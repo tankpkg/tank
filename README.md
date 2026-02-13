@@ -1,10 +1,17 @@
 <p align="center">
-  <h1 align="center">Tank</h1>
-  <p align="center">
-    Security-first package manager for AI agent skills.
-    <br />
-    <em>"I know Kung Fu." — but verified, signed, and sandboxed.</em>
-  </p>
+  <img src="assets/hero-banner.png" alt="Tank — Security-first package manager for AI agent skills" width="100%" />
+</p>
+
+<p align="center">
+  <img src="assets/logo.png" alt="Tank logo" width="120" />
+</p>
+
+<h1 align="center">Tank</h1>
+
+<p align="center">
+  Security-first package manager for AI agent skills.
+  <br />
+  <em>"I know Kung Fu." — but verified, signed, and sandboxed.</em>
 </p>
 
 <p align="center">
