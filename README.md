@@ -94,6 +94,8 @@ See the [Roadmap](docs/roadmap.md) for what we're building and when.
 
 ## Why "Tank"?
 
+<img src="assets/tank-character.jpg" alt="Tank (Marcus Chong) — the operator from The Matrix" width="400" align="right" />
+
 In The Matrix, **Tank is the operator** — the person who loads skills into people's minds. He's the one who makes "I know Kung Fu" possible. But he doesn't just load anything blindly. He verifies, he monitors, he's the last line of defense.
 
 That's what this project does for AI agent skills.
