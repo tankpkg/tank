@@ -13,9 +13,11 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/semver": "^7.7.1",
     "vitest": "^3"
   },
   "dependencies": {
+    "semver": "^7.7.4",
     "zod": "^4.3.6"
   }
 }

@@ -10,3 +10,6 @@ export type { PublishStartRequest, PublishStartResponse, PublishConfirmRequest, 
 // Constants
 export { REGISTRY_URL, REGISTRY_API_VERSION, MAX_PACKAGE_SIZE, MAX_FILE_COUNT, MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, LOCKFILE_VERSION } from './constants/registry.js';
 export { PERMISSION_CATEGORIES, DEFAULT_PERMISSIONS, type PermissionCategory } from './constants/permissions.js';
+
+// Resolver
+export { resolve, sortVersions } from './lib/resolver.js';
