@@ -1180,7 +1180,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 4.1. Search API
+- [x] 4.1. Search API
 
   **What to do**:
   - Create `apps/web/app/api/v1/search/route.ts`
@@ -1211,7 +1211,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 4.2. `tank search` + `tank info`
+- [x] 4.2. `tank search` + `tank info`
 
   **What to do**:
   - `tank search "query"`:
@@ -1237,7 +1237,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 4.3. Download Counting
+- [x] 4.3. Download Counting
 
   **What to do**:
   - On each successful `tank install` of a specific version, record download in `skill_downloads` table

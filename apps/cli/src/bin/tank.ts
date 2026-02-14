@@ -10,6 +10,8 @@ import { removeCommand } from '../commands/remove.js';
 import { updateCommand } from '../commands/update.js';
 import { verifyCommand } from '../commands/verify.js';
 import { permissionsCommand } from '../commands/permissions.js';
+import { searchCommand } from '../commands/search.js';
+import { infoCommand } from '../commands/info.js';
 
 const program = new Command();
 
@@ -145,6 +147,34 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Error: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('search')
+  .description('Search for skills in the Tank registry')
+  .argument('<query>', 'Search query')
+  .action(async (query: string) => {
+    try {
+      await searchCommand({ query });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Search failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('info')
+  .description('Show detailed information about a skill')
+  .argument('<name>', 'Skill name (e.g., @org/skill-name)')
+  .action(async (name: string) => {
+    try {
+      await infoCommand({ name });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Info failed: ${msg}`);
       process.exit(1);
     }
   });
