@@ -123,9 +123,10 @@ program
   .command('update')
   .description('Update skills to latest versions within their ranges')
   .argument('[name]', 'Skill name to update (omit to update all)')
-  .action(async (name: string | undefined) => {
+  .option('-g, --global', 'Update globally installed skills')
+  .action(async (name: string | undefined, opts: { global?: boolean }) => {
     try {
-      await updateCommand({ name });
+      await updateCommand({ name, global: opts.global });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Update failed: ${msg}`);
