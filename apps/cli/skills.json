@@ -1,0 +1,16 @@
+{
+  "name": "galskill",
+  "version": "0.1.0",
+  "description": "blabla",
+  "skills": {},
+  "permissions": {
+    "network": {
+      "outbound": []
+    },
+    "filesystem": {
+      "read": [],
+      "write": []
+    },
+    "subprocess": false
+  }
+}
