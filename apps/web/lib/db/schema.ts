@@ -1,0 +1,189 @@
+import { relations, sql } from 'drizzle-orm';
+import {
+  check,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core';
+
+// ---------------------------------------------------------------------------
+// Reusable column helpers
+// ---------------------------------------------------------------------------
+
+const id = uuid('id').primaryKey().defaultRandom();
+
+const timestamps = {
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .defaultNow()
+    .notNull()
+    .$onUpdateFn(() => new Date()),
+};
+
+const createdAt = timestamp('created_at', { withTimezone: true }).defaultNow().notNull();
+
+// ---------------------------------------------------------------------------
+// publishers
+// ---------------------------------------------------------------------------
+
+export const publishers = pgTable('publishers', {
+  id,
+  userId: text('user_id').notNull(),
+  displayName: text('display_name').notNull(),
+  githubUsername: text('github_username').unique(),
+  avatarUrl: text('avatar_url'),
+  ...timestamps,
+});
+
+// ---------------------------------------------------------------------------
+// skills
+// ---------------------------------------------------------------------------
+
+export const skills = pgTable(
+  'skills',
+  {
+    id,
+    name: text('name').notNull().unique(),
+    description: text('description'),
+    publisherId: uuid('publisher_id')
+      .notNull()
+      .references(() => publishers.id),
+    orgId: text('org_id'),
+    repositoryUrl: text('repository_url'),
+    ...timestamps,
+  },
+  (table) => [
+    // Name format: optional @scope/ prefix, then lowercase alphanumeric + hyphens
+    check(
+      'skills_name_format',
+      sql`${table.name} ~ '^(@[a-z0-9-]+\/)?[a-z0-9][a-z0-9-]*$'`,
+    ),
+    // Max 214 characters (npm convention)
+    check('skills_name_length', sql`length(${table.name}) <= 214`),
+    // Index for filtering by org
+    index('skills_org_id_idx').on(table.orgId),
+    // GIN index for full-text search
+    index('skills_search_idx').using(
+      'gin',
+      sql`to_tsvector('english', ${table.name} || ' ' || coalesce(${table.description}, ''))`,
+    ),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// skill_versions
+// ---------------------------------------------------------------------------
+
+export const skillVersions = pgTable(
+  'skill_versions',
+  {
+    id,
+    skillId: uuid('skill_id')
+      .notNull()
+      .references(() => skills.id),
+    version: text('version').notNull(),
+    integrity: text('integrity').notNull(),
+    tarballPath: text('tarball_path').notNull(),
+    tarballSize: integer('tarball_size').notNull(),
+    fileCount: integer('file_count').notNull(),
+    manifest: jsonb('manifest').notNull(),
+    permissions: jsonb('permissions').notNull(),
+    auditScore: real('audit_score'),
+    auditStatus: text('audit_status').notNull().default('pending'),
+    readme: text('readme'),
+    publishedBy: uuid('published_by')
+      .notNull()
+      .references(() => publishers.id),
+    createdAt,
+  },
+  (table) => [
+    // No duplicate versions per skill
+    unique('skill_versions_skill_version_uniq').on(table.skillId, table.version),
+    // Index for version lookups by skill
+    index('skill_versions_skill_id_idx').on(table.skillId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// skill_downloads
+// ---------------------------------------------------------------------------
+
+export const skillDownloads = pgTable(
+  'skill_downloads',
+  {
+    id,
+    skillId: uuid('skill_id')
+      .notNull()
+      .references(() => skills.id),
+    versionId: uuid('version_id')
+      .notNull()
+      .references(() => skillVersions.id),
+    ipHash: text('ip_hash'),
+    userAgent: text('user_agent'),
+    createdAt,
+  },
+  (table) => [
+    index('skill_downloads_skill_id_idx').on(table.skillId),
+    index('skill_downloads_created_at_idx').on(table.createdAt),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// audit_events
+// ---------------------------------------------------------------------------
+
+export const auditEvents = pgTable('audit_events', {
+  id,
+  action: text('action').notNull(),
+  actorId: text('actor_id'),
+  targetType: text('target_type'),
+  targetId: text('target_id'),
+  metadata: jsonb('metadata'),
+  createdAt,
+});
+
+// ---------------------------------------------------------------------------
+// Relations
+// ---------------------------------------------------------------------------
+
+export const publishersRelations = relations(publishers, ({ many }) => ({
+  skills: many(skills),
+}));
+
+export const skillsRelations = relations(skills, ({ one, many }) => ({
+  publisher: one(publishers, {
+    fields: [skills.publisherId],
+    references: [publishers.id],
+  }),
+  versions: many(skillVersions),
+  downloads: many(skillDownloads),
+}));
+
+export const skillVersionsRelations = relations(skillVersions, ({ one, many }) => ({
+  skill: one(skills, {
+    fields: [skillVersions.skillId],
+    references: [skills.id],
+  }),
+  publishedByPublisher: one(publishers, {
+    fields: [skillVersions.publishedBy],
+    references: [publishers.id],
+  }),
+  downloads: many(skillDownloads),
+}));
+
+export const skillDownloadsRelations = relations(skillDownloads, ({ one }) => ({
+  skill: one(skills, {
+    fields: [skillDownloads.skillId],
+    references: [skills.id],
+  }),
+  version: one(skillVersions, {
+    fields: [skillDownloads.versionId],
+    references: [skillVersions.id],
+  }),
+}));

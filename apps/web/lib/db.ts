@@ -1,5 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import * as schema from './db/schema';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -20,10 +21,9 @@ if (!connectionString) {
 export const sql = postgres(connectionString);
 
 /**
- * Drizzle ORM instance.
+ * Drizzle ORM instance with full schema for relational queries.
  * Import this in your app code for all database operations.
  *
- * Schema will be passed in once created (Task 1.3).
  * Usage: `import { db } from '@/lib/db';`
  */
-export const db = drizzle(sql);
+export const db = drizzle(sql, { schema });
