@@ -14,6 +14,7 @@ import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
 import { auditCommand } from '../commands/audit.js';
 import { linkCommand } from '../commands/link.js';
+import { unlinkCommand } from '../commands/unlink.js';
 import { flushLogs } from '../lib/debug-logger.js';
 
 const program = new Command();
@@ -207,6 +208,19 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Link failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('unlink')
+  .description('Remove skill symlinks from AI agent directories')
+  .action(async () => {
+    try {
+      await unlinkCommand();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Unlink failed: ${msg}`);
       process.exit(1);
     }
   });
