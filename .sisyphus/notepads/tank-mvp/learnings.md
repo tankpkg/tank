@@ -967,3 +967,44 @@
 - **Node.js crypto in Next.js routes**: `import { createHash } from 'node:crypto'` works fine in Next.js App Router routes (Node.js runtime is default).
 - **IP hashing**: SHA-256 produces a 64-char hex string. Use `createHash('sha256').update(ip).digest('hex')`.
 - **Sequential mock results**: A counter-based `selectCallIndex` approach with `mockSelectResults` array is cleaner than chaining `mockResolvedValueOnce` when you have 4+ sequential select calls.
+
+## Task 4.5: Web Skill Detail Page (2026-02-14)
+
+### What worked
+- `[...name]` catch-all route handles scoped names: `/skills/@org/skill-name` → `params.name = ['@org', 'skill-name']` → `nameParts.join('/')` → `@org/skill-name`
+- Next.js 15 `params` is a Promise — `const { name: nameParts } = await params;`
+- Server Component fetches data directly with `fetch()` + `cache: 'no-store'`
+- Client Component (`InstallCommand`) extracted to separate file for clipboard copy functionality
+- `navigator.clipboard.writeText()` with try/catch for graceful fallback
+- `encodeURIComponent(skillName)` correctly encodes scoped names for API URLs
+- Parallel fetch with `Promise.all([metaRes, versionsRes])` for metadata + versions
+- Sequential fetch for version details (depends on `metadata.latestVersion`)
+- shadcn components used: Badge, Card, CardContent, CardHeader, CardTitle, Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Separator
+- Build output shows `ƒ /skills/[...name]` (dynamic, server-rendered) — 1.86 kB page, 184 kB first load JS
+- Zero LSP errors on both files
+
+### Files created
+- `apps/web/app/(registry)/skills/[...name]/page.tsx` — Server Component: skill detail page with header, install command, permissions, version history
+- `apps/web/app/(registry)/skills/[...name]/install-command.tsx` — Client Component: copyable install command with "Copy"/"Copied!" toggle
+
+### Build result
+- `pnpm build --filter=@tank/web`: Succeeded, 16 static + dynamic pages
+- BetterAuthError warnings are expected (no BETTER_AUTH_SECRET in build env)
+
+## Task 4.4: Web Browse Page
+
+### Files Created
+- `apps/web/app/(registry)/layout.tsx` — Public registry layout (no auth), header with Tank logo + Browse Skills nav + Sign In link
+- `apps/web/app/(registry)/skills/page.tsx` — Server Component browse page with search, skill cards grid, pagination, empty state
+- `apps/web/app/(registry)/skills/search-bar.tsx` — Client component for search form using `useRouter` + `useSearchParams`
+
+### Patterns Learned
+- **Route groups**: `(registry)` doesn't affect URL path — `/skills` works directly
+- **searchParams in Next.js 15**: Must be `Promise<{ q?: string }>` and `await`ed
+- **shadcn Card**: Uses `data-slot` attributes, `CardHeader`/`CardTitle`/`CardDescription`/`CardContent` composition
+- **Badge variants**: `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` — used `secondary` for version, conditional `default`/`destructive` for audit score
+- **Button asChild**: Use `asChild` prop with `<Link>` inside for navigation buttons (pagination)
+- **Fetch in Server Components**: Use `process.env.NEXT_PUBLIC_APP_URL` with `http://localhost:3000` fallback for internal API calls
+- **Pre-existing build issues**: First build attempt hit stale `.next` cache causing ENOENT on `.nft.json` files — `rm -rf .next` fixed it. Also, the `[...name]/page.tsx` detail page was already created by Task 4.5 with its `install-command.tsx` client component
+- **BetterAuthError warnings**: Expected during build without `BETTER_AUTH_SECRET` env var — not a real error
+- **Turbo cache**: After `--force` rebuild succeeds, subsequent `pnpm build` uses turbo cache (581ms vs 14s)

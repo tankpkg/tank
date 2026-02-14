@@ -1264,7 +1264,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 4.4. Web — Skills Browse Page
+- [x] 4.4. Web — Skills Browse Page
 
   **What to do**:
   - Create `apps/web/app/(registry)/skills/page.tsx`
@@ -1292,7 +1292,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 4.5. Web — Skill Detail Page
+- [x] 4.5. Web — Skill Detail Page
 
   **What to do**:
   - Create `apps/web/app/(registry)/skills/[...name]/page.tsx`
