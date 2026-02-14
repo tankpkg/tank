@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { initCommand } from '../commands/init.js';
 import { loginCommand } from '../commands/login.js';
 import { whoamiCommand } from '../commands/whoami.js';
+import { logoutCommand } from '../commands/logout.js';
 
 const program = new Command();
 
@@ -38,6 +39,19 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Error: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('logout')
+  .description('Remove authentication token from config')
+  .action(async () => {
+    try {
+      await logoutCommand();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Logout failed: ${msg}`);
       process.exit(1);
     }
   });
