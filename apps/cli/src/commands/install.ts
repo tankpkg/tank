@@ -72,20 +72,21 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
   const config = getConfig(configDir);
 
-  // 1. Read skills.json
+  // 1. Read or create skills.json
   const skillsJsonPath = path.join(directory, 'skills.json');
-  if (!fs.existsSync(skillsJsonPath)) {
-    throw new Error(
-      `No skills.json found in ${directory}. Run: tank init`,
-    );
-  }
-
   let skillsJson: Record<string, unknown>;
-  try {
-    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
-    skillsJson = JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    throw new Error('Failed to read or parse skills.json');
+
+  if (!fs.existsSync(skillsJsonPath)) {
+    skillsJson = { skills: {} };
+    fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+    logger.info('Created skills.json');
+  } else {
+    try {
+      const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
+      skillsJson = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      throw new Error('Failed to read or parse skills.json');
+    }
   }
 
   // Read existing lockfile if present
@@ -328,7 +329,8 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
   }
 
   if (!fs.existsSync(skillsJsonPath)) {
-    throw new Error(`No skills.json found in ${directory}. Run: tank init`);
+    logger.info('No skills.json found — nothing to install');
+    return;
   }
 
   let skillsJson: Record<string, unknown>;

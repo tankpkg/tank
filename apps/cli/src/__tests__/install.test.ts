@@ -166,17 +166,20 @@ describe('installCommand', () => {
     expect(downloadUrl).toBe('https://storage.example.com/download/my-skill-2.0.0.tgz');
   });
 
-  it('errors when skills.json is missing', async () => {
+  it('auto-creates skills.json when missing', async () => {
     const { installCommand } = await import('../commands/install.js');
 
-    // Remove skills.json
     fs.unlinkSync(path.join(tmpDir, 'skills.json'));
 
-    await expect(
-      installCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
-    ).rejects.toThrow(/skills\.json/);
+    mockFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify(versionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ...versionMetadata, integrity: fakeTarballIntegrity })))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)));
 
-    expect(mockFetch).not.toHaveBeenCalled();
+    await installCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir });
+
+    const created = JSON.parse(fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8'));
+    expect(created.skills['@test-org/my-skill']).toBe('^2.0.0');
   });
 
   it('errors when skill is not found (404)', async () => {
@@ -867,12 +870,12 @@ describe('installAll (no-args dispatch)', () => {
       .join('\n');
   }
 
-  it('errors when neither skills.json nor skills.lock exists', async () => {
+  it('returns gracefully when neither skills.json nor skills.lock exists', async () => {
     const { installAll } = await import('../commands/install.js');
 
-    await expect(
-      installAll({ directory: tmpDir, configDir }),
-    ).rejects.toThrow(/skills\.json/i);
+    await installAll({ directory: tmpDir, configDir });
+
+    expect(getAllOutput()).toContain('nothing to install');
   });
 
   it('uses lockfile when skills.lock exists (deterministic mode)', async () => {
