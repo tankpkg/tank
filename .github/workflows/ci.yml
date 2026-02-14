@@ -56,12 +56,7 @@ jobs:
         run: pnpm test
 
       - name: Install Python dependencies
-        run: |
-          cd apps/web
-          pip install -r requirements.txt
-          pip install pytest
+        run: pip install -r apps/web/requirements.txt pytest
 
       - name: Run Python tests
-        run: |
-          cd apps/web
-          python -m pytest api/analyze/tests/ -v
+        run: python -m pytest apps/web/api/analyze/tests/ -v
