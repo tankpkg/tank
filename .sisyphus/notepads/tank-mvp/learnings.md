@@ -491,3 +491,71 @@
 
 ### Versions
 - open: 11.0.0
+
+## Task 2.7: `tank logout` Command (2026-02-14)
+
+### What worked
+- TDD approach: Write failing tests first, then implement — all 4 tests passed on first implementation
+- `setConfig({ token: undefined, user: undefined }, configDir)` correctly removes fields from JSON — JavaScript's `JSON.stringify` omits `undefined` values, so the merged object loses those keys
+- Command registration pattern identical to login/whoami: `.command()` + `.description()` + `.action(async () => { try { await logoutCommand() } catch (err) { ... } })`
+- `configDir` parameter threading enables isolated testing with temp directories (same pattern as login/whoami)
+- Logger methods (`logger.warn()`, `logger.success()`) work perfectly for user feedback
+- 4 test cases cover: logout when logged in, logout when not logged in, success message, config file preservation
+
+### Gotchas
+- None — implementation was straightforward following established patterns
+
+### Files created
+- `apps/cli/src/commands/logout.ts` — Logout command with token/user removal
+- `apps/cli/src/__tests__/logout.test.ts` — 4 tests
+
+### Files modified
+- `apps/cli/src/bin/tank.ts` — Imported and registered logout command
+
+### Test coverage (4 new tests, 75 total)
+- removes token and user from config when logged in
+- prints "Not logged in" when no token exists
+- prints success message when logout succeeds
+- keeps config file intact after logout (just removes token/user)
+
+### Build & Test Results
+- `pnpm test --filter=tank`: 71 tests passed (4 new logout tests included)
+- `pnpm build --filter=tank`: Succeeded with no errors
+- All existing tests still pass — no regressions
+
+## Task 2.5: Two-Step Publish API Endpoint (2026-02-14)
+
+### What worked
+- Two-step publish flow: POST /api/v1/skills (validate + get upload URL) → CLI uploads to Supabase → POST /api/v1/skills/confirm (finalize)
+- Chainable mock pattern for Drizzle: `mockInsert → mockValues → mockReturning`, `mockSelect → mockFrom → mockWhere → mockLimit` — each mock returns the next in the chain
+- `skillsJsonSchema.safeParse()` with `.strict()` catches unknown fields at validation time
+- Name normalization (lowercase + trim) happens BEFORE schema validation — so uppercase names get normalized then pass the regex check
+- Scoped package org check: parse `@org/name` with regex, then `auth.api.getFullOrganization({ query: { organizationSlug }, headers })` to verify membership
+- `supabaseAdmin.storage.from('packages').createSignedUploadUrl(path)` returns `{ data: { signedUrl, token }, error }` — the signedUrl is what the CLI uses to upload directly
+- Version record created with `auditStatus: 'pending-upload'` and placeholder values (integrity: 'pending', tarballSize: 0, fileCount: 0) — confirm endpoint fills in real values
+- Dynamic `await import('../route')` in tests works with vitest module mocking — mocks are hoisted before dynamic imports
+
+### Gotchas
+- **`getFullOrganization` requires `headers` parameter** — TypeScript type has `requireHeaders: true`. Must pass `request.headers` from the API route handler. Without headers, `next build` type-check fails even though LSP doesn't catch it.
+- **`supabase.ts` throws at module level** — `next build` evaluates route handler modules at build time. If `SUPABASE_URL` is missing, the throw kills the build. Fixed by applying the same lazy Proxy pattern as `db.ts`: warn instead of throw, create Proxy that throws on access.
+- **Test relative import paths**: From `skills/__tests__/publish.test.ts`, the route is at `../route` (one level up), NOT `../../route` (two levels up). Easy to get wrong.
+- **`toContain` is case-sensitive** — error message "Version 1.0.0 already exists" doesn't match `toContain('version')` (lowercase v). Use the exact case from the error message.
+- **Drizzle mock chain must be carefully ordered** — `mockLimit` is shared between select queries, so `mockResolvedValueOnce` calls must be in the exact order the route handler makes DB queries (publisher lookup → skill lookup → version conflict check)
+
+### Files created
+- `apps/web/app/api/v1/skills/route.ts` — POST handler: validate manifest, check org membership, find/create publisher+skill, check version conflict, create pending version, generate signed upload URL
+- `apps/web/app/api/v1/skills/confirm/route.ts` — POST handler: verify version exists + is pending-upload, update with integrity/fileCount/tarballSize, set auditStatus to 'published'
+- `apps/web/app/api/v1/skills/__tests__/publish.test.ts` — 20 tests covering both endpoints
+
+### Files modified
+- `apps/web/lib/supabase.ts` — Changed from throw-on-missing-env to lazy Proxy pattern (same as db.ts) to prevent build failures
+
+### Test coverage (20 new tests, 110 total)
+- POST /api/v1/skills: 14 tests (401 missing/invalid auth, 400 invalid manifest x3, 400 invalid JSON, name normalization, 403 non-member/missing org, 409 duplicate version, 200 valid publish, publisher creation, scoped package, existing skill reuse)
+- POST /api/v1/skills/confirm: 6 tests (401 missing auth, 400 missing versionId, 404 nonexistent version, 400 already published, 200 success, 400 invalid JSON)
+
+### Design decisions
+- **Signed upload URL bypasses Vercel 4.5MB body limit**: CLI uploads tarball directly to Supabase Storage, not through our API. Only the manifest (small JSON) goes through our endpoint.
+- **Publisher auto-creation**: If user has no publisher record, one is created with userId as displayName. This simplifies the first-publish experience.
+- **Org membership check uses better-auth API**: `getFullOrganization` returns members array, we check if userId is in it. No direct DB query needed.
+- **Version conflict check before insert**: Even though DB has a unique constraint on (skillId, version), we check first to return a clean 409 error instead of a DB constraint violation.

@@ -751,7 +751,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 2.5. Publish API Endpoint
+- [x] 2.5. Publish API Endpoint
 
   **What to do**:
   - Create `apps/web/app/api/v1/skills/route.ts` — `POST` handler
@@ -845,7 +845,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 2.7. `tank logout`
+- [x] 2.7. `tank logout`
 
   **What to do**:
   - Create `apps/cli/src/commands/logout.ts`
