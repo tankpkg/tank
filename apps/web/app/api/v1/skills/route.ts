@@ -4,7 +4,7 @@ import { skillsJsonSchema } from '@tank/shared';
 import { verifyCliAuth } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { publishers, skills, skillVersions } from '@/lib/db/schema';
-import { organization, member } from '@/lib/db/auth-schema';
+import { organization, member, user, account } from '@/lib/db/auth-schema';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: Request) {
@@ -54,11 +54,38 @@ export async function POST(request: Request) {
 
   let publisher = existingPublishers[0];
   if (!publisher) {
+    const [authUser] = await db
+      .select({ name: user.name, image: user.image })
+      .from(user)
+      .where(eq(user.id, verified.userId))
+      .limit(1);
+
+    const [githubAccount] = await db
+      .select({ accountId: account.accountId, accessToken: account.accessToken })
+      .from(account)
+      .where(and(eq(account.userId, verified.userId), eq(account.providerId, 'github')))
+      .limit(1);
+
+    let githubUsername: string | null = null;
+    if (githubAccount?.accessToken) {
+      try {
+        const ghRes = await fetch('https://api.github.com/user', {
+          headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' },
+        });
+        if (ghRes.ok) {
+          const gh = await ghRes.json() as { login: string };
+          githubUsername = gh.login;
+        }
+      } catch { /* non-critical — fall back to null */ }
+    }
+
     const [newPublisher] = await db
       .insert(publishers)
       .values({
         userId: verified.userId,
-        displayName: verified.userId,
+        displayName: authUser?.name ?? verified.userId,
+        githubUsername,
+        avatarUrl: authUser?.image ?? null,
       })
       .returning();
     publisher = newPublisher;
