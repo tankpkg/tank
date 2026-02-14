@@ -7,7 +7,19 @@ const mockReturning = vi.fn();
 const mockValues = vi.fn(() => ({ returning: mockReturning }));
 const mockInsert = vi.fn(() => ({ values: mockValues }));
 const mockLimit = vi.fn();
-const mockWhere = vi.fn(() => ({ limit: mockLimit }));
+// mockWhere returns a thenable that also has .limit() — supports both
+// `await db.select().from().where()` and `await db.select().from().where().limit()`
+const mockWhere = vi.fn(() => {
+  const chain = {
+    limit: mockLimit,
+    orderBy: vi.fn(() => ({ limit: mockLimit })),
+    then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
+      // When awaited directly (without .limit()), resolve with empty array
+      return Promise.resolve([]).then(onFulfilled, onRejected);
+    },
+  };
+  return chain;
+});
 const mockOrderBy = vi.fn(() => ({ limit: mockLimit }));
 const mockFrom = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy }));
 const mockSelect = vi.fn(() => ({ from: mockFrom }));
@@ -56,12 +68,28 @@ vi.mock('@/lib/db/schema', () => ({
     publishedBy: 'skill_versions.published_by',
     createdAt: 'skill_versions.created_at',
   },
+  skillDownloads: {
+    id: 'skill_downloads.id',
+    skillId: 'skill_downloads.skill_id',
+    versionId: 'skill_downloads.version_id',
+    ipHash: 'skill_downloads.ip_hash',
+    userAgent: 'skill_downloads.user_agent',
+    createdAt: 'skill_downloads.created_at',
+  },
 }));
 
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((col, val) => ({ col, val, type: 'eq' })),
   and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
   desc: vi.fn((col) => ({ col, type: 'desc' })),
+  sql: Object.assign(
+    vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
+      strings,
+      values,
+      type: 'sql',
+    })),
+    { raw: vi.fn((str: string) => ({ str, type: 'sql_raw' })) },
+  ),
 }));
 
 const mockCreateSignedUrl = vi.fn();

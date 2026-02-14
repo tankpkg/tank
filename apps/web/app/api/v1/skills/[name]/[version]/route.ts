@@ -1,11 +1,47 @@
 import { NextResponse } from 'next/server';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
+import { createHash } from 'node:crypto';
 import { db } from '@/lib/db';
-import { skills, skillVersions } from '@/lib/db/schema';
+import { skills, skillVersions, skillDownloads } from '@/lib/db/schema';
 import { supabaseAdmin } from '@/lib/supabase';
 
+async function recordDownload(
+  request: Request,
+  skillId: string,
+  versionId: string,
+): Promise<void> {
+  // 1. Hash the IP address for privacy
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = forwarded?.split(',')[0]?.trim() ?? 'unknown';
+  const ipHash = createHash('sha256').update(ip).digest('hex');
+
+  // 2. Check for duplicate within last hour
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const existing = await db
+    .select({ id: skillDownloads.id })
+    .from(skillDownloads)
+    .where(
+      and(
+        eq(skillDownloads.skillId, skillId),
+        eq(skillDownloads.ipHash, ipHash),
+        sql`${skillDownloads.createdAt} > ${oneHourAgo}`,
+      ),
+    )
+    .limit(1);
+
+  if (existing.length > 0) return; // Already counted within the hour
+
+  // 3. Insert download record
+  await db.insert(skillDownloads).values({
+    skillId,
+    versionId,
+    ipHash,
+    userAgent: request.headers.get('user-agent') ?? null,
+  });
+}
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ name: string; version: string }> },
 ) {
   const { name: rawName, version } = await params;
@@ -52,7 +88,18 @@ export async function GET(
     );
   }
 
-  // 4. Return response
+  // 4. Record download (fire-and-forget, don't block the response)
+  recordDownload(request, skill.id, skillVersion.id).catch(() => {
+    // Silently ignore download counting errors — don't break the download
+  });
+
+  // 5. Count total downloads for this skill
+  const downloadCount = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(skillDownloads)
+    .where(eq(skillDownloads.skillId, skill.id));
+
+  // 6. Return response
   return NextResponse.json({
     name: skill.name,
     version: skillVersion.version,
@@ -63,5 +110,6 @@ export async function GET(
     auditStatus: skillVersion.auditStatus,
     downloadUrl: downloadData.signedUrl,
     publishedAt: skillVersion.createdAt,
+    downloads: downloadCount[0]?.count ?? 0,
   });
 }
