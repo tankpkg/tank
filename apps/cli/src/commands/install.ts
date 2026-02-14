@@ -16,6 +16,16 @@ export interface InstallOptions {
   configDir?: string;
 }
 
+export interface LockfileInstallOptions {
+  directory?: string;
+  configDir?: string;
+}
+
+export interface InstallAllOptions {
+  directory?: string;
+  configDir?: string;
+}
+
 interface VersionInfo {
   version: string;
   integrity: string;
@@ -241,11 +251,115 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   spinner.succeed(`Installed ${name}@${resolved}`);
 }
 
-/**
- * Get the extraction directory for a skill.
- * Scoped packages: .tank/skills/@org/name
- * Unscoped packages: .tank/skills/name
- */
+export async function installFromLockfile(options: LockfileInstallOptions): Promise<void> {
+  const { directory = process.cwd(), configDir: _configDir } = options;
+
+  const lockPath = path.join(directory, 'skills.lock');
+  if (!fs.existsSync(lockPath)) {
+    throw new Error(`No skills.lock found in ${directory}`);
+  }
+
+  let lock: SkillsLock;
+  try {
+    const raw = fs.readFileSync(lockPath, 'utf-8');
+    lock = JSON.parse(raw) as SkillsLock;
+  } catch {
+    throw new Error('Failed to read or parse skills.lock');
+  }
+
+  const entries = Object.entries(lock.skills);
+  if (entries.length === 0) {
+    logger.info('No skills in lockfile');
+    return;
+  }
+
+  const spinner = ora('Installing from lockfile...').start();
+  const skillsDir = path.join(directory, '.tank', 'skills');
+
+  try {
+    for (const [key, entry] of entries) {
+      const skillName = parseLockKey(key);
+      spinner.text = `Installing ${key}...`;
+
+      const downloadRes = await fetch(entry.resolved);
+      if (!downloadRes.ok) {
+        throw new Error(`Failed to download ${key}: ${downloadRes.status} ${downloadRes.statusText}`);
+      }
+
+      const tarballBuffer = Buffer.from(await downloadRes.arrayBuffer());
+
+      const hash = crypto.createHash('sha512').update(tarballBuffer).digest('base64');
+      const computedIntegrity = `sha512-${hash}`;
+
+      if (computedIntegrity !== entry.integrity) {
+        throw new Error(
+          `Integrity mismatch for ${key}. Expected: ${entry.integrity}, Got: ${computedIntegrity}`,
+        );
+      }
+
+      const extractDir = getExtractDir(directory, skillName);
+
+      if (fs.existsSync(extractDir)) {
+        fs.rmSync(extractDir, { recursive: true, force: true });
+      }
+      fs.mkdirSync(extractDir, { recursive: true });
+
+      await extractSafely(tarballBuffer, extractDir);
+    }
+
+    spinner.succeed(`Installed ${entries.length} skill${entries.length === 1 ? '' : 's'} from lockfile`);
+  } catch (err) {
+    spinner.fail('Install from lockfile failed');
+    if (fs.existsSync(skillsDir)) {
+      fs.rmSync(skillsDir, { recursive: true, force: true });
+    }
+    throw err;
+  }
+}
+
+export async function installAll(options: InstallAllOptions): Promise<void> {
+  const { directory = process.cwd(), configDir } = options;
+
+  const lockPath = path.join(directory, 'skills.lock');
+  const skillsJsonPath = path.join(directory, 'skills.json');
+
+  if (fs.existsSync(lockPath)) {
+    return installFromLockfile({ directory, configDir });
+  }
+
+  if (!fs.existsSync(skillsJsonPath)) {
+    throw new Error(`No skills.json found in ${directory}. Run: tank init`);
+  }
+
+  let skillsJson: Record<string, unknown>;
+  try {
+    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
+    skillsJson = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    throw new Error('Failed to read or parse skills.json');
+  }
+
+  const skills = (skillsJson.skills ?? {}) as Record<string, string>;
+  const skillEntries = Object.entries(skills);
+
+  if (skillEntries.length === 0) {
+    logger.info('No skills defined in skills.json');
+    return;
+  }
+
+  for (const [name, versionRange] of skillEntries) {
+    await installCommand({ name, versionRange, directory, configDir });
+  }
+}
+
+function parseLockKey(key: string): string {
+  const lastAt = key.lastIndexOf('@');
+  if (lastAt <= 0) {
+    throw new Error(`Invalid lockfile key: ${key}`);
+  }
+  return key.slice(0, lastAt);
+}
+
 function getExtractDir(projectDir: string, skillName: string): string {
   if (skillName.startsWith('@')) {
     const [scope, name] = skillName.split('/');

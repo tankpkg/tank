@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -515,5 +516,438 @@ describe('installCommand', () => {
       fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8'),
     );
     expect(updated.skills['@test-org/my-skill']).toBe('^1.0.0');
+  });
+});
+
+describe('installFromLockfile', () => {
+  let tmpDir: string;
+  let configDir: string;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
+  // Create fake tarballs with known integrity
+  let fakeTarball1: Buffer;
+  let fakeTarball1Integrity: string;
+  let fakeTarball2: Buffer;
+  let fakeTarball2Integrity: string;
+
+  const validSkillsJson = {
+    name: 'my-project',
+    version: '1.0.0',
+    description: 'A test project',
+    skills: {
+      '@test-org/my-skill': '^2.0.0',
+      'simple-skill': '^1.0.0',
+    },
+    permissions: {
+      network: { outbound: ['*.example.com'] },
+      filesystem: { read: ['./src/**'], write: ['./output/**'] },
+      subprocess: false,
+    },
+  };
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-lockfile-test-'));
+    configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-lockfile-config-'));
+
+    // Write config
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev' }),
+    );
+
+    // Create fake tarballs with real integrity
+    fakeTarball1 = Buffer.from('fake-tarball-content-skill-1');
+    const hash1 = crypto.createHash('sha512').update(fakeTarball1).digest('base64');
+    fakeTarball1Integrity = `sha512-${hash1}`;
+
+    fakeTarball2 = Buffer.from('fake-tarball-content-skill-2');
+    const hash2 = crypto.createHash('sha512').update(fakeTarball2).digest('base64');
+    fakeTarball2Integrity = `sha512-${hash2}`;
+
+    mockFetch.mockReset();
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(configDir, { recursive: true, force: true });
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  function getAllOutput(): string {
+    return [...logSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((c) => c.join(' '))
+      .join('\n');
+  }
+
+  function writeLockfile(skills: Record<string, { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }>) {
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.lock'),
+      JSON.stringify({ lockfileVersion: 1, skills }, null, 2),
+    );
+  }
+
+  it('installs all skills from lockfile with correct integrity', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+
+    writeLockfile({
+      '@test-org/my-skill@2.0.0': {
+        resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+        integrity: fakeTarball1Integrity,
+        permissions: {},
+        audit_score: 8.0,
+      },
+    });
+
+    // Mock tarball download
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+
+    await installFromLockfile({ directory: tmpDir, configDir });
+
+    // Verify download was called with the resolved URL
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch.mock.calls[0][0]).toBe('https://storage.example.com/my-skill-2.0.0.tgz');
+
+    // Verify extraction directory was created
+    const extractDir = path.join(tmpDir, '.tank', 'skills', '@test-org', 'my-skill');
+    expect(fs.existsSync(extractDir)).toBe(true);
+  });
+
+  it('aborts entire install when integrity mismatch on any skill', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+
+    writeLockfile({
+      '@test-org/my-skill@2.0.0': {
+        resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+        integrity: 'sha512-WRONG_HASH_THAT_WILL_NOT_MATCH',
+        permissions: {},
+        audit_score: 8.0,
+      },
+    });
+
+    // Mock tarball download — content won't match the integrity
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+
+    await expect(
+      installFromLockfile({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/integrity/i);
+
+    // .tank/skills directory should be cleaned up on abort
+    expect(fs.existsSync(path.join(tmpDir, '.tank', 'skills'))).toBe(false);
+  });
+
+  it('prints summary with count after successful install', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+    const ora = (await import('ora')).default;
+
+    writeLockfile({
+      '@test-org/my-skill@2.0.0': {
+        resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+        integrity: fakeTarball1Integrity,
+        permissions: {},
+        audit_score: 8.0,
+      },
+    });
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+
+    await installFromLockfile({ directory: tmpDir, configDir });
+
+    const spinner = ora();
+    const succeedCalls = vi.mocked(spinner.succeed).mock.calls;
+    const lastSucceed = succeedCalls[succeedCalls.length - 1]?.[0] ?? '';
+    expect(lastSucceed).toMatch(/installed 1 skill/i);
+  });
+
+  it('installs multiple skills from lockfile', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+
+    writeLockfile({
+      '@test-org/my-skill@2.0.0': {
+        resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+        integrity: fakeTarball1Integrity,
+        permissions: {},
+        audit_score: 8.0,
+      },
+      'simple-skill@1.0.0': {
+        resolved: 'https://storage.example.com/simple-skill-1.0.0.tgz',
+        integrity: fakeTarball2Integrity,
+        permissions: {},
+        audit_score: 9.0,
+      },
+    });
+
+    // Mock both tarball downloads
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball2), { status: 200 }),
+    );
+
+    await installFromLockfile({ directory: tmpDir, configDir });
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+
+    // Both extraction directories should exist
+    expect(fs.existsSync(path.join(tmpDir, '.tank', 'skills', '@test-org', 'my-skill'))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, '.tank', 'skills', 'simple-skill'))).toBe(true);
+
+    const ora = (await import('ora')).default;
+    const spinner = ora();
+    const succeedCalls = vi.mocked(spinner.succeed).mock.calls;
+    const lastSucceed = succeedCalls[succeedCalls.length - 1]?.[0] ?? '';
+    expect(lastSucceed).toMatch(/installed 2 skills/i);
+  });
+
+  it('handles scoped package names with correct extraction paths', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+
+    writeLockfile({
+      '@my-org/deep-skill@3.0.0': {
+        resolved: 'https://storage.example.com/deep-skill-3.0.0.tgz',
+        integrity: fakeTarball1Integrity,
+        permissions: {},
+        audit_score: 7.5,
+      },
+    });
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+
+    await installFromLockfile({ directory: tmpDir, configDir });
+
+    // Scoped package: .tank/skills/@my-org/deep-skill
+    const extractDir = path.join(tmpDir, '.tank', 'skills', '@my-org', 'deep-skill');
+    expect(fs.existsSync(extractDir)).toBe(true);
+  });
+
+  it('re-extracts when directory already exists (fresh install)', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+
+    // Pre-create the extraction directory with a marker file
+    const existingDir = path.join(tmpDir, '.tank', 'skills', 'simple-skill');
+    fs.mkdirSync(existingDir, { recursive: true });
+    fs.writeFileSync(path.join(existingDir, 'old-file.txt'), 'old content');
+
+    writeLockfile({
+      'simple-skill@1.0.0': {
+        resolved: 'https://storage.example.com/simple-skill-1.0.0.tgz',
+        integrity: fakeTarball1Integrity,
+        permissions: {},
+        audit_score: 9.0,
+      },
+    });
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+
+    await installFromLockfile({ directory: tmpDir, configDir });
+
+    // Directory should still exist (re-created)
+    expect(fs.existsSync(existingDir)).toBe(true);
+    // Old file should be gone (directory was cleaned and re-extracted)
+    expect(fs.existsSync(path.join(existingDir, 'old-file.txt'))).toBe(false);
+  });
+
+  it('cleans up .tank/skills on integrity failure mid-install', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+
+    writeLockfile({
+      '@test-org/my-skill@2.0.0': {
+        resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+        integrity: fakeTarball1Integrity,
+        permissions: {},
+        audit_score: 8.0,
+      },
+      'bad-skill@1.0.0': {
+        resolved: 'https://storage.example.com/bad-skill-1.0.0.tgz',
+        integrity: 'sha512-DEFINITELY_WRONG',
+        permissions: {},
+        audit_score: 5.0,
+      },
+    });
+
+    // First skill downloads fine
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+    // Second skill downloads fine but integrity won't match
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball2), { status: 200 }),
+    );
+
+    await expect(
+      installFromLockfile({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/integrity/i);
+
+    // Even though first skill was extracted, the entire .tank/skills should be cleaned up
+    expect(fs.existsSync(path.join(tmpDir, '.tank', 'skills'))).toBe(false);
+  });
+
+  it('errors when skills.lock file is missing', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+
+    // No lockfile exists
+    await expect(
+      installFromLockfile({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/skills\.lock/i);
+  });
+});
+
+describe('installAll (no-args dispatch)', () => {
+  let tmpDir: string;
+  let configDir: string;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
+  let fakeTarball: Buffer;
+  let fakeTarballIntegrity: string;
+
+  const validSkillsJson = {
+    name: 'my-project',
+    version: '1.0.0',
+    description: 'A test project',
+    skills: {
+      '@test-org/my-skill': '^2.0.0',
+    },
+    permissions: {
+      network: { outbound: ['*.example.com'] },
+      filesystem: { read: ['./src/**'], write: ['./output/**'] },
+      subprocess: false,
+    },
+  };
+
+  const versionsResponse = {
+    name: '@test-org/my-skill',
+    versions: [
+      { version: '2.0.0', integrity: 'sha512-ghi789', auditScore: 7.0, auditStatus: 'published', publishedAt: '2026-02-01T00:00:00Z' },
+    ],
+  };
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-installall-test-'));
+    configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-installall-config-'));
+
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev' }),
+    );
+
+    fakeTarball = Buffer.from('fake-tarball-content-for-testing');
+    const hash = crypto.createHash('sha512').update(fakeTarball).digest('base64');
+    fakeTarballIntegrity = `sha512-${hash}`;
+
+    mockFetch.mockReset();
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(configDir, { recursive: true, force: true });
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  function getAllOutput(): string {
+    return [...logSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((c) => c.join(' '))
+      .join('\n');
+  }
+
+  it('errors when neither skills.json nor skills.lock exists', async () => {
+    const { installAll } = await import('../commands/install.js');
+
+    await expect(
+      installAll({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/skills\.json/i);
+  });
+
+  it('uses lockfile when skills.lock exists (deterministic mode)', async () => {
+    const { installAll } = await import('../commands/install.js');
+
+    // Write skills.json
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.json'),
+      JSON.stringify(validSkillsJson, null, 2),
+    );
+
+    // Write skills.lock
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.lock'),
+      JSON.stringify({
+        lockfileVersion: 1,
+        skills: {
+          '@test-org/my-skill@2.0.0': {
+            resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+            integrity: fakeTarballIntegrity,
+            permissions: {},
+            audit_score: 7.0,
+          },
+        },
+      }, null, 2),
+    );
+
+    // Mock tarball download
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball), { status: 200 }),
+    );
+
+    await installAll({ directory: tmpDir, configDir });
+
+    // Should have downloaded from lockfile's resolved URL (not resolved via registry)
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch.mock.calls[0][0]).toBe('https://storage.example.com/my-skill-2.0.0.tgz');
+  });
+
+  it('resolves from skills.json when no lockfile exists (first install)', async () => {
+    const { installAll } = await import('../commands/install.js');
+
+    // Write skills.json with a skill dependency
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.json'),
+      JSON.stringify(validSkillsJson, null, 2),
+    );
+
+    // No skills.lock — should resolve via registry
+    // Mock the 3-step install flow for @test-org/my-skill
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(versionsResponse), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@test-org/my-skill',
+        version: '2.0.0',
+        integrity: fakeTarballIntegrity,
+        permissions: { network: { outbound: ['*.example.com'] } },
+        auditScore: 7.0,
+        auditStatus: 'published',
+        downloadUrl: 'https://storage.example.com/my-skill-2.0.0.tgz',
+        publishedAt: '2026-02-01T00:00:00Z',
+      }), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball), { status: 200 }),
+    );
+
+    await installAll({ directory: tmpDir, configDir });
+
+    // Should have made 3 fetch calls (versions, metadata, download) — the full install flow
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+
+    // Lockfile should now exist (created by installCommand)
+    expect(fs.existsSync(path.join(tmpDir, 'skills.lock'))).toBe(true);
   });
 });

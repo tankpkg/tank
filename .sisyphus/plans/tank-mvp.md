@@ -1023,7 +1023,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 3.4. `tank install` (from lockfile)
+- [x] 3.4. `tank install` (from lockfile)
 
   **What to do**:
   - When `tank install` is run with no arguments and `skills.lock` exists:

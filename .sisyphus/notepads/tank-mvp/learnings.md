@@ -749,3 +749,45 @@
 - `pnpm test --filter=tank`: 97 tests passed (15 new install tests)
 - `pnpm build --filter=tank`: Succeeded with no errors
 - All existing tests still pass — no regressions
+
+## Task 3.4: Lockfile-Based Deterministic Install (2026-02-14)
+
+### What worked
+- `parseLockKey()` uses `lastIndexOf('@')` to split `@org/skill@1.0.0` — handles scoped packages where `@` appears twice
+- `installFromLockfile()` fail-closed: integrity mismatch on ANY skill aborts entire install and cleans up `.tank/skills/`
+- `installAll()` dispatch: lockfile exists → deterministic install, no lockfile + skills.json → resolve each skill via `installCommand()`, neither → error
+- Commander `[name]` (square brackets) makes argument optional — `name` becomes `string | undefined` in action handler
+- `spinner.succeed()` output is NOT captured by `console.log` spy — must check the mock's `.mock.calls` directly via `vi.mocked(spinner.succeed)`
+- `ora` mock returns the same singleton spinner object — `ora()` called multiple times returns same mock, so `.mock.calls` accumulates across all uses
+- Re-extraction on lockfile install: `fs.rmSync(extractDir, { recursive: true })` before `fs.mkdirSync()` ensures fresh install
+- `_configDir` unused variable pattern — prefix with underscore to suppress TypeScript unused parameter warning in `installFromLockfile`
+
+### Gotchas
+- **Spinner mock is a singleton**: The `vi.mock('ora', ...)` returns the same spinner object every time `ora()` is called. To check spinner output in tests, import `ora`, call it to get the mock, then check `vi.mocked(spinner.succeed).mock.calls`
+- **`lastIndexOf('@')` not `indexOf('@')`**: For scoped packages like `@org/skill@1.0.0`, `indexOf('@')` returns 0 (the scope prefix), not the version separator. Must use `lastIndexOf('@')` and check `> 0`
+
+### Files modified
+- `apps/cli/src/commands/install.ts` — Added `installFromLockfile()`, `installAll()`, `parseLockKey()`, new interfaces
+- `apps/cli/src/__tests__/install.test.ts` — Added 11 new tests in 2 new describe blocks
+- `apps/cli/src/bin/tank.ts` — Made `<name>` optional `[name]`, dispatch to `installAll()` when no name provided
+
+### Test coverage (11 new tests, 108 total)
+- installFromLockfile: 8 tests
+  - All skills installed from lockfile with correct integrity
+  - Integrity mismatch aborts entire install
+  - Prints summary with count (via spinner.succeed)
+  - Multiple skills all installed
+  - Scoped package names with correct extraction paths
+  - Re-extracts when directory already exists (fresh install)
+  - Cleans up .tank/skills on integrity failure mid-install
+  - Errors when skills.lock file is missing
+- installAll: 3 tests
+  - Errors when neither skills.json nor skills.lock exists
+  - Uses lockfile when skills.lock exists (deterministic mode)
+  - Resolves from skills.json when no lockfile exists (first install)
+
+### Build & Test Results
+- `pnpm test --filter=tank`: 108 tests passed (11 new lockfile install tests)
+- `pnpm build --filter=tank`: Succeeded with no errors
+- All 97 existing tests still pass — no regressions
+- Zero LSP errors on all modified files

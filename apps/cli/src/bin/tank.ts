@@ -5,7 +5,7 @@ import { loginCommand } from '../commands/login.js';
 import { whoamiCommand } from '../commands/whoami.js';
 import { logoutCommand } from '../commands/logout.js';
 import { publishCommand } from '../commands/publish.js';
-import { installCommand } from '../commands/install.js';
+import { installCommand, installAll } from '../commands/install.js';
 
 const program = new Command();
 
@@ -74,12 +74,16 @@ program
 
 program
   .command('install')
-  .description('Install a skill from the Tank registry')
-  .argument('<name>', 'Skill name (e.g., @org/skill-name)')
+  .description('Install a skill from the Tank registry, or all skills from lockfile')
+  .argument('[name]', 'Skill name (e.g., @org/skill-name). Omit to install from lockfile.')
   .argument('[version-range]', 'Semver range (default: *)', '*')
-  .action(async (name: string, versionRange: string) => {
+  .action(async (name: string | undefined, versionRange: string) => {
     try {
-      await installCommand({ name, versionRange });
+      if (name) {
+        await installCommand({ name, versionRange });
+      } else {
+        await installAll({});
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Install failed: ${msg}`);
