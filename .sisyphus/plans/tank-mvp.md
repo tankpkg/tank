@@ -1377,7 +1377,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 5.4. Audit Score Computation
+- [x] 5.4. Audit Score Computation
 
   **What to do** (PARTNER + ELAD):
   - Compute 0-10 score based on available signals:
@@ -1401,7 +1401,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 5.5. Publish Pipeline Integration
+- [x] 5.5. Publish Pipeline Integration
 
   **What to do** (ELAD):
   - After `POST /api/v1/skills/confirm` succeeds:
@@ -1429,7 +1429,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 5.6. `tank audit`
+- [x] 5.6. `tank audit`
 
   **What to do** (ELAD):
   - Create `apps/cli/src/commands/audit.ts`
