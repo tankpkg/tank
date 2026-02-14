@@ -11,7 +11,17 @@ export interface CliAuthSession {
 
 const SESSION_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-const sessions = new Map<string, CliAuthSession>();
+// globalThis persistence: Next.js dev mode re-evaluates modules on hot reload,
+// which would create a new Map and lose all active sessions.
+declare global {
+  // eslint-disable-next-line no-var
+  var _cliAuthSessions: Map<string, CliAuthSession> | undefined;
+}
+
+if (!globalThis._cliAuthSessions) {
+  globalThis._cliAuthSessions = new Map<string, CliAuthSession>();
+}
+const sessions = globalThis._cliAuthSessions;
 
 /**
  * Remove all expired sessions from the store.

@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { consumeSession } from '@/lib/cli-auth-store';
+import { authLog } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
+    authLog.info({ action: 'exchange' }, 'CLI auth exchange request received');
+
     const body = await request.json();
     const { sessionCode, state } = body;
 
@@ -23,7 +26,10 @@ export async function POST(request: Request) {
 
     // Consume the session (one-time use, validates state match + authorized status)
     const session = consumeSession(sessionCode, state);
+    authLog.info({ action: 'exchange', sessionCode: sessionCode.slice(0, 8) + '...', consumed: !!session, state: state.slice(0, 8) + '...' }, 'Exchange attempt');
+
     if (!session) {
+      authLog.warn({ action: 'exchange', sessionCode: sessionCode.slice(0, 8) + '...' }, 'Session invalid, expired, or already used');
       return NextResponse.json(
         { error: 'Invalid, expired, or already used session code' },
         { status: 400 }
@@ -31,6 +37,7 @@ export async function POST(request: Request) {
     }
 
     if (!session.userId) {
+      authLog.warn({ action: 'exchange', sessionCode: sessionCode.slice(0, 8) + '...' }, 'Session not properly authorized');
       return NextResponse.json(
         { error: 'Session was not properly authorized' },
         { status: 400 }
@@ -45,12 +52,17 @@ export async function POST(request: Request) {
       },
     });
 
+    authLog.info({ action: 'exchange', sessionCode: sessionCode.slice(0, 8) + '...', userId: session.userId, hasKey: !!apiKeyResult?.key }, 'API key creation result');
+
     if (!apiKeyResult?.key) {
+      authLog.error({ action: 'exchange' }, 'Failed to create API key');
       return NextResponse.json(
         { error: 'Failed to create API key' },
         { status: 500 }
       );
     }
+
+    authLog.info({ action: 'exchange', userId: session.userId }, 'Exchange completed successfully - user authenticated via CLI');
 
     return NextResponse.json({
       token: apiKeyResult.key,
@@ -59,7 +71,8 @@ export async function POST(request: Request) {
         email: session.userEmail ?? null,
       },
     });
-  } catch {
+  } catch (err) {
+    authLog.error({ action: 'exchange', error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack : undefined }, 'CLI auth exchange failed');
     return NextResponse.json(
       { error: 'Invalid request body' },
       { status: 400 }

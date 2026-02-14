@@ -8,23 +8,57 @@ if (!connectionString && process.env.NODE_ENV !== 'production') {
   console.warn('Missing DATABASE_URL environment variable');
 }
 
-const sql = connectionString
-  ? postgres(connectionString)
-  : (new Proxy({} as ReturnType<typeof postgres>, {
+// Declare global type for caching across hot reloads
+declare global {
+  // eslint-disable-next-line no-var
+  var _pgClient: ReturnType<typeof postgres> | undefined;
+  // eslint-disable-next-line no-var
+  var _db: ReturnType<typeof drizzle<typeof schema>> | undefined;
+}
+
+function getPostgresClient() {
+  if (!connectionString) {
+    return new Proxy({} as ReturnType<typeof postgres>, {
       get() {
         throw new Error('Missing DATABASE_URL environment variable');
       },
       apply() {
         throw new Error('Missing DATABASE_URL environment variable');
       },
-    }) as ReturnType<typeof postgres>);
+    }) as ReturnType<typeof postgres>;
+  }
 
-const db = connectionString
-  ? drizzle(sql, { schema })
-  : (new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  if (process.env.NODE_ENV === 'production') {
+    return postgres(connectionString);
+  }
+
+  // In dev mode, reuse the client across hot reloads
+  if (!globalThis._pgClient) {
+    globalThis._pgClient = postgres(connectionString);
+  }
+  return globalThis._pgClient;
+}
+
+function getDb() {
+  if (!connectionString) {
+    return new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
       get() {
         throw new Error('Missing DATABASE_URL environment variable');
       },
-    }) as ReturnType<typeof drizzle<typeof schema>>);
+    }) as ReturnType<typeof drizzle<typeof schema>>;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return drizzle(getPostgresClient(), { schema });
+  }
+
+  if (!globalThis._db) {
+    globalThis._db = drizzle(getPostgresClient(), { schema });
+  }
+  return globalThis._db;
+}
+
+const sql = getPostgresClient();
+const db = getDb();
 
 export { sql, db };

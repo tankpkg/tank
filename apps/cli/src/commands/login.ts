@@ -1,6 +1,7 @@
 import open from 'open';
 import { getConfig, setConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
+import { authFlowLog } from '../lib/debug-logger.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -30,6 +31,7 @@ export async function loginCommand(options: LoginOptions = {}): Promise<void> {
 
   // Step 1: Generate random state for CSRF protection
   const state = crypto.randomUUID();
+  authFlowLog.info({ state: state.slice(0, 8) + '...' }, 'Login flow started');
 
   // Step 2: Start auth session
   logger.info('Starting login...');
@@ -42,15 +44,19 @@ export async function loginCommand(options: LoginOptions = {}): Promise<void> {
 
   if (!startRes.ok) {
     const body = await startRes.json().catch(() => ({}));
+    authFlowLog.error({ status: startRes.status, error: (body as { error?: string }).error }, 'Start request failed');
     throw new Error(
       `Failed to start auth session: ${(body as { error?: string }).error ?? startRes.statusText}`,
     );
   }
 
+  authFlowLog.info({ ok: startRes.ok, status: startRes.status }, 'Start response received');
+
   const { authUrl, sessionCode } = (await startRes.json()) as {
     authUrl: string;
     sessionCode: string;
   };
+  authFlowLog.info({ authUrl, sessionCode: sessionCode.slice(0, 8) + '...' }, 'Session created, opening browser');
 
   // Step 3: Open browser
   try {
@@ -74,12 +80,15 @@ export async function loginCommand(options: LoginOptions = {}): Promise<void> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionCode, state }),
       });
+      authFlowLog.debug({ status: exchangeRes.status, ok: exchangeRes.ok }, 'Exchange poll response');
 
       if (exchangeRes.ok) {
         const { token, user } = (await exchangeRes.json()) as {
           token: string;
           user: { name: string | null; email: string | null };
         };
+
+        authFlowLog.info({ userName: user.name, userEmail: user.email }, 'Login successful, saving config');
 
         // Step 5: Write to config
         setConfig({ token, user: user as { name: string; email: string } }, configDir);
@@ -98,6 +107,7 @@ export async function loginCommand(options: LoginOptions = {}): Promise<void> {
         );
       }
     } catch (err) {
+      authFlowLog.warn({ error: err instanceof Error ? err.message : String(err) }, 'Exchange poll error');
       // If it's our own thrown error, re-throw
       if (err instanceof Error && err.message.startsWith('Exchange failed:')) {
         throw err;
@@ -108,5 +118,6 @@ export async function loginCommand(options: LoginOptions = {}): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }
 
+  authFlowLog.error({}, 'Login timed out');
   throw new Error('Login timed out. Please try again.');
 }

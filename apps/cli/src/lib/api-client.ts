@@ -1,4 +1,5 @@
 import { type TankConfig, getConfig } from './config.js';
+import { httpLog } from './debug-logger.js';
 
 const USER_AGENT = 'tank-cli/0.1.0';
 
@@ -28,26 +29,38 @@ export class ApiClient {
   }
 
   async get(path: string): Promise<Response> {
-    return fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    httpLog.info({ method: 'GET', url }, 'Request');
+    const res = await fetch(url, {
       method: 'GET',
       headers: this.headers(false),
     });
+    httpLog.info({ method: 'GET', url, status: res.status, ok: res.ok }, 'Response');
+    return res;
   }
 
   async post(path: string, body: unknown): Promise<Response> {
-    return fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    httpLog.info({ method: 'POST', url, bodyKeys: body && typeof body === 'object' ? Object.keys(body) : undefined }, 'Request');
+    const res = await fetch(url, {
       method: 'POST',
       headers: this.headers(true),
       body: JSON.stringify(body),
     });
+    httpLog.info({ method: 'POST', url, status: res.status, ok: res.ok }, 'Response');
+    return res;
   }
 
   async put(path: string, body: unknown): Promise<Response> {
-    return fetch(`${this.baseUrl}${path}`, {
+    const url = `${this.baseUrl}${path}`;
+    httpLog.info({ method: 'PUT', url, bodyKeys: body && typeof body === 'object' ? Object.keys(body) : undefined }, 'Request');
+    const res = await fetch(url, {
       method: 'PUT',
       headers: this.headers(true),
       body: JSON.stringify(body),
     });
+    httpLog.info({ method: 'PUT', url, status: res.status, ok: res.ok }, 'Response');
+    return res;
   }
 }
 
