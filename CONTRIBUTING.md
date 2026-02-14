@@ -4,26 +4,69 @@ Thank you for your interest in contributing to Tank! Every contribution matters 
 
 ## Project Status
 
-Tank is in **early development** (Phase 0 — Foundation). Right now, the most valuable contributions are:
+Tank is **MVP code-complete** with 461 tests passing. Right now, the most valuable contributions are:
 
-1. **Reviewing the design docs** and poking holes in them
-2. **Opening issues** for anything unclear, missing, or wrong
-3. **Joining discussions** about design decisions
-4. **Improving documentation** — clarity, examples, diagrams
+1. **Testing the CLI and web app** in real workflows
+2. **Opening issues** for bugs, edge cases, or missing features
+3. **Improving documentation** — clarity, examples, diagrams
+4. **Contributing security analysis rules** for the audit system
 
 ## Getting Started
 
 ### Prerequisites
 
-Development setup will be documented here once the codebase is established. For now, you only need:
-
-- Git
-- A text editor
-- Familiarity with the [Product Brief](docs/product-brief.md) and [Roadmap](docs/roadmap.md)
+- [Node.js](https://nodejs.org/) 24 or later
+- [pnpm](https://pnpm.io/) 10 or later (installed via corepack: `corepack enable`)
+- [Python](https://python.org/) 3.14 or later (for security analysis functions)
+- A [Supabase](https://supabase.com/) project (for database)
+- A [GitHub OAuth App](https://github.com/settings/developers) (for authentication)
 
 ### Development Setup
 
-> Coming soon — the project is in early planning phase. Once code lands, this section will include setup instructions, test commands, and local dev workflow.
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/tankpkg/tank.git
+   cd tank
+   ```
+
+2. **Install dependencies**
+   ```bash
+   corepack enable
+   pnpm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   Fill in the values — see `.env.example` for what's needed.
+
+4. **Push database schema** (requires DATABASE_URL in .env.local)
+   ```bash
+   cd apps/web
+   npx drizzle-kit push
+   ```
+
+5. **Start the dev server**
+   ```bash
+   pnpm dev --filter=web
+   ```
+
+6. **Run tests**
+   ```bash
+   pnpm test              # All tests (445 TypeScript + 16 Python)
+   pnpm test --filter=cli # CLI tests only
+   pnpm test --filter=web # Web tests only
+   ```
+
+### Project Structure
+
+This is a monorepo managed by [Turborepo](https://turbo.build/repo) with pnpm workspaces:
+
+- `apps/web` — Next.js 15 web app + API routes (deployed to Vercel)
+- `apps/cli` — `tank` CLI tool (TypeScript, commander.js)
+- `packages/shared` — Shared Zod schemas, TypeScript types, constants
+- `docs/` — Product brief, architecture, roadmap
 
 ## How to Contribute
 
@@ -71,13 +114,13 @@ refactor: extract version resolution logic
 
 ## Coding Standards
 
-> Will be established as the codebase develops. We'll document linting, formatting, and style conventions here.
-
-General principles:
-- Write clear code that doesn't need comments to understand
-- Match existing patterns in the codebase
-- TypeScript strict mode — no `any`, no `@ts-ignore`
-- Tests for all non-trivial logic
+- **TypeScript strict mode** — no `any`, no `@ts-ignore`, no `as any`
+- **TDD** — write failing tests first, then implement (RED → GREEN → REFACTOR)
+- **vitest** for TypeScript tests, **pytest** for Python tests
+- **Drizzle ORM** for database access (not raw SQL, not Prisma)
+- **Server Components** by default in Next.js — `"use client"` only when needed
+- **Zod** for all runtime validation (API inputs, config files, schemas)
+- Match existing patterns — look at similar files before writing new ones
 
 ## Code of Conduct
 

@@ -45,18 +45,37 @@ Tank is the **npm for agent skills**, with security built into the foundation:
 
 ## Quick Look
 
+### All CLI Commands
+
 ```bash
-# Install a skill with full integrity verification
-tank install @vercel/next-skill
+# Authentication
+tank login                          # Authenticate via GitHub OAuth
+tank whoami                         # Show current user info
+tank logout                         # Clear credentials
 
-# See exactly what permissions your agent has
-tank permissions
+# Project setup
+tank init                           # Create skills.json interactively
 
-# Audit everything — signatures, vulnerabilities, permission escalations
-tank audit
+# Publishing
+tank publish                        # Pack and publish a skill
+tank publish --dry-run              # Validate without uploading
 
-# Publish with mandatory signing and static analysis
-tank publish
+# Installation & management
+tank install @org/skill             # Install a specific skill
+tank install                        # Install all from lockfile (like npm ci)
+tank update @org/skill              # Update within semver range
+tank update                         # Update all skills
+tank remove @org/skill              # Remove a skill
+
+# Verification & security
+tank verify                         # Verify lockfile integrity
+tank permissions                    # Display resolved permission summary
+tank audit                          # Show security analysis results
+tank audit @org/skill               # Audit a specific skill
+
+# Discovery
+tank search "query"                 # Search the registry
+tank info @org/skill                # Show skill metadata
 ```
 
 **`skills.json`** — declare what your agent is allowed to do:
@@ -77,9 +96,48 @@ tank publish
 
 If any skill exceeds the permission budget, installation fails. This single feature would have prevented ClawHavoc.
 
+## Development
+
+### Prerequisites
+- Node.js 24+
+- pnpm 10+
+- Python 3.14+ (for security analysis functions)
+
+### Setup
+
+```bash
+git clone https://github.com/tankpkg/tank.git
+cd tank
+pnpm install
+cp .env.example .env.local  # fill in credentials
+```
+
+### Commands
+
+```bash
+pnpm dev                    # Start web app in dev mode
+pnpm build                  # Build all packages
+pnpm test                   # Run all tests (445 TypeScript + 16 Python)
+pnpm test --filter=cli      # Run CLI tests only
+pnpm test --filter=web      # Run web tests only
+pnpm test --filter=shared   # Run shared package tests only
+```
+
+## Project Structure
+
+```
+tank/
+├── apps/
+│   ├── web/          # Next.js 15 web app + API (Vercel)
+│   └── cli/          # Tank CLI (TypeScript)
+├── packages/
+│   └── shared/       # Shared schemas, types, constants
+└── docs/             # Product brief, architecture, roadmap
+```
+
 ## Project Status
 
-> **Tank is in early development.** We're building in the open from day one.
+> **Tank MVP is code-complete with 461 tests passing.** We're building in the open from day one.
 
 See the [Roadmap](docs/roadmap.md) for what we're building and when.
 
