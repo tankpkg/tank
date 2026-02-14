@@ -1,0 +1,16 @@
+{
+  "name": "tank",
+  "version": "0.1.0",
+  "description": "Security-first package manager for AI agent skills",
+  "type": "module",
+  "bin": {
+    "tank": "./dist/bin/tank.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3"
+  }
+}

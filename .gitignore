@@ -12,6 +12,8 @@ node_modules/
 dist/
 build/
 out/
+.next/
+.turbo/
 *.tsbuildinfo
 
 # Environment
