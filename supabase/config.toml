@@ -107,12 +107,11 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
-# Uncomment to configure local storage buckets
-# [storage.buckets.images]
-# public = false
-# file_size_limit = "50MiB"
-# allowed_mime_types = ["image/png", "image/jpeg"]
-# objects_path = "./images"
+# Storage buckets — created automatically on `supabase start` / `supabase db reset`
+[storage.buckets.packages]
+public = false
+file_size_limit = "50MiB"
+allowed_mime_types = ["application/gzip", "application/x-tar", "application/octet-stream"]
 
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
