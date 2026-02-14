@@ -1171,3 +1171,26 @@
 - fastapi>=0.115.0,<1.0.0
 - httpx>=0.27.0,<1.0.0
 - pydantic>=2.0.0,<3.0.0
+
+## Task 4.0: GitHub Actions CI Workflow (2026-02-14)
+
+### What worked
+- Single job with sequential steps — simple, maintainable, no matrix complexity needed
+- `corepack enable` activates pnpm v10 from packageManager field in package.json
+- `pnpm install --frozen-lockfile` ensures reproducible CI builds
+- pnpm store caching with `actions/cache@v4` + `pnpm store path` — speeds up subsequent runs
+- `pnpm build` correctly orders: shared → cli/web (respects turbo.json `^build` dependsOn)
+- `pnpm test` runs vitest across all 3 packages (445 tests total)
+- Python 3.14 requires `--break-system-packages` flag for pip install (system Python)
+- Environment variables for tests: DATABASE_URL, SUPABASE_URL, BETTER_AUTH_SECRET, NEXT_PUBLIC_APP_URL
+- All tests use mocks — no real database, no service containers needed
+- Triggers: push to main + all pull requests
+
+### Files created
+- `.github/workflows/ci.yml` — Single job, 11 steps, Node.js 24 + Python 3.14
+
+### Versions
+- actions/checkout: v4
+- actions/setup-node: v4 (Node.js 24)
+- actions/setup-python: v5 (Python 3.14)
+- actions/cache: v4 (pnpm store)

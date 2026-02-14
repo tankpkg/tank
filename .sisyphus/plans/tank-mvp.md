@@ -1333,7 +1333,7 @@ Sprint 5: Security Pipeline (Partner)
   **Acceptance Criteria**:
   - [x] `POST /api/analyze` returns 200 with test payload
   - [x] FastAPI auto-docs accessible at `/api/analyze/docs`
-  - [ ] Deploys successfully on Vercel *(blocked: not deployed yet)*
+  - [x] Deploys successfully on Vercel *(deployed to tank-web-seven.vercel.app)*
 
   **Commit**: YES
   - Message: `feat(api): scaffold python analysis functions with fastapi`
@@ -1506,11 +1506,11 @@ pnpm test --filter=cli       # CLI command tests
 ```
 
 ### Final E2E Checklist
-- [ ] Create account via GitHub OAuth on tankpkg.dev *(blocked: GITHUB_CLIENT_ID/SECRET not set, not deployed)*
-- [ ] Create organization "testorg" *(blocked: requires live OAuth session)*
-- [ ] Generate API token *(blocked: requires live OAuth session)*
-- [ ] `tank login` → authenticates via browser *(blocked: requires live server)*
-- [ ] `tank whoami` → shows user info *(blocked: requires live server)*
+- [ ] Create account via GitHub OAuth on tankpkg.dev *(blocked: GITHUB_CLIENT_ID/SECRET not set)*
+- [ ] Create organization "testorg" *(blocked: requires OAuth session)*
+- [ ] Generate API token *(blocked: requires OAuth session)*
+- [ ] `tank login` → authenticates via browser *(blocked: GITHUB_CLIENT_ID/SECRET not set)*
+- [ ] `tank whoami` → shows user info *(blocked: requires login)*
 - [x] `tank init` → creates skills.json *(verified via unit tests)*
 - [ ] `tank publish` → uploads skill to registry *(blocked: SUPABASE_SERVICE_ROLE_KEY not set)*
 - [ ] `tank search "test"` → finds published skill *(blocked: requires published skill)*

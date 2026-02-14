@@ -14,17 +14,31 @@ Tasks 5.1, 5.2, 5.3 were originally partner's domain but built ourselves. All 3 
 
 **Remaining integration**: `confirm/route.ts` still passes `analysisResults: null` to `computeAuditScore()`. To activate real analysis, set `OPENROUTER_API_KEY` and call the Python endpoints before scoring.
 
-## Blocked: 18 Live E2E Verification Items
+## Resolved: Vercel Deployment
 
-All 35 implementation tasks and 254 sub-criteria are complete. The remaining 18 unchecked items are **live integration tests** that require env vars and deployment. None are code tasks.
+Deployed successfully to Vercel:
+- **URL**: `https://tank-web-seven.vercel.app`
+- **Project**: `tank-web` in `elad12390-gmailcoms-projects`
+- **Root directory**: `apps/web` (configured via Vercel API)
+- **Install command**: `cd ../.. && pnpm install` (monorepo pattern)
+- **Build command**: `cd ../.. && pnpm build --filter=@tank/web`
+- **Python functions**: Working (`POST /api/analyze` returns 200)
+- **45 commits pushed** to `github.com/tankpkg/tank`
 
-**Blockers (env vars needed from user):**
+**Vercel env vars set**: `DATABASE_URL`, `SUPABASE_URL`, `BETTER_AUTH_SECRET`, `NEXT_PUBLIC_APP_URL`
+**Still need on Vercel**: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENROUTER_API_KEY`
+
+**Custom domain `tankpkg.dev`**: Added to project but DNS needs CNAME → `cname.vercel-dns.com` on Cloudflare.
+
+## Blocked: 17 Live E2E Verification Items
+
+All 35 tasks + 255 sub-criteria complete. 17 remaining items require credentials:
+
 | Variable | Items Blocked | How to Get |
 |----------|--------------|------------|
-| `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` | 3 items (OAuth flow, account creation) | GitHub Developer Settings → OAuth App |
-| `SUPABASE_SERVICE_ROLE_KEY` | 4 items (Storage bucket, publish flow) | Supabase Dashboard → Settings → API |
-| `OPENROUTER_API_KEY` | 1 item (live LLM false-positive test) | openrouter.ai → API Keys |
-| Vercel deployment | 1 item (deploy verification) | `vercel deploy` or push to GitHub |
-| All of the above | 9 items (full E2E checklist) | Need live server with all vars set |
+| `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` | 5 items (OAuth, login, whoami) | github.com/settings/developers → New OAuth App |
+| `SUPABASE_SERVICE_ROLE_KEY` | 4 items (Storage bucket, publish) | Supabase Dashboard → Settings → API |
+| `OPENROUTER_API_KEY` | 1 item (live LLM test) | openrouter.ai → API Keys |
+| Above + published skill | 7 items (search, install, update, remove) | Need publish to work first |
 
-**Action required**: User must provide these credentials. Once set, all 18 items can be verified in a single E2E test session.
+**To create GitHub OAuth App**: Homepage URL: `https://tankpkg.dev`, Callback URL: `https://tankpkg.dev/api/auth/callback/github`
