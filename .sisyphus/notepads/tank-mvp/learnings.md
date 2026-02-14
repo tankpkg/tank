@@ -314,3 +314,43 @@
 - listOrgs: 2 tests (returns array, throws on unauth)
 - inviteMember: 2 tests (calls createInvitation correctly, throws on unauth)
 - removeMember: 2 tests (calls removeMember correctly, throws on unauth)
+
+## Task 2.1: CLI Scaffolding (2026-02-14)
+
+### What worked
+- `commander@14.0.3` — clean API, `.name()`, `.description()`, `.version()` chain, `.parse()` at end
+- `chalk@5.6.2` — ESM-only (v5+), works fine with `type: "module"` in package.json
+- `ora@9.3.0` — installed for future spinner use, not used yet
+- Config module with `configDir` parameter override — enables testing without touching real `~/.tank/`
+- `fs.mkdirSync(dir, { recursive: true, mode: 0o700 })` creates directory with correct permissions
+- `fs.writeFileSync(path, data, { mode: 0o600 })` sets file permissions atomically on write
+- `vi.stubGlobal('fetch', mockFetch)` — clean way to mock global fetch in vitest without importing node-fetch
+- `vi.spyOn(console, 'log').mockImplementation(() => {})` — captures console output for logger tests
+- `.js` extensions in imports (`./config.js`) required for NodeNext module resolution — vitest handles them fine
+- `getConfig()` returns spread of defaults + parsed config — missing fields get defaults automatically
+
+### Gotchas
+- **chalk v5 is ESM-only** — cannot use `require('chalk')`. Must have `"type": "module"` in package.json (already set)
+- **`console.log` with chalk returns two args** — `console.log(chalk.blue('ℹ'), msg)` passes 2 args. Test uses `spy.mock.calls[0].join(' ')` to combine them for assertion
+- **File permission test needs platform check** — `process.platform === 'win32'` skip for Windows since `mode` is Unix-only
+
+### Files created
+- `apps/cli/src/bin/tank.ts` — CLI entry point with shebang, --version, --help
+- `apps/cli/src/lib/config.ts` — Read/write ~/.tank/config.json with 0600 permissions
+- `apps/cli/src/lib/api-client.ts` — HTTP client with auto Bearer token, User-Agent header
+- `apps/cli/src/lib/logger.ts` — Colored output helpers (info, success, error, warn)
+- `apps/cli/src/index.ts` — Re-exports all modules
+- `apps/cli/src/__tests__/config.test.ts` — 12 tests
+- `apps/cli/src/__tests__/api-client.test.ts` — 8 tests
+- `apps/cli/src/__tests__/logger.test.ts` — 4 tests
+
+### Test coverage (24 tests)
+- config: 12 tests (getConfigDir, getConfigPath, getConfig defaults/read/merge, setConfig create/merge/overwrite/json/permissions)
+- api-client: 8 tests (auth header with/without token, User-Agent on GET/POST, GET/POST/PUT methods, Content-Type)
+- logger: 4 tests (info/success/warn use console.log, error uses console.error, icons present)
+
+### Versions
+- commander: 14.0.3
+- chalk: 5.6.2
+- ora: 9.3.0
+- @types/node: 22.19.11

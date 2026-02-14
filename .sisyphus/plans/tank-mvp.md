@@ -570,7 +570,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 2.1. CLI Scaffolding
+- [x] 2.1. CLI Scaffolding
 
   **What to do**:
   - Set up `apps/cli` as a TypeScript CLI package
