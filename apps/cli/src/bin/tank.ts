@@ -5,6 +5,7 @@ import { loginCommand } from '../commands/login.js';
 import { whoamiCommand } from '../commands/whoami.js';
 import { logoutCommand } from '../commands/logout.js';
 import { publishCommand } from '../commands/publish.js';
+import { installCommand } from '../commands/install.js';
 
 const program = new Command();
 
@@ -67,6 +68,21 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Publish failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('install')
+  .description('Install a skill from the Tank registry')
+  .argument('<name>', 'Skill name (e.g., @org/skill-name)')
+  .argument('[version-range]', 'Semver range (default: *)', '*')
+  .action(async (name: string, versionRange: string) => {
+    try {
+      await installCommand({ name, versionRange });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Install failed: ${msg}`);
       process.exit(1);
     }
   });
