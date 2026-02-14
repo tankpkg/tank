@@ -479,7 +479,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 1.8. Dashboard — Organization Management
+- [x] 1.8. Dashboard — Organization Management
 
   **What to do**:
   - Create orgs page: `apps/web/app/(dashboard)/orgs/page.tsx`

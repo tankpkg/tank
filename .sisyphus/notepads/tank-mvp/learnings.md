@@ -281,3 +281,36 @@
 - createToken: creates token with tank_ prefix, throws on unauthenticated
 - listTokens: returns array of keys, throws on unauthenticated
 - revokeToken: calls deleteApiKey correctly, throws on unauthenticated
+
+## Task 1.8: Dashboard Organization Management (2026-02-14)
+
+### What worked
+- better-auth organization plugin server-side API methods:
+  - `auth.api.createOrganization({ body: { name, slug }, headers })` — creates org, requires session cookies
+  - `auth.api.listOrganizations({ headers })` — lists user's orgs, requires session cookies
+  - `auth.api.getFullOrganization({ query: { organizationSlug }, headers })` — gets org with members
+  - `auth.api.createInvitation({ body: { email, role, organizationId }, headers })` — invites member
+  - `auth.api.removeMember({ body: { memberIdOrEmail, organizationId }, headers })` — removes member
+- Client-side: `authClient.organization.create()`, `authClient.organization.list()`, `authClient.useListOrganizations()`
+- Slug auto-generation from name: lowercase, replace non-alphanumeric with hyphens, trim hyphens, max 39 chars
+- Same test mocking pattern as tokens: mock `@/lib/auth`, `next/headers`, and `postgres` at module level
+- Dynamic imports in tests (`await import('../actions')`) work well with vitest module mocking
+
+### Gotchas
+- **`'use server'` files require ALL exports to be async** — Next.js build fails with "Server Actions must be async functions" if any sync function is exported. Solution: keep sync helpers as non-exported (private) and wrap in async exported function (`validateOrgSlug` wraps `validateSlug`)
+- **`getFullOrganization` uses `query` not `body`** — it's a GET-style endpoint, so parameters go in `query: { organizationSlug }` not `body`
+- **`createInvitation` is the server-side method name** — client uses `inviteMember`, server uses `createInvitation`
+- **`removeMember` uses `memberIdOrEmail`** — can accept either member ID or email address
+
+### Files created
+- `apps/web/app/(dashboard)/orgs/actions.ts` — Server actions: createOrg, listOrgs, getOrgDetails, inviteMember, removeMember, validateOrgSlug
+- `apps/web/app/(dashboard)/orgs/page.tsx` — Org list page with create dialog, slug auto-generation
+- `apps/web/app/(dashboard)/orgs/[slug]/page.tsx` — Org detail page with member table, invite dialog, remove button
+- `apps/web/app/(dashboard)/orgs/__tests__/actions.test.ts` — 16 tests for server actions + slug validation
+
+### Test coverage (16 new tests, 90 total)
+- validateOrgSlug: 6 tests (valid slugs, empty, >39 chars, spaces, special chars, leading/trailing hyphens)
+- createOrg: 4 tests (normalizes slug, rejects invalid, rejects >39 chars, throws on unauth)
+- listOrgs: 2 tests (returns array, throws on unauth)
+- inviteMember: 2 tests (calls createInvitation correctly, throws on unauth)
+- removeMember: 2 tests (calls removeMember correctly, throws on unauth)
