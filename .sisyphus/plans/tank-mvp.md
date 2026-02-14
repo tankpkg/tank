@@ -202,7 +202,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 1.2. Supabase Project Setup
+- [x] 1.2. Supabase Project Setup
 
   **What to do**:
   - Create Supabase project (via dashboard or CLI)
@@ -236,7 +236,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 1.3. Database Schema + Migrations
+- [x] 1.3. Database Schema + Migrations
 
   **What to do**:
   - Create SQL migration files in `supabase/migrations/`
@@ -276,7 +276,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 1.4. Shared Package Foundation
+- [x] 1.4. Shared Package Foundation
 
   **What to do**:
   - Create `packages/shared/src/schemas/skills-json.ts` — Zod schema for `skills.json` manifest
@@ -353,7 +353,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 1.5. Better-Auth Integration
+- [x] 1.5. Better-Auth Integration
 
   **What to do**:
   - Install `better-auth` in `apps/web`
@@ -521,7 +521,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 1.9. CLI Auth Endpoint
+- [x] 1.9. CLI Auth Endpoint
 
   **What to do**:
   - Create `apps/web/app/api/v1/cli-auth/route.ts`

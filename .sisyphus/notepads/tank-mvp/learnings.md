@@ -78,3 +78,123 @@
 
 ### Versions
 - @supabase/supabase-js: resolved from latest (installed via pnpm)
+
+## Task 1.2 (Drizzle Rewrite): Drizzle ORM + Supabase Storage Client (2026-02-14)
+
+### What worked
+- `postgres` (postgres.js) driver v3.4.8 + `drizzle-orm` v0.45.1 + `drizzle-kit` v0.31.9
+- Session mode pooler (port 5432) works perfectly with postgres.js — no `prepare: false` needed
+- `drizzle()` from `drizzle-orm/postgres-js` takes the postgres client directly
+- Supabase client simplified to Storage-only: single `supabaseAdmin` export, no anon key needed
+- Removed `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` — not needed when using Drizzle for DB and better-auth for auth
+- `drizzle.config.ts` uses `defineConfig()` from `drizzle-kit` — schema path set to `./lib/db/schema.ts` (created in Task 1.3)
+- DB connectivity confirmed: `SELECT 1 as ok` returns `[{"ok":1}]` via pooler
+
+### Gotchas
+- Mocking `postgres` for vitest requires realistic shape: Drizzle's constructor reads `client.options.parsers` — a bare `vi.fn()` mock causes `Cannot read properties of undefined (reading 'parsers')`
+- Fix: mock must include `options: { parsers: {}, serializers: {}, transform: { undefined: undefined } }` and `reserve: vi.fn()`
+- `vi.resetModules()` in `beforeEach` is essential when testing module-level env var validation — otherwise cached module from first import persists
+- drizzle-kit v0.31.9 pulls in deprecated `@esbuild-kit/core-utils@3.3.2` and `@esbuild-kit/esm-loader@2.6.5` — harmless warnings
+
+### Versions
+- drizzle-orm: 0.45.1
+- drizzle-kit: 0.31.9
+- postgres (postgres.js): 3.4.8
+- @supabase/supabase-js: ^2.95.3 (already installed)
+
+## Task 1.3: Drizzle Schema for 5 Tables (2026-02-14)
+
+### What worked
+- `pgTable` third argument uses array syntax `(table) => [...]` in Drizzle v0.45 — returns array of indexes/checks/uniques
+- `uuid('id').primaryKey().defaultRandom()` generates `gen_random_uuid()` default — no need for `sql` template
+- `check()` from `drizzle-orm/pg-core` works with `sql` template for regex constraints: `sql\`${table.name} ~ '^pattern$'\``
+- GIN index for full-text search: `index('name').using('gin', sql\`to_tsvector('english', ...)\`)`
+- `$onUpdateFn(() => new Date())` on timestamp columns auto-updates on Drizzle `.update()` calls (app-level, not DB trigger)
+- `drizzle-kit push --force` skips interactive confirmation — essential for CI/scripted usage
+- `source ../../.env.local` before `drizzle-kit push` loads DATABASE_URL correctly
+- Schema tests use `getTableName()` and `getTableColumns()` from `drizzle-orm` — no DB connection needed
+- Reusable column helpers (id, timestamps, createdAt) reduce duplication across tables
+
+### Gotchas
+- `unique()` in the third argument creates a named unique constraint (e.g., `unique('name').on(col1, col2)`)
+- `text('col').unique()` on the column itself creates an unnamed unique index — both work but named is clearer for composite
+- `relations()` from `drizzle-orm` are separate from table definitions — they enable the relational query API (`db.query.table.findMany({ with: ... })`)
+- Relations don't create FK constraints — `references()` on columns does that. Relations are for Drizzle's query builder only
+- `$inferSelect` / `$inferInsert` are type-level only — they compile away, no runtime cost
+
+### Schema summary
+- 5 tables: publishers, skills, skill_versions, skill_downloads, audit_events
+- 13 indexes total (including PKs and unique constraints)
+- 2 CHECK constraints on skills.name (format regex + length <= 214)
+- 1 GIN index for full-text search on skills (name + description)
+- 4 relation definitions connecting all tables
+- 21 schema tests verifying exports, columns, constraints, and type inference
+## Task 1.5: better-auth Integration (2026-02-14)
+
+### What worked
+- `better-auth` v1.4.18 installed cleanly — single dependency, no peer dep issues
+- `betterAuth()` config with Drizzle adapter: `drizzle({ client: db, provider: 'pg' })` — straightforward
+- `toNextJsHandler(auth)` for App Router catch-all route — exports `{ GET, POST }` directly
+- `nextCookies()` plugin (from `better-auth/next-js`) required on server config for App Router cookie sync
+- `auth.api.verifyApiKey({ body: { key } })` returns `{ valid: boolean, key?: { userId, id, ... } }` — clean API
+- `@better-auth/cli generate --config ./lib/auth.ts --output ./lib/db/auth-schema.ts` auto-generates Drizzle schema
+- Non-interactive CLI: pipe `echo "y"` to bypass confirmation prompt
+- Drizzle config accepts schema array: `schema: ['./lib/db/schema.ts', './lib/db/auth-schema.ts']`
+- `drizzle-kit push` applied 8 new tables (user, session, account, verification, apikey, organization, member, invitation) without issues
+- Tests mock `better-auth` and `better-auth/plugins` at module level — no DB connection needed for unit tests
+
+### Gotchas
+- **`defaultPrefix` not `prefix`**: The apiKey plugin option for key prefix is `defaultPrefix: 'tank_'`, not `prefix`. TypeScript type `ApiKeyOptions` confirms this. The skill reference and task spec both had it wrong.
+- **Lazy DB initialization for Next.js build**: `next build` evaluates route handler modules at build time. If `db.ts` throws on missing `DATABASE_URL` at module level, the build fails. Solution: Proxy-based lazy initialization that defers the error to actual property access.
+- **Re-exporting auth-schema from schema.ts**: Adding `export * from './auth-schema'` to `schema.ts` makes all tables available from a single import, and Drizzle's relational query API sees all tables.
+- **13 tables total in DB**: 5 original (publishers, skills, skill_versions, skill_downloads, audit_events) + 8 better-auth (user, session, account, verification, apikey, organization, member, invitation)
+
+### Files created
+- `apps/web/lib/auth.ts` — Server-side better-auth config
+- `apps/web/lib/auth-client.ts` — Client-side auth with React hooks
+- `apps/web/lib/auth-helpers.ts` — `verifyCliAuth()` for Bearer token + API key verification
+- `apps/web/lib/db/auth-schema.ts` — Auto-generated Drizzle schema for 8 auth tables
+- `apps/web/app/api/auth/[...all]/route.ts` — Auth API catch-all route
+- `apps/web/lib/__tests__/auth.test.ts` — 4 tests
+- `apps/web/lib/__tests__/auth-helpers.test.ts` — 7 tests
+
+### Versions
+- better-auth: 1.4.18
+
+## Task 1.9: CLI Auth Endpoint (2026-02-14)
+
+### What worked
+- In-memory `Map<sessionCode, CliAuthSession>` with TTL cleanup on every access — simple, no dependencies
+- `crypto.randomUUID()` for session codes — built-in, no extra deps
+- Storing user info (name, email) in the CLI auth session at authorize time avoids needing `auth.api.getUser()` at exchange time
+- `next/headers` `headers()` function returns a `Headers` object that can be passed directly to `auth.api.getSession()`
+- Vitest `@/` path alias requires `resolve.alias` in `vitest.config.ts` — tsconfig paths alone don't work for vitest
+- `Suspense` wrapper required for `useSearchParams()` in Next.js 15 client components — otherwise build warns/errors
+- Inline styles (React.CSSProperties) work well for simple pages when Tailwind/shadcn availability is uncertain
+
+### Gotchas
+- **`auth.api.getUser()` does NOT exist** in base better-auth — it's only available with the `admin` plugin. User info must be obtained from the session at authorize time or queried from DB directly
+- **`auth.api.createApiKey()`** returns `{ key: string }` where `key` is the full token value (e.g., `tank_abc123...`)
+- **vitest.config.ts needs path alias**: Added `resolve.alias: { '@': path.resolve(__dirname, '.') }` to support `@/` imports in tests. Existing tests used relative imports so this wasn't needed before
+- **`next build` type-checks more strictly than LSP** — LSP showed no errors for `auth.api.getUser()` but `next build` caught the type error. Always run build to verify.
+
+### Security design
+- Token NEVER in URLs — session code is in URL, token only in POST response body
+- Session code expires after 5 minutes (TTL)
+- One-time use: `consumeSession()` deletes the session immediately after successful exchange
+- State parameter CSRF protection: must match between start and exchange
+- Session must be in "authorized" status before exchange (prevents unauthorized code exchange)
+
+### Files created
+- `apps/web/lib/cli-auth-store.ts` — In-memory store with TTL, cleanup, CRUD operations
+- `apps/web/app/api/v1/cli-auth/start/route.ts` — POST: creates session, returns authUrl + sessionCode
+- `apps/web/app/api/v1/cli-auth/authorize/route.ts` — POST: requires auth session, marks CLI session as authorized
+- `apps/web/app/api/v1/cli-auth/exchange/route.ts` — POST: consumes session, creates API key, returns token + user info
+- `apps/web/app/cli-login/page.tsx` — Client component: Authorize/Deny buttons, auth redirect, success/error states
+- `apps/web/app/api/v1/cli-auth/__tests__/cli-auth.test.ts` — 31 tests covering store + all 3 route handlers
+
+### Test coverage (31 tests)
+- cli-auth-store: 14 tests (create, get, authorize, consume, expiry, replay)
+- POST /start: 4 tests (valid, missing state, wrong type, invalid JSON)
+- POST /authorize: 4 tests (unauth, missing code, nonexistent, valid)
+- POST /exchange: 9 tests (missing fields, invalid/expired/pending/state-mismatch, valid exchange, replay, expiry)
