@@ -1509,18 +1509,18 @@ pnpm test --filter=cli       # CLI command tests
 - [ ] Create account via GitHub OAuth on tankpkg.dev *(blocked: GITHUB_CLIENT_ID/SECRET not set)*
 - [ ] Create organization "testorg" *(blocked: requires OAuth session)*
 - [ ] Generate API token *(blocked: requires OAuth session)*
-- [ ] `tank login` → authenticates via browser *(blocked: GITHUB_CLIENT_ID/SECRET not set)*
-- [ ] `tank whoami` → shows user info *(blocked: requires login)*
+- [ ] `tank login` → authenticates via browser *(blocked: GITHUB_CLIENT_ID/SECRET not set — E2E tests use direct DB seeding instead)*
+- [x] `tank whoami` → shows user info *(verified via E2E: producer.e2e.test.ts)*
 - [x] `tank init` → creates skills.json *(verified via unit tests)*
-- [ ] `tank publish` → uploads skill to registry *(blocked: SUPABASE_SERVICE_ROLE_KEY not set)*
-- [ ] `tank search "test"` → finds published skill *(blocked: requires published skill)*
-- [ ] `tank info @testorg/test-skill` → shows metadata *(blocked: requires published skill)*
-- [ ] `tank install @testorg/test-skill` → downloads and locks *(blocked: requires published skill)*
-- [ ] `tank install` (from lockfile) → deterministic reinstall *(blocked: requires published skill)*
+- [x] `tank publish` → uploads skill to registry *(verified via E2E: producer.e2e.test.ts — 3 publish tests)*
+- [x] `tank search "test"` → finds published skill *(verified via E2E: consumer.e2e.test.ts)*
+- [x] `tank info @testorg/test-skill` → shows metadata *(verified via E2E: producer.e2e.test.ts)*
+- [x] `tank install @testorg/test-skill` → downloads and locks *(verified via E2E: consumer.e2e.test.ts)*
+- [x] `tank install` (from lockfile) → deterministic reinstall *(verified via E2E: consumer.e2e.test.ts)*
 - [x] `tank verify` → integrity check passes *(verified via unit tests)*
 - [x] `tank permissions` → shows resolved permissions *(verified via unit tests)*
-- [ ] `tank update @testorg/test-skill` → updates within range *(blocked: requires published skill)*
-- [ ] `tank remove @testorg/test-skill` → removes cleanly *(blocked: requires published skill)*
-- [x] `tank audit` → shows security analysis results *(verified via unit tests)*
-- [x] `tank logout` → clears credentials *(verified via unit tests)*
+- [x] `tank update @testorg/test-skill` → updates within range *(verified via E2E: consumer.e2e.test.ts)*
+- [ ] `tank remove @testorg/test-skill` → removes cleanly *(not yet in E2E — unit tests cover this)*
+- [x] `tank audit` → shows security analysis results *(verified via E2E: consumer.e2e.test.ts)*
+- [x] `tank logout` → clears credentials *(verified via E2E: producer.e2e.test.ts)*
 - [x] All "Must NOT Have" items are absent from the codebase

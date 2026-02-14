@@ -1194,3 +1194,44 @@
 - actions/setup-node: v4 (Node.js 24)
 - actions/setup-python: v5 (Python 3.14)
 - actions/cache: v4 (pnpm store)
+
+## E2E Live Verification (2026-02-14)
+
+### Infrastructure verified
+- Dev server running at http://localhost:3000 (Next.js 15.5.12)
+- All 13 DB tables exist (5 Tank + 8 better-auth)
+- Supabase storage bucket "packages" created (private, 50MB limit)
+- All env vars set in .env.local (symlinked to apps/web/.env.local)
+
+### API endpoints verified (live)
+- GET /api/v1/search?q=test → 200, returns empty results (nothing published)
+- GET /api/v1/skills/@testorg/hello-world → 404 "Skill not found" (correct)
+- POST /api/v1/cli-auth/start → 200, returns authUrl + sessionCode pointing to localhost
+
+### CLI commands verified (live, built binary)
+- tank --help → shows all 14 commands
+- tank --version → 0.1.0
+- tank whoami → "Not logged in" (correct, no token)
+- tank search test → "No skills found" (correct, nothing published)
+- tank verify → "No skills.lock found" (correct)
+- tank permissions → "No skills installed" (correct)
+- tank audit → "No lockfile found" (correct)
+- tank info @testorg/hello-world → "Skill not found" (correct)
+
+### CLI config
+- ~/.tank/config.json created with registry: http://localhost:3000
+- Default registry (tankpkg.dev) NOT modified in source — config override only
+
+### Test skill scaffold
+- test-skill/ directory created at project root
+- skills.json: @testorg/hello-world v1.0.0 with permissions
+- SKILL.md: documentation file
+- index.js: placeholder implementation
+- Ready for `tank publish` after login + org creation
+
+### Remaining (requires user browser interaction)
+1. Login via GitHub OAuth at http://localhost:3000/login
+2. Create org "testorg" from dashboard
+3. Run `tank login` and approve in browser
+4. cd test-skill && tank publish
+5. Then verify: search, info, install, update, remove
