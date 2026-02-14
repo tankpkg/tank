@@ -682,3 +682,70 @@
 - `pnpm build --filter=@tank/web`: Succeeded — 3 new dynamic routes visible in build output
 - All existing tests still pass — no regressions
 - Zero LSP errors on all new files
+
+## Task 3.3: `tank install @org/skill` Command (2026-02-14)
+
+### What worked
+- `encodeURIComponent(name)` correctly encodes scoped names: `@test-org/my-skill` → `%40test-org%2Fmy-skill`
+- `resolve()` from `@tank/shared` works perfectly for version resolution — `resolve('*', versions)` returns latest, `resolve('^1.0.0', versions)` returns highest matching
+- `crypto.createHash('sha512').update(buffer).digest('base64')` for integrity verification — same pattern as packer
+- `tar.extract({ file, cwd, strip: 1, filter, onReadEntry })` for safe extraction with security checks
+- `filter` callback rejects absolute paths and `..` traversal; `onReadEntry` rejects symlinks/hardlinks
+- Permission budget check: simple subset logic — skill's domains/paths must be subset of project's allowed list
+- Wildcard domain matching: `*.example.com` matches `sub.example.com` and `example.com`
+- Path matching: `./src/**` allows any path starting with `./src/`
+- Lockfile keys sorted alphabetically with `Object.keys(skills).sort()` + rebuild object
+- `LOCKFILE_VERSION` constant from `@tank/shared` ensures consistency
+- `vi.mock('tar', ...)` for mocking tar extraction in tests — clean pattern
+- `new Uint8Array(fakeTarball)` needed for `new Response()` body in tests — Buffer not assignable to BodyInit
+- `setupSuccessfulInstall()` helper in tests reduces boilerplate for the 3-fetch sequence
+- 15 tests covering: success flow, missing skills.json, 404, version not found, integrity mismatch, permission budget exceeded, no budget warning, skills.json update, skills.lock update, scoped names, already installed skip, extract path, network domain check, sorted lockfile, explicit version range
+
+### Gotchas
+- **`Buffer` not assignable to `BodyInit`**: Same issue as publish tests — `new Response(fakeTarball, ...)` fails in strict TypeScript. Must wrap with `new Uint8Array(fakeTarball)`.
+- **`tar.extract` mock is module-level**: When testing extract path, can't easily access the mock from a dynamic import. Better to verify the directory was created (`fs.existsSync`) than to check mock call args across different `tmpDir` instances.
+- **`tar.extract` needs `file` option**: Writing tarball to temp file then extracting is more reliable than streaming. Temp file cleaned up in `finally` block.
+- **Install doesn't require auth**: Unlike publish, install works without a token (public registry). Auth will be needed for private skills later.
+
+### Install flow
+1. Read `skills.json` (must exist)
+2. Read existing `skills.lock` (optional)
+3. Fetch versions: `GET /api/v1/skills/{encodedName}/versions`
+4. Resolve best version with `resolve(range, versions)`
+5. Check if already in lockfile → skip if same version
+6. Fetch metadata: `GET /api/v1/skills/{encodedName}/{version}`
+7. Check permission budget (warn if no budget, error if exceeded)
+8. Download tarball from `downloadUrl`
+9. Verify sha512 integrity
+10. Extract to `.tank/skills/{name}/` with security checks
+11. Update `skills.json` with `^{version}` or explicit range
+12. Update `skills.lock` with sorted keys
+
+### Files created
+- `apps/cli/src/commands/install.ts` — Install command with full flow
+- `apps/cli/src/__tests__/install.test.ts` — 15 tests
+
+### Files modified
+- `apps/cli/src/bin/tank.ts` — Imported and registered install command with `<name>` and `[version-range]` arguments
+
+### Test coverage (15 new tests, 97 total)
+- Successful install flow (3 fetch calls verified)
+- Missing skills.json → error
+- Skill not found (404) → error
+- No version satisfies range → error
+- Integrity mismatch → abort
+- Permission budget exceeded (subprocess) → abort
+- No permission budget → install with warning
+- skills.json updated with ^version
+- skills.lock updated with correct entry
+- Scoped package URL encoding
+- Already installed → skip
+- Extract directory created correctly
+- Network domain budget exceeded → abort
+- Lockfile keys sorted alphabetically
+- Explicit version range used instead of default
+
+### Build & Test Results
+- `pnpm test --filter=tank`: 97 tests passed (15 new install tests)
+- `pnpm build --filter=tank`: Succeeded with no errors
+- All existing tests still pass — no regressions

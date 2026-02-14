@@ -969,7 +969,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 3.3. `tank install @org/skill`
+- [x] 3.3. `tank install @org/skill`
 
   **What to do**:
   - Create `apps/cli/src/commands/install.ts`
