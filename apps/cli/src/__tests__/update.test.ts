@@ -37,6 +37,7 @@ vi.mock('ora', () => {
 describe('updateCommand', () => {
   let tmpDir: string;
   let configDir: string;
+  let homedir: string;
 
   const baseSkillsJson = {
     name: 'my-project',
@@ -66,9 +67,28 @@ describe('updateCommand', () => {
     },
   };
 
+  const baseGlobalLockfile = {
+    lockfileVersion: 1,
+    skills: {
+      '@test-org/my-skill@2.0.0': {
+        resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+        integrity: 'sha512-abc123',
+        permissions: {},
+        audit_score: 8.0,
+      },
+      'simple-skill@1.0.0': {
+        resolved: 'https://storage.example.com/simple-skill-1.0.0.tgz',
+        integrity: 'sha512-ghi789',
+        permissions: {},
+        audit_score: 7.0,
+      },
+    },
+  };
+
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-update-test-'));
     configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-update-config-'));
+    homedir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-update-home-'));
 
     fs.writeFileSync(
       path.join(configDir, 'config.json'),
@@ -82,6 +102,7 @@ describe('updateCommand', () => {
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     fs.rmSync(configDir, { recursive: true, force: true });
+    fs.rmSync(homedir, { recursive: true, force: true });
     vi.restoreAllMocks();
   });
 
@@ -99,11 +120,38 @@ describe('updateCommand', () => {
     );
   }
 
+  function writeGlobalLockfile(data: Record<string, unknown> = baseGlobalLockfile) {
+    const tankDir = path.join(homedir, '.tank');
+    fs.mkdirSync(tankDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(tankDir, 'skills.lock'),
+      JSON.stringify(data, null, 2) + '\n',
+    );
+  }
+
   function mockVersionsResponse(versions: string[]) {
     mockFetch.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
           name: '@test-org/my-skill',
+          versions: versions.map((v) => ({
+            version: v,
+            integrity: `sha512-${v}`,
+            auditScore: 8.0,
+            auditStatus: 'published',
+            publishedAt: '2026-01-01T00:00:00Z',
+          })),
+        }),
+        { status: 200 },
+      ),
+    );
+  }
+
+  function mockVersionsResponseFor(name: string, versions: string[]) {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          name,
           versions: versions.map((v) => ({
             version: v,
             integrity: `sha512-${v}`,
@@ -334,6 +382,152 @@ describe('updateCommand', () => {
       expect.objectContaining({
         name: '@test-org/my-skill',
         versionRange: '^2.0.0',
+      }),
+    );
+  });
+
+  it('updates global skill using global lockfile entry', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    const { installCommand } = await import('../commands/install.js');
+    writeGlobalLockfile();
+
+    mockVersionsResponse(['2.0.0', '2.1.0']);
+
+    await updateCommand({
+      name: '@test-org/my-skill',
+      configDir,
+      global: true,
+      homedir,
+    });
+
+    expect(vi.mocked(installCommand)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: '@test-org/my-skill',
+        versionRange: '>=2.0.0',
+        global: true,
+        homedir,
+        configDir,
+      }),
+    );
+  });
+
+  it('does not require skills.json for global updates', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    writeGlobalLockfile();
+
+    mockVersionsResponse(['2.0.0', '2.1.0']);
+
+    await expect(
+      updateCommand({
+        name: '@test-org/my-skill',
+        configDir,
+        global: true,
+        homedir,
+      }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('updates all global skills from global lockfile', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    const { installCommand } = await import('../commands/install.js');
+    writeGlobalLockfile();
+
+    mockVersionsResponseFor('@test-org/my-skill', ['2.0.0', '2.1.0']);
+    mockVersionsResponseFor('simple-skill', ['1.0.0', '1.1.0']);
+
+    await updateCommand({ configDir, global: true, homedir });
+
+    expect(vi.mocked(installCommand)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(installCommand)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: '@test-org/my-skill',
+        versionRange: '*',
+        global: true,
+      }),
+    );
+    expect(vi.mocked(installCommand)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'simple-skill',
+        versionRange: '*',
+        global: true,
+      }),
+    );
+  });
+
+  it('errors when global lockfile is missing', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+
+    await expect(
+      updateCommand({ configDir, global: true, homedir }),
+    ).rejects.toThrow(/skills\.lock|global/i);
+  });
+
+  it('prints "Already at latest" for global updates', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    const { installCommand } = await import('../commands/install.js');
+    const { logger } = await import('../lib/logger.js');
+    writeGlobalLockfile();
+
+    mockVersionsResponse(['2.0.0']);
+
+    await updateCommand({
+      name: '@test-org/my-skill',
+      configDir,
+      global: true,
+      homedir,
+    });
+
+    expect(vi.mocked(installCommand)).not.toHaveBeenCalled();
+    expect(vi.mocked(logger.info)).toHaveBeenCalledWith(
+      expect.stringMatching(/already.*latest|up.to.date/i),
+    );
+  });
+
+  it('errors when global skill is not in lockfile', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    writeGlobalLockfile({
+      lockfileVersion: 1,
+      skills: {
+        'simple-skill@1.0.0': {
+          resolved: 'https://storage.example.com/simple-skill-1.0.0.tgz',
+          integrity: 'sha512-ghi789',
+          permissions: {},
+          audit_score: 7.0,
+        },
+      },
+    });
+
+    await expect(
+      updateCommand({
+        name: '@test-org/my-skill',
+        configDir,
+        global: true,
+        homedir,
+      }),
+    ).rejects.toThrow(/not found|not installed|lockfile/i);
+  });
+
+  it('passes homedir through for local updates', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    const { installCommand } = await import('../commands/install.js');
+    writeSkillsJson();
+    writeLockfile();
+
+    mockVersionsResponse(['2.0.0', '2.1.0']);
+
+    await updateCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir,
+    });
+
+    expect(vi.mocked(installCommand)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: '@test-org/my-skill',
+        versionRange: '^2.0.0',
+        global: false,
+        homedir,
       }),
     );
   });
