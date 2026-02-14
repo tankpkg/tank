@@ -13,6 +13,7 @@ import { permissionsCommand } from '../commands/permissions.js';
 import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
 import { auditCommand } from '../commands/audit.js';
+import { linkCommand } from '../commands/link.js';
 import { flushLogs } from '../lib/debug-logger.js';
 
 const program = new Command();
@@ -193,6 +194,19 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Audit failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('link')
+  .description('Link current skill directory to AI agent directories (for development)')
+  .action(async () => {
+    try {
+      await linkCommand();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Link failed: ${msg}`);
       process.exit(1);
     }
   });
