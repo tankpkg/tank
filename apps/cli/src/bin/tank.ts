@@ -108,9 +108,10 @@ program
   .command('remove')
   .description('Remove an installed skill')
   .argument('<name>', 'Skill name (e.g., @org/skill-name)')
-  .action(async (name: string) => {
+  .option('-g, --global', 'Remove a globally installed skill')
+  .action(async (name: string, opts: { global?: boolean }) => {
     try {
-      await removeCommand({ name });
+      await removeCommand({ name, global: opts.global });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Remove failed: ${msg}`);
