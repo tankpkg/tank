@@ -354,3 +354,140 @@
 - chalk: 5.6.2
 - ora: 9.3.0
 - @types/node: 22.19.11
+
+## Task 2.3: `tank init` Command (2026-02-14)
+
+### What worked
+- `@inquirer/prompts` v8.2.0 — modern ESM-compatible prompts, clean API: `input()`, `confirm()` as standalone functions
+- `vi.mock('@inquirer/prompts')` at module level + dynamic `await import()` in tests — standard pattern for mocking ESM modules
+- `process.cwd = () => tmpDir` override in tests — simple way to control working directory without mocking `fs`
+- `skillsJsonSchema.safeParse()` validates output before writing — catches schema violations at generation time
+- `void author` to suppress unused variable warning — author is prompted but not included in output (schema is `.strict()`)
+- `mockInput.mockResolvedValueOnce()` chaining for sequential prompt answers — clean, readable test setup
+- Capturing `validate` function from mock implementation to test validation logic separately — avoids needing to trigger real prompt validation
+
+### Gotchas
+- **`skillsJsonSchema` uses `.strict()` — no `author` field allowed**: The schema only allows `name`, `version`, `description`, `skills`, `permissions`, `audit`. Adding `author` to the output would fail validation. Author is prompted for future use but excluded from the manifest.
+- **`@tank/shared` is a workspace package** — must install with `pnpm add '@tank/shared@workspace:*' --filter=tank` (quoted to prevent shell glob expansion)
+- **pnpm filter uses package name not directory name** — `--filter=tank` (package.json name), not `--filter=cli` (directory name)
+- **`mockInput.mockImplementation()` overrides all `mockResolvedValueOnce()` calls** — when testing validation, use a single `mockImplementation` that handles all 4 prompt calls via a counter, don't mix with `mockResolvedValueOnce`
+
+### Files created
+- `apps/cli/src/commands/init.ts` — Interactive init command with validation
+- `apps/cli/src/__tests__/init.test.ts` — 11 tests
+
+### Files modified
+- `apps/cli/src/bin/tank.ts` — Registered `init` command
+- `apps/cli/package.json` — Added `@inquirer/prompts` and `@tank/shared` dependencies
+
+### Test coverage (11 new tests, 67 total)
+- creates skills.json with prompted values
+- omits description when empty
+- generates output that passes strict schema validation
+- writes pretty-printed JSON with trailing newline
+- supports scoped package names
+- prints success message
+- asks to overwrite when skills.json exists and user confirms
+- aborts when user declines overwrite
+- validates name: rejects uppercase, spaces, empty, too long
+- validates version: rejects non-semver
+- does not include author in output (strict schema)
+
+### Versions
+- @inquirer/prompts: 8.2.0
+
+## Task 2.4: Packer Module (2026-02-14)
+
+### What worked
+- `tar@7.5.7` — ESM-compatible, `create()` is a named export from `'tar'`
+- `tar.create({ gzip: true, cwd, portable: true }, files)` without `file` option returns a readable stream — collect chunks to get Buffer
+- `ignore@7.0.5` — CJS module with `export =` syntax, works with `import ignore from 'ignore'` thanks to `esModuleInterop: true`
+- `ignore().add(content)` accepts raw .gitignore file content as string — handles comments, negation, etc.
+- `ignore().ignores(path)` for files, `ignore().ignores(path + '/')` for directories — trailing slash is important for directory-only patterns
+- `fs.lstatSync()` (not `statSync()`) correctly detects symlinks without following them
+- `portable: true` in tar options omits system-specific metadata (uid, gid, uname, gname, dev, ino, nlink) — good for reproducible builds
+- `crypto.createHash('sha512').update(buffer).digest('base64')` for integrity hash — standard SRI format `sha512-{base64}`
+- `@types/tar@6.1.13` works fine with `tar@7.5.7` — the types are compatible enough
+- Tests use `fs.mkdtempSync(path.join(os.tmpdir(), 'tank-packer-test-'))` for isolated temp dirs — cleaned up in `afterEach`
+- All 18 tests passed on first implementation run — no iteration needed
+
+### Gotchas
+- **`tar.create()` returns a Pack stream, not a standard Readable** — need `as unknown as Readable` cast for TypeScript, but `data`/`end`/`error` events work fine
+- **`ignore` package requires relative paths without `./` prefix** — `path.relative()` output works directly
+- **Pre-existing build error in `login.ts`** — `POLL_INTERVAL_MS` undefined (should be `pollInterval`). Not introduced by packer changes. `tsc --noEmit` filtering out login.ts shows zero errors for packer code.
+- **`ignore` treats `foo` as file and `foo/` as directory** — must append `/` when checking directories to match patterns like `node_modules/`
+
+### Security validations implemented
+1. `skills.json` exists + valid against `skillsJsonSchema` (Zod `.strict()`)
+2. `SKILL.md` exists
+3. No symlinks (checked via `fs.lstatSync().isSymbolicLink()`)
+4. No `..` path components (path traversal prevention)
+5. No absolute paths
+6. File count <= 1000
+7. Tarball size <= 50MB
+8. Ignore patterns: `.tankignore` > `.gitignore` > defaults
+9. Always ignore: `node_modules`, `.git` (even if not in ignore file)
+
+### Files created
+- `apps/cli/src/lib/packer.ts` — Pack module with `pack()` function
+- `apps/cli/src/__tests__/packer.test.ts` — 18 tests
+
+### Dependencies added
+- tar: ^7.5.7
+- @types/tar: ^6.1.13 (devDep)
+- ignore: ^7.0.5
+
+### Test coverage (18 tests, 67 total for CLI)
+- valid directory: 3 tests (produces tarball, correct sha512, valid gzip)
+- missing files: 4 tests (no skills.json, no SKILL.md, invalid skills.json, bad JSON)
+- security symlinks: 1 test (symlink detection)
+- security path traversal: 1 test (.. component detection)
+- file count limit: 1 test (>1000 files)
+- ignore patterns: 6 tests (.tankignore, .gitignore fallback, default ignores, forced ignores, .DS_Store, .tank dir)
+- directory validation: 1 test (nonexistent directory)
+- totalSize accuracy: 1 test (matches sum of file sizes)
+
+## Task 2.2: tank login + tank whoami Commands (2026-02-14)
+
+### What worked
+- Polling-based auth flow: POST /start → open browser → poll POST /exchange until authorized → write config
+- `open@11.0.0` (ESM-compatible) for opening browser — `vi.mock('open', ...)` works cleanly in vitest
+- `vi.stubGlobal('crypto', { ...globalThis.crypto, randomUUID: vi.fn() })` to mock crypto.randomUUID
+- `vi.stubGlobal('fetch', mockFetch)` pattern from existing tests works perfectly
+- `pollInterval` option on loginCommand enables fast tests (10ms) vs production (2000ms)
+- Exchange endpoint returns 400 while session is pending (not yet authorized) — polling treats 400 as "keep trying"
+- Non-400 errors (500, etc.) are treated as fatal and thrown immediately
+- Network errors during polling are silently retried (transient failures)
+- whoami falls back to cached user info when server is unreachable or returns non-401 errors
+- Commander `.command()` + `.description()` + `.action()` chain for subcommand registration
+- `configDir` parameter threading through all commands enables isolated testing with temp directories
+
+### Gotchas
+- **Exchange endpoint returns 400 for BOTH "not yet authorized" AND "invalid session"** — the CLI treats all 400s as "keep polling" which is correct since the session code was just created and is valid. If the session expires (5 min TTL), the timeout will catch it.
+- **`open` package default export** — must mock as `{ default: vi.fn() }` not `vi.fn()` since it's ESM
+- **Polling tests were slow (2s each)** until adding `pollInterval` option — always make timing configurable for tests
+- **`mockFetch.mockResolvedValue()` (without Once)** creates a persistent mock — useful for the timeout test where every exchange call should return 400
+- **`mockFetch.mockResolvedValueOnce()` queues responses** — first call gets first mock, second gets second, etc. Perfect for simulating start → exchange sequences
+
+### Design decisions
+- **Polling over localhost server**: The existing cli-login page doesn't redirect to localhost after authorization, so polling the exchange endpoint is the natural fit. Simpler, more testable, no port conflicts.
+- **5-minute timeout**: Matches the server-side session TTL (SESSION_TTL_MS = 5 * 60 * 1000)
+- **whoami verifies token via API**: Even though we have cached user info, we verify the token is still valid. Falls back to cached info on network errors.
+- **Error re-throw pattern**: `catch (err) { if (err.message.startsWith('Exchange failed:')) throw err; }` — distinguishes our own thrown errors from transient network errors during polling
+
+### Files created
+- `apps/cli/src/commands/login.ts` — Login command with polling-based OAuth flow
+- `apps/cli/src/commands/whoami.ts` — Whoami command with token verification + cached fallback
+- `apps/cli/src/__tests__/login.test.ts` — 9 tests (full flow, start/exchange calls, errors, polling, timeout, browser failure, browser open)
+- `apps/cli/src/__tests__/whoami.test.ts` — 5 tests (no token, valid token, auth header, expired token, network error)
+
+### Files modified
+- `apps/cli/src/bin/tank.ts` — Registered login + whoami commands
+- `apps/cli/package.json` — Added `open@^11.0.0` dependency
+
+### Test coverage (14 new tests, 67 total)
+- login: 9 tests (full flow, start call, exchange call, start failure, exchange server error, polling, timeout, browser failure, browser open)
+- whoami: 5 tests (no token, valid token, auth header verification, expired token, network error)
+
+### Versions
+- open: 11.0.0

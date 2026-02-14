@@ -618,7 +618,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 2.2. `tank login`
+- [x] 2.2. `tank login`
 
   **What to do**:
   - Create `apps/cli/src/commands/login.ts`
@@ -664,7 +664,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 2.3. `tank init`
+- [x] 2.3. `tank init`
 
   **What to do**:
   - Create `apps/cli/src/commands/init.ts`
@@ -701,7 +701,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 2.4. Packer — Create Skill Tarball
+- [x] 2.4. Packer — Create Skill Tarball
 
   **What to do**:
   - Create `apps/cli/src/lib/packer.ts`

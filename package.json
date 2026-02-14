@@ -8,8 +8,16 @@
     "lint": "turbo run lint"
   },
   "devDependencies": {
+    "@types/tar": "^6.1.13",
     "turbo": "^2",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@10.29.3"
+  "packageManager": "pnpm@10.29.3",
+  "dependencies": {
+    "@inquirer/prompts": "^8.2.0",
+    "@tank/shared": "workspace:*",
+    "ignore": "^7.0.5",
+    "open": "^11.0.0",
+    "tar": "^7.5.7"
+  }
 }
