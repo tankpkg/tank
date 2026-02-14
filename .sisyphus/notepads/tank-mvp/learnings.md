@@ -241,3 +241,43 @@
 - `apps/web/app/layout.tsx` — Updated with Inter font + globals.css import
 - `apps/web/app/(auth)/layout.tsx` — Centered card layout for auth pages
 - `apps/web/app/(auth)/login/page.tsx` — Client Component with GitHub OAuth button
+
+## Task 1.7: Dashboard with Token Management (2026-02-14)
+
+### What worked
+- Dashboard route group `(dashboard)` with server-side session check in layout — `auth.api.getSession({ headers: await headers() })` + `redirect('/login')` if null
+- `signOut` from `auth-client.ts` needs `fetchOptions.onSuccess` callback for client-side redirect after sign-out
+- better-auth API key methods (server-side):
+  - `auth.api.createApiKey({ body: { name, userId, expiresIn } })` — returns object with `key` field (full token value)
+  - `auth.api.listApiKeys({ headers })` — requires session cookies via headers, returns `ApiKey[]` (no full key value)
+  - `auth.api.deleteApiKey({ body: { keyId }, headers })` — requires session cookies, returns `{ success: boolean }`
+- `expiresIn` is in **seconds** (not milliseconds) for `createApiKey` — 90 days = `90 * 24 * 60 * 60`
+- Server actions (`'use server'`) can be called directly from client components — no API route needed
+- shadcn `npx shadcn@latest add table dialog input label badge separator -y` installs all 6 components in one command
+- Token page as Client Component with `useState`/`useEffect` calling server actions — simple pattern, no React Query needed
+- Build correctly marks `/dashboard` and `/tokens` as `ƒ` (Dynamic) due to `headers()` usage in server components/actions
+
+### Gotchas
+- **`listApiKeys` requires `headers` parameter** — unlike `createApiKey` which uses `body.userId`, `listApiKeys` uses session cookies to determine the user. Must pass `headers: await headers()` from `next/headers`
+- **`deleteApiKey` also requires `headers`** — session cookies needed for authorization check
+- **Sign-out button must be a Client Component** — `signOut` from `better-auth/react` uses browser APIs. Extracted to `sign-out-button.tsx` to keep layout as Server Component
+- **`BetterAuthError` warnings during build** are expected — `BETTER_AUTH_SECRET` not set during `next build`, but lazy DB proxy prevents actual failures
+
+### Files created
+- `apps/web/app/(dashboard)/layout.tsx` — Dashboard layout with sidebar nav, session check, responsive mobile header
+- `apps/web/app/(dashboard)/sign-out-button.tsx` — Client Component for sign-out with redirect
+- `apps/web/app/(dashboard)/dashboard/page.tsx` — Welcome page with quick link cards
+- `apps/web/app/(dashboard)/tokens/page.tsx` — Token management page (client component, table, create/revoke dialogs)
+- `apps/web/app/(dashboard)/tokens/actions.ts` — Server actions: createToken, listTokens, revokeToken
+- `apps/web/app/(dashboard)/tokens/__tests__/actions.test.ts` — 6 tests for server actions
+- `apps/web/components/ui/table.tsx` — shadcn Table component
+- `apps/web/components/ui/dialog.tsx` — shadcn Dialog component
+- `apps/web/components/ui/input.tsx` — shadcn Input component
+- `apps/web/components/ui/label.tsx` — shadcn Label component
+- `apps/web/components/ui/badge.tsx` — shadcn Badge component
+- `apps/web/components/ui/separator.tsx` — shadcn Separator component
+
+### Test coverage (6 new tests, 74 total)
+- createToken: creates token with tank_ prefix, throws on unauthenticated
+- listTokens: returns array of keys, throws on unauthenticated
+- revokeToken: calls deleteApiKey correctly, throws on unauthenticated

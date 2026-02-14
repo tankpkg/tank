@@ -439,7 +439,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 1.7. Dashboard — Token Management
+- [x] 1.7. Dashboard — Token Management
 
   **What to do**:
   - Create dashboard layout: `apps/web/app/(dashboard)/layout.tsx`
