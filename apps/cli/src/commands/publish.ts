@@ -71,7 +71,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
     throw err;
   }
 
-  const { tarball, integrity, fileCount, totalSize } = packResult;
+  const { tarball, integrity, fileCount, totalSize, readme, files } = packResult;
 
   // 4. Dry run — print summary and exit
   if (dryRun) {
@@ -95,7 +95,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
   const step1Res = await fetch(`${config.registry}/api/v1/skills`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ manifest }),
+    body: JSON.stringify({ manifest, readme, files }),
   });
 
   if (!step1Res.ok) {
@@ -150,6 +150,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
       integrity,
       fileCount,
       tarballSize: totalSize,
+      readme,
     }),
   });
 

@@ -20,11 +20,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { versionId, integrity, fileCount, tarballSize } = body as {
+  const { versionId, integrity, fileCount, tarballSize, readme } = body as {
     versionId?: string;
     integrity?: string;
     fileCount?: number;
     tarballSize?: number;
+    readme?: string;
   };
 
   if (!versionId || !integrity) {
@@ -73,12 +74,12 @@ export async function POST(request: Request) {
     const manifest = version.manifest as AuditScoreInput['manifest'];
     const permissions = (version.permissions ?? {}) as Record<string, unknown>;
 
-    const result = computeAuditScore({
+     const result = computeAuditScore({
       manifest,
       permissions,
       fileCount: fileCount ?? 0,
       tarballSize: tarballSize ?? 0,
-      readme: version.readme ?? null,
+      readme: typeof readme === 'string' ? readme : (version.readme ?? null),
       analysisResults: null, // No Python analysis yet — default scoring
     });
 
@@ -92,6 +93,7 @@ export async function POST(request: Request) {
         tarballSize: tarballSize ?? 0,
         auditScore: result.score,
         auditStatus: 'completed',
+        ...(typeof readme === 'string' ? { readme } : {}),
       })
       .where(eq(skillVersions.id, versionId));
   } catch {
@@ -103,6 +105,7 @@ export async function POST(request: Request) {
         fileCount: fileCount ?? 0,
         tarballSize: tarballSize ?? 0,
         auditStatus: 'published',
+        ...(typeof readme === 'string' ? { readme } : {}),
       })
       .where(eq(skillVersions.id, versionId));
   }

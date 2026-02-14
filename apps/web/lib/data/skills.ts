@@ -50,9 +50,13 @@ export interface SkillVersionDetail {
   version: string;
   integrity: string;
   permissions: unknown;
+  manifest: unknown;
   auditScore: number | null;
   auditStatus: string;
   publishedAt: Date;
+  readme: string | null;
+  fileCount: number;
+  tarballSize: number;
 }
 
 export interface SkillVersionSummary {
@@ -66,6 +70,7 @@ export interface SkillVersionSummary {
 export interface SkillDetailResult {
   name: string;
   description: string | null;
+  repositoryUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
   publisher: { displayName: string };
@@ -118,13 +123,18 @@ export async function getSkillDetail(
       // Download count (scalar subquery, computed once)
       downloadCount:
         sql<number>`coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = ${skills.id}), 0)`,
+      skillRepositoryUrl: skills.repositoryUrl,
       // Version fields (null when skill has no versions)
       version: skillVersions.version,
       integrity: skillVersions.integrity,
       permissions: skillVersions.permissions,
+      manifest: skillVersions.manifest,
       auditScore: skillVersions.auditScore,
       auditStatus: skillVersions.auditStatus,
       publishedAt: skillVersions.createdAt,
+      readme: skillVersions.readme,
+      versionFileCount: skillVersions.fileCount,
+      versionTarballSize: skillVersions.tarballSize,
     })
     .from(skills)
     .innerJoin(publishers, eq(skills.publisherId, publishers.id))
@@ -157,15 +167,20 @@ export async function getSkillDetail(
         version: latestRow.version,
         integrity: latestRow.integrity,
         permissions: rows[0].permissions,
+        manifest: rows[0].manifest,
         auditScore: latestRow.auditScore,
         auditStatus: latestRow.auditStatus,
         publishedAt: latestRow.publishedAt,
+        readme: rows[0].readme ?? null,
+        fileCount: rows[0].versionFileCount ?? 0,
+        tarballSize: rows[0].versionTarballSize ?? 0,
       }
     : null;
 
   const result: SkillDetailResult = {
     name: first.skillName,
     description: first.skillDescription,
+    repositoryUrl: first.skillRepositoryUrl,
     createdAt: first.skillCreatedAt,
     updatedAt: first.skillUpdatedAt,
     publisher: { displayName: first.publisherDisplayName },

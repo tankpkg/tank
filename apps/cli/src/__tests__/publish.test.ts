@@ -50,6 +50,8 @@ describe('publishCommand', () => {
     integrity: 'sha512-abc123',
     fileCount: 5,
     totalSize: 2048,
+    readme: '# Test Skill\n\nA test skill.',
+    files: ['skills.json', 'SKILL.md', 'src/index.ts'],
   };
 
   beforeEach(() => {
@@ -159,6 +161,7 @@ describe('publishCommand', () => {
       integrity: 'sha512-abc123',
       fileCount: 5,
       tarballSize: 2048,
+      readme: '# Test Skill\n\nA test skill.',
     });
   });
 

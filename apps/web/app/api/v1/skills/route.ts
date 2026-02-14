@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { manifest: rawManifest } = body as { manifest?: unknown };
+  const { manifest: rawManifest, readme, files } = body as { manifest?: unknown; readme?: string; files?: string[] };
   if (!rawManifest || typeof rawManifest !== 'object') {
     return NextResponse.json({ error: 'Missing manifest in request body' }, { status: 400 });
   }
@@ -152,6 +152,7 @@ export async function POST(request: Request) {
       permissions: (manifest.permissions ?? {}) as Record<string, unknown>,
       auditStatus: 'pending-upload',
       publishedBy: publisher.id,
+      readme: typeof readme === 'string' ? readme : null,
     })
     .returning();
 

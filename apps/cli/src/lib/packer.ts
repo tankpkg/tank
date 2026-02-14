@@ -34,6 +34,8 @@ export interface PackResult {
   integrity: string; // "sha512-{base64}"
   fileCount: number;
   totalSize: number;
+  readme: string;
+  files: string[];
 }
 
 /**
@@ -89,10 +91,17 @@ export async function pack(directory: string): Promise<PackResult> {
     throw new Error(`Invalid skills.json:\n${issues}`);
   }
 
-  // 3. Verify SKILL.md exists
+  // 3. Verify SKILL.md exists and read its content
   const skillMdPath = path.join(absDir, 'SKILL.md');
   if (!fs.existsSync(skillMdPath)) {
     throw new Error('Missing required file: SKILL.md');
+  }
+
+  let readmeContent: string;
+  try {
+    readmeContent = fs.readFileSync(skillMdPath, 'utf-8');
+  } catch {
+    throw new Error('Failed to read SKILL.md');
   }
 
   // 4. Build ignore filter
@@ -135,6 +144,8 @@ export async function pack(directory: string): Promise<PackResult> {
     integrity,
     fileCount: files.length,
     totalSize,
+    readme: readmeContent,
+    files,
   };
 }
 
