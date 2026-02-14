@@ -23,13 +23,12 @@ describe('db module', () => {
     vi.resetModules();
   });
 
-  it('throws if DATABASE_URL is missing', async () => {
+  it('throws on access if DATABASE_URL is missing', async () => {
     const original = process.env.DATABASE_URL;
     delete process.env.DATABASE_URL;
 
-    await expect(import('../db')).rejects.toThrow(
-      'Missing DATABASE_URL environment variable',
-    );
+    const { db } = await import('../db');
+    expect(() => db.select).toThrow('Missing DATABASE_URL environment variable');
 
     process.env.DATABASE_URL = original;
   });
