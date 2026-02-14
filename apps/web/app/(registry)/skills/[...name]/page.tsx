@@ -127,9 +127,12 @@ export default async function SkillDetailPage({
     return <NotFound name={skillName} />;
   }
 
-  const latestManifest = data.latestVersion?.manifest as
-    | Record<string, unknown>
-    | undefined;
+  // manifest may be a JSONB object or a double-encoded JSON string
+  const rawManifest = data.latestVersion?.manifest;
+  const latestManifest: Record<string, unknown> | undefined =
+    typeof rawManifest === 'string'
+      ? JSON.parse(rawManifest)
+      : (rawManifest as Record<string, unknown> | undefined);
   const fileList: string[] = Array.isArray(latestManifest?.files)
     ? (latestManifest.files as string[])
     : [];

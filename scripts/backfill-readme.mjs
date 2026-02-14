@@ -1,6 +1,7 @@
 /**
  * One-off backfill script: Downloads each skill's tarball from Supabase Storage,
- * extracts the SKILL.md content and file list, then updates the skill_versions table.
+ * extracts the SKILL.md content and file list, then updates skill_versions
+ * (readme, file_count, manifest.files) and skills (repository_url).
  *
  * Usage: node scripts/backfill-readme.mjs
  *
@@ -52,12 +53,35 @@ function listFiles(dir, base = '') {
   return files;
 }
 
-async function main() {
-  console.log('🔄 Backfilling readme and files for existing skill versions...\n');
+// All @tank skills live in the tankpkg/tank monorepo
+const TANK_REPO_URL = 'https://github.com/tankpkg/tank';
 
-  // Get all skill versions with their skill names
+async function main() {
+  console.log('🔄 Backfilling readme, files, and repository URL...\n');
+
+  // ── Step 1: Set repository_url on all @tank/* skills ──────────────────
+  console.log('── Setting repository_url for @tank/* skills ──');
+  const repoResult = await sql`
+    UPDATE skills
+    SET repository_url = ${TANK_REPO_URL}
+    WHERE name LIKE '@tank/%' AND repository_url IS NULL
+    RETURNING name
+  `;
+  if (repoResult.length > 0) {
+    for (const r of repoResult) {
+      console.log(`  ✅ ${r.name} → ${TANK_REPO_URL}`);
+    }
+  } else {
+    console.log('  ⏭  All @tank/* skills already have repository_url');
+  }
+
+  // ── Step 2: Backfill file list in manifest + readme ───────────────────
+  console.log('\n── Backfilling file list and readme ──');
+
+  // Get all skill versions with their manifest
   const versions = await sql`
-    SELECT sv.id, sv.tarball_path, sv.readme, sv.version, s.name as skill_name
+    SELECT sv.id, sv.tarball_path, sv.readme, sv.version, sv.manifest,
+           s.name as skill_name
     FROM skill_versions sv
     JOIN skills s ON s.id = sv.skill_id
     ORDER BY s.name
@@ -68,8 +92,13 @@ async function main() {
   let failed = 0;
 
   for (const sv of versions) {
-    if (sv.readme !== null) {
-      console.log(`  ⏭  ${sv.skill_name}@${sv.version} — already has readme, skipping`);
+    // Check if manifest already has files array
+    const manifest = typeof sv.manifest === 'string' ? JSON.parse(sv.manifest) : sv.manifest;
+    const hasFiles = Array.isArray(manifest?.files) && manifest.files.length > 0;
+    const hasReadme = sv.readme !== null;
+
+    if (hasFiles && hasReadme) {
+      console.log(`  ⏭  ${sv.skill_name}@${sv.version} — already has files + readme, skipping`);
       skipped++;
       continue;
     }
@@ -98,14 +127,15 @@ async function main() {
 
       // Find all files and look for SKILL.md
       const files = listFiles(extractDir);
-      let readme = null;
+      let readme = sv.readme; // Keep existing readme if present
 
-      // Look for SKILL.md (might be at root or inside a package/ folder)
-      for (const f of files) {
-        const basename = f.split('/').pop();
-        if (basename === 'SKILL.md') {
-          readme = readFileSync(join(extractDir, f), 'utf-8');
-          break;
+      if (!hasReadme) {
+        for (const f of files) {
+          const basename = f.split('/').pop();
+          if (basename === 'SKILL.md') {
+            readme = readFileSync(join(extractDir, f), 'utf-8');
+            break;
+          }
         }
       }
 
@@ -115,10 +145,15 @@ async function main() {
         return f;
       });
 
+      // Merge files into manifest
+      const updatedManifest = { ...manifest, files: normalizedFiles };
+
       // Update the skill_versions record
       await sql`
         UPDATE skill_versions
-        SET readme = ${readme}, file_count = ${normalizedFiles.length}
+        SET readme = ${readme},
+            file_count = ${normalizedFiles.length},
+            manifest = ${JSON.stringify(updatedManifest)}::jsonb
         WHERE id = ${sv.id}
       `;
 
