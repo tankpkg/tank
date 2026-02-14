@@ -198,3 +198,46 @@
 - POST /start: 4 tests (valid, missing state, wrong type, invalid JSON)
 - POST /authorize: 4 tests (unauth, missing code, nonexistent, valid)
 - POST /exchange: 9 tests (missing fields, invalid/expired/pending/state-mismatch, valid exchange, replay, expiry)
+
+## Task 1.6: Tailwind CSS + shadcn/ui + Auth Pages (2026-02-14)
+
+### What worked
+- Tailwind CSS v4 (`tailwindcss@4.1.18`) with `@tailwindcss/postcss@4.1.18` — uses `@import "tailwindcss"` in CSS, no `tailwind.config.ts` needed
+- `postcss.config.mjs` with `{ plugins: { '@tailwindcss/postcss': {} } }` — minimal config for Tailwind v4
+- `shadcn@3.8.4` auto-detected Tailwind v4 and Next.js — `npx shadcn@latest init -d --base-color slate` worked cleanly
+- shadcn v4 generates `@import "tw-animate-css"` and `@import "shadcn/tailwind.css"` in globals.css — new v4 pattern
+- shadcn uses oklch color space for CSS variables — modern, perceptually uniform
+- `components/ui/button.tsx` and `components/ui/card.tsx` generated with `class-variance-authority` and `radix-ui`
+- `lib/utils.ts` generated with `cn()` helper using `clsx` + `tailwind-merge`
+- Inter font via `next/font/google` — applied to body with `antialiased` class
+- Auth route group `(auth)` with centered layout — `flex min-h-screen items-center justify-center`
+- Login page as Client Component with `authClient.signIn.social({ provider: 'github', callbackURL: '/dashboard' })`
+- Build produces `/login` as static page (11.1 kB first load JS)
+- All 68 existing tests still pass — no regressions
+
+### Gotchas
+- **`npx shadcn@latest init -d --css-variables true` fails** — the `true` gets interpreted as a component name, causing a 404 on the registry. Use `--css-variables` without a value, or just `-d` (defaults include CSS variables)
+- **shadcn generates duplicate `@apply` lines** in globals.css `@layer base` — both `border-border` and `bg-background` lines appear twice. Manual cleanup needed.
+- **No `tailwind.config.ts` with Tailwind v4** — configuration is done via CSS `@theme` blocks in globals.css, not a JS config file. shadcn handles this automatically.
+
+### Versions
+- tailwindcss: 4.1.18
+- @tailwindcss/postcss: 4.1.18
+- postcss: 8.5.6
+- shadcn CLI: 3.8.4
+- class-variance-authority: (installed by shadcn)
+- tailwind-merge: (installed by shadcn)
+- clsx: (installed by shadcn)
+- radix-ui: (installed by shadcn)
+- tw-animate-css: (installed by shadcn)
+
+### Files created/modified
+- `apps/web/postcss.config.mjs` — PostCSS config for Tailwind v4
+- `apps/web/app/globals.css` — Tailwind directives + shadcn CSS variables (oklch)
+- `apps/web/components.json` — shadcn config (new-york style, slate base, Tailwind v4)
+- `apps/web/lib/utils.ts` — `cn()` utility (clsx + tailwind-merge)
+- `apps/web/components/ui/button.tsx` — shadcn Button with CVA variants
+- `apps/web/components/ui/card.tsx` — shadcn Card components
+- `apps/web/app/layout.tsx` — Updated with Inter font + globals.css import
+- `apps/web/app/(auth)/layout.tsx` — Centered card layout for auth pages
+- `apps/web/app/(auth)/login/page.tsx` — Client Component with GitHub OAuth button

@@ -402,7 +402,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 1.6. Auth Web Pages
+- [x] 1.6. Auth Web Pages
 
   **What to do**:
   - Create login page: `apps/web/app/(auth)/login/page.tsx`
