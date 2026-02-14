@@ -1062,7 +1062,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 3.5. Lockfile Generation + Determinism
+- [x] 3.5. Lockfile Generation + Determinism
 
   **What to do**:
   - Create `apps/cli/src/lib/lockfile.ts`
@@ -1105,7 +1105,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 3.6. `tank remove` + `tank update`
+- [x] 3.6. `tank remove` + `tank update`
 
   **What to do**:
   - `tank remove @org/skill`:
@@ -1136,7 +1136,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 3.7. `tank permissions`
+- [x] 3.7. `tank permissions`
 
   **What to do**:
   - Create `apps/cli/src/commands/permissions.ts`

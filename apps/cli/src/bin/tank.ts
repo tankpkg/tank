@@ -6,6 +6,10 @@ import { whoamiCommand } from '../commands/whoami.js';
 import { logoutCommand } from '../commands/logout.js';
 import { publishCommand } from '../commands/publish.js';
 import { installCommand, installAll } from '../commands/install.js';
+import { removeCommand } from '../commands/remove.js';
+import { updateCommand } from '../commands/update.js';
+import { verifyCommand } from '../commands/verify.js';
+import { permissionsCommand } from '../commands/permissions.js';
 
 const program = new Command();
 
@@ -87,6 +91,60 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Install failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('remove')
+  .description('Remove an installed skill')
+  .argument('<name>', 'Skill name (e.g., @org/skill-name)')
+  .action(async (name: string) => {
+    try {
+      await removeCommand({ name });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Remove failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('update')
+  .description('Update skills to latest versions within their ranges')
+  .argument('[name]', 'Skill name to update (omit to update all)')
+  .action(async (name: string | undefined) => {
+    try {
+      await updateCommand({ name });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Update failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('verify')
+  .description('Verify installed skills match the lockfile')
+  .action(async () => {
+    try {
+      await verifyCommand();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Verify failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('permissions')
+  .description('Display resolved permission summary for installed skills')
+  .action(async () => {
+    try {
+      await permissionsCommand();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Error: ${msg}`);
       process.exit(1);
     }
   });

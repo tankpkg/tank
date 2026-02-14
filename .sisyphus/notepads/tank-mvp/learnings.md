@@ -791,3 +791,90 @@
 - `pnpm build --filter=tank`: Succeeded with no errors
 - All 97 existing tests still pass — no regressions
 - Zero LSP errors on all modified files
+
+## Task 3.5: Lockfile Generation + tank verify
+
+### Files Created
+- `apps/cli/src/lib/lockfile.ts` — 4 functions: readLockfile, writeLockfile, computeResolvedPermissions, computeBudgetCheck
+- `apps/cli/src/commands/verify.ts` — verifyCommand that checks installed skills match lockfile
+- `apps/cli/src/__tests__/lockfile.test.ts` — 13 tests across 4 describe blocks
+- `apps/cli/src/__tests__/verify.test.ts` — 7 tests
+
+### Key Patterns
+- Lockfile key format: `name@version` (e.g., `@org/skill@1.0.0`). Parse with `lastIndexOf('@')` to handle scoped packages
+- `getExtractDir` splits scoped packages: `@scope/name` → `.tank/skills/@scope/name`
+- Deterministic lockfile: sort keys with `Object.keys(skills).sort()`, use `JSON.stringify(obj, null, 2) + '\n'`
+- Permission union: use Sets for dedup, OR for subprocess boolean
+- Budget check: exact string match for domains/patterns (not glob matching) — consistent with install.ts behavior
+- verify.test.ts mocks logger with `vi.mock('../lib/logger.js')` to capture output without console noise
+- lockfile.test.ts needs NO mocks — pure functions operating on filesystem temp dirs
+- Test count went from 108 → 149 (added 20 lockfile + 7 verify + 14 from other recent additions)
+
+### Decisions
+- `readLockfile` returns null (not throws) on missing/corrupt file — caller decides error handling
+- `writeLockfile` always sorts keys — even if input is already sorted, for idempotency
+- `computeResolvedPermissions` returns `{}` for empty lockfile (not undefined)
+- `computeBudgetCheck` does exact string matching for domains/patterns — glob matching would be a future enhancement
+- verify command checks directory exists AND is non-empty — catches partial extraction failures
+- Duplicated `parseLockKey` and `getExtractDir` in verify.ts rather than exporting from install.ts — avoids modifying install.ts per task constraints
+
+## Task 3.7: tank permissions Command (2026-02-14)
+
+### What worked
+- `permissionsCommand()` with `directory` option for testability — same pattern as other commands
+- Lockfile key parsing with `lastIndexOf('@')` correctly handles scoped packages: `@org/skill@1.0.0` → `@org/skill`
+- `Map<string, string[]>` for collecting permission→skills attribution — clean deduplication
+- Budget check reuses same `isDomainAllowed()` and `isPathAllowed()` logic from install.ts (copied, not imported — display-only module)
+- chalk mock in tests: `vi.mock('chalk', ...)` with identity functions strips colors for clean assertions
+- `logSpy.mock.calls.map(c => c.join(' ')).join('\n')` captures all console.log output as single string for assertions
+- 11 tests covering: no lockfile, empty skills, network/filesystem/subprocess display, "none" for empty categories, budget PASS/FAIL/undefined, scoped names, multiple skills same permission
+- TDD: tests written first (RED — module not found), then implementation (GREEN — all 11 pass)
+- Total: 159 tests in CLI package (148 existing + 11 new)
+
+### Gotchas
+- **chalk mock must match actual usage**: `chalk.bold()`, `chalk.gray()`, `chalk.green()`, `chalk.red()`, `chalk.yellow()` all need to be in the mock
+- **Budget check for subprocess**: `budget.subprocess !== true` (not `=== false`) — undefined budget subprocess should also trigger violation when skill requests it
+- **No need to validate lockfile with Zod**: The lockfile was written by our own install command, so `JSON.parse()` is sufficient. Validation would add overhead for no benefit.
+
+### Files created
+- `apps/cli/src/commands/permissions.ts` — Permissions display command with attribution and budget check
+- `apps/cli/src/__tests__/permissions.test.ts` — 11 tests
+
+### Files modified
+- `apps/cli/src/bin/tank.ts` — Imported and registered permissions command
+
+### Test coverage (11 new tests, 159 total)
+- No lockfile → "No skills installed"
+- Empty skills → "No skills installed"
+- Network outbound with attribution
+- Filesystem read/write with attribution
+- Subprocess permission display
+- "none" for empty permission categories
+- Budget PASS (within budget)
+- Budget FAIL (exceeding budget)
+- No budget defined
+- Scoped package name parsing
+- Multiple skills for same permission value
+
+### Build & Test Results
+- `pnpm test --filter=tank`: 159 tests passed (11 new permissions tests)
+- `pnpm build --filter=tank`: Succeeded with no errors
+- All existing tests still pass — no regressions
+
+## Task 3.6: tank remove + tank update
+
+### Patterns
+- `remove` command: pure filesystem operations (read/write skills.json, skills.lock, delete skill dir). No network calls needed.
+- `update` command: delegates to `installCommand` for actual download/extract. Only does version resolution + comparison itself.
+- Lockfile key parsing for scoped packages: use `key.lastIndexOf('@')` to split `@org/skill@1.0.0` into name `@org/skill` and version `1.0.0`.
+- For removing ALL lockfile entries for a skill, iterate keys and match the name portion (a skill can have multiple version entries).
+- Update tests mock `installCommand` via `vi.mock('../commands/install.js')` since update delegates to install. This keeps tests focused on update logic (version comparison, "already at latest" detection).
+- Remove tests don't need fetch mocking — remove is purely local filesystem operations.
+- tank.ts now has verify and permissions commands (added in earlier tasks) — imports were updated accordingly.
+- Test count went from 139 to 159 (20 new tests: 10 remove + 10 update).
+
+### Key Decisions
+- `removeCommand` does NOT create a lockfile if one doesn't exist (just skips lockfile update).
+- `updateCommand` with no name iterates all skills in skills.json and checks each against registry.
+- Update prints "Already at latest: name@version" for individual skills, "All skills up to date" for update-all when nothing changed.
+- Lockfile is always written with sorted keys and trailing newline for deterministic output.
