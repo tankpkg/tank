@@ -604,3 +604,81 @@
 - `pnpm test --filter=tank`: 82 tests passed (11 new publish tests)
 - `pnpm build --filter=tank`: Succeeded with no errors
 - All existing tests still pass — no regressions
+
+## Task 3.2: Semver Resolver Module (2026-02-14)
+
+### What worked
+- `semver` npm package v7 — `maxSatisfying()` handles all range types (^, ~, >=, <, *, compound) out of the box
+- `semver.maxSatisfying(versions, range)` excludes pre-release versions by default unless the range itself contains a pre-release tag — exactly the behavior we want
+- `semver.validRange(range)` returns null for invalid ranges — clean guard before calling maxSatisfying
+- `semver.valid(v)` filters invalid version strings — returns null for non-semver strings
+- `semver.rcompare(a, b)` for descending sort — standard semver comparison
+- `import semver from 'semver'` works with ESM (`type: "module"`) + `moduleResolution: "bundler"` — no issues
+- `@types/semver` as devDependency provides full type coverage
+- Created `src/lib/` directory for utility modules — first non-schema, non-type, non-constant module in shared package
+- TDD: 25 tests written first (RED), all passed on first implementation (GREEN)
+- Total: 74 tests in shared package (49 existing + 25 new)
+
+### API design
+- `resolve(range, versions)` → `string | null` — simple, null-safe, never throws
+- `sortVersions(versions)` → `string[]` — filters invalid, returns new array (no mutation)
+- Both functions handle invalid input gracefully (null return / filtered output)
+
+### Files created
+- `packages/shared/src/lib/resolver.ts` — resolve() + sortVersions()
+- `packages/shared/src/__tests__/resolver.test.ts` — 25 tests
+
+### Files modified
+- `packages/shared/src/index.ts` — Added resolver exports
+- `packages/shared/package.json` — Added semver + @types/semver dependencies
+
+### Test coverage (25 new tests, 74 total)
+- resolve caret (^): 2 tests (match, no match)
+- resolve tilde (~): 1 test
+- resolve exact: 2 tests (match, no match)
+- resolve wildcard (*): 1 test
+- resolve comparison (>=, <): 2 tests
+- resolve compound (>=x <y): 2 tests (match, no match)
+- pre-release: 3 tests (exclusion, explicit range, exact match)
+- edge cases: 7 tests (empty array, invalid range, empty range, invalid versions filtered, all invalid, single version, malformed range no throw)
+- sortVersions: 5 tests (descending, pre-release order, empty, filter invalid, no mutation)
+
+### Versions
+- semver: ^7 (resolved from latest)
+- @types/semver: latest (devDep)
+
+## Task 3.1: Registry Read API Endpoints (2026-02-14)
+
+### What worked
+- Three public GET endpoints: `/api/v1/skills/[name]`, `/api/v1/skills/[name]/[version]`, `/api/v1/skills/[name]/versions`
+- `decodeURIComponent(params.name)` correctly handles scoped names like `@org/skill` (URL-encoded as `%40org%2Fskill`)
+- Next.js App Router `params` is a Promise in v15 — must `await params` before accessing properties
+- `innerJoin(publishers, eq(skills.publisherId, publishers.id))` in Drizzle for joining skill with publisher data
+- `desc(skillVersions.createdAt)` from `drizzle-orm` for ordering versions newest-first
+- `supabaseAdmin.storage.from('packages').createSignedUrl(path, 3600)` for 1-hour download URLs
+- Mock chain pattern extended: `mockFrom → { where, innerJoin, orderBy }` to support both simple and join queries
+- `@/` alias imports in tests (`@/app/api/v1/skills/[name]/route`) work perfectly with vitest path alias config
+- TDD approach: 15 failing tests first, then 3 route implementations — all passed on first run after fixing imports
+
+### Gotchas
+- **Bracket directories in import paths break module resolution**: `../../[version]/route` fails because Vite/Node treats `[` as a glob character. Fix: use `@/` alias imports instead of relative paths when importing from `[bracket]` directories
+- **Test file location matters for relative imports**: From `[name]/__tests__/`, `../../route` resolves to the parent `skills/route.ts` (the POST endpoint), NOT `[name]/route.ts`. The `@/` alias avoids this ambiguity entirely
+- **`mockFrom` needs to return different chain shapes**: For `select().from().where().limit()` vs `select().from().innerJoin().where().limit()` — the mock must return an object with both `where` and `innerJoin` methods
+- **`mockOrderBy` can be terminal or chainable**: For versions list, `orderBy()` returns the result directly (no `.limit()`). For latest version query, `orderBy().limit()` is used. Mock setup must handle both patterns
+
+### Files created
+- `apps/web/app/api/v1/skills/[name]/route.ts` — GET: skill metadata + latest version + publisher info
+- `apps/web/app/api/v1/skills/[name]/[version]/route.ts` — GET: specific version + signed download URL
+- `apps/web/app/api/v1/skills/[name]/versions/route.ts` — GET: all versions list ordered by createdAt desc
+- `apps/web/app/api/v1/skills/[name]/__tests__/registry-read.test.ts` — 15 tests covering all 3 endpoints
+
+### Test coverage (15 new tests, 125 total)
+- GET /skills/[name]: 4 tests (valid skill with latest version, 404, scoped name, no versions)
+- GET /skills/[name]/[version]: 6 tests (valid version + download URL, 404 skill, 404 version, 1hr expiry, scoped name, 500 on URL generation failure)
+- GET /skills/[name]/versions: 5 tests (multiple versions, 404, empty versions, scoped name, ordering)
+
+### Build & Test Results
+- `pnpm test --filter=@tank/web`: 125 tests passed (15 new registry-read tests)
+- `pnpm build --filter=@tank/web`: Succeeded — 3 new dynamic routes visible in build output
+- All existing tests still pass — no regressions
+- Zero LSP errors on all new files

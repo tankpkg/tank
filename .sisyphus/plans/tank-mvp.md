@@ -867,7 +867,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 2.8. Publish End-to-End Verification
+- [x] 2.8. Publish End-to-End Verification
 
   **What to do**:
   - Manual E2E test (not automated):
@@ -898,7 +898,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 3.1. Registry Read API Endpoints
+- [x] 3.1. Registry Read API Endpoints
 
   **What to do**:
   - `GET /api/v1/skills/:name` — return skill metadata + latest version
@@ -934,7 +934,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 3.2. Semver Resolver
+- [x] 3.2. Semver Resolver
 
   **What to do**:
   - Create `packages/shared/src/lib/resolver.ts`
