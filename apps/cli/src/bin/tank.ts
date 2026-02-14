@@ -12,6 +12,7 @@ import { verifyCommand } from '../commands/verify.js';
 import { permissionsCommand } from '../commands/permissions.js';
 import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
+import { auditCommand } from '../commands/audit.js';
 
 const program = new Command();
 
@@ -175,6 +176,20 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Info failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('audit')
+  .description('Display security audit results for installed skills')
+  .argument('[name]', 'Skill name to audit (omit to audit all)')
+  .action(async (name: string | undefined) => {
+    try {
+      await auditCommand({ name });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Audit failed: ${msg}`);
       process.exit(1);
     }
   });
