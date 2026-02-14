@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { verifyCliAuth } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { skills, skillVersions } from '@/lib/db/schema';
+import { computeAuditScore, type AuditScoreInput } from '@/lib/audit-score';
 
 export async function POST(request: Request) {
   // 1. Verify CLI auth
@@ -66,21 +67,51 @@ export async function POST(request: Request) {
 
   const skill = existingSkills[0];
 
-  // 6. Update version record
-  await db
-    .update(skillVersions)
-    .set({
-      integrity,
+  // 6. Update version record and compute audit score
+  let auditScore: number | null = null;
+  try {
+    const manifest = version.manifest as AuditScoreInput['manifest'];
+    const permissions = (version.permissions ?? {}) as Record<string, unknown>;
+
+    const result = computeAuditScore({
+      manifest,
+      permissions,
       fileCount: fileCount ?? 0,
       tarballSize: tarballSize ?? 0,
-      auditStatus: 'published',
-    })
-    .where(eq(skillVersions.id, versionId));
+      readme: version.readme ?? null,
+      analysisResults: null, // No Python analysis yet — default scoring
+    });
+
+    auditScore = result.score;
+
+    await db
+      .update(skillVersions)
+      .set({
+        integrity,
+        fileCount: fileCount ?? 0,
+        tarballSize: tarballSize ?? 0,
+        auditScore: result.score,
+        auditStatus: 'completed',
+      })
+      .where(eq(skillVersions.id, versionId));
+  } catch {
+    // Scoring failed — still mark as published (fallback)
+    await db
+      .update(skillVersions)
+      .set({
+        integrity,
+        fileCount: fileCount ?? 0,
+        tarballSize: tarballSize ?? 0,
+        auditStatus: 'published',
+      })
+      .where(eq(skillVersions.id, versionId));
+  }
 
   // 7. Return success
   return NextResponse.json({
     success: true,
     name: skill?.name ?? 'unknown',
     version: version.version,
+    auditScore,
   });
 }

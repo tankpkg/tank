@@ -70,6 +70,11 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
+const mockComputeAuditScore = vi.fn(() => ({ score: 8, details: [] }));
+vi.mock('@/lib/audit-score', () => ({
+  computeAuditScore: (...args: unknown[]) => mockComputeAuditScore(...args),
+}));
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function makeRequest(url: string, body: unknown, token?: string) {
@@ -493,18 +498,18 @@ describe('POST /api/v1/skills/confirm', () => {
     expect(data.error).toContain('already');
   });
 
-  it('confirms publish and returns success', async () => {
+  it('confirms publish and returns success with audit score', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    // Version lookup returns pending-upload version
     mockLimit.mockResolvedValueOnce([{
       id: 'version-1',
       skillId: 'skill-1',
       version: '1.0.0',
       auditStatus: 'pending-upload',
+      manifest: { name: 'my-skill', version: '1.0.0', description: 'A test skill' },
+      permissions: { network: { outbound: ['*.example.com'] } },
+      readme: '# My Skill\nA test skill.',
     }]);
-    // Skill lookup for name
     mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill' }]);
-    // Update succeeds (no return value needed)
     mockUpdateWhere.mockResolvedValueOnce(undefined);
 
     const { POST } = await import('../confirm/route');
@@ -520,6 +525,7 @@ describe('POST /api/v1/skills/confirm', () => {
     expect(data.success).toBe(true);
     expect(data.name).toBe('my-skill');
     expect(data.version).toBe('1.0.0');
+    expect(typeof data.auditScore).toBe('number');
   });
 
   it('returns 400 for invalid JSON body', async () => {
@@ -537,5 +543,75 @@ describe('POST /api/v1/skills/confirm', () => {
     const response = await POST(request);
 
     expect(response.status).toBe(400);
+  });
+
+  it('stores audit score in db update with completed status', async () => {
+    mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
+    mockComputeAuditScore.mockReturnValueOnce({ score: 9, details: [] });
+    mockLimit.mockResolvedValueOnce([{
+      id: 'ver-1',
+      skillId: 'skill-1',
+      version: '1.0.0',
+      auditStatus: 'pending-upload',
+      manifest: { name: 'test-skill', version: '1.0.0', description: 'A test skill' },
+      permissions: { network: { outbound: ['*.example.com'] } },
+      readme: '# Test Skill',
+    }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'test-skill' }]);
+    mockUpdateWhere.mockResolvedValueOnce(undefined);
+
+    const { POST } = await import('../confirm/route');
+    const request = makeRequest(
+      'http://localhost:3000/api/v1/skills/confirm',
+      { versionId: 'ver-1', integrity: 'sha512-abc', fileCount: 3, tarballSize: 512 },
+      'tank_valid',
+    );
+    await POST(request);
+
+    expect(mockSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auditScore: 9,
+        auditStatus: 'completed',
+      }),
+    );
+  });
+
+  it('falls back to published status when scoring throws', async () => {
+    mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
+    mockComputeAuditScore.mockImplementationOnce(() => { throw new Error('scoring failed'); });
+    mockLimit.mockResolvedValueOnce([{
+      id: 'ver-1',
+      skillId: 'skill-1',
+      version: '1.0.0',
+      auditStatus: 'pending-upload',
+      manifest: { name: 'test-skill', version: '1.0.0' },
+      permissions: {},
+      readme: null,
+    }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'test-skill' }]);
+    mockUpdateWhere.mockResolvedValueOnce(undefined);
+
+    const { POST } = await import('../confirm/route');
+    const request = makeRequest(
+      'http://localhost:3000/api/v1/skills/confirm',
+      { versionId: 'ver-1', integrity: 'sha512-abc', fileCount: 3, tarballSize: 512 },
+      'tank_valid',
+    );
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.success).toBe(true);
+    expect(data.auditScore).toBeNull();
+    expect(mockSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        auditStatus: 'published',
+      }),
+    );
+    expect(mockSet).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        auditScore: expect.anything(),
+      }),
+    );
   });
 });
