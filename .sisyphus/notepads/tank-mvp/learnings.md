@@ -559,3 +559,48 @@
 - **Publisher auto-creation**: If user has no publisher record, one is created with userId as displayName. This simplifies the first-publish experience.
 - **Org membership check uses better-auth API**: `getFullOrganization` returns members array, we check if userId is in it. No direct DB query needed.
 - **Version conflict check before insert**: Even though DB has a unique constraint on (skillId, version), we check first to return a clean 409 error instead of a DB constraint violation.
+
+## Task 2.6: `tank publish` CLI Command (2026-02-14)
+
+### What worked
+- TDD approach: 11 failing tests first, then implementation — all passed on first run
+- `ora@9.3.0` spinner mocked cleanly: `vi.mock('ora', () => { const spinner = { start, stop, succeed, fail, text }; return { default: vi.fn(() => spinner) }; })`
+- `vi.mock('../lib/packer.js')` + `vi.mocked(pack)` for type-safe mock access — clean pattern
+- `vi.stubGlobal('fetch', vi.fn())` for mocking all HTTP calls (API + upload)
+- Three-step publish flow: POST /api/v1/skills → PUT tarball to signed URL → POST /api/v1/skills/confirm
+- Raw `fetch()` for upload step (not ApiClient) since we need to send Buffer body, not JSON
+- `new Uint8Array(tarball)` conversion needed for `fetch()` body — Node.js `Buffer` is not assignable to `BodyInit` in strict TypeScript
+- `formatSize()` exported separately for unit testing — bytes → KB → MB formatting
+- Error handling maps HTTP status codes to user-friendly messages: 401 → auth, 403 → permission, 409 → version conflict
+- `configDir` parameter threading enables isolated testing with temp directories
+- Commander `--dry-run` option auto-converts to `dryRun` camelCase in opts object
+
+### Gotchas
+- **`Buffer` is not `BodyInit`**: TypeScript strict mode rejects `body: tarball` (Buffer) in `fetch()`. Must wrap with `new Uint8Array(tarball)`. Tests also need to compare with `new Uint8Array()` wrapper.
+- **Test assertion for Uint8Array body**: `expect(step2Opts.body).toEqual(mockPackResult.tarball)` fails because Buffer !== Uint8Array. Use `expect(new Uint8Array(step2Opts.body)).toEqual(new Uint8Array(mockPackResult.tarball))`.
+- **pnpm filter uses package name**: `pnpm test --filter=tank` (package.json name), NOT `--filter=cli` (directory name)
+
+### Files created
+- `apps/cli/src/commands/publish.ts` — Publish command with 3-step flow, dry-run, error handling, spinner
+- `apps/cli/src/__tests__/publish.test.ts` — 11 tests
+
+### Files modified
+- `apps/cli/src/bin/tank.ts` — Imported and registered publish command with --dry-run option
+
+### Test coverage (11 new tests, 82 total)
+- Successful publish flow (pack → API step 1 → upload → confirm)
+- Dry run (pack only, no API calls)
+- Not logged in → error message
+- Missing skills.json → error message
+- API 401 → auth error message
+- API 403 → permission error message
+- API 409 → version conflict message
+- Upload failure → error message
+- Confirm step failure → error message
+- Generic API error with message from response
+- formatSize utility (bytes, KB, MB)
+
+### Build & Test Results
+- `pnpm test --filter=tank`: 82 tests passed (11 new publish tests)
+- `pnpm build --filter=tank`: Succeeded with no errors
+- All existing tests still pass — no regressions

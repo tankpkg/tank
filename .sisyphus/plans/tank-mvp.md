@@ -803,7 +803,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 2.6. `tank publish`
+- [x] 2.6. `tank publish`
 
   **What to do**:
   - Create `apps/cli/src/commands/publish.ts`
