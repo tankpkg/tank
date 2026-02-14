@@ -1124,3 +1124,50 @@
 ### Test coverage (2 new tests, 182 total)
 - stores audit score in db update with completed status
 - falls back to published status when scoring throws
+
+## Task 5.1+5.2+5.3: Python Analysis Endpoints (2026-02-14)
+
+### What worked
+- FastAPI with Vercel Python serverless functions — each `.py` file gets its own `app = FastAPI()` for Vercel file-based routing
+- `_lib.py` prefix (underscore) prevents Vercel from routing it as an endpoint — shared utility pattern
+- `httpx.AsyncClient` for async HTTP calls to OpenRouter — Vercel-friendly, no `requests` dependency
+- `response_format: {"type": "json_object"}` forces JSON output from LLM — reduces parsing failures
+- `parse_llm_json()` strips markdown code fences (```json...```) before parsing — handles common LLM quirk
+- `FastAPI TestClient` (sync wrapper) works perfectly for pytest — no need for async test runner
+- `_make_openrouter_response()` helper builds fake `httpx.Response` objects with correct structure
+- Mocking `httpx.AsyncClient` at module level with `AsyncMock` for `__aenter__`/`__aexit__` — clean async context manager mock
+- Direct `lib_module.OPENROUTER_API_KEY = ""` manipulation in tests (with try/finally restore) — simpler than env var patching for module-level constants
+- Empty skill content short-circuits without calling LLM — saves API calls and avoids errors
+- Security endpoint forces `safe = False` when issues are present — defensive against LLM inconsistency
+
+### Gotchas
+- **Python falsy vs None**: `len(x) if x else None` treats empty string `""` as falsy → returns None instead of 0. Fix: `if x is not None` for explicit None check
+- **`OPENROUTER_API_KEY` is read at module import time**: `os.environ.get()` captures the value once. Tests must directly mutate `lib_module.OPENROUTER_API_KEY` rather than patching `os.environ` (which only affects future `os.environ.get()` calls, not the already-captured value)
+- **No `__init__.py` in `api/` or `api/analyze/`**: Vercel Python routing requires flat files, not Python packages. Only `tests/` directory gets `__init__.py`
+- **LSP "Import could not be resolved" errors are expected**: Python LSP can't find `fastapi`/`httpx` installed at system level — these are runtime-only deps, not IDE-visible
+- **pip3 on macOS requires `--break-system-packages`**: Python 3.14 on Homebrew enforces PEP 668 — externally managed environment
+
+### Files created
+- `apps/web/api/analyze/_lib.py` — Shared OpenRouter client (call_llm + parse_llm_json)
+- `apps/web/api/analyze/index.py` — POST /api/analyze (health check/echo)
+- `apps/web/api/analyze/permissions.py` — POST /api/analyze/permissions (LLM permission extraction)
+- `apps/web/api/analyze/security.py` — POST /api/analyze/security (LLM security scanning)
+- `apps/web/requirements.txt` — fastapi, httpx, pydantic
+- `apps/web/api/analyze/tests/__init__.py` — Empty init for test package
+- `apps/web/api/analyze/tests/test_analyze.py` — 16 tests
+
+### Test coverage (16 tests)
+- Health check: 3 tests (basic ok, with content length, empty string content)
+- Permissions: 4 tests (missing API key, successful extraction, empty skill, LLM timeout)
+- Security: 5 tests (safe skill, malicious skill, missing API key, LLM timeout, empty skill)
+- Parse JSON: 4 tests (plain JSON, code fence, bare fence, invalid JSON raises)
+
+### Models used
+- Permission extraction: `qwen/qwen3-coder:free` — good at code analysis
+- Security scanning: `deepseek/deepseek-r1-0528:free` — strong reasoning
+- Both support `response_format: {"type": "json_object"}`
+
+### Dependencies
+- fastapi>=0.115.0,<1.0.0
+- httpx>=0.27.0,<1.0.0
+- pydantic>=2.0.0,<3.0.0

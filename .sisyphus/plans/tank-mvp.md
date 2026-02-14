@@ -1321,7 +1321,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 5.1. Python Function Scaffold
+- [x] 5.1. Python Function Scaffold
 
   **What to do** (PARTNER):
   - Create `api/analyze.py` with FastAPI
@@ -1340,7 +1340,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 5.2. Permission Extraction
+- [x] 5.2. Permission Extraction
 
   **What to do** (PARTNER):
   - `POST /api/analyze/permissions` — accepts SKILL.md content
@@ -1359,7 +1359,7 @@ Sprint 5: Security Pipeline (Partner)
 
 ---
 
-- [ ] 5.3. Security Scanning
+- [x] 5.3. Security Scanning
 
   **What to do** (PARTNER):
   - `POST /api/analyze/security` — accepts SKILL.md content
