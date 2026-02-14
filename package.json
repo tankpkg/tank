@@ -5,12 +5,15 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "test": "turbo run test",
+    "test:e2e": "vitest run --config e2e/vitest.config.ts",
     "lint": "turbo run lint"
   },
   "devDependencies": {
     "@types/tar": "^6.1.13",
+    "postgres": "^3.4.7",
     "turbo": "^2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.1.4"
   },
   "packageManager": "pnpm@10.29.3",
   "dependencies": {
