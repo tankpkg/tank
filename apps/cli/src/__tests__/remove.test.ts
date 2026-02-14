@@ -62,6 +62,8 @@ describe('removeCommand', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     logSpy.mockRestore();
     errorSpy.mockRestore();
+    vi.resetModules();
+    vi.doUnmock('../lib/linker.js');
   });
 
   function writeSkillsJson(data: Record<string, unknown> = baseSkillsJson) {
@@ -97,6 +99,75 @@ describe('removeCommand', () => {
     const skills = updated.skills as Record<string, string>;
     expect(skills['@test-org/my-skill']).toBeUndefined();
     expect(skills['simple-skill']).toBe('^1.0.0');
+  });
+
+  it('unlinks from agents before removing local skill', async () => {
+    vi.resetModules();
+    const unlinkSkillFromAgents = vi.fn().mockReturnValue({ unlinked: ['claude'], notFound: [] });
+    vi.doMock('../lib/linker.js', () => ({ unlinkSkillFromAgents }));
+    const { removeCommand } = await import('../commands/remove.js');
+    writeSkillsJson();
+    writeLockfile();
+
+    await removeCommand({ name: '@test-org/my-skill', directory: tmpDir, homedir: tmpDir });
+
+    expect(unlinkSkillFromAgents).toHaveBeenCalledWith({
+      skillName: '@test-org/my-skill',
+      linksDir: path.join(tmpDir, '.tank'),
+      homedir: tmpDir,
+    });
+  });
+
+  it('removes agent-skills wrapper dir on local remove', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    const { getSymlinkName } = await import('../lib/agents.js');
+    writeSkillsJson();
+    writeLockfile();
+
+    const symlinkName = getSymlinkName('@test-org/my-skill');
+    const agentSkillDir = path.join(tmpDir, '.tank', 'agent-skills', symlinkName);
+    fs.mkdirSync(agentSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(agentSkillDir, 'skill.json'), '{}');
+
+    await removeCommand({ name: '@test-org/my-skill', directory: tmpDir });
+
+    expect(fs.existsSync(agentSkillDir)).toBe(false);
+  });
+
+  it('succeeds when skill was never linked (no links entry)', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    writeSkillsJson();
+    writeLockfile();
+
+    await expect(
+      removeCommand({ name: '@test-org/my-skill', directory: tmpDir }),
+    ).resolves.toBeUndefined();
+  });
+
+  it('handles broken/missing symlinks gracefully', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    const { writeLinks } = await import('../lib/links.js');
+    writeSkillsJson();
+    writeLockfile();
+
+    const linksDir = path.join(tmpDir, '.tank');
+    writeLinks(linksDir, {
+      version: 1,
+      links: {
+        '@test-org/my-skill': {
+          source: 'local',
+          sourceDir: tmpDir,
+          installedAt: new Date().toISOString(),
+          agentLinks: {
+            claude: path.join(tmpDir, '.missing', 'link'),
+          },
+        },
+      },
+    });
+
+    await expect(
+      removeCommand({ name: '@test-org/my-skill', directory: tmpDir }),
+    ).resolves.toBeUndefined();
   });
 
   it('removes ALL lockfile entries for the skill name', async () => {
@@ -248,5 +319,73 @@ describe('removeCommand', () => {
     const lock = readLockfile() as { skills: Record<string, unknown> };
     const keys = Object.keys(lock.skills);
     expect(keys).toEqual([...keys].sort());
+  });
+
+  it('removes global skill from ~/.tank/skills/', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
+    writeSkillsJson();
+    writeLockfile();
+
+    const skillDir = path.join(homeDir, '.tank', 'skills', '@test-org', 'my-skill');
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, 'skill.json'), '{}');
+
+    await removeCommand({ name: '@test-org/my-skill', directory: tmpDir, global: true, homedir: homeDir });
+
+    expect(fs.existsSync(skillDir)).toBe(false);
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it('does NOT touch project skills.json for global remove', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
+    writeSkillsJson();
+    writeLockfile();
+
+    const original = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+
+    await removeCommand({ name: '@test-org/my-skill', directory: tmpDir, global: true, homedir: homeDir });
+
+    const updated = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+    expect(updated).toBe(original);
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it('updates ~/.tank/skills.lock for global remove', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
+    writeSkillsJson();
+    writeLockfile();
+
+    const lockPath = path.join(homeDir, '.tank', 'skills.lock');
+    fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    fs.writeFileSync(lockPath, JSON.stringify(baseLockfile, null, 2) + '\n');
+
+    await removeCommand({ name: '@test-org/my-skill', directory: tmpDir, global: true, homedir: homeDir });
+
+    const lock = JSON.parse(fs.readFileSync(lockPath, 'utf-8')) as { skills: Record<string, unknown> };
+    expect(lock.skills['@test-org/my-skill@2.0.0']).toBeUndefined();
+    expect(lock.skills['@test-org/my-skill@2.1.0']).toBeUndefined();
+    expect(lock.skills['simple-skill@1.0.0']).toBeDefined();
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  });
+
+  it('removes agent-skills wrapper dir on global remove', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    const { getSymlinkName } = await import('../lib/agents.js');
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
+    writeSkillsJson();
+    writeLockfile();
+
+    const symlinkName = getSymlinkName('@test-org/my-skill');
+    const agentSkillDir = path.join(homeDir, '.tank', 'agent-skills', symlinkName);
+    fs.mkdirSync(agentSkillDir, { recursive: true });
+    fs.writeFileSync(path.join(agentSkillDir, 'skill.json'), '{}');
+
+    await removeCommand({ name: '@test-org/my-skill', directory: tmpDir, global: true, homedir: homeDir });
+
+    expect(fs.existsSync(agentSkillDir)).toBe(false);
+    fs.rmSync(homeDir, { recursive: true, force: true });
   });
 });
