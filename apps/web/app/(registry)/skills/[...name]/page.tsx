@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+
 import {
   Table,
   TableBody,
@@ -247,7 +248,7 @@ export default async function SkillDetailPage({
       )}
 
       {/* Permissions */}
-      {data.latestVersion?.permissions && (
+      {data.latestVersion?.permissions != null && (
         <PermissionsSection
           permissions={data.latestVersion.permissions as SkillPermissions}
         />
