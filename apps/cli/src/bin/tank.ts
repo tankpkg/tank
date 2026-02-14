@@ -89,12 +89,13 @@ program
   .description('Install a skill from the Tank registry, or all skills from lockfile')
   .argument('[name]', 'Skill name (e.g., @org/skill-name). Omit to install from lockfile.')
   .argument('[version-range]', 'Semver range (default: *)', '*')
-  .action(async (name: string | undefined, versionRange: string) => {
+  .option('-g, --global', 'Install skill globally (available to all projects)')
+  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean }) => {
     try {
       if (name) {
-        await installCommand({ name, versionRange });
+        await installCommand({ name, versionRange, global: opts.global });
       } else {
-        await installAll({});
+        await installAll({ global: opts.global });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

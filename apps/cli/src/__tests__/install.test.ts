@@ -148,6 +148,7 @@ describe('installCommand', () => {
       name: '@test-org/my-skill',
       directory: tmpDir,
       configDir,
+      homedir: tmpDir,
     });
 
     // Verify 3 fetch calls
@@ -519,6 +520,267 @@ describe('installCommand', () => {
       fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8'),
     );
     expect(updated.skills['@test-org/my-skill']).toBe('^1.0.0');
+  });
+
+  it('creates agent symlinks after local install', async () => {
+    vi.resetModules();
+    const prepareAgentSkillDir = vi.fn().mockReturnValue('/mock/agent-skills/test-org--my-skill');
+    const linkSkillToAgents = vi.fn().mockReturnValue({ linked: ['claude'], skipped: [], failed: [] });
+    vi.doMock('../lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
+    vi.doMock('../lib/linker.js', () => ({ linkSkillToAgents }));
+
+    const { installCommand } = await import('../commands/install.js');
+    setupSuccessfulInstall();
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir: tmpDir,
+    });
+
+    const expectedExtractDir = path.join(tmpDir, '.tank', 'skills', '@test-org', 'my-skill');
+    expect(prepareAgentSkillDir).toHaveBeenCalledWith({
+      skillName: '@test-org/my-skill',
+      extractDir: expectedExtractDir,
+      agentSkillsBaseDir: path.join(tmpDir, '.tank', 'agent-skills'),
+      description: 'A test skill',
+    });
+    expect(linkSkillToAgents).toHaveBeenCalledWith({
+      skillName: '@test-org/my-skill',
+      sourceDir: '/mock/agent-skills/test-org--my-skill',
+      linksDir: path.join(tmpDir, '.tank'),
+      source: 'local',
+      homedir: tmpDir,
+    });
+  });
+
+  it('succeeds with warning when no agents are detected', async () => {
+    vi.resetModules();
+    vi.doMock('../lib/linker.js', () => ({
+      linkSkillToAgents: vi.fn().mockReturnValue({ linked: [], skipped: [], failed: [] }),
+    }));
+    vi.doMock('../lib/agents.js', async () => {
+      const actual = await vi.importActual<typeof import('../lib/agents.js')>('../lib/agents.js');
+      return {
+        ...actual,
+        detectInstalledAgents: vi.fn().mockReturnValue([]),
+      };
+    });
+    const { installCommand } = await import('../commands/install.js');
+    setupSuccessfulInstall();
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+    });
+
+    const output = getAllOutput();
+    expect(output).toMatch(/no agents detected/i);
+  });
+
+  it('succeeds with warning when agent linking fails', async () => {
+    vi.resetModules();
+    vi.doMock('../lib/linker.js', () => ({
+      linkSkillToAgents: vi.fn(() => {
+        throw new Error('link failed');
+      }),
+    }));
+
+    const { installCommand } = await import('../commands/install.js');
+    setupSuccessfulInstall();
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+    });
+
+    const output = getAllOutput();
+    expect(output).toMatch(/agent linking skipped/i);
+  });
+
+  it('agent symlink target is agent-skills wrapper dir, not raw extract dir', async () => {
+    vi.resetModules();
+    const prepareAgentSkillDir = vi.fn().mockReturnValue('/mock/agent-skills/test-org--my-skill');
+    const linkSkillToAgents = vi.fn().mockReturnValue({ linked: [], skipped: [], failed: [] });
+    vi.doMock('../lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
+    vi.doMock('../lib/linker.js', () => ({ linkSkillToAgents }));
+
+    const { installCommand } = await import('../commands/install.js');
+    setupSuccessfulInstall();
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+    });
+
+    const expectedExtractDir = path.join(tmpDir, '.tank', 'skills', '@test-org', 'my-skill');
+    const linkArgs = linkSkillToAgents.mock.calls[0]?.[0];
+    expect(linkArgs?.sourceDir).toBe('/mock/agent-skills/test-org--my-skill');
+    expect(linkArgs?.sourceDir).not.toBe(expectedExtractDir);
+  });
+});
+
+describe('installCommand --global', () => {
+  let tmpDir: string;
+  let configDir: string;
+  let fakeHome: string;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
+  const validSkillsJson = {
+    name: 'my-project',
+    version: '1.0.0',
+    description: 'A test project',
+    skills: {},
+  };
+
+  const versionsResponse = {
+    name: '@test-org/my-skill',
+    versions: [
+      { version: '2.0.0', integrity: 'sha512-ghi789', auditScore: 7.0, auditStatus: 'published', publishedAt: '2026-02-01T00:00:00Z' },
+    ],
+  };
+
+  const versionMetadata = {
+    name: '@test-org/my-skill',
+    version: '2.0.0',
+    description: 'A test skill',
+    integrity: 'sha512-ghi789',
+    permissions: {},
+    auditScore: 7.0,
+    auditStatus: 'published',
+    downloadUrl: 'https://storage.example.com/download/my-skill-2.0.0.tgz',
+    publishedAt: '2026-02-01T00:00:00Z',
+  };
+
+  let fakeTarball: Buffer;
+  let fakeTarballIntegrity: string;
+
+  beforeEach(async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-install-global-test-'));
+    configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-install-global-config-'));
+    fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-install-global-home-'));
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.json'),
+      JSON.stringify(validSkillsJson, null, 2),
+    );
+
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev' }),
+    );
+
+    fakeTarball = Buffer.from('fake-tarball-content-for-testing');
+    const hash = crypto.createHash('sha512').update(fakeTarball).digest('base64');
+    fakeTarballIntegrity = `sha512-${hash}`;
+
+    mockFetch.mockReset();
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(configDir, { recursive: true, force: true });
+    fs.rmSync(fakeHome, { recursive: true, force: true });
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+    vi.resetModules();
+    vi.unmock('../lib/frontmatter.js');
+    vi.unmock('../lib/linker.js');
+  });
+
+  function setupSuccessfulInstall() {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(versionsResponse), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ...versionMetadata, integrity: fakeTarballIntegrity }), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball), { status: 200 }),
+    );
+  }
+
+  it('extracts to ~/.tank/skills/ for global install', async () => {
+    const { installCommand } = await import('../commands/install.js');
+    setupSuccessfulInstall();
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      global: true,
+      homedir: fakeHome,
+    });
+
+    const extractDir = path.join(fakeHome, '.tank', 'skills', '@test-org', 'my-skill');
+    expect(fs.existsSync(extractDir)).toBe(true);
+  });
+
+  it('does NOT create or modify project skills.json for global install', async () => {
+    const { installCommand } = await import('../commands/install.js');
+    setupSuccessfulInstall();
+
+    const original = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      global: true,
+      homedir: fakeHome,
+    });
+
+    const updated = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+    expect(updated).toBe(original);
+  });
+
+  it('writes to ~/.tank/skills.lock for global install', async () => {
+    const { installCommand } = await import('../commands/install.js');
+    setupSuccessfulInstall();
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      global: true,
+      homedir: fakeHome,
+    });
+
+    const lockPath = path.join(fakeHome, '.tank', 'skills.lock');
+    expect(fs.existsSync(lockPath)).toBe(true);
+  });
+
+  it('creates agent symlinks with source "global"', async () => {
+    vi.resetModules();
+    const prepareAgentSkillDir = vi.fn().mockReturnValue('/mock/global-agent-skills/test-org--my-skill');
+    const linkSkillToAgents = vi.fn().mockReturnValue({ linked: ['claude'], skipped: [], failed: [] });
+    vi.doMock('../lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
+    vi.doMock('../lib/linker.js', () => ({ linkSkillToAgents }));
+
+    const { installCommand } = await import('../commands/install.js');
+    setupSuccessfulInstall();
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      global: true,
+      homedir: fakeHome,
+    });
+
+    expect(linkSkillToAgents).toHaveBeenCalledWith({
+      skillName: '@test-org/my-skill',
+      sourceDir: '/mock/global-agent-skills/test-org--my-skill',
+      linksDir: path.join(fakeHome, '.tank'),
+      source: 'global',
+      homedir: fakeHome,
+    });
   });
 });
 
