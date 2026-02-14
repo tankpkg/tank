@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
 import { skillsJsonSchema } from '@tank/shared';
 import { verifyCliAuth } from '@/lib/auth-helpers';
-import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { publishers, skills, skillVersions } from '@/lib/db/schema';
+import { organization, member } from '@/lib/db/auth-schema';
 import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: Request) {
@@ -69,22 +69,30 @@ export async function POST(request: Request) {
   const scopeMatch = name.match(/^@([^/]+)\//);
   if (scopeMatch) {
     const orgSlug = scopeMatch[1];
-    const org = await auth.api.getFullOrganization({
-      query: { organizationSlug: orgSlug },
-      headers: request.headers,
-    });
 
-    if (!org) {
+    // Look up the organization by slug directly (API key auth can't use session-based auth.api)
+    const orgs = await db
+      .select()
+      .from(organization)
+      .where(eq(organization.slug, orgSlug))
+      .limit(1);
+
+    if (orgs.length === 0) {
       return NextResponse.json(
         { error: `Organization '${orgSlug}' not found. You must create the org before publishing scoped packages.` },
         { status: 403 },
       );
     }
 
-    const isMember = org.members?.some(
-      (m: { userId: string }) => m.userId === verified.userId,
-    );
-    if (!isMember) {
+    const org = orgs[0];
+
+    const members = await db
+      .select()
+      .from(member)
+      .where(and(eq(member.organizationId, org.id), eq(member.userId, verified.userId)))
+      .limit(1);
+
+    if (members.length === 0) {
       return NextResponse.json(
         { error: `You are not a member of org '${orgSlug}'` },
         { status: 403 },

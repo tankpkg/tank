@@ -4,16 +4,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockVerifyCliAuth = vi.fn();
 vi.mock('@/lib/auth-helpers', () => ({
-  verifyCliAuth: (...args: unknown[]) => mockVerifyCliAuth(...args),
+  verifyCliAuth: mockVerifyCliAuth,
 }));
 
-const mockGetFullOrganization = vi.fn();
-vi.mock('@/lib/auth', () => ({
-  auth: {
-    api: {
-      getFullOrganization: (...args: unknown[]) => mockGetFullOrganization(...args),
-    },
-  },
+vi.mock('@/lib/db/auth-schema', () => ({
+  organization: { id: 'organization.id', slug: 'organization.slug', name: 'organization.name' },
+  member: { id: 'member.id', organizationId: 'member.organization_id', userId: 'member.user_id', role: 'member.role' },
 }));
 
 // Mock Drizzle db with chainable query builder
@@ -30,9 +26,9 @@ const mockUpdate = vi.fn(() => ({ set: mockSet }));
 
 vi.mock('@/lib/db', () => ({
   db: {
-    insert: (...args: unknown[]) => mockInsert(...args),
-    select: (...args: unknown[]) => mockSelect(...args),
-    update: (...args: unknown[]) => mockUpdate(...args),
+    insert: mockInsert,
+    select: mockSelect,
+    update: mockUpdate,
   },
 }));
 
@@ -72,7 +68,7 @@ vi.mock('@/lib/supabase', () => ({
 
 const mockComputeAuditScore = vi.fn(() => ({ score: 8, details: [] }));
 vi.mock('@/lib/audit-score', () => ({
-  computeAuditScore: (...args: unknown[]) => mockComputeAuditScore(...args),
+  computeAuditScore: mockComputeAuditScore,
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -228,12 +224,10 @@ describe('POST /api/v1/skills', () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
     // Publisher lookup
     mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
-    // Org lookup returns org without user as member
-    mockGetFullOrganization.mockResolvedValue({
-      id: 'org-1',
-      slug: 'myorg',
-      members: [{ userId: 'other-user' }],
-    });
+    // Org lookup returns existing org
+    mockLimit.mockResolvedValueOnce([{ id: 'org-1', slug: 'myorg', name: 'My Org' }]);
+    // Member lookup returns empty (user is NOT a member)
+    mockLimit.mockResolvedValueOnce([]);
 
     const { POST } = await import('../route');
     const request = makeRequest(
@@ -252,8 +246,8 @@ describe('POST /api/v1/skills', () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
     // Publisher lookup
     mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
-    // Org lookup returns null
-    mockGetFullOrganization.mockResolvedValue(null);
+    // Org lookup returns empty (org does not exist)
+    mockLimit.mockResolvedValueOnce([]);
 
     const { POST } = await import('../route');
     const request = makeRequest(
@@ -358,12 +352,10 @@ describe('POST /api/v1/skills', () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
     // Publisher lookup
     mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
-    // Org lookup returns org with user as member
-    mockGetFullOrganization.mockResolvedValue({
-      id: 'org-1',
-      slug: 'myorg',
-      members: [{ userId: 'user-1' }],
-    });
+    // Org lookup returns existing org
+    mockLimit.mockResolvedValueOnce([{ id: 'org-1', slug: 'myorg', name: 'My Org' }]);
+    // Member lookup returns user as member
+    mockLimit.mockResolvedValueOnce([{ id: 'mem-1', organizationId: 'org-1', userId: 'user-1', role: 'owner' }]);
     // Skill lookup returns empty (new skill)
     mockLimit.mockResolvedValueOnce([]);
     // Skill insert

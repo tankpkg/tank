@@ -46,13 +46,13 @@ const mockSelect = vi.fn(() => ({
 }));
 
 // Track insert calls
-const mockInsertValues = vi.fn(() => Promise.resolve());
-const mockInsert = vi.fn(() => ({ values: mockInsertValues }));
+const mockInsertValues = vi.fn((_values?: unknown) => Promise.resolve());
+const mockInsert = vi.fn((_table?: unknown) => ({ values: mockInsertValues }));
 
 vi.mock('@/lib/db', () => ({
   db: {
-    select: (...args: unknown[]) => mockSelect(...args),
-    insert: (...args: unknown[]) => mockInsert(...args),
+    select: mockSelect,
+    insert: mockInsert,
   },
 }));
 
@@ -209,11 +209,11 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
     });
 
     // Verify insert was called with skillDownloads table
-    const insertCallArg = mockInsert.mock.calls[0][0];
+    const insertCallArg = mockInsert.mock.calls[0]![0];
     expect(insertCallArg).toBeDefined();
 
     // Verify values passed to insert
-    const valuesCallArg = mockInsertValues.mock.calls[0][0];
+    const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
     expect(valuesCallArg).toMatchObject({
       skillId: 'skill-1',
       versionId: 'version-1',
@@ -231,7 +231,7 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
       expect(mockInsertValues).toHaveBeenCalled();
     });
 
-    const valuesCallArg = mockInsertValues.mock.calls[0][0];
+    const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
     // IP hash should be a 64-char hex string (SHA-256)
     expect(valuesCallArg.ipHash).toMatch(/^[a-f0-9]{64}$/);
     // Should NOT contain the raw IP
@@ -250,7 +250,7 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
     });
 
     // Should use the first IP from x-forwarded-for
-    const valuesCallArg = mockInsertValues.mock.calls[0][0];
+    const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
     const { createHash } = await import('node:crypto');
     const expectedHash = createHash('sha256').update('10.0.0.1').digest('hex');
     expect(valuesCallArg.ipHash).toBe(expectedHash);
@@ -265,7 +265,7 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
       expect(mockInsertValues).toHaveBeenCalled();
     });
 
-    const valuesCallArg = mockInsertValues.mock.calls[0][0];
+    const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
     const { createHash } = await import('node:crypto');
     const expectedHash = createHash('sha256').update('unknown').digest('hex');
     expect(valuesCallArg.ipHash).toBe(expectedHash);
@@ -369,7 +369,7 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
       expect(mockInsertValues).toHaveBeenCalled();
     });
 
-    const valuesCallArg = mockInsertValues.mock.calls[0][0];
+    const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
     expect(valuesCallArg.userAgent).toBe('tank-cli/1.0.0');
   });
 
@@ -387,7 +387,7 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
       expect(mockInsertValues).toHaveBeenCalled();
     });
 
-    const valuesCallArg = mockInsertValues.mock.calls[0][0];
+    const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
     expect(valuesCallArg.userAgent).toBeNull();
   });
 });

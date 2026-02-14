@@ -16,8 +16,8 @@ const mockExecute = vi.fn();
 
 vi.mock('@/lib/db', () => ({
   db: {
-    select: (...args: unknown[]) => mockSelect(...args),
-    execute: (...args: unknown[]) => mockExecute(...args),
+    select: mockSelect,
+    execute: mockExecute,
   },
 }));
 

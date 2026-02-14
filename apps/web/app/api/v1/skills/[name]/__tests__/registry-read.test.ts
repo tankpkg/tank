@@ -7,34 +7,31 @@ const mockReturning = vi.fn();
 const mockValues = vi.fn(() => ({ returning: mockReturning }));
 const mockInsert = vi.fn(() => ({ values: mockValues }));
 const mockLimit = vi.fn();
-// mockWhere returns a thenable that also has .limit() — supports both
-// `await db.select().from().where()` and `await db.select().from().where().limit()`
-const mockWhere = vi.fn(() => {
-  const chain = {
-    limit: mockLimit,
-    orderBy: vi.fn(() => ({ limit: mockLimit })),
-    then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
-      // When awaited directly (without .limit()), resolve with empty array
-      return Promise.resolve([]).then(onFulfilled, onRejected);
-    },
-  };
-  return chain;
-});
-const mockOrderBy = vi.fn(() => ({ limit: mockLimit }));
-const mockFrom = vi.fn(() => ({ where: mockWhere, orderBy: mockOrderBy }));
+// mockWhere returns a chainable that supports .limit() and .orderBy()
+// beforeEach overrides this with mockReturnValue for each test suite
+const mockWhere = vi.fn((): Record<string, unknown> => ({
+  limit: mockLimit,
+  orderBy: vi.fn(() => ({ limit: mockLimit })),
+  then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
+    // When awaited directly (without .limit()), resolve with empty array
+    return Promise.resolve([]).then(onFulfilled, onRejected);
+  },
+}));
+const mockOrderBy = vi.fn((): unknown => ({ limit: mockLimit }));
+const mockFrom = vi.fn((): Record<string, unknown> => ({ where: mockWhere, innerJoin: mockInnerJoin, orderBy: mockOrderBy }));
 const mockSelect = vi.fn(() => ({ from: mockFrom }));
 const mockSet = vi.fn(() => ({ where: vi.fn() }));
 const mockUpdate = vi.fn(() => ({ set: mockSet }));
 
 // Support for innerJoin chain: select().from().innerJoin().where().orderBy().limit()
-const mockInnerJoinWhere = vi.fn(() => ({ orderBy: mockOrderBy, limit: mockLimit }));
-const mockInnerJoin = vi.fn(() => ({ where: mockInnerJoinWhere, orderBy: mockOrderBy, limit: mockLimit }));
+const mockInnerJoinWhere = vi.fn((): Record<string, unknown> => ({ orderBy: mockOrderBy, limit: mockLimit }));
+const mockInnerJoin = vi.fn((): Record<string, unknown> => ({ where: mockInnerJoinWhere, orderBy: mockOrderBy, limit: mockLimit }));
 
 vi.mock('@/lib/db', () => ({
   db: {
-    insert: (...args: unknown[]) => mockInsert(...args),
-    select: (...args: unknown[]) => mockSelect(...args),
-    update: (...args: unknown[]) => mockUpdate(...args),
+    insert: mockInsert,
+    select: mockSelect,
+    update: mockUpdate,
   },
 }));
 

@@ -382,7 +382,6 @@ async function extractSafely(tarball: Buffer, destDir: string): Promise<void> {
     await extract({
       file: tmpTarball,
       cwd: destDir,
-      strip: 1,
       // Safety: reject entries that try to escape the extraction directory
       filter: (entryPath: string) => {
         // Reject absolute paths
