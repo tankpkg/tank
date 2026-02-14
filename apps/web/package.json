@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
+    "drizzle-orm": "^0.45.1",
     "next": "^15",
+    "postgres": "^3.4.8",
     "react": "^19",
     "react-dom": "^19"
   },
@@ -19,6 +21,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.9",
     "vitest": "^3"
   }
 }

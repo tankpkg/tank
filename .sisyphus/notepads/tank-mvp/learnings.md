@@ -56,3 +56,25 @@
 - Build produces `dist/` with `.d.ts` declarations — other packages import via `@tank/shared`
 - `lockedSkillSchema` uses `permissionsSchema` (not optional) — locked skills always have permissions recorded
 - `skillsJsonSchema` uses `.strict()` at all levels to prevent unknown fields sneaking in
+
+## Task 1.2: Supabase Project Setup (2026-02-14)
+
+### What worked
+- `@supabase/supabase-js` installed in `apps/web` only (not shared or cli)
+- Two clients: `supabaseClient` (anon key) and `supabaseAdmin` (service role key)
+- `supabaseAdmin` disables `autoRefreshToken` and `persistSession` — server-side only, no session management
+- Storage bucket created via REST API: `POST /storage/v1/bucket` with service role key as both `Authorization` and `apikey` headers
+- Bucket config also declared in `supabase/config.toml` under `[storage.buckets.packages]` for persistence across `supabase db reset`
+- Local Supabase keys use `sb_publishable_` and `sb_secret_` prefixes (not standard JWT format)
+- `.env.local` uses `NEXT_PUBLIC_` prefix for URL and anon key (browser-safe), no prefix for service role key (server-only)
+- Tests use dynamic `import()` with `beforeAll` to set env vars before module loads (module validates env on import)
+- `.gitignore` already covers `.env.*` except `.env.example` — no changes needed
+
+### Gotchas
+- Supabase module throws on import if env vars are missing — tests must set `process.env` in `beforeAll` before dynamic `import()`
+- `require()` in vitest with ESM modules can be tricky — `await import()` is more reliable
+- Storage bucket API needs both `Authorization: Bearer <key>` AND `apikey: <key>` headers
+- `file_size_limit` in REST API is in bytes (52428800), but in config.toml it's a string ("50MiB")
+
+### Versions
+- @supabase/supabase-js: resolved from latest (installed via pnpm)
