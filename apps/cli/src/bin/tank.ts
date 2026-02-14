@@ -15,6 +15,7 @@ import { infoCommand } from '../commands/info.js';
 import { auditCommand } from '../commands/audit.js';
 import { linkCommand } from '../commands/link.js';
 import { unlinkCommand } from '../commands/unlink.js';
+import { doctorCommand } from '../commands/doctor.js';
 import { flushLogs } from '../lib/debug-logger.js';
 
 const program = new Command();
@@ -224,6 +225,19 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Unlink failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('doctor')
+  .description('Diagnose agent integration health')
+  .action(async () => {
+    try {
+      await doctorCommand();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Doctor failed: ${msg}`);
       process.exit(1);
     }
   });
