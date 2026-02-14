@@ -9,53 +9,15 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { getSkillDetail } from '@/lib/data/skills';
+import type { SkillVersionSummary } from '@/lib/data/skills';
 import { InstallCommand } from './install-command';
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-interface SkillMetadata {
-  name: string;
-  description: string;
-  latestVersion: string | null;
-  publisher: { displayName: string };
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface VersionDetails {
-  name: string;
-  version: string;
-  description: string;
-  integrity: string;
-  permissions: {
-    network?: { outbound?: string[] };
-    filesystem?: { read?: string[]; write?: string[] };
-    subprocess?: boolean;
-  } | null;
-  auditScore: number | null;
-  auditStatus: string;
-  downloadUrl: string;
-  publishedAt: string;
-  downloads: number;
-}
-
-interface VersionSummary {
-  version: string;
-  integrity: string;
-  auditScore: number | null;
-  auditStatus: string;
-  publishedAt: string;
-}
-
-interface VersionsResponse {
-  name: string;
-  versions: VersionSummary[];
-}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+function formatDate(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -83,10 +45,16 @@ function NotFound({ name }: { name: string }) {
   );
 }
 
+interface SkillPermissions {
+  network?: { outbound?: string[] };
+  filesystem?: { read?: string[]; write?: string[] };
+  subprocess?: boolean;
+}
+
 function PermissionsSection({
   permissions,
 }: {
-  permissions: NonNullable<VersionDetails['permissions']>;
+  permissions: SkillPermissions;
 }) {
   const networkHosts = permissions.network?.outbound ?? [];
   const fsRead = permissions.filesystem?.read ?? [];
@@ -167,7 +135,7 @@ function PermissionsSection({
   );
 }
 
-function VersionHistory({ versions }: { versions: VersionSummary[] }) {
+function VersionHistory({ versions }: { versions: SkillVersionSummary[] }) {
   if (versions.length === 0) return null;
 
   return (
@@ -223,67 +191,38 @@ export default async function SkillDetailPage({
   params,
 }: SkillDetailPageProps) {
   const { name: nameParts } = await params;
-  // Reconstruct skill name from path segments
-  // /skills/@org/skill-name → ['@org', 'skill-name'] → '@org/skill-name'
-  // /skills/my-skill → ['my-skill'] → 'my-skill'
-  const skillName = nameParts.join('/');
+  // /skills/%40org/skill-name → ['%40org', 'skill-name'] → '@org/skill-name'
+  const skillName = decodeURIComponent(nameParts.join('/'));
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const encodedName = encodeURIComponent(skillName);
+  // Single direct DB call — 2 parallel queries, no HTTP self-fetch
+  const data = await getSkillDetail(skillName);
 
-  // Fetch skill metadata and versions list in parallel
-  const [metaRes, versionsRes] = await Promise.all([
-    fetch(`${baseUrl}/api/v1/skills/${encodedName}`, { cache: 'no-store' }),
-    fetch(`${baseUrl}/api/v1/skills/${encodedName}/versions`, {
-      cache: 'no-store',
-    }),
-  ]);
-
-  if (!metaRes.ok) {
+  if (!data) {
     return <NotFound name={skillName} />;
-  }
-
-  const metadata: SkillMetadata = await metaRes.json();
-  const versionsData: VersionsResponse = versionsRes.ok
-    ? await versionsRes.json()
-    : { name: skillName, versions: [] };
-
-  // Fetch latest version details for permissions
-  let versionDetails: VersionDetails | null = null;
-  if (metadata.latestVersion) {
-    const versionRes = await fetch(
-      `${baseUrl}/api/v1/skills/${encodedName}/${metadata.latestVersion}`,
-      { cache: 'no-store' },
-    );
-    if (versionRes.ok) {
-      versionDetails = await versionRes.json();
-    }
   }
 
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">{skillName}</h1>
-        {metadata.description && (
+        <h1 className="text-3xl font-bold tracking-tight">{data.name}</h1>
+        {data.description && (
           <p className="text-muted-foreground mt-2 text-lg">
-            {metadata.description}
+            {data.description}
           </p>
         )}
         <div className="flex items-center gap-3 mt-4 flex-wrap">
-          {metadata.latestVersion && (
-            <Badge variant="secondary">v{metadata.latestVersion}</Badge>
+          {data.latestVersion && (
+            <Badge variant="secondary">v{data.latestVersion.version}</Badge>
           )}
-          {metadata.publisher?.displayName && (
+          {data.publisher?.displayName && (
             <span className="text-sm text-muted-foreground">
-              by {metadata.publisher.displayName}
+              by {data.publisher.displayName}
             </span>
           )}
-          {versionDetails && (
-            <span className="text-sm text-muted-foreground">
-              {versionDetails.downloads.toLocaleString()} downloads
-            </span>
-          )}
+          <span className="text-sm text-muted-foreground">
+            {data.downloadCount.toLocaleString()} downloads
+          </span>
         </div>
       </div>
 
@@ -293,28 +232,29 @@ export default async function SkillDetailPage({
       <Separator className="my-8" />
 
       {/* Audit score highlight */}
-      {versionDetails?.auditScore !== null &&
-        versionDetails?.auditScore !== undefined && (
-          <div className="mb-8 flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">
-              Audit Score
+      {data.latestVersion?.auditScore != null && (
+        <div className="mb-8 flex items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground">
+            Audit Score
+          </span>
+          <span className="text-2xl font-bold">
+            {data.latestVersion.auditScore}
+            <span className="text-sm font-normal text-muted-foreground">
+              /10
             </span>
-            <span className="text-2xl font-bold">
-              {versionDetails.auditScore}
-              <span className="text-sm font-normal text-muted-foreground">
-                /10
-              </span>
-            </span>
-          </div>
-        )}
+          </span>
+        </div>
+      )}
 
       {/* Permissions */}
-      {versionDetails?.permissions && (
-        <PermissionsSection permissions={versionDetails.permissions} />
+      {data.latestVersion?.permissions && (
+        <PermissionsSection
+          permissions={data.latestVersion.permissions as SkillPermissions}
+        />
       )}
 
       {/* Version History */}
-      <VersionHistory versions={versionsData.versions ?? []} />
+      <VersionHistory versions={data.versions} />
     </div>
   );
 }

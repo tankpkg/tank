@@ -1235,3 +1235,6 @@
 3. Run `tank login` and approve in browser
 4. cd test-skill && tank publish
 5. Then verify: search, info, install, update, remove
+## 2026-02-14
+- Created 12 Tank skill packages under /tmp/tank-seed-skills with strict skills.json schema and cleaned SKILL.md content.
+- For planning and playwright skills, removed frontmatter and tool-specific script/path references while keeping methodology.

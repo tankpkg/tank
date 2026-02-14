@@ -42,3 +42,5 @@ All 35 tasks + 255 sub-criteria complete. 17 remaining items require credentials
 | Above + published skill | 7 items (search, install, update, remove) | Need publish to work first |
 
 **To create GitHub OAuth App**: Homepage URL: `https://tankpkg.dev`, Callback URL: `https://tankpkg.dev/api/auth/callback/github`
+## 2026-02-14
+- lsp_diagnostics failed for /tmp JSON files because Biome LSP is configured but not installed.

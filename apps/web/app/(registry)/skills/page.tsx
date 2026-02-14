@@ -8,23 +8,11 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { searchSkills } from '@/lib/data/skills';
+import type { SkillSearchResult } from '@/lib/data/skills';
 import { SearchBar } from './search-bar';
 
-interface SearchResult {
-  name: string;
-  description: string | null;
-  latestVersion: string | null;
-  auditScore: number | null;
-  publisher: string;
-  downloads: number;
-}
-
-interface SearchResponse {
-  results: SearchResult[];
-  page: number;
-  limit: number;
-  total: number;
-}
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 interface SkillsPageProps {
   searchParams: Promise<{ q?: string; page?: string }>;
@@ -36,24 +24,8 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
   const limit = 20;
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-  const url = new URL('/api/v1/search', baseUrl);
-  url.searchParams.set('q', query);
-  url.searchParams.set('page', String(page));
-  url.searchParams.set('limit', String(limit));
-
-  let data: SearchResponse = { results: [], page: 1, limit, total: 0 };
-
-  try {
-    const res = await fetch(url.toString(), { cache: 'no-store' });
-    if (res.ok) {
-      data = await res.json();
-    }
-  } catch {
-    // API unavailable — show empty state
-  }
-
+  // Direct DB query — no HTTP self-fetch to /api/v1/search
+  const data = await searchSkills(query, page, limit);
   const totalPages = Math.max(1, Math.ceil(data.total / limit));
 
   return (
@@ -90,7 +62,9 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
   );
 }
 
-function SkillCard({ skill }: { skill: SearchResult }) {
+// ── Sub-components ───────────────────────────────────────────────────────────
+
+function SkillCard({ skill }: { skill: SkillSearchResult }) {
   return (
     <Link href={`/skills/${encodeURIComponent(skill.name)}`}>
       <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
