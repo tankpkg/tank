@@ -73,7 +73,7 @@ export interface SkillDetailResult {
   repositoryUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
-  publisher: { displayName: string };
+  publisher: { displayName: string; githubUsername: string | null };
   downloadCount: number;
   latestVersion: SkillVersionDetail | null;
   versions: SkillVersionSummary[];
@@ -120,6 +120,7 @@ export async function getSkillDetail(
       skillUpdatedAt: skills.updatedAt,
       // Publisher
       publisherDisplayName: publishers.displayName,
+      publisherGithubUsername: publishers.githubUsername,
       // Download count (scalar subquery, computed once)
       downloadCount:
         sql<number>`coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = ${skills.id}), 0)`,
@@ -183,7 +184,7 @@ export async function getSkillDetail(
     repositoryUrl: first.skillRepositoryUrl,
     createdAt: first.skillCreatedAt,
     updatedAt: first.skillUpdatedAt,
-    publisher: { displayName: first.publisherDisplayName },
+    publisher: { displayName: first.publisherDisplayName, githubUsername: first.publisherGithubUsername },
     downloadCount: first.downloadCount,
     latestVersion,
     versions,
@@ -222,7 +223,7 @@ export async function searchSkills(
       description: skills.description,
       latestVersion: skillVersions.version,
       auditScore: skillVersions.auditScore,
-      publisher: publishers.displayName,
+      publisher: sql<string>`coalesce(${publishers.githubUsername}, ${publishers.displayName})`,
       total: sql<number>`count(*) OVER()`,
     })
     .from(skills)

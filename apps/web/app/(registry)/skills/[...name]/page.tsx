@@ -269,7 +269,20 @@ export default async function SkillDetailPage({
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Publisher</dt>
-                <dd>{data.publisher.displayName}</dd>
+                <dd>
+                  {data.publisher.githubUsername ? (
+                    <a
+                      href={`https://github.com/${data.publisher.githubUsername}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                    >
+                      {data.publisher.githubUsername}
+                    </a>
+                  ) : (
+                    data.publisher.displayName
+                  )}
+                </dd>
               </div>
             </dl>
           </div>

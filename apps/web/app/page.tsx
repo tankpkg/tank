@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +73,8 @@ export default function Home() {
       {/* Navigation */}
       <header className="border-b sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto flex h-14 items-center px-4 gap-6">
-          <Link href="/" className="font-bold text-lg tracking-tight">
+          <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+            <Image src="/logo.png" alt="Tank" width={28} height={28} className="rounded-sm" />
             Tank
           </Link>
           <nav className="hidden sm:flex gap-4 text-sm">
@@ -288,7 +290,8 @@ export default function Home() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <Link href="/" className="font-semibold text-foreground">
+              <Link href="/" className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Image src="/logo.png" alt="Tank" width={20} height={20} className="rounded-sm" />
                 Tank
               </Link>
               <Link href="/skills" className="hover:text-foreground transition-colors">

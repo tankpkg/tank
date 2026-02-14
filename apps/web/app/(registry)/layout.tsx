@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function RegistryLayout({
   children,
@@ -9,7 +10,8 @@ export default function RegistryLayout({
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto flex h-14 items-center px-4 gap-6">
-          <Link href="/" className="font-semibold text-lg">
+          <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
+            <Image src="/logo.png" alt="Tank" width={24} height={24} className="rounded-sm" />
             Tank
           </Link>
           <nav className="flex gap-4 text-sm">

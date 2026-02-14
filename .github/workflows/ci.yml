@@ -59,4 +59,4 @@ jobs:
         run: pip install -r apps/web/requirements.txt pytest
 
       - name: Run Python tests
-        run: python -m pytest apps/web/api/analyze/tests/ -v
+        run: python -m pytest apps/web/api-python/analyze/tests/ -v
