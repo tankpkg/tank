@@ -1,11 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import ora from 'ora';
 import { extract } from 'tar';
 import { resolve, type Permissions, type SkillsLock, LOCKFILE_VERSION } from '@tank/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
+import { prepareAgentSkillDir } from '../lib/frontmatter.js';
+import { linkSkillToAgents } from '../lib/linker.js';
+import { detectInstalledAgents, getGlobalSkillsDir, getGlobalAgentSkillsDir } from '../lib/agents.js';
 
 const MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024; // 100MB
 
@@ -14,16 +18,22 @@ export interface InstallOptions {
   versionRange?: string;
   directory?: string;
   configDir?: string;
+  global?: boolean;
+  homedir?: string;
 }
 
 export interface LockfileInstallOptions {
   directory?: string;
   configDir?: string;
+  global?: boolean;
+  homedir?: string;
 }
 
 export interface InstallAllOptions {
   directory?: string;
   configDir?: string;
+  global?: boolean;
+  homedir?: string;
 }
 
 interface VersionInfo {
@@ -68,29 +78,35 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     versionRange = '*',
     directory = process.cwd(),
     configDir,
+    global = false,
+    homedir,
   } = options;
 
   const config = getConfig(configDir);
+  const resolvedHome = homedir ?? os.homedir();
 
   // 1. Read or create skills.json
   const skillsJsonPath = path.join(directory, 'skills.json');
-  let skillsJson: Record<string, unknown>;
-
-  if (!fs.existsSync(skillsJsonPath)) {
-    skillsJson = { skills: {} };
-    fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
-    logger.info('Created skills.json');
-  } else {
-    try {
-      const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
-      skillsJson = JSON.parse(raw) as Record<string, unknown>;
-    } catch {
-      throw new Error('Failed to read or parse skills.json');
+  let skillsJson: Record<string, unknown> = { skills: {} };
+  if (!global) {
+    if (!fs.existsSync(skillsJsonPath)) {
+      skillsJson = { skills: {} };
+      fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+      logger.info('Created skills.json');
+    } else {
+      try {
+        const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
+        skillsJson = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        throw new Error('Failed to read or parse skills.json');
+      }
     }
   }
 
   // Read existing lockfile if present
-  const lockPath = path.join(directory, 'skills.lock');
+  const lockPath = global
+    ? path.join(resolvedHome, '.tank', 'skills.lock')
+    : path.join(directory, 'skills.lock');
   let lock: SkillsLock = { lockfileVersion: LOCKFILE_VERSION, skills: {} };
   if (fs.existsSync(lockPath)) {
     try {
@@ -170,13 +186,15 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   const metadata = await metaRes.json() as VersionMetadata;
 
   // 6. Check permission budget
-  const projectPermissions = skillsJson.permissions as Permissions | undefined;
+  const projectPermissions = global ? undefined : skillsJson.permissions as Permissions | undefined;
   const skillPermissions = metadata.permissions;
 
-  if (!projectPermissions) {
-    logger.warn('No permission budget defined in skills.json. Install proceeding without permission checks.');
-  } else {
-    checkPermissionBudget(projectPermissions, skillPermissions, name);
+  if (!global) {
+    if (!projectPermissions) {
+      logger.warn('No permission budget defined in skills.json. Install proceeding without permission checks.');
+    } else {
+      checkPermissionBudget(projectPermissions, skillPermissions, name);
+    }
   }
 
   // 7. Download tarball
@@ -210,7 +228,9 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
   // 9. Extract tarball safely
   spinner.text = `Extracting ${name}@${resolved}...`;
-  const extractDir = getExtractDir(directory, name);
+  const extractDir = global
+    ? getGlobalExtractDir(resolvedHome, name)
+    : getExtractDir(directory, name);
 
   // Create extraction directory
   fs.mkdirSync(extractDir, { recursive: true });
@@ -219,15 +239,17 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   await extractSafely(tarballBuffer, extractDir);
 
   // 10. Update skills.json
-  const skills = (skillsJson.skills ?? {}) as Record<string, string>;
-  // Use the provided range if explicit, otherwise use ^{resolved}
-  skills[name] = versionRange === '*' ? `^${resolved}` : versionRange;
-  skillsJson.skills = skills;
+  if (!global) {
+    const skills = (skillsJson.skills ?? {}) as Record<string, string>;
+    // Use the provided range if explicit, otherwise use ^{resolved}
+    skills[name] = versionRange === '*' ? `^${resolved}` : versionRange;
+    skillsJson.skills = skills;
 
-  fs.writeFileSync(
-    skillsJsonPath,
-    JSON.stringify(skillsJson, null, 2) + '\n',
-  );
+    fs.writeFileSync(
+      skillsJsonPath,
+      JSON.stringify(skillsJson, null, 2) + '\n',
+    );
+  }
 
   // 11. Update skills.lock
   lock.skills[lockKey] = {
@@ -244,18 +266,53 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   }
   lock.skills = sortedSkills as SkillsLock['skills'];
 
-  fs.writeFileSync(
-    lockPath,
-    JSON.stringify(lock, null, 2) + '\n',
-  );
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+
+  // 12. Agent linking (always-on, failures are warnings)
+  try {
+    const agentSkillsBaseDir = global
+      ? getGlobalAgentSkillsDir(resolvedHome)
+      : path.join(directory, '.tank', 'agent-skills');
+    const agentSkillDir = prepareAgentSkillDir({
+      skillName: name,
+      extractDir,
+      agentSkillsBaseDir,
+      description: metadata.description,
+    });
+    const linkResult = linkSkillToAgents({
+      skillName: name,
+      sourceDir: agentSkillDir,
+      linksDir: global ? path.join(resolvedHome, '.tank') : path.join(directory, '.tank'),
+      source: global ? 'global' : 'local',
+      homedir: options.homedir,
+    });
+    const detectedAgents = detectInstalledAgents(options.homedir);
+    if (detectedAgents.length === 0) {
+      logger.warn('No agents detected for linking');
+    }
+    if (linkResult.linked.length > 0) {
+      logger.info(`Linked to ${linkResult.linked.length} agent(s)`);
+    }
+    if (linkResult.failed.length > 0) {
+      for (const f of linkResult.failed) {
+        logger.warn(`Failed to link to ${f.agentId}: ${f.error}`);
+      }
+    }
+  } catch {
+    logger.warn('Agent linking skipped (non-fatal)');
+  }
 
   spinner.succeed(`Installed ${name}@${resolved}`);
 }
 
 export async function installFromLockfile(options: LockfileInstallOptions): Promise<void> {
-  const { directory = process.cwd(), configDir: _configDir } = options;
+  const { directory = process.cwd(), configDir: _configDir, global = false, homedir } = options;
+  const resolvedHome = homedir ?? os.homedir();
 
-  const lockPath = path.join(directory, 'skills.lock');
+  const lockPath = global
+    ? path.join(resolvedHome, '.tank', 'skills.lock')
+    : path.join(directory, 'skills.lock');
   if (!fs.existsSync(lockPath)) {
     throw new Error(`No skills.lock found in ${directory}`);
   }
@@ -275,7 +332,9 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
   }
 
   const spinner = ora('Installing from lockfile...').start();
-  const skillsDir = path.join(directory, '.tank', 'skills');
+  const skillsDir = global
+    ? getGlobalSkillsDir(resolvedHome)
+    : path.join(directory, '.tank', 'skills');
 
   try {
     for (const [key, entry] of entries) {
@@ -298,7 +357,9 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
         );
       }
 
-      const extractDir = getExtractDir(directory, skillName);
+      const extractDir = global
+        ? getGlobalExtractDir(resolvedHome, skillName)
+        : getExtractDir(directory, skillName);
 
       if (fs.existsSync(extractDir)) {
         fs.rmSync(extractDir, { recursive: true, force: true });
@@ -306,6 +367,38 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
       fs.mkdirSync(extractDir, { recursive: true });
 
       await extractSafely(tarballBuffer, extractDir);
+
+      if (global) {
+        try {
+          const agentSkillsBaseDir = getGlobalAgentSkillsDir(resolvedHome);
+          const agentSkillDir = prepareAgentSkillDir({
+            skillName,
+            extractDir,
+            agentSkillsBaseDir,
+          });
+          const linkResult = linkSkillToAgents({
+            skillName,
+            sourceDir: agentSkillDir,
+            linksDir: path.join(resolvedHome, '.tank'),
+            source: 'global',
+            homedir,
+          });
+          const detectedAgents = detectInstalledAgents(homedir);
+          if (detectedAgents.length === 0) {
+            logger.warn('No agents detected for linking');
+          }
+          if (linkResult.linked.length > 0) {
+            logger.info(`Linked to ${linkResult.linked.length} agent(s)`);
+          }
+          if (linkResult.failed.length > 0) {
+            for (const f of linkResult.failed) {
+              logger.warn(`Failed to link to ${f.agentId}: ${f.error}`);
+            }
+          }
+        } catch {
+          logger.warn('Agent linking skipped (non-fatal)');
+        }
+      }
     }
 
     spinner.succeed(`Installed ${entries.length} skill${entries.length === 1 ? '' : 's'} from lockfile`);
@@ -319,13 +412,21 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
 }
 
 export async function installAll(options: InstallAllOptions): Promise<void> {
-  const { directory = process.cwd(), configDir } = options;
+  const { directory = process.cwd(), configDir, global = false, homedir } = options;
+  const resolvedHome = homedir ?? os.homedir();
 
-  const lockPath = path.join(directory, 'skills.lock');
+  const lockPath = global
+    ? path.join(resolvedHome, '.tank', 'skills.lock')
+    : path.join(directory, 'skills.lock');
   const skillsJsonPath = path.join(directory, 'skills.json');
 
   if (fs.existsSync(lockPath)) {
-    return installFromLockfile({ directory, configDir });
+    return installFromLockfile({ directory, configDir, global, homedir });
+  }
+
+  if (global) {
+    logger.info('No skills.lock found — nothing to install');
+    return;
   }
 
   if (!fs.existsSync(skillsJsonPath)) {
@@ -350,7 +451,7 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
   }
 
   for (const [name, versionRange] of skillEntries) {
-    await installCommand({ name, versionRange, directory, configDir });
+    await installCommand({ name, versionRange, directory, configDir, global, homedir });
   }
 }
 
@@ -368,6 +469,15 @@ function getExtractDir(projectDir: string, skillName: string): string {
     return path.join(projectDir, '.tank', 'skills', scope, name);
   }
   return path.join(projectDir, '.tank', 'skills', skillName);
+}
+
+function getGlobalExtractDir(homedir: string, skillName: string): string {
+  const globalDir = path.join(homedir, '.tank', 'skills');
+  if (skillName.startsWith('@')) {
+    const [scope, name] = skillName.split('/');
+    return path.join(globalDir, scope, name);
+  }
+  return path.join(globalDir, skillName);
 }
 
 /**
