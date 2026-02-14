@@ -58,7 +58,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           cd apps/web
-          pip install -r requirements.txt --break-system-packages
+          pip install -r requirements.txt
+          pip install pytest
 
       - name: Run Python tests
         run: |
