@@ -30,6 +30,7 @@ function createThenableChain() {
 
   const chain: Record<string, unknown> = {
     limit: vi.fn(() => getResult()),
+    orderBy: vi.fn(() => chain), // Return chain to allow .limit() after .orderBy()
     then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
       const result = getResult();
       return Promise.resolve(result).then(onFulfilled, onRejected);
@@ -82,11 +83,27 @@ vi.mock('@/lib/db/schema', () => ({
     userAgent: 'skill_downloads.user_agent',
     createdAt: 'skill_downloads.created_at',
   },
+  scanResults: {
+    id: 'scan_results.id',
+    versionId: 'scan_results.version_id',
+    verdict: 'scan_results.verdict',
+    createdAt: 'scan_results.created_at',
+  },
+  scanFindings: {
+    id: 'scan_findings.id',
+    scanId: 'scan_findings.scan_id',
+    stage: 'scan_findings.stage',
+    severity: 'scan_findings.severity',
+    type: 'scan_findings.type',
+    description: 'scan_findings.description',
+    location: 'scan_findings.location',
+  },
 }));
 
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((col, val) => ({ col, val, type: 'eq' })),
   and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
+  desc: vi.fn((col) => ({ col, type: 'desc' })),
   sql: Object.assign(
     vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
       strings,
@@ -152,12 +169,15 @@ const mockVersionData = {
  *   2. Version lookup → [mockVersionData]
  *   3. Dedup check (inside recordDownload) → existingDownloads
  *   4. Download count → [{ count: downloadCount }]
+ *   5. Scan results lookup → [] (no scan results in basic test)
+ *   6. Scan findings lookup → [] (no findings in basic test)
  */
 function setupSuccessfulFetch(options?: {
   existingDownloads?: unknown[];
   downloadCount?: number;
+  scanResults?: unknown[];
 }) {
-  const { existingDownloads = [], downloadCount = 0 } = options ?? {};
+  const { existingDownloads = [], downloadCount = 0, scanResults: scanResultsData = [] } = options ?? {};
 
   // Call 1: skill lookup
   mockSelectResults.push([mockSkill]);
@@ -167,6 +187,10 @@ function setupSuccessfulFetch(options?: {
   mockSelectResults.push(existingDownloads);
   // Call 4: download count
   mockSelectResults.push([{ count: downloadCount }]);
+  // Call 5: scan results lookup
+  mockSelectResults.push(scanResultsData);
+  // Call 6: scan findings (only if scan results exist, but mock returns empty)
+  mockSelectResults.push([]);
 
   mockCreateSignedUrl.mockResolvedValue({
     data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
@@ -328,6 +352,10 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
     mockSelectResults.push('__THROW__');
     // Call 4: download count — still works
     mockSelectResults.push([{ count: 0 }]);
+    // Call 5: scan results lookup
+    mockSelectResults.push([]);
+    // Call 6: scan findings
+    mockSelectResults.push([]);
 
     mockCreateSignedUrl.mockResolvedValue({
       data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
