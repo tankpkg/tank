@@ -28,6 +28,30 @@ RESCAN_AGE_HOURS = 24
 CRON_SECRET = os.environ.get("CRON_SECRET", "")
 
 
+def verify_cron_auth(authorization: Optional[str]) -> None:
+    """Verify cron endpoint authorization.
+
+    In production, CRON_SECRET must be set and match the Authorization header.
+    In development/preview, missing CRON_SECRET allows access for testing.
+    """
+    vercel_env = os.environ.get("VERCEL_ENV", "")
+
+    # In production, CRON_SECRET is required
+    if vercel_env == "production":
+        if not CRON_SECRET:
+            raise HTTPException(
+                status_code=500,
+                detail="CRON_SECRET not configured in production"
+            )
+        if not authorization or authorization != f"Bearer {CRON_SECRET}":
+            raise HTTPException(status_code=401, detail="Unauthorized")
+    else:
+        # In non-production, require auth if secret is set, allow if not
+        if CRON_SECRET:
+            if not authorization or authorization != f"Bearer {CRON_SECRET}":
+                raise HTTPException(status_code=401, detail="Unauthorized")
+
+
 async def get_versions_to_rescan() -> List[Dict[str, Any]]:
     """Query database for versions that need rescanning."""
     database_url = os.environ.get("DATABASE_URL")
@@ -240,10 +264,8 @@ async def rescan_handler(
     This endpoint is called by Vercel Cron Jobs. It requires authentication
     via the CRON_SECRET header.
     """
-    # Verify cron authorization
-    if CRON_SECRET:
-        if not authorization or authorization != f"Bearer {CRON_SECRET}":
-            raise HTTPException(status_code=401, detail="Unauthorized")
+    # Verify cron authorization (raises HTTPException if unauthorized)
+    verify_cron_auth(authorization)
 
     # Get versions to rescan
     versions = await get_versions_to_rescan()

@@ -23,6 +23,45 @@ MAX_EXTRACTED_SIZE = 50 * 1024 * 1024  # 50MB
 MAX_COMPRESSION_RATIO = 100  # decompressed/compressed
 DOWNLOAD_TIMEOUT = 30.0  # seconds
 
+# Allowed domains for tarball downloads (Supabase storage)
+ALLOWED_DOWNLOAD_DOMAINS = [
+    "supabase.co",
+    "supabase.com",
+    "supabase.in",
+    # Local development fallback
+    "localhost",
+    "127.0.0.1",
+]
+
+
+def validate_download_url(url: str) -> None:
+    """Validate that the download URL is from an authorized source.
+
+    Prevents SSRF-like attacks where malicious URLs could be provided.
+    """
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+
+    # Check scheme
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme: {parsed.scheme}")
+
+    # Extract hostname (handle port numbers)
+    hostname = parsed.hostname or ""
+
+    # Check if hostname matches allowed domains
+    is_allowed = any(
+        hostname == allowed or hostname.endswith(f".{allowed}")
+        for allowed in ALLOWED_DOWNLOAD_DOMAINS
+    )
+
+    if not is_allowed:
+        raise ValueError(
+            f"URL must be from authorized storage domain. "
+            f"Got: {hostname}, Allowed: {ALLOWED_DOWNLOAD_DOMAINS}"
+        )
+
 # Allowed file extensions (whitelist)
 ALLOWED_EXTENSIONS: Set[str] = {
     # Documentation
@@ -47,7 +86,13 @@ BLOCKED_EXTENSIONS: Set[str] = {
 
 
 async def download_tarball(url: str) -> bytes:
-    """Download tarball from URL with size and timeout limits."""
+    """Download tarball from URL with size and timeout limits.
+
+    Validates the URL origin before downloading to prevent SSRF attacks.
+    """
+    # Validate URL origin before downloading
+    validate_download_url(url)
+
     async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT) as client:
         # First, get headers to check content-length
         head_response = await client.head(url, follow_redirects=True)
@@ -285,7 +330,8 @@ async def stage0_ingest(tarball_url: str) -> IngestResult:
     # Check for critical findings that should stop extraction
     critical_findings = [f for f in safety_findings if f.severity == "critical"]
     if critical_findings:
-        # Clean up tarball but keep temp_dir for cleanup later
+        # Clean up tarball file, but return temp_dir so orchestrator can clean it up.
+        # The orchestrator's finally block calls cleanup_ingest() to remove the directory.
         os.remove(tar_path)
         return IngestResult(
             temp_dir=temp_dir,

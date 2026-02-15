@@ -119,10 +119,12 @@ def run_detect_secrets(temp_dir: str) -> List[Finding]:
                                         tool="detect-secrets",
                                         evidence=line.strip()[:100] if len(line.strip()) > 100 else line.strip(),
                                     ))
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
+                            except Exception as plugin_error:
+                                # Log plugin errors for debugging but continue with other plugins
+                                print(f"detect-secrets plugin error: {plugin_error}")
+                except Exception as file_error:
+                    # Log file read errors for debugging but continue with other files
+                    print(f"detect-secrets file scan error: {file_error}")
 
     except ImportError:
         # detect-secrets not available, add info finding

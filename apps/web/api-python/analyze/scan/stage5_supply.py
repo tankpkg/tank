@@ -19,7 +19,7 @@ from .models import Finding, IngestResult, StageResult
 OSV_API_URL = "https://api.osv.dev/v1/query"
 PYPI_API_URL = "https://pypi.org/pypi"
 NPM_REGISTRY_URL = "https://registry.npmjs.org"
-REQUEST_TIMEOUT = 10.0
+REQUEST_TIMEOUT = 20.0  # Increased from 10s for slower API responses
 
 # Top 1000 popular Python packages (truncated for brevity - include more in production)
 POPULAR_PYTHON_PACKAGES: Set[str] = {
