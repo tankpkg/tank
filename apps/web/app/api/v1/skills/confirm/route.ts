@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { verifyCliAuth } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { skills, skillVersions, scanResults, scanFindings } from '@/lib/db/schema';
+import { skills, skillVersions } from '@/lib/db/schema';
 import { computeAuditScore, type AuditScoreInput } from '@/lib/audit-score';
 import { supabaseAdmin } from '@/lib/supabase';
 
