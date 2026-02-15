@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, desc } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import { db } from '@/lib/db';
-import { skills, skillVersions, skillDownloads } from '@/lib/db/schema';
+import { skills, skillVersions, skillDownloads, scanResults, scanFindings } from '@/lib/db/schema';
 import { supabaseAdmin } from '@/lib/supabase';
 
 async function recordDownload(
@@ -99,7 +99,43 @@ export async function GET(
     .from(skillDownloads)
     .where(eq(skillDownloads.skillId, skill.id));
 
-  // 6. Return response
+  // 6. Fetch latest scan results
+  const latestScanResults = await db
+    .select()
+    .from(scanResults)
+    .where(eq(scanResults.versionId, skillVersion.id))
+    .orderBy(desc(scanResults.createdAt))
+    .limit(1);
+
+  let scanVerdict: string | null = null;
+  let scanFindingsList: Array<{
+    stage: string;
+    severity: string;
+    type: string;
+    description: string;
+    location: string | null;
+  }> = [];
+
+  if (latestScanResults.length > 0) {
+    const latestScan = latestScanResults[0];
+    scanVerdict = latestScan.verdict;
+
+    // Fetch findings for this scan
+    const findings = await db
+      .select({
+        stage: scanFindings.stage,
+        severity: scanFindings.severity,
+        type: scanFindings.type,
+        description: scanFindings.description,
+        location: scanFindings.location,
+      })
+      .from(scanFindings)
+      .where(eq(scanFindings.scanId, latestScan.id));
+
+    scanFindingsList = findings;
+  }
+
+  // 7. Return response
   return NextResponse.json({
     name: skill.name,
     version: skillVersion.version,
@@ -111,5 +147,7 @@ export async function GET(
     downloadUrl: downloadData.signedUrl,
     publishedAt: skillVersion.createdAt,
     downloads: downloadCount[0]?.count ?? 0,
+    scanVerdict,
+    scanFindings: scanFindingsList,
   });
 }
