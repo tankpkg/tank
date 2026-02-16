@@ -1,0 +1,27 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "apps/web/api-python/analyze/scan.py": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "apps/web/api-python/analyze/rescan.py": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "apps/web/api-python/analyze/index.py": {
+      "maxDuration": 10,
+      "memory": 256
+    },
+    "apps/web/api-python/analyze/permissions.py": {
+      "maxDuration": 30,
+      "memory": 256
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/analyze/rescan",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

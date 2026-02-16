@@ -58,15 +58,21 @@ vi.mock('drizzle-orm', () => ({
 }));
 
 const mockCreateSignedUploadUrl = vi.fn();
+const mockCreateSignedUrl = vi.fn();
 vi.mock('@/lib/supabase', () => ({
   supabaseAdmin: {
     storage: {
       from: vi.fn(() => ({
         createSignedUploadUrl: mockCreateSignedUploadUrl,
+        createSignedUrl: mockCreateSignedUrl,
       })),
     },
   },
 }));
+
+// Mock fetch for the Python scan endpoint
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 const mockComputeAuditScore = vi.fn(() => ({ score: 8, details: [] }));
 vi.mock('@/lib/audit-score', () => ({
@@ -516,9 +522,27 @@ describe('POST /api/v1/skills/confirm', () => {
       manifest: { name: 'my-skill', version: '1.0.0', description: 'A test skill' },
       permissions: { network: { outbound: ['*.example.com'] } },
       readme: '# My Skill\nA test skill.',
+      tarballPath: 'skills/my-skill/1.0.0.tgz',
     }]);
     mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill' }]);
     mockUpdateWhere.mockResolvedValueOnce(undefined);
+
+    // Mock the security scan flow
+    mockCreateSignedUrl.mockResolvedValueOnce({
+      data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
+      error: null,
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        scan_id: 'scan-1',
+        verdict: 'pass',
+        findings: [],
+        stage_results: [],
+        duration_ms: 100,
+        file_hashes: {},
+      }),
+    });
 
     const { POST } = await import('../confirm/route');
     const request = makeRequest(
@@ -564,9 +588,27 @@ describe('POST /api/v1/skills/confirm', () => {
       manifest: { name: 'test-skill', version: '1.0.0', description: 'A test skill' },
       permissions: { network: { outbound: ['*.example.com'] } },
       readme: '# Test Skill',
+      tarballPath: 'skills/test-skill/1.0.0.tgz',
     }]);
     mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'test-skill' }]);
     mockUpdateWhere.mockResolvedValueOnce(undefined);
+
+    // Mock the security scan flow
+    mockCreateSignedUrl.mockResolvedValueOnce({
+      data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
+      error: null,
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        scan_id: 'scan-1',
+        verdict: 'pass',
+        findings: [],
+        stage_results: [],
+        duration_ms: 100,
+        file_hashes: {},
+      }),
+    });
 
     const { POST } = await import('../confirm/route');
     const request = makeRequest(
@@ -576,6 +618,7 @@ describe('POST /api/v1/skills/confirm', () => {
     );
     await POST(request);
 
+    // The final mockSet call should have auditScore and auditStatus
     expect(mockSet).toHaveBeenCalledWith(
       expect.objectContaining({
         auditScore: 9,
@@ -584,9 +627,9 @@ describe('POST /api/v1/skills/confirm', () => {
     );
   });
 
-  it('falls back to published status when scoring throws', async () => {
+  it('falls back to scan-failed status when scan fails', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    mockComputeAuditScore.mockImplementationOnce(() => { throw new Error('scoring failed'); });
+    mockComputeAuditScore.mockReturnValueOnce({ score: 8, details: [] });
     mockLimit.mockResolvedValueOnce([{
       id: 'ver-1',
       skillId: 'skill-1',
@@ -595,9 +638,16 @@ describe('POST /api/v1/skills/confirm', () => {
       manifest: { name: 'test-skill', version: '1.0.0' },
       permissions: {},
       readme: null,
+      tarballPath: 'skills/test-skill/1.0.0.tgz',
     }]);
     mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'test-skill' }]);
     mockUpdateWhere.mockResolvedValueOnce(undefined);
+
+    // Mock the security scan flow to fail (no signed URL)
+    mockCreateSignedUrl.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'Failed to generate signed URL' },
+    });
 
     const { POST } = await import('../confirm/route');
     const request = makeRequest(
@@ -610,15 +660,12 @@ describe('POST /api/v1/skills/confirm', () => {
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.success).toBe(true);
-    expect(data.auditScore).toBeNull();
+    // When scan fails, it still computes a score using fallback
+    expect(typeof data.auditScore).toBe('number');
+    // The status should be 'scan-failed' when the scan doesn't work
     expect(mockSet).toHaveBeenCalledWith(
       expect.objectContaining({
-        auditStatus: 'published',
-      }),
-    );
-    expect(mockSet).toHaveBeenCalledWith(
-      expect.not.objectContaining({
-        auditScore: expect.anything(),
+        auditStatus: 'scan-failed',
       }),
     );
   });
