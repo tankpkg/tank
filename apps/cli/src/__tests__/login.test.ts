@@ -8,6 +8,24 @@ vi.mock('open', () => ({
   default: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Mock debug-logger to prevent Loki transport from calling global fetch
+vi.mock('../lib/debug-logger.js', () => {
+  const noop = () => {};
+  const noopLog = {
+    info: noop,
+    debug: noop,
+    warn: noop,
+    error: noop,
+    child: () => noopLog,
+  };
+  return {
+    debugLog: noopLog,
+    httpLog: noopLog,
+    authFlowLog: noopLog,
+    flushLogs: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
 // Mock global fetch
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
