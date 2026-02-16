@@ -6,7 +6,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockReturning = vi.fn();
 const mockValues = vi.fn(() => ({ returning: mockReturning }));
 const mockInsert = vi.fn(() => ({ values: mockValues }));
-const mockLimit = vi.fn();
+
+// Create a thenable that resolves to empty array for scan results queries
+const createThenable = () => ({
+  then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
+    return Promise.resolve([]).then(onFulfilled, onRejected);
+  },
+});
+
+const mockLimit = vi.fn(() => createThenable());
 // mockWhere returns a chainable that supports .limit() and .orderBy()
 // beforeEach overrides this with mockReturnValue for each test suite
 const mockWhere = vi.fn((): Record<string, unknown> => ({
@@ -72,6 +80,21 @@ vi.mock('@/lib/db/schema', () => ({
     ipHash: 'skill_downloads.ip_hash',
     userAgent: 'skill_downloads.user_agent',
     createdAt: 'skill_downloads.created_at',
+  },
+  scanResults: {
+    id: 'scan_results.id',
+    versionId: 'scan_results.version_id',
+    verdict: 'scan_results.verdict',
+    createdAt: 'scan_results.created_at',
+  },
+  scanFindings: {
+    id: 'scan_findings.id',
+    scanId: 'scan_findings.scan_id',
+    stage: 'scan_findings.stage',
+    severity: 'scan_findings.severity',
+    type: 'scan_findings.type',
+    description: 'scan_findings.description',
+    location: 'scan_findings.location',
   },
 }));
 

@@ -155,6 +155,58 @@ export const auditEvents = pgTable('audit_events', {
 });
 
 // ---------------------------------------------------------------------------
+// scan_results
+// ---------------------------------------------------------------------------
+
+export const scanResults = pgTable(
+  'scan_results',
+  {
+    id,
+    versionId: uuid('version_id')
+      .notNull()
+      .references(() => skillVersions.id),
+    verdict: text('verdict').notNull(), // 'pass', 'pass_with_notes', 'flagged', 'fail'
+    totalFindings: integer('total_findings').notNull().default(0),
+    criticalCount: integer('critical_count').notNull().default(0),
+    highCount: integer('high_count').notNull().default(0),
+    mediumCount: integer('medium_count').notNull().default(0),
+    lowCount: integer('low_count').notNull().default(0),
+    stagesRun: jsonb('stages_run').notNull().$type<string[]>(),
+    durationMs: integer('duration_ms'),
+    fileHashes: jsonb('file_hashes').$type<Record<string, string>>(),
+    createdAt,
+  },
+  (table) => [index('scan_results_version_id_idx').on(table.versionId)],
+);
+
+// ---------------------------------------------------------------------------
+// scan_findings
+// ---------------------------------------------------------------------------
+
+export const scanFindings = pgTable(
+  'scan_findings',
+  {
+    id,
+    scanId: uuid('scan_id')
+      .notNull()
+      .references(() => scanResults.id),
+    stage: text('stage').notNull(), // 'stage0', 'stage1', ..., 'stage5'
+    severity: text('severity').notNull(), // 'critical', 'high', 'medium', 'low'
+    type: text('type').notNull(), // e.g. 'prompt_injection', 'shell_injection', 'secret_found'
+    description: text('description').notNull(),
+    location: text('location'), // e.g. 'SKILL.md:47' or 'script.py:12'
+    confidence: real('confidence'), // 0.0-1.0
+    tool: text('tool'), // which tool/rule found it
+    evidence: text('evidence'), // raw snippet or pattern matched
+    createdAt,
+  },
+  (table) => [
+    index('scan_findings_scan_id_idx').on(table.scanId),
+    index('scan_findings_severity_idx').on(table.severity),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // Relations
 // ---------------------------------------------------------------------------
 
@@ -181,6 +233,22 @@ export const skillVersionsRelations = relations(skillVersions, ({ one, many }) =
     references: [publishers.id],
   }),
   downloads: many(skillDownloads),
+  scanResults: many(scanResults),
+}));
+
+export const scanResultsRelations = relations(scanResults, ({ one, many }) => ({
+  version: one(skillVersions, {
+    fields: [scanResults.versionId],
+    references: [skillVersions.id],
+  }),
+  findings: many(scanFindings),
+}));
+
+export const scanFindingsRelations = relations(scanFindings, ({ one }) => ({
+  scan: one(scanResults, {
+    fields: [scanFindings.scanId],
+    references: [scanResults.id],
+  }),
 }));
 
 export const skillDownloadsRelations = relations(skillDownloads, ({ one }) => ({
