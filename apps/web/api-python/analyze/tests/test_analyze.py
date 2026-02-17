@@ -134,9 +134,7 @@ class TestPermissions:
         finally:
             lib_module.OPENROUTER_API_KEY = original_key
 
-    @patch("apps.web.api.analyze._lib.httpx.AsyncClient")
-    @patch.dict("os.environ", {"OPENROUTER_API_KEY": "test-key-123"}, clear=False)
-    def test_permissions_successful_extraction(self, mock_client_cls):
+    def test_permissions_successful_extraction(self):
         """Successful LLM call returns correct permission JSON shape."""
         import apps.web.api.analyze._lib as lib_module
 
@@ -157,26 +155,26 @@ class TestPermissions:
         mock_instance.post = AsyncMock(return_value=mock_response)
         mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)
         mock_instance.__aexit__ = AsyncMock(return_value=None)
-        mock_client_cls.return_value = mock_instance
 
-        try:
-            response = permissions_client.post(
-                "/api/analyze/permissions",
-                json={"skill_content": SAMPLE_SKILL},
-            )
-            assert response.status_code == 200
-            data = response.json()
+        with patch.object(lib_module.httpx, "AsyncClient", return_value=mock_instance):
+            try:
+                response = permissions_client.post(
+                    "/api/analyze/permissions",
+                    json={"skill_content": SAMPLE_SKILL},
+                )
+                assert response.status_code == 200
+                data = response.json()
 
-            assert "permissions" in data
-            assert "reasoning" in data
-            perms = data["permissions"]
-            assert perms["network"]["outbound"] == ["api.github.com"]
-            assert perms["filesystem"]["read"] == ["./src/**"]
-            assert perms["filesystem"]["write"] == ["./output/**"]
-            assert perms["subprocess"] is True
-            assert "GitHub API" in data["reasoning"]
-        finally:
-            lib_module.OPENROUTER_API_KEY = original_key
+                assert "permissions" in data
+                assert "reasoning" in data
+                perms = data["permissions"]
+                assert perms["network"]["outbound"] == ["api.github.com"]
+                assert perms["filesystem"]["read"] == ["./src/**"]
+                assert perms["filesystem"]["write"] == ["./output/**"]
+                assert perms["subprocess"] is True
+                assert "GitHub API" in data["reasoning"]
+            finally:
+                lib_module.OPENROUTER_API_KEY = original_key
 
     def test_permissions_empty_skill(self):
         """Empty skill content returns empty permissions without calling LLM."""
@@ -189,8 +187,7 @@ class TestPermissions:
         assert data["permissions"] == {}
         assert "Empty" in data["reasoning"] or "empty" in data["reasoning"].lower()
 
-    @patch("apps.web.api.analyze._lib.httpx.AsyncClient")
-    def test_permissions_llm_timeout(self, mock_client_cls):
+    def test_permissions_llm_timeout(self):
         """Handles httpx timeout gracefully."""
         import apps.web.api.analyze._lib as lib_module
 
@@ -203,18 +200,18 @@ class TestPermissions:
         )
         mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)
         mock_instance.__aexit__ = AsyncMock(return_value=None)
-        mock_client_cls.return_value = mock_instance
 
-        try:
-            response = permissions_client.post(
-                "/api/analyze/permissions",
-                json={"skill_content": SAMPLE_SKILL},
-            )
-            assert response.status_code == 500
-            data = response.json()
-            assert "error" in data
-        finally:
-            lib_module.OPENROUTER_API_KEY = original_key
+        with patch.object(lib_module.httpx, "AsyncClient", return_value=mock_instance):
+            try:
+                response = permissions_client.post(
+                    "/api/analyze/permissions",
+                    json={"skill_content": SAMPLE_SKILL},
+                )
+                assert response.status_code == 500
+                data = response.json()
+                assert "error" in data
+            finally:
+                lib_module.OPENROUTER_API_KEY = original_key
 
 
 # ===========================================================================
@@ -225,8 +222,7 @@ class TestPermissions:
 class TestSecurity:
     """Tests for the security scanning endpoint."""
 
-    @patch("apps.web.api.analyze._lib.httpx.AsyncClient")
-    def test_security_safe_skill(self, mock_client_cls):
+    def test_security_safe_skill(self):
         """Benign skill returns safe=true with no issues."""
         import apps.web.api.analyze._lib as lib_module
 
@@ -244,23 +240,22 @@ class TestSecurity:
         mock_instance.post = AsyncMock(return_value=mock_response)
         mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)
         mock_instance.__aexit__ = AsyncMock(return_value=None)
-        mock_client_cls.return_value = mock_instance
 
-        try:
-            response = security_client.post(
-                "/api/analyze/security",
-                json={"skill_content": SAMPLE_SKILL},
-            )
-            assert response.status_code == 200
-            data = response.json()
-            assert data["safe"] is True
-            assert data["issues"] == []
-            assert "No security issues" in data["summary"]
-        finally:
-            lib_module.OPENROUTER_API_KEY = original_key
+        with patch.object(lib_module.httpx, "AsyncClient", return_value=mock_instance):
+            try:
+                response = security_client.post(
+                    "/api/analyze/security",
+                    json={"skill_content": SAMPLE_SKILL},
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert data["safe"] is True
+                assert data["issues"] == []
+                assert "No security issues" in data["summary"]
+            finally:
+                lib_module.OPENROUTER_API_KEY = original_key
 
-    @patch("apps.web.api.analyze._lib.httpx.AsyncClient")
-    def test_security_malicious_skill(self, mock_client_cls):
+    def test_security_malicious_skill(self):
         """Malicious skill returns safe=false with issues array."""
         import apps.web.api.analyze._lib as lib_module
 
@@ -289,22 +284,22 @@ class TestSecurity:
         mock_instance.post = AsyncMock(return_value=mock_response)
         mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)
         mock_instance.__aexit__ = AsyncMock(return_value=None)
-        mock_client_cls.return_value = mock_instance
 
-        try:
-            response = security_client.post(
-                "/api/analyze/security",
-                json={"skill_content": SAMPLE_MALICIOUS_SKILL},
-            )
-            assert response.status_code == 200
-            data = response.json()
-            assert data["safe"] is False
-            assert len(data["issues"]) == 2
-            assert data["issues"][0]["severity"] == "critical"
-            assert data["issues"][1]["severity"] == "high"
-            assert "SSH" in data["issues"][0]["description"]
-        finally:
-            lib_module.OPENROUTER_API_KEY = original_key
+        with patch.object(lib_module.httpx, "AsyncClient", return_value=mock_instance):
+            try:
+                response = security_client.post(
+                    "/api/analyze/security",
+                    json={"skill_content": SAMPLE_MALICIOUS_SKILL},
+                )
+                assert response.status_code == 200
+                data = response.json()
+                assert data["safe"] is False
+                assert len(data["issues"]) == 2
+                assert data["issues"][0]["severity"] == "critical"
+                assert data["issues"][1]["severity"] == "high"
+                assert "SSH" in data["issues"][0]["description"]
+            finally:
+                lib_module.OPENROUTER_API_KEY = original_key
 
     @patch.dict("os.environ", {"OPENROUTER_API_KEY": ""}, clear=False)
     def test_security_missing_api_key(self):
@@ -325,8 +320,7 @@ class TestSecurity:
         finally:
             lib_module.OPENROUTER_API_KEY = original_key
 
-    @patch("apps.web.api.analyze._lib.httpx.AsyncClient")
-    def test_security_llm_timeout(self, mock_client_cls):
+    def test_security_llm_timeout(self):
         """Handles httpx timeout gracefully."""
         import apps.web.api.analyze._lib as lib_module
 
@@ -339,18 +333,18 @@ class TestSecurity:
         )
         mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)
         mock_instance.__aexit__ = AsyncMock(return_value=None)
-        mock_client_cls.return_value = mock_instance
 
-        try:
-            response = security_client.post(
-                "/api/analyze/security",
-                json={"skill_content": SAMPLE_SKILL},
-            )
-            assert response.status_code == 500
-            data = response.json()
-            assert "error" in data
-        finally:
-            lib_module.OPENROUTER_API_KEY = original_key
+        with patch.object(lib_module.httpx, "AsyncClient", return_value=mock_instance):
+            try:
+                response = security_client.post(
+                    "/api/analyze/security",
+                    json={"skill_content": SAMPLE_SKILL},
+                )
+                assert response.status_code == 500
+                data = response.json()
+                assert "error" in data
+            finally:
+                lib_module.OPENROUTER_API_KEY = original_key
 
     def test_security_empty_skill(self):
         """Empty skill content returns safe=true without calling LLM."""
