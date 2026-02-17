@@ -39,7 +39,7 @@ export default async function DashboardPage() {
           description="Create organizations and manage team members and permissions."
         />
         <QuickLinkCard
-          href="/dashboard"
+          href="/skills"
           title="Browse Skills"
           description="Discover and install verified AI agent skills from the registry."
         />
