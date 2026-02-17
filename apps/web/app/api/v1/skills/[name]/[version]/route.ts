@@ -44,110 +44,119 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ name: string; version: string }> },
 ) {
-  const { name: rawName, version } = await params;
-  const name = decodeURIComponent(rawName);
+  try {
+    const { name: rawName, version } = await params;
+    const name = decodeURIComponent(rawName);
 
-  // 1. Look up skill by name
-  const existingSkills = await db
-    .select()
-    .from(skills)
-    .where(eq(skills.name, name))
-    .limit(1);
+    // 1. Look up skill by name
+    const existingSkills = await db
+      .select()
+      .from(skills)
+      .where(eq(skills.name, name))
+      .limit(1);
 
-  if (existingSkills.length === 0) {
-    return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
-  }
+    if (existingSkills.length === 0) {
+      return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
+    }
 
-  const skill = existingSkills[0];
+    const skill = existingSkills[0];
 
-  // 2. Look up specific version
-  const existingVersions = await db
-    .select()
-    .from(skillVersions)
-    .where(and(eq(skillVersions.skillId, skill.id), eq(skillVersions.version, version)))
-    .limit(1);
+    // 2. Look up specific version
+    const existingVersions = await db
+      .select()
+      .from(skillVersions)
+      .where(and(eq(skillVersions.skillId, skill.id), eq(skillVersions.version, version)))
+      .limit(1);
 
-  if (existingVersions.length === 0) {
+    if (existingVersions.length === 0) {
+      return NextResponse.json(
+        { error: `Version ${version} not found for ${name}` },
+        { status: 404 },
+      );
+    }
+
+    const skillVersion = existingVersions[0];
+
+    // 3. Generate signed download URL (1 hour expiry)
+    const { data: downloadData, error: downloadError } = await supabaseAdmin.storage
+      .from('packages')
+      .createSignedUrl(skillVersion.tarballPath, 3600);
+
+    if (downloadError || !downloadData) {
+      console.error('[Version] Supabase signed URL error:', downloadError);
+      return NextResponse.json(
+        { error: 'Failed to generate download URL', details: downloadError?.message },
+        { status: 500 },
+      );
+    }
+
+    // 4. Record download (fire-and-forget, don't block the response)
+    recordDownload(request, skill.id, skillVersion.id).catch(() => {
+      // Silently ignore download counting errors — don't break the download
+    });
+
+    // 5. Count total downloads for this skill
+    const downloadCount = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(skillDownloads)
+      .where(eq(skillDownloads.skillId, skill.id));
+
+    // 6. Fetch latest scan results
+    const latestScanResults = await db
+      .select()
+      .from(scanResults)
+      .where(eq(scanResults.versionId, skillVersion.id))
+      .orderBy(desc(scanResults.createdAt))
+      .limit(1);
+
+    let scanVerdict: string | null = null;
+    let scanFindingsList: Array<{
+      stage: string;
+      severity: string;
+      type: string;
+      description: string;
+      location: string | null;
+    }> = [];
+
+    if (latestScanResults.length > 0) {
+      const latestScan = latestScanResults[0];
+      scanVerdict = latestScan.verdict;
+
+      // Fetch findings for this scan
+      const findings = await db
+        .select({
+          stage: scanFindings.stage,
+          severity: scanFindings.severity,
+          type: scanFindings.type,
+          description: scanFindings.description,
+          location: scanFindings.location,
+        })
+        .from(scanFindings)
+        .where(eq(scanFindings.scanId, latestScan.id));
+
+      scanFindingsList = findings;
+    }
+
+    // 7. Return response
+    return NextResponse.json({
+      name: skill.name,
+      version: skillVersion.version,
+      description: skill.description,
+      integrity: skillVersion.integrity,
+      permissions: skillVersion.permissions,
+      auditScore: skillVersion.auditScore,
+      auditStatus: skillVersion.auditStatus,
+      downloadUrl: downloadData.signedUrl,
+      publishedAt: skillVersion.createdAt,
+      downloads: downloadCount[0]?.count ?? 0,
+      scanVerdict,
+      scanFindings: scanFindingsList,
+    });
+  } catch (error) {
+    console.error('[Version] Error:', error);
     return NextResponse.json(
-      { error: `Version ${version} not found for ${name}` },
-      { status: 404 },
-    );
-  }
-
-  const skillVersion = existingVersions[0];
-
-  // 3. Generate signed download URL (1 hour expiry)
-  const { data: downloadData, error: downloadError } = await supabaseAdmin.storage
-    .from('packages')
-    .createSignedUrl(skillVersion.tarballPath, 3600);
-
-  if (downloadError || !downloadData) {
-    return NextResponse.json(
-      { error: 'Failed to generate download URL' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 },
     );
   }
-
-  // 4. Record download (fire-and-forget, don't block the response)
-  recordDownload(request, skill.id, skillVersion.id).catch(() => {
-    // Silently ignore download counting errors — don't break the download
-  });
-
-  // 5. Count total downloads for this skill
-  const downloadCount = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(skillDownloads)
-    .where(eq(skillDownloads.skillId, skill.id));
-
-  // 6. Fetch latest scan results
-  const latestScanResults = await db
-    .select()
-    .from(scanResults)
-    .where(eq(scanResults.versionId, skillVersion.id))
-    .orderBy(desc(scanResults.createdAt))
-    .limit(1);
-
-  let scanVerdict: string | null = null;
-  let scanFindingsList: Array<{
-    stage: string;
-    severity: string;
-    type: string;
-    description: string;
-    location: string | null;
-  }> = [];
-
-  if (latestScanResults.length > 0) {
-    const latestScan = latestScanResults[0];
-    scanVerdict = latestScan.verdict;
-
-    // Fetch findings for this scan
-    const findings = await db
-      .select({
-        stage: scanFindings.stage,
-        severity: scanFindings.severity,
-        type: scanFindings.type,
-        description: scanFindings.description,
-        location: scanFindings.location,
-      })
-      .from(scanFindings)
-      .where(eq(scanFindings.scanId, latestScan.id));
-
-    scanFindingsList = findings;
-  }
-
-  // 7. Return response
-  return NextResponse.json({
-    name: skill.name,
-    version: skillVersion.version,
-    description: skill.description,
-    integrity: skillVersion.integrity,
-    permissions: skillVersion.permissions,
-    auditScore: skillVersion.auditScore,
-    auditStatus: skillVersion.auditStatus,
-    downloadUrl: downloadData.signedUrl,
-    publishedAt: skillVersion.createdAt,
-    downloads: downloadCount[0]?.count ?? 0,
-    scanVerdict,
-    scanFindings: scanFindingsList,
-  });
 }
