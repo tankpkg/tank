@@ -27,14 +27,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing manifest in request body' }, { status: 400 });
   }
 
-  // 3. Normalize name to lowercase and add files to manifest
+  // 3. Normalize name to lowercase
   const manifestInput = rawManifest as Record<string, unknown>;
   if (typeof manifestInput.name === 'string') {
     manifestInput.name = manifestInput.name.toLowerCase().trim();
-  }
-  // Store files array in manifest for UI display
-  if (Array.isArray(files)) {
-    manifestInput.files = files;
   }
 
   // 4. Validate manifest against schema
@@ -170,6 +166,11 @@ export async function POST(request: Request) {
 
   // 9. Create skill_version record with pending-upload status
   const tarballPath = `skills/${skill.id}/${version}.tgz`;
+  // Add files array to manifest for UI display (after validation)
+  const manifestWithFiles = {
+    ...manifest,
+    ...(Array.isArray(files) && files.length > 0 ? { files } : {}),
+  } as Record<string, unknown>;
   const [skillVersion] = await db
     .insert(skillVersions)
     .values({
@@ -179,7 +180,7 @@ export async function POST(request: Request) {
       tarballPath,
       tarballSize: 0,
       fileCount: 0,
-      manifest: manifest as unknown as Record<string, unknown>,
+      manifest: manifestWithFiles,
       permissions: (manifest.permissions ?? {}) as Record<string, unknown>,
       auditStatus: 'pending-upload',
       publishedBy: publisher.id,
