@@ -358,25 +358,83 @@ export default async function SkillDetailPage({
 
                 {/* Findings */}
                 {data.latestVersion.scanDetails?.findings && data.latestVersion.scanDetails.findings.length > 0 && (
-                  <div className="mt-2 pt-2 border-t">
-                    <p className="text-xs font-medium text-amber-600 mb-1">
-                      Findings ({data.latestVersion.scanDetails.findings.length}):
+                  <div className="mt-3 pt-2 border-t">
+                    <p className="text-xs font-medium text-amber-600 mb-2">
+                      ⚠ Security Findings ({data.latestVersion.scanDetails.findings.length}):
                     </p>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {data.latestVersion.scanDetails.findings.map((finding, i) => (
-                        <div key={i} className="text-[10px] p-1 bg-muted/50 rounded">
-                          <span className={`font-medium ${
-                            finding.severity === 'critical' ? 'text-red-600' :
-                            finding.severity === 'high' ? 'text-orange-600' :
-                            finding.severity === 'medium' ? 'text-yellow-600' : 'text-blue-600'
-                          }`}>
-                            [{finding.severity.toUpperCase()}]
-                          </span>
-                          <span className="ml-1">{finding.type}</span>
-                          {finding.location && <span className="text-muted-foreground ml-1">({finding.location})</span>}
-                        </div>
-                      ))}
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {data.latestVersion.scanDetails.findings.map((finding, i) => {
+                        // Remediation suggestions based on finding type
+                        const getRemediation = (type: string): string => {
+                          const remediations: Record<string, string> = {
+                            'shell_injection': 'Remove shell command execution or use safe alternatives. Avoid passing user input to shell.',
+                            'prompt_injection': 'Sanitize user input before including in prompts. Use structured templates.',
+                            'secret_found': 'Remove hardcoded credentials. Use environment variables or secure vaults.',
+                            'dangerous_function': 'Avoid eval(), exec(), or similar functions. Use safer alternatives.',
+                            'suspicious_import': 'Review if this import is necessary. Consider alternatives with better security.',
+                            'file_traversal': 'Validate and sanitize file paths. Use path.resolve() and check boundaries.',
+                            'network_access': 'Ensure network access is declared in permissions. Limit to specific domains.',
+                          };
+                          return remediations[type] || 'Review and address this security concern before publishing.';
+                        };
+
+                        return (
+                          <details key={i} className="text-xs bg-muted/30 rounded">
+                            <summary className={`p-2 cursor-pointer font-medium ${
+                              finding.severity === 'critical' ? 'text-red-600 bg-red-50' :
+                              finding.severity === 'high' ? 'text-orange-600 bg-orange-50' :
+                              finding.severity === 'medium' ? 'text-yellow-700 bg-yellow-50' : 'text-blue-600 bg-blue-50'
+                            } rounded`}>
+                              <span className="uppercase">[{finding.severity}]</span>
+                              <span className="ml-1">{finding.type.replace(/_/g, ' ')}</span>
+                              {finding.location && (
+                                <span className="ml-1 text-muted-foreground font-normal">
+                                  at {finding.location}
+                                </span>
+                              )}
+                            </summary>
+                            <div className="p-2 space-y-2 border-t">
+                              <div>
+                                <p className="font-medium text-foreground">Issue:</p>
+                                <p className="text-muted-foreground">{finding.description}</p>
+                              </div>
+                              {finding.evidence && (
+                                <div>
+                                  <p className="font-medium text-foreground">Evidence:</p>
+                                  <pre className="text-[10px] bg-destructive/10 text-destructive p-1.5 rounded font-mono overflow-x-auto">
+                                    {finding.evidence}
+                                  </pre>
+                                </div>
+                              )}
+                              <div>
+                                <p className="font-medium text-foreground">How to fix:</p>
+                                <p className="text-green-700">{getRemediation(finding.type)}</p>
+                              </div>
+                              {finding.confidence && (
+                                <p className="text-muted-foreground text-[10px]">
+                                  Confidence: {Math.round(finding.confidence * 100)}%
+                                  {finding.tool && ` • Detected by: ${finding.tool}`}
+                                </p>
+                              )}
+                            </div>
+                          </details>
+                        );
+                      })}
                     </div>
+                  </div>
+                )}
+
+                {/* No findings message */}
+                {data.latestVersion.scanDetails?.findings && data.latestVersion.scanDetails.findings.length === 0 && (
+                  <div className="mt-3 pt-2 border-t">
+                    <div className="text-xs text-green-600 flex items-center gap-1.5">
+                      <span>✓</span>
+                      <span>No security issues found in any of the 6 scan stages</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      The scanner checked for: shell injection, prompt injection, secrets/credentials,
+                      dangerous functions, file traversal, and suspicious imports.
+                    </p>
                   </div>
                 )}
 

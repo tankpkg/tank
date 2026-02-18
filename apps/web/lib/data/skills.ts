@@ -52,6 +52,9 @@ export interface ScanFinding {
   type: string;
   description: string;
   location: string | null;
+  confidence: number | null;
+  tool: string | null;
+  evidence: string | null;
 }
 
 export interface ScanDetails {
@@ -223,6 +226,9 @@ export async function getSkillDetail(
           type: scanFindings.type,
           description: scanFindings.description,
           location: scanFindings.location,
+          confidence: scanFindings.confidence,
+          tool: scanFindings.tool,
+          evidence: scanFindings.evidence,
         })
         .from(scanFindings)
         .where(eq(scanFindings.scanId, scan.id));
