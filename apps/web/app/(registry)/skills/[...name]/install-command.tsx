@@ -40,7 +40,7 @@ export function InstallCommand({ name }: { name: string }) {
       <TabsContent value="project">
         <div className="rounded-lg border bg-muted/50 p-4">
           <div className="flex items-center justify-between gap-4">
-            <code className="text-sm font-mono select-all">
+            <code className="text-sm font-mono select-all text-foreground bg-background/50 px-2 py-1 rounded">
               {projectCommand}
             </code>
             <Button
@@ -60,7 +60,7 @@ export function InstallCommand({ name }: { name: string }) {
       <TabsContent value="global">
         <div className="rounded-lg border bg-muted/50 p-4">
           <div className="flex items-center justify-between gap-4">
-            <code className="text-sm font-mono select-all">
+            <code className="text-sm font-mono select-all text-foreground bg-background/50 px-2 py-1 rounded">
               {globalCommand}
             </code>
             <Button
