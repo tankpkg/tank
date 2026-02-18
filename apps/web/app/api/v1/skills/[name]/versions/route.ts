@@ -30,15 +30,17 @@ export async function GET(
     .where(eq(skillVersions.skillId, skill.id))
     .orderBy(desc(skillVersions.createdAt));
 
-  // 3. Return response
+  // 3. Return response (filter out pending/incomplete versions)
   return NextResponse.json({
     name: skill.name,
-    versions: versions.map((v) => ({
-      version: v.version,
-      integrity: v.integrity,
-      auditScore: v.auditScore,
-      auditStatus: v.auditStatus,
-      publishedAt: v.createdAt,
-    })),
+    versions: versions
+      .filter((v) => v.integrity !== 'pending' && v.auditStatus !== 'pending-upload')
+      .map((v) => ({
+        version: v.version,
+        integrity: v.integrity,
+        auditScore: v.auditScore,
+        auditStatus: v.auditStatus,
+        publishedAt: v.createdAt,
+      })),
   });
 }

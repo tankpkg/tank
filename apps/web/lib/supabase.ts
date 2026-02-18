@@ -1,7 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Trim env vars to handle accidental whitespace/newlines
+const supabaseUrl = (process.env.SUPABASE_URL || '').trim();
+const supabaseServiceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 if (!supabaseUrl && process.env.NODE_ENV !== 'production') {
   console.warn('Missing SUPABASE_URL environment variable');

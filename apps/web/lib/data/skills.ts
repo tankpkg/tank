@@ -13,7 +13,7 @@
 
 import { eq, desc, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { skills, skillVersions, publishers } from '@/lib/db/schema';
+import { skills, skillVersions, publishers, scanResults, scanFindings } from '@/lib/db/schema';
 
 // ── In-memory TTL cache ──────────────────────────────────────────────────────
 // Skill metadata rarely changes. A short TTL eliminates repeated DB round-trips
@@ -46,6 +46,28 @@ function setCache<T>(key: string, data: T): void {
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+export interface ScanFinding {
+  stage: string;
+  severity: string;
+  type: string;
+  description: string;
+  location: string | null;
+  confidence: number | null;
+  tool: string | null;
+  evidence: string | null;
+}
+
+export interface ScanDetails {
+  verdict: string | null;
+  stagesRun: string[];
+  durationMs: number | null;
+  findings: ScanFinding[];
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+}
+
 export interface SkillVersionDetail {
   version: string;
   integrity: string;
@@ -57,6 +79,7 @@ export interface SkillVersionDetail {
   readme: string | null;
   fileCount: number;
   tarballSize: number;
+  scanDetails: ScanDetails;
 }
 
 export interface SkillVersionSummary {
@@ -126,6 +149,7 @@ export async function getSkillDetail(
         sql<number>`coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = ${skills.id}), 0)`,
       skillRepositoryUrl: skills.repositoryUrl,
       // Version fields (null when skill has no versions)
+      versionId: skillVersions.id,
       version: skillVersions.version,
       integrity: skillVersions.integrity,
       permissions: skillVersions.permissions,
@@ -163,6 +187,61 @@ export async function getSkillDetail(
 
   // Latest version is the first (ordered by created_at DESC)
   const latestRow = versions[0];
+  const latestRowData = rows.find(r => r.version === latestRow?.version);
+
+  // Fetch scan results for latest version
+  const scanDetails: ScanDetails = {
+    verdict: null,
+    stagesRun: [],
+    durationMs: null,
+    findings: [],
+    criticalCount: 0,
+    highCount: 0,
+    mediumCount: 0,
+    lowCount: 0,
+  };
+
+  if (latestRowData?.versionId) {
+    console.log('[getSkillDetail] Fetching scan results for versionId:', latestRowData.versionId);
+
+    const latestScanResult = await db
+      .select()
+      .from(scanResults)
+      .where(eq(scanResults.versionId, latestRowData.versionId))
+      .orderBy(desc(scanResults.createdAt))
+      .limit(1);
+
+    console.log('[getSkillDetail] Scan results found:', latestScanResult.length);
+
+    if (latestScanResult.length > 0) {
+      const scan = latestScanResult[0];
+      scanDetails.verdict = scan.verdict;
+      scanDetails.stagesRun = scan.stagesRun || [];
+      scanDetails.durationMs = scan.durationMs;
+      scanDetails.criticalCount = scan.criticalCount;
+      scanDetails.highCount = scan.highCount;
+      scanDetails.mediumCount = scan.mediumCount;
+      scanDetails.lowCount = scan.lowCount;
+
+      const findings = await db
+        .select({
+          stage: scanFindings.stage,
+          severity: scanFindings.severity,
+          type: scanFindings.type,
+          description: scanFindings.description,
+          location: scanFindings.location,
+          confidence: scanFindings.confidence,
+          tool: scanFindings.tool,
+          evidence: scanFindings.evidence,
+        })
+        .from(scanFindings)
+        .where(eq(scanFindings.scanId, scan.id));
+
+      console.log('[getSkillDetail] Findings found:', findings.length);
+      scanDetails.findings = findings;
+    }
+  }
+
   const latestVersion: SkillVersionDetail | null = latestRow
     ? {
         version: latestRow.version,
@@ -175,6 +254,7 @@ export async function getSkillDetail(
         readme: rows[0].readme ?? null,
         fileCount: rows[0].versionFileCount ?? 0,
         tarballSize: rows[0].versionTarballSize ?? 0,
+        scanDetails,
       }
     : null;
 

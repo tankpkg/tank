@@ -1,11 +1,17 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
 
-export default function RegistryLayout({
+export default async function RegistryLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -23,12 +29,21 @@ export default function RegistryLayout({
             </Link>
           </nav>
           <div className="ml-auto">
-            <Link
-              href="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign In
-            </Link>
+            {session ? (
+              <Link
+                href="/dashboard"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </header>

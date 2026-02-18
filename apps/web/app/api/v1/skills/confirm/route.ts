@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { verifyCliAuth } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { skills, skillVersions } from '@/lib/db/schema';
+import { skills, skillVersions, scanResults, scanFindings } from '@/lib/db/schema';
 import { computeAuditScore, type AuditScoreInput } from '@/lib/audit-score';
 import { supabaseAdmin } from '@/lib/supabase';
 
@@ -50,12 +50,16 @@ async function triggerSecurityScan(
       return null;
     }
 
-    // Call Python scan endpoint
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000';
+    // Call Python scan endpoint (use separate Python API URL if configured)
+    // Trim to handle any accidental whitespace/newlines in env vars
+    const pythonApiUrl = (process.env.PYTHON_API_URL || '').trim();
+    const scanApiUrl = pythonApiUrl
+      || process.env.NEXT_PUBLIC_APP_URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
-    const scanResponse = await fetch(`${appUrl}/api/analyze/scan`, {
+    console.log('[Scan] Calling Python API:', scanApiUrl);
+
+    const scanResponse = await fetch(`${scanApiUrl}/api/analyze/scan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -189,6 +193,45 @@ export async function POST(request: Request) {
       });
 
       auditScore = result.score;
+
+      // Store scan results in database for UI display
+      try {
+        const [scanResultRecord] = await db
+          .insert(scanResults)
+          .values({
+            versionId: versionId,
+            verdict: scanResult.verdict,
+            totalFindings: scanResult.findings.length,
+            criticalCount: scanResult.findings.filter(f => f.severity === 'critical').length,
+            highCount: scanResult.findings.filter(f => f.severity === 'high').length,
+            mediumCount: scanResult.findings.filter(f => f.severity === 'medium').length,
+            lowCount: scanResult.findings.filter(f => f.severity === 'low').length,
+            stagesRun: scanResult.stage_results?.map(s => s.stage) || [],
+            durationMs: scanResult.duration_ms || null,
+            fileHashes: scanResult.file_hashes || null,
+          })
+          .returning();
+
+        // Store individual findings
+        if (scanResultRecord && scanResult.findings.length > 0) {
+          await db.insert(scanFindings).values(
+            scanResult.findings.map(f => ({
+              scanId: scanResultRecord.id,
+              stage: f.stage,
+              severity: f.severity,
+              type: f.type,
+              description: f.description,
+              location: f.location || null,
+              confidence: f.confidence || null,
+              tool: f.tool || null,
+              evidence: f.evidence || null,
+            }))
+          );
+        }
+      } catch (dbError) {
+        console.error('Failed to store scan results:', dbError);
+        // Continue - don't fail the whole publish if storage fails
+      }
 
       // Map verdict to audit status
       const auditStatusMap: Record<string, string> = {

@@ -166,6 +166,11 @@ export async function POST(request: Request) {
 
   // 9. Create skill_version record with pending-upload status
   const tarballPath = `skills/${skill.id}/${version}.tgz`;
+  // Add files array to manifest for UI display (after validation)
+  const manifestWithFiles = {
+    ...manifest,
+    ...(Array.isArray(files) && files.length > 0 ? { files } : {}),
+  } as Record<string, unknown>;
   const [skillVersion] = await db
     .insert(skillVersions)
     .values({
@@ -175,7 +180,7 @@ export async function POST(request: Request) {
       tarballPath,
       tarballSize: 0,
       fileCount: 0,
-      manifest: manifest as unknown as Record<string, unknown>,
+      manifest: manifestWithFiles,
       permissions: (manifest.permissions ?? {}) as Record<string, unknown>,
       auditStatus: 'pending-upload',
       publishedBy: publisher.id,
