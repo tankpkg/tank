@@ -356,72 +356,120 @@ export default async function SkillDetailPage({
                   })}
                 </div>
 
-                {/* Findings */}
-                {data.latestVersion.scanDetails?.findings && data.latestVersion.scanDetails.findings.length > 0 && (
-                  <div className="mt-3 pt-2 border-t">
-                    <p className="text-xs font-medium text-amber-600 mb-2">
-                      ⚠ Security Findings ({data.latestVersion.scanDetails.findings.length}):
-                    </p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {data.latestVersion.scanDetails.findings.map((finding, i) => {
-                        // Remediation suggestions based on finding type
-                        const getRemediation = (type: string): string => {
-                          const remediations: Record<string, string> = {
-                            'shell_injection': 'Remove shell command execution or use safe alternatives. Avoid passing user input to shell.',
-                            'prompt_injection': 'Sanitize user input before including in prompts. Use structured templates.',
-                            'secret_found': 'Remove hardcoded credentials. Use environment variables or secure vaults.',
-                            'dangerous_function': 'Avoid eval(), exec(), or similar functions. Use safer alternatives.',
-                            'suspicious_import': 'Review if this import is necessary. Consider alternatives with better security.',
-                            'file_traversal': 'Validate and sanitize file paths. Use path.resolve() and check boundaries.',
-                            'network_access': 'Ensure network access is declared in permissions. Limit to specific domains.',
-                          };
-                          return remediations[type] || 'Review and address this security concern before publishing.';
-                        };
+                {/* Findings grouped by stage */}
+                {data.latestVersion.scanDetails?.findings && data.latestVersion.scanDetails.findings.length > 0 && (() => {
+                  const stageInfo: Record<string, { name: string; desc: string }> = {
+                    'stage0': { name: 'Stage 0: Ingestion', desc: 'Download & extraction issues' },
+                    'stage1': { name: 'Stage 1: Structure', desc: 'File type/size violations' },
+                    'stage2': { name: 'Stage 2: Static Analysis', desc: 'Dangerous code patterns' },
+                    'stage3': { name: 'Stage 3: Injection Detection', desc: 'Prompt/shell injections' },
+                    'stage4': { name: 'Stage 4: Secrets Scanning', desc: 'Leaked credentials' },
+                    'stage5': { name: 'Stage 5: Dependency Audit', desc: 'Supply chain risks' },
+                  };
 
-                        return (
-                          <details key={i} className="text-xs bg-muted/30 rounded">
-                            <summary className={`p-2 cursor-pointer font-medium ${
-                              finding.severity === 'critical' ? 'text-red-600 bg-red-50' :
-                              finding.severity === 'high' ? 'text-orange-600 bg-orange-50' :
-                              finding.severity === 'medium' ? 'text-yellow-700 bg-yellow-50' : 'text-blue-600 bg-blue-50'
-                            } rounded`}>
-                              <span className="uppercase">[{finding.severity}]</span>
-                              <span className="ml-1">{finding.type.replace(/_/g, ' ')}</span>
-                              {finding.location && (
-                                <span className="ml-1 text-muted-foreground font-normal">
-                                  at {finding.location}
-                                </span>
-                              )}
-                            </summary>
-                            <div className="p-2 space-y-2 border-t">
-                              <div>
-                                <p className="font-medium text-foreground">Issue:</p>
-                                <p className="text-muted-foreground">{finding.description}</p>
-                              </div>
-                              {finding.evidence && (
+                  const getRemediation = (type: string): string => {
+                    const remediations: Record<string, string> = {
+                      'shell_injection': 'Remove shell command execution or use safe alternatives.',
+                      'prompt_injection': 'Sanitize user input before including in prompts.',
+                      'secret_found': 'Remove hardcoded credentials. Use environment variables.',
+                      'custom_secret_pattern': 'Remove hardcoded secrets. Use secure vaults.',
+                      'code_execution': 'Avoid eval(), exec(). Use safer alternatives.',
+                      'dangerous_function': 'Avoid dangerous functions. Use safer alternatives.',
+                      'undeclared_subprocess': 'Declare subprocess permission in skills.json.',
+                      'suspicious_import': 'Review if this import is necessary.',
+                      'file_traversal': 'Validate and sanitize file paths.',
+                    };
+                    return remediations[type] || 'Review and address this security concern.';
+                  };
+
+                  const findingsByStage = data.latestVersion.scanDetails!.findings.reduce((acc, f) => {
+                    const stage = f.stage || 'unknown';
+                    if (!acc[stage]) acc[stage] = [];
+                    acc[stage].push(f);
+                    return acc;
+                  }, {} as Record<string, typeof data.latestVersion.scanDetails.findings>);
+
+                  const totalFindings = data.latestVersion.scanDetails.findings.length;
+                  const criticalCount = data.latestVersion.scanDetails.criticalCount || 0;
+                  const highCount = data.latestVersion.scanDetails.highCount || 0;
+
+                  return (
+                    <div className="mt-3 pt-2 border-t">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-medium text-amber-600">
+                          ⚠ Security Findings ({totalFindings})
+                        </p>
+                        <div className="flex gap-2 text-[10px]">
+                          {criticalCount > 0 && <span className="text-red-600 font-medium">{criticalCount} critical</span>}
+                          {highCount > 0 && <span className="text-orange-600 font-medium">{highCount} high</span>}
+                        </div>
+                      </div>
+                      <div className="space-y-3 max-h-64 overflow-y-auto">
+                        {Object.entries(findingsByStage).map(([stage, findings]) => {
+                          const info = stageInfo[stage] || { name: stage, desc: '' };
+                          const criticalInStage = findings.filter(f => f.severity === 'critical').length;
+                          const highInStage = findings.filter(f => f.severity === 'high').length;
+
+                          return (
+                            <div key={stage} className="border rounded-lg overflow-hidden">
+                              <div className="bg-muted/50 px-2 py-1.5 flex items-center justify-between">
                                 <div>
-                                  <p className="font-medium text-foreground">Evidence:</p>
-                                  <pre className="text-[10px] bg-destructive/10 text-destructive p-1.5 rounded font-mono overflow-x-auto">
-                                    {finding.evidence}
-                                  </pre>
+                                  <span className="text-xs font-medium">{info.name}</span>
+                                  <span className="text-[10px] text-muted-foreground ml-2">{info.desc}</span>
                                 </div>
-                              )}
-                              <div>
-                                <p className="font-medium text-foreground">How to fix:</p>
-                                <p className="text-green-700">{getRemediation(finding.type)}</p>
+                                <div className="flex gap-1.5 text-[10px]">
+                                  {criticalInStage > 0 && (
+                                    <span className="bg-red-100 text-red-700 px-1 rounded">{criticalInStage} critical</span>
+                                  )}
+                                  {highInStage > 0 && (
+                                    <span className="bg-orange-100 text-orange-700 px-1 rounded">{highInStage} high</span>
+                                  )}
+                                  <span className="bg-muted px-1 rounded">{findings.length} total</span>
+                                </div>
                               </div>
-                              {finding.confidence && (
-                                <p className="text-muted-foreground text-[10px]">
-                                  Confidence: {Math.round(finding.confidence * 100)}%
-                                  {finding.tool && ` • Detected by: ${finding.tool}`}
-                                </p>
-                              )}
+                              <div className="divide-y">
+                                {findings.map((finding, i) => (
+                                  <details key={i} className="text-xs group">
+                                    <summary className={`px-2 py-1.5 cursor-pointer hover:bg-muted/30 flex items-center gap-2 ${
+                                      finding.severity === 'critical' ? 'border-l-2 border-l-red-500' :
+                                      finding.severity === 'high' ? 'border-l-2 border-l-orange-500' :
+                                      finding.severity === 'medium' ? 'border-l-2 border-l-yellow-500' : 'border-l-2 border-l-blue-500'
+                                    }`}>
+                                      <span className={`uppercase text-[10px] font-medium ${
+                                        finding.severity === 'critical' ? 'text-red-600' :
+                                        finding.severity === 'high' ? 'text-orange-600' :
+                                        finding.severity === 'medium' ? 'text-yellow-700' : 'text-blue-600'
+                                      }`}>
+                                        {finding.severity}
+                                      </span>
+                                      <span className="flex-1 truncate">{finding.type.replace(/_/g, ' ')}</span>
+                                      {finding.location && (
+                                        <span className="text-muted-foreground text-[10px] font-mono">
+                                          {finding.location}
+                                        </span>
+                                      )}
+                                    </summary>
+                                    <div className="px-2 py-2 bg-muted/20 space-y-2">
+                                      <p className="text-muted-foreground">{finding.description}</p>
+                                      {finding.evidence && (
+                                        <pre className="text-[10px] bg-destructive/10 text-destructive p-1.5 rounded font-mono overflow-x-auto">
+                                          {finding.evidence}
+                                        </pre>
+                                      )}
+                                      <p className="text-green-700 text-[10px]">
+                                        <span className="font-medium">Fix:</span> {getRemediation(finding.type)}
+                                      </p>
+                                    </div>
+                                  </details>
+                                ))}
+                              </div>
                             </div>
-                          </details>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  );
+                })()}
                 )}
 
                 {/* No findings message */}
