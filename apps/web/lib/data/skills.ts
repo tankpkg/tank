@@ -54,6 +54,17 @@ export interface ScanFinding {
   location: string | null;
 }
 
+export interface ScanDetails {
+  verdict: string | null;
+  stagesRun: string[];
+  durationMs: number | null;
+  findings: ScanFinding[];
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+}
+
 export interface SkillVersionDetail {
   version: string;
   integrity: string;
@@ -65,8 +76,7 @@ export interface SkillVersionDetail {
   readme: string | null;
   fileCount: number;
   tarballSize: number;
-  scanVerdict: string | null;
-  scanFindings: ScanFinding[];
+  scanDetails: ScanDetails;
 }
 
 export interface SkillVersionSummary {
@@ -177,8 +187,16 @@ export async function getSkillDetail(
   const latestRowData = rows.find(r => r.version === latestRow?.version);
 
   // Fetch scan results for latest version
-  let scanVerdict: string | null = null;
-  let scanFindingsList: ScanFinding[] = [];
+  const scanDetails: ScanDetails = {
+    verdict: null,
+    stagesRun: [],
+    durationMs: null,
+    findings: [],
+    criticalCount: 0,
+    highCount: 0,
+    mediumCount: 0,
+    lowCount: 0,
+  };
 
   if (latestRowData?.versionId) {
     const latestScanResult = await db
@@ -189,7 +207,14 @@ export async function getSkillDetail(
       .limit(1);
 
     if (latestScanResult.length > 0) {
-      scanVerdict = latestScanResult[0].verdict;
+      const scan = latestScanResult[0];
+      scanDetails.verdict = scan.verdict;
+      scanDetails.stagesRun = scan.stagesRun || [];
+      scanDetails.durationMs = scan.durationMs;
+      scanDetails.criticalCount = scan.criticalCount;
+      scanDetails.highCount = scan.highCount;
+      scanDetails.mediumCount = scan.mediumCount;
+      scanDetails.lowCount = scan.lowCount;
 
       const findings = await db
         .select({
@@ -200,9 +225,9 @@ export async function getSkillDetail(
           location: scanFindings.location,
         })
         .from(scanFindings)
-        .where(eq(scanFindings.scanId, latestScanResult[0].id));
+        .where(eq(scanFindings.scanId, scan.id));
 
-      scanFindingsList = findings;
+      scanDetails.findings = findings;
     }
   }
 
@@ -218,8 +243,7 @@ export async function getSkillDetail(
         readme: rows[0].readme ?? null,
         fileCount: rows[0].versionFileCount ?? 0,
         tarballSize: rows[0].versionTarballSize ?? 0,
-        scanVerdict,
-        scanFindings: scanFindingsList,
+        scanDetails,
       }
     : null;
 
