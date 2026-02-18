@@ -14,6 +14,7 @@ import { InstallCommand } from './install-command';
 import { SkillReadme } from './skill-readme';
 import { SkillTabs } from './skill-tabs';
 import { FileExplorer } from './file-explorer';
+import { DownloadButton } from './download-button';
 
 function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -206,6 +207,11 @@ export default async function SkillDetailPage({
               Install
             </h3>
             <InstallCommand name={skillName} />
+            {data.latestVersion && (
+              <div className="mt-3">
+                <DownloadButton name={skillName} version={data.latestVersion.version} />
+              </div>
+            )}
           </div>
 
           <Separator />
