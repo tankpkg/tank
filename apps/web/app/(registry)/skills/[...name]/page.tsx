@@ -165,7 +165,13 @@ export default async function SkillDetailPage({
 
   const versionsTab = <VersionHistory versions={data.versions} />;
 
-  const filesTab = <FileExplorer files={fileList} />;
+  const filesTab = (
+    <FileExplorer
+      files={fileList}
+      readme={data.latestVersion?.readme}
+      manifest={latestManifest}
+    />
+  );
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -300,34 +306,96 @@ export default async function SkillDetailPage({
                   </span>
                   <span className="text-sm text-muted-foreground">/10</span>
                 </div>
-                <div className="text-xs space-y-1 text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Score breakdown:</p>
-                  <ul className="space-y-0.5">
-                    <li>✓ SKILL.md present (+1)</li>
-                    <li>✓ Description (+1)</li>
-                    <li>{Object.keys(data.latestVersion.permissions || {}).length > 0 ? '✓' : '✗'} Permissions declared (+1)</li>
-                    <li>✓ No security issues (+2)</li>
-                    <li>✓ Permission extraction match (+2)</li>
-                    <li>✓ File count reasonable (+1)</li>
-                    <li>{data.latestVersion.readme ? '✓' : '✗'} README documentation (+1)</li>
-                    <li>✓ Package size reasonable (+1)</li>
-                  </ul>
+
+                {/* Security Scan Results */}
+                {data.latestVersion.scanDetails?.verdict && (
+                  <div className="mb-3 p-2 bg-muted/50 rounded text-xs">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-medium">Scan Result</span>
+                      <span className={`px-1.5 py-0.5 rounded text-white text-[10px] font-medium ${
+                        data.latestVersion.scanDetails.verdict === 'pass' ? 'bg-green-600' :
+                        data.latestVersion.scanDetails.verdict === 'pass_with_notes' ? 'bg-yellow-600' :
+                        data.latestVersion.scanDetails.verdict === 'flagged' ? 'bg-orange-600' : 'bg-red-600'
+                      }`}>
+                        {data.latestVersion.scanDetails.verdict.replace('_', ' ').toUpperCase()}
+                      </span>
+                    </div>
+                    {data.latestVersion.scanDetails.durationMs && (
+                      <p className="text-muted-foreground">Duration: {data.latestVersion.scanDetails.durationMs}ms</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Scan Stages */}
+                <div className="text-xs space-y-1 mb-3">
+                  <p className="font-medium text-foreground mb-1">6-Stage Security Scan:</p>
+                  {[
+                    { stage: 'stage0', name: 'Ingestion', desc: 'Download & extract tarball safely' },
+                    { stage: 'stage1', name: 'Structure Validation', desc: 'Check file types, sizes, paths' },
+                    { stage: 'stage2', name: 'Static Analysis', desc: 'Detect dangerous code patterns' },
+                    { stage: 'stage3', name: 'Injection Detection', desc: 'Find prompt/shell injections' },
+                    { stage: 'stage4', name: 'Secrets Scanning', desc: 'Detect leaked credentials' },
+                    { stage: 'stage5', name: 'Dependency Audit', desc: 'Check supply chain risks' },
+                  ].map(({ stage, name, desc }) => {
+                    const wasRun = data.latestVersion?.scanDetails?.stagesRun?.includes(stage);
+                    const stageFindings = data.latestVersion?.scanDetails?.findings?.filter(f => f.stage === stage) || [];
+                    return (
+                      <div key={stage} className="flex items-start gap-1.5">
+                        <span className={wasRun ? 'text-green-500' : 'text-muted-foreground'}>
+                          {wasRun ? '✓' : '○'}
+                        </span>
+                        <div>
+                          <span className="font-medium">{name}</span>
+                          {stageFindings.length > 0 && (
+                            <span className="ml-1 text-amber-600">({stageFindings.length} issues)</span>
+                          )}
+                          <p className="text-muted-foreground text-[10px]">{desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {data.latestVersion.scanVerdict && (
-                  <div className="mt-3 pt-2 border-t">
-                    <p className="text-xs font-medium">Scan verdict:</p>
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {data.latestVersion.scanVerdict.replace('_', ' ')}
+
+                {/* Findings */}
+                {data.latestVersion.scanDetails?.findings && data.latestVersion.scanDetails.findings.length > 0 && (
+                  <div className="mt-2 pt-2 border-t">
+                    <p className="text-xs font-medium text-amber-600 mb-1">
+                      Findings ({data.latestVersion.scanDetails.findings.length}):
                     </p>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {data.latestVersion.scanDetails.findings.map((finding, i) => (
+                        <div key={i} className="text-[10px] p-1 bg-muted/50 rounded">
+                          <span className={`font-medium ${
+                            finding.severity === 'critical' ? 'text-red-600' :
+                            finding.severity === 'high' ? 'text-orange-600' :
+                            finding.severity === 'medium' ? 'text-yellow-600' : 'text-blue-600'
+                          }`}>
+                            [{finding.severity.toUpperCase()}]
+                          </span>
+                          <span className="ml-1">{finding.type}</span>
+                          {finding.location && <span className="text-muted-foreground ml-1">({finding.location})</span>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {data.latestVersion.scanFindings && data.latestVersion.scanFindings.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-amber-600">
-                      {data.latestVersion.scanFindings.length} finding(s)
-                    </p>
+
+                {/* Score Breakdown */}
+                <details className="mt-2">
+                  <summary className="text-xs font-medium cursor-pointer hover:text-foreground">
+                    Score breakdown details
+                  </summary>
+                  <div className="text-xs space-y-0.5 text-muted-foreground mt-1 pl-2">
+                    <p>✓ SKILL.md present (+1)</p>
+                    <p>✓ Description (+1)</p>
+                    <p>{Object.keys(data.latestVersion.permissions || {}).length > 0 ? '✓' : '✗'} Permissions declared (+1)</p>
+                    <p>{data.latestVersion.scanDetails?.findings?.length === 0 ? '✓' : '✗'} No security issues (+2)</p>
+                    <p>✓ Permission extraction match (+2)</p>
+                    <p>✓ File count &lt;100 (+1)</p>
+                    <p>{data.latestVersion.readme ? '✓' : '✗'} README documentation (+1)</p>
+                    <p>✓ Package size &lt;5MB (+1)</p>
                   </div>
-                )}
+                </details>
               </div>
             </>
           )}
