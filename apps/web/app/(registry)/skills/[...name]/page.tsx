@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getSkillDetail } from '@/lib/data/skills';
-import type { SkillVersionSummary } from '@/lib/data/skills';
+import type { SkillVersionSummary, ScanFinding } from '@/lib/data/skills';
 import { InstallCommand } from './install-command';
 import { SkillReadme } from './skill-readme';
 import { SkillTabs } from './skill-tabs';
@@ -387,7 +387,7 @@ export default async function SkillDetailPage({
                     if (!acc[stage]) acc[stage] = [];
                     acc[stage].push(f);
                     return acc;
-                  }, {} as Record<string, typeof data.latestVersion.scanDetails.findings>);
+                  }, {} as Record<string, ScanFinding[]>);
 
                   const totalFindings = data.latestVersion.scanDetails.findings.length;
                   const criticalCount = data.latestVersion.scanDetails.criticalCount || 0;
@@ -470,7 +470,6 @@ export default async function SkillDetailPage({
                     </div>
                   );
                 })()}
-                )}
 
                 {/* No findings message */}
                 {data.latestVersion.scanDetails?.findings && data.latestVersion.scanDetails.findings.length === 0 && (
