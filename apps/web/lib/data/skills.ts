@@ -13,7 +13,7 @@
 
 import { eq, desc, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { skills, skillVersions, publishers } from '@/lib/db/schema';
+import { skills, skillVersions, publishers, scanResults, scanFindings } from '@/lib/db/schema';
 
 // ── In-memory TTL cache ──────────────────────────────────────────────────────
 // Skill metadata rarely changes. A short TTL eliminates repeated DB round-trips
@@ -46,6 +46,14 @@ function setCache<T>(key: string, data: T): void {
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+export interface ScanFinding {
+  stage: string;
+  severity: string;
+  type: string;
+  description: string;
+  location: string | null;
+}
+
 export interface SkillVersionDetail {
   version: string;
   integrity: string;
@@ -57,6 +65,8 @@ export interface SkillVersionDetail {
   readme: string | null;
   fileCount: number;
   tarballSize: number;
+  scanVerdict: string | null;
+  scanFindings: ScanFinding[];
 }
 
 export interface SkillVersionSummary {
@@ -126,6 +136,7 @@ export async function getSkillDetail(
         sql<number>`coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = ${skills.id}), 0)`,
       skillRepositoryUrl: skills.repositoryUrl,
       // Version fields (null when skill has no versions)
+      versionId: skillVersions.id,
       version: skillVersions.version,
       integrity: skillVersions.integrity,
       permissions: skillVersions.permissions,
@@ -163,6 +174,38 @@ export async function getSkillDetail(
 
   // Latest version is the first (ordered by created_at DESC)
   const latestRow = versions[0];
+  const latestRowData = rows.find(r => r.version === latestRow?.version);
+
+  // Fetch scan results for latest version
+  let scanVerdict: string | null = null;
+  let scanFindingsList: ScanFinding[] = [];
+
+  if (latestRowData?.versionId) {
+    const latestScanResult = await db
+      .select()
+      .from(scanResults)
+      .where(eq(scanResults.versionId, latestRowData.versionId))
+      .orderBy(desc(scanResults.createdAt))
+      .limit(1);
+
+    if (latestScanResult.length > 0) {
+      scanVerdict = latestScanResult[0].verdict;
+
+      const findings = await db
+        .select({
+          stage: scanFindings.stage,
+          severity: scanFindings.severity,
+          type: scanFindings.type,
+          description: scanFindings.description,
+          location: scanFindings.location,
+        })
+        .from(scanFindings)
+        .where(eq(scanFindings.scanId, latestScanResult[0].id));
+
+      scanFindingsList = findings;
+    }
+  }
+
   const latestVersion: SkillVersionDetail | null = latestRow
     ? {
         version: latestRow.version,
@@ -175,6 +218,8 @@ export async function getSkillDetail(
         readme: rows[0].readme ?? null,
         fileCount: rows[0].versionFileCount ?? 0,
         tarballSize: rows[0].versionTarballSize ?? 0,
+        scanVerdict,
+        scanFindings: scanFindingsList,
       }
     : null;
 

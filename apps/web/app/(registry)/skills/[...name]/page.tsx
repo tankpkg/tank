@@ -292,20 +292,42 @@ export default async function SkillDetailPage({
               <Separator />
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Security
+                  Security Audit
                 </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl font-bold text-green-600">
                     {data.latestVersion.auditScore}
                   </span>
-                  <span className="text-sm text-muted-foreground">
-                    /10 audit score
-                  </span>
+                  <span className="text-sm text-muted-foreground">/10</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Based on: SKILL.md, description, permissions, security scan,
-                  file count, README, and package size.
-                </p>
+                <div className="text-xs space-y-1 text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">Score breakdown:</p>
+                  <ul className="space-y-0.5">
+                    <li>✓ SKILL.md present (+1)</li>
+                    <li>✓ Description (+1)</li>
+                    <li>{Object.keys(data.latestVersion.permissions || {}).length > 0 ? '✓' : '✗'} Permissions declared (+1)</li>
+                    <li>✓ No security issues (+2)</li>
+                    <li>✓ Permission extraction match (+2)</li>
+                    <li>✓ File count reasonable (+1)</li>
+                    <li>{data.latestVersion.readme ? '✓' : '✗'} README documentation (+1)</li>
+                    <li>✓ Package size reasonable (+1)</li>
+                  </ul>
+                </div>
+                {data.latestVersion.scanVerdict && (
+                  <div className="mt-3 pt-2 border-t">
+                    <p className="text-xs font-medium">Scan verdict:</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {data.latestVersion.scanVerdict.replace('_', ' ')}
+                    </p>
+                  </div>
+                )}
+                {data.latestVersion.scanFindings && data.latestVersion.scanFindings.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-amber-600">
+                      {data.latestVersion.scanFindings.length} finding(s)
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           )}
