@@ -202,12 +202,16 @@ export async function getSkillDetail(
   };
 
   if (latestRowData?.versionId) {
+    console.log('[getSkillDetail] Fetching scan results for versionId:', latestRowData.versionId);
+
     const latestScanResult = await db
       .select()
       .from(scanResults)
       .where(eq(scanResults.versionId, latestRowData.versionId))
       .orderBy(desc(scanResults.createdAt))
       .limit(1);
+
+    console.log('[getSkillDetail] Scan results found:', latestScanResult.length);
 
     if (latestScanResult.length > 0) {
       const scan = latestScanResult[0];
@@ -233,6 +237,7 @@ export async function getSkillDetail(
         .from(scanFindings)
         .where(eq(scanFindings.scanId, scan.id));
 
+      console.log('[getSkillDetail] Findings found:', findings.length);
       scanDetails.findings = findings;
     }
   }
