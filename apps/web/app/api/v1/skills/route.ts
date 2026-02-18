@@ -27,10 +27,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing manifest in request body' }, { status: 400 });
   }
 
-  // 3. Normalize name to lowercase
+  // 3. Normalize name to lowercase and add files to manifest
   const manifestInput = rawManifest as Record<string, unknown>;
   if (typeof manifestInput.name === 'string') {
     manifestInput.name = manifestInput.name.toLowerCase().trim();
+  }
+  // Store files array in manifest for UI display
+  if (Array.isArray(files)) {
+    manifestInput.files = files;
   }
 
   // 4. Validate manifest against schema
