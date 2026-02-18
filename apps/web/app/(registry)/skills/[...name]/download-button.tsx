@@ -29,7 +29,9 @@ export function DownloadButton({ name, version }: DownloadButtonProps) {
       // Create a temporary anchor to trigger download
       const link = document.createElement('a');
       link.href = data.downloadUrl;
-      link.download = `${name.replace('/', '-')}-${version}.tgz`;
+      // Extract just the package name (last part after /) for scoped packages
+      const packageName = name.includes('/') ? name.split('/').pop()! : name;
+      link.download = `${packageName}-${version}.tgz`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
