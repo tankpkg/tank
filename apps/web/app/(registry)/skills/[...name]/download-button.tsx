@@ -18,6 +18,7 @@ export function DownloadButton({ name, version }: DownloadButtonProps) {
     setError(null);
 
     try {
+      // 1. Get the signed download URL
       const response = await fetch(`/api/v1/skills/${encodeURIComponent(name)}/${version}`);
 
       if (!response.ok) {
@@ -26,15 +27,26 @@ export function DownloadButton({ name, version }: DownloadButtonProps) {
 
       const data = await response.json();
 
-      // Create a temporary anchor to trigger download
-      const link = document.createElement('a');
-      link.href = data.downloadUrl;
-      // Extract just the package name (last part after /) for scoped packages
+      // 2. Fetch the actual file blob (required for cross-origin URLs to respect download filename)
+      const fileResponse = await fetch(data.downloadUrl);
+      if (!fileResponse.ok) {
+        throw new Error('Failed to download file');
+      }
+
+      const blob = await fileResponse.blob();
+
+      // 3. Create a local blob URL and trigger download
+      const blobUrl = URL.createObjectURL(blob);
       const packageName = name.includes('/') ? name.split('/').pop()! : name;
-      link.download = `${packageName}-${version}.tgz`;
+      const filename = `${packageName}-${version}.tgz`;
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download failed');
     } finally {
