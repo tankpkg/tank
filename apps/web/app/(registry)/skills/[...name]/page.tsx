@@ -302,6 +302,10 @@ export default async function SkillDetailPage({
                     /10 audit score
                   </span>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Based on: SKILL.md, description, permissions, security scan,
+                  file count, README, and package size.
+                </p>
               </div>
             </>
           )}
