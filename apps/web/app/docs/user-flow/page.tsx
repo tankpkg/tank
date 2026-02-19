@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -60,19 +61,13 @@ export default function UserFlowPage() {
                 User Guide
               </Link>
             </nav>
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="hidden sm:inline-flex items-center justify-center h-9 px-4 py-2 text-sm font-medium rounded-md border bg-background shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors whitespace-nowrap shrink-0"
-              >
-                Sign In
-              </Link>
-              <Link
-                href="/skills"
-                className="hidden sm:inline-flex items-center justify-center h-9 px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors whitespace-nowrap shrink-0"
-              >
-                Get Started
-              </Link>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link href="/skills">Get Started</Link>
+              </Button>
               {/* Mobile menu button */}
               <button className="md:hidden p-2 text-muted-foreground hover:text-foreground">
                 <Menu className="h-5 w-5" />
@@ -101,18 +96,12 @@ export default function UserFlowPage() {
                 A security-first package manager for AI agent skills. Learn how to discover, install, and publish skills safely.
               </p>
               <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  href="/skills"
-                  className="inline-flex items-center justify-center h-10 px-6 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors w-full sm:w-auto whitespace-nowrap shrink-0"
-                >
-                  Browse Skills
-                </Link>
-                <a
-                  href="#quick-start"
-                  className="inline-flex items-center justify-center h-10 px-6 text-sm font-medium rounded-md border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground transition-colors w-full sm:w-auto whitespace-nowrap shrink-0"
-                >
-                  Quick Start
-                </a>
+                <Button size="lg" asChild>
+                  <Link href="/skills">Browse Skills</Link>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <a href="#quick-start">Quick Start</a>
+                </Button>
               </div>
             </div>
           </div>
@@ -688,12 +677,9 @@ programmatic API access`}
               </div>
 
               <div className="mt-8 text-center">
-                <Link
-                  href="/skills"
-                  className="inline-flex items-center justify-center h-10 px-6 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors whitespace-nowrap shrink-0"
-                >
-                  Browse Skills Registry
-                </Link>
+                <Button size="lg" asChild>
+                  <Link href="/skills">Browse Skills Registry</Link>
+                </Button>
               </div>
             </div>
           </div>
