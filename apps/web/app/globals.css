@@ -124,3 +124,313 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TANK — OPERATOR'S CONSOLE AESTHETIC
+   A security-first design language inspired by the Matrix operator station
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Custom Tank Theme Variables */
+:root {
+  --tank-midnight: #0a0e1a;
+  --tank-deep: #0f172a;
+  --tank-cyan: #00d4ff;
+  --tank-cyan-muted: #0891b2;
+  --tank-matrix-green: #00ff88;
+  --tank-matrix-dim: #166534;
+  --tank-amber: #f59e0b;
+  --tank-amber-glow: #fbbf24;
+  --tank-purple: #8b5cf6;
+  --tank-purple-dim: #7c3aed;
+
+  /* Glow effects */
+  --tank-glow-cyan: 0 0 20px rgba(0, 212, 255, 0.3);
+  --tank-glow-green: 0 0 20px rgba(0, 255, 136, 0.25);
+  --tank-glow-amber: 0 0 20px rgba(245, 158, 11, 0.4);
+}
+
+.dark {
+  --tank-midnight: #0a0e1a;
+  --tank-deep: #0f172a;
+}
+
+/* Animated gradient mesh background */
+.tank-gradient-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 50% 80%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, var(--tank-midnight) 0%, var(--tank-deep) 100%);
+}
+
+/* Matrix-style data stream grid */
+.tank-grid-overlay {
+  background-image:
+    linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Terminal glow effect for code blocks */
+.tank-terminal {
+  background: linear-gradient(135deg, #0c1222 0%, #0a1628 100%);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(0, 212, 255, 0.05),
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(0, 212, 255, 0.1);
+  position: relative;
+}
+
+.tank-terminal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.02) 0%, transparent 30%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Animated border glow */
+.tank-glow-border {
+  position: relative;
+}
+
+.tank-glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, var(--tank-cyan), var(--tank-purple), var(--tank-matrix-green));
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tank-glow-border:hover::before {
+  opacity: 0.6;
+}
+
+/* Scanline effect (subtle Matrix reference) */
+.tank-scanlines {
+  position: relative;
+}
+
+.tank-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Glowing text effects */
+.tank-text-glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5), 0 0 40px rgba(0, 212, 255, 0.3);
+}
+
+.tank-text-glow-green {
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.5), 0 0 40px rgba(0, 255, 136, 0.3);
+}
+
+.tank-text-glow-amber {
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.5), 0 0 40px rgba(245, 158, 11, 0.3);
+}
+
+/* Animated gradient text */
+.tank-gradient-text {
+  background: linear-gradient(135deg, var(--tank-cyan) 0%, var(--tank-matrix-green) 50%, var(--tank-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hero gradient overlay */
+.tank-hero-gradient {
+  background:
+    radial-gradient(ellipse 100% 80% at 50% -20%, rgba(0, 212, 255, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 50% at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 20% 60%, rgba(0, 255, 136, 0.08) 0%, transparent 50%);
+}
+
+/* Card hover effects with depth */
+.tank-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(0, 212, 255, 0.02) 100%);
+}
+
+.dark .tank-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(0, 212, 255, 0.03) 100%);
+}
+
+.tank-card:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(0, 212, 255, 0.1);
+}
+
+/* Animated data stream background */
+@keyframes tank-data-stream {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 100%; }
+}
+
+.tank-data-stream {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 212, 255, 0.03) 25%,
+    transparent 50%,
+    rgba(0, 255, 136, 0.02) 75%,
+    transparent 100%
+  );
+  background-size: 100% 200%;
+  animation: tank-data-stream 20s linear infinite;
+}
+
+/* Pulse animation for security indicators */
+@keyframes tank-pulse-cyan {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(0, 212, 255, 0); }
+}
+
+.tank-pulse {
+  animation: tank-pulse-cyan 2s ease-in-out infinite;
+}
+
+/* Staggered fade-in animations */
+@keyframes tank-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tank-animate-fade-up {
+  animation: tank-fade-up 0.6s ease-out forwards;
+}
+
+.tank-delay-100 { animation-delay: 0.1s; }
+.tank-delay-200 { animation-delay: 0.2s; }
+.tank-delay-300 { animation-delay: 0.3s; }
+.tank-delay-400 { animation-delay: 0.4s; }
+.tank-delay-500 { animation-delay: 0.5s; }
+
+/* Code syntax highlighting colors */
+.tank-code-keyword { color: #c084fc; }  /* purple for keywords */
+.tank-code-string { color: #00ff88; }   /* green for strings */
+.tank-code-comment { color: #64748b; }  /* muted for comments */
+.tank-code-function { color: #00d4ff; } /* cyan for functions */
+.tank-code-number { color: #fbbf24; }   /* amber for numbers */
+.tank-code-operator { color: #f472b6; } /* pink for operators */
+
+/* Floating orb decorations */
+.tank-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.tank-orb-cyan {
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.3) 0%, transparent 70%);
+}
+
+.tank-orb-purple {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%);
+}
+
+.tank-orb-green {
+  background: radial-gradient(circle, rgba(0, 255, 136, 0.2) 0%, transparent 70%);
+}
+
+/* Security score gauge */
+.tank-score-gauge {
+  background: conic-gradient(
+    var(--tank-matrix-green) calc(var(--score) * 1%),
+    rgba(0, 255, 136, 0.1) calc(var(--score) * 1%)
+  );
+}
+
+/* Custom scrollbar for dark theme */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--tank-midnight);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.2);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.3);
+}
+
+/* Section divider with glow */
+.tank-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 212, 255, 0.3) 20%,
+    rgba(0, 255, 136, 0.3) 50%,
+    rgba(0, 212, 255, 0.3) 80%,
+    transparent 100%
+  );
+}
+
+/* Icon container with glow */
+.tank-icon-glow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tank-icon-glow::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  background: radial-gradient(circle, currentColor 0%, transparent 70%);
+  opacity: 0.2;
+  border-radius: inherit;
+}
+
+/* Badge variants */
+.tank-badge-success {
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.15) 0%, rgba(0, 255, 136, 0.05) 100%);
+  border-color: rgba(0, 255, 136, 0.3);
+  color: var(--tank-matrix-green);
+}
+
+.tank-badge-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--tank-amber);
+}
+
+.tank-badge-info {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.15) 0%, rgba(0, 212, 255, 0.05) 100%);
+  border-color: rgba(0, 212, 255, 0.3);
+  color: var(--tank-cyan);
+}
