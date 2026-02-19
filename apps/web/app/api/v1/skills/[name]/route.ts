@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { eq, desc } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { publishers, skills, skillVersions } from '@/lib/db/schema';
+import { skills, skillVersions } from '@/lib/db/schema';
+import { user } from '@/lib/db/auth-schema';
 
 export async function GET(
   _request: Request,
@@ -20,10 +21,10 @@ export async function GET(
       orgId: skills.orgId,
       createdAt: skills.createdAt,
       updatedAt: skills.updatedAt,
-      publisherDisplayName: publishers.displayName,
+      publisherName: user.name,
     })
     .from(skills)
-    .innerJoin(publishers, eq(skills.publisherId, publishers.id))
+    .innerJoin(user, eq(skills.publisherId, user.id))
     .where(eq(skills.name, name))
     .limit(1);
 
@@ -49,7 +50,7 @@ export async function GET(
     description: skill.description,
     latestVersion: latestVersion?.version ?? null,
     publisher: {
-      displayName: skill.publisherDisplayName,
+      name: skill.publisherName,
     },
     createdAt: skill.createdAt,
     updatedAt: skill.updatedAt,

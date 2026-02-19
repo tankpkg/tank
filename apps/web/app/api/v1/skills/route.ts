@@ -3,7 +3,7 @@ import { eq, and } from 'drizzle-orm';
 import { skillsJsonSchema } from '@tank/shared';
 import { verifyCliAuth } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
-import { publishers, skills, skillVersions } from '@/lib/db/schema';
+import { skills, skillVersions } from '@/lib/db/schema';
 import { organization, member, user, account } from '@/lib/db/auth-schema';
 import { supabaseAdmin } from '@/lib/supabase';
 
@@ -45,28 +45,21 @@ export async function POST(request: Request) {
   const manifest = parsed.data;
   const { name, version } = manifest;
 
-  // 5. Find or create publisher
-  const existingPublishers = await db
-    .select()
-    .from(publishers)
-    .where(eq(publishers.userId, verified.userId))
+  // 5. Ensure user has githubUsername populated (fetch from GitHub if not set)
+  const [authUser] = await db
+    .select({ name: user.name, githubUsername: user.githubUsername })
+    .from(user)
+    .where(eq(user.id, verified.userId))
     .limit(1);
 
-  let publisher = existingPublishers[0];
-  if (!publisher) {
-    const [authUser] = await db
-      .select({ name: user.name, image: user.image })
-      .from(user)
-      .where(eq(user.id, verified.userId))
-      .limit(1);
-
+  // Fetch GitHub username if not already set
+  if (authUser && !authUser.githubUsername) {
     const [githubAccount] = await db
-      .select({ accountId: account.accountId, accessToken: account.accessToken })
+      .select({ accessToken: account.accessToken })
       .from(account)
       .where(and(eq(account.userId, verified.userId), eq(account.providerId, 'github')))
       .limit(1);
 
-    let githubUsername: string | null = null;
     if (githubAccount?.accessToken) {
       try {
         const ghRes = await fetch('https://api.github.com/user', {
@@ -74,21 +67,14 @@ export async function POST(request: Request) {
         });
         if (ghRes.ok) {
           const gh = await ghRes.json() as { login: string };
-          githubUsername = gh.login;
+          // Update user with github username
+          await db
+            .update(user)
+            .set({ githubUsername: gh.login })
+            .where(eq(user.id, verified.userId));
         }
       } catch { /* non-critical — fall back to null */ }
     }
-
-    const [newPublisher] = await db
-      .insert(publishers)
-      .values({
-        userId: verified.userId,
-        displayName: authUser?.name ?? verified.userId,
-        githubUsername,
-        avatarUrl: authUser?.image ?? null,
-      })
-      .returning();
-    publisher = newPublisher;
   }
 
   // 6. Check org membership for scoped packages
@@ -143,7 +129,7 @@ export async function POST(request: Request) {
       .values({
         name,
         description: manifest.description ?? null,
-        publisherId: publisher.id,
+        publisherId: verified.userId,
         orgId,
       })
       .returning();
@@ -183,7 +169,7 @@ export async function POST(request: Request) {
       manifest: manifestWithFiles,
       permissions: (manifest.permissions ?? {}) as Record<string, unknown>,
       auditStatus: 'pending-upload',
-      publishedBy: publisher.id,
+      publishedBy: verified.userId,
       readme: typeof readme === 'string' ? readme : null,
     })
     .returning();
