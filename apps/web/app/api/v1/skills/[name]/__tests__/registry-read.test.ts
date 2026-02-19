@@ -44,11 +44,6 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('@/lib/db/schema', () => ({
-  publishers: {
-    id: 'publishers.id',
-    userId: 'publishers.user_id',
-    displayName: 'publishers.display_name',
-  },
   skills: {
     id: 'skills.id',
     name: 'skills.name',
@@ -98,6 +93,14 @@ vi.mock('@/lib/db/schema', () => ({
   },
 }));
 
+vi.mock('@/lib/db/auth-schema', () => ({
+  user: {
+    id: 'user.id',
+    name: 'user.name',
+    githubUsername: 'user.github_username',
+  },
+}));
+
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((col, val) => ({ col, val, type: 'eq' })),
   and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
@@ -133,7 +136,7 @@ const mockSkill = {
   id: 'skill-1',
   name: 'my-skill',
   description: 'A test skill',
-  publisherId: 'pub-1',
+  publisherId: 'user-1',
   orgId: null,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-15T00:00:00Z'),
@@ -143,16 +146,16 @@ const mockScopedSkill = {
   id: 'skill-2',
   name: '@myorg/my-skill',
   description: 'A scoped skill',
-  publisherId: 'pub-1',
+  publisherId: 'user-1',
   orgId: 'org-1',
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-15T00:00:00Z'),
 };
 
-const mockPublisher = {
-  id: 'pub-1',
-  userId: 'user-1',
-  displayName: 'Test Publisher',
+const mockUser = {
+  id: 'user-1',
+  name: 'Test User',
+  githubUsername: 'testuser',
 };
 
 const mockVersion = {
@@ -202,7 +205,7 @@ describe('GET /api/v1/skills/[name]', () => {
 
   it('returns skill metadata with latest version for a valid skill', async () => {
     // Skill lookup
-    mockLimit.mockResolvedValueOnce([{ ...mockSkill, publisherDisplayName: mockPublisher.displayName }]);
+    mockLimit.mockResolvedValueOnce([{ ...mockSkill, publisherName: mockUser.name }]);
     // Latest version lookup
     mockLimit.mockResolvedValueOnce([mockVersion2]);
 
@@ -216,7 +219,7 @@ describe('GET /api/v1/skills/[name]', () => {
     expect(data.description).toBe('A test skill');
     expect(data.latestVersion).toBe('2.0.0');
     expect(data.publisher).toBeDefined();
-    expect(data.publisher.displayName).toBe('Test Publisher');
+    expect(data.publisher.name).toBe('Test User');
     expect(data.createdAt).toBeDefined();
     expect(data.updatedAt).toBeDefined();
   });
@@ -236,7 +239,7 @@ describe('GET /api/v1/skills/[name]', () => {
 
   it('handles scoped package names (URL-encoded)', async () => {
     // Skill lookup
-    mockLimit.mockResolvedValueOnce([{ ...mockScopedSkill, publisherDisplayName: mockPublisher.displayName }]);
+    mockLimit.mockResolvedValueOnce([{ ...mockScopedSkill, publisherName: mockUser.name }]);
     // Latest version lookup
     mockLimit.mockResolvedValueOnce([mockVersion]);
 
@@ -252,7 +255,7 @@ describe('GET /api/v1/skills/[name]', () => {
 
   it('includes latest version info even when skill has no versions', async () => {
     // Skill lookup
-    mockLimit.mockResolvedValueOnce([{ ...mockSkill, publisherDisplayName: mockPublisher.displayName }]);
+    mockLimit.mockResolvedValueOnce([{ ...mockSkill, publisherName: mockUser.name }]);
     // Latest version lookup returns empty
     mockLimit.mockResolvedValueOnce([]);
 

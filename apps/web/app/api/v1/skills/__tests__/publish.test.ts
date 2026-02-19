@@ -10,7 +10,7 @@ vi.mock('@/lib/auth-helpers', () => ({
 vi.mock('@/lib/db/auth-schema', () => ({
   organization: { id: 'organization.id', slug: 'organization.slug', name: 'organization.name' },
   member: { id: 'member.id', organizationId: 'member.organization_id', userId: 'member.user_id', role: 'member.role' },
-  user: { id: 'user.id', name: 'user.name', image: 'user.image' },
+  user: { id: 'user.id', name: 'user.name', image: 'user.image', githubUsername: 'user.github_username' },
   account: { userId: 'account.user_id', providerId: 'account.provider_id', accountId: 'account.account_id', accessToken: 'account.access_token' },
 }));
 
@@ -35,7 +35,6 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('@/lib/db/schema', () => ({
-  publishers: { id: 'publishers.id', userId: 'publishers.user_id', displayName: 'publishers.display_name' },
   skills: { id: 'skills.id', name: 'skills.name', publisherId: 'skills.publisher_id', orgId: 'skills.org_id' },
   skillVersions: {
     id: 'skill_versions.id',
@@ -196,8 +195,8 @@ describe('POST /api/v1/skills', () => {
   it('normalizes name to lowercase', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
 
-    // Publisher lookup returns existing publisher
-    mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
+    // User lookup returns existing user with githubUsername
+    mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
     // Skill lookup returns empty (new skill)
     mockLimit.mockResolvedValueOnce([]);
     // Skill insert
@@ -230,8 +229,8 @@ describe('POST /api/v1/skills', () => {
 
   it('returns 403 for scoped package when user is not org member', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    // Publisher lookup
-    mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
+    // User lookup
+    mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
     // Org lookup returns existing org
     mockLimit.mockResolvedValueOnce([{ id: 'org-1', slug: 'myorg', name: 'My Org' }]);
     // Member lookup returns empty (user is NOT a member)
@@ -252,8 +251,8 @@ describe('POST /api/v1/skills', () => {
 
   it('returns 403 when org does not exist', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    // Publisher lookup
-    mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
+    // User lookup
+    mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
     // Org lookup returns empty (org does not exist)
     mockLimit.mockResolvedValueOnce([]);
 
@@ -270,10 +269,10 @@ describe('POST /api/v1/skills', () => {
 
   it('returns 409 for duplicate version', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    // Publisher lookup
-    mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
+    // User lookup
+    mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
     // Skill lookup returns existing skill
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill', publisherId: 'pub-1' }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill', publisherId: 'user-1' }]);
     // Version conflict check returns existing version
     mockLimit.mockResolvedValueOnce([{ id: 'version-existing', version: '1.0.0' }]);
 
@@ -292,8 +291,8 @@ describe('POST /api/v1/skills', () => {
 
   it('returns uploadUrl, skillId, versionId for valid publish', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    // Publisher lookup returns existing publisher
-    mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
+    // User lookup returns existing user with githubUsername
+    mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
     // Skill lookup returns empty (new skill)
     mockLimit.mockResolvedValueOnce([]);
     // Skill insert
@@ -323,22 +322,18 @@ describe('POST /api/v1/skills', () => {
     expect(data.versionId).toBe('version-1');
   });
 
-  it('creates publisher if not exists', async () => {
+  it('updates githubUsername if not set', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    // Publisher lookup returns empty (new publisher)
-    mockLimit.mockResolvedValueOnce([]);
-    // User lookup (for display name)
-    mockLimit.mockResolvedValueOnce([{ name: 'Test User', image: 'https://example.com/avatar.png' }]);
+    // User lookup returns user without githubUsername
+    mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: null }]);
     // Account lookup (for GitHub username)
-    mockLimit.mockResolvedValueOnce([{ accountId: '12345', accessToken: 'ghu_fake' }]);
+    mockLimit.mockResolvedValueOnce([{ accessToken: 'ghu_fake' }]);
     // Mock global fetch for GitHub API call
     const originalFetch = global.fetch;
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({ login: 'testuser' }),
     }) as unknown as typeof fetch;
-    // Publisher insert
-    mockReturning.mockResolvedValueOnce([{ id: 'pub-new', userId: 'user-1', displayName: 'Test User' }]);
     // Skill lookup returns empty (new skill)
     mockLimit.mockResolvedValueOnce([]);
     // Skill insert
@@ -363,8 +358,8 @@ describe('POST /api/v1/skills', () => {
       const response = await POST(request);
 
       expect(response.status).toBe(200);
-      // Verify publisher insert was called
-      expect(mockInsert).toHaveBeenCalled();
+      // Verify user update was called to set githubUsername
+      expect(mockUpdate).toHaveBeenCalled();
     } finally {
       global.fetch = originalFetch;
     }
@@ -372,8 +367,8 @@ describe('POST /api/v1/skills', () => {
 
   it('allows scoped package when user is org member', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    // Publisher lookup
-    mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
+    // User lookup
+    mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
     // Org lookup returns existing org
     mockLimit.mockResolvedValueOnce([{ id: 'org-1', slug: 'myorg', name: 'My Org' }]);
     // Member lookup returns user as member
@@ -407,10 +402,10 @@ describe('POST /api/v1/skills', () => {
 
   it('reuses existing skill record', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
-    // Publisher lookup
-    mockLimit.mockResolvedValueOnce([{ id: 'pub-1', userId: 'user-1', displayName: 'Test' }]);
+    // User lookup
+    mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
     // Skill lookup returns existing skill
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-existing', name: 'my-skill', publisherId: 'pub-1' }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-existing', name: 'my-skill', publisherId: 'user-1' }]);
     // Version conflict check returns empty (new version)
     mockLimit.mockResolvedValueOnce([]);
     // Version insert

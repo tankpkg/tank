@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { sql, desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { skills, skillVersions, publishers } from '@/lib/db/schema';
+import { skills, skillVersions } from '@/lib/db/schema';
+import { user } from '@/lib/db/auth-schema';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -31,10 +32,10 @@ export async function GET(request: Request) {
       description: skills.description,
       latestVersion: skillVersions.version,
       auditScore: skillVersions.auditScore,
-      publisher: publishers.displayName,
+      publisher: user.name,
     })
     .from(skills)
-    .leftJoin(publishers, eq(skills.publisherId, publishers.id))
+    .leftJoin(user, eq(skills.publisherId, user.id))
     .leftJoin(
       skillVersions,
       sql`${skillVersions.skillId} = ${skills.id} AND ${skillVersions.createdAt} = (

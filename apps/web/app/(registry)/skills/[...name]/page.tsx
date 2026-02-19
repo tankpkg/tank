@@ -292,7 +292,7 @@ export default async function SkillDetailPage({
                       {data.publisher.githubUsername}
                     </a>
                   ) : (
-                    data.publisher.displayName
+                    data.publisher.name
                   )}
                 </dd>
               </div>

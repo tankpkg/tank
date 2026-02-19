@@ -22,10 +22,6 @@ vi.mock('@/lib/db', () => ({
 }));
 
 vi.mock('@/lib/db/schema', () => ({
-  publishers: {
-    id: 'publishers.id',
-    displayName: 'publishers.display_name',
-  },
   skills: {
     id: 'skills.id',
     name: 'skills.name',
@@ -43,6 +39,14 @@ vi.mock('@/lib/db/schema', () => ({
   skillDownloads: {
     id: 'skill_downloads.id',
     skillId: 'skill_downloads.skill_id',
+  },
+}));
+
+vi.mock('@/lib/db/auth-schema', () => ({
+  user: {
+    id: 'user.id',
+    name: 'user.name',
+    githubUsername: 'user.github_username',
   },
 }));
 

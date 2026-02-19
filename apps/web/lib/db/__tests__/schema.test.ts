@@ -1,54 +1,56 @@
 import { describe, it, expect } from 'vitest';
 import { getTableName, getTableColumns } from 'drizzle-orm';
 import {
-  publishers,
   skills,
   skillVersions,
   skillDownloads,
   auditEvents,
-  publishersRelations,
   skillsRelations,
   skillVersionsRelations,
   skillDownloadsRelations,
 } from '../schema';
+import { user } from '../auth-schema';
 
 describe('schema exports', () => {
-  it('exports all 5 tables', () => {
-    expect(publishers).toBeDefined();
+  it('exports all 4 business tables', () => {
     expect(skills).toBeDefined();
     expect(skillVersions).toBeDefined();
     expect(skillDownloads).toBeDefined();
     expect(auditEvents).toBeDefined();
   });
 
+  it('exports user table from auth-schema', () => {
+    expect(user).toBeDefined();
+  });
+
   it('exports all relation definitions', () => {
-    expect(publishersRelations).toBeDefined();
     expect(skillsRelations).toBeDefined();
     expect(skillVersionsRelations).toBeDefined();
     expect(skillDownloadsRelations).toBeDefined();
   });
 });
 
-describe('publishers table', () => {
+describe('user table (auth-schema)', () => {
   it('has correct table name', () => {
-    expect(getTableName(publishers)).toBe('publishers');
+    expect(getTableName(user)).toBe('user');
   });
 
-  it('has expected columns', () => {
-    const cols = getTableColumns(publishers);
+  it('has expected columns including githubUsername', () => {
+    const cols = getTableColumns(user);
     expect(cols.id).toBeDefined();
-    expect(cols.userId).toBeDefined();
-    expect(cols.displayName).toBeDefined();
+    expect(cols.name).toBeDefined();
+    expect(cols.email).toBeDefined();
+    expect(cols.emailVerified).toBeDefined();
+    expect(cols.image).toBeDefined();
     expect(cols.githubUsername).toBeDefined();
-    expect(cols.avatarUrl).toBeDefined();
     expect(cols.createdAt).toBeDefined();
     expect(cols.updatedAt).toBeDefined();
   });
 
-  it('userId is text type for better-auth compatibility', () => {
-    const cols = getTableColumns(publishers);
-    expect(cols.userId.dataType).toBe('string');
-    expect(cols.userId.notNull).toBe(true);
+  it('githubUsername is unique and nullable', () => {
+    const cols = getTableColumns(user);
+    expect(cols.githubUsername.notNull).toBe(false);
+    expect(cols.githubUsername.isUnique).toBe(true);
   });
 });
 
@@ -73,6 +75,12 @@ describe('skills table', () => {
     const cols = getTableColumns(skills);
     expect(cols.name.notNull).toBe(true);
     expect(cols.name.isUnique).toBe(true);
+  });
+
+  it('publisherId is text type referencing user.id', () => {
+    const cols = getTableColumns(skills);
+    expect(cols.publisherId.dataType).toBe('string');
+    expect(cols.publisherId.notNull).toBe(true);
   });
 
   it('orgId is nullable', () => {
@@ -102,6 +110,12 @@ describe('skill_versions table', () => {
     expect(cols.readme).toBeDefined();
     expect(cols.publishedBy).toBeDefined();
     expect(cols.createdAt).toBeDefined();
+  });
+
+  it('publishedBy is text type referencing user.id', () => {
+    const cols = getTableColumns(skillVersions);
+    expect(cols.publishedBy.dataType).toBe('string');
+    expect(cols.publishedBy.notNull).toBe(true);
   });
 
   it('auditStatus defaults to pending', () => {
@@ -165,20 +179,20 @@ describe('audit_events table', () => {
 
 describe('type inference', () => {
   it('$inferSelect produces correct types', () => {
-    type Publisher = typeof publishers.$inferSelect;
+    type User = typeof user.$inferSelect;
     type Skill = typeof skills.$inferSelect;
     type SkillVersion = typeof skillVersions.$inferSelect;
     type SkillDownload = typeof skillDownloads.$inferSelect;
     type AuditEvent = typeof auditEvents.$inferSelect;
 
     // Type-level assertions — if these compile, types are correct
-    const _publisherCheck: Publisher = {} as Publisher;
+    const _userCheck: User = {} as User;
     const _skillCheck: Skill = {} as Skill;
     const _versionCheck: SkillVersion = {} as SkillVersion;
     const _downloadCheck: SkillDownload = {} as SkillDownload;
     const _auditCheck: AuditEvent = {} as AuditEvent;
 
-    expect(_publisherCheck).toBeDefined();
+    expect(_userCheck).toBeDefined();
     expect(_skillCheck).toBeDefined();
     expect(_versionCheck).toBeDefined();
     expect(_downloadCheck).toBeDefined();

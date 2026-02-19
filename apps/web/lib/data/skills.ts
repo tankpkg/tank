@@ -13,7 +13,8 @@
 
 import { eq, desc, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { skills, skillVersions, publishers, scanResults, scanFindings } from '@/lib/db/schema';
+import { skills, skillVersions, scanResults, scanFindings } from '@/lib/db/schema';
+import { user } from '@/lib/db/auth-schema';
 
 // ── In-memory TTL cache ──────────────────────────────────────────────────────
 // Skill metadata rarely changes. A short TTL eliminates repeated DB round-trips
@@ -96,7 +97,7 @@ export interface SkillDetailResult {
   repositoryUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
-  publisher: { displayName: string; githubUsername: string | null };
+  publisher: { name: string; githubUsername: string | null };
   downloadCount: number;
   latestVersion: SkillVersionDetail | null;
   versions: SkillVersionSummary[];
@@ -141,9 +142,9 @@ export async function getSkillDetail(
       skillDescription: skills.description,
       skillCreatedAt: skills.createdAt,
       skillUpdatedAt: skills.updatedAt,
-      // Publisher
-      publisherDisplayName: publishers.displayName,
-      publisherGithubUsername: publishers.githubUsername,
+      // Publisher (now user)
+      publisherName: user.name,
+      publisherGithubUsername: user.githubUsername,
       // Download count (scalar subquery, computed once)
       downloadCount:
         sql<number>`coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = ${skills.id}), 0)`,
@@ -162,7 +163,7 @@ export async function getSkillDetail(
       versionTarballSize: skillVersions.tarballSize,
     })
     .from(skills)
-    .innerJoin(publishers, eq(skills.publisherId, publishers.id))
+    .innerJoin(user, eq(skills.publisherId, user.id))
     .leftJoin(skillVersions, eq(skillVersions.skillId, skills.id))
     .where(eq(skills.name, name))
     .orderBy(desc(skillVersions.createdAt));
@@ -264,7 +265,7 @@ export async function getSkillDetail(
     repositoryUrl: first.skillRepositoryUrl,
     createdAt: first.skillCreatedAt,
     updatedAt: first.skillUpdatedAt,
-    publisher: { displayName: first.publisherDisplayName, githubUsername: first.publisherGithubUsername },
+    publisher: { name: first.publisherName, githubUsername: first.publisherGithubUsername },
     downloadCount: first.downloadCount,
     latestVersion,
     versions,
@@ -303,11 +304,11 @@ export async function searchSkills(
       description: skills.description,
       latestVersion: skillVersions.version,
       auditScore: skillVersions.auditScore,
-      publisher: sql<string>`coalesce(${publishers.githubUsername}, ${publishers.displayName})`,
+      publisher: sql<string>`coalesce(${user.githubUsername}, ${user.name})`,
       total: sql<number>`count(*) OVER()`,
     })
     .from(skills)
-    .leftJoin(publishers, eq(skills.publisherId, publishers.id))
+    .leftJoin(user, eq(skills.publisherId, user.id))
     .leftJoin(
       skillVersions,
       sql`${skillVersions.skillId} = ${skills.id} AND ${skillVersions.createdAt} = (
