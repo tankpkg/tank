@@ -147,30 +147,18 @@ export async function cleanupE2E(ctx: E2EContext): Promise<void> {
   const orgId = `e2e-org-${runId}`;
 
   try {
-    // Delete skill data (cascades: downloads → versions → skills → publishers)
-    // First find publishers by userId
-    const publishers = await sql`
-      SELECT id FROM publishers WHERE user_id = ${userId}
+    // Delete skill data (cascades: downloads → versions → skills)
+    await sql`
+      DELETE FROM skill_downloads WHERE skill_id IN (
+        SELECT id FROM skills WHERE publisher_id = ${userId}
+      )
     `;
-    if (publishers.length > 0) {
-      const pubIds = publishers.map((p: { id: string }) => p.id);
-      // Delete downloads for skills owned by this publisher
-      await sql`
-        DELETE FROM skill_downloads WHERE skill_id IN (
-          SELECT id FROM skills WHERE publisher_id = ANY(${pubIds})
-        )
-      `;
-      // Delete versions
-      await sql`
-        DELETE FROM skill_versions WHERE skill_id IN (
-          SELECT id FROM skills WHERE publisher_id = ANY(${pubIds})
-        )
-      `;
-      // Delete skills
-      await sql`DELETE FROM skills WHERE publisher_id = ANY(${pubIds})`;
-      // Delete publishers
-      await sql`DELETE FROM publishers WHERE id = ANY(${pubIds})`;
-    }
+    await sql`
+      DELETE FROM skill_versions WHERE skill_id IN (
+        SELECT id FROM skills WHERE publisher_id = ${userId}
+      )
+    `;
+    await sql`DELETE FROM skills WHERE publisher_id = ${userId}`;
 
     // Delete auth data (reverse dependency order)
     await sql`DELETE FROM "member" WHERE id LIKE ${'e2e-member-' + runId + '%'}`;

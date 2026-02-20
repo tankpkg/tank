@@ -103,6 +103,9 @@ The permission model is the core security innovation.
 2. **Project budget**: each project declares what it allows (`permissions` in `skills.json`)
 3. **Runtime enforcement**: the sandbox blocks anything not declared (Phase 3)
 
+**Performance Guardrails:**
+To prevent security features from degrading developer experience, Tank implements a non-cached performance regression suite that gates all CI merges. See [Performance Testing](performance-testing.md) for methodology.
+
 **Permission types:**
 ```
 network:outbound     — make HTTP/HTTPS requests

@@ -1,0 +1,26 @@
+{
+  "webRoutes": [
+    { "route": "/", "ttfbMs": 15, "lcpMs": 30, "fcpMs": 25, "cls": 0.1 },
+    { "route": "/skills", "ttfbMs": 60, "lcpMs": 120, "fcpMs": 90, "cls": 0.1 },
+    { "route": "/skills/test-org/test-skill", "ttfbMs": 35, "lcpMs": 70, "fcpMs": 55, "cls": 0.1 }
+  ],
+  "apiRoutes": [
+    { "route": "/api/v1/search?q=test", "p95Ms": 90, "sampleCount": 20 },
+    { "route": "/api/v1/skills/test-org/test-skill", "p95Ms": 50, "sampleCount": 20 },
+    { "route": "/api/v1/skills/test-org/test-skill/versions", "p95Ms": 10, "sampleCount": 20 },
+    { "route": "/api/v1/skills/test-org/test-skill/1.0.0", "p95Ms": 10, "sampleCount": 20 }
+  ],
+  "runs": {
+    "webRunsPerRoute": 5,
+    "apiRunsPerRoute": 20,
+    "warmupRuns": {
+      "web": 1,
+      "api": 2
+    }
+  },
+  "gating": {
+    "webAggregation": "median",
+    "apiAggregation": "p95",
+    "maxVariancePct": 15
+  }
+}

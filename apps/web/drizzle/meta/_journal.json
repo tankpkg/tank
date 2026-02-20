@@ -15,6 +15,20 @@
       "when": 1771173756425,
       "tag": "0001_tense_blue_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771543300000,
+      "tag": "0002_perf_read_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1771544869256,
+      "tag": "0003_cheerful_moon_knight",
+      "breakpoints": true
     }
   ]
 }

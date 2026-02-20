@@ -60,3 +60,98 @@ jobs:
 
       - name: Run Python tests
         run: python -m pytest apps/web/api-python/analyze/tests/ -v
+
+  performance:
+    runs-on: ubuntu-latest
+    needs: test
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: tank
+          POSTGRES_PASSWORD: tank
+          POSTGRES_DB: tank_perf
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U tank -d tank_perf"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
+      BETTER_AUTH_SECRET: ci-perf-secret-not-real
+      NEXT_PUBLIC_APP_URL: http://localhost:3999
+      TANK_PERF_MODE: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase local stack
+        run: supabase start
+
+      - name: Export Supabase env vars
+        run: |
+          echo "SUPABASE_URL=$(supabase status --output json | jq -r '.API_URL')" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(supabase status --output json | jq -r '.SERVICE_ROLE_KEY')" >> $GITHUB_ENV
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Provision database schema
+        run: pnpm --filter=web exec drizzle-kit push --force
+        env:
+          DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
+
+      - name: Seed deterministic perf data
+        run: pnpm --filter=web run perf:seed
+
+      - name: Run performance tests
+        id: perf-test
+        run: pnpm --filter=web run perf:test
+
+      - name: Generate performance report
+        if: always() && steps.perf-test.outcome != 'skipped'
+        run: pnpm --filter=web run perf:report || true
+
+      - name: Upload performance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results
+          path: apps/web/perf/results/*.json
+          if-no-files-found: warn
+          retention-days: 30
