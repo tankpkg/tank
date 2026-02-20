@@ -54,5 +54,11 @@ chmod +x "$OUTPUT"
 echo "Binary size:"
 ls -lh "$OUTPUT"
 
-echo "Smoke test:"
-"$OUTPUT" --version
+HOST_TARGET="bun-${OS}-${ARCH}"
+
+if [ -n "$TARGET" ] && [ "$TARGET" != "$HOST_TARGET" ]; then
+  echo "Skipping smoke test for cross-compiled target: $TARGET (host: $HOST_TARGET)"
+else
+  echo "Smoke test:"
+  "$OUTPUT" --version
+fi

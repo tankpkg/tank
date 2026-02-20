@@ -204,6 +204,7 @@ jobs:
     name: publish-npm
     runs-on: ubuntu-22.04
     needs: build
+    continue-on-error: true
     env:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 

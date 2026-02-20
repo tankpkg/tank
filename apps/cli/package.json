@@ -4,7 +4,7 @@
   "description": "Security-first package manager for AI agent skills",
   "type": "module",
   "bin": {
-    "tank": "./dist/bin/tank.js"
+    "tank": "dist/bin/tank.js"
   },
   "files": [
     "dist"
