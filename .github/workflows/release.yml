@@ -87,6 +87,9 @@ jobs:
       VERSION: ${{ github.ref_name }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -230,6 +233,7 @@ jobs:
           pnpm --filter ./apps/cli build
 
       - name: Publish to npm
+        continue-on-error: true
         if: ${{ env.NPM_TOKEN != '' }}
         working-directory: apps/cli
         env:
