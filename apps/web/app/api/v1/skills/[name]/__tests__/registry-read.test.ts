@@ -2,44 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
-// Mock Drizzle db with chainable query builder
-const mockReturning = vi.fn();
-const mockValues = vi.fn(() => ({ returning: mockReturning }));
-const mockInsert = vi.fn(() => ({ values: mockValues }));
+const mockExecute = vi.fn();
 
-// Create a thenable that resolves to empty array for scan results queries
-const createThenable = () => ({
-  then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
-    return Promise.resolve([]).then(onFulfilled, onRejected);
-  },
-});
-
-const mockLimit = vi.fn(() => createThenable());
-// mockWhere returns a chainable that supports .limit() and .orderBy()
-// beforeEach overrides this with mockReturnValue for each test suite
-const mockWhere = vi.fn((): Record<string, unknown> => ({
-  limit: mockLimit,
-  orderBy: vi.fn(() => ({ limit: mockLimit })),
-  then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
-    // When awaited directly (without .limit()), resolve with empty array
-    return Promise.resolve([]).then(onFulfilled, onRejected);
-  },
-}));
-const mockOrderBy = vi.fn((): unknown => ({ limit: mockLimit }));
-const mockFrom = vi.fn((): Record<string, unknown> => ({ where: mockWhere, innerJoin: mockInnerJoin, orderBy: mockOrderBy }));
+const mockLimit = vi.fn();
+const mockWhere = vi.fn((): Record<string, unknown> => ({ limit: mockLimit }));
+const mockFrom = vi.fn((): Record<string, unknown> => ({ where: mockWhere }));
 const mockSelect = vi.fn(() => ({ from: mockFrom }));
-const mockSet = vi.fn(() => ({ where: vi.fn() }));
-const mockUpdate = vi.fn(() => ({ set: mockSet }));
 
-// Support for innerJoin chain: select().from().innerJoin().where().orderBy().limit()
-const mockInnerJoinWhere = vi.fn((): Record<string, unknown> => ({ orderBy: mockOrderBy, limit: mockLimit }));
-const mockInnerJoin = vi.fn((): Record<string, unknown> => ({ where: mockInnerJoinWhere, orderBy: mockOrderBy, limit: mockLimit }));
+const mockInsertValues = vi.fn(() => Promise.resolve());
+const mockInsert = vi.fn(() => ({ values: mockInsertValues }));
 
 vi.mock('@/lib/db', () => ({
   db: {
-    insert: mockInsert,
+    execute: mockExecute,
     select: mockSelect,
-    update: mockUpdate,
+    insert: mockInsert,
   },
 }));
 
@@ -52,6 +29,11 @@ vi.mock('@/lib/db/schema', () => ({
     orgId: 'skills.org_id',
     createdAt: 'skills.created_at',
     updatedAt: 'skills.updated_at',
+  },
+  user: {
+    id: 'user.id',
+    name: 'user.name',
+    githubUsername: 'user.github_username',
   },
   skillVersions: {
     id: 'skill_versions.id',
@@ -132,82 +114,22 @@ function makeGetRequest(url: string) {
   return new Request(url, { method: 'GET' });
 }
 
-const mockSkill = {
-  id: 'skill-1',
-  name: 'my-skill',
-  description: 'A test skill',
-  publisherId: 'user-1',
-  orgId: null,
-  createdAt: new Date('2026-01-01T00:00:00Z'),
-  updatedAt: new Date('2026-01-15T00:00:00Z'),
-};
-
-const mockScopedSkill = {
-  id: 'skill-2',
-  name: '@myorg/my-skill',
-  description: 'A scoped skill',
-  publisherId: 'user-1',
-  orgId: 'org-1',
-  createdAt: new Date('2026-01-01T00:00:00Z'),
-  updatedAt: new Date('2026-01-15T00:00:00Z'),
-};
-
-const mockUser = {
-  id: 'user-1',
-  name: 'Test User',
-  githubUsername: 'testuser',
-};
-
-const mockVersion = {
-  id: 'version-1',
-  skillId: 'skill-1',
-  version: '1.0.0',
-  integrity: 'sha512-abc123',
-  tarballPath: 'skills/skill-1/1.0.0.tgz',
-  tarballSize: 2048,
-  fileCount: 5,
-  manifest: { name: 'my-skill', version: '1.0.0' },
-  permissions: { network: { outbound: ['*.example.com'] } },
-  auditScore: 8.5,
-  auditStatus: 'published',
-  publishedBy: 'pub-1',
-  createdAt: new Date('2026-01-10T00:00:00Z'),
-};
-
-const mockVersion2 = {
-  id: 'version-2',
-  skillId: 'skill-1',
-  version: '2.0.0',
-  integrity: 'sha512-def456',
-  tarballPath: 'skills/skill-1/2.0.0.tgz',
-  tarballSize: 3072,
-  fileCount: 8,
-  manifest: { name: 'my-skill', version: '2.0.0' },
-  permissions: {},
-  auditScore: 9.0,
-  auditStatus: 'published',
-  publishedBy: 'pub-1',
-  createdAt: new Date('2026-02-01T00:00:00Z'),
-};
-
 // ─── GET /api/v1/skills/[name] ──────────────────────────────────────────────
 
 describe('GET /api/v1/skills/[name]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset the chain: from() returns { where, innerJoin }
-    mockFrom.mockReturnValue({ where: mockWhere, innerJoin: mockInnerJoin, orderBy: mockOrderBy });
-    mockWhere.mockReturnValue({ limit: mockLimit, orderBy: mockOrderBy });
-    mockInnerJoin.mockReturnValue({ where: mockInnerJoinWhere, orderBy: mockOrderBy, limit: mockLimit });
-    mockInnerJoinWhere.mockReturnValue({ orderBy: mockOrderBy, limit: mockLimit });
-    mockOrderBy.mockReturnValue({ limit: mockLimit });
   });
 
   it('returns skill metadata with latest version for a valid skill', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([{ ...mockSkill, publisherName: mockUser.name }]);
-    // Latest version lookup
-    mockLimit.mockResolvedValueOnce([mockVersion2]);
+    mockExecute.mockResolvedValueOnce([{
+      name: 'my-skill',
+      description: 'A test skill',
+      latestVersion: '2.0.0',
+      publisherName: 'Test User',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-15T00:00:00Z',
+    }]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill');
@@ -225,8 +147,7 @@ describe('GET /api/v1/skills/[name]', () => {
   });
 
   it('returns 404 for non-existent skill', async () => {
-    // Skill lookup returns empty
-    mockLimit.mockResolvedValueOnce([]);
+    mockExecute.mockResolvedValueOnce([]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/nonexistent');
@@ -238,13 +159,16 @@ describe('GET /api/v1/skills/[name]', () => {
   });
 
   it('handles scoped package names (URL-encoded)', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([{ ...mockScopedSkill, publisherName: mockUser.name }]);
-    // Latest version lookup
-    mockLimit.mockResolvedValueOnce([mockVersion]);
+    mockExecute.mockResolvedValueOnce([{
+      name: '@myorg/my-skill',
+      description: 'A scoped skill',
+      latestVersion: '1.0.0',
+      publisherName: 'Test User',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-15T00:00:00Z',
+    }]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/route');
-    // URL-encoded @myorg/my-skill → %40myorg%2Fmy-skill
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/%40myorg%2Fmy-skill');
     const response = await GET(request, { params: Promise.resolve({ name: '%40myorg%2Fmy-skill' }) });
 
@@ -254,10 +178,14 @@ describe('GET /api/v1/skills/[name]', () => {
   });
 
   it('includes latest version info even when skill has no versions', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([{ ...mockSkill, publisherName: mockUser.name }]);
-    // Latest version lookup returns empty
-    mockLimit.mockResolvedValueOnce([]);
+    mockExecute.mockResolvedValueOnce([{
+      name: 'my-skill',
+      description: 'A test skill',
+      latestVersion: null,
+      publisherName: 'Test User',
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-15T00:00:00Z',
+    }]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill');
@@ -275,23 +203,58 @@ describe('GET /api/v1/skills/[name]', () => {
 describe('GET /api/v1/skills/[name]/[version]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFrom.mockReturnValue({ where: mockWhere, innerJoin: mockInnerJoin, orderBy: mockOrderBy });
-    mockWhere.mockReturnValue({ limit: mockLimit, orderBy: mockOrderBy });
-    mockInnerJoin.mockReturnValue({ where: mockInnerJoinWhere, orderBy: mockOrderBy, limit: mockLimit });
-    mockInnerJoinWhere.mockReturnValue({ orderBy: mockOrderBy, limit: mockLimit });
-    mockOrderBy.mockReturnValue({ limit: mockLimit });
   });
 
+  function setupSkillVersionExecute(row: Record<string, unknown> | null) {
+    if (row) {
+      mockExecute.mockResolvedValueOnce([row]);
+    } else {
+      mockExecute.mockResolvedValueOnce([]);
+    }
+  }
+
+  function setupMetaExecute(downloadCount: number) {
+    mockExecute.mockResolvedValueOnce([{
+      downloadCount,
+      scanVerdict: null,
+      findingStage: null,
+      findingSeverity: null,
+      findingType: null,
+      findingDescription: null,
+      findingLocation: null,
+    }]);
+  }
+
+  const skillVersionRow = {
+    skillId: 'skill-1',
+    name: 'my-skill',
+    description: 'A test skill',
+    versionId: 'version-1',
+    version: '1.0.0',
+    integrity: 'sha512-abc123',
+    permissions: { network: { outbound: ['*.example.com'] } },
+    auditScore: 8.5,
+    auditStatus: 'published',
+    tarballPath: 'skills/skill-1/1.0.0.tgz',
+    publishedAt: '2026-01-10T00:00:00Z',
+  };
+
+  const scopedSkillVersionRow = {
+    ...skillVersionRow,
+    skillId: 'skill-2',
+    name: '@myorg/my-skill',
+    tarballPath: 'skills/skill-2/1.0.0.tgz',
+  };
+
   it('returns version details with download URL for valid version', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([mockSkill]);
-    // Version lookup
-    mockLimit.mockResolvedValueOnce([mockVersion]);
-    // Signed download URL
+    setupSkillVersionExecute(skillVersionRow);
     mockCreateSignedUrl.mockResolvedValue({
       data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
       error: null,
     });
+    // recordDownload dedup check
+    mockLimit.mockResolvedValueOnce([]);
+    setupMetaExecute(0);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill/1.0.0');
@@ -312,7 +275,9 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
   });
 
   it('returns 404 when skill does not exist', async () => {
-    // Skill lookup returns empty
+    // skill+version execute returns empty
+    setupSkillVersionExecute(null);
+    // Fallback skill check also returns empty
     mockLimit.mockResolvedValueOnce([]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
@@ -327,10 +292,10 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
   });
 
   it('returns 404 when version does not exist', async () => {
-    // Skill lookup returns skill
-    mockLimit.mockResolvedValueOnce([mockSkill]);
-    // Version lookup returns empty
-    mockLimit.mockResolvedValueOnce([]);
+    // skill+version execute returns empty
+    setupSkillVersionExecute(null);
+    // Fallback skill check finds the skill
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-1' }]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill/9.9.9');
@@ -344,15 +309,13 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
   });
 
   it('generates signed download URL with 1 hour expiry', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([mockSkill]);
-    // Version lookup
-    mockLimit.mockResolvedValueOnce([mockVersion]);
-    // Signed download URL
+    setupSkillVersionExecute(skillVersionRow);
     mockCreateSignedUrl.mockResolvedValue({
       data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
       error: null,
     });
+    mockLimit.mockResolvedValueOnce([]);
+    setupMetaExecute(0);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill/1.0.0');
@@ -360,25 +323,17 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
       params: Promise.resolve({ name: 'my-skill', version: '1.0.0' }),
     });
 
-    // Verify createSignedUrl was called with correct path and 1 hour (3600 seconds)
-    expect(mockCreateSignedUrl).toHaveBeenCalledWith(mockVersion.tarballPath, 3600);
+    expect(mockCreateSignedUrl).toHaveBeenCalledWith(skillVersionRow.tarballPath, 3600);
   });
 
   it('handles scoped package names for version lookup', async () => {
-    const scopedVersion = {
-      ...mockVersion,
-      skillId: 'skill-2',
-      tarballPath: 'skills/skill-2/1.0.0.tgz',
-    };
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([mockScopedSkill]);
-    // Version lookup
-    mockLimit.mockResolvedValueOnce([scopedVersion]);
-    // Signed download URL
+    setupSkillVersionExecute(scopedSkillVersionRow);
     mockCreateSignedUrl.mockResolvedValue({
       data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
       error: null,
     });
+    mockLimit.mockResolvedValueOnce([]);
+    setupMetaExecute(0);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/%40myorg%2Fmy-skill/1.0.0');
@@ -392,11 +347,7 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
   });
 
   it('returns 500 when signed URL generation fails', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([mockSkill]);
-    // Version lookup
-    mockLimit.mockResolvedValueOnce([mockVersion]);
-    // Signed URL fails
+    setupSkillVersionExecute(skillVersionRow);
     mockCreateSignedUrl.mockResolvedValue({
       data: null,
       error: { message: 'Storage error' },
@@ -419,18 +370,28 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
 describe('GET /api/v1/skills/[name]/versions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFrom.mockReturnValue({ where: mockWhere, innerJoin: mockInnerJoin, orderBy: mockOrderBy });
-    mockWhere.mockReturnValue({ limit: mockLimit, orderBy: mockOrderBy });
-    mockInnerJoin.mockReturnValue({ where: mockInnerJoinWhere, orderBy: mockOrderBy, limit: mockLimit });
-    mockInnerJoinWhere.mockReturnValue({ orderBy: mockOrderBy, limit: mockLimit });
-    mockOrderBy.mockReturnValue({ limit: mockLimit });
   });
 
+  const version1Row = {
+    name: 'my-skill',
+    version: '1.0.0',
+    integrity: 'sha512-abc123',
+    auditScore: 8.5,
+    auditStatus: 'published',
+    publishedAt: '2026-01-10T00:00:00Z',
+  };
+
+  const version2Row = {
+    name: 'my-skill',
+    version: '2.0.0',
+    integrity: 'sha512-def456',
+    auditScore: 9.0,
+    auditStatus: 'published',
+    publishedAt: '2026-02-01T00:00:00Z',
+  };
+
   it('returns all versions for a valid skill', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([mockSkill]);
-    // Versions lookup — orderBy returns the array directly (no limit)
-    mockOrderBy.mockResolvedValueOnce([mockVersion2, mockVersion]);
+    mockExecute.mockResolvedValueOnce([version2Row, version1Row]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/versions/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill/versions');
@@ -442,7 +403,6 @@ describe('GET /api/v1/skills/[name]/versions', () => {
     expect(data.versions).toHaveLength(2);
     expect(data.versions[0].version).toBe('2.0.0');
     expect(data.versions[1].version).toBe('1.0.0');
-    // Each version should have these fields
     expect(data.versions[0].integrity).toBeDefined();
     expect(data.versions[0].auditScore).toBeDefined();
     expect(data.versions[0].auditStatus).toBeDefined();
@@ -450,8 +410,7 @@ describe('GET /api/v1/skills/[name]/versions', () => {
   });
 
   it('returns 404 when skill does not exist', async () => {
-    // Skill lookup returns empty
-    mockLimit.mockResolvedValueOnce([]);
+    mockExecute.mockResolvedValueOnce([]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/versions/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/nonexistent/versions');
@@ -463,10 +422,15 @@ describe('GET /api/v1/skills/[name]/versions', () => {
   });
 
   it('returns empty versions array when skill has no versions', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([mockSkill]);
-    // Versions lookup returns empty
-    mockOrderBy.mockResolvedValueOnce([]);
+    // Skill exists but LEFT JOIN produces a row with null version fields
+    mockExecute.mockResolvedValueOnce([{
+      name: 'my-skill',
+      version: null,
+      integrity: null,
+      auditScore: null,
+      auditStatus: null,
+      publishedAt: null,
+    }]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/versions/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill/versions');
@@ -479,10 +443,10 @@ describe('GET /api/v1/skills/[name]/versions', () => {
   });
 
   it('handles scoped package names for versions list', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([mockScopedSkill]);
-    // Versions lookup
-    mockOrderBy.mockResolvedValueOnce([mockVersion]);
+    mockExecute.mockResolvedValueOnce([{
+      ...version1Row,
+      name: '@myorg/my-skill',
+    }]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/versions/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/%40myorg%2Fmy-skill/versions');
@@ -495,10 +459,7 @@ describe('GET /api/v1/skills/[name]/versions', () => {
   });
 
   it('versions are ordered by createdAt descending (newest first)', async () => {
-    // Skill lookup
-    mockLimit.mockResolvedValueOnce([mockSkill]);
-    // Versions lookup — already ordered by createdAt desc
-    mockOrderBy.mockResolvedValueOnce([mockVersion2, mockVersion]);
+    mockExecute.mockResolvedValueOnce([version2Row, version1Row]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/versions/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill/versions');
@@ -506,7 +467,6 @@ describe('GET /api/v1/skills/[name]/versions', () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    // v2.0.0 (Feb 2026) should come before v1.0.0 (Jan 2026)
     expect(data.versions[0].version).toBe('2.0.0');
     expect(data.versions[1].version).toBe('1.0.0');
   });

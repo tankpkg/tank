@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
-import { eq, desc } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { skills, skillVersions } from '@/lib/db/schema';
+import { skills } from '@/lib/db/schema';
 
+/**
+ * GET /api/v1/skills/[name]/versions — single query for skill + all versions.
+ *
+ * Consolidation: LEFT JOIN skill_versions onto skills in one query.
+ * Filters out pending/incomplete versions in JS (same as before).
+ * Round-trips: 1 (was 2).
+ */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ name: string }> },
@@ -10,37 +17,40 @@ export async function GET(
   const { name: rawName } = await params;
   const name = decodeURIComponent(rawName);
 
-  // 1. Look up skill by name
-  const existingSkills = await db
-    .select()
-    .from(skills)
-    .where(eq(skills.name, name))
-    .limit(1);
+  const rows = await db.execute(sql`
+    SELECT
+      s.name,
+      sv.version,
+      sv.integrity,
+      sv.audit_score AS "auditScore",
+      sv.audit_status AS "auditStatus",
+      sv.created_at AS "publishedAt"
+    FROM ${skills} s
+    LEFT JOIN skill_versions sv ON sv.skill_id = s.id
+    WHERE s.name = ${name}
+    ORDER BY sv.created_at DESC
+  `);
 
-  if (existingSkills.length === 0) {
+  if (rows.length === 0) {
     return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
   }
 
-  const skill = existingSkills[0];
+  const skillName = (rows[0] as Record<string, unknown>).name as string;
 
-  // 2. Get all versions ordered by createdAt descending
-  const versions = await db
-    .select()
-    .from(skillVersions)
-    .where(eq(skillVersions.skillId, skill.id))
-    .orderBy(desc(skillVersions.createdAt));
-
-  // 3. Return response (filter out pending/incomplete versions)
   return NextResponse.json({
-    name: skill.name,
-    versions: versions
-      .filter((v) => v.integrity !== 'pending' && v.auditStatus !== 'pending-upload')
-      .map((v) => ({
-        version: v.version,
-        integrity: v.integrity,
-        auditScore: v.auditScore,
-        auditStatus: v.auditStatus,
-        publishedAt: v.createdAt,
+    name: skillName,
+    versions: rows
+      .filter((r: Record<string, unknown>) =>
+        r.version !== null &&
+        r.integrity !== 'pending' &&
+        r.auditStatus !== 'pending-upload',
+      )
+      .map((r: Record<string, unknown>) => ({
+        version: r.version as string,
+        integrity: r.integrity as string,
+        auditScore: r.auditScore != null ? Number(r.auditScore) : null,
+        auditStatus: r.auditStatus as string,
+        publishedAt: r.publishedAt as string,
       })),
   });
 }

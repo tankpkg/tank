@@ -153,9 +153,11 @@ export default async function SkillDetailPage({
   const readmeContent = data.latestVersion?.readme;
 
   const readmeTab = readmeContent ? (
-    <SkillReadme content={readmeContent} />
+    <div data-testid="readme-root">
+      <SkillReadme content={readmeContent} />
+    </div>
   ) : (
-    <div className="py-12 text-center text-muted-foreground">
+    <div className="py-12 text-center text-muted-foreground" data-testid="readme-root">
       <p className="text-lg font-medium mb-1">No README</p>
       <p className="text-sm">
         This skill doesn&apos;t have a README yet. Add a SKILL.md to your
@@ -167,15 +169,17 @@ export default async function SkillDetailPage({
   const versionsTab = <VersionHistory versions={data.versions} />;
 
   const filesTab = (
-    <FileExplorer
-      files={fileList}
-      readme={data.latestVersion?.readme}
-      manifest={latestManifest}
-    />
+    <div data-testid="file-explorer-root">
+      <FileExplorer
+        files={fileList}
+        readme={data.latestVersion?.readme}
+        manifest={latestManifest}
+      />
+    </div>
   );
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto" data-testid="skill-detail-root">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
           <h1 className="text-2xl font-bold tracking-tight font-mono">

@@ -27,6 +27,7 @@ export function SearchBar({ defaultValue }: { defaultValue: string }) {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search skills..."
         className="max-w-md"
+        data-testid="skills-filter-input"
       />
       <Button type="submit" variant="secondary">
         Search
