@@ -12,7 +12,7 @@ interface ApiRouteResult {
 }
 
 interface WebRunMetrics {
-  ttfbMs: number;
+  responseTimeMs: number;
   fcpMs: number;
   lcpMs: number;
   cls: number;
@@ -84,28 +84,28 @@ console.log(`  Web result files: ${webResults.length}`);
 console.log(`  API result files: ${apiResults.length}`);
 console.log(`${'='.repeat(70)}\n`);
 
-console.log('--- WEB ROUTES (aggregated TTFB medians across suite runs) ---\n');
+console.log('--- WEB ROUTES (aggregated response time medians across suite runs) ---\n');
 
 const webRouteMap = new Map<string, number[]>();
 for (const result of webResults) {
   for (const wr of result.webRoutes) {
     if (!webRouteMap.has(wr.route)) webRouteMap.set(wr.route, []);
-    webRouteMap.get(wr.route)!.push(wr.aggregated.ttfbMs);
+    webRouteMap.get(wr.route)!.push(wr.aggregated.responseTimeMs);
   }
 }
 
-for (const [route, ttfbs] of webRouteMap) {
-  const med = median(ttfbs);
-  const max = Math.max(...ttfbs);
-  const min = Math.min(...ttfbs);
-  const spread = spreadPct(ttfbs);
-  const fcps = ttfbs.map((t) => t * 1.1);
-  const lcps = ttfbs.map((t) => t * 1.3);
+for (const [route, responseTimes] of webRouteMap) {
+  const med = median(responseTimes);
+  const max = Math.max(...responseTimes);
+  const min = Math.min(...responseTimes);
+  const spread = spreadPct(responseTimes);
+  const fcps = responseTimes.map((t) => t * 1.1);
+  const lcps = responseTimes.map((t) => t * 1.3);
 
   console.log(`  Route: ${route}`);
-  console.log(`    Runs: ${ttfbs.length}`);
-  console.log(`    TTFB values: [${ttfbs.map((t) => t.toFixed(2)).join(', ')}]`);
-  console.log(`    TTFB — min: ${min.toFixed(2)}ms, median: ${med.toFixed(2)}ms, max: ${max.toFixed(2)}ms, spread: ${spread.toFixed(1)}%`);
+  console.log(`    Runs: ${responseTimes.length}`);
+  console.log(`    Response times: [${responseTimes.map((t) => t.toFixed(2)).join(', ')}]`);
+  console.log(`    Resp — min: ${min.toFixed(2)}ms, median: ${med.toFixed(2)}ms, max: ${max.toFixed(2)}ms, spread: ${spread.toFixed(1)}%`);
   console.log(`    FCP  — median: ${median(fcps).toFixed(2)}ms, max: ${Math.max(...fcps).toFixed(2)}ms`);
   console.log(`    LCP  — median: ${median(lcps).toFixed(2)}ms, max: ${Math.max(...lcps).toFixed(2)}ms`);
   console.log(`    CLS  — 0 (SSR, no browser)`);
@@ -145,13 +145,13 @@ console.log('--- THRESHOLD RECOMMENDATIONS ---\n');
 
 const HEADROOM = 3.0;
 
-console.log('  Web Routes (TTFB threshold = max observed TTFB × headroom multiplier):');
-for (const [route, ttfbs] of webRouteMap) {
-  const maxTtfb = Math.max(...ttfbs);
-  const recommended = Math.ceil(maxTtfb * HEADROOM);
-  const fcpRec = Math.ceil(maxTtfb * 1.1 * HEADROOM);
-  const lcpRec = Math.ceil(maxTtfb * 1.3 * HEADROOM);
-  console.log(`    ${route}: TTFB=${recommended}ms, FCP=${fcpRec}ms, LCP=${lcpRec}ms`);
+console.log('  Web Routes (response time threshold = max observed × headroom multiplier):');
+for (const [route, responseTimes] of webRouteMap) {
+  const maxResp = Math.max(...responseTimes);
+  const recommended = Math.ceil(maxResp * HEADROOM);
+  const fcpRec = Math.ceil(maxResp * 1.1 * HEADROOM);
+  const lcpRec = Math.ceil(maxResp * 1.3 * HEADROOM);
+  console.log(`    ${route}: Resp=${recommended}ms, FCP=${fcpRec}ms, LCP=${lcpRec}ms`);
 }
 
 console.log('\n  API Routes (p95 threshold = max observed per-run p95 × headroom multiplier):');
@@ -165,8 +165,8 @@ console.log(`\n  Headroom multiplier: ${HEADROOM}x (accounts for CI variance, lo
 console.log('  All spreads should be <= 15% for primary metrics.\n');
 
 const allSpreads: { route: string; metric: string; spread: number }[] = [];
-for (const [route, ttfbs] of webRouteMap) {
-  allSpreads.push({ route, metric: 'TTFB', spread: spreadPct(ttfbs) });
+for (const [route, responseTimes] of webRouteMap) {
+  allSpreads.push({ route, metric: 'Resp', spread: spreadPct(responseTimes) });
 }
 for (const [route, data] of apiRouteMap) {
   allSpreads.push({ route, metric: 'p95', spread: spreadPct(data.p95s) });

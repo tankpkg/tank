@@ -1,17 +1,44 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { headers } from 'next/headers';
+import { Suspense } from 'react';
 import { auth } from '@/lib/auth';
 
-export default async function RegistryLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+async function AuthLink() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
+  if (session) {
+    return (
+      <Link
+        href="/dashboard"
+        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        Dashboard
+      </Link>
+    );
+  }
+
+  return <SignInLink />;
+}
+
+function SignInLink() {
+  return (
+    <Link
+      href="/login"
+      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+    >
+      Sign In
+    </Link>
+  );
+}
+
+export default function RegistryLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -29,21 +56,9 @@ export default async function RegistryLayout({
             </Link>
           </nav>
           <div className="ml-auto">
-            {session ? (
-              <Link
-                href="/dashboard"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Dashboard
-              </Link>
-            ) : (
-              <Link
-                href="/login"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Sign In
-              </Link>
-            )}
+            <Suspense fallback={<SignInLink />}>
+              <AuthLink />
+            </Suspense>
           </div>
         </div>
       </header>
