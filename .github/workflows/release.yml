@@ -30,7 +30,7 @@ jobs:
             platform: darwin-arm64
             target: bun-darwin-arm64
             output: tank-darwin-arm64
-          - runner: macos-13
+          - runner: macos-14
             platform: darwin-x64
             target: bun-darwin-x64
             output: tank-darwin-x64
@@ -61,6 +61,7 @@ jobs:
           TARGET: ${{ matrix.target }}
           OUTPUT_NAME: ${{ matrix.output }}
         run: |
+          pnpm --filter @tank/shared build
           pnpm run build
           pnpm run build:bundle
           pnpm run build:sea
