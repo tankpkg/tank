@@ -25,7 +25,6 @@ import { createHash, randomUUID } from 'node:crypto';
 // ---------------------------------------------------------------------------
 
 const PERF_USER_ID = deterministicUUID('perf-user', 0);
-const PERF_PUBLISHER_ID = deterministicUUID('perf-publisher', 0);
 const PERF_ORG_ID = deterministicUUID('perf-org', 0);
 const PERF_ORG_SLUG = 'perf-org';
 const PERF_MEMBER_ID = deterministicUUID('perf-member', 0);
@@ -103,20 +102,11 @@ async function main() {
 // ---------------------------------------------------------------------------
 
 async function cleanupPerfData(sql: postgres.Sql) {
-  // Find publisher(s) for the perf user
-  const perfPublishers = await sql<{ id: string }[]>`
-    SELECT id FROM publishers WHERE user_id = ${PERF_USER_ID}
+  // Find all perf-seeded skill IDs via publisher_id (points to user.id after publishers merge)
+  const perfSkills = await sql<{ id: string }[]>`
+    SELECT id FROM skills WHERE publisher_id = ${PERF_USER_ID}
   `;
-  const publisherIds = perfPublishers.map((r) => r.id);
-
-  // Find all perf-seeded skill IDs via publisher
-  let skillIds: string[] = [];
-  if (publisherIds.length > 0) {
-    const perfSkills = await sql<{ id: string }[]>`
-      SELECT id FROM skills WHERE publisher_id = ANY(${publisherIds})
-    `;
-    skillIds = perfSkills.map((r) => r.id);
-  }
+  const skillIds = perfSkills.map((r) => r.id);
 
   if (skillIds.length > 0) {
     // Find all version IDs for these skills
@@ -152,11 +142,6 @@ async function cleanupPerfData(sql: postgres.Sql) {
     await sql`DELETE FROM skills WHERE id = ANY(${skillIds})`;
   }
 
-  // Delete publishers
-  if (publisherIds.length > 0) {
-    await sql`DELETE FROM publishers WHERE id = ANY(${publisherIds})`;
-  }
-
   // Delete auth entities
   await sql`DELETE FROM "member" WHERE id IN (${PERF_MEMBER_ID}, ${TEST_MEMBER_ID})`;
   await sql`DELETE FROM "organization" WHERE id IN (${PERF_ORG_ID}, ${TEST_ORG_ID})`;
@@ -187,11 +172,6 @@ async function insertAuthEntities(sql: postgres.Sql) {
   `;
 
   await sql`
-    INSERT INTO publishers (id, user_id, display_name, created_at, updated_at)
-    VALUES (${PERF_PUBLISHER_ID}, ${PERF_USER_ID}, ${'Perf Seed User'}, ${now}, ${now})
-  `;
-
-  await sql`
     INSERT INTO "organization" (id, name, slug, created_at)
     VALUES (${PERF_ORG_ID}, ${'Perf Org'}, ${PERF_ORG_SLUG}, ${now})
   `;
@@ -210,7 +190,7 @@ async function insertAuthEntities(sql: postgres.Sql) {
     VALUES (${TEST_MEMBER_ID}, ${TEST_ORG_ID}, ${PERF_USER_ID}, ${'owner'}, ${now})
   `;
 
-  console.log('[perf-seed]   Created user, publisher, 2 orgs, 2 memberships.');
+  console.log('[perf-seed]   Created user, 2 orgs, 2 memberships.');
 }
 
 // ---------------------------------------------------------------------------
@@ -256,7 +236,7 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
       id: s.id,
       name: s.name,
       description: s.description,
-      publisher_id: PERF_PUBLISHER_ID,
+      publisher_id: PERF_USER_ID,
       org_id: s.orgId,
       created_at: deterministicDate(s.index),
       updated_at: deterministicDate(s.index + 1),
@@ -395,7 +375,7 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
         audit_score: 8.5 + (v % 3) * 0.5, // 8.5, 9.0, 9.5, 8.5, 9.0
         audit_status: 'completed',
         readme,
-        published_by: PERF_PUBLISHER_ID,
+        published_by: PERF_USER_ID,
         created_at: publishedDate,
       });
 
