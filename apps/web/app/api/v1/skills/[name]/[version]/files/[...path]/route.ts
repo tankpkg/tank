@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { eq, and } from 'drizzle-orm';
-import { Readable } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
-import { createGunzip } from 'node:zlib';
-import { extract, ReadEntry } from 'tar';
+import { unpackTar } from 'modern-tar';
+import pako from 'pako';
 import { db } from '@/lib/db';
 import { skills, skillVersions } from '@/lib/db/schema';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -50,29 +48,28 @@ export async function GET(
     }
 
     const response = await fetch(downloadData.signedUrl);
-    if (!response.ok || !response.body) {
+    if (!response.ok) {
       return NextResponse.json({ error: 'Failed to fetch tarball' }, { status: 500 });
     }
 
-    const readable = Readable.fromWeb(response.body as import('node:stream/web').ReadableStream);
-    const contentChunks: Buffer[] = [];
+    // Get compressed tarball as ArrayBuffer
+    const compressedBuffer = await response.arrayBuffer();
 
-    await pipeline(
-      readable,
-      createGunzip(),
-      extract({
-        filter: (path: string) => path.replace(/^package\//, '') === filePath,
-        onentry: (entry: ReadEntry) => {
-          entry.on('data', (chunk: Buffer) => contentChunks.push(chunk));
-        },
-      }),
-    );
+    // Decompress gzip using pako
+    const decompressed = pako.ungzip(new Uint8Array(compressedBuffer));
 
-    if (contentChunks.length === 0) {
+    // Extract using modern-tar
+    const entries = await unpackTar(decompressed.buffer, {
+      filter: (header) => header.name.replace(/^package\//, '') === filePath,
+    });
+
+    if (entries.length === 0) {
       return NextResponse.json({ error: 'File not found in package' }, { status: 404 });
     }
 
-    const fileContent = Buffer.concat(contentChunks).toString('utf-8');
+    const entry = entries[0];
+    const fileContent = new TextDecoder().decode(entry.data);
+
     const extension = filePath.split('.').pop()?.toLowerCase();
     const contentTypeMap: Record<string, string> = {
       md: 'text/markdown',
