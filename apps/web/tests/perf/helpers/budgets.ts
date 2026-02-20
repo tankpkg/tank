@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export interface WebRouteBudget {
   route: string;
-  ttfbMs: number;
+  responseTimeMs: number;
   lcpMs: number;
   fcpMs: number;
   cls: number;
@@ -50,13 +50,13 @@ export function loadBudgets(): PerfBudgets {
 export interface WebRouteResult {
   route: string;
   runs: Array<{
-    ttfbMs: number;
+    responseTimeMs: number;
     fcpMs: number;
     lcpMs: number;
     cls: number;
   }>;
   aggregated: {
-    ttfbMs: number;
+    responseTimeMs: number;
     fcpMs: number;
     lcpMs: number;
     cls: number;

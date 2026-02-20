@@ -24,7 +24,7 @@ describe('P0 Web Route Performance (no-cache)', () => {
 
   for (const budget of budgets.webRoutes) {
     describe(`${budget.route}`, () => {
-      it(`TTFB median < ${budget.ttfbMs}ms`, async () => {
+      it(`response time median < ${budget.responseTimeMs}ms`, async () => {
         const runs = await measureWebRouteWithWarmup(
           PERF_BASE_URL,
           budget.route,
@@ -32,11 +32,11 @@ describe('P0 Web Route Performance (no-cache)', () => {
           budgets.runs.warmupRuns.web,
         );
 
-        const ttfbValues = runs.map((r) => r.ttfbMs);
-        const medianTtfb = median(ttfbValues);
+        const responseTimeValues = runs.map((r) => r.responseTimeMs);
+        const medianResponseTime = median(responseTimeValues);
 
         const aggregated = {
-          ttfbMs: medianTtfb,
+          responseTimeMs: medianResponseTime,
           fcpMs: median(runs.map((r) => r.fcpMs)),
           lcpMs: median(runs.map((r) => r.lcpMs)),
           cls: median(runs.map((r) => r.cls)),
@@ -45,7 +45,7 @@ describe('P0 Web Route Performance (no-cache)', () => {
         webResults.push({
           route: budget.route,
           runs: runs.map((r) => ({
-            ttfbMs: r.ttfbMs,
+            responseTimeMs: r.responseTimeMs,
             fcpMs: r.fcpMs,
             lcpMs: r.lcpMs,
             cls: r.cls,
@@ -54,9 +54,9 @@ describe('P0 Web Route Performance (no-cache)', () => {
         });
 
         expect(
-          medianTtfb,
-          `TTFB for ${budget.route}: ${medianTtfb.toFixed(0)}ms exceeds budget ${budget.ttfbMs}ms`,
-        ).toBeLessThanOrEqual(budget.ttfbMs);
+          medianResponseTime,
+          `Response time for ${budget.route}: ${medianResponseTime.toFixed(0)}ms exceeds budget ${budget.responseTimeMs}ms`,
+        ).toBeLessThanOrEqual(budget.responseTimeMs);
       }, 120_000);
 
       it(`FCP median < ${budget.fcpMs}ms`, async () => {

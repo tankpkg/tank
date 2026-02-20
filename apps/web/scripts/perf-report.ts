@@ -12,7 +12,7 @@ import path from 'node:path';
 // Mirrored from tests/perf/helpers/budgets.ts — standalone script can't import test helpers
 interface WebRouteBudget {
   route: string;
-  ttfbMs: number;
+  responseTimeMs: number;
   lcpMs: number;
   fcpMs: number;
   cls: number;
@@ -41,8 +41,8 @@ interface PerfBudgets {
 
 interface WebRouteResult {
   route: string;
-  runs: Array<{ ttfbMs: number; fcpMs: number; lcpMs: number; cls: number }>;
-  aggregated: { ttfbMs: number; fcpMs: number; lcpMs: number; cls: number };
+  runs: Array<{ responseTimeMs: number; fcpMs: number; lcpMs: number; cls: number }>;
+  aggregated: { responseTimeMs: number; fcpMs: number; lcpMs: number; cls: number };
 }
 
 interface ApiRouteResult {
@@ -107,7 +107,7 @@ function main(): void {
     console.log('\n--- Web Routes (no-cache, median) ---\n');
     console.log(
       padRight('Route', 40) +
-        padRight('TTFB', 12) +
+        padRight('Resp', 12) +
         padRight('FCP', 12) +
         padRight('LCP', 12) +
         padRight('CLS', 10) +
@@ -123,22 +123,22 @@ function main(): void {
       }
 
       const agg = result.aggregated;
-      const ttfbOk = agg.ttfbMs <= budget.ttfbMs;
+      const respOk = agg.responseTimeMs <= budget.responseTimeMs;
       const fcpOk = agg.fcpMs <= budget.fcpMs;
       const lcpOk = agg.lcpMs <= budget.lcpMs;
       const clsOk = agg.cls <= budget.cls;
-      const allOk = ttfbOk && fcpOk && lcpOk && clsOk;
+      const allOk = respOk && fcpOk && lcpOk && clsOk;
 
       console.log(
         padRight(result.route, 40) +
-          padRight(fmtMs(agg.ttfbMs, budget.ttfbMs), 12) +
+          padRight(fmtMs(agg.responseTimeMs, budget.responseTimeMs), 12) +
           padRight(fmtMs(agg.fcpMs, budget.fcpMs), 12) +
           padRight(fmtMs(agg.lcpMs, budget.lcpMs), 12) +
           padRight(fmtCls(agg.cls, budget.cls), 10) +
           (allOk ? 'PASS' : 'FAIL'),
       );
 
-      if (!ttfbOk) breaches.push(`${result.route} TTFB: ${agg.ttfbMs.toFixed(0)}ms > ${budget.ttfbMs}ms`);
+      if (!respOk) breaches.push(`${result.route} Response: ${agg.responseTimeMs.toFixed(0)}ms > ${budget.responseTimeMs}ms`);
       if (!fcpOk) breaches.push(`${result.route} FCP: ${agg.fcpMs.toFixed(0)}ms > ${budget.fcpMs}ms`);
       if (!lcpOk) breaches.push(`${result.route} LCP: ${agg.lcpMs.toFixed(0)}ms > ${budget.lcpMs}ms`);
       if (!clsOk) breaches.push(`${result.route} CLS: ${agg.cls.toFixed(3)} > ${budget.cls}`);

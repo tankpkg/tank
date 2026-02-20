@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { unstable_noStore as noStore } from 'next/cache';
 import {
   Card,
   CardHeader,
@@ -12,6 +13,9 @@ import { searchSkills } from '@/lib/data/skills';
 import type { SkillSearchResult } from '@/lib/data/skills';
 import { SearchBar } from './search-bar';
 
+// ISR: cache page at CDN for 60s, survives serverless cold starts (PERF-005/006)
+export const revalidate = 60;
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 interface SkillsPageProps {
@@ -19,6 +23,8 @@ interface SkillsPageProps {
 }
 
 export default async function SkillsPage({ searchParams }: SkillsPageProps) {
+  // Bypass ISR cache for perf tests so every request hits the DB
+  if (process.env.TANK_PERF_MODE === '1') noStore();
   const params = await searchParams;
   const query = params.q ?? '';
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
