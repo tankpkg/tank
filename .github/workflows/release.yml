@@ -112,8 +112,8 @@ jobs:
             --maintainer "Tank Team <team@tankpkg.dev>" \
             --license "MIT" \
             --architecture amd64 \
-            release/tank-linux-x64=/usr/local/bin/tank \
-            --package release/tank_${VERSION_NO_V}_amd64.deb
+            --package release/tank_${VERSION_NO_V}_amd64.deb \
+            release/tank-linux-x64=/usr/local/bin/tank
 
           fpm -s dir -t deb \
             -n tank \
@@ -123,8 +123,8 @@ jobs:
             --maintainer "Tank Team <team@tankpkg.dev>" \
             --license "MIT" \
             --architecture arm64 \
-            release/tank-linux-arm64=/usr/local/bin/tank \
-            --package release/tank_${VERSION_NO_V}_arm64.deb
+            --package release/tank_${VERSION_NO_V}_arm64.deb \
+            release/tank-linux-arm64=/usr/local/bin/tank
 
       - name: Generate checksums
         working-directory: release
@@ -225,7 +225,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build CLI package
-        run: pnpm --filter ./apps/cli build
+        run: |
+          pnpm --filter @tank/shared build
+          pnpm --filter ./apps/cli build
 
       - name: Publish to npm
         if: ${{ env.NPM_TOKEN != '' }}
