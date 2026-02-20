@@ -390,7 +390,7 @@ describe('POST /api/v1/cli-auth/exchange', () => {
     expect(data.user).toEqual({ name: 'Test User', email: 'test@example.com' });
 
     expect(mockCreateApiKey).toHaveBeenCalledWith({
-      body: { name: 'CLI Token', userId: 'user-123' },
+      body: { name: 'CLI Token', userId: 'user-123', expiresIn: 90 * 24 * 60 * 60, rateLimitMax: 1000 },
     });
   });
 
