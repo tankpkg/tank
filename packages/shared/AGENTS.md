@@ -1,63 +1,40 @@
-# packages/shared — @tank/shared
+# SHARED — @tank/shared
 
 ## OVERVIEW
 
-Shared library: Zod schemas for runtime validation, TypeScript types for API contracts, constants for registry limits, and semver resolution utilities. Consumed by CLI (heavily) and Web (minimally). Pure — no side effects, no I/O.
-
-## API SURFACE
-
-**Schemas** (Zod v4 — use `safeParse()` for validation):
-- `skillsJsonSchema` / `SkillsJson` — skills.json manifest (name, version, description, skills map, permissions)
-- `skillsLockSchema` / `SkillsLock` / `LockedSkill` — skills.lock lockfile (lockfileVersion, resolved URLs, SHA512 integrity, permissions)
-- `permissionsSchema` / `Permissions` — permission declarations (network outbound domains, filesystem read/write globs, subprocess boolean)
-- `networkPermissionsSchema` / `NetworkPermissions`, `filesystemPermissionsSchema` / `FilesystemPermissions`
-
-**Types** (TypeScript interfaces):
-- `Publisher`, `Skill`, `SkillVersion` — domain entities
-- `PublishStartRequest`, `PublishStartResponse`, `PublishConfirmRequest` — publish flow contracts
-- `SkillInfoResponse`, `SearchResult`, `SearchResponse` — read endpoint contracts
-
-**Constants**:
-- `REGISTRY_URL` = `https://tankpkg.dev`, `REGISTRY_API_VERSION` = `v1`
-- `MAX_PACKAGE_SIZE` = 50MB, `MAX_FILE_COUNT` = 1000, `MAX_NAME_LENGTH` = 214, `MAX_DESCRIPTION_LENGTH` = 500
-- `LOCKFILE_VERSION` = 1
-- `PERMISSION_CATEGORIES` = `['network', 'filesystem', 'subprocess']`, `DEFAULT_PERMISSIONS`
-
-**Utilities**:
-- `resolve(range, versions)` → highest matching version or null. Excludes pre-releases unless range specifies them.
-- `sortVersions(versions)` → descending order, filters out invalid semver strings.
+Pure library package — Zod schemas, TypeScript types, constants, and a semver resolver. Zero side effects, consumed by both CLI and Web.
 
 ## STRUCTURE
 
 ```
-src/
-├── index.ts           # Barrel export — ALL public API here
+shared/src/
+├── index.ts                      # Barrel export (ONLY public API)
 ├── schemas/
-│   ├── skills-json.ts # skillsJsonSchema
-│   ├── skills-lock.ts # skillsLockSchema, lockedSkillSchema
-│   └── permissions.ts # permissionsSchema + sub-schemas
+│   ├── skills-json.ts            # skillsJsonSchema — validates skills.json manifests
+│   ├── skills-lock.ts            # skillsLockSchema — validates tank-lock.json
+│   └── permissions.ts            # permissionsSchema — capability declarations
 ├── types/
-│   ├── skill.ts       # Publisher, Skill, SkillVersion
-│   └── api.ts         # Request/Response interfaces
+│   ├── api.ts                    # Publish*, SkillInfo*, Search* request/response contracts
+│   └── skill.ts                  # Publisher, Skill, SkillVersion domain types
 ├── constants/
-│   ├── registry.ts    # URLs, limits, versions
-│   └── permissions.ts # Categories, defaults
+│   ├── registry.ts               # REGISTRY_URL, MAX_PACKAGE_SIZE(50MB), MAX_FILE_COUNT(1000)
+│   └── permissions.ts            # Permission categories and descriptions
 ├── lib/
-│   └── resolver.ts    # Semver resolution
-└── __tests__/         # Unit tests
+│   └── resolver.ts               # resolve(range, versions), sortVersions()
+└── __tests__/                    # Unit tests per module
 ```
 
 ## CONVENTIONS
 
-- **Export everything through `src/index.ts`** — consumers import `from '@tank/shared'`, never deep paths
-- **Zod v4** — use `safeParse()` for validation, `z.infer<typeof schema>` for type extraction
-- **No side effects** — pure functions and type definitions only
-- **Dependencies**: only `zod` and `semver` — keep minimal
-- **ESM** with TypeScript declarations (`dist/index.js` + `dist/index.d.ts`)
+- **Barrel export only** — all public API via `index.ts`, no deep imports
+- **Zod v4** — `safeParse()` for validation, never `parse()` (throws)
+- **Pure library** — no side effects, no I/O, no runtime dependencies beyond `zod` + `semver`
+- **ESM + declarations** — compiled with `tsc`, emits `.js` + `.d.ts`
+- **LOCKFILE_VERSION = 1** — bump only on breaking lockfile format changes
 
 ## ANTI-PATTERNS
 
-- **Never add runtime dependencies with side effects** — this package must remain pure
-- **Never import from `apps/`** — shared is a leaf dependency
-- **Never expose deep import paths** — always re-export from `index.ts`
-- **Never mutate constants** — treat as frozen
+- **Never add side-effect dependencies** — this package must stay pure
+- **Never import from `apps/cli` or `apps/web`** — dependency flows one way
+- **Never use deep import paths** — always import from `@tank/shared`
+- **Never mutate exported constants** — treat as frozen

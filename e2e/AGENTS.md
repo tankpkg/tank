@@ -1,36 +1,37 @@
-# e2e — End-to-End Tests
+# E2E — Integration Tests
 
 ## OVERVIEW
 
-Real CLI-to-registry integration tests. Spawns actual `tank` CLI as child process, hits live (local) API. Tests run **sequentially** — producer flow must complete before consumer flow.
+Real CLI-to-registry integration tests. Spawns the actual `tank` binary against a live registry with real database. Zero mocks.
 
 ## STRUCTURE
 
 ```
 e2e/
-├── producer.e2e.test.ts   # Publish flow: login → init → publish
-├── consumer.e2e.test.ts   # Install flow: search → install → verify → audit
+├── producer.e2e.test.ts          # Publish flow (runs first)
+├── consumer.e2e.test.ts          # Install flow (runs second)
+├── integration.e2e.test.ts       # Cross-cutting scenarios
 ├── helpers/
-│   ├── cli.ts             # runTank() — spawns CLI as child process
-│   ├── fixtures.ts        # createSkillFixture() — temp skill directories
-│   └── setup.ts           # Environment setup and teardown
-└── vitest.config.ts       # Sequential execution, long timeouts
+│   ├── cli.ts                    # runTank() — spawns real CLI binary
+│   ├── fixtures.ts               # createSkillFixture(), createConsumerFixture()
+│   └── setup.ts                  # setupE2E() — creates user + API key + org
+└── vitest.config.ts              # Sequential, 60s/120s timeouts
 ```
 
 ## CONVENTIONS
 
-- **Sequential execution**: `fileParallelism: false` + `sequence.concurrent: false` — tests depend on ordered state
-- **Real CLI spawning**: `runTank()` executes `node dist/bin/tank.js` — no HTTP mocking
-- **Temp fixtures**: `createSkillFixture()` creates disposable skill directories, cleaned in `afterEach`
-- **Long timeouts**: 60s per test, 120s per hook (real HTTP + CLI startup overhead)
-- **Env from root**: loads `.env.local` from project root (`envDir: ..`) — needs real credentials
-- **`NO_COLOR=1`**: disables chalk to simplify output assertions
-- **File pattern**: `*.e2e.test.ts` (distinguished from unit `*.test.ts`)
-- **Run command**: `pnpm test:e2e` from root (NOT via Turbo)
+- **Sequential execution** — `fileParallelism: false`, producer before consumer
+- **Real CLI spawning** — `node dist/bin/tank.js` (requires `pnpm build` first)
+- **Zero mocks** — real HTTP, real DB, real Supabase storage
+- **Unique `runId`** per test run — prevents collision between runs
+- **Temp fixtures** — created in `os.tmpdir()`, cleaned in `afterEach`
+- **File pattern** — `*.e2e.test.ts` (not `.test.ts`)
+- **NO_COLOR=1** — disables chalk for parseable output
+- **Env from root `.env.local`** — needs real credentials
 
 ## ANTI-PATTERNS
 
-- **Never run E2E in parallel** — tests share registry state (published skills)
-- **Never mock HTTP calls** — the point is real integration
-- **Never run without `.env.local`** — needs `DATABASE_URL`, Supabase credentials
-- **Never add to Turbo `test` task** — E2E has separate config and credentials requirement
+- **Never run in parallel** — tests have ordering dependencies
+- **Never mock HTTP or DB** — defeats the purpose
+- **Never add to Turbo `test` task** — E2E runs via `pnpm test:e2e` separately
+- **Never skip cleanup** — fixtures accumulate and pollute runs

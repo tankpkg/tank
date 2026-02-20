@@ -1,71 +1,67 @@
-# apps/cli — Tank CLI
+# CLI — `tank` Command
 
 ## OVERVIEW
 
-Node.js CLI (`tank` command) built with Commander.js. 13 commands for auth, publishing, installing, and auditing skills. Heavy consumer of `@tank/shared` for schemas, types, and semver resolution.
+Commander.js CLI with 16 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## STRUCTURE
 
 ```
-src/
-├── bin/tank.ts        # Entry point — registers all 13 commands
-├── commands/          # One file per command (async function export)
-│   ├── audit.ts       # Display security audit results
-│   ├── info.ts        # Show skill metadata
-│   ├── init.ts        # Create skills.json interactively
-│   ├── install.ts     # Fetch, verify, extract skills (501 lines — largest)
-│   ├── login.ts       # OAuth flow: start → browser → poll → store key
-│   ├── logout.ts      # Clear auth token
-│   ├── permissions.ts # Display resolved permissions + budget check
-│   ├── publish.ts     # Pack → POST manifest → PUT tarball → confirm
-│   ├── remove.ts      # Remove skill from project
-│   ├── search.ts      # Search registry
-│   ├── update.ts      # Update skills within semver ranges
-│   ├── verify.ts      # Verify lockfile integrity
-│   └── whoami.ts      # Display current user
-├── lib/
-│   ├── api-client.ts  # HTTP client (GET/POST/PUT) with Bearer auth
-│   ├── config.ts      # ~/.tank/config.json read/write
-│   ├── lockfile.ts    # skills.lock I/O + permission resolution
-│   ├── packer.ts      # Tarball creation with security checks
-│   ├── logger.ts      # User-facing chalk output (info/success/warn/error)
-│   └── debug-logger.ts # Structured Pino → Loki debug logging
-├── index.ts           # Public exports (VERSION, logger, config, ApiClient)
-└── __tests__/         # Unit tests (mirrors commands/ and lib/)
+cli/
+├── bin/tank.ts                   # Entry point — registers all commands
+├── src/
+│   ├── commands/                 # 1-file-per-command (16 commands)
+│   │   ├── install.ts            # Largest (613 lines) — fetch→verify→extract
+│   │   ├── publish.ts            # Pack→POST→PUT→confirm
+│   │   ├── agents.ts             # Agent linking management
+│   │   └── ...                   # init, login, whoami, logout, remove, update,
+│   │                             #   verify, permissions, search, info, audit,
+│   │                             #   link, unlink, doctor
+│   ├── lib/                      # Shared utilities
+│   │   ├── api-client.ts         # HTTP client for registry API
+│   │   ├── config.ts             # ~/.tank/config.json management
+│   │   ├── lockfile.ts           # Deterministic lockfile (sorted keys)
+│   │   ├── packer.ts             # Tarball creation with security filters
+│   │   ├── linker.ts             # Agent linking infrastructure
+│   │   ├── frontmatter.ts        # Skills.json frontmatter parsing
+│   │   ├── links.ts              # Symlink management
+│   │   ├── logger.ts             # chalk (user) + pino (debug)
+│   │   └── debug-logger.ts       # TANK_DEBUG=1 → pino → Loki
+│   └── __tests__/                # 25 test files, colocated
+└── dist/                         # Build output (NodeNext)
 ```
 
 ## WHERE TO LOOK
 
-| Task | File | Notes |
-|------|------|-------|
-| Add new command | `commands/<name>.ts` + `bin/tank.ts` | Export async fn, register with Commander |
-| Modify API calls | `lib/api-client.ts` | Returns native `Response` objects |
-| Change config | `lib/config.ts` | Default: `~/.tank/config.json`, `configDir` param for tests |
-| Modify lockfile | `lib/lockfile.ts` | Also update `@tank/shared` schema if format changes |
-| Change pack rules | `lib/packer.ts` | Security filters: no symlinks, no traversal, size limits |
-| Add debug logging | `lib/debug-logger.ts` | Child loggers: `debugLog`, `httpLog`, `authFlowLog` |
-
-## CONVENTIONS
-
-- **Command pattern**: each command exports a single async function, registered in `bin/tank.ts` with try/catch + `process.exit(1)`
-- **Error handling**: `bin/tank.ts` wraps each command action — catch extracts message, calls `flushLogs()`, exits
-- **Config injection**: `configDir` parameter avoids touching real `~/.tank/` in tests
-- **User output**: `logger` (chalk colors) for users; `debugLog`/`httpLog` (Pino) for structured debugging
-- **Packer security**: rejects symlinks, path traversal (`..`), absolute paths. Max 1000 files, 50MB
-- **Deterministic lockfile**: keys sorted alphabetically when writing `skills.lock`
-- **Import style**: relative paths with `.js` extension (ESM requirement for Node)
+| Task | Location | Notes |
+|------|----------|-------|
+| Add new command | `src/commands/new-cmd.ts` | Export async fn, register in `bin/tank.ts` |
+| Modify API calls | `src/lib/api-client.ts` | All registry HTTP communication |
+| Modify tarball packing | `src/lib/packer.ts` | Security: rejects symlinks, path traversal, >50MB |
+| Modify lockfile format | `src/lib/lockfile.ts` | LOCKFILE_VERSION from @tank/shared |
+| Add agent linking logic | `src/lib/linker.ts` | Multi-agent skill installation |
+| Add test | `src/__tests__/cmd-name.test.ts` | Pass `configDir` for isolation |
 
 ## KEY FLOWS
 
-**Install**: read `skills.json` → fetch versions from API → resolve semver → check permission budget → download tarball → verify SHA512 → extract safely → update `skills.json` + `skills.lock`
+1. **Install**: resolve version → fetch tarball → verify SHA-512 → extract with security filters → update lockfile
+2. **Publish**: validate skills.json → pack tarball → POST manifest → PUT tarball → POST confirm
+3. **Login**: open browser → OAuth flow → poll for API key → store in `~/.tank/config.json`
+4. **Agent linking**: parse frontmatter → resolve dependencies → symlink skills into agent workspace
 
-**Publish**: check auth → read `skills.json` → pack (validate + create tarball) → POST manifest → PUT tarball to signed URL → POST confirm
+## CONVENTIONS
 
-**Login**: POST `/api/v1/cli-auth/start` → open browser → user authorizes → poll `/api/v1/cli-auth/exchange` → store API key in config
+- Commands export a single async function, registered in `bin/tank.ts`
+- `configDir` injection for test isolation — never touch real `~/.tank/`
+- `chalk` for user-facing output, `pino` for structured debug logs
+- `.js` extensions on all imports (ESM with NodeNext resolution)
+- Deterministic lockfile — sorted keys, stable output
+- ALWAYS_IGNORED in packer: `.git`, `node_modules`, `.env*`, etc.
 
 ## ANTI-PATTERNS
 
-- **Never hardcode registry URL** — read from config (default from `@tank/shared` constants)
-- **Never skip integrity verification** — SHA512 check is mandatory on install
-- **Never extract without security filters** — `packer.ts` rejects symlinks and path traversal
-- **Never use `logger` for debug data** — use `debugLog`/`httpLog` (Pino structured logging)
+- **Never hardcode registry URL** — use `REGISTRY_URL` from `@tank/shared`
+- **Never skip SHA-512 verification** during install
+- **Never extract without security filters** — reject symlinks, hardlinks, path traversal, absolute paths
+- **Never use logger for debug output** — use `debug-logger` with `TANK_DEBUG=1`
+- **Never exceed** 1000 files or 50MB per tarball (enforced in packer)

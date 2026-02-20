@@ -1,92 +1,84 @@
-# apps/web — Tank Registry
+# WEB — Next.js 15 Registry
 
 ## OVERVIEW
 
-Next.js 15 App Router web app. Public skill registry + protected dashboard + REST API for CLI. PostgreSQL via Drizzle ORM, auth via better-auth (GitHub OAuth + API keys). Supabase for tarball storage only.
+Next.js 15 App Router application serving as the Tank skill registry — web UI, REST API for CLI, and Python security scanning stubs.
 
 ## STRUCTURE
 
 ```
-app/
-├── (auth)/              # Login page (GitHub OAuth)
-├── (dashboard)/         # Protected: dashboard, tokens, orgs
-│   ├── layout.tsx       # Session check → redirect if unauthenticated
-│   ├── tokens/          # API key management (server actions)
-│   └── orgs/            # Organization CRUD (server actions)
-├── (registry)/          # Public: browse & view skills
-│   ├── skills/page.tsx  # Search + list all skills
-│   └── skills/[...name] # Skill detail (tabs: readme, files, versions, permissions)
-├── api/
-│   ├── auth/[...all]/   # better-auth catch-all
-│   └── v1/              # REST API
-│       ├── skills/      # Publish, metadata, download, confirm
-│       ├── search/      # Full-text search (PostgreSQL GIN index)
-│       └── cli-auth/    # CLI OAuth flow (start, authorize, exchange)
-├── cli-login/           # CLI OAuth callback page
-├── layout.tsx           # Root layout (Inter font, metadata)
-└── page.tsx             # Home page (hero + search + featured skills)
-
-lib/
-├── db/
-│   ├── schema.ts        # Domain: publishers, skills, skill_versions, skill_downloads, audit_events
-│   └── auth-schema.ts   # better-auth generated: user, session, account, apikey, organization, member
-├── auth.ts              # better-auth config (GitHub, apiKey plugin, organization plugin)
-├── auth-helpers.ts      # verifyCliAuth() — Bearer token → { userId, keyId }
-├── auth-client.ts       # Client-side auth helpers
-├── cli-auth-store.ts    # In-memory CLI OAuth session store (5-min TTL)
-├── db.ts                # Connection singleton (hot-reload safe via globalThis)
-├── supabase.ts          # Supabase admin client — STORAGE ONLY, never for DB
-├── audit-score.ts       # Compute 0-10 score (pure fn, 8 weighted checks)
-├── logger.ts            # Pino → Loki (child loggers: authLog, apiLog, dbLog)
-└── utils.ts             # cn() tailwind-merge helper
-
-components/ui/           # shadcn/ui (badge, button, card, dialog, input, label, separator, table, tabs)
-api-python/analyze/      # FastAPI security analysis module (Python 3.14)
-drizzle/                 # Generated migrations
+web/
+├── app/
+│   ├── layout.tsx                # Root layout
+│   ├── page.tsx                  # Homepage
+│   ├── cli-login/                # CLI OAuth redirect handler
+│   ├── (auth)/login/             # Web login page
+│   ├── (dashboard)/              # Protected — layout auth guard
+│   │   ├── dashboard/            # Overview
+│   │   ├── tokens/               # API key management + actions.ts
+│   │   └── orgs/                 # Organization management + actions.ts
+│   ├── (registry)/               # Public
+│   │   └── skills/[...name]/     # Skill detail (page + tabs + explorer)
+│   └── api/v1/                   # REST API (10 endpoints)
+│       ├── skills/               # Publish, metadata, download
+│       ├── search/               # FTS with GIN index
+│       └── cli-auth/             # OAuth start → authorize → exchange
+├── api-python/                   # Vercel Python stubs — mirrors python-api/
+│   └── analyze/                  # Security scan endpoints
+├── lib/
+│   ├── db.ts                     # globalThis singleton (hot-reload safe)
+│   ├── db/schema.ts              # Domain: skills, versions, downloads, audit, scans
+│   ├── db/auth-schema.ts         # better-auth auto-generated tables
+│   ├── auth.ts                   # better-auth config (GitHub OAuth + apiKey + org)
+│   ├── auth-helpers.ts           # verifyCliAuth() — Bearer token validation
+│   ├── cli-auth-store.ts         # In-memory store, 5-min TTL
+│   ├── supabase.ts               # Storage client (tarballs only)
+│   ├── audit-score.ts            # 0–10 score, 8 weighted checks
+│   ├── logger.ts                 # pino → Loki structured logging
+│   └── data/skills.ts            # Data access layer
+├── components/ui/                # shadcn/ui components (9 files)
+└── scripts/                      # Performance testing
+    ├── perf-seed.ts              # Seed test data
+    ├── perf-analyze-runs.ts      # Analyze results
+    └── perf-report.ts            # Generate reports
 ```
 
 ## WHERE TO LOOK
 
-| Task | File | Notes |
-|------|------|-------|
-| Add API endpoint | `app/api/v1/<name>/route.ts` | Export `GET`/`POST`/`PUT` functions |
-| Add page | `app/(<group>)/<name>/page.tsx` | Choose route group |
-| Add server action | `app/(<group>)/<name>/actions.ts` | `"use server"` directive |
-| Modify DB schema | `lib/db/schema.ts` | Then `drizzle-kit generate` |
-| Auth config | `lib/auth.ts` | better-auth plugins and social providers |
-| Verify CLI auth | `lib/auth-helpers.ts` | `verifyCliAuth(request)` returns userId or null |
+| Task | Location | Notes |
+|------|----------|-------|
+| Add API endpoint | `app/api/v1/new/route.ts` | Export `GET`/`POST`/etc. |
+| Add protected page | `app/(dashboard)/new/page.tsx` | Layout guard handles auth |
+| Add public page | `app/(registry)/new/page.tsx` | No auth needed |
+| Add server action | `app/(dashboard)/feature/actions.ts` | `'use server'` directive |
+| Modify DB schema | `lib/db/schema.ts` | Run `drizzle-kit generate` after |
 | Add UI component | `components/ui/` | `npx shadcn add <component>` |
-| Audit score logic | `lib/audit-score.ts` | Pure function — always returns exactly 8 detail entries |
-| Python analysis | `api-python/analyze/` | FastAPI, separate `requirements.txt` |
+| Auth configuration | `lib/auth.ts` | better-auth plugins: apiKey, organization |
+| Modify security scanning | `api-python/analyze/` | Must sync with `python-api/` at root |
+| Performance testing | `scripts/perf-*.ts` | Needs real Postgres + Supabase |
+
+## KEY PATTERNS
+
+- **Auth**: Two modes — web sessions (better-auth cookies) and CLI (Bearer `tank_*` API keys)
+- **DB singleton**: `globalThis.__db` in `lib/db.ts` — prevents hot-reload connection leaks
+- **Dual schema**: `schema.ts` (domain) + `auth-schema.ts` (better-auth generated) — both imported by Drizzle
+- **Audit score**: 0–10, always 8 weighted entries (README, LICENSE, permissions, tests, types, examples, size, docs)
+- **FTS**: `searchVector` column with GIN index on skills table
+- **CLI auth flow**: POST `/cli-auth/start` → redirect to `/cli-auth/authorize` → user grants → POST `/cli-auth/exchange`
 
 ## CONVENTIONS
 
-- **Route groups**: `(auth)` = login, `(dashboard)` = protected pages, `(registry)` = public browse
-- **Auth check**: dashboard `layout.tsx` calls `auth.api.getSession()`, redirects if missing — never in page components
-- **API auth split**: CLI endpoints use `verifyCliAuth()` (Bearer token), web pages use session cookies
-- **DB connection**: `lib/db.ts` globalThis singleton — never create connections elsewhere
-- **Supabase = storage only**: `supabaseAdmin` generates signed URLs for tarball uploads. Never use for DB queries
-- **Path alias**: `@/` maps to `apps/web/` root (e.g., `import { db } from '@/lib/db'`)
-- **Dual schema files**: `schema.ts` for domain tables, `auth-schema.ts` for better-auth (generated by `@better-auth/cli`)
-- **Full-text search**: PostgreSQL `to_tsvector` with GIN index on `skills.name || skills.description`
-- **Audit score invariant**: details array is always exactly 8 entries — do not add/remove checks without updating
-
-## ENVIRONMENT VARIABLES
-
-```
-DATABASE_URL              # PostgreSQL (Supabase pooler connection string)
-SUPABASE_URL              # Supabase project URL
-SUPABASE_SERVICE_ROLE_KEY # Supabase admin key (server-only!)
-GITHUB_CLIENT_ID          # GitHub OAuth app
-GITHUB_CLIENT_SECRET      # GitHub OAuth app
-BETTER_AUTH_SECRET        # Session signing secret
-NEXT_PUBLIC_APP_URL       # Public URL for OAuth callbacks
-```
+- Server Components by default — `'use client'` only when interactive
+- Auth checks at layout level, never in individual pages
+- Tailwind CSS v4 via `@tailwindcss/postcss`
+- `@/*` import alias (tsconfig paths)
+- All data access through `lib/data/skills.ts` or direct Drizzle queries
 
 ## ANTI-PATTERNS
 
-- **Never create DB connections outside `lib/db.ts`** — hot-reload safety requires the globalThis singleton
-- **Never use Supabase for database queries** — use Drizzle ORM via `lib/db.ts`
-- **Never expose `supabaseAdmin` to browser** — service-role key is server-only
-- **Never put auth checks in page components** — use layout-level session validation
+- **Never create DB connections outside `lib/db.ts`** — use the globalThis singleton
+- **Never use Supabase for DB queries** — Supabase client is for file storage only
+- **Never expose `supabaseAdmin` to the browser** — service-role key is server-only
+- **Never put auth checks in page components** — layout guards only
 - **Never import from `apps/cli`** — use `@tank/shared` for shared types
+- **Never modify `auth-schema.ts` manually** — auto-generated by better-auth
