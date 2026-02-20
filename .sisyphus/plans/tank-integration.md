@@ -63,16 +63,16 @@ Add the npm-model install/link workflow to Tank CLI so that installed skills are
 - Tests for all new and modified code
 
 ### Definition of Done
-- [ ] `tank install @org/skill` extracts locally AND creates agent symlinks
-- [ ] `tank install -g @org/skill` extracts globally AND creates agent symlinks
-- [ ] `tank link` (in skill dir) symlinks CWD to all detected agent directories
-- [ ] `tank unlink` removes dev symlinks from agent directories
-- [ ] `tank remove @org/skill` removes local install + agent symlinks
-- [ ] `tank remove -g @org/skill` removes global install + agent symlinks
-- [ ] `tank doctor` reports agent status, symlink health, frontmatter presence
-- [ ] tankpkg.dev skill pages show install commands with copy-to-clipboard
-- [ ] All existing tests continue passing (`pnpm test`)
-- [ ] All new code has unit test coverage
+- [x] `tank install @org/skill` extracts locally AND creates agent symlinks
+- [x] `tank install -g @org/skill` extracts globally AND creates agent symlinks
+- [x] `tank link` (in skill dir) symlinks CWD to all detected agent directories
+- [x] `tank unlink` removes dev symlinks from agent directories
+- [x] `tank remove @org/skill` removes local install + agent symlinks
+- [x] `tank remove -g @org/skill` removes global install + agent symlinks
+- [x] `tank doctor` reports agent status, symlink health, frontmatter presence
+- [x] tankpkg.dev skill pages show install commands with copy-to-clipboard
+- [x] All existing tests continue passing (`pnpm test`)
+- [x] All new code has unit test coverage
 
 ### Must Have
 - `-g` / `--global` flag on `install`, `remove`, `update`
@@ -198,9 +198,9 @@ Each TODO follows RED-GREEN-REFACTOR:
   - Universal convention: `~/.agents/skills/<name>/SKILL.md` — used by skills.sh (Vercel)
 
   **Acceptance Criteria**:
-  - [ ] Test file: `apps/cli/src/__tests__/agents.test.ts`
-  - [ ] Tests cover: path resolution for all 6 agents, global dir paths, agent detection (exists/not exists), scoped name mapping (`@org/name` → `org--name`), unscoped name passthrough
-  - [ ] `pnpm test --filter=tank` → PASS (new + existing tests)
+  - [x] Test file: `apps/cli/src/__tests__/agents.test.ts`
+  - [x] Tests cover: path resolution for all 6 agents, global dir paths, agent detection (exists/not exists), scoped name mapping (`@org/name` → `org--name`), unscoped name passthrough
+  - [x] `pnpm test --filter=tank` → PASS (new + existing tests)
 
   **Commit**: YES
   - Message: `feat(cli): add agent registry with detection and name mapping`
@@ -253,9 +253,9 @@ Each TODO follows RED-GREEN-REFACTOR:
   - `apps/cli/src/__tests__/lockfile.test.ts` — Test pattern for JSON file I/O with temp directories
 
   **Acceptance Criteria**:
-  - [ ] Test file: `apps/cli/src/__tests__/links.test.ts`
-  - [ ] Tests cover: read missing file → empty manifest, read existing, write deterministic, add/remove, source types (local/global/dev), local vs global paths
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] Test file: `apps/cli/src/__tests__/links.test.ts`
+  - [x] Tests cover: read missing file → empty manifest, read existing, write deterministic, add/remove, source types (local/global/dev), local vs global paths
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add links manifest module for tracking agent symlinks`
@@ -321,8 +321,8 @@ Each TODO follows RED-GREEN-REFACTOR:
   - `lstatSync` vs `statSync`: `statSync` follows symlinks, `lstatSync` returns symlink info itself — critical for detecting existing/dangling symlinks
 
   **Acceptance Criteria**:
-  - [ ] Test file: `apps/cli/src/__tests__/linker.test.ts`
-  - [ ] Tests cover:
+  - [x] Test file: `apps/cli/src/__tests__/linker.test.ts`
+  - [x] Tests cover:
     - Link creates symlink in each detected agent dir
     - Link skips if symlink already correct
     - Link warns + overwrites if symlink points to wrong target
@@ -333,7 +333,7 @@ Each TODO follows RED-GREEN-REFACTOR:
     - Unlink skips missing symlinks (idempotent)
     - Unlink never deletes real directories
     - Status correctly reports linked/unlinked/broken per agent
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add linker core with symlink create/remove/status`
@@ -389,15 +389,15 @@ Each TODO follows RED-GREEN-REFACTOR:
   - The angular-expert SKILL.md shows the exact YAML frontmatter format agents expect
 
   **Acceptance Criteria**:
-  - [ ] Test file: `apps/cli/src/__tests__/frontmatter.test.ts`
-  - [ ] Tests cover:
+  - [x] Test file: `apps/cli/src/__tests__/frontmatter.test.ts`
+  - [x] Tests cover:
     - SKILL.md without frontmatter → frontmatter prepended in generated dir
     - SKILL.md with existing frontmatter → content preserved as-is
     - Description extracted from skills.json or first heading
     - Agent skill dir created at correct path (local and global variants)
     - Original extract content unchanged (integrity preserved)
     - Reference files accessible from agent skill dir
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add SKILL.md frontmatter wrapper generation`
@@ -448,8 +448,8 @@ Each TODO follows RED-GREEN-REFACTOR:
   - npm link docs: `npm link` in package dir creates global symlink, others can then `npm link <pkg>` to use it
 
   **Acceptance Criteria**:
-  - [ ] Test file: `apps/cli/src/__tests__/link.test.ts`
-  - [ ] Tests cover:
+  - [x] Test file: `apps/cli/src/__tests__/link.test.ts`
+  - [x] Tests cover:
     - `tank link` in skill dir → symlinks CWD (or agent wrapper) to all detected agent dirs
     - Error if no skills.json in CWD
     - Error if no name in skills.json
@@ -458,7 +458,7 @@ Each TODO follows RED-GREEN-REFACTOR:
     - SKILL.md without frontmatter → generates wrapper, symlinks to wrapper
     - Idempotent: running twice produces same result
     - Tracked in global `~/.tank/links.json` with `source: "dev"`
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add tank link command (npm-link-style for skill developers)`
@@ -493,15 +493,15 @@ Each TODO follows RED-GREEN-REFACTOR:
   - `apps/cli/src/commands/remove.ts` — Similar flow: read state, remove things, print success
 
   **Acceptance Criteria**:
-  - [ ] Test file: `apps/cli/src/__tests__/unlink.test.ts`
-  - [ ] Tests cover:
+  - [x] Test file: `apps/cli/src/__tests__/unlink.test.ts`
+  - [x] Tests cover:
     - `tank unlink` removes dev symlinks from all agent dirs
     - Error if no skills.json in CWD
     - Graceful if skill was never linked
     - Cleans up agent-skills wrapper dir
     - Does NOT modify the skill directory itself
     - Idempotent: running twice is safe
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add tank unlink command (reverse of tank link)`
@@ -512,7 +512,7 @@ Each TODO follows RED-GREEN-REFACTOR:
 
 ### Sprint 3: Wire Into Existing Commands
 
-- [ ] 7. Add `-g` flag and agent linking to `install` command
+- [x] 7. Add `-g` flag and agent linking to `install` command
 
   **What to do**:
   - Modify `apps/cli/src/commands/install.ts`
@@ -560,8 +560,8 @@ Each TODO follows RED-GREEN-REFACTOR:
   - `apps/cli/src/__tests__/install.test.ts` — Existing tests — ALL must continue passing
 
   **Acceptance Criteria**:
-  - [ ] ALL existing install tests continue passing (zero regressions)
-  - [ ] New tests:
+  - [x] ALL existing install tests continue passing (zero regressions)
+  - [x] New tests:
     - `tank install @org/skill` → extracts locally + creates agent symlinks
     - `tank install @org/skill` with no agents detected → installs successfully, logs info about no agents
     - `tank install @org/skill` with link failure → install succeeds with warning
@@ -570,7 +570,7 @@ Each TODO follows RED-GREEN-REFACTOR:
     - `tank install -g @org/skill` → writes to `~/.tank/skills.lock`
     - `tank install -g` (no name) → installs all from global lockfile
     - Agent symlink target is the agent-skills wrapper dir (not raw extract dir)
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add -g flag and always-on agent linking to install`
@@ -579,7 +579,7 @@ Each TODO follows RED-GREEN-REFACTOR:
 
 ---
 
-- [ ] 8. Add `-g` flag and auto-unlink to `remove` command
+- [x] 8. Add `-g` flag and auto-unlink to `remove` command
 
   **What to do**:
   - Modify `apps/cli/src/commands/remove.ts`
@@ -613,14 +613,14 @@ Each TODO follows RED-GREEN-REFACTOR:
   - `apps/cli/src/__tests__/remove.test.ts` — Existing tests — ALL must continue passing
 
   **Acceptance Criteria**:
-  - [ ] ALL existing remove tests continue passing
-  - [ ] New tests:
+  - [x] ALL existing remove tests continue passing
+  - [x] New tests:
     - `tank remove @org/skill` → removes local install + agent symlinks
     - `tank remove @org/skill` that was never linked → removes normally (no errors)
     - `tank remove -g @org/skill` → removes global install + agent symlinks
     - `tank remove -g @org/skill` → does NOT touch project files
     - Broken/missing symlinks → graceful handling
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add -g flag and auto-unlink to remove command`
@@ -629,7 +629,7 @@ Each TODO follows RED-GREEN-REFACTOR:
 
 ---
 
-- [ ] 9. Add `-g` flag and re-link to `update` command
+- [x] 9. Add `-g` flag and re-link to `update` command
 
   **What to do**:
   - Modify `apps/cli/src/commands/update.ts`
@@ -652,11 +652,11 @@ Each TODO follows RED-GREEN-REFACTOR:
   - `apps/cli/src/commands/update.ts` — Current update flow (calls `installCommand` internally)
 
   **Acceptance Criteria**:
-  - [ ] ALL existing update tests continue passing
-  - [ ] New tests:
+  - [x] ALL existing update tests continue passing
+  - [x] New tests:
     - `tank update` → local update + agent skill dir regenerated
     - `tank update -g` → global update + agent skill dir regenerated
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add -g flag and re-link to update command`
@@ -667,7 +667,7 @@ Each TODO follows RED-GREEN-REFACTOR:
 
 ### Sprint 4: Diagnostics + Web UI
 
-- [ ] 10. `tank doctor` Command
+- [x] 10. `tank doctor` Command
 
   **What to do**:
   - Create `apps/cli/src/commands/doctor.ts`
@@ -720,15 +720,15 @@ Each TODO follows RED-GREEN-REFACTOR:
   - `apps/cli/src/lib/logger.ts` — Chalk-based output formatting
 
   **Acceptance Criteria**:
-  - [ ] Test file: `apps/cli/src/__tests__/doctor.test.ts`
-  - [ ] Tests cover:
+  - [x] Test file: `apps/cli/src/__tests__/doctor.test.ts`
+  - [x] Tests cover:
     - Reports detected vs missing agents
     - Reports local, global, and dev-linked skills correctly
     - Reports linked/unlinked/broken symlinks
     - Provides actionable suggestions
     - Works with no skills installed (graceful empty state)
     - Works with no agents detected (graceful message)
-  - [ ] `pnpm test --filter=tank` → PASS
+  - [x] `pnpm test --filter=tank` → PASS
 
   **Commit**: YES
   - Message: `feat(cli): add tank doctor command for integration diagnostics`
@@ -737,7 +737,7 @@ Each TODO follows RED-GREEN-REFACTOR:
 
 ---
 
-- [ ] 11. Web "Install" Button on Skill Detail Page
+- [x] 11. Web "Install" Button on Skill Detail Page
 
   **What to do**:
   - Modify `apps/web/app/(registry)/skills/[...name]/page.tsx`
@@ -772,12 +772,12 @@ Each TODO follows RED-GREEN-REFACTOR:
   - npm package page "Install" tab — the UX pattern we're following
 
   **Acceptance Criteria**:
-  - [ ] Skill detail page shows install commands (Project + Global tabs)
-  - [ ] Copy-to-clipboard works for both variants
-  - [ ] Tab UI matches existing design language
-  - [ ] Responsive on mobile
-  - [ ] `pnpm build --filter=@tank/web` → succeeds
-  - [ ] Manual: Visit skill page → see install buttons → copy works
+  - [x] Skill detail page shows install commands (Project + Global tabs)
+  - [x] Copy-to-clipboard works for both variants
+  - [x] Tab UI matches existing design language
+  - [x] Responsive on mobile
+  - [x] `pnpm build --filter=@tank/web` → succeeds
+  - [x] Manual: Visit skill page → see install buttons → copy works
 
   **Commit**: YES
   - Message: `feat(web): add install command tabs to skill detail page`
@@ -788,7 +788,7 @@ Each TODO follows RED-GREEN-REFACTOR:
 
 ### Sprint 5: Integration Validation
 
-- [ ] 12. End-to-End Validation: Full npm-Model Flow
+- [x] 12. End-to-End Validation: Full npm-Model Flow
 
   **What to do**:
   - Manual E2E validation of all three workflows:
@@ -840,11 +840,11 @@ Each TODO follows RED-GREEN-REFACTOR:
   **Parallelizable**: NO (final validation)
 
   **Acceptance Criteria**:
-  - [ ] All three workflows work correctly
-  - [ ] `tank doctor` accurately reports all link types
-  - [ ] No regressions: `pnpm test` → ALL tests pass
-  - [ ] Web install button works on local dev server
-  - [ ] Evidence documented
+  - [x] All three workflows work correctly
+  - [x] `tank doctor` accurately reports all link types
+  - [x] No regressions: `pnpm test` → ALL tests pass
+  - [x] Web install button works on local dev server
+  - [x] Evidence documented
 
   **Commit**: YES
   - Message: `test: validate full npm-model agent integration flow`
@@ -889,14 +889,14 @@ tank remove -g @tank/react         # Global remove + unlink
 ```
 
 ### Final Checklist
-- [ ] All "Must Have" features implemented
-- [ ] All "Must NOT Have" guardrails respected
-- [ ] All existing tests continue passing (zero regressions)
-- [ ] New commands: `tank link`, `tank unlink`, `tank doctor`
-- [ ] New flags: `-g` on `install`, `remove`, `update`
-- [ ] Local installs: `.tank/skills/` + `.tank/agent-skills/` + `.tank/links.json`
-- [ ] Global installs: `~/.tank/skills/` + `~/.tank/agent-skills/` + `~/.tank/links.json` + `~/.tank/skills.lock`
-- [ ] Dev links: CWD → agent dirs, tracked in `~/.tank/links.json`
-- [ ] Symlink failures are warnings, not errors
-- [ ] Web install button visible on skill detail page
-- [ ] E2E flow validated: all 3 workflows (local, global, dev)
+- [x] All "Must Have" features implemented
+- [x] All "Must NOT Have" guardrails respected
+- [x] All existing tests continue passing (zero regressions)
+- [x] New commands: `tank link`, `tank unlink`, `tank doctor`
+- [x] New flags: `-g` on `install`, `remove`, `update`
+- [x] Local installs: `.tank/skills/` + `.tank/agent-skills/` + `.tank/links.json`
+- [x] Global installs: `~/.tank/skills/` + `~/.tank/agent-skills/` + `~/.tank/links.json` + `~/.tank/skills.lock`
+- [x] Dev links: CWD → agent dirs, tracked in `~/.tank/links.json`
+- [x] Symlink failures are warnings, not errors
+- [x] Web install button visible on skill detail page
+- [x] E2E flow validated: all 3 workflows (local, global, dev)

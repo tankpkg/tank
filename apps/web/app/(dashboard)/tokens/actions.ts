@@ -15,7 +15,8 @@ export async function createToken(name: string) {
     body: {
       name,
       userId: session.user.id,
-      expiresIn: 90 * 24 * 60 * 60, // 90 days in seconds
+      expiresIn: 90 * 24 * 60 * 60,
+        rateLimitMax: 1000,
     },
   });
 

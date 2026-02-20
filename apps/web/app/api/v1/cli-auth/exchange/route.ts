@@ -44,11 +44,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create an API key for the user
     const apiKeyResult = await auth.api.createApiKey({
       body: {
         name: 'CLI Token',
         userId: session.userId,
+        expiresIn: 90 * 24 * 60 * 60,
+        rateLimitMax: 1000,
       },
     });
 
