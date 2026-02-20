@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
-import { eq, desc } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { skills, skillVersions } from '@/lib/db/schema';
-import { user } from '@/lib/db/auth-schema';
+import { skills, user } from '@/lib/db/schema';
 
+/**
+ * GET /api/v1/skills/[name] — single-query skill metadata with latest version.
+ *
+ * Consolidation: merges skill lookup + latest version into one query via LEFT JOIN
+ * with correlated subquery. Joins through user table (text FK) to get
+ * publisher name from user.name field.
+ * Round-trips: 1 (was 2).
+ */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ name: string }> },
@@ -11,48 +18,38 @@ export async function GET(
   const { name: rawName } = await params;
   const name = decodeURIComponent(rawName);
 
-  // 1. Look up skill by name
-  const existingSkills = await db
-    .select({
-      id: skills.id,
-      name: skills.name,
-      description: skills.description,
-      publisherId: skills.publisherId,
-      orgId: skills.orgId,
-      createdAt: skills.createdAt,
-      updatedAt: skills.updatedAt,
-      publisherName: user.name,
-    })
-    .from(skills)
-    .innerJoin(user, eq(skills.publisherId, user.id))
-    .where(eq(skills.name, name))
-    .limit(1);
+  const results = await db.execute(sql`
+    SELECT
+      s.name,
+      s.description,
+      sv.version AS "latestVersion",
+      coalesce(u.name, '') AS "publisherName",
+      s.created_at AS "createdAt",
+      s.updated_at AS "updatedAt"
+    FROM ${skills} s
+    LEFT JOIN ${user} u ON u.id = s.publisher_id
+    LEFT JOIN skill_versions sv ON sv.skill_id = s.id
+      AND sv.created_at = (
+        SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
+      )
+    WHERE s.name = ${name}
+    LIMIT 1
+  `);
 
-  if (existingSkills.length === 0) {
+  if (results.length === 0) {
     return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
   }
 
-  const skill = existingSkills[0];
+  const row = results[0] as Record<string, unknown>;
 
-  // 2. Get latest version (most recently published)
-  const latestVersions = await db
-    .select()
-    .from(skillVersions)
-    .where(eq(skillVersions.skillId, skill.id))
-    .orderBy(desc(skillVersions.createdAt))
-    .limit(1);
-
-  const latestVersion = latestVersions[0] ?? null;
-
-  // 3. Return response
   return NextResponse.json({
-    name: skill.name,
-    description: skill.description,
-    latestVersion: latestVersion?.version ?? null,
+    name: row.name as string,
+    description: row.description as string | null,
+    latestVersion: (row.latestVersion as string) ?? null,
     publisher: {
-      name: skill.publisherName,
+      name: (row.publisherName as string) || null,
     },
-    createdAt: skill.createdAt,
-    updatedAt: skill.updatedAt,
+    createdAt: row.createdAt as string,
+    updatedAt: row.updatedAt as string,
   });
 }

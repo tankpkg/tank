@@ -46,34 +46,51 @@ export async function POST(request: Request) {
   const { name, version } = manifest;
 
   // 5. Ensure user has githubUsername populated (fetch from GitHub if not set)
-  const [authUser] = await db
-    .select({ name: user.name, githubUsername: user.githubUsername })
-    .from(user)
-    .where(eq(user.id, verified.userId))
-    .limit(1);
-
-  // Fetch GitHub username if not already set
-  if (authUser && !authUser.githubUsername) {
-    const [githubAccount] = await db
-      .select({ accessToken: account.accessToken })
-      .from(account)
-      .where(and(eq(account.userId, verified.userId), eq(account.providerId, 'github')))
+  // Non-fatal: if column missing or query fails, continue without throwing
+  let authUser: { name: string | null; githubUsername: string | null } | undefined;
+  try {
+    const result = await db
+      .select({ name: user.name, githubUsername: user.githubUsername })
+      .from(user)
+      .where(eq(user.id, verified.userId))
       .limit(1);
+    authUser = result[0];
+  } catch {
+    // Column may not exist in runtime DB; continue without github username
+  }
 
-    if (githubAccount?.accessToken) {
-      try {
-        const ghRes = await fetch('https://api.github.com/user', {
-          headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' },
-        });
-        if (ghRes.ok) {
-          const gh = await ghRes.json() as { login: string };
-          // Update user with github username
-          await db
-            .update(user)
-            .set({ githubUsername: gh.login })
-            .where(eq(user.id, verified.userId));
+  // Fetch GitHub username if not already set (best-effort, non-blocking)
+  if (authUser && !authUser.githubUsername) {
+    try {
+      const [githubAccount] = await db
+        .select({ accessToken: account.accessToken })
+        .from(account)
+        .where(and(eq(account.userId, verified.userId), eq(account.providerId, 'github')))
+        .limit(1);
+
+      if (githubAccount?.accessToken) {
+        try {
+          const ghRes = await fetch('https://api.github.com/user', {
+            headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' },
+          });
+          if (ghRes.ok) {
+            const gh = await ghRes.json() as { login: string };
+            // Update user with github username (non-fatal if fails)
+            try {
+              await db
+                .update(user)
+                .set({ githubUsername: gh.login })
+                .where(eq(user.id, verified.userId));
+            } catch {
+              // Update may fail if column missing; continue
+            }
+          }
+        } catch {
+          // GitHub API call failed; continue
         }
-      } catch { /* non-critical — fall back to null */ }
+      }
+    } catch {
+      // Account lookup failed; continue
     }
   }
 

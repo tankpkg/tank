@@ -118,6 +118,7 @@ cp .env.example .env.local  # fill in credentials
 pnpm dev                    # Start web app in dev mode
 pnpm build                  # Build all packages
 pnpm test                   # Run all tests (445 TypeScript + 16 Python)
+pnpm test:perf              # Run performance tests (no-cache production build)
 pnpm test --filter=cli      # Run CLI tests only
 pnpm test --filter=web      # Run web tests only
 pnpm test --filter=shared   # Run shared package tests only
@@ -148,6 +149,7 @@ See the [Roadmap](docs/roadmap.md) for what we're building and when.
 | [Product Brief](docs/product-brief.md) | Full vision, features, and technical direction |
 | [Roadmap](docs/roadmap.md) | Phased timeline with milestones |
 | [Architecture](docs/architecture.md) | Technical design and decisions |
+| [Performance Testing](docs/performance-testing.md) | Methodology and regression protocol |
 | [Contributing](CONTRIBUTING.md) | How to get involved |
 
 ## Why "Tank"?
