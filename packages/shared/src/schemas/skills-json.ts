@@ -16,6 +16,7 @@ export const skillsJsonSchema = z.object({
     .optional(),
   skills: z.record(z.string(), z.string()).optional(),
   permissions: permissionsSchema.optional(),
+  repository: z.string().url('Repository must be a valid URL').optional(),
   audit: z.object({
     min_score: z.number().min(0).max(10),
   }).strict().optional(),

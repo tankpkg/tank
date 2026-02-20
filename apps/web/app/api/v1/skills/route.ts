@@ -146,11 +146,26 @@ export async function POST(request: Request) {
       .values({
         name,
         description: manifest.description ?? null,
+        repositoryUrl: manifest.repository ?? null,
         publisherId: verified.userId,
         orgId,
       })
       .returning();
     skill = newSkill;
+  } else {
+    const updates: Record<string, string | null> = {};
+    if (manifest.description !== undefined) {
+      updates.description = manifest.description;
+    }
+    if (manifest.repository !== undefined) {
+      updates.repositoryUrl = manifest.repository;
+    }
+    if (Object.keys(updates).length > 0) {
+      await db
+        .update(skills)
+        .set(updates)
+        .where(eq(skills.id, skill.id));
+    }
   }
 
   // 8. Check for version conflict

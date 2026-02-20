@@ -188,6 +188,38 @@ describe('skillsJsonSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('accepts valid repository URL', () => {
+    const result = skillsJsonSchema.safeParse({
+      name: 'my-skill',
+      version: '1.0.0',
+      repository: 'https://github.com/user/repo',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.repository).toBe('https://github.com/user/repo');
+    }
+  });
+
+  it('accepts manifest without repository (optional)', () => {
+    const result = skillsJsonSchema.safeParse({
+      name: 'my-skill',
+      version: '1.0.0',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.repository).toBeUndefined();
+    }
+  });
+
+  it('rejects invalid repository URL', () => {
+    const result = skillsJsonSchema.safeParse({
+      name: 'my-skill',
+      version: '1.0.0',
+      repository: 'not-a-url',
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('rejects unknown top-level field (strict)', () => {
     const result = skillsJsonSchema.safeParse({
       name: 'my-skill',

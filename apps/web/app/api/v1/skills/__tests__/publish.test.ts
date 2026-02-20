@@ -428,6 +428,73 @@ describe('POST /api/v1/skills', () => {
     const data = await response.json();
     expect(data.skillId).toBe('skill-existing');
   });
+
+  it('includes repositoryUrl in skill insert when manifest has repository', async () => {
+    mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
+    mockLimit.mockResolvedValueOnce([{ githubUsername: 'testuser' }]);
+    mockLimit.mockResolvedValueOnce([]);
+    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill' }]);
+    mockLimit.mockResolvedValueOnce([]);
+    mockReturning.mockResolvedValueOnce([{ id: 'version-1' }]);
+    mockCreateSignedUploadUrl.mockResolvedValue({
+      data: { signedUrl: 'https://storage.example.com/upload' },
+      error: null,
+    });
+
+    const { POST } = await import('../route');
+    const request = makeRequest(
+      'http://localhost:3000/api/v1/skills',
+      {
+        manifest: {
+          ...validManifest,
+          repository: 'https://github.com/tankpkg/skills',
+        },
+      },
+      'tank_valid',
+    );
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(mockValues).toHaveBeenCalledWith(
+      expect.objectContaining({ repositoryUrl: 'https://github.com/tankpkg/skills' }),
+    );
+  });
+
+  it('updates repositoryUrl on existing skill re-publish', async () => {
+    mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
+    mockLimit.mockResolvedValueOnce([{ githubUsername: 'testuser' }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-existing', name: 'my-skill', publisherId: 'user-1', orgId: null }]);
+    mockLimit.mockResolvedValueOnce([]);
+    mockReturning.mockResolvedValueOnce([{ id: 'version-1' }]);
+    mockCreateSignedUploadUrl.mockResolvedValue({
+      data: { signedUrl: 'https://storage.example.com/upload' },
+      error: null,
+    });
+    mockUpdateWhere.mockResolvedValueOnce(undefined);
+
+    const { POST } = await import('../route');
+    const request = makeRequest(
+      'http://localhost:3000/api/v1/skills',
+      {
+        manifest: {
+          ...validManifest,
+          description: 'Updated description',
+          repository: 'https://github.com/tankpkg/skills',
+        },
+      },
+      'tank_valid',
+    );
+    const response = await POST(request);
+
+    expect(response.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repositoryUrl: 'https://github.com/tankpkg/skills',
+        description: 'Updated description',
+      }),
+    );
+  });
 });
 
 // ─── POST /api/v1/skills/confirm (Step 3: Finalize Publish) ─────────────────
