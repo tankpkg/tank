@@ -203,7 +203,8 @@ jobs:
     name: publish-npm
     runs-on: ubuntu-22.04
     needs: build
-    if: ${{ secrets.NPM_TOKEN != '' }}
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -225,7 +226,8 @@ jobs:
         run: pnpm --filter ./apps/cli build
 
       - name: Publish to npm
+        if: ${{ env.NPM_TOKEN != '' }}
         working-directory: apps/cli
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
         run: pnpm publish --no-git-checks --access public
