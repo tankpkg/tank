@@ -178,6 +178,8 @@ export default async function SkillDetailPage({
     <div data-testid="file-explorer-root">
       <FileExplorer
         files={fileList}
+        skillName={data.name}
+        version={data.latestVersion?.version ?? ''}
         readme={data.latestVersion?.readme}
         manifest={latestManifest}
       />

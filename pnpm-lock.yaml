@@ -157,6 +157,9 @@ importers:
       tailwindcss:
         specifier: ^4.1.18
         version: 4.1.18
+      tar:
+        specifier: ^7.5.7
+        version: 7.5.7
     devDependencies:
       '@types/node':
         specifier: ^22
@@ -167,6 +170,9 @@ importers:
       '@types/react-dom':
         specifier: ^19
         version: 19.2.3(@types/react@19.2.14)
+      '@types/tar':
+        specifier: ^6.1.13
+        version: 6.1.13
       drizzle-kit:
         specifier: ^0.31.9
         version: 0.31.9
