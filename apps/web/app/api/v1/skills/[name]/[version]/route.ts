@@ -10,12 +10,10 @@ async function recordDownload(
   skillId: string,
   versionId: string,
 ): Promise<void> {
-  // 1. Hash the IP address for privacy
   const forwarded = request.headers.get('x-forwarded-for');
   const ip = forwarded?.split(',')[0]?.trim() ?? 'unknown';
   const ipHash = createHash('sha256').update(ip).digest('hex');
 
-  // 2. Check for duplicate within last hour
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   const existing = await db
     .select({ id: skillDownloads.id })
@@ -29,9 +27,8 @@ async function recordDownload(
     )
     .limit(1);
 
-  if (existing.length > 0) return; // Already counted within the hour
+  if (existing.length > 0) return;
 
-  // 3. Insert download record
   await db.insert(skillDownloads).values({
     skillId,
     versionId,
@@ -40,6 +37,15 @@ async function recordDownload(
   });
 }
 
+/**
+ * GET /api/v1/skills/[name]/[version]
+ *
+ * Consolidation: skill+version merged into 1 query (was 2).
+ * Download count + scan + findings merged into 1 query (was 3).
+ * Supabase signedUrl is external (cannot consolidate).
+ * recordDownload stays fire-and-forget.
+ * Round-trips: 3 (was 5-6). Breakdown: 1 skill+version, 1 signedUrl, 1 count+scan+findings.
+ */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ name: string; version: string }> },
@@ -48,39 +54,52 @@ export async function GET(
     const { name: rawName, version } = await params;
     const name = decodeURIComponent(rawName);
 
-    // 1. Look up skill by name
-    const existingSkills = await db
-      .select()
-      .from(skills)
-      .where(eq(skills.name, name))
-      .limit(1);
+    // Query 1: skill + version in one shot
+    const skillVersionRows = await db.execute(sql`
+      SELECT
+        s.id AS "skillId",
+        s.name,
+        s.description,
+        sv.id AS "versionId",
+        sv.version,
+        sv.integrity,
+        sv.permissions,
+        sv.audit_score AS "auditScore",
+        sv.audit_status AS "auditStatus",
+        sv.tarball_path AS "tarballPath",
+        sv.created_at AS "publishedAt"
+      FROM skills s
+      INNER JOIN skill_versions sv ON sv.skill_id = s.id AND sv.version = ${version}
+      WHERE s.name = ${name}
+      LIMIT 1
+    `);
 
-    if (existingSkills.length === 0) {
-      return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
-    }
+    if (skillVersionRows.length === 0) {
+      // Distinguish skill-not-found vs version-not-found
+      const skillCheck = await db
+        .select({ id: skills.id })
+        .from(skills)
+        .where(eq(skills.name, name))
+        .limit(1);
 
-    const skill = existingSkills[0];
-
-    // 2. Look up specific version
-    const existingVersions = await db
-      .select()
-      .from(skillVersions)
-      .where(and(eq(skillVersions.skillId, skill.id), eq(skillVersions.version, version)))
-      .limit(1);
-
-    if (existingVersions.length === 0) {
+      if (skillCheck.length === 0) {
+        return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
+      }
       return NextResponse.json(
         { error: `Version ${version} not found for ${name}` },
         { status: 404 },
       );
     }
 
-    const skillVersion = existingVersions[0];
+    const row = skillVersionRows[0] as Record<string, unknown>;
+    const skillId = row.skillId as string;
+    const versionId = row.versionId as string;
+    const tarballPath = row.tarballPath as string;
 
-    // 3. Generate signed download URL (1 hour expiry)
+    // Query 2: Supabase signed URL (external, cannot consolidate)
     const { data: downloadData, error: downloadError } = await supabaseAdmin.storage
       .from('packages')
-      .createSignedUrl(skillVersion.tarballPath, 3600);
+      .createSignedUrl(tarballPath, 3600);
 
     if (downloadError || !downloadData) {
       console.error('[Version] Supabase signed URL error:', downloadError);
@@ -90,65 +109,52 @@ export async function GET(
       );
     }
 
-    // 4. Record download (fire-and-forget, don't block the response)
-    recordDownload(request, skill.id, skillVersion.id).catch(() => {
-      // Silently ignore download counting errors — don't break the download
-    });
+    // Fire-and-forget download recording
+    recordDownload(request, skillId, versionId).catch(() => {});
 
-    // 5. Count total downloads for this skill
-    const downloadCount = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(skillDownloads)
-      .where(eq(skillDownloads.skillId, skill.id));
+    // Query 3: download count + scan verdict + findings in one query
+    const metaRows = await db.execute(sql`
+      SELECT
+        (SELECT count(*)::int FROM skill_downloads WHERE skill_id = ${skillId}) AS "downloadCount",
+        sr.verdict AS "scanVerdict",
+        sf.stage AS "findingStage",
+        sf.severity AS "findingSeverity",
+        sf.type AS "findingType",
+        sf.description AS "findingDescription",
+        sf.location AS "findingLocation"
+      FROM (SELECT 1) AS _dummy
+      LEFT JOIN LATERAL (
+        SELECT id, verdict FROM scan_results
+        WHERE version_id = ${versionId}
+        ORDER BY created_at DESC LIMIT 1
+      ) sr ON true
+      LEFT JOIN scan_findings sf ON sf.scan_id = sr.id
+    `);
 
-    // 6. Fetch latest scan results
-    const latestScanResults = await db
-      .select()
-      .from(scanResults)
-      .where(eq(scanResults.versionId, skillVersion.id))
-      .orderBy(desc(scanResults.createdAt))
-      .limit(1);
+    const downloadCount = metaRows.length > 0 ? Number((metaRows[0] as Record<string, unknown>).downloadCount) ?? 0 : 0;
+    const scanVerdict = metaRows.length > 0 ? ((metaRows[0] as Record<string, unknown>).scanVerdict as string | null) : null;
 
-    let scanVerdict: string | null = null;
-    let scanFindingsList: Array<{
-      stage: string;
-      severity: string;
-      type: string;
-      description: string;
-      location: string | null;
-    }> = [];
+    const scanFindingsList = metaRows
+      .filter((r: Record<string, unknown>) => r.findingStage !== null)
+      .map((r: Record<string, unknown>) => ({
+        stage: r.findingStage as string,
+        severity: r.findingSeverity as string,
+        type: r.findingType as string,
+        description: r.findingDescription as string,
+        location: (r.findingLocation as string | null),
+      }));
 
-    if (latestScanResults.length > 0) {
-      const latestScan = latestScanResults[0];
-      scanVerdict = latestScan.verdict;
-
-      // Fetch findings for this scan
-      const findings = await db
-        .select({
-          stage: scanFindings.stage,
-          severity: scanFindings.severity,
-          type: scanFindings.type,
-          description: scanFindings.description,
-          location: scanFindings.location,
-        })
-        .from(scanFindings)
-        .where(eq(scanFindings.scanId, latestScan.id));
-
-      scanFindingsList = findings;
-    }
-
-    // 7. Return response
     return NextResponse.json({
-      name: skill.name,
-      version: skillVersion.version,
-      description: skill.description,
-      integrity: skillVersion.integrity,
-      permissions: skillVersion.permissions,
-      auditScore: skillVersion.auditScore,
-      auditStatus: skillVersion.auditStatus,
+      name: row.name as string,
+      version: row.version as string,
+      description: row.description as string | null,
+      integrity: row.integrity as string,
+      permissions: row.permissions,
+      auditScore: row.auditScore != null ? Number(row.auditScore) : null,
+      auditStatus: row.auditStatus as string,
       downloadUrl: downloadData.signedUrl,
-      publishedAt: skillVersion.createdAt,
-      downloads: downloadCount[0]?.count ?? 0,
+      publishedAt: row.publishedAt as string,
+      downloads: downloadCount,
       scanVerdict,
       scanFindings: scanFindingsList,
     });

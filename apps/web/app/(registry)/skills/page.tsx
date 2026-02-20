@@ -29,7 +29,7 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
   const totalPages = Math.max(1, Math.ceil(data.total / limit));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-testid="skills-list-root">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Browse Skills</h1>
         <p className="mt-2 text-muted-foreground">

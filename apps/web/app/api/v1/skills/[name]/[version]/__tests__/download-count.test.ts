@@ -2,56 +2,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
-// Track all db query results in order. Each select chain consumes the next result.
-const mockSelectResults: unknown[] = [];
-let selectCallIndex = 0;
+const mockExecute = vi.fn();
 
-function nextResult() {
-  const result = mockSelectResults[selectCallIndex] ?? [];
-  selectCallIndex++;
-  if (result === '__THROW__') {
-    throw new Error('DB connection failed');
-  }
-  return result;
-}
+const mockDedupLimit = vi.fn();
+const mockDedupWhere = vi.fn((): Record<string, unknown> => ({ limit: mockDedupLimit }));
+const mockDedupFrom = vi.fn((): Record<string, unknown> => ({ where: mockDedupWhere }));
+const mockSelect = vi.fn(() => ({ from: mockDedupFrom }));
 
-// Create a thenable chain object: can be awaited directly OR chained with .limit()
-function createThenableChain() {
-  let resolved = false;
-  let resultValue: unknown;
-
-  const getResult = () => {
-    if (!resolved) {
-      resultValue = nextResult();
-      resolved = true;
-    }
-    return resultValue;
-  };
-
-  const chain: Record<string, unknown> = {
-    limit: vi.fn(() => getResult()),
-    orderBy: vi.fn(() => chain), // Return chain to allow .limit() after .orderBy()
-    then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) => {
-      const result = getResult();
-      return Promise.resolve(result).then(onFulfilled, onRejected);
-    },
-  };
-
-  return chain;
-}
-
-const mockSelect = vi.fn(() => ({
-  from: vi.fn(() => ({
-    where: vi.fn(() => createThenableChain()),
-  })),
-}));
-
-// Track insert calls
 const mockInsertValues = vi.fn((_values?: unknown) => Promise.resolve());
 const mockInsert = vi.fn((_table?: unknown) => ({ values: mockInsertValues }));
 
 vi.mock('@/lib/db', () => ({
   db: {
+    execute: mockExecute,
     select: mockSelect,
     insert: mockInsert,
   },
@@ -136,61 +99,50 @@ function makeGetRequest(url: string, headers?: Record<string, string>) {
   });
 }
 
-const mockSkill = {
-  id: 'skill-1',
+const skillVersionRow = {
+  skillId: 'skill-1',
   name: 'my-skill',
   description: 'A test skill',
-  publisherId: 'pub-1',
-  orgId: null,
-  createdAt: new Date('2026-01-01T00:00:00Z'),
-  updatedAt: new Date('2026-01-15T00:00:00Z'),
-};
-
-const mockVersionData = {
-  id: 'version-1',
-  skillId: 'skill-1',
+  versionId: 'version-1',
   version: '1.0.0',
   integrity: 'sha512-abc123',
-  tarballPath: 'skills/skill-1/1.0.0.tgz',
-  tarballSize: 2048,
-  fileCount: 5,
-  manifest: { name: 'my-skill', version: '1.0.0' },
   permissions: { network: { outbound: ['*.example.com'] } },
   auditScore: 8.5,
   auditStatus: 'published',
-  publishedBy: 'pub-1',
-  createdAt: new Date('2026-01-10T00:00:00Z'),
+  tarballPath: 'skills/skill-1/1.0.0.tgz',
+  publishedAt: '2026-01-10T00:00:00Z',
+};
+
+const defaultMetaRow = {
+  downloadCount: 0,
+  scanVerdict: null,
+  findingStage: null,
+  findingSeverity: null,
+  findingType: null,
+  findingDescription: null,
+  findingLocation: null,
 };
 
 /**
- * Sets up mock results for a successful version fetch.
- * Select call order:
- *   1. Skill lookup → [mockSkill]
- *   2. Version lookup → [mockVersionData]
- *   3. Dedup check (inside recordDownload) → existingDownloads
- *   4. Download count → [{ count: downloadCount }]
- *   5. Scan results lookup → [] (no scan results in basic test)
- *   6. Scan findings lookup → [] (no findings in basic test)
+ * Query order for a successful version fetch:
+ *   1. db.execute → skill+version row
+ *   2. supabaseAdmin.createSignedUrl → signed URL
+ *   3. recordDownload (fire-and-forget): db.select chain → dedup check via mockDedupLimit
+ *   4. db.execute → count+scan+findings meta row
  */
 function setupSuccessfulFetch(options?: {
   existingDownloads?: unknown[];
   downloadCount?: number;
-  scanResults?: unknown[];
 }) {
-  const { existingDownloads = [], downloadCount = 0, scanResults: scanResultsData = [] } = options ?? {};
+  const { existingDownloads = [], downloadCount = 0 } = options ?? {};
 
-  // Call 1: skill lookup
-  mockSelectResults.push([mockSkill]);
-  // Call 2: version lookup
-  mockSelectResults.push([mockVersionData]);
-  // Call 3: dedup check (existing downloads within hour)
-  mockSelectResults.push(existingDownloads);
-  // Call 4: download count
-  mockSelectResults.push([{ count: downloadCount }]);
-  // Call 5: scan results lookup
-  mockSelectResults.push(scanResultsData);
-  // Call 6: scan findings (only if scan results exist, but mock returns empty)
-  mockSelectResults.push([]);
+  // Execute call 1: skill+version
+  mockExecute.mockResolvedValueOnce([skillVersionRow]);
+  // Execute call 2: count+scan+findings meta
+  mockExecute.mockResolvedValueOnce([{ ...defaultMetaRow, downloadCount }]);
+
+  // Dedup check inside recordDownload (db.select chain)
+  mockDedupLimit.mockResolvedValueOnce(existingDownloads);
 
   mockCreateSignedUrl.mockResolvedValue({
     data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
@@ -214,8 +166,6 @@ async function callVersionEndpoint(headers?: Record<string, string>) {
 describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSelectResults.length = 0;
-    selectCallIndex = 0;
   });
 
   it('records download on successful version fetch', async () => {
@@ -227,16 +177,13 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
 
     expect(response.status).toBe(200);
 
-    // Wait for fire-and-forget promise to settle
     await vi.waitFor(() => {
       expect(mockInsert).toHaveBeenCalled();
     });
 
-    // Verify insert was called with skillDownloads table
     const insertCallArg = mockInsert.mock.calls[0]![0];
     expect(insertCallArg).toBeDefined();
 
-    // Verify values passed to insert
     const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
     expect(valuesCallArg).toMatchObject({
       skillId: 'skill-1',
@@ -256,9 +203,7 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
     });
 
     const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
-    // IP hash should be a 64-char hex string (SHA-256)
     expect(valuesCallArg.ipHash).toMatch(/^[a-f0-9]{64}$/);
-    // Should NOT contain the raw IP
     expect(valuesCallArg.ipHash).not.toBe('192.168.1.1');
   });
 
@@ -273,7 +218,6 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
       expect(mockInsertValues).toHaveBeenCalled();
     });
 
-    // Should use the first IP from x-forwarded-for
     const valuesCallArg = mockInsertValues.mock.calls[0]![0] as Record<string, unknown>;
     const { createHash } = await import('node:crypto');
     const expectedHash = createHash('sha256').update('10.0.0.1').digest('hex');
@@ -283,7 +227,7 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
   it("falls back to 'unknown' when no IP header", async () => {
     setupSuccessfulFetch();
 
-    await callVersionEndpoint(); // No headers
+    await callVersionEndpoint();
 
     await vi.waitFor(() => {
       expect(mockInsertValues).toHaveBeenCalled();
@@ -296,7 +240,6 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
   });
 
   it('deduplicates within 1 hour (same IP + same skill)', async () => {
-    // Setup with existing download within the hour
     setupSuccessfulFetch({
       existingDownloads: [{ id: 'existing-download-1' }],
     });
@@ -307,15 +250,12 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
 
     expect(response.status).toBe(200);
 
-    // Give fire-and-forget time to settle
     await new Promise((r) => setTimeout(r, 50));
 
-    // Insert should NOT have been called because dedup found existing
     expect(mockInsert).not.toHaveBeenCalled();
   });
 
   it('allows download after 1 hour window (no existing)', async () => {
-    // Setup with no existing downloads (hour window passed)
     setupSuccessfulFetch({ existingDownloads: [] });
 
     await callVersionEndpoint({
@@ -326,7 +266,6 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
       expect(mockInsert).toHaveBeenCalled();
     });
 
-    // Insert should have been called since no dedup match
     expect(mockInsertValues).toHaveBeenCalledTimes(1);
   });
 
@@ -343,19 +282,13 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
   });
 
   it("download counting errors don't break the response", async () => {
-    // Setup: skill and version found, signed URL works
-    // Call 1: skill lookup
-    mockSelectResults.push([mockSkill]);
-    // Call 2: version lookup
-    mockSelectResults.push([mockVersionData]);
-    // Call 3: dedup check throws error — use a special marker
-    mockSelectResults.push('__THROW__');
-    // Call 4: download count — still works
-    mockSelectResults.push([{ count: 0 }]);
-    // Call 5: scan results lookup
-    mockSelectResults.push([]);
-    // Call 6: scan findings
-    mockSelectResults.push([]);
+    // Execute call 1: skill+version
+    mockExecute.mockResolvedValueOnce([skillVersionRow]);
+    // Execute call 2: count+scan+findings meta
+    mockExecute.mockResolvedValueOnce([defaultMetaRow]);
+
+    // Dedup check throws
+    mockDedupLimit.mockRejectedValueOnce(new Error('DB connection failed'));
 
     mockCreateSignedUrl.mockResolvedValue({
       data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
@@ -366,7 +299,6 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
       'x-forwarded-for': '192.168.1.1',
     });
 
-    // Response should still be 200 — download counting is fire-and-forget
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.name).toBe('my-skill');
@@ -406,7 +338,6 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
 
     const response = await callVersionEndpoint({
       'x-forwarded-for': '192.168.1.1',
-      // No user-agent header
     });
 
     expect(response.status).toBe(200);

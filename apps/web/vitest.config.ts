@@ -10,5 +10,6 @@ export default defineConfig({
   test: {
     environment: 'node',
     passWithNoTests: true,
+    exclude: ['tests/perf/**', 'node_modules/**'],
   },
 });

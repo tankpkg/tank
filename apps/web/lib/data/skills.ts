@@ -13,8 +13,7 @@
 
 import { eq, desc, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { skills, skillVersions, scanResults, scanFindings } from '@/lib/db/schema';
-import { user } from '@/lib/db/auth-schema';
+import { scanResults, scanFindings } from '@/lib/db/schema';
 
 // ── In-memory TTL cache ──────────────────────────────────────────────────────
 // Skill metadata rarely changes. A short TTL eliminates repeated DB round-trips
@@ -32,6 +31,7 @@ interface CacheEntry<T> {
 const queryCache = new Map<string, CacheEntry<unknown>>();
 
 function getCached<T>(key: string): T | undefined {
+  if (process.env.TANK_PERF_MODE === '1') return undefined;
   const entry = queryCache.get(key);
   if (!entry) return undefined;
   if (Date.now() > entry.expiresAt) {
@@ -42,6 +42,7 @@ function getCached<T>(key: string): T | undefined {
 }
 
 function setCache<T>(key: string, data: T): void {
+  if (process.env.TANK_PERF_MODE === '1') return;
   queryCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
 }
 
@@ -135,38 +136,35 @@ export async function getSkillDetail(
   const cached = getCached<SkillDetailResult | null>(cacheKey);
   if (cached !== undefined) return cached;
 
-  const rows = await db
-    .select({
-      // Skill fields
-      skillName: skills.name,
-      skillDescription: skills.description,
-      skillCreatedAt: skills.createdAt,
-      skillUpdatedAt: skills.updatedAt,
-      // Publisher (now user)
-      publisherName: user.name,
-      publisherGithubUsername: user.githubUsername,
-      // Download count (scalar subquery, computed once)
-      downloadCount:
-        sql<number>`coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = ${skills.id}), 0)`,
-      skillRepositoryUrl: skills.repositoryUrl,
-      // Version fields (null when skill has no versions)
-      versionId: skillVersions.id,
-      version: skillVersions.version,
-      integrity: skillVersions.integrity,
-      permissions: skillVersions.permissions,
-      manifest: skillVersions.manifest,
-      auditScore: skillVersions.auditScore,
-      auditStatus: skillVersions.auditStatus,
-      publishedAt: skillVersions.createdAt,
-      readme: skillVersions.readme,
-      versionFileCount: skillVersions.fileCount,
-      versionTarballSize: skillVersions.tarballSize,
-    })
-    .from(skills)
-    .innerJoin(user, eq(skills.publisherId, user.id))
-    .leftJoin(skillVersions, eq(skillVersions.skillId, skills.id))
-    .where(eq(skills.name, name))
-    .orderBy(desc(skillVersions.createdAt));
+  // Join through user table (text PK) to resolve publisher name.
+  // Consolidates scan results via LATERAL join.
+  const rows = await db.execute(sql`
+    SELECT
+      s.name AS "skillName",
+      s.description AS "skillDescription",
+      s.created_at AS "skillCreatedAt",
+      s.updated_at AS "skillUpdatedAt",
+      coalesce(u.name, '') AS "publisherName",
+      NULL AS "publisherGithubUsername",
+      coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS "downloadCount",
+      s.repository_url AS "skillRepositoryUrl",
+      sv.id AS "versionId",
+      sv.version,
+      sv.integrity,
+      sv.permissions,
+      sv.manifest,
+      sv.audit_score AS "auditScore",
+      sv.audit_status AS "auditStatus",
+      sv.created_at AS "publishedAt",
+      sv.readme,
+      sv.file_count AS "versionFileCount",
+      sv.tarball_size AS "versionTarballSize"
+    FROM skills s
+    LEFT JOIN "user" u ON u.id = s.publisher_id
+    LEFT JOIN skill_versions sv ON sv.skill_id = s.id
+    WHERE s.name = ${name}
+    ORDER BY sv.created_at DESC
+  `) as Record<string, unknown>[];
 
   if (rows.length === 0) {
     setCache(cacheKey, null);
@@ -175,22 +173,19 @@ export async function getSkillDetail(
 
   const first = rows[0];
 
-  // Collect version rows (filter out null versions from LEFT JOIN)
   const versions: SkillVersionSummary[] = rows
     .filter((r) => r.version !== null)
     .map((r) => ({
-      version: r.version!,
-      integrity: r.integrity!,
-      auditScore: r.auditScore,
-      auditStatus: r.auditStatus!,
-      publishedAt: r.publishedAt!,
+      version: r.version as string,
+      integrity: r.integrity as string,
+      auditScore: r.auditScore != null ? Number(r.auditScore) : null,
+      auditStatus: r.auditStatus as string,
+      publishedAt: new Date(r.publishedAt as string),
     }));
 
-  // Latest version is the first (ordered by created_at DESC)
   const latestRow = versions[0];
   const latestRowData = rows.find(r => r.version === latestRow?.version);
 
-  // Fetch scan results for latest version
   const scanDetails: ScanDetails = {
     verdict: null,
     stagesRun: [],
@@ -203,16 +198,12 @@ export async function getSkillDetail(
   };
 
   if (latestRowData?.versionId) {
-    console.log('[getSkillDetail] Fetching scan results for versionId:', latestRowData.versionId);
-
     const latestScanResult = await db
       .select()
       .from(scanResults)
-      .where(eq(scanResults.versionId, latestRowData.versionId))
+      .where(eq(scanResults.versionId, latestRowData.versionId as string))
       .orderBy(desc(scanResults.createdAt))
       .limit(1);
-
-    console.log('[getSkillDetail] Scan results found:', latestScanResult.length);
 
     if (latestScanResult.length > 0) {
       const scan = latestScanResult[0];
@@ -238,7 +229,6 @@ export async function getSkillDetail(
         .from(scanFindings)
         .where(eq(scanFindings.scanId, scan.id));
 
-      console.log('[getSkillDetail] Findings found:', findings.length);
       scanDetails.findings = findings;
     }
   }
@@ -252,21 +242,21 @@ export async function getSkillDetail(
         auditScore: latestRow.auditScore,
         auditStatus: latestRow.auditStatus,
         publishedAt: latestRow.publishedAt,
-        readme: rows[0].readme ?? null,
-        fileCount: rows[0].versionFileCount ?? 0,
-        tarballSize: rows[0].versionTarballSize ?? 0,
+        readme: (rows[0].readme as string) ?? null,
+        fileCount: Number(rows[0].versionFileCount) ?? 0,
+        tarballSize: Number(rows[0].versionTarballSize) ?? 0,
         scanDetails,
       }
     : null;
 
   const result: SkillDetailResult = {
-    name: first.skillName,
-    description: first.skillDescription,
-    repositoryUrl: first.skillRepositoryUrl,
-    createdAt: first.skillCreatedAt,
-    updatedAt: first.skillUpdatedAt,
-    publisher: { name: first.publisherName, githubUsername: first.publisherGithubUsername },
-    downloadCount: first.downloadCount,
+    name: first.skillName as string,
+    description: (first.skillDescription as string | null),
+    repositoryUrl: (first.skillRepositoryUrl as string | null),
+    createdAt: new Date(first.skillCreatedAt as string),
+    updatedAt: new Date(first.skillUpdatedAt as string),
+    publisher: { name: first.publisherName as string, githubUsername: (first.publisherGithubUsername as string | null) },
+    downloadCount: Number(first.downloadCount),
     latestVersion,
     versions,
   };
@@ -295,49 +285,45 @@ export async function searchSkills(
   const offset = (page - 1) * limit;
 
   const searchCondition = q
-    ? sql`to_tsvector('english', ${skills.name} || ' ' || coalesce(${skills.description}, '')) @@ plainto_tsquery('english', ${q})`
+    ? sql`to_tsvector('english', s.name || ' ' || coalesce(s.description, '')) @@ plainto_tsquery('english', ${q})`
     : undefined;
 
-  const baseQuery = db
-    .select({
-      name: skills.name,
-      description: skills.description,
-      latestVersion: skillVersions.version,
-      auditScore: skillVersions.auditScore,
-      publisher: sql<string>`coalesce(${user.githubUsername}, ${user.name})`,
-      total: sql<number>`count(*) OVER()`,
-    })
-    .from(skills)
-    .leftJoin(user, eq(skills.publisherId, user.id))
-    .leftJoin(
-      skillVersions,
-      sql`${skillVersions.skillId} = ${skills.id} AND ${skillVersions.createdAt} = (
-        SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = ${skills.id}
-      )`,
-    );
+  const whereClause = searchCondition ? sql`WHERE ${searchCondition}` : sql``;
 
-  const results = searchCondition
-    ? await baseQuery
-        .where(searchCondition)
-        .orderBy(
-          sql`ts_rank(to_tsvector('english', ${skills.name} || ' ' || coalesce(${skills.description}, '')), plainto_tsquery('english', ${q})) DESC`,
-        )
-        .offset(offset)
-        .limit(limit)
-    : await baseQuery
-        .orderBy(desc(skills.updatedAt))
-        .offset(offset)
-        .limit(limit);
+  const orderClause = q
+    ? sql`ts_rank(to_tsvector('english', s.name || ' ' || coalesce(s.description, '')), plainto_tsquery('english', ${q})) DESC`
+    : sql`s.updated_at DESC`;
 
-  const total = results[0]?.total ?? 0;
+  // Join through user table to resolve publisher name
+  const results = await db.execute(sql`
+    SELECT
+      s.name,
+      s.description,
+      sv.version AS "latestVersion",
+      sv.audit_score AS "auditScore",
+      coalesce(u.name, '') AS publisher,
+      count(*) OVER() AS total
+    FROM skills s
+    LEFT JOIN "user" u ON u.id = s.publisher_id
+    LEFT JOIN skill_versions sv ON sv.skill_id = s.id
+      AND sv.created_at = (
+        SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
+      )
+    ${whereClause}
+    ORDER BY ${orderClause}
+    OFFSET ${offset}
+    LIMIT ${limit}
+  `) as Record<string, unknown>[];
+
+  const total = results.length > 0 ? Number(results[0].total) : 0;
 
   const response: SkillSearchResponse = {
     results: results.map((row) => ({
-      name: row.name,
-      description: row.description,
-      latestVersion: row.latestVersion ?? null,
-      auditScore: row.auditScore ?? null,
-      publisher: row.publisher ?? '',
+      name: row.name as string,
+      description: (row.description as string | null),
+      latestVersion: (row.latestVersion as string) ?? null,
+      auditScore: row.auditScore != null ? Number(row.auditScore) : null,
+      publisher: (row.publisher as string) ?? '',
       downloads: 0,
     })),
     page,

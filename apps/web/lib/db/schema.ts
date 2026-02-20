@@ -68,6 +68,10 @@ export const skills = pgTable(
       'gin',
       sql`to_tsvector('english', ${table.name} || ' ' || coalesce(${table.description}, ''))`,
     ),
+    // JOIN key: every read query joins publishers ON p.id = s.publisher_id
+    index('skills_publisher_id_idx').on(table.publisherId),
+    // Default browse ORDER BY updated_at DESC (non-search list path)
+    index('skills_updated_at_idx').on(table.updatedAt),
   ],
 );
 
@@ -100,8 +104,8 @@ export const skillVersions = pgTable(
   (table) => [
     // No duplicate versions per skill
     unique('skill_versions_skill_version_uniq').on(table.skillId, table.version),
-    // Index for version lookups by skill
-    index('skill_versions_skill_id_idx').on(table.skillId),
+    // Composite: covers MAX(created_at) subquery in search + ORDER BY created_at DESC in detail/versions
+    index('skill_versions_skill_id_created_at_idx').on(table.skillId, table.createdAt),
   ],
 );
 
@@ -165,7 +169,10 @@ export const scanResults = pgTable(
     fileHashes: jsonb('file_hashes').$type<Record<string, string>>(),
     createdAt,
   },
-  (table) => [index('scan_results_version_id_idx').on(table.versionId)],
+  (table) => [
+    // Composite: covers LATERAL (ORDER BY created_at DESC LIMIT 1) in version detail route
+    index('scan_results_version_id_created_at_idx').on(table.versionId, table.createdAt),
+  ],
 );
 
 // ---------------------------------------------------------------------------

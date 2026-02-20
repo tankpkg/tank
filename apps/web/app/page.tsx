@@ -145,7 +145,7 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button size="lg" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white group">
-                  <Link href="/login">
+                  <Link href="/login" data-testid="home-primary-cta">
                     Get Started
                     <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Link>
