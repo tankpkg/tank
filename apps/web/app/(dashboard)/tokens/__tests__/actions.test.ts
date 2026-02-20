@@ -73,6 +73,7 @@ describe('token server actions', () => {
           name: 'My Token',
           userId: 'user-123',
           expiresIn: 90 * 24 * 60 * 60,
+          rateLimitMax: 1000,
         },
       });
     });
