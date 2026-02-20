@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { unstable_noStore as noStore } from 'next/cache';
 import {
   Table,
   TableBody,
@@ -15,6 +16,9 @@ import { SkillReadme } from './skill-readme';
 import { SkillTabs } from './skill-tabs';
 import { FileExplorer } from './file-explorer';
 import { DownloadButton } from './download-button';
+
+// ISR: cache page at CDN for 60s, survives serverless cold starts (PERF-005/006)
+export const revalidate = 60;
 
 function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -120,6 +124,8 @@ interface SkillDetailPageProps {
 export default async function SkillDetailPage({
   params,
 }: SkillDetailPageProps) {
+  if (process.env.TANK_PERF_MODE === '1') noStore();
+
   const { name: nameParts } = await params;
   const skillName = decodeURIComponent(nameParts.join('/'));
   const data = await getSkillDetail(skillName);

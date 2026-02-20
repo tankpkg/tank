@@ -1,8 +1,8 @@
 {
   "webRoutes": [
-    { "route": "/", "ttfbMs": 15, "lcpMs": 30, "fcpMs": 25, "cls": 0.1 },
-    { "route": "/skills", "ttfbMs": 60, "lcpMs": 120, "fcpMs": 90, "cls": 0.1 },
-    { "route": "/skills/test-org/test-skill", "ttfbMs": 35, "lcpMs": 70, "fcpMs": 55, "cls": 0.1 }
+    { "route": "/", "responseTimeMs": 15, "lcpMs": 30, "fcpMs": 25, "cls": 0.1 },
+    { "route": "/skills", "responseTimeMs": 60, "lcpMs": 120, "fcpMs": 90, "cls": 0.1 },
+    { "route": "/skills/test-org/test-skill", "responseTimeMs": 35, "lcpMs": 70, "fcpMs": 55, "cls": 0.1 }
   ],
   "apiRoutes": [
     { "route": "/api/v1/search?q=test", "p95Ms": 90, "sampleCount": 20 },

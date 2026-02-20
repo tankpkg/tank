@@ -28,11 +28,9 @@ function getPostgresClient() {
     }) as ReturnType<typeof postgres>;
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    return postgres(connectionString);
-  }
-
-  // In dev mode, reuse the client across hot reloads
+  // Reuse connection across hot reloads (dev) and cold starts (prod).
+  // Without this, every Vercel cold start creates a new TCP connection
+  // to Supabase (~50-100ms overhead).
   if (!globalThis._pgClient) {
     globalThis._pgClient = postgres(connectionString);
   }
@@ -46,10 +44,6 @@ function getDb() {
         throw new Error('Missing DATABASE_URL environment variable');
       },
     }) as ReturnType<typeof drizzle<typeof schema>>;
-  }
-
-  if (process.env.NODE_ENV === 'production') {
-    return drizzle(getPostgresClient(), { schema });
   }
 
   if (!globalThis._db) {

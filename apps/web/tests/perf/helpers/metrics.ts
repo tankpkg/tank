@@ -23,15 +23,28 @@ export function variancePct(values: number[]): number {
 }
 
 export interface WebMetrics {
-  ttfbMs: number;
+  /**
+   * Full server response time: time from request start to response body fully
+   * received (includes DNS, TCP, TLS, server processing, and transfer).
+   * Measured via `performance.now()` around `fetch()` + `response.text()`.
+   * This is NOT true TTFB — it includes body download time.
+   */
+  responseTimeMs: number;
+  /** Synthetic estimate: responseTimeMs × 1.1 (no real browser paint event). */
   fcpMs: number;
+  /** Synthetic estimate: responseTimeMs × 1.3 (no real browser paint event). */
   lcpMs: number;
+  /** Always 0 — SSR without browser context cannot measure layout shift. */
   cls: number;
 }
 
 /**
- * TTFB via fetch timing. FCP/LCP approximated as TTFB * multiplier
- * (no real browser in Task 1). CLS=0 for SSR without browser context.
+ * Measures full server response time via fetch timing.
+ *
+ * **Important**: `responseTimeMs` measures the full round-trip including body
+ * download, not true TTFB (time to first byte). FCP and LCP are synthetic
+ * estimates (responseTimeMs × 1.1 and × 1.3 respectively) since there is no
+ * real browser rendering. CLS is always 0 for SSR without browser context.
  */
 export async function measureWebRoute(
   baseUrl: string,
@@ -47,7 +60,7 @@ export async function measureWebRoute(
     },
   });
   await response.text();
-  const ttfbMs = performance.now() - start;
+  const responseTimeMs = performance.now() - start;
 
   if (!response.ok) {
     throw new Error(
@@ -56,9 +69,9 @@ export async function measureWebRoute(
   }
 
   return {
-    ttfbMs,
-    fcpMs: ttfbMs * 1.1,
-    lcpMs: ttfbMs * 1.3,
+    responseTimeMs,
+    fcpMs: responseTimeMs * 1.1,
+    lcpMs: responseTimeMs * 1.3,
     cls: 0,
   };
 }

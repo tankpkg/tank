@@ -11,40 +11,8 @@
  * way to be fast is to minimize the number of separate queries.
  */
 
-import { eq, desc, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { scanResults, scanFindings } from '@/lib/db/schema';
-
-// ── In-memory TTL cache ──────────────────────────────────────────────────────
-// Skill metadata rarely changes. A short TTL eliminates repeated DB round-trips
-// during navigation (each costs ~150-200ms to remote Supabase).
-//
-// For production multi-instance deployments, swap for Redis or Vercel KV.
-
-const CACHE_TTL_MS = 60_000; // 1 minute
-
-interface CacheEntry<T> {
-  data: T;
-  expiresAt: number;
-}
-
-const queryCache = new Map<string, CacheEntry<unknown>>();
-
-function getCached<T>(key: string): T | undefined {
-  if (process.env.TANK_PERF_MODE === '1') return undefined;
-  const entry = queryCache.get(key);
-  if (!entry) return undefined;
-  if (Date.now() > entry.expiresAt) {
-    queryCache.delete(key);
-    return undefined;
-  }
-  return entry.data as T;
-}
-
-function setCache<T>(key: string, data: T): void {
-  if (process.env.TANK_PERF_MODE === '1') return;
-  queryCache.set(key, { data, expiresAt: Date.now() + CACHE_TTL_MS });
-}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -132,12 +100,9 @@ export interface SkillSearchResponse {
 export async function getSkillDetail(
   name: string,
 ): Promise<SkillDetailResult | null> {
-  const cacheKey = `skill:${name}`;
-  const cached = getCached<SkillDetailResult | null>(cacheKey);
-  if (cached !== undefined) return cached;
-
-  // Join through user table (text PK) to resolve publisher name.
-  // Consolidates scan results via LATERAL join.
+  // Single query: skill + publisher + all versions + scan data for latest version.
+  // Scan subqueries use indexed lookups and only add ~1ms overhead.
+  // This saves 2 round-trips to Supabase (~300-400ms).
   const rows = await db.execute(sql`
     SELECT
       s.name AS "skillName",
@@ -158,7 +123,26 @@ export async function getSkillDetail(
       sv.created_at AS "publishedAt",
       sv.readme,
       sv.file_count AS "versionFileCount",
-      sv.tarball_size AS "versionTarballSize"
+      sv.tarball_size AS "versionTarballSize",
+      -- Scan result for this version (JSON object or NULL)
+      (SELECT row_to_json(t) FROM (
+        SELECT sr.verdict, sr.stages_run AS "stagesRun", sr.duration_ms AS "durationMs",
+               sr.critical_count AS "criticalCount", sr.high_count AS "highCount",
+               sr.medium_count AS "mediumCount", sr.low_count AS "lowCount"
+        FROM scan_results sr WHERE sr.version_id = sv.id
+        ORDER BY sr.created_at DESC LIMIT 1
+      ) t) AS "scanResult",
+      -- Scan findings for this version (JSON array or NULL)
+      (SELECT json_agg(json_build_object(
+        'stage', sf.stage, 'severity', sf.severity, 'type', sf.type,
+        'description', sf.description, 'location', sf.location,
+        'confidence', sf.confidence, 'tool', sf.tool, 'evidence', sf.evidence
+      ))
+      FROM scan_findings sf
+      WHERE sf.scan_id = (
+        SELECT sr.id FROM scan_results sr WHERE sr.version_id = sv.id
+        ORDER BY sr.created_at DESC LIMIT 1
+      )) AS "scanFindings"
     FROM skills s
     LEFT JOIN "user" u ON u.id = s.publisher_id
     LEFT JOIN skill_versions sv ON sv.skill_id = s.id
@@ -167,7 +151,6 @@ export async function getSkillDetail(
   `) as Record<string, unknown>[];
 
   if (rows.length === 0) {
-    setCache(cacheKey, null);
     return null;
   }
 
@@ -183,68 +166,40 @@ export async function getSkillDetail(
       publishedAt: new Date(r.publishedAt as string),
     }));
 
+  // Parse scan data from the latest version row (first row, already ordered DESC)
   const latestRow = versions[0];
   const latestRowData = rows.find(r => r.version === latestRow?.version);
+  const scanResultJson = latestRowData?.scanResult as Record<string, unknown> | null;
+  const scanFindingsJson = latestRowData?.scanFindings as ScanFinding[] | null;
 
-  const scanDetails: ScanDetails = {
-    verdict: null,
-    stagesRun: [],
-    durationMs: null,
-    findings: [],
-    criticalCount: 0,
-    highCount: 0,
-    mediumCount: 0,
-    lowCount: 0,
-  };
-
-  if (latestRowData?.versionId) {
-    const latestScanResult = await db
-      .select()
-      .from(scanResults)
-      .where(eq(scanResults.versionId, latestRowData.versionId as string))
-      .orderBy(desc(scanResults.createdAt))
-      .limit(1);
-
-    if (latestScanResult.length > 0) {
-      const scan = latestScanResult[0];
-      scanDetails.verdict = scan.verdict;
-      scanDetails.stagesRun = scan.stagesRun || [];
-      scanDetails.durationMs = scan.durationMs;
-      scanDetails.criticalCount = scan.criticalCount;
-      scanDetails.highCount = scan.highCount;
-      scanDetails.mediumCount = scan.mediumCount;
-      scanDetails.lowCount = scan.lowCount;
-
-      const findings = await db
-        .select({
-          stage: scanFindings.stage,
-          severity: scanFindings.severity,
-          type: scanFindings.type,
-          description: scanFindings.description,
-          location: scanFindings.location,
-          confidence: scanFindings.confidence,
-          tool: scanFindings.tool,
-          evidence: scanFindings.evidence,
-        })
-        .from(scanFindings)
-        .where(eq(scanFindings.scanId, scan.id));
-
-      scanDetails.findings = findings;
-    }
-  }
+  const scanDetails: ScanDetails = scanResultJson
+    ? {
+        verdict: scanResultJson.verdict as string | null,
+        stagesRun: (scanResultJson.stagesRun as string[]) || [],
+        durationMs: scanResultJson.durationMs as number | null,
+        findings: scanFindingsJson || [],
+        criticalCount: Number(scanResultJson.criticalCount) || 0,
+        highCount: Number(scanResultJson.highCount) || 0,
+        mediumCount: Number(scanResultJson.mediumCount) || 0,
+        lowCount: Number(scanResultJson.lowCount) || 0,
+      }
+    : {
+        verdict: null, stagesRun: [], durationMs: null, findings: [],
+        criticalCount: 0, highCount: 0, mediumCount: 0, lowCount: 0,
+      };
 
   const latestVersion: SkillVersionDetail | null = latestRow
     ? {
         version: latestRow.version,
         integrity: latestRow.integrity,
-        permissions: rows[0].permissions,
-        manifest: rows[0].manifest,
+        permissions: latestRowData?.permissions,
+        manifest: latestRowData?.manifest,
         auditScore: latestRow.auditScore,
         auditStatus: latestRow.auditStatus,
         publishedAt: latestRow.publishedAt,
-        readme: (rows[0].readme as string) ?? null,
-        fileCount: Number(rows[0].versionFileCount) ?? 0,
-        tarballSize: Number(rows[0].versionTarballSize) ?? 0,
+        readme: (latestRowData?.readme as string) ?? null,
+        fileCount: Number(latestRowData?.versionFileCount) ?? 0,
+        tarballSize: Number(latestRowData?.versionTarballSize) ?? 0,
         scanDetails,
       }
     : null;
@@ -263,7 +218,6 @@ export async function getSkillDetail(
     versions,
   };
 
-  setCache(cacheKey, result);
   return result;
 }
 
@@ -280,10 +234,6 @@ export async function searchSkills(
   page: number,
   limit: number,
 ): Promise<SkillSearchResponse> {
-  const cacheKey = `search:${q}:${page}:${limit}`;
-  const cached = getCached<SkillSearchResponse>(cacheKey);
-  if (cached !== undefined) return cached;
-
   const offset = (page - 1) * limit;
 
   const searchCondition = q
@@ -333,6 +283,5 @@ export async function searchSkills(
     total,
   };
 
-  setCache(cacheKey, response);
   return response;
 }
