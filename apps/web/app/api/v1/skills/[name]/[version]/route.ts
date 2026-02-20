@@ -131,7 +131,10 @@ export async function GET(
       LEFT JOIN scan_findings sf ON sf.scan_id = sr.id
     `);
 
-    const downloadCount = metaRows.length > 0 ? Number((metaRows[0] as Record<string, unknown>).downloadCount) ?? 0 : 0;
+    const rawDownloadCount = metaRows.length > 0
+      ? Number((metaRows[0] as Record<string, unknown>).downloadCount)
+      : 0;
+    const downloadCount = Number.isFinite(rawDownloadCount) ? rawDownloadCount : 0;
     const scanVerdict = metaRows.length > 0 ? ((metaRows[0] as Record<string, unknown>).scanVerdict as string | null) : null;
 
     const scanFindingsList = metaRows

@@ -249,6 +249,8 @@ export async function getSkillDetail(
       }
     : null;
 
+  const parsedDownloadCount = Number(first.downloadCount);
+
   const result: SkillDetailResult = {
     name: first.skillName as string,
     description: (first.skillDescription as string | null),
@@ -256,7 +258,7 @@ export async function getSkillDetail(
     createdAt: new Date(first.skillCreatedAt as string),
     updatedAt: new Date(first.skillUpdatedAt as string),
     publisher: { name: first.publisherName as string, githubUsername: (first.publisherGithubUsername as string | null) },
-    downloadCount: Number(first.downloadCount),
+    downloadCount: Number.isFinite(parsedDownloadCount) ? parsedDownloadCount : 0,
     latestVersion,
     versions,
   };
