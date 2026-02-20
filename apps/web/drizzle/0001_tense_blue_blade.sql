@@ -1,4 +1,4 @@
-CREATE TABLE "scan_findings" (
+CREATE TABLE IF NOT EXISTS "scan_findings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"scan_id" uuid NOT NULL,
 	"stage" text NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE "scan_findings" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "scan_results" (
+CREATE TABLE IF NOT EXISTS "scan_results" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"version_id" uuid NOT NULL,
 	"verdict" text NOT NULL,
@@ -27,8 +27,10 @@ CREATE TABLE "scan_results" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "scan_findings" DROP CONSTRAINT IF EXISTS "scan_findings_scan_id_scan_results_id_fk";--> statement-breakpoint
 ALTER TABLE "scan_findings" ADD CONSTRAINT "scan_findings_scan_id_scan_results_id_fk" FOREIGN KEY ("scan_id") REFERENCES "public"."scan_results"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scan_results" DROP CONSTRAINT IF EXISTS "scan_results_version_id_skill_versions_id_fk";--> statement-breakpoint
 ALTER TABLE "scan_results" ADD CONSTRAINT "scan_results_version_id_skill_versions_id_fk" FOREIGN KEY ("version_id") REFERENCES "public"."skill_versions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "scan_findings_scan_id_idx" ON "scan_findings" USING btree ("scan_id");--> statement-breakpoint
-CREATE INDEX "scan_findings_severity_idx" ON "scan_findings" USING btree ("severity");--> statement-breakpoint
-CREATE INDEX "scan_results_version_id_idx" ON "scan_results" USING btree ("version_id");
+CREATE INDEX IF NOT EXISTS "scan_findings_scan_id_idx" ON "scan_findings" USING btree ("scan_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "scan_findings_severity_idx" ON "scan_findings" USING btree ("severity");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "scan_results_version_id_idx" ON "scan_results" USING btree ("version_id");

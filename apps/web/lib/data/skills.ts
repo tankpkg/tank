@@ -145,7 +145,7 @@ export async function getSkillDetail(
       s.created_at AS "skillCreatedAt",
       s.updated_at AS "skillUpdatedAt",
       coalesce(u.name, '') AS "publisherName",
-      NULL AS "publisherGithubUsername",
+      u.github_username AS "publisherGithubUsername",
       coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS "downloadCount",
       s.repository_url AS "skillRepositoryUrl",
       sv.id AS "versionId",

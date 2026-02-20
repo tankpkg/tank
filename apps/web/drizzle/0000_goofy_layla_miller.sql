@@ -1,4 +1,4 @@
-CREATE TABLE "audit_events" (
+CREATE TABLE IF NOT EXISTS "audit_events" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"action" text NOT NULL,
 	"actor_id" text,
@@ -8,7 +8,7 @@ CREATE TABLE "audit_events" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "publishers" (
+CREATE TABLE IF NOT EXISTS "publishers" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
 	"display_name" text NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE "publishers" (
 	CONSTRAINT "publishers_github_username_unique" UNIQUE("github_username")
 );
 --> statement-breakpoint
-CREATE TABLE "skill_downloads" (
+CREATE TABLE IF NOT EXISTS "skill_downloads" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"skill_id" uuid NOT NULL,
 	"version_id" uuid NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE "skill_downloads" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "skill_versions" (
+CREATE TABLE IF NOT EXISTS "skill_versions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"skill_id" uuid NOT NULL,
 	"version" text NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE "skill_versions" (
 	CONSTRAINT "skill_versions_skill_version_uniq" UNIQUE("skill_id","version")
 );
 --> statement-breakpoint
-CREATE TABLE "skills" (
+CREATE TABLE IF NOT EXISTS "skills" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
@@ -60,7 +60,7 @@ CREATE TABLE "skills" (
 	CONSTRAINT "skills_name_length" CHECK (length("skills"."name") <= 214)
 );
 --> statement-breakpoint
-CREATE TABLE "account" (
+CREATE TABLE IF NOT EXISTS "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
 	"provider_id" text NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE "account" (
 	"updated_at" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "apikey" (
+CREATE TABLE IF NOT EXISTS "apikey" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text,
 	"start" text,
@@ -100,7 +100,7 @@ CREATE TABLE "apikey" (
 	"metadata" text
 );
 --> statement-breakpoint
-CREATE TABLE "invitation" (
+CREATE TABLE IF NOT EXISTS "invitation" (
 	"id" text PRIMARY KEY NOT NULL,
 	"organization_id" text NOT NULL,
 	"email" text NOT NULL,
@@ -111,7 +111,7 @@ CREATE TABLE "invitation" (
 	"inviter_id" text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "member" (
+CREATE TABLE IF NOT EXISTS "member" (
 	"id" text PRIMARY KEY NOT NULL,
 	"organization_id" text NOT NULL,
 	"user_id" text NOT NULL,
@@ -119,7 +119,7 @@ CREATE TABLE "member" (
 	"created_at" timestamp NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "organization" (
+CREATE TABLE IF NOT EXISTS "organization" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"slug" text NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE "organization" (
 	CONSTRAINT "organization_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint
-CREATE TABLE "session" (
+CREATE TABLE IF NOT EXISTS "session" (
 	"id" text PRIMARY KEY NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"token" text NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE "session" (
 	CONSTRAINT "session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
-CREATE TABLE "user" (
+CREATE TABLE IF NOT EXISTS "user" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
@@ -153,7 +153,7 @@ CREATE TABLE "user" (
 	CONSTRAINT "user_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "verification" (
+CREATE TABLE IF NOT EXISTS "verification" (
 	"id" text PRIMARY KEY NOT NULL,
 	"identifier" text NOT NULL,
 	"value" text NOT NULL,
@@ -162,30 +162,42 @@ CREATE TABLE "verification" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "skill_downloads" DROP CONSTRAINT IF EXISTS "skill_downloads_skill_id_skills_id_fk";--> statement-breakpoint
 ALTER TABLE "skill_downloads" ADD CONSTRAINT "skill_downloads_skill_id_skills_id_fk" FOREIGN KEY ("skill_id") REFERENCES "public"."skills"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "skill_downloads" DROP CONSTRAINT IF EXISTS "skill_downloads_version_id_skill_versions_id_fk";--> statement-breakpoint
 ALTER TABLE "skill_downloads" ADD CONSTRAINT "skill_downloads_version_id_skill_versions_id_fk" FOREIGN KEY ("version_id") REFERENCES "public"."skill_versions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "skill_versions" DROP CONSTRAINT IF EXISTS "skill_versions_skill_id_skills_id_fk";--> statement-breakpoint
 ALTER TABLE "skill_versions" ADD CONSTRAINT "skill_versions_skill_id_skills_id_fk" FOREIGN KEY ("skill_id") REFERENCES "public"."skills"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "skill_versions" DROP CONSTRAINT IF EXISTS "skill_versions_published_by_publishers_id_fk";--> statement-breakpoint
 ALTER TABLE "skill_versions" ADD CONSTRAINT "skill_versions_published_by_publishers_id_fk" FOREIGN KEY ("published_by") REFERENCES "public"."publishers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "skills" DROP CONSTRAINT IF EXISTS "skills_publisher_id_publishers_id_fk";--> statement-breakpoint
 ALTER TABLE "skills" ADD CONSTRAINT "skills_publisher_id_publishers_id_fk" FOREIGN KEY ("publisher_id") REFERENCES "public"."publishers"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "account" DROP CONSTRAINT IF EXISTS "account_user_id_user_id_fk";--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "apikey" DROP CONSTRAINT IF EXISTS "apikey_user_id_user_id_fk";--> statement-breakpoint
 ALTER TABLE "apikey" ADD CONSTRAINT "apikey_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "invitation" DROP CONSTRAINT IF EXISTS "invitation_organization_id_organization_id_fk";--> statement-breakpoint
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "invitation" DROP CONSTRAINT IF EXISTS "invitation_inviter_id_user_id_fk";--> statement-breakpoint
 ALTER TABLE "invitation" ADD CONSTRAINT "invitation_inviter_id_user_id_fk" FOREIGN KEY ("inviter_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "member" DROP CONSTRAINT IF EXISTS "member_organization_id_organization_id_fk";--> statement-breakpoint
 ALTER TABLE "member" ADD CONSTRAINT "member_organization_id_organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organization"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "member" DROP CONSTRAINT IF EXISTS "member_user_id_user_id_fk";--> statement-breakpoint
 ALTER TABLE "member" ADD CONSTRAINT "member_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "session" DROP CONSTRAINT IF EXISTS "session_user_id_user_id_fk";--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "skill_downloads_skill_id_idx" ON "skill_downloads" USING btree ("skill_id");--> statement-breakpoint
-CREATE INDEX "skill_downloads_created_at_idx" ON "skill_downloads" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX "skill_versions_skill_id_idx" ON "skill_versions" USING btree ("skill_id");--> statement-breakpoint
-CREATE INDEX "skills_org_id_idx" ON "skills" USING btree ("org_id");--> statement-breakpoint
-CREATE INDEX "skills_search_idx" ON "skills" USING gin (to_tsvector('english', "name" || ' ' || coalesce("description", '')));--> statement-breakpoint
-CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "apikey_key_idx" ON "apikey" USING btree ("key");--> statement-breakpoint
-CREATE INDEX "apikey_userId_idx" ON "apikey" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "invitation_organizationId_idx" ON "invitation" USING btree ("organization_id");--> statement-breakpoint
-CREATE INDEX "invitation_email_idx" ON "invitation" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "member_organizationId_idx" ON "member" USING btree ("organization_id");--> statement-breakpoint
-CREATE INDEX "member_userId_idx" ON "member" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "organization_slug_uidx" ON "organization" USING btree ("slug");--> statement-breakpoint
-CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");
+CREATE INDEX IF NOT EXISTS "skill_downloads_skill_id_idx" ON "skill_downloads" USING btree ("skill_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "skill_downloads_created_at_idx" ON "skill_downloads" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "skill_versions_skill_id_idx" ON "skill_versions" USING btree ("skill_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "skills_org_id_idx" ON "skills" USING btree ("org_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "skills_search_idx" ON "skills" USING gin (to_tsvector('english', "name" || ' ' || coalesce("description", '')));--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "apikey_key_idx" ON "apikey" USING btree ("key");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "apikey_userId_idx" ON "apikey" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invitation_organizationId_idx" ON "invitation" USING btree ("organization_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invitation_email_idx" ON "invitation" USING btree ("email");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "member_organizationId_idx" ON "member" USING btree ("organization_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "member_userId_idx" ON "member" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "organization_slug_uidx" ON "organization" USING btree ("slug");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "verification_identifier_idx" ON "verification" USING btree ("identifier");

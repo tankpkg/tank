@@ -132,7 +132,7 @@ jobs:
         run: pnpm build
 
       - name: Provision database schema
-        run: pnpm --filter=web drizzle-kit push --force
+        run: pnpm --filter=web exec drizzle-kit push --force
         env:
           DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
 
