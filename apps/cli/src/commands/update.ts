@@ -6,6 +6,7 @@ import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
 import { getGlobalSkillsDir } from '../lib/agents.js';
 import { installCommand } from './install.js';
+import { USER_AGENT } from '../version.js';
 
 export interface UpdateOptions {
   name?: string;  // undefined = update all
@@ -126,7 +127,7 @@ async function updateSingle(
   let versionsRes: Response;
   try {
     versionsRes = await fetch(versionsUrl, {
-      headers: { 'User-Agent': 'tank-cli/0.1.0' },
+      headers: { 'User-Agent': USER_AGENT },
     });
   } catch (err) {
     throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
@@ -215,7 +216,7 @@ async function updateAll(
     let versionsRes: Response;
     try {
       versionsRes = await fetch(versionsUrl, {
-        headers: { 'User-Agent': 'tank-cli/0.1.0' },
+        headers: { 'User-Agent': USER_AGENT },
       });
     } catch (err) {
       throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
@@ -300,7 +301,7 @@ async function updateSingleGlobal(
   let versionsRes: Response;
   try {
     versionsRes = await fetch(versionsUrl, {
-      headers: { 'User-Agent': 'tank-cli/0.1.0' },
+      headers: { 'User-Agent': USER_AGENT },
     });
   } catch (err) {
     throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
@@ -369,7 +370,7 @@ async function updateAllGlobal(
     let versionsRes: Response;
     try {
       versionsRes = await fetch(versionsUrl, {
-        headers: { 'User-Agent': 'tank-cli/0.1.0' },
+        headers: { 'User-Agent': USER_AGENT },
       });
     } catch (err) {
       throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);

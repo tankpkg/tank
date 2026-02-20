@@ -4,6 +4,7 @@ import ora from 'ora';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
 import { pack } from '../lib/packer.js';
+import { USER_AGENT } from '../version.js';
 
 export interface PublishOptions {
   directory?: string;
@@ -89,7 +90,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
   const headers = {
     'Authorization': `Bearer ${config.token}`,
     'Content-Type': 'application/json',
-    'User-Agent': 'tank-cli/0.1.0',
+    'User-Agent': USER_AGENT,
   };
 
   const step1Res = await fetch(`${config.registry}/api/v1/skills`, {

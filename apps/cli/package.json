@@ -1,18 +1,28 @@
 {
-  "name": "tank",
+  "name": "@tankpkg/cli",
   "version": "0.1.0",
   "description": "Security-first package manager for AI agent skills",
   "type": "module",
   "bin": {
     "tank": "./dist/bin/tank.js"
   },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
+    "build:bundle": "esbuild dist/bin/tank.js --bundle --platform=node --format=esm --outfile=build/tank-bundle.mjs --external:fsevents",
+    "build:sea": "bash scripts/build-binary.sh",
+    "build:binary": "pnpm run build && pnpm run build:bundle && pnpm run build:sea",
     "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^22.19.11",
     "@types/tar": "^6.1.13",
+    "esbuild": "^0.25.9",
     "vitest": "^3"
   },
   "dependencies": {

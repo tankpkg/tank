@@ -1,5 +1,6 @@
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
+import { USER_AGENT } from '../version.js';
 
 export interface WhoamiOptions {
   configDir?: string;
@@ -19,7 +20,7 @@ export async function whoamiCommand(options: WhoamiOptions = {}): Promise<void> 
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${config.token}`,
-        'User-Agent': 'tank-cli/0.1.0',
+      'User-Agent': USER_AGENT,
       },
     });
 

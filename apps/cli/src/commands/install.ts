@@ -10,6 +10,7 @@ import { logger } from '../lib/logger.js';
 import { prepareAgentSkillDir } from '../lib/frontmatter.js';
 import { linkSkillToAgents } from '../lib/linker.js';
 import { detectInstalledAgents, getGlobalSkillsDir, getGlobalAgentSkillsDir } from '../lib/agents.js';
+import { USER_AGENT } from '../version.js';
 
 const MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024; // 100MB
 
@@ -127,7 +128,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   let versionsRes: Response;
   try {
     versionsRes = await fetch(versionsUrl, {
-      headers: { 'User-Agent': 'tank-cli/0.1.0' },
+          headers: { 'User-Agent': USER_AGENT },
     });
   } catch (err) {
     spinner.fail('Failed to fetch versions');
@@ -170,7 +171,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   let metaRes: Response;
   try {
     metaRes = await fetch(metaUrl, {
-      headers: { 'User-Agent': 'tank-cli/0.1.0' },
+        headers: { 'User-Agent': USER_AGENT },
     });
   } catch (err) {
     spinner.fail('Failed to fetch version metadata');

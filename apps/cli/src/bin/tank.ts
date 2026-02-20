@@ -17,13 +17,14 @@ import { linkCommand } from '../commands/link.js';
 import { unlinkCommand } from '../commands/unlink.js';
 import { doctorCommand } from '../commands/doctor.js';
 import { flushLogs } from '../lib/debug-logger.js';
+import { VERSION } from '../version.js';
 
 const program = new Command();
 
 program
   .name('tank')
   .description('Security-first package manager for AI agent skills')
-  .version('0.1.0');
+  .version(VERSION);
 
 program
   .command('init')

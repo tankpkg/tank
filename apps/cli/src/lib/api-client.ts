@@ -1,7 +1,6 @@
 import { type TankConfig, getConfig } from './config.js';
 import { httpLog } from './debug-logger.js';
-
-const USER_AGENT = 'tank-cli/0.1.0';
+import { USER_AGENT } from '../version.js';
 
 export class ApiClient {
   private baseUrl: string;

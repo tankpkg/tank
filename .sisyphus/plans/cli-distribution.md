@@ -134,7 +134,7 @@ Wave 4: [Task 7 — npm Publish]
 
 ### Wave 0 — Validation Gate
 
-- [ ] 0. PoC: Validate esbuild + Node.js SEA Binary Approach
+- [x] 0. PoC: Validate esbuild + Node.js SEA Binary Approach
 
   **What to do**:
   - Bundle the CLI into a single CJS file using esbuild:
@@ -216,7 +216,7 @@ Wave 4: [Task 7 — npm Publish]
 
 ### Wave 1 — Foundation
 
-- [ ] 1. Unify Version to Single Source of Truth
+- [x] 1. Unify Version to Single Source of Truth
 
   **What to do**:
   - Remove hardcoded version from `apps/cli/src/bin/tank.ts:26` (`.version('0.1.0')`)
@@ -258,7 +258,7 @@ Wave 4: [Task 7 — npm Publish]
 
 ---
 
-- [ ] 2. Create Binary Build Scripts
+- [x] 2. Create Binary Build Scripts
 
   **What to do**:
   - Install build dependencies: `pnpm --filter=cli add -D esbuild postject`
@@ -325,7 +325,7 @@ Wave 4: [Task 7 — npm Publish]
 
 ### Wave 2 — Release Automation
 
-- [ ] 3. Create GitHub Actions Release Workflow
+- [x] 3. Create GitHub Actions Release Workflow
 
   **What to do**:
   - Create `.github/workflows/release.yml` triggered on `push: tags: ['v*']`
@@ -387,7 +387,7 @@ Wave 4: [Task 7 — npm Publish]
 
 ### Wave 3 — Distribution Channels (PARALLEL)
 
-- [ ] 4. Create Homebrew Tap
+- [x] 4. Create Homebrew Tap
 
   **What to do**:
   - Create new GitHub repository: `tankpkg/homebrew-tank`
@@ -448,7 +448,7 @@ Wave 4: [Task 7 — npm Publish]
 
 ---
 
-- [ ] 5. Create Curl Installer Script
+- [x] 5. Create Curl Installer Script
 
   **What to do**:
   - Create `install.sh` at the root of the repo (or `scripts/install.sh`)
@@ -513,7 +513,7 @@ Wave 4: [Task 7 — npm Publish]
 
 ---
 
-- [ ] 6. Create .deb Packages for Linux
+- [x] 6. Create .deb Packages for Linux
 
   **What to do**:
   - Install `fpm` (Effing Package Managers) as a build tool: `gem install fpm`
@@ -567,7 +567,7 @@ Wave 4: [Task 7 — npm Publish]
 
 ### Wave 4 — npm (Secondary)
 
-- [ ] 7. Publish @tankpkg/cli to npm
+- [x] 7. Publish @tankpkg/cli to npm
 
   **What to do**:
   - Verify scope availability: `npm view @tankpkg/cli` → should 404

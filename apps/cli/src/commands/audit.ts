@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { getConfig } from '../lib/config.js';
 import { readLockfile } from '../lib/lockfile.js';
+import { USER_AGENT } from '../version.js';
 
 export interface AuditOptions {
   name?: string;
@@ -85,7 +86,7 @@ async function fetchVersionDetails(
   let res: Response;
   try {
     res = await fetch(url, {
-      headers: { 'User-Agent': 'tank-cli/0.1.0' },
+    headers: { 'User-Agent': USER_AGENT },
     });
   } catch (err) {
     throw new Error(`Network error fetching audit data: ${err instanceof Error ? err.message : String(err)}`);

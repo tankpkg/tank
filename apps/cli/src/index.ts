@@ -1,4 +1,4 @@
-export const VERSION = '0.1.0';
+export { VERSION } from './version.js';
 
 export { logger } from './lib/logger.js';
 export { getConfig, setConfig, getConfigPath, getConfigDir } from './lib/config.js';

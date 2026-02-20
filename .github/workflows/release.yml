@@ -1,0 +1,233 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build-${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            platform: linux-x64
+            target: bun-linux-x64
+            output: tank-linux-x64
+            deb_arch: amd64
+          - runner: ubuntu-22.04
+            platform: linux-arm64
+            target: bun-linux-arm64
+            output: tank-linux-arm64
+            deb_arch: arm64
+          - runner: macos-14
+            platform: darwin-arm64
+            target: bun-darwin-arm64
+            output: tank-darwin-arm64
+          - runner: macos-13
+            platform: darwin-x64
+            target: bun-darwin-x64
+            output: tank-darwin-x64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.REPO_PUSH_TOKEN || github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build bundle and binary
+        working-directory: apps/cli
+        env:
+          TARGET: ${{ matrix.target }}
+          OUTPUT_NAME: ${{ matrix.output }}
+        run: |
+          pnpm run build
+          pnpm run build:bundle
+          pnpm run build:sea
+
+      - name: Package tarball
+        working-directory: apps/cli/build
+        run: tar -czf ${{ matrix.output }}.tar.gz ${{ matrix.output }}
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: |
+            apps/cli/build/${{ matrix.output }}
+            apps/cli/build/${{ matrix.output }}.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: create-release
+    runs-on: ubuntu-22.04
+    needs: build
+    env:
+      VERSION: ${{ github.ref_name }}
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p release
+          find dist -type f -exec mv {} release/ \;
+          ls -lah release
+
+      - name: Install fpm
+        run: sudo gem install --no-document fpm
+
+      - name: Build .deb packages
+        run: |
+          VERSION_NO_V="${VERSION#v}"
+          fpm -s dir -t deb \
+            -n tank \
+            -v "$VERSION_NO_V" \
+            --description "Security-first package manager for AI agent skills" \
+            --url "https://tankpkg.dev" \
+            --maintainer "Tank Team <team@tankpkg.dev>" \
+            --license "MIT" \
+            --architecture amd64 \
+            release/tank-linux-x64=/usr/local/bin/tank \
+            --package release/tank_${VERSION_NO_V}_amd64.deb
+
+          fpm -s dir -t deb \
+            -n tank \
+            -v "$VERSION_NO_V" \
+            --description "Security-first package manager for AI agent skills" \
+            --url "https://tankpkg.dev" \
+            --maintainer "Tank Team <team@tankpkg.dev>" \
+            --license "MIT" \
+            --architecture arm64 \
+            release/tank-linux-arm64=/usr/local/bin/tank \
+            --package release/tank_${VERSION_NO_V}_arm64.deb
+
+      - name: Generate checksums
+        working-directory: release
+        run: sha256sum tank-* *.deb > SHA256SUMS
+
+      - name: Update in-repo Homebrew formula
+        run: |
+          VERSION_NO_V="${VERSION#v}"
+
+          SHA_DARWIN_ARM64="$(sha256sum release/tank-darwin-arm64.tar.gz | awk '{print $1}')"
+          SHA_DARWIN_X64="$(sha256sum release/tank-darwin-x64.tar.gz | awk '{print $1}')"
+          SHA_LINUX_ARM64="$(sha256sum release/tank-linux-arm64.tar.gz | awk '{print $1}')"
+          SHA_LINUX_X64="$(sha256sum release/tank-linux-x64.tar.gz | awk '{print $1}')"
+
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          mkdir -p Formula
+          cat > Formula/tank.rb <<EOF
+          class Tank < Formula
+            desc "Security-first package manager for AI agent skills"
+            homepage "https://tankpkg.dev"
+            version "${VERSION_NO_V}"
+
+            if OS.mac? && Hardware::CPU.arm?
+              url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-darwin-arm64.tar.gz"
+              sha256 "${SHA_DARWIN_ARM64}"
+            elsif OS.mac?
+              url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-darwin-x64.tar.gz"
+              sha256 "${SHA_DARWIN_X64}"
+            elsif OS.linux? && Hardware::CPU.arm?
+              url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-linux-arm64.tar.gz"
+              sha256 "${SHA_LINUX_ARM64}"
+            else
+              url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-linux-x64.tar.gz"
+              sha256 "${SHA_LINUX_X64}"
+            end
+
+            def install
+              bin.install "tank-#{OS.mac? ? \"darwin\" : \"linux\"}-#{Hardware::CPU.arm? ? \"arm64\" : \"x64\"}" => "tank"
+            end
+
+            test do
+              system "#{bin}/tank", "--version"
+            end
+          end
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/tank.rb
+          if git diff --cached --quiet; then
+            echo "No formula changes"
+          else
+            git commit -m "chore: update formula for ${VERSION}"
+            git push origin main
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            release/tank-linux-x64
+            release/tank-linux-arm64
+            release/tank-darwin-x64
+            release/tank-darwin-arm64
+            release/tank-linux-x64.tar.gz
+            release/tank-linux-arm64.tar.gz
+            release/tank-darwin-x64.tar.gz
+            release/tank-darwin-arm64.tar.gz
+            release/tank_*.deb
+            release/SHA256SUMS
+
+  publish-npm:
+    name: publish-npm
+    runs-on: ubuntu-22.04
+    needs: build
+    if: ${{ secrets.NPM_TOKEN != '' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI package
+        run: pnpm --filter ./apps/cli build
+
+      - name: Publish to npm
+        working-directory: apps/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm publish --no-git-checks --access public

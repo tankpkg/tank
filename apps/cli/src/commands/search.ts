@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { getConfig } from '../lib/config.js';
+import { USER_AGENT } from '../version.js';
 
 export interface SearchOptions {
   query: string;
@@ -49,7 +50,7 @@ export async function searchCommand(options: SearchOptions): Promise<void> {
   let res: Response;
   try {
     res = await fetch(url, {
-      headers: { 'User-Agent': 'tank-cli/0.1.0' },
+    headers: { 'User-Agent': USER_AGENT },
     });
   } catch (err) {
     throw new Error(`Network error searching: ${err instanceof Error ? err.message : String(err)}`);

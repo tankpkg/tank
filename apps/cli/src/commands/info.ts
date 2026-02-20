@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { getConfig } from '../lib/config.js';
+import { USER_AGENT } from '../version.js';
 
 export interface InfoOptions {
   name: string;
@@ -52,7 +53,7 @@ export async function infoCommand(options: InfoOptions): Promise<void> {
   let metaRes: Response;
   try {
     metaRes = await fetch(metaUrl, {
-      headers: { 'User-Agent': 'tank-cli/0.1.0' },
+    headers: { 'User-Agent': USER_AGENT },
     });
   } catch (err) {
     throw new Error(`Network error fetching skill info: ${err instanceof Error ? err.message : String(err)}`);
@@ -76,7 +77,7 @@ export async function infoCommand(options: InfoOptions): Promise<void> {
   let versionRes: Response;
   try {
     versionRes = await fetch(versionUrl, {
-      headers: { 'User-Agent': 'tank-cli/0.1.0' },
+    headers: { 'User-Agent': USER_AGENT },
     });
   } catch (err) {
     throw new Error(`Network error fetching version details: ${err instanceof Error ? err.message : String(err)}`);
