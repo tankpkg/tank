@@ -68,6 +68,11 @@ vi.mock('@/lib/db', () => ({
     select: (...args: unknown[]) => mockSelect(...args),
     insert: (...args: unknown[]) => mockInsertFn(...args),
     update: (...args: unknown[]) => mockUpdate(...args),
+    transaction: async (callback: (tx: Record<string, unknown>) => Promise<unknown>) => callback({
+      insert: (...args: unknown[]) => mockInsertFn(...args),
+      update: (...args: unknown[]) => mockUpdate(...args),
+      select: (...args: unknown[]) => mockSelect(...args),
+    }),
   },
 }));
 

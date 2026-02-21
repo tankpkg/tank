@@ -43,21 +43,23 @@ export const POST = withAdminAuth(async (req: NextRequest, { user: adminUser }: 
     return NextResponse.json({ error: 'Package not found' }, { status: 404 });
   }
 
-  await db
-    .update(skills)
-    .set({
-      featured,
-      featuredBy: featured ? adminUser.id : null,
-      featuredAt: featured ? new Date() : null,
-    })
-    .where(eq(skills.id, skill.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(skills)
+      .set({
+        featured,
+        featuredBy: featured ? adminUser.id : null,
+        featuredAt: featured ? new Date() : null,
+      })
+      .where(eq(skills.id, skill.id));
 
-  await db.insert(auditEvents).values({
-    action: featured ? 'skill.feature' : 'skill.unfeature',
-    actorId: adminUser.id,
-    targetType: 'skill',
-    targetId: skill.id,
-    metadata: { featured },
+    await tx.insert(auditEvents).values({
+      action: featured ? 'skill.feature' : 'skill.unfeature',
+      actorId: adminUser.id,
+      targetType: 'skill',
+      targetId: skill.id,
+      metadata: { featured },
+    });
   });
 
   return NextResponse.json({

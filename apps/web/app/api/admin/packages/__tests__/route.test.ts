@@ -78,6 +78,29 @@ vi.mock('@/lib/db', () => ({
         },
       };
     },
+    transaction: async (callback: (tx: Record<string, unknown>) => Promise<unknown>) => callback({
+      update: (...args: unknown[]) => {
+        mockDbUpdate(...args);
+        return {
+          set: (...setArgs: unknown[]) => {
+            mockDbSet(...setArgs);
+            return {
+              where: mockDbWhere,
+            };
+          },
+        };
+      },
+      insert: (...args: unknown[]) => {
+        mockDbInsert(...args);
+        return {
+          values: (...valueArgs: unknown[]) => {
+            mockDbValues(...valueArgs);
+            return Promise.resolve();
+          },
+        };
+      },
+      execute: (...args: unknown[]) => mockDbExecute(...args),
+    }),
   },
 }));
 

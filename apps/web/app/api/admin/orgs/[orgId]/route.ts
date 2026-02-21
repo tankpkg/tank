@@ -79,25 +79,27 @@ export const DELETE = withAdminAuth(async (req: NextRequest, ctx: AdminAuthConte
     .from(member)
     .where(eq(member.organizationId, orgId));
 
-  await db
-    .update(skills)
-    .set({ orgId: null })
-    .where(eq(skills.orgId, orgId));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(skills)
+      .set({ orgId: null })
+      .where(eq(skills.orgId, orgId));
 
-  await db
-    .delete(organization)
-    .where(eq(organization.id, orgId));
+    await tx
+      .delete(organization)
+      .where(eq(organization.id, orgId));
 
-  await db.insert(auditEvents).values({
-    action: 'org.delete',
-    actorId: ctx.user.id,
-    targetType: 'organization',
-    targetId: orgId,
-    metadata: {
-      name: org.name,
-      slug: org.slug,
-      memberCount: memberCountResult.count,
-    },
+    await tx.insert(auditEvents).values({
+      action: 'org.delete',
+      actorId: ctx.user.id,
+      targetType: 'organization',
+      targetId: orgId,
+      metadata: {
+        name: org.name,
+        slug: org.slug,
+        memberCount: memberCountResult.count,
+      },
+    });
   });
 
   return NextResponse.json({ success: true });

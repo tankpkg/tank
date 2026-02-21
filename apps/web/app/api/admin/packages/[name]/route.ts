@@ -79,22 +79,24 @@ export const DELETE = withAdminAuth(async (req: NextRequest, { user: adminUser }
 
   const previousStatus = skill.status;
 
-  await db
-    .update(skills)
-    .set({
-      status: 'removed',
-      statusReason: 'Removed by admin',
-      statusChangedBy: adminUser.id,
-      statusChangedAt: new Date(),
-    })
-    .where(eq(skills.id, skill.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(skills)
+      .set({
+        status: 'removed',
+        statusReason: 'Removed by admin',
+        statusChangedBy: adminUser.id,
+        statusChangedAt: new Date(),
+      })
+      .where(eq(skills.id, skill.id));
 
-  await db.insert(auditEvents).values({
-    action: 'skill.remove',
-    actorId: adminUser.id,
-    targetType: 'skill',
-    targetId: skill.id,
-    metadata: { reason: 'Removed by admin', previousStatus },
+    await tx.insert(auditEvents).values({
+      action: 'skill.remove',
+      actorId: adminUser.id,
+      targetType: 'skill',
+      targetId: skill.id,
+      metadata: { reason: 'Removed by admin', previousStatus },
+    });
   });
 
   return NextResponse.json({ success: true, name: skill.name, status: 'removed' });
