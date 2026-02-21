@@ -117,17 +117,19 @@ export const PATCH = withAdminAuth(async (req: NextRequest, { user: adminUser }:
     );
   }
 
-  await db
-    .update(user)
-    .set({ role: newRole })
-    .where(eq(user.id, userId));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(user)
+      .set({ role: newRole })
+      .where(eq(user.id, userId));
 
-  await db.insert(auditEvents).values({
-    action: newRole === 'admin' ? 'user.promote' : 'user.demote',
-    actorId: adminUser.id,
-    targetType: 'user',
-    targetId: userId,
-    metadata: { oldRole, newRole },
+    await tx.insert(auditEvents).values({
+      action: newRole === 'admin' ? 'user.promote' : 'user.demote',
+      actorId: adminUser.id,
+      targetType: 'user',
+      targetId: userId,
+      metadata: { oldRole, newRole },
+    });
   });
 
   return NextResponse.json({

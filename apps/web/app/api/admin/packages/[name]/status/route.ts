@@ -62,22 +62,24 @@ export const PATCH = withAdminAuth(async (req: NextRequest, { user: adminUser }:
   const previousStatus = skill.status;
   const newStatus = statusResult.data;
 
-  await db
-    .update(skills)
-    .set({
-      status: newStatus,
-      statusReason: reason.trim(),
-      statusChangedBy: adminUser.id,
-      statusChangedAt: new Date(),
-    })
-    .where(eq(skills.id, skill.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(skills)
+      .set({
+        status: newStatus,
+        statusReason: reason.trim(),
+        statusChangedBy: adminUser.id,
+        statusChangedAt: new Date(),
+      })
+      .where(eq(skills.id, skill.id));
 
-  await db.insert(auditEvents).values({
-    action: actionMap[newStatus] ?? `skill.status.${newStatus}`,
-    actorId: adminUser.id,
-    targetType: 'skill',
-    targetId: skill.id,
-    metadata: { reason: reason.trim(), previousStatus },
+    await tx.insert(auditEvents).values({
+      action: actionMap[newStatus] ?? `skill.status.${newStatus}`,
+      actorId: adminUser.id,
+      targetType: 'skill',
+      targetId: skill.id,
+      metadata: { reason: reason.trim(), previousStatus },
+    });
   });
 
   return NextResponse.json({

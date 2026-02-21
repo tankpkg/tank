@@ -84,24 +84,26 @@ export const POST = withAdminAuth(async (req: NextRequest, { user: adminUser }: 
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  await db.insert(userStatus).values({
-    userId,
-    status: validStatus,
-    reason: (typeof reason === 'string' ? reason : null),
-    bannedBy: adminUser.id,
-    expiresAt: typeof expiresAt === 'string' ? new Date(expiresAt) : null,
-  });
-
-  await db.insert(auditEvents).values({
-    action: actionMap[validStatus] ?? `user.status.${validStatus}`,
-    actorId: adminUser.id,
-    targetType: 'user',
-    targetId: userId,
-    metadata: {
+  await db.transaction(async (tx) => {
+    await tx.insert(userStatus).values({
+      userId,
       status: validStatus,
-      reason: typeof reason === 'string' ? reason : null,
-      expiresAt: typeof expiresAt === 'string' ? expiresAt : null,
-    },
+      reason: (typeof reason === 'string' ? reason : null),
+      bannedBy: adminUser.id,
+      expiresAt: typeof expiresAt === 'string' ? new Date(expiresAt) : null,
+    });
+
+    await tx.insert(auditEvents).values({
+      action: actionMap[validStatus] ?? `user.status.${validStatus}`,
+      actorId: adminUser.id,
+      targetType: 'user',
+      targetId: userId,
+      metadata: {
+        status: validStatus,
+        reason: typeof reason === 'string' ? reason : null,
+        expiresAt: typeof expiresAt === 'string' ? expiresAt : null,
+      },
+    });
   });
 
   return NextResponse.json({
