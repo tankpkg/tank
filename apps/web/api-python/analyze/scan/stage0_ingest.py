@@ -14,6 +14,9 @@ from pathlib import Path
 from typing import Set
 
 import httpx
+import ipaddress
+import socket
+from urllib.parse import urlparse
 
 from .models import Finding, IngestResult, StageResult
 
@@ -83,6 +86,70 @@ BLOCKED_EXTENSIONS: Set[str] = {
     ".class", ".pyc", ".pyo", ".jar", ".war",
     ".bin", ".dat",
 }
+
+# Allowed hosts for tarball downloads. This should list the domains or hostnames
+# that are expected to serve signed tarball URLs, for example:
+# "storage.googleapis.com", "my-bucket.s3.amazonaws.com", etc.
+# Multiple hosts can be provided via the TARBALL_ALLOWED_HOSTS environment
+# variable as a comma-separated list.
+_allowed_hosts_env = os.environ.get("TARBALL_ALLOWED_HOSTS", "")
+ALLOWED_DOWNLOAD_HOSTS: Set[str] = {
+    host.strip().lower()
+    for host in _allowed_hosts_env.split(",")
+    if host.strip()
+}
+
+
+def _is_public_ip(ip_str: str) -> bool:
+    """Return True if the given IP string is a public (non-private) address."""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return False
+
+    return not (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+    )
+
+
+def validate_download_url(url: str) -> None:
+    """Validate that the download URL is allowed and does not target private networks.
+
+    This enforces:
+      - scheme is http or https
+      - hostname is in ALLOWED_DOWNLOAD_HOSTS (if configured)
+      - resolved IPs are public (non-private, non-loopback, etc.)
+    """
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError("Unsupported URL scheme for tarball download")
+
+    if not parsed.hostname:
+        raise ValueError("Tarball URL must include a hostname")
+
+    hostname = parsed.hostname.lower()
+
+    if ALLOWED_DOWNLOAD_HOSTS and hostname not in ALLOWED_DOWNLOAD_HOSTS:
+        raise ValueError("Tarball host is not in the allowed hosts list")
+
+    try:
+        # Resolve all IPs for the hostname and ensure each is public.
+        addr_info = socket.getaddrinfo(hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        raise ValueError("Failed to resolve tarball host")
+
+    ips = {item[4][0] for item in addr_info}
+    if not ips:
+        raise ValueError("No IPs resolved for tarball host")
+
+    for ip in ips:
+        if not _is_public_ip(ip):
+            raise ValueError("Tarball host resolves to a non-public IP address")
 
 
 async def download_tarball(url: str) -> bytes:
