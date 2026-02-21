@@ -74,7 +74,7 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
                     content={"error": "Invalid skill_dir: must refer to an existing directory within the configured skills base directory."},
                 )
 
-            permissions = extract_permissions(str(requested_path))
+            permissions = extract_permissions(requested_path)
             reasoning = _generate_reasoning(permissions)
 
             return PermissionsResponse(

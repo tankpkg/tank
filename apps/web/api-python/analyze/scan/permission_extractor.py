@@ -7,7 +7,7 @@ operations, and subprocess usage to determine what permissions a skill needs.
 
 import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from urllib.parse import urlparse
 import os
 
@@ -63,14 +63,15 @@ SUBPROCESS_PATTERNS = [
 ]
 
 
-def extract_permissions(skill_dir: str) -> dict[str, Any]:
+def extract_permissions(skill_dir: Union[str, Path]) -> dict[str, Any]:
     """Extract permissions from skill code using static analysis.
 
     Scans Python, JS, TS, and shell files for network calls, filesystem
     operations, and subprocess usage to determine what permissions a skill needs.
 
     Args:
-        skill_dir: Path to the extracted skill directory
+        skill_dir: Path to the extracted skill directory. May be a string path
+            relative to SKILL_BASE_DIR, or a fully validated Path object.
 
     Returns:
         {
@@ -89,32 +90,37 @@ def extract_permissions(skill_dir: str) -> dict[str, Any]:
 
     base_path = Path(SKILL_BASE_DIR).resolve()
 
-    # Reject absolute paths explicitly to ensure skill_dir stays within the base directory
-    try:
-        skill_dir_path = Path(skill_dir)
-    except TypeError:
-        # Non-string or invalid path type; return empty permissions
-        return normalize_permissions(permissions)
-    if skill_dir_path.is_absolute():
-        return normalize_permissions(permissions)
-
-    # Treat the supplied value as a path *within* SKILL_BASE_DIR and resolve it
-    skill_path = (base_path / skill_dir_path).resolve()
-
-    # Ensure the resolved path is within the allowed base directory
-    try:
-        is_within_base = skill_path.is_relative_to(base_path)  # type: ignore[attr-defined]
-    except AttributeError:
-        # Fallback for Python versions without Path.is_relative_to
+    # If a Path is provided, assume it has already been validated by the caller.
+    if isinstance(skill_dir, Path):
+        skill_path = skill_dir.resolve()
+        if not skill_path.exists() or not skill_path.is_dir():
+            return normalize_permissions(permissions)
+    else:
+        # Reject absolute paths explicitly to ensure skill_dir stays within the base directory
         try:
-            skill_path.relative_to(base_path)
-            is_within_base = True
-        except ValueError:
-            is_within_base = False
+            skill_dir_path = Path(skill_dir)
+        except TypeError:
+            # Non-string or invalid path type; return empty permissions
+            return normalize_permissions(permissions)
+        if skill_dir_path.is_absolute():
+            return normalize_permissions(permissions)
 
-    if not is_within_base or not skill_path.exists() or not skill_path.is_dir():
-        return normalize_permissions(permissions)
+        # Treat the supplied value as a path *within* SKILL_BASE_DIR and resolve it
+        skill_path = (base_path / skill_dir_path).resolve()
 
+        # Ensure the resolved path is within the allowed base directory
+        try:
+            is_within_base = skill_path.is_relative_to(base_path)  # type: ignore[attr-defined]
+        except AttributeError:
+            # Fallback for Python versions without Path.is_relative_to
+            try:
+                skill_path.relative_to(base_path)
+                is_within_base = True
+            except ValueError:
+                is_within_base = False
+
+        if not is_within_base or not skill_path.exists() or not skill_path.is_dir():
+            return normalize_permissions(permissions)
 
     for file_path in skill_path.rglob("*"):
         if not file_path.is_file():
