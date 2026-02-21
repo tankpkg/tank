@@ -58,6 +58,13 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
                     content={"error": "Invalid skill_dir: value must not be empty."},
                 )
 
+            # Reject absolute paths to ensure callers cannot escape the base directory
+            if Path(skill_dir_value).is_absolute():
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "Invalid skill_dir: absolute paths are not allowed."},
+                )
+
             # Treat the user-supplied value as a path *within* SKILL_BASE_DIR
             requested_path = (base_path / skill_dir_value).resolve()
 
@@ -66,17 +73,18 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
                 is_within_base = requested_path.is_relative_to(base_path)  # type: ignore[attr-defined]
             except AttributeError:
                 # Fallback for Python versions without Path.is_relative_to
-                base_path_str = str(base_path)
-                requested_path_str = str(requested_path)
-                # Normalize to ensure we are comparing canonical forms
-                base_path_str = os.path.normpath(base_path_str)
-                requested_path_str = os.path.normpath(requested_path_str)
-                # Check that requested_path is either the base directory itself
-                # or a descendant of it, avoiding simple prefix tricks.
-                if requested_path_str == base_path_str:
-                    is_within_base = True
-                else:
-                    is_within_base = requested_path_str.startswith(base_path_str + os.sep)
+                # Walk up the directory tree from requested_path to see if we ever
+                # reach base_path; if not, requested_path escapes the allowed root.
+                current = requested_path
+                is_within_base = False
+                while True:
+                    if current == base_path:
+                        is_within_base = True
+                        break
+                    if current.parent == current:
+                        # Reached filesystem root without finding base_path
+                        break
+                    current = current.parent
 
             if not is_within_base or not requested_path.is_dir():
                 return JSONResponse(
