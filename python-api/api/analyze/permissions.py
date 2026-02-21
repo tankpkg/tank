@@ -1,96 +1,114 @@
-"""POST /api/analyze/permissions — Extract permissions from SKILL.md content using LLM."""
+"""POST /api/analyze/permissions — Extract permissions from skill code using static analysis.
 
+This endpoint uses deterministic AST and regex analysis instead of LLM-based
+extraction. This is immune to prompt injection attacks that could manipulate
+an LLM into returning incorrect permissions.
+"""
+
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from ._lib import call_llm, parse_llm_json
+from lib.scan.permission_extractor import extract_permissions
 
-app = FastAPI(title="Tank Permission Extraction", version="0.1.0")
-
-MODEL = "qwen/qwen3-coder:free"
-
-SYSTEM_PROMPT = """You are a security analyst for AI agent skill packages. Analyze the following SKILL.md file and extract all permissions the skill requires.
-
-Return a JSON object with this exact structure:
-{
-  "permissions": {
-    "network": { "outbound": ["domain1.com", "*.example.com"] },
-    "filesystem": { "read": ["./path/**"], "write": ["./path/**"] },
-    "subprocess": true or false
-  },
-  "reasoning": "Brief explanation of why these permissions are needed"
-}
-
-Rules:
-- Only include permission categories that are actually used
-- Use glob patterns for filesystem paths
-- Use wildcard domains (*.example.com) for API domains
-- Set subprocess to true ONLY if the skill runs shell commands
-- If no permissions are needed, return empty objects
-- Be conservative — only extract what's explicitly mentioned or clearly implied"""
+app = FastAPI(title="Tank Permission Extraction", version="2.0.0")
 
 
 class PermissionsRequest(BaseModel):
-    skill_content: str
-
-
-class NetworkPermissions(BaseModel):
-    outbound: Optional[List[str]] = None
-
-
-class FilesystemPermissions(BaseModel):
-    read: Optional[List[str]] = None
-    write: Optional[List[str]] = None
-
-
-class ExtractedPermissions(BaseModel):
-    network: Optional[NetworkPermissions] = None
-    filesystem: Optional[FilesystemPermissions] = None
-    subprocess: Optional[bool] = None
+    skill_dir: Optional[str] = None  # Path to extracted skill directory
+    skill_content: Optional[str] = None  # Fallback for compatibility
 
 
 class PermissionsResponse(BaseModel):
     permissions: Dict[str, Any]
     reasoning: str
+    method: str = "static_analysis"
 
 
 @app.post("/api/analyze/permissions")
-async def extract_permissions(request: PermissionsRequest) -> PermissionsResponse:
-    """Extract permissions from SKILL.md content using LLM analysis."""
-    if not request.skill_content.strip():
+async def extract_permissions_endpoint(request: PermissionsRequest):
+    """Extract permissions from skill code using static analysis.
+
+    This endpoint analyzes Python, JavaScript, TypeScript, and shell files
+    to determine what permissions a skill actually needs based on:
+    - Network calls (fetch, requests, httpx, etc.)
+    - Filesystem operations (read/write patterns)
+    - Subprocess usage (os.system, child_process, etc.)
+    - Environment variable access
+
+    This is a deterministic replacement for the previous LLM-based approach,
+    which was vulnerable to prompt injection attacks.
+    """
+    if request.skill_dir:
+        try:
+            skill_path = Path(request.skill_dir)
+            if not skill_path.exists():
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": f"Skill directory does not exist: {request.skill_dir}"},
+                )
+
+            permissions = extract_permissions(request.skill_dir)
+            reasoning = _generate_reasoning(permissions)
+
+            return PermissionsResponse(
+                permissions=permissions,
+                reasoning=reasoning,
+            )
+
+        except Exception as e:
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Permission extraction failed: {str(e)}"},
+            )
+
+    # Fallback for legacy requests with skill_content
+    if request.skill_content:
         return PermissionsResponse(
             permissions={},
-            reasoning="Empty skill content provided — no permissions detected.",
+            reasoning="Static analysis requires skill_dir parameter with extracted files. skill_content is no longer supported.",
         )
 
-    try:
-        raw = await call_llm(MODEL, SYSTEM_PROMPT, request.skill_content)
-        parsed = parse_llm_json(raw)
+    return JSONResponse(
+        status_code=400,
+        content={"error": "Either skill_dir or skill_content is required"},
+    )
 
-        permissions = parsed.get("permissions", {})
-        reasoning = parsed.get("reasoning", "No reasoning provided by model.")
 
-        # Validate and clean the permissions structure
-        clean_perms: Dict[str, Any] = {}
-        if "network" in permissions and permissions["network"]:
-            clean_perms["network"] = permissions["network"]
-        if "filesystem" in permissions and permissions["filesystem"]:
-            clean_perms["filesystem"] = permissions["filesystem"]
-        if "subprocess" in permissions:
-            clean_perms["subprocess"] = bool(permissions["subprocess"])
+def _generate_reasoning(permissions: Dict[str, Any]) -> str:
+    """Generate a human-readable explanation of detected permissions."""
+    parts = []
 
-        return PermissionsResponse(permissions=clean_perms, reasoning=reasoning)
+    network = permissions.get("network", {}).get("outbound", [])
+    if network:
+        if "*" in network:
+            parts.append("makes network requests to arbitrary domains")
+        else:
+            domains = ", ".join(network[:5])
+            if len(network) > 5:
+                domains += f" and {len(network) - 5} more"
+            parts.append(f"makes network requests to: {domains}")
 
-    except ValueError as e:
-        # Missing API key or invalid JSON from LLM
-        return JSONResponse(
-            status_code=500,
-            content={"error": str(e)},
-        )
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Analysis failed: {str(e)}"},
-        )
+    fs_read = permissions.get("filesystem", {}).get("read", [])
+    fs_write = permissions.get("filesystem", {}).get("write", [])
+
+    if fs_read and fs_write:
+        parts.append(f"reads from {len(fs_read)} path(s) and writes to {len(fs_write)} path(s)")
+    elif fs_read:
+        parts.append(f"reads from {len(fs_read)} path(s)")
+    elif fs_write:
+        parts.append(f"writes to {len(fs_write)} path(s)")
+
+    if permissions.get("subprocess"):
+        parts.append("executes subprocess commands")
+
+    env_vars = permissions.get("environment", [])
+    if env_vars:
+        parts.append(f"accesses environment variables: {', '.join(env_vars[:3])}")
+
+    if not parts:
+        return "No significant permissions detected - skill appears to operate within safe boundaries."
+
+    return "Static analysis detected that this skill: " + "; ".join(parts) + "."

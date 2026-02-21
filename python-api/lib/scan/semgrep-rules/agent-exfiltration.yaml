@@ -1,0 +1,96 @@
+rules:
+  - id: tank/env-to-network
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $DATA = os.environ[...]
+              ...
+              requests.$METHOD($URL, ..., data=$DATA, ...)
+          - pattern: |
+              $DATA = os.getenv(...)
+              ...
+              requests.$METHOD($URL, ..., json=$DATA, ...)
+          - pattern: |
+              $DATA = os.environ[...]
+              ...
+              httpx.$METHOD($URL, ..., content=$DATA, ...)
+    message: "Environment variable data sent to external endpoint (potential credential exfiltration)"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: data-exfiltration
+      cwe: ["CWE-200"]
+      confidence: HIGH
+      tags: [agent, exfiltration, credentials]
+
+  - id: tank/file-read-then-post
+    patterns:
+      - pattern: |
+          $CONTENT = open($PATH).read()
+          ...
+          requests.post($URL, ..., data=$CONTENT, ...)
+      - pattern: |
+          with open($PATH) as $F:
+              $CONTENT = $F.read()
+          ...
+          requests.post($URL, ..., data=$CONTENT, ...)
+    message: "File contents read and sent to network endpoint (potential exfiltration)"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: data-exfiltration
+      cwe: ["CWE-200"]
+      confidence: HIGH
+      tags: [agent, exfiltration]
+
+  - id: tank/fetch-with-sensitive-data
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $DATA = process.env.$KEY
+              ...
+              fetch($URL, { ..., body: $DATA, ... })
+          - pattern: |
+              $DATA = process.env.$KEY
+              ...
+              fetch($URL, { ..., body: JSON.stringify({..., $KEY: $DATA, ...}), ... })
+    message: "Environment variable included in fetch request body"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: data-exfiltration
+      cwe: ["CWE-200"]
+      confidence: HIGH
+      tags: [agent, exfiltration]
+
+  - id: tank/harvest-env-all
+    patterns:
+      - pattern-either:
+          - pattern: os.environ
+          - pattern: process.env
+      - pattern-not-inside: |
+          if "$VAR" in ...
+      - pattern-not-inside: |
+          $VAR = os.getenv("...")
+    message: "Access to all environment variables (potential credential harvesting)"
+    severity: WARNING
+    languages: [python, javascript, typescript]
+    metadata:
+      category: credential-harvesting
+      confidence: MEDIUM
+      tags: [agent, credentials]
+
+  - id: tank/ssh-key-read
+    patterns:
+      - pattern-either:
+          - pattern: open(".../.ssh/...")
+          - pattern: fs.readFile(".../.ssh/...")
+          - pattern: open("$HOME/.ssh/...")
+    message: "Reading SSH keys (credential theft)"
+    severity: ERROR
+    languages: [python, javascript, typescript]
+    metadata:
+      category: credential-theft
+      cwe: ["CWE-200"]
+      confidence: HIGH
+      tags: [agent, credentials, ssh]

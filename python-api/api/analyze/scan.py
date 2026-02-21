@@ -8,6 +8,8 @@ Orchestrates the full 6-stage scanning pipeline:
 - Stage 4: Secrets & Credential Scanning
 - Stage 5: Dependency & Supply Chain Audit
 
+Includes finding deduplication and SARIF export support.
+
 Stores results in PostgreSQL and returns comprehensive scan response.
 """
 
@@ -32,8 +34,10 @@ from lib.scan.stage3_injection import stage3_detect_injection
 from lib.scan.stage4_secrets import stage4_scan_secrets
 from lib.scan.stage5_supply import stage5_audit_deps
 from lib.scan.verdict import compute_verdict, get_verdict_counts, get_stages_run
+from lib.scan.dedup import deduplicate_findings
+from lib.scan.sarif import to_sarif
 
-app = FastAPI(title="Tank Security Scan", version="1.0.0")
+app = FastAPI(title="Tank Security Scan", version="2.0.0")
 
 # Configuration
 MAX_SCAN_DURATION_MS = 55000  # 55 seconds (leave buffer for Vercel 60s limit)
@@ -296,6 +300,24 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
         # Always cleanup temp directory
         cleanup_ingest(temp_dir)
 
+    # Collect all findings from all stages
+    all_findings = [f for sr in stage_results for f in sr.findings]
+
+    # Deduplicate findings across tools (boosts confidence for corroborated findings)
+    deduped_findings = deduplicate_findings([
+        {
+            "stage": f.stage,
+            "severity": f.severity,
+            "type": f.type,
+            "description": f.description,
+            "location": f.location,
+            "confidence": f.confidence,
+            "tool": f.tool,
+            "evidence": f.evidence,
+        }
+        for f in all_findings
+    ])
+
     # Compute final verdict
     verdict = compute_verdict(stage_results)
     duration_ms = int((time.monotonic() - start) * 1000)
@@ -312,7 +334,16 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
     return ScanResponse(
         scan_id=scan_id,
         verdict=verdict.value,
-        findings=[f for sr in stage_results for f in sr.findings],
+        findings=[Finding(
+            stage=f["stage"],
+            severity=f["severity"],
+            type=f["type"],
+            description=f["description"],
+            location=f.get("location"),
+            confidence=f.get("confidence"),
+            tool=f.get("tool"),
+            evidence=f.get("evidence"),
+        ) for f in deduped_findings],
         stage_results=stage_results,
         duration_ms=duration_ms,
         file_hashes=file_hashes,

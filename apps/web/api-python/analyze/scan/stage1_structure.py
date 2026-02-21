@@ -211,7 +211,7 @@ def check_hidden_files(temp_dir: str, file_list: list[str]) -> list[Finding]:
             # Check if it's a common config file pattern
             if not any(
                 name.startswith(prefix)
-                for prefix in [".env.", ".git", ".docker"]
+                for prefix in [".env.", ".git"]
             ):
                 findings.append(Finding(
                     stage="stage1",

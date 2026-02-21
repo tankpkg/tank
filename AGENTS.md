@@ -20,7 +20,7 @@ tank/
 ├── python-api/       # Standalone security scanner — FastAPI, 6-stage pipeline
 ├── e2e/              # End-to-end tests (sequential, real CLI spawning)
 ├── docs/             # Product brief, architecture, roadmap
-├── infra/            # Loki + Grafana configs (docker-compose)
+├── infra/            # Loki + Grafana configs
 ├── supabase/         # Supabase local dev config
 ├── scripts/          # One-off utilities (backfill-readme.mjs)
 └── test-skill/       # Fixture skill for E2E testing
@@ -114,9 +114,6 @@ pnpm test --filter=shared         # Shared package tests only
 # Database
 pnpm --filter=web drizzle-kit generate  # Generate migration
 pnpm --filter=web drizzle-kit push      # Push schema to DB
-
-# Infrastructure
-docker-compose up                 # Start Loki + Grafana (port 4000)
 ```
 
 ## NOTES

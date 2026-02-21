@@ -1,16 +1,28 @@
 """Stage 2: Static Code Analysis
 
-Runs Bandit on Python files, custom AST analysis for dangerous patterns,
-regex patterns for JS/TS, and purpose cross-check against declared permissions.
+Runs Semgrep (multi-language SAST), Bandit (Python AST), custom AST analysis
+for dangerous patterns, regex patterns for JS/TS, and cross-check against
+declared permissions.
 """
 
 import ast
+import json
 import re
+import subprocess
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, List
 
 from lib.scan.models import Finding, IngestResult, StageResult
+
+# Semgrep configuration
+SEMGREP_CONFIGS = [
+    "p/security-audit",     # General security patterns
+    "p/owasp-top-ten",      # OWASP coverage
+    "p/python",             # Python-specific rules
+    "p/typescript",         # TypeScript-specific rules
+    "p/javascript",         # JavaScript-specific rules
+]
 
 # Python extensions to scan
 PYTHON_EXTENSIONS = {".py"}
@@ -178,7 +190,7 @@ class PythonASTAnalyzer(ast.NodeVisitor):
                                 self._add_finding(node, pattern_type, pattern_info, func_name)
                                 return
 
-    def _get_func_name(self, node: ast.Call) -> str | None:
+    def _get_func_name(self, node: ast.Call) -> Optional[str]:
         """Extract function name from Call node."""
         if isinstance(node.func, ast.Name):
             return node.func.id
@@ -265,6 +277,96 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
             severity="low",
             type="bandit_error",
             description=f"Bandit scan failed: {str(e)}",
+            confidence=0.5,
+            tool="stage2_static",
+        ))
+
+    return findings
+
+
+def run_semgrep_scan(temp_dir: str) -> list[Finding]:
+    """Run Semgrep OSS with security + OWASP rules.
+
+    Semgrep is a fast, deterministic static analysis tool that parses ASTs
+    and understands language semantics. It catches patterns that regex misses.
+    """
+    findings: list[Finding] = []
+
+    try:
+        cmd = [
+            "semgrep",
+            "--json",
+            "--timeout", "30",
+            "--max-target-bytes", "1000000",
+            "--no-git-ignore",
+            "--metrics", "off",
+        ]
+
+        # Add security rule configs
+        for config in SEMGREP_CONFIGS:
+            cmd.extend(["--config", config])
+
+        # Add custom agent rules if they exist
+        custom_rules = Path(__file__).parent / "semgrep-rules"
+        if custom_rules.exists():
+            cmd.extend(["--config", str(custom_rules)])
+
+        cmd.append(temp_dir)
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=45
+        )
+
+        if result.stdout:
+            data = json.loads(result.stdout)
+            sev_map = {"ERROR": "critical", "WARNING": "high", "INFO": "medium"}
+
+            for match in data.get("results", []):
+                extra = match.get("extra", {})
+                semgrep_sev = extra.get("severity", "WARNING")
+                severity = sev_map.get(semgrep_sev, "medium")
+
+                findings.append(Finding(
+                    stage="stage2",
+                    severity=severity,
+                    type=f"semgrep/{match.get('check_id', 'unknown')}",
+                    description=extra.get("message", "Semgrep finding"),
+                    location=f"{match.get('path', '?')}:{match.get('start', {}).get('line', '?')}",
+                    confidence=0.85,
+                    tool="semgrep",
+                    evidence=extra.get("lines", "")[:500],
+                ))
+
+    except subprocess.TimeoutExpired:
+        findings.append(Finding(
+            stage="stage2",
+            severity="low",
+            type="semgrep_timeout",
+            description="Semgrep scan timed out after 45 seconds",
+            confidence=0.5,
+            tool="stage2_static",
+        ))
+    except FileNotFoundError:
+        # Semgrep not installed, skip
+        pass
+    except json.JSONDecodeError:
+        findings.append(Finding(
+            stage="stage2",
+            severity="low",
+            type="semgrep_parse_error",
+            description="Failed to parse Semgrep output",
+            confidence=0.5,
+            tool="stage2_static",
+        ))
+    except Exception as e:
+        findings.append(Finding(
+            stage="stage2",
+            severity="low",
+            type="semgrep_error",
+            description=f"Semgrep scan error: {str(e)}",
             confidence=0.5,
             tool="stage2_static",
         ))
@@ -467,8 +569,8 @@ def stage2_analyze(
 ) -> StageResult:
     """Run Stage 2: Static Code Analysis.
 
-    Runs Bandit on Python files, custom AST analysis, regex patterns for JS/TS,
-    and cross-checks against declared permissions.
+    Runs Semgrep (multi-language SAST), Bandit (Python AST), custom AST analysis,
+    regex patterns for JS/TS, and cross-checks against declared permissions.
 
     Args:
         ingest_result: Result from Stage 0
@@ -512,7 +614,11 @@ def stage2_analyze(
         elif ext in SHELL_EXTENSIONS:
             shell_files.append(file_path)
 
-    # Run Bandit on Python files
+    # Run Semgrep first (comprehensive multi-language SAST)
+    semgrep_findings = run_semgrep_scan(temp_dir)
+    findings.extend(semgrep_findings)
+
+    # Run Bandit on Python files (Python-specific AST scanner)
     if python_files:
         bandit_findings = run_bandit_scan(temp_dir, python_files)
         findings.extend(bandit_findings)

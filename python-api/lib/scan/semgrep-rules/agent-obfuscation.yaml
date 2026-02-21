@@ -1,0 +1,95 @@
+rules:
+  - id: tank/char-concat-exec
+    patterns:
+      - pattern: |
+          $S = chr(...) + ...
+          ...
+          exec($S)
+      - pattern: |
+          $PARTS = [...chr(...)...]
+          ...
+          $S = "".join($PARTS)
+          ...
+          exec($S)
+    message: "Character-by-character string construction followed by exec (obfuscation)"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: obfuscation
+      confidence: HIGH
+      tags: [agent, obfuscation, code-execution]
+
+  - id: tank/hex-decode-exec
+    patterns:
+      - pattern: |
+          $S = bytes.fromhex(...)
+          ...
+          exec($S)
+      - pattern: |
+          $DECODED = bytes.fromhex(...).decode(...)
+          ...
+          exec($DECODED)
+    message: "Hex-decoded string passed to exec (obfuscation)"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: obfuscation
+      confidence: HIGH
+      tags: [agent, obfuscation]
+
+  - id: tank/base64-dynamic-import
+    patterns:
+      - pattern: |
+          $DECODED = base64.b64decode(...)
+          ...
+          importlib.import_module($DECODED)
+      - pattern: |
+          $CODE = base64.b64decode(...).decode()
+          ...
+          exec($CODE)
+    message: "Base64-decoded string used for dynamic module import or exec"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: obfuscation
+      confidence: HIGH
+      tags: [agent, obfuscation, code-execution]
+
+  - id: tank/rot13-obfuscation
+    patterns:
+      - pattern: codecs.decode($STR, "rot13")
+      - pattern: codecs.decode($STR, 'rot13')
+    message: "ROT13 encoding detected (potential obfuscation)"
+    severity: WARNING
+    languages: [python]
+    metadata:
+      category: obfuscation
+      confidence: MEDIUM
+      tags: [agent, obfuscation]
+
+  - id: tank/unicode-escape-exec
+    patterns:
+      - pattern: |
+          $S = "...".encode(...).decode("unicode_escape")
+          ...
+          exec($S)
+    message: "Unicode escape decoding followed by exec (obfuscation)"
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: obfuscation
+      confidence: HIGH
+      tags: [agent, obfuscation]
+
+  - id: tank/js-eval-obfuscation
+    patterns:
+      - pattern: eval(atob("..."))
+      - pattern: eval(String.fromCharCode(...))
+      - pattern: new Function(atob("..."))()
+    message: "Obfuscated JavaScript execution via eval/Function"
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: obfuscation
+      confidence: HIGH
+      tags: [agent, obfuscation, code-execution]
