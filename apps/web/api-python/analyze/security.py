@@ -99,14 +99,14 @@ async def scan_security(request: SecurityRequest) -> SecurityResponse:
 
         return SecurityResponse(safe=safe, issues=issues, summary=summary)
 
-    except ValueError as e:
+    except ValueError:
         # Missing API key or invalid JSON from LLM
         return JSONResponse(
             status_code=500,
-            content={"error": str(e)},
+            content={"error": "Security scan failed due to configuration error"},
         )
-    except Exception as e:
+    except Exception:
         return JSONResponse(
             status_code=500,
-            content={"error": f"Security scan failed: {str(e)}"},
+            content={"error": "Security scan failed due to an internal error"},
         )
