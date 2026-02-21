@@ -122,8 +122,13 @@ def extract_permissions(skill_dir: Union[str, Path]) -> dict[str, Any]:
         if skill_dir_path.is_absolute():
             return normalize_permissions(permissions)
 
+        # Reject paths containing parent directory references to prevent traversal
+        if ".." in skill_dir_path.parts:
+            return normalize_permissions(permissions)
+
         # Treat the supplied value as a path *within* SKILL_BASE_DIR and resolve it
-        skill_path = (base_path / skill_dir_path).resolve()
+        # Path is validated: absolute paths rejected above, resolved path validated below
+        skill_path = (base_path / skill_dir_path).resolve()  # lgtm[py/path-injection]
 
         # Ensure the resolved, normalized path is within the allowed base directory
         try:
