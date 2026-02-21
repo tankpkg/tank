@@ -15,7 +15,7 @@ import os
 from analyze.scan.permission_extractor import extract_permissions
 
 # Base directory under which all skill directories must reside
-SKILL_BASE_DIR = os.environ.get("SKILL_BASE_DIR", "/workspace/skills")
+SKILL_BASE_DIR = str(Path(os.environ.get("SKILL_BASE_DIR", "/workspace/skills")).resolve())
 
 app = FastAPI(title="Tank Permission Extraction", version="2.0.0")
 
@@ -48,6 +48,12 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
     if request.skill_dir:
         try:
             base_path = Path(SKILL_BASE_DIR).resolve()
+            # Reject absolute paths explicitly to ensure skill_dir stays within the base directory
+            if Path(request.skill_dir).is_absolute():
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "Invalid skill_dir: must be a relative path within the configured skills base directory."},
+                )
             # Treat the user-supplied value as a path *within* SKILL_BASE_DIR
             requested_path = (base_path / request.skill_dir).resolve()
 
