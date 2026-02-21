@@ -56,7 +56,11 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
                 is_within_base = requested_path.is_relative_to(base_path)  # type: ignore[attr-defined]
             except AttributeError:
                 # Fallback for Python versions without Path.is_relative_to
-                is_within_base = str(requested_path).startswith(str(base_path) + os.sep)
+                try:
+                    requested_path.relative_to(base_path)
+                    is_within_base = True
+                except ValueError:
+                    is_within_base = False
 
             if not is_within_base or not requested_path.is_dir():
                 return JSONResponse(
