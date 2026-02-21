@@ -47,20 +47,36 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
     """
     if request.skill_dir:
         try:
+            # Resolve the configured base directory to an absolute, normalized path
             base_path = Path(SKILL_BASE_DIR).resolve()
+
+            # Reject empty or whitespace-only skill_dir values
+            skill_dir_value = request.skill_dir.strip()
+            if not skill_dir_value:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "Invalid skill_dir: value must not be empty."},
+                )
+
             # Treat the user-supplied value as a path *within* SKILL_BASE_DIR
-            requested_path = (base_path / request.skill_dir).resolve()
+            requested_path = (base_path / skill_dir_value).resolve()
 
             # Ensure the resolved path is within the allowed base directory
             try:
                 is_within_base = requested_path.is_relative_to(base_path)  # type: ignore[attr-defined]
             except AttributeError:
                 # Fallback for Python versions without Path.is_relative_to
-                try:
-                    requested_path.relative_to(base_path)
+                base_path_str = str(base_path)
+                requested_path_str = str(requested_path)
+                # Normalize to ensure we are comparing canonical forms
+                base_path_str = os.path.normpath(base_path_str)
+                requested_path_str = os.path.normpath(requested_path_str)
+                # Check that requested_path is either the base directory itself
+                # or a descendant of it, avoiding simple prefix tricks.
+                if requested_path_str == base_path_str:
                     is_within_base = True
-                except ValueError:
-                    is_within_base = False
+                else:
+                    is_within_base = requested_path_str.startswith(base_path_str + os.sep)
 
             if not is_within_base or not requested_path.is_dir():
                 return JSONResponse(
