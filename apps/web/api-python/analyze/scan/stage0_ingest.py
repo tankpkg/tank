@@ -110,10 +110,10 @@ async def download_tarball(url: str) -> bytes:
 
         # Stream download to handle large files
         # URL is validated against ALLOWED_DOWNLOAD_DOMAINS in validate_download_url() above
-        # Re-validate the final URL after redirects to prevent SSRF via redirect chains
-        validate_download_url(str(response.url))
         # nosemgrep: python.http.security.audit.http-requests
         response = await client.get(url, follow_redirects=True)  # lgtm[py/ssrf]
+        # Re-validate the final URL after redirects to prevent SSRF via redirect chains
+        validate_download_url(str(response.url))
         response.raise_for_status()
 
         data = response.content
