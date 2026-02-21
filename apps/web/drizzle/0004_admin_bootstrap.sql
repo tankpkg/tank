@@ -46,3 +46,4 @@ BEGIN
 END $$;
 
 CREATE INDEX IF NOT EXISTS "skills_status_idx" ON "skills" ("status");
+CREATE INDEX IF NOT EXISTS "skills_featured_idx" ON "skills" ("featured");

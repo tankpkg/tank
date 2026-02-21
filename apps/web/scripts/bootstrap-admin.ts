@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import { db } from '@/lib/db';
-import { auditEvents, user } from '@/lib/db/schema';
+import { db } from '../lib/db';
+import { auditEvents, user } from '../lib/db/schema';
 
 async function main() {
   const email = process.env.FIRST_ADMIN_EMAIL?.trim().toLowerCase();

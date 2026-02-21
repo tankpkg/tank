@@ -50,19 +50,20 @@ export async function requireAdmin(): Promise<AdminAuthContext | NextResponse> {
   };
 }
 
-export function withAdminAuth<T>(
+export function withAdminAuth<T, TRouteContext = unknown>(
   handler: (
     req: NextRequest,
-    context: AdminAuthContext
+    context: AdminAuthContext,
+    routeContext?: TRouteContext,
   ) => Promise<NextResponse<T>>
-): (req: NextRequest) => Promise<NextResponse> {
-  return async (req: NextRequest) => {
+): (req: NextRequest, routeContext?: TRouteContext) => Promise<NextResponse> {
+  return async (req: NextRequest, routeContext?: TRouteContext) => {
     const authResult = await requireAdmin();
 
     if (authResult instanceof NextResponse) {
       return authResult;
     }
 
-    return handler(req, authResult);
+    return handler(req, authResult, routeContext);
   };
 }

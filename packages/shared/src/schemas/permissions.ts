@@ -42,6 +42,7 @@ export const adminActionSchema = z.enum([
   'skill.feature',
   'skill.unfeature',
   'org.suspend',
+  'org.member.remove',
   'org.delete',
 ]);
 export type AdminAction = z.infer<typeof adminActionSchema>;

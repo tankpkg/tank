@@ -31,13 +31,6 @@ export const GET = withAdminAuth(async (req: NextRequest) => {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [totalResult] = await db
-    .select({ count: count() })
-    .from(user)
-    .where(whereClause);
-
-  const total = totalResult?.count ?? 0;
-
   const latestStatusSubquery = db
     .select({
       userId: userStatus.userId,
@@ -72,6 +65,14 @@ export const GET = withAdminAuth(async (req: NextRequest) => {
   }
 
   const combinedWhere = statusConditions.length > 0 ? and(...statusConditions) : undefined;
+
+  const [totalResult] = await db
+    .select({ count: count() })
+    .from(user)
+    .leftJoin(latestStatusSubquery, eq(user.id, latestStatusSubquery.userId))
+    .where(combinedWhere);
+
+  const total = totalResult?.count ?? 0;
 
   const users = await db
     .select({

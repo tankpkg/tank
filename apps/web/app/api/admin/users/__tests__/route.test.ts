@@ -15,69 +15,59 @@ vi.mock('@/lib/admin-middleware', () => ({
         const { NextResponse } = await import('next/server');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      if ((mockAuthResult as Record<string, unknown>).__forbidden) {
-        const { NextResponse } = await import('next/server');
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
       return handler(req, mockAuthResult);
     };
   }),
 }));
 
-let selectResults: unknown[];
-const mockInsertFn = vi.fn();
-const mockValues = vi.fn();
-const mockReturning = vi.fn();
-const mockSet = vi.fn();
-const mockUpdateWhere = vi.fn();
-const mockUpdate = vi.fn();
+// Thenable chain mock — each DB call resolves to the next queued result via .then()
+const dbResults: unknown[][] = [];
+let dbResultIndex = 0;
+const insertCalls: { table: unknown; values: unknown }[] = [];
+const updateCalls: { table: unknown; set: unknown; where: unknown }[] = [];
 
-function makeThenable<T>(obj: T, result: unknown): T {
-  Object.defineProperty(obj, 'then', {
-    value: (
-      onFulfilled?: ((v: unknown) => unknown) | null,
-      onRejected?: ((e: unknown) => unknown) | null,
-    ) => Promise.resolve(result).then(onFulfilled, onRejected),
-    configurable: true,
-    enumerable: false,
-  });
-  return obj;
+function nextResult(): unknown[] {
+  return dbResults[dbResultIndex++] ?? [];
 }
 
-function createSelectChain(result: unknown) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  for (const m of ['from', 'where', 'limit', 'offset', 'orderBy', 'leftJoin', 'as']) {
-    chain[m] = vi.fn().mockImplementation(() => chain);
+function createChain(): Record<string, unknown> {
+  const chain: Record<string, unknown> = {};
+  for (const m of ['from', 'where', 'limit', 'orderBy', 'offset', 'leftJoin', 'as']) {
+    chain[m] = vi.fn(() => chain);
   }
-  return makeThenable(chain, result);
+  chain.then = (resolve: (v: unknown) => unknown) => resolve(nextResult());
+  return chain;
 }
 
-function createInsertChain() {
-  return makeThenable({ returning: mockReturning }, undefined);
-}
+const mockSelect = vi.fn((..._args: unknown[]) => createChain());
 
-const mockSelect = vi.fn(() => {
-  const result = selectResults.shift() ?? [];
-  return createSelectChain(result);
-});
+const mockInsertFn = vi.fn((...tableArgs: unknown[]) => ({
+  values: vi.fn((...vArgs: unknown[]) => {
+    insertCalls.push({ table: tableArgs[0], values: vArgs[0] });
+    const inner: Record<string, unknown> = {};
+    inner.returning = vi.fn(() => ({
+      then: (resolve: (v: unknown) => unknown) => resolve(nextResult()),
+    }));
+    inner.then = (resolve: (v: unknown) => unknown) => resolve(nextResult());
+    return inner;
+  }),
+}));
 
-function setupMocks() {
-  selectResults = [];
-
-  mockValues.mockReturnValue(createInsertChain());
-  mockReturning.mockReturnValue(Promise.resolve([{}]));
-  mockInsertFn.mockReturnValue({ values: mockValues });
-
-  mockUpdateWhere.mockReturnValue(Promise.resolve(undefined));
-  mockSet.mockReturnValue({ where: mockUpdateWhere });
-  mockUpdate.mockReturnValue({ set: mockSet });
-}
+const mockUpdate = vi.fn((...tableArgs: unknown[]) => ({
+  set: vi.fn((...sArgs: unknown[]) => ({
+    where: vi.fn((...wArgs: unknown[]) => {
+      updateCalls.push({ table: tableArgs[0], set: sArgs[0], where: wArgs[0] });
+      return { then: (resolve: (v: unknown) => unknown) => resolve(undefined) };
+    }),
+    then: (resolve: (v: unknown) => unknown) => resolve(undefined),
+  })),
+}));
 
 vi.mock('@/lib/db', () => ({
   db: {
-    select: () => mockSelect(),
-    insert: () => mockInsertFn(),
-    update: () => mockUpdate(),
+    select: (...args: unknown[]) => mockSelect(...args),
+    insert: (...args: unknown[]) => mockInsertFn(...args),
+    update: (...args: unknown[]) => mockUpdate(...args),
   },
 }));
 
@@ -121,11 +111,11 @@ vi.mock('@/lib/db/schema', () => ({
 }));
 
 vi.mock('drizzle-orm', () => ({
-  eq: vi.fn((_col: unknown, _val: unknown) => ({ _col, _val, type: 'eq' })),
+  eq: vi.fn((col: unknown, val: unknown) => ({ col, val, type: 'eq' })),
   and: vi.fn((...conditions: unknown[]) => ({ conditions, type: 'and' })),
   or: vi.fn((...conditions: unknown[]) => ({ conditions, type: 'or' })),
-  ilike: vi.fn((_col: unknown, _val: unknown) => ({ _col, _val, type: 'ilike' })),
-  desc: vi.fn((_col: unknown) => ({ _col, type: 'desc' })),
+  ilike: vi.fn((col: unknown, val: unknown) => ({ col, val, type: 'ilike' })),
+  desc: vi.fn((col: unknown) => ({ col, type: 'desc' })),
   count: vi.fn(() => 'count_fn'),
   sql: vi.fn(),
 }));
@@ -142,55 +132,45 @@ function makeRequest(url: string, method: string, body?: unknown): NextRequest {
   });
 }
 
+function resetMocks() {
+  vi.clearAllMocks();
+  dbResults.length = 0;
+  dbResultIndex = 0;
+  insertCalls.length = 0;
+  updateCalls.length = 0;
+  mockAuthResult = { user: mockAdminUser, session: mockSession };
+}
+
 describe('GET /api/admin/users', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    setupMocks();
-    mockAuthResult = { user: mockAdminUser, session: mockSession };
-  });
+  beforeEach(resetMocks);
 
   it('returns 401 when not authenticated', async () => {
     mockAuthResult = null;
-
     const { GET } = await import('../route');
     const response = await GET(makeGetRequest('/api/admin/users'));
-
     expect(response.status).toBe(401);
   });
 
   it('returns paginated users with defaults', async () => {
-    selectResults = [
+    dbResults.push(
       [{ count: 2 }],
-      [],
       [
         {
-          id: 'user-1',
-          name: 'Alice',
-          email: 'alice@test.com',
-          githubUsername: 'alice',
-          image: null,
-          role: 'user',
+          id: 'user-1', name: 'Alice', email: 'alice@test.com',
+          githubUsername: 'alice', image: null, role: 'user',
           createdAt: new Date('2024-01-01'),
-          latestStatusStatus: null,
-          latestStatusReason: null,
-          latestStatusExpiresAt: null,
-          latestStatusCreatedAt: null,
+          latestStatusStatus: null, latestStatusReason: null,
+          latestStatusExpiresAt: null, latestStatusCreatedAt: null,
         },
         {
-          id: 'user-2',
-          name: 'Bob',
-          email: 'bob@test.com',
-          githubUsername: 'bob',
-          image: null,
-          role: 'admin',
+          id: 'user-2', name: 'Bob', email: 'bob@test.com',
+          githubUsername: 'bob', image: null, role: 'admin',
           createdAt: new Date('2024-01-02'),
-          latestStatusStatus: 'banned',
-          latestStatusReason: 'Spam',
-          latestStatusExpiresAt: null,
-          latestStatusCreatedAt: new Date('2024-06-01'),
+          latestStatusStatus: 'banned', latestStatusReason: 'Spam',
+          latestStatusExpiresAt: null, latestStatusCreatedAt: new Date('2024-06-01'),
         },
       ],
-    ];
+    );
 
     const { GET } = await import('../route');
     const response = await GET(makeGetRequest('/api/admin/users'));
@@ -209,25 +189,18 @@ describe('GET /api/admin/users', () => {
   });
 
   it('respects search, role, and pagination params', async () => {
-    selectResults = [
+    dbResults.push(
       [{ count: 1 }],
-      [],
       [
         {
-          id: 'user-1',
-          name: 'Alice',
-          email: 'alice@test.com',
-          githubUsername: 'alice',
-          image: null,
-          role: 'admin',
+          id: 'user-1', name: 'Alice', email: 'alice@test.com',
+          githubUsername: 'alice', image: null, role: 'admin',
           createdAt: new Date('2024-01-01'),
-          latestStatusStatus: null,
-          latestStatusReason: null,
-          latestStatusExpiresAt: null,
-          latestStatusCreatedAt: null,
+          latestStatusStatus: null, latestStatusReason: null,
+          latestStatusExpiresAt: null, latestStatusCreatedAt: null,
         },
       ],
-    ];
+    );
 
     const { GET } = await import('../route');
     const response = await GET(
@@ -241,11 +214,7 @@ describe('GET /api/admin/users', () => {
   });
 
   it('clamps limit to max 100', async () => {
-    selectResults = [
-      [{ count: 0 }],
-      [],
-      [],
-    ];
+    dbResults.push([{ count: 0 }], []);
 
     const { GET } = await import('../route');
     const response = await GET(makeGetRequest('/api/admin/users?limit=500'));
@@ -257,23 +226,17 @@ describe('GET /api/admin/users', () => {
 });
 
 describe('GET /api/admin/users/[userId]', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    setupMocks();
-    mockAuthResult = { user: mockAdminUser, session: mockSession };
-  });
+  beforeEach(resetMocks);
 
   it('returns 401 when not authenticated', async () => {
     mockAuthResult = null;
-
     const { GET } = await import('../[userId]/route');
     const response = await GET(makeGetRequest('/api/admin/users/user-1'));
-
     expect(response.status).toBe(401);
   });
 
   it('returns 404 when user not found', async () => {
-    selectResults = [[]];
+    dbResults.push([]);
 
     const { GET } = await import('../[userId]/route');
     const response = await GET(makeGetRequest('/api/admin/users/nonexistent'));
@@ -284,15 +247,19 @@ describe('GET /api/admin/users/[userId]', () => {
   });
 
   it('returns user detail with status history and counts', async () => {
-    selectResults = [
-      [{ id: 'user-1', name: 'Alice', email: 'alice@test.com', githubUsername: 'alice', image: null, role: 'user', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-06-01') }],
+    dbResults.push(
+      [{
+        id: 'user-1', name: 'Alice', email: 'alice@test.com',
+        githubUsername: 'alice', image: null, role: 'user',
+        createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-06-01'),
+      }],
       [
         { id: 'status-1', status: 'banned', reason: 'Spam', bannedBy: 'admin-1', expiresAt: null, createdAt: new Date('2024-03-01') },
         { id: 'status-2', status: 'active', reason: 'Unbanned', bannedBy: 'admin-1', expiresAt: null, createdAt: new Date('2024-04-01') },
       ],
       [{ count: 5 }],
       [{ count: 2 }],
-    ];
+    );
 
     const { GET } = await import('../[userId]/route');
     const response = await GET(makeGetRequest('/api/admin/users/user-1'));
@@ -308,18 +275,12 @@ describe('GET /api/admin/users/[userId]', () => {
 });
 
 describe('PATCH /api/admin/users/[userId]', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    setupMocks();
-    mockAuthResult = { user: mockAdminUser, session: mockSession };
-  });
+  beforeEach(resetMocks);
 
   it('returns 401 when not authenticated', async () => {
     mockAuthResult = null;
-
     const { PATCH } = await import('../[userId]/route');
     const response = await PATCH(makeRequest('/api/admin/users/user-1', 'PATCH', { role: 'admin' }));
-
     expect(response.status).toBe(401);
   });
 
@@ -328,7 +289,6 @@ describe('PATCH /api/admin/users/[userId]', () => {
     const response = await PATCH(
       makeRequest('/api/admin/users/user-1', 'PATCH', { role: 'superadmin' }),
     );
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toContain('role');
@@ -339,7 +299,6 @@ describe('PATCH /api/admin/users/[userId]', () => {
     const response = await PATCH(
       makeRequest('/api/admin/users/user-1', 'PATCH', {}),
     );
-
     expect(response.status).toBe(400);
   });
 
@@ -351,7 +310,6 @@ describe('PATCH /api/admin/users/[userId]', () => {
       body: 'not json',
     });
     const response = await PATCH(req);
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toContain('Invalid JSON');
@@ -362,38 +320,35 @@ describe('PATCH /api/admin/users/[userId]', () => {
     const response = await PATCH(
       makeRequest('/api/admin/users/admin-1', 'PATCH', { role: 'user' }),
     );
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toContain('own role');
   });
 
   it('returns 404 when target user not found', async () => {
-    selectResults = [[]];
+    dbResults.push([]);
 
     const { PATCH } = await import('../[userId]/route');
     const response = await PATCH(
       makeRequest('/api/admin/users/nonexistent', 'PATCH', { role: 'admin' }),
     );
-
     expect(response.status).toBe(404);
   });
 
   it('returns 400 when user already has the role', async () => {
-    selectResults = [[{ id: 'user-1', role: 'admin' }]];
+    dbResults.push([{ id: 'user-1', role: 'admin' }]);
 
     const { PATCH } = await import('../[userId]/route');
     const response = await PATCH(
       makeRequest('/api/admin/users/user-1', 'PATCH', { role: 'admin' }),
     );
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toContain('already');
   });
 
   it('promotes user to admin and logs audit event', async () => {
-    selectResults = [[{ id: 'user-1', role: 'user' }]];
+    dbResults.push([{ id: 'user-1', role: 'user' }]);
 
     const { PATCH } = await import('../[userId]/route');
     const response = await PATCH(
@@ -405,8 +360,12 @@ describe('PATCH /api/admin/users/[userId]', () => {
     expect(data.success).toBe(true);
     expect(data.oldRole).toBe('user');
     expect(data.newRole).toBe('admin');
-    expect(mockInsertFn).toHaveBeenCalled();
-    expect(mockValues).toHaveBeenCalledWith(
+
+    const auditInsert = insertCalls.find(
+      (c) => (c.values as Record<string, unknown>)?.action === 'user.promote',
+    );
+    expect(auditInsert).toBeTruthy();
+    expect(auditInsert!.values).toEqual(
       expect.objectContaining({
         action: 'user.promote',
         actorId: 'admin-1',
@@ -417,7 +376,7 @@ describe('PATCH /api/admin/users/[userId]', () => {
   });
 
   it('demotes admin to user and logs audit event', async () => {
-    selectResults = [[{ id: 'user-2', role: 'admin' }]];
+    dbResults.push([{ id: 'user-2', role: 'admin' }]);
 
     const { PATCH } = await import('../[userId]/route');
     const response = await PATCH(
@@ -427,27 +386,23 @@ describe('PATCH /api/admin/users/[userId]', () => {
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.newRole).toBe('user');
-    expect(mockValues).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'user.demote' }),
+
+    const auditInsert = insertCalls.find(
+      (c) => (c.values as Record<string, unknown>)?.action === 'user.demote',
     );
+    expect(auditInsert).toBeTruthy();
   });
 });
 
 describe('POST /api/admin/users/[userId]/status', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    setupMocks();
-    mockAuthResult = { user: mockAdminUser, session: mockSession };
-  });
+  beforeEach(resetMocks);
 
   it('returns 401 when not authenticated', async () => {
     mockAuthResult = null;
-
     const { POST } = await import('../[userId]/status/route');
     const response = await POST(
       makeRequest('/api/admin/users/user-1/status', 'POST', { status: 'banned', reason: 'Spam' }),
     );
-
     expect(response.status).toBe(401);
   });
 
@@ -456,7 +411,6 @@ describe('POST /api/admin/users/[userId]/status', () => {
     const response = await POST(
       makeRequest('/api/admin/users/user-1/status', 'POST', { status: 'deleted', reason: 'test' }),
     );
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toContain('status');
@@ -470,7 +424,6 @@ describe('POST /api/admin/users/[userId]/status', () => {
       body: 'not json',
     });
     const response = await POST(req);
-
     expect(response.status).toBe(400);
   });
 
@@ -479,7 +432,6 @@ describe('POST /api/admin/users/[userId]/status', () => {
     const response = await POST(
       makeRequest('/api/admin/users/user-1/status', 'POST', { status: 'banned' }),
     );
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toContain('Reason');
@@ -490,7 +442,6 @@ describe('POST /api/admin/users/[userId]/status', () => {
     const response = await POST(
       makeRequest('/api/admin/users/user-1/status', 'POST', { status: 'banned', reason: '  ' }),
     );
-
     expect(response.status).toBe(400);
   });
 
@@ -499,25 +450,23 @@ describe('POST /api/admin/users/[userId]/status', () => {
     const response = await POST(
       makeRequest('/api/admin/users/admin-1/status', 'POST', { status: 'banned', reason: 'test' }),
     );
-
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toContain('own status');
   });
 
   it('returns 404 when target user not found', async () => {
-    selectResults = [[]];
+    dbResults.push([]);
 
     const { POST } = await import('../[userId]/status/route');
     const response = await POST(
       makeRequest('/api/admin/users/nonexistent/status', 'POST', { status: 'banned', reason: 'Spam' }),
     );
-
     expect(response.status).toBe(404);
   });
 
   it('bans user and logs audit event', async () => {
-    selectResults = [[{ id: 'user-1' }]];
+    dbResults.push([{ id: 'user-1' }]);
 
     const { POST } = await import('../[userId]/status/route');
     const response = await POST(
@@ -532,8 +481,9 @@ describe('POST /api/admin/users/[userId]/status', () => {
     expect(data.success).toBe(true);
     expect(data.userId).toBe('user-1');
     expect(data.status).toBe('banned');
-    expect(mockInsertFn).toHaveBeenCalledTimes(2);
-    expect(mockValues).toHaveBeenCalledWith(
+
+    expect(insertCalls).toHaveLength(2);
+    expect(insertCalls[0].values).toEqual(
       expect.objectContaining({
         userId: 'user-1',
         status: 'banned',
@@ -544,7 +494,7 @@ describe('POST /api/admin/users/[userId]/status', () => {
   });
 
   it('suspends user with expiresAt', async () => {
-    selectResults = [[{ id: 'user-1' }]];
+    dbResults.push([{ id: 'user-1' }]);
 
     const { POST } = await import('../[userId]/status/route');
     const response = await POST(
@@ -561,7 +511,7 @@ describe('POST /api/admin/users/[userId]/status', () => {
   });
 
   it('unbans user without requiring reason', async () => {
-    selectResults = [[{ id: 'user-1' }]];
+    dbResults.push([{ id: 'user-1' }]);
 
     const { POST } = await import('../[userId]/status/route');
     const response = await POST(
@@ -574,15 +524,18 @@ describe('POST /api/admin/users/[userId]/status', () => {
   });
 
   it('logs correct audit action for each status', async () => {
-    selectResults = [[{ id: 'user-1' }]];
+    dbResults.push([{ id: 'user-1' }]);
 
     const { POST } = await import('../[userId]/status/route');
     await POST(
       makeRequest('/api/admin/users/user-1/status', 'POST', { status: 'banned', reason: 'Spam' }),
     );
 
-    const auditCall = mockValues.mock.calls[1]?.[0];
-    expect(auditCall).toEqual(
+    const auditInsert = insertCalls.find(
+      (c) => (c.values as Record<string, unknown>)?.action === 'user.ban',
+    );
+    expect(auditInsert).toBeTruthy();
+    expect(auditInsert!.values).toEqual(
       expect.objectContaining({
         action: 'user.ban',
         actorId: 'admin-1',
