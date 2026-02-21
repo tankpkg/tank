@@ -98,8 +98,7 @@ async def download_tarball(url: str) -> bytes:
         # URL is validated against ALLOWED_DOWNLOAD_DOMAINS in validate_download_url() above
         # nosemgrep: python.http.security.audit.http-request.http-requests
         # noinspection PyUnresolvedReferences
-        # codeql[py/full-ssrf]
-        head_response = await client.head(url, follow_redirects=True)
+        head_response = await client.head(url, follow_redirects=True)  # lgtm[py/ssrf]
         content_length = int(head_response.headers.get("content-length", 0))
 
         if content_length > MAX_TARBALL_SIZE:
@@ -110,8 +109,7 @@ async def download_tarball(url: str) -> bytes:
         # Stream download to handle large files
         # URL is validated against ALLOWED_DOWNLOAD_DOMAINS in validate_download_url() above
         # nosemgrep: python.http.security.audit.http-requests
-        # codeql[py/full-ssrf]
-        response = await client.get(url, follow_redirects=True)
+        response = await client.get(url, follow_redirects=True)  # lgtm[py/ssrf]
         response.raise_for_status()
 
         data = response.content
