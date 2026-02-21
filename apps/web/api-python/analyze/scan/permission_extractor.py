@@ -108,12 +108,17 @@ def extract_permissions(skill_dir: Union[str, Path]) -> dict[str, Any]:
         if not is_within_base or not skill_path.exists() or not skill_path.is_dir():
             return normalize_permissions(permissions)
     else:
-        # Reject absolute paths explicitly to ensure skill_dir stays within the base directory
+        # Ensure non-Path inputs are treated as relative paths within SKILL_BASE_DIR
         try:
-            skill_dir_path = Path(skill_dir)
-        except TypeError:
-            # Non-string or invalid path type; return empty permissions
+            # Coerce to string first to avoid unexpected Path interpretations
+            skill_dir_str = str(skill_dir)
+        except Exception:
+            # Non-stringable or invalid path type; return empty permissions
             return normalize_permissions(permissions)
+
+        skill_dir_path = Path(skill_dir_str)
+
+        # Reject absolute paths explicitly to ensure skill_dir stays within the base directory
         if skill_dir_path.is_absolute():
             return normalize_permissions(permissions)
 
