@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       DATABASE_URL: postgresql://fake:fake@localhost:5432/fake
       SUPABASE_URL: https://fake.supabase.co
@@ -64,6 +66,8 @@ jobs:
   performance:
     runs-on: ubuntu-latest
     needs: test
+    permissions:
+      contents: read
 
     services:
       postgres:
