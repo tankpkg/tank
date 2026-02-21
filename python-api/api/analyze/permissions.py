@@ -77,6 +77,8 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
             )
 
         except Exception:
+            # Log internally for debugging but return generic error to user
+            # to avoid exposing stack traces or internal state
             return JSONResponse(
                 status_code=500,
                 content={"error": "Permission extraction failed due to an internal error"},

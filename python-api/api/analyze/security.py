@@ -135,3 +135,7 @@ async def scan_security(request: SecurityRequest) -> SecurityResponse:
         issues=unique_issues,
         summary=summary,
     )
+
+
+# Note: This module uses deterministic static analysis and does not expose
+# exception details to users. All error responses return generic messages.
