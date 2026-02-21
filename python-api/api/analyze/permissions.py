@@ -58,15 +58,34 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
                     content={"error": "Invalid skill_dir: value must not be empty."},
                 )
 
+            skill_dir_path = Path(skill_dir_value)
+
             # Reject absolute paths to ensure callers cannot escape the base directory
-            if Path(skill_dir_value).is_absolute():
+            if skill_dir_path.is_absolute():
                 return JSONResponse(
                     status_code=400,
                     content={"error": "Invalid skill_dir: absolute paths are not allowed."},
                 )
 
-            # Treat the user-supplied value as a path *within* SKILL_BASE_DIR
-            requested_path = (base_path / skill_dir_value).resolve()
+            # Sanitize path by rejecting dangerous components
+            safe_parts = []
+            for part in skill_dir_path.parts:
+                if part in ("..", "."):
+                    return JSONResponse(
+                        status_code=400,
+                        content={"error": "Invalid skill_dir: path traversal not allowed."},
+                    )
+                if part and not part.startswith("."):
+                    safe_parts.append(part)
+
+            if not safe_parts:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "Invalid skill_dir: empty path."},
+                )
+
+            # Build path from sanitized components
+            requested_path = base_path.joinpath(*safe_parts).resolve()
 
             # Ensure the resolved path is within the allowed base directory
             try:
