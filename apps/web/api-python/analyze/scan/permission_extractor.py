@@ -90,10 +90,22 @@ def extract_permissions(skill_dir: Union[str, Path]) -> dict[str, Any]:
 
     base_path = Path(SKILL_BASE_DIR).resolve()
 
-    # If a Path is provided, assume it has already been validated by the caller.
+    # If a Path is provided, still enforce that it resides within the configured base directory.
     if isinstance(skill_dir, Path):
         skill_path = skill_dir.resolve()
-        if not skill_path.exists() or not skill_path.is_dir():
+
+        # Ensure the resolved path is within the allowed base directory
+        try:
+            is_within_base = skill_path.is_relative_to(base_path)  # type: ignore[attr-defined]
+        except AttributeError:
+            # Fallback for Python versions without Path.is_relative_to
+            try:
+                skill_path.relative_to(base_path)
+                is_within_base = True
+            except ValueError:
+                is_within_base = False
+
+        if not is_within_base or not skill_path.exists() or not skill_path.is_dir():
             return normalize_permissions(permissions)
     else:
         # Reject absolute paths explicitly to ensure skill_dir stays within the base directory
