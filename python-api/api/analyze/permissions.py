@@ -10,8 +10,12 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Any, Dict, Optional
+import os
 
 from lib.scan.permission_extractor import extract_permissions
+
+# Base directory under which all skill directories must reside
+SKILL_BASE_DIR = os.environ.get("SKILL_BASE_DIR", "/workspace/skills")
 
 app = FastAPI(title="Tank Permission Extraction", version="2.0.0")
 
@@ -43,14 +47,24 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
     """
     if request.skill_dir:
         try:
-            skill_path = Path(request.skill_dir)
-            if not skill_path.exists():
+            base_path = Path(SKILL_BASE_DIR).resolve()
+            # Treat the user-supplied value as a path *within* SKILL_BASE_DIR
+            requested_path = (base_path / request.skill_dir).resolve()
+
+            # Ensure the resolved path is within the allowed base directory
+            try:
+                is_within_base = requested_path.is_relative_to(base_path)  # type: ignore[attr-defined]
+            except AttributeError:
+                # Fallback for Python versions without Path.is_relative_to
+                is_within_base = str(requested_path).startswith(str(base_path) + os.sep)
+
+            if not is_within_base or not requested_path.is_dir():
                 return JSONResponse(
                     status_code=400,
-                    content={"error": f"Skill directory does not exist: {request.skill_dir}"},
+                    content={"error": "Invalid skill_dir: must refer to an existing directory within the configured skills base directory."},
                 )
 
-            permissions = extract_permissions(request.skill_dir)
+            permissions = extract_permissions(str(requested_path))
             reasoning = _generate_reasoning(permissions)
 
             return PermissionsResponse(
