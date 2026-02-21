@@ -9,7 +9,10 @@ import re
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urlparse
+import os
 
+# Base directory under which all skill directories must reside
+SKILL_BASE_DIR = str(Path(os.environ.get("SKILL_BASE_DIR", "/workspace/skills")).resolve())
 
 # Network patterns
 NETWORK_PATTERNS = {
@@ -84,9 +87,34 @@ def extract_permissions(skill_dir: str) -> dict[str, Any]:
         "environment": set(),
     }
 
-    skill_path = Path(skill_dir)
-    if not skill_path.exists():
+    base_path = Path(SKILL_BASE_DIR).resolve()
+
+    # Reject absolute paths explicitly to ensure skill_dir stays within the base directory
+    try:
+        skill_dir_path = Path(skill_dir)
+    except TypeError:
+        # Non-string or invalid path type; return empty permissions
         return normalize_permissions(permissions)
+    if skill_dir_path.is_absolute():
+        return normalize_permissions(permissions)
+
+    # Treat the supplied value as a path *within* SKILL_BASE_DIR and resolve it
+    skill_path = (base_path / skill_dir_path).resolve()
+
+    # Ensure the resolved path is within the allowed base directory
+    try:
+        is_within_base = skill_path.is_relative_to(base_path)  # type: ignore[attr-defined]
+    except AttributeError:
+        # Fallback for Python versions without Path.is_relative_to
+        try:
+            skill_path.relative_to(base_path)
+            is_within_base = True
+        except ValueError:
+            is_within_base = False
+
+    if not is_within_base or not skill_path.exists() or not skill_path.is_dir():
+        return normalize_permissions(permissions)
+
 
     for file_path in skill_path.rglob("*"):
         if not file_path.is_file():
