@@ -76,10 +76,10 @@ async def extract_permissions_endpoint(request: PermissionsRequest):
                 reasoning=reasoning,
             )
 
-        except Exception as e:
+        except Exception:
             return JSONResponse(
                 status_code=500,
-                content={"error": f"Permission extraction failed: {str(e)}"},
+                content={"error": "Permission extraction failed due to an internal error"},
             )
 
     # Fallback for legacy requests with skill_content

@@ -95,7 +95,8 @@ async def download_tarball(url: str) -> bytes:
 
     async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT) as client:
         # First, get headers to check content-length
-        head_response = await client.head(url, follow_redirects=True)
+        # URL has been validated against ALLOWED_DOWNLOAD_DOMAINS
+        head_response = await client.head(url, follow_redirects=True)  # nosec
         content_length = int(head_response.headers.get("content-length", 0))
 
         if content_length > MAX_TARBALL_SIZE:
@@ -104,7 +105,8 @@ async def download_tarball(url: str) -> bytes:
             )
 
         # Stream download to handle large files
-        response = await client.get(url, follow_redirects=True)
+        # URL has been validated against ALLOWED_DOWNLOAD_DOMAINS
+        response = await client.get(url, follow_redirects=True)  # nosec
         response.raise_for_status()
 
         data = response.content

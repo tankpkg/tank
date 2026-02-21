@@ -67,7 +67,7 @@ export async function setupE2E(
   }
 
   const sql = postgres(connectionString);
-  const runId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const runId = randomUUID().replace(/-/g, '').slice(0, 10);
   const userId = `e2e-user-${runId}`;
   const orgSlug = `e2etest-${runId}`;
   const orgId = `e2e-org-${runId}`;

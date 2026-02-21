@@ -83,14 +83,14 @@ async def extract_permissions(request: PermissionsRequest) -> PermissionsRespons
 
         return PermissionsResponse(permissions=clean_perms, reasoning=reasoning)
 
-    except ValueError as e:
+    except ValueError:
         # Missing API key or invalid JSON from LLM
         return JSONResponse(
             status_code=500,
-            content={"error": str(e)},
+            content={"error": "Analysis failed due to configuration error"},
         )
-    except Exception as e:
+    except Exception:
         return JSONResponse(
             status_code=500,
-            content={"error": f"Analysis failed: {str(e)}"},
+            content={"error": "Analysis failed due to an internal error"},
         )
