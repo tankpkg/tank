@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -28,6 +29,13 @@ export default async function AdminLayout({
     redirect('/dashboard');
   }
 
+  const navItems = [
+    { href: '/admin', label: 'Dashboard' },
+    { href: '/admin/users', label: 'Users' },
+    { href: '/admin/packages', label: 'Packages' },
+    { href: '/admin/orgs', label: 'Organizations' },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b bg-background">
@@ -35,7 +43,24 @@ export default async function AdminLayout({
           <h1 className="text-lg font-semibold">Admin</h1>
         </div>
       </header>
-      <main className="flex-1 container px-4 py-6">{children}</main>
+      <div className="container flex-1 px-4 py-6">
+        <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+          <aside className="border rounded-lg p-3 h-fit">
+            <nav className="space-y-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </aside>
+          <main>{children}</main>
+        </div>
+      </div>
     </div>
   );
 }

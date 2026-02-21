@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "vitest run",
     "lint": "next lint",
+    "admin:bootstrap": "npx tsx scripts/bootstrap-admin.ts",
     "perf:test": "bash scripts/perf-test.sh",
     "perf:seed": "npx tsx scripts/perf-seed.ts",
     "perf:report": "npx tsx scripts/perf-report.ts"
