@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface FileExplorerProps {
   files: string[];
+  skillName: string;
+  version: string;
   readme?: string | null;
   manifest?: Record<string, unknown>;
 }
@@ -100,10 +102,93 @@ function TreeItem({ node, depth = 0, selectedFile, onSelect }: {
   );
 }
 
-export function FileExplorer({ files, readme, manifest }: FileExplorerProps) {
+function FilePreview({ content, isLoading, error, filePath }: {
+  content: string | null;
+  isLoading: boolean;
+  error: string | null;
+  filePath: string | null;
+}) {
+  if (!filePath) {
+    return (
+      <p className="text-xs text-muted-foreground italic p-2">
+        Click a file to preview
+      </p>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <p className="text-xs text-muted-foreground italic p-2">
+        Loading...
+      </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <p className="text-xs text-destructive italic p-2">
+        {error}
+      </p>
+    );
+  }
+
+  if (content) {
+    return (
+      <pre className="text-xs font-mono whitespace-pre-wrap break-all bg-muted/30 p-2 rounded max-h-64 overflow-y-auto">
+        {content}
+      </pre>
+    );
+  }
+
+  return (
+    <p className="text-xs text-muted-foreground italic p-2">
+      Preview not available.
+    </p>
+  );
+}
+
+export function FileExplorer({ files, skillName, version, readme, manifest }: FileExplorerProps) {
   const [selectedFile, setSelectedFile] = useState<string | null>(
     files.includes('SKILL.md') ? 'SKILL.md' : null
   );
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getFileContent = useCallback(async (path: string): Promise<string | null> => {
+    if (path === 'SKILL.md' && readme) return readme;
+    if (path === 'skills.json' && manifest) return JSON.stringify(manifest, null, 2);
+
+    const response = await fetch(`/api/v1/skills/${encodeURIComponent(skillName)}/${version}/files/${path}`);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || `Failed to load file: ${response.status}`);
+    }
+    return response.text();
+  }, [skillName, version, readme, manifest]);
+
+  useEffect(() => {
+    if (!selectedFile) {
+      setFileContent(null);
+      setError(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    getFileContent(selectedFile)
+      .then((content) => {
+        setFileContent(content);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load file');
+        setFileContent(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [selectedFile, getFileContent]);
 
   if (files.length === 0) {
     return (
@@ -115,17 +200,8 @@ export function FileExplorer({ files, readme, manifest }: FileExplorerProps) {
 
   const tree = buildTree(files);
 
-  const getFileContent = (path: string): string | null => {
-    if (path === 'SKILL.md' && readme) return readme;
-    if (path === 'skills.json' && manifest) return JSON.stringify(manifest, null, 2);
-    return null;
-  };
-
-  const selectedContent = selectedFile ? getFileContent(selectedFile) : null;
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* File Tree */}
       <div className="border rounded-lg p-2">
         <div className="text-xs font-medium text-muted-foreground mb-2 px-1">
           {files.length} file{files.length !== 1 ? 's' : ''}
@@ -142,27 +218,17 @@ export function FileExplorer({ files, readme, manifest }: FileExplorerProps) {
         </div>
       </div>
 
-      {/* File Preview */}
       <div className="border rounded-lg p-2">
         <div className="text-xs font-medium text-muted-foreground mb-2 px-1 flex items-center justify-between">
           <span>Preview</span>
           {selectedFile && <span className="font-mono">{selectedFile}</span>}
         </div>
-        <div className="max-h-64 overflow-y-auto">
-          {selectedContent ? (
-            <pre className="text-xs font-mono whitespace-pre-wrap break-all bg-muted/30 p-2 rounded">
-              {selectedContent}
-            </pre>
-          ) : selectedFile ? (
-            <p className="text-xs text-muted-foreground italic p-2">
-              Preview not available. Download the package to view this file.
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground italic p-2">
-              Click a file to preview (SKILL.md and skills.json available)
-            </p>
-          )}
-        </div>
+        <FilePreview
+          content={fileContent}
+          isLoading={isLoading}
+          error={error}
+          filePath={selectedFile}
+        />
       </div>
     </div>
   );
