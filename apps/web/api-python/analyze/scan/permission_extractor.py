@@ -122,13 +122,22 @@ def extract_permissions(skill_dir: Union[str, Path]) -> dict[str, Any]:
         if skill_dir_path.is_absolute():
             return normalize_permissions(permissions)
 
-        # Reject paths containing parent directory references to prevent traversal
-        if ".." in skill_dir_path.parts:
+        # Sanitize path by filtering out dangerous components
+        # This prevents path traversal attacks by rejecting any ".." or "." components
+        safe_parts = []
+        for part in skill_dir_path.parts:
+            if part in ("..", "."):
+                # Reject paths with parent or current directory references
+                return normalize_permissions(permissions)
+            # Only allow safe path components (alphanumeric, dash, underscore, dot in filenames)
+            if part and not part.startswith("."):
+                safe_parts.append(part)
+
+        if not safe_parts:
             return normalize_permissions(permissions)
 
-        # Treat the supplied value as a path *within* SKILL_BASE_DIR and resolve it
-        # Path is validated: absolute paths rejected above, resolved path validated below
-        skill_path = (base_path / skill_dir_path).resolve()  # lgtm[py/path-injection]
+        # Build clean path from sanitized components within SKILL_BASE_DIR
+        skill_path = base_path.joinpath(*safe_parts).resolve()
 
         # Ensure the resolved, normalized path is within the allowed base directory
         try:
