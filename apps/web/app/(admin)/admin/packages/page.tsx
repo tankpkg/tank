@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { RescanSkillsButton } from '@/components/admin/rescan-skills-button';
 
 type SearchParams = {
   search?: string;
@@ -367,11 +368,14 @@ export default async function AdminPackagesPage({
   const resolvedSearchParams = await searchParams;
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Packages</h1>
-        <p className="text-muted-foreground mt-1">
-          Search, filter, and moderate published packages.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Packages</h1>
+          <p className="text-muted-foreground mt-1">
+            Search, filter, and moderate published packages.
+          </p>
+        </div>
+        <RescanSkillsButton />
       </div>
       <Suspense fallback={<PackagesTableSkeleton />}>
         <PackagesTable searchParams={resolvedSearchParams} />
