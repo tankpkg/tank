@@ -8,12 +8,14 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      security-events: write
     env:
       DATABASE_URL: postgresql://fake:fake@localhost:5432/fake
       SUPABASE_URL: https://fake.supabase.co
@@ -71,6 +73,7 @@ jobs:
     needs: test
     permissions:
       contents: read
+      security-events: write
 
     services:
       postgres:

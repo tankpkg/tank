@@ -70,8 +70,11 @@ export async function setupE2E(
   }
 
   const sql = postgres(connectionString);
+  // randomUUID() is cryptographically secure (uses crypto.randomUUID from Node.js)
+  // lgtm[js/insecure-randomness]
   const runId = randomUUID().replace(/-/g, '').slice(0, 10);
   const userId = `e2e-user-${runId}`;
+  // lgtm[js/insecure-randomness]
   const orgSlug = `e2etest-${runId}`;
   const orgId = `e2e-org-${runId}`;
   const memberId = `e2e-member-${runId}`;
