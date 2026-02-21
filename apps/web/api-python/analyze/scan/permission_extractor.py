@@ -108,7 +108,7 @@ def extract_permissions(skill_dir: Union[str, Path]) -> dict[str, Any]:
         if not is_within_base or not skill_path.exists() or not skill_path.is_dir():
             return normalize_permissions(permissions)
     else:
-        # Ensure non-Path inputs are treated as relative paths within SKILL_BASE_DIR
+        # Treat non-Path inputs as untrusted and confine them within SKILL_BASE_DIR
         try:
             # Coerce to string first to avoid unexpected Path interpretations
             skill_dir_str = str(skill_dir)
@@ -125,7 +125,7 @@ def extract_permissions(skill_dir: Union[str, Path]) -> dict[str, Any]:
         # Treat the supplied value as a path *within* SKILL_BASE_DIR and resolve it
         skill_path = (base_path / skill_dir_path).resolve()
 
-        # Ensure the resolved path is within the allowed base directory
+        # Ensure the resolved, normalized path is within the allowed base directory
         try:
             is_within_base = skill_path.is_relative_to(base_path)  # type: ignore[attr-defined]
         except AttributeError:
@@ -136,6 +136,7 @@ def extract_permissions(skill_dir: Union[str, Path]) -> dict[str, Any]:
             except ValueError:
                 is_within_base = False
 
+        # Only proceed if the resolved path is a directory within the configured base path
         if not is_within_base or not skill_path.exists() or not skill_path.is_dir():
             return normalize_permissions(permissions)
 
