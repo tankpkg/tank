@@ -321,8 +321,9 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 }
 
 export async function installFromLockfile(options: LockfileInstallOptions): Promise<void> {
-  const { directory = process.cwd(), configDir: _configDir, global = false, homedir } = options;
+  const { directory = process.cwd(), configDir, global = false, homedir } = options;
   const resolvedHome = homedir ?? os.homedir();
+  const config = getConfig(configDir);
 
   const lockPath = global
     ? path.join(resolvedHome, '.tank', 'skills.lock')
@@ -353,9 +354,34 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
   try {
     for (const [key, entry] of entries) {
       const skillName = parseLockKey(key);
+      const version = parseVersionFromLockKey(key);
       spinner.text = `Installing ${key}...`;
 
-      const downloadRes = await fetch(entry.resolved);
+      // Fetch metadata from API to record download and get fresh signed URL
+      const encodedName = encodeURIComponent(skillName);
+      const metaUrl = `${config.registry}/api/v1/skills/${encodedName}/${version}`;
+      
+      let metaRes: Response;
+      try {
+        metaRes = await fetch(metaUrl, {
+          headers: { 'User-Agent': USER_AGENT },
+        });
+      } catch (err) {
+        throw new Error(`Network error fetching ${key}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      if (!metaRes.ok) {
+        if (metaRes.status === 404) {
+          throw new Error(`Skill or version not found: ${key}`);
+        }
+        const body = await metaRes.json().catch(() => ({})) as { error?: string };
+        throw new Error(`Failed to fetch ${key}: ${body.error ?? metaRes.statusText}`);
+      }
+
+      const metadata = await metaRes.json() as VersionMetadata;
+      const downloadUrl = metadata.downloadUrl;
+
+      const downloadRes = await fetch(downloadUrl);
       if (!downloadRes.ok) {
         throw new Error(`Failed to download ${key}: ${downloadRes.status} ${downloadRes.statusText}`);
       }
@@ -475,6 +501,14 @@ function parseLockKey(key: string): string {
     throw new Error(`Invalid lockfile key: ${key}`);
   }
   return key.slice(0, lastAt);
+}
+
+function parseVersionFromLockKey(key: string): string {
+  const lastAt = key.lastIndexOf('@');
+  if (lastAt <= 0 || lastAt === key.length - 1) {
+    throw new Error(`Invalid lockfile key: ${key}`);
+  }
+  return key.slice(lastAt + 1);
 }
 
 function getExtractDir(projectDir: string, skillName: string): string {

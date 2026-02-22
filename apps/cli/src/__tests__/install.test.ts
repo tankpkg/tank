@@ -903,6 +903,15 @@ describe('installFromLockfile', () => {
       },
     });
 
+    // Mock API metadata response (returns downloadUrl)
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@test-org/my-skill',
+        version: '2.0.0',
+        integrity: fakeTarball1Integrity,
+        downloadUrl: 'https://storage.example.com/my-skill-2.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     // Mock tarball download
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball1), { status: 200 }),
@@ -910,9 +919,10 @@ describe('installFromLockfile', () => {
 
     await installFromLockfile({ directory: tmpDir, configDir });
 
-    // Verify download was called with the resolved URL
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch.mock.calls[0][0]).toBe('https://storage.example.com/my-skill-2.0.0.tgz');
+    // Verify API was called for metadata
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[0][0]).toBe('https://tankpkg.dev/api/v1/skills/%40test-org%2Fmy-skill/2.0.0');
+    expect(mockFetch.mock.calls[1][0]).toBe('https://storage.example.com/my-skill-2.0.0.tgz');
 
     // Verify extraction directory was created
     const extractDir = path.join(tmpDir, '.tank', 'skills', '@test-org', 'my-skill');
@@ -931,6 +941,15 @@ describe('installFromLockfile', () => {
       },
     });
 
+    // Mock API metadata response
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@test-org/my-skill',
+        version: '2.0.0',
+        integrity: 'sha512-WRONG_HASH_THAT_WILL_NOT_MATCH',
+        downloadUrl: 'https://storage.example.com/my-skill-2.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     // Mock tarball download — content won't match the integrity
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball1), { status: 200 }),
@@ -957,6 +976,15 @@ describe('installFromLockfile', () => {
       },
     });
 
+    // Mock API metadata response
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@test-org/my-skill',
+        version: '2.0.0',
+        integrity: fakeTarball1Integrity,
+        downloadUrl: 'https://storage.example.com/my-skill-2.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball1), { status: 200 }),
     );
@@ -987,9 +1015,26 @@ describe('installFromLockfile', () => {
       },
     });
 
-    // Mock both tarball downloads
+    // Mock API + tarball for first skill
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@test-org/my-skill',
+        version: '2.0.0',
+        integrity: fakeTarball1Integrity,
+        downloadUrl: 'https://storage.example.com/my-skill-2.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+    // Mock API + tarball for second skill
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: 'simple-skill',
+        version: '1.0.0',
+        integrity: fakeTarball2Integrity,
+        downloadUrl: 'https://storage.example.com/simple-skill-1.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
     );
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball2), { status: 200 }),
@@ -997,7 +1042,7 @@ describe('installFromLockfile', () => {
 
     await installFromLockfile({ directory: tmpDir, configDir });
 
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(4);
 
     // Both extraction directories should exist
     expect(fs.existsSync(path.join(tmpDir, '.tank', 'skills', '@test-org', 'my-skill'))).toBe(true);
@@ -1022,6 +1067,14 @@ describe('installFromLockfile', () => {
       },
     });
 
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@my-org/deep-skill',
+        version: '3.0.0',
+        integrity: fakeTarball1Integrity,
+        downloadUrl: 'https://storage.example.com/deep-skill-3.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball1), { status: 200 }),
     );
@@ -1050,6 +1103,14 @@ describe('installFromLockfile', () => {
       },
     });
 
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: 'simple-skill',
+        version: '1.0.0',
+        integrity: fakeTarball1Integrity,
+        downloadUrl: 'https://storage.example.com/simple-skill-1.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball1), { status: 200 }),
     );
@@ -1080,11 +1141,27 @@ describe('installFromLockfile', () => {
       },
     });
 
-    // First skill downloads fine
+    // First skill: API + tarball
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@test-org/my-skill',
+        version: '2.0.0',
+        integrity: fakeTarball1Integrity,
+        downloadUrl: 'https://storage.example.com/my-skill-2.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball1), { status: 200 }),
     );
-    // Second skill downloads fine but integrity won't match
+    // Second skill: API + tarball (integrity won't match)
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: 'bad-skill',
+        version: '1.0.0',
+        integrity: 'sha512-DEFINITELY_WRONG',
+        downloadUrl: 'https://storage.example.com/bad-skill-1.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball2), { status: 200 }),
     );
@@ -1201,16 +1278,25 @@ describe('installAll (no-args dispatch)', () => {
       }, null, 2),
     );
 
-    // Mock tarball download
+    // Mock API metadata + tarball download
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@test-org/my-skill',
+        version: '2.0.0',
+        integrity: fakeTarballIntegrity,
+        downloadUrl: 'https://storage.example.com/my-skill-2.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
     mockFetch.mockResolvedValueOnce(
       new Response(new Uint8Array(fakeTarball), { status: 200 }),
     );
 
     await installAll({ directory: tmpDir, configDir });
 
-    // Should have downloaded from lockfile's resolved URL (not resolved via registry)
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(mockFetch.mock.calls[0][0]).toBe('https://storage.example.com/my-skill-2.0.0.tgz');
+    // Should have called API for metadata, then downloaded tarball
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[0][0]).toBe('https://tankpkg.dev/api/v1/skills/%40test-org%2Fmy-skill/2.0.0');
+    expect(mockFetch.mock.calls[1][0]).toBe('https://storage.example.com/my-skill-2.0.0.tgz');
   });
 
   it('resolves from skills.json when no lockfile exists (first install)', async () => {

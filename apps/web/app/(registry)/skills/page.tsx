@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
+import { Star, Download } from 'lucide-react';
 import {
   Card,
   CardHeader,
@@ -97,7 +98,14 @@ function SkillCard({ skill }: { skill: SkillSearchResult }) {
                 Score: {skill.auditScore}
               </Badge>
             )}
-            <span>{skill.downloads.toLocaleString()} downloads</span>
+            <span className="flex items-center gap-1">
+              <Download className="h-3.5 w-3.5" />
+              {skill.downloads.toLocaleString()}
+            </span>
+            <span className="flex items-center gap-1">
+              <Star className="h-3.5 w-3.5" />
+              {skill.stars.toLocaleString()}
+            </span>
           </div>
         </CardContent>
       </Card>

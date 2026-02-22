@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { unstable_noStore as noStore } from 'next/cache';
+import { Star } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -14,6 +15,7 @@ import type { SkillVersionSummary, ScanFinding } from '@/lib/data/skills';
 import { InstallCommand } from './install-command';
 import { SkillTabs } from './skill-tabs';
 import { DownloadButton } from './download-button';
+import { StarButton } from './star-button';
 import {
   SecurityOverview,
   ScanningToolsStrip,
@@ -360,6 +362,19 @@ export default async function SkillDetailPage({
                   <dd>{license}</dd>
                 </div>
               )}
+              <div className="flex justify-between items-center">
+                <dt className="text-muted-foreground flex items-center gap-1">
+                  <Star className="h-3 w-3" />
+                  Stars
+                </dt>
+                <dd>
+                  <StarButton
+                    skillName={skillName}
+                    initialStarCount={data.starCount}
+                    initialIsStarred={data.isStarred}
+                  />
+                </dd>
+              </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Downloads</dt>
                 <dd>{data.downloadCount.toLocaleString()}</dd>

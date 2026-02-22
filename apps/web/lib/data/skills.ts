@@ -71,6 +71,8 @@ export interface SkillDetailResult {
   updatedAt: Date;
   publisher: { name: string; githubUsername: string | null };
   downloadCount: number;
+  starCount: number;
+  isStarred: boolean;
   latestVersion: SkillVersionDetail | null;
   versions: SkillVersionSummary[];
 }
@@ -83,6 +85,7 @@ export interface SkillSearchResult {
   auditScore: number | null;
   publisher: string;
   downloads: number;
+  stars: number;
 }
 
 export interface SkillSearchResponse {
@@ -149,9 +152,6 @@ export async function getSkillDetail(
   const viewerUserId = await resolveViewerUserId();
   const visClause = visibilityClause(viewerUserId);
 
-  // Single query: skill + publisher + all versions + scan data for latest version.
-  // Scan subqueries use indexed lookups and only add ~1ms overhead.
-  // This saves 2 round-trips to Supabase (~300-400ms).
   const rows = await db.execute(sql`
     SELECT
       s.name AS "skillName",
@@ -162,6 +162,8 @@ export async function getSkillDetail(
       coalesce(u.name, '') AS "publisherName",
       u.github_username AS "publisherGithubUsername",
       coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS "downloadCount",
+      coalesce((SELECT count(*)::int FROM skill_stars WHERE skill_id = s.id), 0) AS "starCount",
+      ${viewerUserId ? sql`EXISTS(SELECT 1 FROM skill_stars WHERE skill_id = s.id AND user_id = ${viewerUserId})` : sql`false`} AS "isStarred",
       s.repository_url AS "skillRepositoryUrl",
       sv.id AS "versionId",
       sv.version,
@@ -174,7 +176,6 @@ export async function getSkillDetail(
       sv.readme,
       sv.file_count AS "versionFileCount",
       sv.tarball_size AS "versionTarballSize",
-      -- Scan result for this version (JSON object or NULL)
       (SELECT row_to_json(t) FROM (
         SELECT sr.verdict, sr.stages_run AS "stagesRun", sr.duration_ms AS "durationMs",
                sr.critical_count AS "criticalCount", sr.high_count AS "highCount",
@@ -182,7 +183,6 @@ export async function getSkillDetail(
         FROM scan_results sr WHERE sr.version_id = sv.id
         ORDER BY sr.created_at DESC LIMIT 1
       ) t) AS "scanResult",
-      -- Scan findings for this version (JSON array or NULL)
       (SELECT json_agg(json_build_object(
         'stage', sf.stage, 'severity', sf.severity, 'type', sf.type,
         'description', sf.description, 'location', sf.location,
@@ -265,6 +265,8 @@ export async function getSkillDetail(
     updatedAt: new Date(first.skillUpdatedAt as string),
     publisher: { name: first.publisherName as string, githubUsername: (first.publisherGithubUsername as string | null) },
     downloadCount: Number.isFinite(parsedDownloadCount) ? parsedDownloadCount : 0,
+    starCount: Number(first.starCount) || 0,
+    isStarred: Boolean(first.isStarred),
     latestVersion,
     versions,
   };
@@ -301,8 +303,6 @@ export async function searchSkills(
     ? sql`ts_rank(to_tsvector('english', s.name || ' ' || coalesce(s.description, '')), plainto_tsquery('english', ${q})) DESC`
     : sql`s.updated_at DESC`;
 
-  // Join through user table to resolve publisher name
-  // Also fetch download count from skill_downloads table
   const results = await db.execute(sql`
     SELECT
       s.name,
@@ -312,6 +312,7 @@ export async function searchSkills(
       sv.audit_score AS "auditScore",
       coalesce(u.name, '') AS publisher,
       coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS downloads,
+      coalesce((SELECT count(*)::int FROM skill_stars WHERE skill_id = s.id), 0) AS stars,
       count(*) OVER() AS total
     FROM skills s
     LEFT JOIN "user" u ON u.id = s.publisher_id
@@ -336,6 +337,7 @@ export async function searchSkills(
       auditScore: row.auditScore != null ? Number(row.auditScore) : null,
       publisher: (row.publisher as string) ?? '',
       downloads: Number(row.downloads) || 0,
+      stars: Number(row.stars) || 0,
     })),
     page,
     limit,

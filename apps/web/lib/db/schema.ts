@@ -196,6 +196,29 @@ export const skillDownloads = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// skill_stars
+// ---------------------------------------------------------------------------
+
+export const skillStars = pgTable(
+  'skill_stars',
+  {
+    id,
+    skillId: uuid('skill_id')
+      .notNull()
+      .references(() => skills.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt,
+  },
+  (table) => [
+    index('skill_stars_skill_id_idx').on(table.skillId),
+    index('skill_stars_user_id_idx').on(table.userId),
+    unique('skill_stars_skill_user_uniq').on(table.skillId, table.userId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // audit_events
 // ---------------------------------------------------------------------------
 
@@ -306,7 +329,19 @@ export const skillsRelations = relations(skills, ({ one, many }) => ({
   }),
   versions: many(skillVersions),
   downloads: many(skillDownloads),
+  stars: many(skillStars),
   accessGrants: many(skillAccess),
+}));
+
+export const skillStarsRelations = relations(skillStars, ({ one }) => ({
+  skill: one(skills, {
+    fields: [skillStars.skillId],
+    references: [skills.id],
+  }),
+  user: one(user, {
+    fields: [skillStars.userId],
+    references: [user.id],
+  }),
 }));
 
 export const skillAccessRelations = relations(skillAccess, ({ one }) => ({
