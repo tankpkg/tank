@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, type ChangeEvent, type KeyboardEvent } from 'react';
 import { createToken, listTokens, revokeToken } from './actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ interface ApiKeyItem {
   lastRequest: Date | null;
   expiresAt: Date | null;
   enabled: boolean;
+  permissions?: string | null;
 }
 
 export default function TokensPage() {
@@ -40,6 +41,8 @@ export default function TokensPage() {
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [tokenName, setTokenName] = useState('');
+  const [expiresInDays, setExpiresInDays] = useState('90');
+  const [scopes, setScopes] = useState<string[]>(['skills:read']);
   const [creating, setCreating] = useState(false);
   const [newTokenValue, setNewTokenValue] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -64,10 +67,16 @@ export default function TokensPage() {
     if (!tokenName.trim()) return;
     setCreating(true);
     try {
-      const result = await createToken(tokenName.trim());
+      const result = await createToken({
+        name: tokenName.trim(),
+        expiresInDays: Number(expiresInDays) || 90,
+        scopes,
+      });
       // result contains the full key value on creation
       setNewTokenValue((result as { key: string }).key);
       setTokenName('');
+      setExpiresInDays('90');
+      setScopes(['skills:read']);
       await loadTokens();
     } catch (err) {
       console.error('Failed to create token:', err);
@@ -100,6 +109,28 @@ export default function TokensPage() {
     setNewTokenValue(null);
     setCreateOpen(false);
     setCopied(false);
+    setExpiresInDays('90');
+    setScopes(['skills:read']);
+  };
+
+  const toggleScope = (scope: string) => {
+    setScopes((current: string[]) => {
+      if (current.includes(scope)) {
+        const next = current.filter((s: string) => s !== scope);
+        return next.length === 0 ? ['skills:read'] : next;
+      }
+      return [...current, scope];
+    });
+  };
+
+  const parseScopes = (raw: string | null | undefined) => {
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') as string[] : [];
+    } catch {
+      return [];
+    }
   };
 
   const formatDate = (date: Date | string | null) => {
@@ -127,7 +158,7 @@ export default function TokensPage() {
           </p>
         </div>
 
-        <Dialog open={createOpen} onOpenChange={(open) => {
+        <Dialog open={createOpen} onOpenChange={(open: boolean) => {
           setCreateOpen(open);
           if (!open) {
             setNewTokenValue(null);
@@ -170,7 +201,7 @@ export default function TokensPage() {
                 <DialogHeader>
                   <DialogTitle>Create New Token</DialogTitle>
                   <DialogDescription>
-                    Give your token a name to identify it later. Tokens expire after 90 days.
+                    Create a scoped token for your workflows.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
@@ -180,11 +211,37 @@ export default function TokensPage() {
                       id="token-name"
                       placeholder="e.g. CI/CD Pipeline"
                       value={tokenName}
-                      onChange={(e) => setTokenName(e.target.value)}
-                      onKeyDown={(e) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setTokenName(e.target.value)}
+                      onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
                         if (e.key === 'Enter') handleCreate();
                       }}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="token-expiry">Expires in (days)</Label>
+                    <Input
+                      id="token-expiry"
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={expiresInDays}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setExpiresInDays(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Scopes</Label>
+                    <div className="flex flex-wrap gap-2 text-sm">
+                      {['skills:read', 'skills:publish', 'skills:admin'].map((scope) => (
+                        <label key={scope} className="inline-flex items-center gap-2 rounded border px-2 py-1">
+                          <input
+                            type="checkbox"
+                            checked={scopes.includes(scope)}
+                            onChange={() => toggleScope(scope)}
+                          />
+                          {scope}
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
@@ -227,10 +284,11 @@ export default function TokensPage() {
                 <TableHead>Key</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Last Used</TableHead>
-                <TableHead>Expires</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+                  <TableHead>Expires</TableHead>
+                  <TableHead>Scopes</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {tokens.map((token) => (
                 <TableRow key={token.id}>
@@ -256,6 +314,12 @@ export default function TokensPage() {
                     ) : (
                       <Badge variant="secondary">Never</Badge>
                     )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {(() => {
+                      const tokenScopes = parseScopes(token.permissions);
+                      return tokenScopes.length > 0 ? tokenScopes.join(', ') : 'legacy-full';
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
