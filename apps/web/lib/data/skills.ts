@@ -137,6 +137,26 @@ function visibilityClause(userId: string | null) {
   )`;
 }
 
+let skillStarsTableExists: boolean | null = null;
+
+async function hasSkillStarsTable(): Promise<boolean> {
+  if (skillStarsTableExists !== null) {
+    return skillStarsTableExists;
+  }
+
+  try {
+    const rows = await db.execute(sql`
+      SELECT to_regclass('public.skill_stars') IS NOT NULL AS "exists"
+    `) as Record<string, unknown>[];
+
+    skillStarsTableExists = Boolean(rows[0]?.exists);
+  } catch {
+    skillStarsTableExists = false;
+  }
+
+  return skillStarsTableExists;
+}
+
 // ── Skill Detail ─────────────────────────────────────────────────────────────
 
 /**
@@ -150,7 +170,14 @@ export async function getSkillDetail(
   name: string,
 ): Promise<SkillDetailResult | null> {
   const viewerUserId = await resolveViewerUserId();
+  const starsTableAvailable = await hasSkillStarsTable();
   const visClause = visibilityClause(viewerUserId);
+  const starCountSql = starsTableAvailable
+    ? sql`coalesce((SELECT count(*)::int FROM skill_stars WHERE skill_id = s.id), 0)`
+    : sql`0`;
+  const isStarredSql = starsTableAvailable && viewerUserId
+    ? sql`EXISTS(SELECT 1 FROM skill_stars WHERE skill_id = s.id AND user_id = ${viewerUserId})`
+    : sql`false`;
 
   const rows = await db.execute(sql`
     SELECT
@@ -162,8 +189,8 @@ export async function getSkillDetail(
       coalesce(u.name, '') AS "publisherName",
       u.github_username AS "publisherGithubUsername",
       coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS "downloadCount",
-      coalesce((SELECT count(*)::int FROM skill_stars WHERE skill_id = s.id), 0) AS "starCount",
-      ${viewerUserId ? sql`EXISTS(SELECT 1 FROM skill_stars WHERE skill_id = s.id AND user_id = ${viewerUserId})` : sql`false`} AS "isStarred",
+      ${starCountSql} AS "starCount",
+      ${isStarredSql} AS "isStarred",
       s.repository_url AS "skillRepositoryUrl",
       sv.id AS "versionId",
       sv.version,
@@ -288,8 +315,12 @@ export async function searchSkills(
   limit: number,
 ): Promise<SkillSearchResponse> {
   const viewerUserId = await resolveViewerUserId();
+  const starsTableAvailable = await hasSkillStarsTable();
   const visClause = visibilityClause(viewerUserId);
   const offset = (page - 1) * limit;
+  const starsSql = starsTableAvailable
+    ? sql`coalesce((SELECT count(*)::int FROM skill_stars WHERE skill_id = s.id), 0)`
+    : sql`0`;
 
   const searchCondition = q
     ? sql`to_tsvector('english', s.name || ' ' || coalesce(s.description, '')) @@ plainto_tsquery('english', ${q})`
@@ -312,7 +343,7 @@ export async function searchSkills(
       sv.audit_score AS "auditScore",
       coalesce(u.name, '') AS publisher,
       coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS downloads,
-      coalesce((SELECT count(*)::int FROM skill_stars WHERE skill_id = s.id), 0) AS stars,
+      ${starsSql} AS stars,
       count(*) OVER() AS total
     FROM skills s
     LEFT JOIN "user" u ON u.id = s.publisher_id
