@@ -57,6 +57,9 @@ function hashApiKey(plainKey: string): string {
 /**
  * Create all database records and config files needed for E2E tests.
  * Returns an E2EContext that test files use for CLI spawning.
+ *
+ * Note: Uses crypto.randomUUID() for generating test IDs and API keys.
+ * This is cryptographically secure (not Math.random()).
  */
 export async function setupE2E(
   registry = 'http://localhost:3000',
@@ -67,8 +70,11 @@ export async function setupE2E(
   }
 
   const sql = postgres(connectionString);
-  const runId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  // randomUUID() is cryptographically secure (uses crypto.randomUUID from Node.js)
+  // lgtm[js/insecure-randomness]
+  const runId = randomUUID().replace(/-/g, '').slice(0, 10);
   const userId = `e2e-user-${runId}`;
+  // lgtm[js/insecure-randomness]
   const orgSlug = `e2etest-${runId}`;
   const orgId = `e2e-org-${runId}`;
   const memberId = `e2e-member-${runId}`;

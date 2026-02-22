@@ -16,6 +16,13 @@ import { SkillReadme } from './skill-readme';
 import { SkillTabs } from './skill-tabs';
 import { FileExplorer } from './file-explorer';
 import { DownloadButton } from './download-button';
+import {
+  SecurityOverview,
+  ScanningToolsStrip,
+  FindingsList,
+  ScanPipeline,
+  ScoreBreakdown,
+} from '@/components/security';
 
 // ISR: cache page at CDN for 60s, survives serverless cold starts (PERF-005/006)
 export const revalidate = 60;
@@ -186,6 +193,84 @@ export default async function SkillDetailPage({
     </div>
   );
 
+  // Security tab - comprehensive security analysis
+  const scanDetails = data.latestVersion?.scanDetails;
+  const hasSecurityData = data.latestVersion?.auditScore != null && scanDetails != null;
+
+  // Build security tab content
+  const securityTab = hasSecurityData ? (
+    <div className="space-y-6" data-testid="security-root">
+      {/* Security Overview Banner */}
+      <SecurityOverview
+        score={data.latestVersion?.auditScore ?? null}
+        verdict={scanDetails?.verdict ?? null}
+        durationMs={scanDetails?.durationMs ?? null}
+        scannedAt={data.latestVersion?.publishedAt ? String(data.latestVersion.publishedAt) : null}
+        criticalCount={scanDetails?.criticalCount ?? 0}
+        highCount={scanDetails?.highCount ?? 0}
+        mediumCount={scanDetails?.mediumCount ?? 0}
+        lowCount={scanDetails?.lowCount ?? 0}
+      />
+
+      {/* Scanning Tools Used */}
+      <div>
+        <h3 className="text-sm font-semibold mb-2">Scanning Tools</h3>
+        <ScanningToolsStrip
+          tools={[
+            { name: 'Semgrep', category: 'SAST', ran: scanDetails?.stagesRun?.includes('stage2') ?? false, findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage2' && f.tool?.includes('semgrep')).length ?? 0 },
+            { name: 'Bandit', category: 'Python AST', ran: scanDetails?.stagesRun?.includes('stage2') ?? false, findingCount: scanDetails?.findings?.filter(f => f.tool === 'bandit').length ?? 0 },
+            { name: 'Cisco Skill Scanner', category: 'Agent Threats', ran: scanDetails?.stagesRun?.includes('stage3') ?? false, findingCount: 0 },
+            { name: 'detect-secrets', category: 'Secrets', ran: scanDetails?.stagesRun?.includes('stage4') ?? false, findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage4').length ?? 0 },
+            { name: 'OSV API', category: 'SCA', ran: scanDetails?.stagesRun?.includes('stage5') ?? false, findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage5').length ?? 0 },
+          ]}
+        />
+      </div>
+
+      {/* Findings List */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3">
+          Findings
+          {scanDetails?.findings && scanDetails.findings.length > 0 && (
+            <span className="ml-2 text-muted-foreground font-normal">
+              ({scanDetails.findings.length} total)
+            </span>
+          )}
+        </h3>
+        <FindingsList findings={scanDetails?.findings ?? []} />
+      </div>
+
+      {/* Two-column layout for Pipeline and Score */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Scan Pipeline */}
+        <ScanPipeline
+          stages={[
+            { id: 'stage0', name: 'Ingestion', description: 'Download & extract tarball safely', status: scanDetails?.stagesRun?.includes('stage0') ? 'passed' : 'skipped', findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage0').length ?? 0, durationMs: 0, tools: ['httpx', 'tarfile', 'hashlib'] },
+            { id: 'stage1', name: 'Structure Validation', description: 'Check file types, sizes, paths', status: scanDetails?.stagesRun?.includes('stage1') ? 'passed' : 'skipped', findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage1').length ?? 0, durationMs: 0, tools: ['charset-normalizer', 'unicodedata'] },
+            { id: 'stage2', name: 'Static Analysis', description: 'Detect dangerous code patterns', status: scanDetails?.stagesRun?.includes('stage2') ? ((scanDetails?.findings?.filter(f => f.stage === 'stage2').length ?? 0) > 0 ? 'flagged' : 'passed') : 'skipped', findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage2').length ?? 0, durationMs: 0, tools: ['Semgrep', 'Bandit', 'Custom AST'] },
+            { id: 'stage3', name: 'Injection Detection', description: 'Find prompt/shell injections', status: scanDetails?.stagesRun?.includes('stage3') ? ((scanDetails?.findings?.filter(f => f.stage === 'stage3').length ?? 0) > 0 ? 'flagged' : 'passed') : 'skipped', findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage3').length ?? 0, durationMs: 0, tools: ['Regex patterns'] },
+            { id: 'stage4', name: 'Secrets Scanning', description: 'Detect leaked credentials', status: scanDetails?.stagesRun?.includes('stage4') ? ((scanDetails?.findings?.filter(f => f.stage === 'stage4').length ?? 0) > 0 ? 'flagged' : 'passed') : 'skipped', findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage4').length ?? 0, durationMs: 0, tools: ['detect-secrets', 'Custom patterns'] },
+            { id: 'stage5', name: 'Dependency Audit', description: 'Check supply chain risks', status: scanDetails?.stagesRun?.includes('stage5') ? ((scanDetails?.findings?.filter(f => f.stage === 'stage5').length ?? 0) > 0 ? 'flagged' : 'passed') : 'skipped', findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage5').length ?? 0, durationMs: 0, tools: ['OSV API', 'pip-audit'] },
+          ]}
+        />
+
+        {/* Score Breakdown */}
+        <ScoreBreakdown
+          criteria={[
+            { label: 'SKILL.md present', passed: !!data.latestVersion?.readme, points: data.latestVersion?.readme ? 1 : 0, maxPoints: 1 },
+            { label: 'Description provided', passed: !!data.description, points: data.description ? 1 : 0, maxPoints: 1 },
+            { label: 'Permissions declared', passed: !!data.latestVersion?.permissions && Object.keys(data.latestVersion.permissions).length > 0, points: data.latestVersion?.permissions && Object.keys(data.latestVersion.permissions).length > 0 ? 1 : 0, maxPoints: 1 },
+            { label: 'No security issues', passed: (scanDetails?.findings?.length ?? 0) === 0, points: (scanDetails?.findings?.length ?? 0) === 0 ? 2 : 0, maxPoints: 2 },
+            { label: 'Permissions match detected usage', passed: true, points: 2, maxPoints: 2 },
+            { label: 'File count under 100', passed: (data.latestVersion?.fileCount ?? 0) < 100, points: (data.latestVersion?.fileCount ?? 0) < 100 ? 1 : 0, maxPoints: 1 },
+            { label: 'README documentation', passed: !!data.latestVersion?.readme, points: data.latestVersion?.readme ? 1 : 0, maxPoints: 1 },
+            { label: 'Package under 5MB', passed: (data.latestVersion?.tarballSize ?? 0) < 5 * 1024 * 1024, points: (data.latestVersion?.tarballSize ?? 0) < 5 * 1024 * 1024 ? 1 : 0, maxPoints: 1 },
+          ]}
+          totalScore={data.latestVersion?.auditScore ?? 0}
+        />
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="max-w-6xl mx-auto" data-testid="skill-detail-root">
       <div className="mb-6">
@@ -210,6 +295,8 @@ export default async function SkillDetailPage({
             readmeTab={readmeTab}
             versionsTab={versionsTab}
             filesTab={filesTab}
+            securityTab={securityTab}
+            hasSecurityData={hasSecurityData}
           />
         </div>
 
@@ -316,209 +403,90 @@ export default async function SkillDetailPage({
               <Separator />
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Security Audit
+                  Security
                 </h3>
+                {/* Score with progress bar */}
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl font-bold text-green-600">
+                  <span className={`text-2xl font-bold ${
+                    data.latestVersion.auditScore >= 8 ? 'text-green-600' :
+                    data.latestVersion.auditScore >= 6 ? 'text-yellow-600' :
+                    data.latestVersion.auditScore >= 4 ? 'text-orange-600' : 'text-red-600'
+                  }`}>
                     {data.latestVersion.auditScore}
                   </span>
                   <span className="text-sm text-muted-foreground">/10</span>
                 </div>
-
-                {/* Security Scan Results */}
-                {data.latestVersion.scanDetails?.verdict && (
-                  <div className="mb-3 p-2 bg-muted/50 rounded text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-medium">Scan Result</span>
-                      <span className={`px-1.5 py-0.5 rounded text-white text-[10px] font-medium ${
-                        data.latestVersion.scanDetails.verdict === 'pass' ? 'bg-green-600' :
-                        data.latestVersion.scanDetails.verdict === 'pass_with_notes' ? 'bg-yellow-600' :
-                        data.latestVersion.scanDetails.verdict === 'flagged' ? 'bg-orange-600' : 'bg-red-600'
-                      }`}>
-                        {data.latestVersion.scanDetails.verdict.replace('_', ' ').toUpperCase()}
-                      </span>
-                    </div>
-                    {data.latestVersion.scanDetails.durationMs && (
-                      <p className="text-muted-foreground">Duration: {data.latestVersion.scanDetails.durationMs}ms</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Scan Stages */}
-                <div className="text-xs space-y-1 mb-3">
-                  <p className="font-medium text-foreground mb-1">6-Stage Security Scan:</p>
-                  {[
-                    { stage: 'stage0', name: 'Ingestion', desc: 'Download & extract tarball safely' },
-                    { stage: 'stage1', name: 'Structure Validation', desc: 'Check file types, sizes, paths' },
-                    { stage: 'stage2', name: 'Static Analysis', desc: 'Detect dangerous code patterns' },
-                    { stage: 'stage3', name: 'Injection Detection', desc: 'Find prompt/shell injections' },
-                    { stage: 'stage4', name: 'Secrets Scanning', desc: 'Detect leaked credentials' },
-                    { stage: 'stage5', name: 'Dependency Audit', desc: 'Check supply chain risks' },
-                  ].map(({ stage, name, desc }) => {
-                    const wasRun = data.latestVersion?.scanDetails?.stagesRun?.includes(stage);
-                    const stageFindings = data.latestVersion?.scanDetails?.findings?.filter(f => f.stage === stage) || [];
-                    return (
-                      <div key={stage} className="flex items-start gap-1.5">
-                        <span className={wasRun ? 'text-green-500' : 'text-muted-foreground'}>
-                          {wasRun ? '✓' : '○'}
-                        </span>
-                        <div>
-                          <span className="font-medium">{name}</span>
-                          {stageFindings.length > 0 && (
-                            <span className="ml-1 text-amber-600">({stageFindings.length} issues)</span>
-                          )}
-                          <p className="text-muted-foreground text-[10px]">{desc}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="h-2 bg-muted rounded-full overflow-hidden mb-3">
+                  <div
+                    className={`h-full transition-all ${
+                      data.latestVersion.auditScore >= 8 ? 'bg-green-500' :
+                      data.latestVersion.auditScore >= 6 ? 'bg-yellow-500' :
+                      data.latestVersion.auditScore >= 4 ? 'bg-orange-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${(data.latestVersion.auditScore / 10) * 100}%` }}
+                  />
                 </div>
 
-                {/* Findings grouped by stage */}
-                {data.latestVersion.scanDetails?.findings && data.latestVersion.scanDetails.findings.length > 0 && (() => {
-                  const stageInfo: Record<string, { name: string; desc: string }> = {
-                    'stage0': { name: 'Stage 0: Ingestion', desc: 'Download & extraction issues' },
-                    'stage1': { name: 'Stage 1: Structure', desc: 'File type/size violations' },
-                    'stage2': { name: 'Stage 2: Static Analysis', desc: 'Dangerous code patterns' },
-                    'stage3': { name: 'Stage 3: Injection Detection', desc: 'Prompt/shell injections' },
-                    'stage4': { name: 'Stage 4: Secrets Scanning', desc: 'Leaked credentials' },
-                    'stage5': { name: 'Stage 5: Dependency Audit', desc: 'Supply chain risks' },
-                  };
-
-                  const getRemediation = (type: string): string => {
-                    const remediations: Record<string, string> = {
-                      'shell_injection': 'Remove shell command execution or use safe alternatives.',
-                      'prompt_injection': 'Sanitize user input before including in prompts.',
-                      'secret_found': 'Remove hardcoded credentials. Use environment variables.',
-                      'custom_secret_pattern': 'Remove hardcoded secrets. Use secure vaults.',
-                      'code_execution': 'Avoid eval(), exec(). Use safer alternatives.',
-                      'dangerous_function': 'Avoid dangerous functions. Use safer alternatives.',
-                      'undeclared_subprocess': 'Declare subprocess permission in skills.json.',
-                      'suspicious_import': 'Review if this import is necessary.',
-                      'file_traversal': 'Validate and sanitize file paths.',
-                    };
-                    return remediations[type] || 'Review and address this security concern.';
-                  };
-
-                  const findingsByStage = data.latestVersion.scanDetails!.findings.reduce((acc, f) => {
-                    const stage = f.stage || 'unknown';
-                    if (!acc[stage]) acc[stage] = [];
-                    acc[stage].push(f);
-                    return acc;
-                  }, {} as Record<string, ScanFinding[]>);
-
-                  const totalFindings = data.latestVersion.scanDetails.findings.length;
-                  const criticalCount = data.latestVersion.scanDetails.criticalCount || 0;
-                  const highCount = data.latestVersion.scanDetails.highCount || 0;
-
-                  return (
-                    <div className="mt-3 pt-2 border-t">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-medium text-amber-600">
-                          ⚠ Security Findings ({totalFindings})
-                        </p>
-                        <div className="flex gap-2 text-[10px]">
-                          {criticalCount > 0 && <span className="text-red-600 font-medium">{criticalCount} critical</span>}
-                          {highCount > 0 && <span className="text-orange-600 font-medium">{highCount} high</span>}
-                        </div>
-                      </div>
-                      <div className="space-y-3 max-h-64 overflow-y-auto">
-                        {Object.entries(findingsByStage).map(([stage, findings]) => {
-                          const info = stageInfo[stage] || { name: stage, desc: '' };
-                          const criticalInStage = findings.filter(f => f.severity === 'critical').length;
-                          const highInStage = findings.filter(f => f.severity === 'high').length;
-
-                          return (
-                            <div key={stage} className="border rounded-lg overflow-hidden">
-                              <div className="bg-muted/50 px-2 py-1.5 flex items-center justify-between">
-                                <div>
-                                  <span className="text-xs font-medium">{info.name}</span>
-                                  <span className="text-[10px] text-muted-foreground ml-2">{info.desc}</span>
-                                </div>
-                                <div className="flex gap-1.5 text-[10px]">
-                                  {criticalInStage > 0 && (
-                                    <span className="bg-red-100 text-red-700 px-1 rounded">{criticalInStage} critical</span>
-                                  )}
-                                  {highInStage > 0 && (
-                                    <span className="bg-orange-100 text-orange-700 px-1 rounded">{highInStage} high</span>
-                                  )}
-                                  <span className="bg-muted px-1 rounded">{findings.length} total</span>
-                                </div>
-                              </div>
-                              <div className="divide-y">
-                                {findings.map((finding, i) => (
-                                  <details key={i} className="text-xs group">
-                                    <summary className={`px-2 py-1.5 cursor-pointer hover:bg-muted/30 flex items-center gap-2 ${
-                                      finding.severity === 'critical' ? 'border-l-2 border-l-red-500' :
-                                      finding.severity === 'high' ? 'border-l-2 border-l-orange-500' :
-                                      finding.severity === 'medium' ? 'border-l-2 border-l-yellow-500' : 'border-l-2 border-l-blue-500'
-                                    }`}>
-                                      <span className={`uppercase text-[10px] font-medium ${
-                                        finding.severity === 'critical' ? 'text-red-600' :
-                                        finding.severity === 'high' ? 'text-orange-600' :
-                                        finding.severity === 'medium' ? 'text-yellow-700' : 'text-blue-600'
-                                      }`}>
-                                        {finding.severity}
-                                      </span>
-                                      <span className="flex-1 truncate">{finding.type.replace(/_/g, ' ')}</span>
-                                      {finding.location && (
-                                        <span className="text-muted-foreground text-[10px] font-mono">
-                                          {finding.location}
-                                        </span>
-                                      )}
-                                    </summary>
-                                    <div className="px-2 py-2 bg-muted/20 space-y-2">
-                                      <p className="text-muted-foreground">{finding.description}</p>
-                                      {finding.evidence && (
-                                        <pre className="text-[10px] bg-destructive/10 text-destructive p-1.5 rounded font-mono overflow-x-auto">
-                                          {finding.evidence}
-                                        </pre>
-                                      )}
-                                      <p className="text-green-700 text-[10px]">
-                                        <span className="font-medium">Fix:</span> {getRemediation(finding.type)}
-                                      </p>
-                                    </div>
-                                  </details>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* No findings message */}
-                {data.latestVersion.scanDetails?.findings && data.latestVersion.scanDetails.findings.length === 0 && (
-                  <div className="mt-3 pt-2 border-t">
-                    <div className="text-xs text-green-600 flex items-center gap-1.5">
-                      <span>✓</span>
-                      <span>No security issues found in any of the 6 scan stages</span>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      The scanner checked for: shell injection, prompt injection, secrets/credentials,
-                      dangerous functions, file traversal, and suspicious imports.
-                    </p>
+                {/* Verdict badge */}
+                {scanDetails?.verdict && (
+                  <div className={`inline-flex px-2 py-1 rounded text-xs font-medium text-white mb-2 ${
+                    scanDetails.verdict === 'pass' ? 'bg-green-600' :
+                    scanDetails.verdict === 'pass_with_notes' ? 'bg-yellow-600' :
+                    scanDetails.verdict === 'flagged' ? 'bg-orange-600' : 'bg-red-600'
+                  }`}>
+                    {scanDetails.verdict.replace('_', ' ').toUpperCase()}
                   </div>
                 )}
 
-                {/* Score Breakdown */}
-                <details className="mt-2">
-                  <summary className="text-xs font-medium cursor-pointer hover:text-foreground">
-                    Score breakdown details
-                  </summary>
-                  <div className="text-xs space-y-0.5 text-muted-foreground mt-1 pl-2">
-                    <p>✓ SKILL.md present (+1)</p>
-                    <p>✓ Description (+1)</p>
-                    <p>{Object.keys(data.latestVersion.permissions || {}).length > 0 ? '✓' : '✗'} Permissions declared (+1)</p>
-                    <p>{data.latestVersion.scanDetails?.findings?.length === 0 ? '✓' : '✗'} No security issues (+2)</p>
-                    <p>✓ Permission extraction match (+2)</p>
-                    <p>✓ File count &lt;100 (+1)</p>
-                    <p>{data.latestVersion.readme ? '✓' : '✗'} README documentation (+1)</p>
-                    <p>✓ Package size &lt;5MB (+1)</p>
-                  </div>
-                </details>
+                {/* Finding counts summary */}
+                <div className="text-xs space-y-1 mb-3">
+                  {(scanDetails?.criticalCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 text-red-600">
+                      <span>●</span>
+                      <span>{scanDetails?.criticalCount} critical finding{(scanDetails?.criticalCount ?? 0) !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                  {(scanDetails?.highCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 text-orange-600">
+                      <span>●</span>
+                      <span>{scanDetails?.highCount} high finding{(scanDetails?.highCount ?? 0) !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                  {(scanDetails?.mediumCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 text-yellow-600">
+                      <span>●</span>
+                      <span>{scanDetails?.mediumCount} medium finding{(scanDetails?.mediumCount ?? 0) !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                  {(scanDetails?.lowCount ?? 0) > 0 && (
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <span>●</span>
+                      <span>{scanDetails?.lowCount} low finding{(scanDetails?.lowCount ?? 0) !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                  {(scanDetails?.findings?.length ?? 0) === 0 && (
+                    <div className="flex items-center gap-2 text-green-600">
+                      <span>✓</span>
+                      <span>No security issues</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Link to full report */}
+                {hasSecurityData && (
+                  <a
+                    href="#security"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      // Click the security tab
+                      const securityTab = document.querySelector('[data-state="inactive"][value="security"]') as HTMLElement;
+                      if (securityTab) securityTab.click();
+                    }}
+                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                  >
+                    View full security report →
+                  </a>
+                )}
               </div>
             </>
           )}

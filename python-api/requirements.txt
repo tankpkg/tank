@@ -12,12 +12,14 @@ charset-normalizer>=3.0.0
 # Database (for scan storage)
 psycopg[binary]>=3.2.0
 
-# Static analysis tools (optional - for stage2)
-# semgrep>=1.50.0
-# bandit>=1.7.0
+# Static analysis tools (stage2 - SAST)
+bandit>=1.8.0
 
-# Secrets detection (optional - for stage4)
-# detect-secrets>=1.4.0
+# Cisco AI Defense Skill Scanner (stage3 - behavioral analysis)
+skill-scanner>=1.0.0
 
-# Dependency auditing (optional - for stage5)
-# pip-audit>=2.6.0
+# Secrets detection (stage4)
+detect-secrets>=1.5.0
+
+# Dependency auditing (stage5)
+pip-audit>=2.7.0

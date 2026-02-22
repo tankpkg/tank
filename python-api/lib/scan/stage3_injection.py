@@ -1,7 +1,8 @@
 """Stage 3: Prompt Injection Detection
 
 Detects prompt injection attempts in markdown files using regex patterns,
-heuristic scoring, hidden content detection, and Claude-specific format analysis.
+heuristic scoring, hidden content detection, Claude-specific format analysis,
+and the Cisco skill-scanner for behavioral analysis.
 """
 
 import re
@@ -10,6 +11,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from lib.scan.models import Finding, IngestResult, StageResult
+from lib.scan.cisco_scanner import run_skill_scanner
 
 # ==============================================================================
 # PROMPT INJECTION REGEX PATTERNS
@@ -350,6 +352,23 @@ def stage3_detect_injection(ingest_result: IngestResult) -> StageResult:
     for md_file in md_files:
         md_findings = analyze_markdown_file(temp_dir, md_file)
         findings.extend(md_findings)
+
+    # Run Cisco skill-scanner for behavioral analysis (cross-file dataflow)
+    # This detects patterns like: read creds in file A, encode in B, send to network in C
+    try:
+        cisco_findings = run_skill_scanner(temp_dir, use_behavioral=True)
+        findings.extend(cisco_findings)
+    except Exception as e:
+        # Non-blocking: continue if Cisco scanner fails
+        findings.append(Finding(
+            stage="stage3",
+            severity="low",
+            type="cisco_scanner_error",
+            description=f"Cisco skill-scanner encountered an error: {str(e)}",
+            location=None,
+            confidence=0.5,
+            tool="stage3_injection",
+        ))
 
     # Determine status
     has_critical = any(f.severity == "critical" for f in findings)
