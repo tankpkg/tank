@@ -132,6 +132,8 @@ export async function POST(request: Request) {
     orgId = org.id;
   }
 
+  const resolvedVisibility = manifest.visibility ?? (orgId ? 'private' : 'public');
+
   // 7. Find or create skill record
   const existingSkills = await db
     .select()
@@ -149,9 +151,11 @@ export async function POST(request: Request) {
         repositoryUrl: manifest.repository ?? null,
         publisherId: verified.userId,
         orgId,
+        visibility: resolvedVisibility,
       })
       .returning();
     skill = newSkill;
+
   } else {
     const updates: Record<string, string | null> = {};
     if (manifest.description !== undefined) {
@@ -160,11 +164,15 @@ export async function POST(request: Request) {
     if (manifest.repository !== undefined) {
       updates.repositoryUrl = manifest.repository;
     }
+    if (manifest.visibility !== undefined) {
+      updates.visibility = manifest.visibility;
+    }
     if (Object.keys(updates).length > 0) {
       await db
         .update(skills)
         .set(updates)
         .where(eq(skills.id, skill.id));
+
     }
   }
 

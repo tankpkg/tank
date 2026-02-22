@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { db } from '@/lib/db';
 import { skills, skillVersions, skillDownloads, scanResults, scanFindings } from '@/lib/db/schema';
 import { supabaseAdmin } from '@/lib/supabase';
+import { resolveRequestUserId } from '@/lib/auth-helpers';
 
 async function recordDownload(
   request: Request,
@@ -51,14 +52,19 @@ export async function GET(
   { params }: { params: Promise<{ name: string; version: string }> },
 ) {
   try {
+    const requesterUserId = await resolveRequestUserId(request);
     const { name: rawName, version } = await params;
     const name = decodeURIComponent(rawName);
+    const visibilityClause = requesterUserId
+      ? sql`(s.visibility = 'public' OR s.publisher_id = ${requesterUserId} OR (s.visibility = 'private' AND s.org_id IS NOT NULL AND EXISTS (SELECT 1 FROM "member" m WHERE m.organization_id = s.org_id AND m.user_id = ${requesterUserId})))`
+      : sql`s.visibility = 'public'`;
 
     // Query 1: skill + version in one shot
     const skillVersionRows = await db.execute(sql`
       SELECT
         s.id AS "skillId",
         s.name,
+        s.visibility,
         s.description,
         sv.id AS "versionId",
         sv.version,
@@ -70,17 +76,18 @@ export async function GET(
         sv.created_at AS "publishedAt"
       FROM skills s
       INNER JOIN skill_versions sv ON sv.skill_id = s.id AND sv.version = ${version}
-      WHERE s.name = ${name}
+      WHERE s.name = ${name} AND ${visibilityClause}
       LIMIT 1
     `);
 
     if (skillVersionRows.length === 0) {
       // Distinguish skill-not-found vs version-not-found
-      const skillCheck = await db
-        .select({ id: skills.id })
-        .from(skills)
-        .where(eq(skills.name, name))
-        .limit(1);
+      const skillCheck = await db.execute(sql`
+        SELECT s.id
+        FROM skills s
+        WHERE s.name = ${name} AND ${visibilityClause}
+        LIMIT 1
+      `);
 
       if (skillCheck.length === 0) {
         return NextResponse.json({ error: 'Skill not found' }, { status: 404 });

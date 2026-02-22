@@ -36,6 +36,13 @@
       "when": 1771679800000,
       "tag": "0004_admin_bootstrap",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1771790955715,
+      "tag": "0005_tan_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

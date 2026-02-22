@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { skills, user } from '@/lib/db/schema';
+import { resolveRequestUserId } from '@/lib/auth-helpers';
 
 /**
  * GET /api/v1/skills/[name] — single-query skill metadata with latest version.
@@ -15,13 +16,18 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ name: string }> },
 ) {
+  const requesterUserId = await resolveRequestUserId(_request);
   const { name: rawName } = await params;
   const name = decodeURIComponent(rawName);
+  const visibilityClause = requesterUserId
+    ? sql`(s.visibility = 'public' OR s.publisher_id = ${requesterUserId} OR (s.visibility = 'private' AND s.org_id IS NOT NULL AND EXISTS (SELECT 1 FROM "member" m WHERE m.organization_id = s.org_id AND m.user_id = ${requesterUserId})))`
+    : sql`s.visibility = 'public'`;
 
   const results = await db.execute(sql`
     SELECT
       s.name,
       s.description,
+      s.visibility,
       sv.version AS "latestVersion",
       coalesce(u.name, '') AS "publisherName",
       s.created_at AS "createdAt",
@@ -32,7 +38,7 @@ export async function GET(
       AND sv.created_at = (
         SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
       )
-    WHERE s.name = ${name}
+    WHERE s.name = ${name} AND ${visibilityClause}
     LIMIT 1
   `);
 
@@ -45,6 +51,7 @@ export async function GET(
   return NextResponse.json({
     name: row.name as string,
     description: row.description as string | null,
+    visibility: row.visibility as 'public' | 'private',
     latestVersion: (row.latestVersion as string) ?? null,
     publisher: {
       name: (row.publisherName as string) || null,

@@ -49,8 +49,12 @@ export async function searchCommand(options: SearchOptions): Promise<void> {
 
   let res: Response;
   try {
+    const headers: Record<string, string> = { 'User-Agent': USER_AGENT };
+    if (config.token) {
+      headers.Authorization = `Bearer ${config.token}`;
+    }
     res = await fetch(url, {
-    headers: { 'User-Agent': USER_AGENT },
+      headers,
     });
   } catch (err) {
     throw new Error(`Network error searching: ${err instanceof Error ? err.message : String(err)}`);

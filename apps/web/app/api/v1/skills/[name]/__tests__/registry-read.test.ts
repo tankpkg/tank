@@ -83,6 +83,11 @@ vi.mock('@/lib/db/auth-schema', () => ({
   },
 }));
 
+vi.mock('@/lib/auth-helpers', () => ({
+  resolveRequestUserId: vi.fn().mockResolvedValue(null),
+  canReadSkill: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((col, val) => ({ col, val, type: 'eq' })),
   and: vi.fn((...conditions) => ({ conditions, type: 'and' })),
@@ -126,6 +131,7 @@ describe('GET /api/v1/skills/[name]', () => {
       name: 'my-skill',
       description: 'A test skill',
       latestVersion: '2.0.0',
+      visibility: 'public',
       publisherName: 'Test User',
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-15T00:00:00Z',
@@ -139,6 +145,7 @@ describe('GET /api/v1/skills/[name]', () => {
     const data = await response.json();
     expect(data.name).toBe('my-skill');
     expect(data.description).toBe('A test skill');
+    expect(data.visibility).toBe('public');
     expect(data.latestVersion).toBe('2.0.0');
     expect(data.publisher).toBeDefined();
     expect(data.publisher.name).toBe('Test User');
@@ -163,6 +170,7 @@ describe('GET /api/v1/skills/[name]', () => {
       name: '@myorg/my-skill',
       description: 'A scoped skill',
       latestVersion: '1.0.0',
+      visibility: 'public',
       publisherName: 'Test User',
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-15T00:00:00Z',
@@ -182,6 +190,7 @@ describe('GET /api/v1/skills/[name]', () => {
       name: 'my-skill',
       description: 'A test skill',
       latestVersion: null,
+      visibility: 'public',
       publisherName: 'Test User',
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-15T00:00:00Z',
@@ -229,6 +238,7 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
     skillId: 'skill-1',
     name: 'my-skill',
     description: 'A test skill',
+    visibility: 'public',
     versionId: 'version-1',
     version: '1.0.0',
     integrity: 'sha512-abc123',
@@ -278,7 +288,7 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
     // skill+version execute returns empty
     setupSkillVersionExecute(null);
     // Fallback skill check also returns empty
-    mockLimit.mockResolvedValueOnce([]);
+    mockExecute.mockResolvedValueOnce([]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/nonexistent/1.0.0');
@@ -295,7 +305,7 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
     // skill+version execute returns empty
     setupSkillVersionExecute(null);
     // Fallback skill check finds the skill
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-1' }]);
+    mockExecute.mockResolvedValueOnce([{ id: 'skill-1' }]);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
     const request = makeGetRequest('http://localhost:3000/api/v1/skills/my-skill/9.9.9');

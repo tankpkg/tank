@@ -1,7 +1,7 @@
 import { auth } from './auth';
 import { db } from './db';
-import { userStatus } from './db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { userStatus, member } from './db/schema';
+import { and, desc, eq } from 'drizzle-orm';
 
 export interface VerifiedApiKey {
   userId: string;
@@ -60,4 +60,53 @@ export async function verifyCliAuth(request: Request): Promise<VerifiedApiKey | 
   } catch {
     return null;
   }
+}
+
+export interface SkillAccessSubject {
+  visibility: 'public' | 'private';
+  publisherId: string;
+  orgId: string | null;
+}
+
+export async function resolveRequestUserId(request: Request): Promise<string | null> {
+  const cliVerified = await verifyCliAuth(request);
+  if (cliVerified) {
+    return cliVerified.userId;
+  }
+
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    return session?.user.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function canReadSkill(
+  skill: SkillAccessSubject,
+  userId: string | null,
+): Promise<boolean> {
+  if (skill.visibility === 'public') {
+    return true;
+  }
+
+  if (!userId) {
+    return false;
+  }
+
+  if (skill.publisherId === userId) {
+    return true;
+  }
+
+  if (!skill.orgId) {
+    return false;
+  }
+
+  const membership = await db
+    .select({ id: member.id })
+    .from(member)
+    .where(and(eq(member.organizationId, skill.orgId), eq(member.userId, userId)))
+    .limit(1);
+
+  return membership.length > 0;
 }

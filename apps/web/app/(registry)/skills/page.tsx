@@ -87,6 +87,9 @@ function SkillCard({ skill }: { skill: SkillSearchResult }) {
             {skill.latestVersion && (
               <Badge variant="secondary">v{skill.latestVersion}</Badge>
             )}
+            {skill.visibility === 'private' && (
+              <Badge variant="outline">Private</Badge>
+            )}
             {skill.auditScore !== null && (
               <Badge
                 variant={skill.auditScore >= 7 ? 'default' : 'destructive'}

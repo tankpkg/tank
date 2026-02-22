@@ -10,6 +10,7 @@ export interface InfoOptions {
 interface SkillMetadata {
   name: string;
   description?: string;
+  visibility?: 'public' | 'private';
   latestVersion: string;
   publisher: { displayName: string };
   createdAt: string;
@@ -48,12 +49,16 @@ export async function infoCommand(options: InfoOptions): Promise<void> {
 
   const encodedName = encodeURIComponent(name);
   const metaUrl = `${config.registry}/api/v1/skills/${encodedName}`;
+  const headers: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (config.token) {
+    headers.Authorization = `Bearer ${config.token}`;
+  }
 
   // 1. Fetch skill metadata
   let metaRes: Response;
   try {
     metaRes = await fetch(metaUrl, {
-    headers: { 'User-Agent': USER_AGENT },
+      headers,
     });
   } catch (err) {
     throw new Error(`Network error fetching skill info: ${err instanceof Error ? err.message : String(err)}`);
@@ -77,7 +82,7 @@ export async function infoCommand(options: InfoOptions): Promise<void> {
   let versionRes: Response;
   try {
     versionRes = await fetch(versionUrl, {
-    headers: { 'User-Agent': USER_AGENT },
+      headers,
     });
   } catch (err) {
     throw new Error(`Network error fetching version details: ${err instanceof Error ? err.message : String(err)}`);
@@ -98,6 +103,9 @@ export async function infoCommand(options: InfoOptions): Promise<void> {
   }
 
   console.log(labelValue('Version:', meta.latestVersion));
+  if (meta.visibility) {
+    console.log(labelValue('Visibility:', meta.visibility));
+  }
   console.log(labelValue('Publisher:', meta.publisher?.displayName ?? 'unknown'));
 
   if (versionData?.auditScore != null) {

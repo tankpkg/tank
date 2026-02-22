@@ -24,6 +24,7 @@ describe('init command', () => {
     mockConfirm = prompts.confirm as ReturnType<typeof vi.fn>;
     mockInput.mockReset();
     mockConfirm.mockReset();
+    mockConfirm.mockResolvedValue(false);
 
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -122,13 +123,13 @@ describe('init command', () => {
     const { initCommand } = await import('../commands/init.js');
     fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
 
-    mockConfirm.mockResolvedValueOnce(true);
+    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     mockPrompts('new-skill', '0.1.0', '', '');
 
     await initCommand();
 
     expect(readOutput().name).toBe('new-skill');
-    expect(mockConfirm).toHaveBeenCalledTimes(1);
+    expect(mockConfirm).toHaveBeenCalledTimes(2);
   });
 
   it('aborts when user declines overwrite', async () => {

@@ -5,6 +5,7 @@ import pako from 'pako';
 import { db } from '@/lib/db';
 import { skills, skillVersions } from '@/lib/db/schema';
 import { supabaseAdmin } from '@/lib/supabase';
+import { canReadSkill, resolveRequestUserId } from '@/lib/auth-helpers';
 
 export async function GET(
   request: Request,
@@ -14,12 +15,16 @@ export async function GET(
     const { name: rawName, version, path: filePathParts } = await params;
     const name = decodeURIComponent(rawName);
     const filePath = filePathParts.join('/');
+    const requesterUserId = await resolveRequestUserId(request);
 
     const skillVersionRows = await db
       .select({
         skillId: skills.id,
         versionId: skillVersions.id,
         tarballPath: skillVersions.tarballPath,
+        visibility: skills.visibility,
+        publisherId: skills.publisherId,
+        orgId: skills.orgId,
       })
       .from(skills)
       .innerJoin(skillVersions, and(
@@ -33,7 +38,17 @@ export async function GET(
       return NextResponse.json({ error: 'Skill or version not found' }, { status: 404 });
     }
 
-    const { tarballPath } = skillVersionRows[0];
+    const { tarballPath, visibility, publisherId, orgId } = skillVersionRows[0];
+    const normalizedVisibility = visibility === 'private' ? 'private' : 'public';
+
+    const allowed = await canReadSkill(
+      { visibility: normalizedVisibility, publisherId, orgId },
+      requesterUserId,
+    );
+
+    if (!allowed) {
+      return NextResponse.json({ error: 'Skill or version not found' }, { status: 404 });
+    }
 
     const { data: downloadData, error: downloadError } = await supabaseAdmin.storage
       .from('packages')

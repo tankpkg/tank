@@ -1,11 +1,14 @@
 import type { Permissions } from '../schemas/permissions.js';
 
+export type SkillVisibility = 'public' | 'private';
+
 export interface PublishStartRequest {
   manifest: {
     name: string;
     version: string;
     description?: string;
     permissions?: Permissions;
+    visibility?: SkillVisibility;
   };
 }
 
@@ -24,6 +27,7 @@ export interface PublishConfirmRequest {
 export interface SkillInfoResponse {
   name: string;
   description: string | null;
+  visibility?: SkillVisibility;
   latestVersion: string;
   versions: string[];
   permissions: Permissions | null;
@@ -35,6 +39,7 @@ export interface SkillInfoResponse {
 export interface SearchResult {
   name: string;
   description: string | null;
+  visibility?: SkillVisibility;
   version: string;
   auditScore: number | null;
   downloads: number;

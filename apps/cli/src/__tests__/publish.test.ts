@@ -179,6 +179,58 @@ describe('publishCommand', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it('sets manifest.visibility=private when private option is enabled', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          uploadUrl: 'https://storage.example.com/upload?token=abc',
+          skillId: 'skill-123',
+          versionId: 'version-456',
+        }),
+        { status: 200 },
+      ),
+    );
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 200 }));
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true, name: '@test-org/my-skill', version: '1.0.0' }), { status: 200 }),
+    );
+
+    await publishCommand({ directory: tmpDir, configDir, private: true });
+
+    const [, step1Opts] = mockFetch.mock.calls[0];
+    const step1Body = JSON.parse(step1Opts.body);
+    expect(step1Body.manifest.visibility).toBe('private');
+  });
+
+  it('uses explicit visibility option when provided', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          uploadUrl: 'https://storage.example.com/upload?token=abc',
+          skillId: 'skill-123',
+          versionId: 'version-456',
+        }),
+        { status: 200 },
+      ),
+    );
+    mockFetch.mockResolvedValueOnce(new Response(null, { status: 200 }));
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ success: true, name: '@test-org/my-skill', version: '1.0.0' }), { status: 200 }),
+    );
+
+    await publishCommand({ directory: tmpDir, configDir, visibility: 'public' });
+
+    const [, step1Opts] = mockFetch.mock.calls[0];
+    const step1Body = JSON.parse(step1Opts.body);
+    expect(step1Body.manifest.visibility).toBe('public');
+  });
+
   it('errors when not logged in (no token)', async () => {
     const { publishCommand } = await import('../commands/publish.js');
 

@@ -38,9 +38,18 @@ export function getConfig(configDir?: string): TankConfig {
   try {
     const raw = fs.readFileSync(configPath, 'utf-8');
     const parsed = JSON.parse(raw) as Partial<TankConfig>;
-    return { ...DEFAULT_CONFIG, ...parsed };
+    const merged = { ...DEFAULT_CONFIG, ...parsed };
+    const envToken = process.env.TANK_TOKEN?.trim();
+    if (envToken) {
+      merged.token = envToken;
+    }
+    return merged;
   } catch {
-    return { ...DEFAULT_CONFIG };
+    const envToken = process.env.TANK_TOKEN?.trim();
+    return {
+      ...DEFAULT_CONFIG,
+      ...(envToken ? { token: envToken } : {}),
+    };
   }
 }
 

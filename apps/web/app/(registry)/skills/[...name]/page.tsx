@@ -277,6 +277,11 @@ export default async function SkillDetailPage({
               {data.latestVersion.version}
             </Badge>
           )}
+          {data.visibility === 'private' && (
+            <Badge variant="outline" className="text-xs">
+              Private
+            </Badge>
+          )}
         </div>
         {data.description && (
           <p className="text-muted-foreground">{data.description}</p>
@@ -395,6 +400,10 @@ export default async function SkillDetailPage({
                     data.publisher.name
                   )}
                 </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Visibility</dt>
+                <dd>{data.visibility}</dd>
               </div>
             </dl>
           </div>

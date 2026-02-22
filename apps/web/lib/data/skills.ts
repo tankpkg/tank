@@ -13,6 +13,8 @@
 
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,6 +65,7 @@ export interface SkillVersionSummary {
 export interface SkillDetailResult {
   name: string;
   description: string | null;
+  visibility: 'public' | 'private';
   repositoryUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -75,6 +78,7 @@ export interface SkillDetailResult {
 export interface SkillSearchResult {
   name: string;
   description: string | null;
+  visibility: 'public' | 'private';
   latestVersion: string | null;
   auditScore: number | null;
   publisher: string;
@@ -86,6 +90,23 @@ export interface SkillSearchResponse {
   page: number;
   limit: number;
   total: number;
+}
+
+async function resolveViewerUserId(): Promise<string | null> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    return session?.user.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function visibilityClause(userId: string | null) {
+  if (!userId) {
+    return sql`s.visibility = 'public'`;
+  }
+
+  return sql`(s.visibility = 'public' OR s.publisher_id = ${userId} OR (s.visibility = 'private' AND s.org_id IS NOT NULL AND EXISTS (SELECT 1 FROM "member" m WHERE m.organization_id = s.org_id AND m.user_id = ${userId})))`;
 }
 
 // ── Skill Detail ─────────────────────────────────────────────────────────────
@@ -100,6 +121,9 @@ export interface SkillSearchResponse {
 export async function getSkillDetail(
   name: string,
 ): Promise<SkillDetailResult | null> {
+  const viewerUserId = await resolveViewerUserId();
+  const visClause = visibilityClause(viewerUserId);
+
   // Single query: skill + publisher + all versions + scan data for latest version.
   // Scan subqueries use indexed lookups and only add ~1ms overhead.
   // This saves 2 round-trips to Supabase (~300-400ms).
@@ -107,6 +131,7 @@ export async function getSkillDetail(
     SELECT
       s.name AS "skillName",
       s.description AS "skillDescription",
+      s.visibility AS "skillVisibility",
       s.created_at AS "skillCreatedAt",
       s.updated_at AS "skillUpdatedAt",
       coalesce(u.name, '') AS "publisherName",
@@ -146,7 +171,7 @@ export async function getSkillDetail(
     FROM skills s
     LEFT JOIN "user" u ON u.id = s.publisher_id
     LEFT JOIN skill_versions sv ON sv.skill_id = s.id
-    WHERE s.name = ${name}
+    WHERE s.name = ${name} AND ${visClause}
     ORDER BY sv.created_at DESC
   `) as Record<string, unknown>[];
 
@@ -209,6 +234,7 @@ export async function getSkillDetail(
   const result: SkillDetailResult = {
     name: first.skillName as string,
     description: (first.skillDescription as string | null),
+    visibility: (first.skillVisibility as 'public' | 'private') ?? 'public',
     repositoryUrl: (first.skillRepositoryUrl as string | null),
     createdAt: new Date(first.skillCreatedAt as string),
     updatedAt: new Date(first.skillUpdatedAt as string),
@@ -234,13 +260,17 @@ export async function searchSkills(
   page: number,
   limit: number,
 ): Promise<SkillSearchResponse> {
+  const viewerUserId = await resolveViewerUserId();
+  const visClause = visibilityClause(viewerUserId);
   const offset = (page - 1) * limit;
 
   const searchCondition = q
     ? sql`to_tsvector('english', s.name || ' ' || coalesce(s.description, '')) @@ plainto_tsquery('english', ${q})`
     : undefined;
 
-  const whereClause = searchCondition ? sql`WHERE ${searchCondition}` : sql``;
+  const whereClause = searchCondition
+    ? sql`WHERE ${searchCondition} AND ${visClause}`
+    : sql`WHERE ${visClause}`;
 
   const orderClause = q
     ? sql`ts_rank(to_tsvector('english', s.name || ' ' || coalesce(s.description, '')), plainto_tsquery('english', ${q})) DESC`
@@ -252,6 +282,7 @@ export async function searchSkills(
     SELECT
       s.name,
       s.description,
+      s.visibility,
       sv.version AS "latestVersion",
       sv.audit_score AS "auditScore",
       coalesce(u.name, '') AS publisher,
@@ -275,6 +306,7 @@ export async function searchSkills(
     results: results.map((row) => ({
       name: row.name as string,
       description: (row.description as string | null),
+      visibility: (row.visibility as 'public' | 'private') ?? 'public',
       latestVersion: (row.latestVersion as string) ?? null,
       auditScore: row.auditScore != null ? Number(row.auditScore) : null,
       publisher: (row.publisher as string) ?? '',

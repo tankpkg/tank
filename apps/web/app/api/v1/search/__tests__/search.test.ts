@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
 const mockExecute = vi.fn();
+const mockResolveRequestUserId = vi.fn().mockResolvedValue(null);
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -17,6 +18,10 @@ vi.mock('@/lib/db/schema', () => ({
     updatedAt: 'skills.updated_at',
   },
   skillVersions: {},
+}));
+
+vi.mock('@/lib/auth-helpers', () => ({
+  resolveRequestUserId: (...args: unknown[]) => mockResolveRequestUserId(...args),
 }));
 
 vi.mock('drizzle-orm', () => ({
@@ -48,6 +53,7 @@ function makeRows(
     latestVersion: string | null;
     auditScore: number | null;
     publisher: string;
+    visibility?: string;
   }>,
   total?: number,
 ) {
@@ -57,8 +63,9 @@ function makeRows(
     description: item.description,
     latestVersion: item.latestVersion,
     auditScore: item.auditScore,
-    publisher: item.publisher,
-    total: t,
+      publisher: item.publisher,
+      visibility: item.visibility ?? 'public',
+      total: t,
   }));
 }
 
@@ -101,6 +108,7 @@ const recentItems = [
 describe('GET /api/v1/search', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockResolveRequestUserId.mockResolvedValue(null);
   });
 
   it('returns matching skills when searching by name', async () => {
@@ -239,5 +247,26 @@ describe('GET /api/v1/search', () => {
     expect(data).toHaveProperty('page', 1);
     expect(data).toHaveProperty('limit', 20);
     expect(data).toHaveProperty('total', 42);
+  });
+
+  it('applies public visibility filter for unauthenticated requests', async () => {
+    mockExecute.mockResolvedValueOnce(makeRows([], 0));
+
+    const { GET } = await import('@/app/api/v1/search/route');
+    const response = await GET(makeGetRequest('http://localhost:3000/api/v1/search?q=test'));
+
+    expect(response.status).toBe(200);
+    expect(mockResolveRequestUserId).toHaveBeenCalledTimes(1);
+  });
+
+  it('applies member/publisher visibility clause for authenticated requests', async () => {
+    mockResolveRequestUserId.mockResolvedValueOnce('user-123');
+    mockExecute.mockResolvedValueOnce(makeRows([], 0));
+
+    const { GET } = await import('@/app/api/v1/search/route');
+    const response = await GET(makeGetRequest('http://localhost:3000/api/v1/search?q=test'));
+
+    expect(response.status).toBe(200);
+    expect(mockResolveRequestUserId).toHaveBeenCalledTimes(1);
   });
 });

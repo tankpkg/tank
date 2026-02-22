@@ -62,6 +62,11 @@ export async function initCommand(): Promise<void> {
     default: '',
   });
 
+  const privateChoice = await confirm({
+    message: 'Make this skill private?',
+    default: name.startsWith('@'),
+  });
+
   const author = await input({
     message: 'Author:',
     default: defaultAuthor,
@@ -73,6 +78,7 @@ export async function initCommand(): Promise<void> {
     name,
     version,
     ...(description ? { description } : {}),
+    visibility: privateChoice ? 'private' : 'public',
     skills: {},
     permissions: {
       network: { outbound: [] },

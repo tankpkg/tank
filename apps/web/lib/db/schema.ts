@@ -52,6 +52,7 @@ export const skills = pgTable(
       .references(() => user.id),
     orgId: text('org_id'),
     repositoryUrl: text('repository_url'),
+    visibility: text('visibility').notNull().default('public'),
     status: text('status').notNull().default('active'),
     statusReason: text('status_reason'),
     statusChangedBy: text('status_changed_by').references(() => user.id, { onDelete: 'set null' }),
@@ -69,6 +70,7 @@ export const skills = pgTable(
     ),
     // Max 214 characters (npm convention)
     check('skills_name_length', sql`length(${table.name}) <= 214`),
+    check('skills_visibility_valid', sql`${table.visibility} in ('public', 'private')`),
     // Index for filtering by org
     index('skills_org_id_idx').on(table.orgId),
     // GIN index for full-text search
@@ -81,6 +83,7 @@ export const skills = pgTable(
     // Default browse ORDER BY updated_at DESC (non-search list path)
     index('skills_updated_at_idx').on(table.updatedAt),
     index('skills_status_idx').on(table.status),
+    index('skills_visibility_idx').on(table.visibility),
     index('skills_featured_idx').on(table.featured),
   ],
 );
