@@ -113,6 +113,30 @@ export const skillAccess = pgTable(
   ],
 );
 
+export const serviceAccounts = pgTable(
+  'service_accounts',
+  {
+    id,
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' })
+      .unique(),
+    ownerUserId: text('owner_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    orgId: text('org_id').references(() => organization.id, { onDelete: 'set null' }),
+    displayName: text('display_name').notNull(),
+    description: text('description'),
+    disabled: boolean('disabled').notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [
+    index('service_accounts_owner_user_id_idx').on(table.ownerUserId),
+    index('service_accounts_org_id_idx').on(table.orgId),
+    index('service_accounts_disabled_idx').on(table.disabled),
+  ],
+);
+
 // ---------------------------------------------------------------------------
 // skill_versions
 // ---------------------------------------------------------------------------
@@ -300,6 +324,21 @@ export const skillAccessRelations = relations(skillAccess, ({ one }) => ({
   }),
   grantedOrg: one(organization, {
     fields: [skillAccess.grantedOrgId],
+    references: [organization.id],
+  }),
+}));
+
+export const serviceAccountsRelations = relations(serviceAccounts, ({ one }) => ({
+  user: one(user, {
+    fields: [serviceAccounts.userId],
+    references: [user.id],
+  }),
+  ownerUser: one(user, {
+    fields: [serviceAccounts.ownerUserId],
+    references: [user.id],
+  }),
+  org: one(organization, {
+    fields: [serviceAccounts.orgId],
     references: [organization.id],
   }),
 }));

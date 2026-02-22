@@ -1,11 +1,48 @@
 import { auth } from './auth';
 import { db } from './db';
-import { userStatus, member, skillAccess } from './db/schema';
+import { userStatus, member, skillAccess, serviceAccounts } from './db/schema';
 import { and, desc, eq, sql } from 'drizzle-orm';
 
 export interface VerifiedApiKey {
   userId: string;
   keyId: string;
+  scopes: string[];
+}
+
+const ADMIN_SCOPE = 'skills:admin';
+
+function parseScopes(rawPermissions: unknown): string[] {
+  if (typeof rawPermissions !== 'string' || rawPermissions.trim().length === 0) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(rawPermissions);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+  } catch {
+    return [];
+  }
+}
+
+function hasRequiredScopes(grantedScopes: string[], requiredScopes: string[]): boolean {
+  if (requiredScopes.length === 0) {
+    return true;
+  }
+
+  if (grantedScopes.length === 0) {
+    return true;
+  }
+
+  const scopeSet = new Set(grantedScopes);
+  if (scopeSet.has(ADMIN_SCOPE)) {
+    return true;
+  }
+
+  return requiredScopes.every((scope) => scopeSet.has(scope));
 }
 
 export type ModerationStatus = 'active' | 'suspended' | 'banned';
@@ -31,7 +68,10 @@ export async function isUserBlocked(userId: string): Promise<boolean> {
  * Expects: `Authorization: Bearer tank_...`
  * Returns verified key info or null if invalid/missing.
  */
-export async function verifyCliAuth(request: Request): Promise<VerifiedApiKey | null> {
+export async function verifyCliAuth(
+  request: Request,
+  requiredScopes: string[] = [],
+): Promise<VerifiedApiKey | null> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
@@ -53,9 +93,29 @@ export async function verifyCliAuth(request: Request): Promise<VerifiedApiKey | 
       return null;
     }
 
+    try {
+      const serviceAccount = await db
+        .select({ disabled: serviceAccounts.disabled })
+        .from(serviceAccounts)
+        .where(eq(serviceAccounts.userId, result.key.userId))
+        .limit(1);
+
+      if (serviceAccount[0]?.disabled) {
+        return null;
+      }
+    } catch {
+      return null;
+    }
+
+    const scopes = parseScopes(result.key.permissions);
+    if (!hasRequiredScopes(scopes, requiredScopes)) {
+      return null;
+    }
+
     return {
       userId: result.key.userId,
       keyId: result.key.id,
+      scopes,
     };
   } catch {
     return null;
@@ -70,7 +130,7 @@ export interface SkillAccessSubject {
 }
 
 export async function resolveRequestUserId(request: Request): Promise<string | null> {
-  const cliVerified = await verifyCliAuth(request);
+  const cliVerified = await verifyCliAuth(request, ['skills:read']);
   if (cliVerified) {
     return cliVerified.userId;
   }

@@ -120,6 +120,9 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
       throw new Error('Authentication failed. Run: tank login');
     }
     if (step1Res.status === 403) {
+      if ((body.error ?? '').includes('skills:publish')) {
+        throw new Error('Token lacks required scope: skills:publish');
+      }
       throw new Error(
         "You don't have permission to publish to this organization",
       );

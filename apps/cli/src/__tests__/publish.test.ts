@@ -298,6 +298,23 @@ describe('publishCommand', () => {
     ).rejects.toThrow(/permission/i);
   });
 
+  it('handles API 403 with explicit scope message', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ error: 'Insufficient API key scope. Required: skills:publish' }),
+        { status: 403 },
+      ),
+    );
+
+    await expect(
+      publishCommand({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/skills:publish/i);
+  });
+
   it('handles API 409 with version conflict message', async () => {
     const { publishCommand } = await import('../commands/publish.js');
 

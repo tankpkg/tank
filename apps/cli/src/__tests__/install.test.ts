@@ -158,6 +158,9 @@ describe('installCommand', () => {
     const [versionsUrl] = mockFetch.mock.calls[0];
     expect(versionsUrl).toBe('https://tankpkg.dev/api/v1/skills/%40test-org%2Fmy-skill/versions');
 
+    const [, versionsOpts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect((versionsOpts.headers as Record<string, string>).Authorization).toBeUndefined();
+
     // Verify version metadata fetch
     const [metaUrl] = mockFetch.mock.calls[1];
     expect(metaUrl).toBe('https://tankpkg.dev/api/v1/skills/%40test-org%2Fmy-skill/2.0.0');
@@ -194,6 +197,39 @@ describe('installCommand', () => {
     await expect(
       installCommand({ name: '@test-org/nonexistent', directory: tmpDir, configDir }),
     ).rejects.toThrow(/not found/i);
+  });
+
+  it('sends bearer token when config contains token', async () => {
+    const { installCommand } = await import('../commands/install.js');
+
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev', token: 'tank_ci_token' }),
+    );
+
+    setupSuccessfulInstall();
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir: tmpDir,
+    });
+
+    const [, versionsOpts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect((versionsOpts.headers as Record<string, string>).Authorization).toBe('Bearer tank_ci_token');
+  });
+
+  it('shows scope error when versions endpoint returns 403', async () => {
+    const { installCommand } = await import('../commands/install.js');
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Insufficient API key scope. Required: skills:read' }), { status: 403 }),
+    );
+
+    await expect(
+      installCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
+    ).rejects.toThrow(/skills:read/i);
   });
 
   it('errors when no version satisfies the range', async () => {

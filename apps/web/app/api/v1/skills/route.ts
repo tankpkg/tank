@@ -9,9 +9,17 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   // 1. Verify CLI auth
-  const verified = await verifyCliAuth(request);
-  if (!verified) {
+  const verifiedAny = await verifyCliAuth(request);
+  if (!verifiedAny) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const verified = await verifyCliAuth(request, ['skills:publish']);
+  if (!verified) {
+    return NextResponse.json(
+      { error: 'Insufficient API key scope. Required: skills:publish' },
+      { status: 403 },
+    );
   }
 
   // 2. Parse JSON body

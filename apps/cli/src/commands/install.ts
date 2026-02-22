@@ -85,6 +85,10 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
   const config = getConfig(configDir);
   const resolvedHome = homedir ?? os.homedir();
+  const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (config.token) {
+    requestHeaders.Authorization = `Bearer ${config.token}`;
+  }
 
   // 1. Read or create skills.json
   const skillsJsonPath = path.join(directory, 'skills.json');
@@ -128,7 +132,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   let versionsRes: Response;
   try {
     versionsRes = await fetch(versionsUrl, {
-          headers: { 'User-Agent': USER_AGENT },
+      headers: requestHeaders,
     });
   } catch (err) {
     spinner.fail('Failed to fetch versions');
@@ -137,8 +141,11 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
   if (!versionsRes.ok) {
     spinner.fail('Failed to fetch versions');
+    if (versionsRes.status === 403) {
+      throw new Error('Token lacks required scope: skills:read');
+    }
     if (versionsRes.status === 404) {
-      throw new Error(`Skill not found: ${name}`);
+      throw new Error(`Skill not found or no access: ${name}`);
     }
     const body = await versionsRes.json().catch(() => ({})) as { error?: string };
     throw new Error(body.error ?? versionsRes.statusText);
@@ -171,7 +178,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   let metaRes: Response;
   try {
     metaRes = await fetch(metaUrl, {
-        headers: { 'User-Agent': USER_AGENT },
+      headers: requestHeaders,
     });
   } catch (err) {
     spinner.fail('Failed to fetch version metadata');
@@ -180,6 +187,12 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
   if (!metaRes.ok) {
     spinner.fail('Failed to fetch version metadata');
+    if (metaRes.status === 403) {
+      throw new Error('Token lacks required scope: skills:read');
+    }
+    if (metaRes.status === 404) {
+      throw new Error(`Skill not found or no access: ${name}@${resolved}`);
+    }
     const body = await metaRes.json().catch(() => ({})) as { error?: string };
     throw new Error(body.error ?? metaRes.statusText);
   }

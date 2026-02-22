@@ -26,6 +26,7 @@ vi.mock('../db', () => ({
             where: (...args: unknown[]) => {
               mockWhere(...args);
               return {
+                limit: (...args: unknown[]) => mockLimit(...args),
                 orderBy: (...args: unknown[]) => {
                   mockOrderBy(...args);
                   return {
@@ -92,7 +93,7 @@ describe('verifyCliAuth', () => {
     const result = await verifyCliAuth(request);
 
     expect(mockVerifyApiKey).toHaveBeenCalledWith({ body: { key: 'tank_abc123' } });
-    expect(result).toEqual({ userId: 'user-456', keyId: 'key-123' });
+    expect(result).toEqual({ userId: 'user-456', keyId: 'key-123', scopes: [] });
   });
 
   it('returns null when verifyApiKey returns invalid', async () => {

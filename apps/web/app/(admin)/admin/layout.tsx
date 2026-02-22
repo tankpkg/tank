@@ -33,6 +33,7 @@ export default async function AdminLayout({
     { href: '/admin', label: 'Dashboard' },
     { href: '/admin/users', label: 'Users' },
     { href: '/admin/packages', label: 'Packages' },
+    { href: '/admin/service-accounts', label: 'Service Accounts' },
     { href: '/admin/orgs', label: 'Organizations' },
   ];
 
