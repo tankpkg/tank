@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockVerifyApiKey = vi.fn();
+const mockSelect = vi.fn();
+const mockFrom = vi.fn();
+const mockWhere = vi.fn();
+const mockOrderBy = vi.fn();
+const mockLimit = vi.fn();
 
 vi.mock('../auth', () => ({
   auth: {
@@ -10,11 +15,44 @@ vi.mock('../auth', () => ({
   },
 }));
 
+vi.mock('../db', () => ({
+  db: {
+    select: (...args: unknown[]) => {
+      mockSelect(...args);
+      return {
+        from: (...args: unknown[]) => {
+          mockFrom(...args);
+          return {
+            where: (...args: unknown[]) => {
+              mockWhere(...args);
+              return {
+                orderBy: (...args: unknown[]) => {
+                  mockOrderBy(...args);
+                  return {
+                    limit: (...args: unknown[]) => mockLimit(...args),
+                  };
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  },
+}));
+
 import { verifyCliAuth } from '../auth-helpers';
 
 describe('verifyCliAuth', () => {
   beforeEach(() => {
     mockVerifyApiKey.mockReset();
+    mockSelect.mockReset();
+    mockFrom.mockReset();
+    mockWhere.mockReset();
+    mockOrderBy.mockReset();
+    mockLimit.mockReset();
+    // Default: user is not blocked (no userStatus records = active)
+    mockLimit.mockResolvedValue([]);
   });
 
   it('returns null when Authorization header is missing', async () => {
