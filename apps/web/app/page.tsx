@@ -16,6 +16,7 @@ import {
   Sparkles,
   CheckCircle2,
 } from 'lucide-react';
+import { HomeNavAuthCta, HomePrimaryAuthCta } from './home-auth-cta';
 
 const features = [
   {
@@ -109,14 +110,7 @@ export default function Home() {
                 </svg>
               </a>
             </nav>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-                <Link href="/login">Sign In</Link>
-              </Button>
-              <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white">
-                <Link href="/skills">Get Started</Link>
-              </Button>
-            </div>
+            <HomeNavAuthCta />
           </div>
         </div>
       </header>
@@ -144,12 +138,7 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button size="lg" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white group">
-                  <Link href="/login" data-testid="home-primary-cta">
-                    Get Started
-                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
+                <HomePrimaryAuthCta testId="home-primary-cta" />
                 <Button variant="outline" size="lg" asChild>
                   <Link href="/skills">Browse Skills</Link>
                 </Button>
@@ -360,12 +349,7 @@ export default function Home() {
                 Tank is open source and free. Start publishing and installing skills with confidence.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button size="lg" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white group">
-                  <Link href="/login">
-                    Get Started
-                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                </Button>
+                <HomePrimaryAuthCta />
                 <Button variant="outline" size="lg" asChild>
                   <a
                     href="https://github.com/tankpkg/tank"
