@@ -110,6 +110,7 @@ git clone https://github.com/tankpkg/tank.git
 cd tank
 pnpm install
 cp .env.example .env.local  # fill in credentials
+pnpm --filter=web admin:bootstrap  # promotes FIRST_ADMIN_EMAIL to admin
 ```
 
 ### Commands
@@ -118,6 +119,7 @@ cp .env.example .env.local  # fill in credentials
 pnpm dev                    # Start web app in dev mode
 pnpm build                  # Build all packages
 pnpm test                   # Run all tests (445 TypeScript + 16 Python)
+pnpm --filter=web admin:bootstrap  # Promote bootstrap admin user
 pnpm test:perf              # Run performance tests (no-cache production build)
 pnpm test --filter=cli      # Run CLI tests only
 pnpm test --filter=web      # Run web tests only

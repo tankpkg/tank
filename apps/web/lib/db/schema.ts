@@ -8,6 +8,7 @@ export * from './auth-schema';
 // Import user for relations
 import { user } from './auth-schema';
 import {
+  boolean,
   check,
   index,
   integer,
@@ -51,6 +52,13 @@ export const skills = pgTable(
       .references(() => user.id),
     orgId: text('org_id'),
     repositoryUrl: text('repository_url'),
+    status: text('status').notNull().default('active'),
+    statusReason: text('status_reason'),
+    statusChangedBy: text('status_changed_by').references(() => user.id, { onDelete: 'set null' }),
+    statusChangedAt: timestamp('status_changed_at', { withTimezone: true }),
+    featured: boolean('featured').notNull().default(false),
+    featuredBy: text('featured_by').references(() => user.id, { onDelete: 'set null' }),
+    featuredAt: timestamp('featured_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [
@@ -72,6 +80,8 @@ export const skills = pgTable(
     index('skills_publisher_id_idx').on(table.publisherId),
     // Default browse ORDER BY updated_at DESC (non-search list path)
     index('skills_updated_at_idx').on(table.updatedAt),
+    index('skills_status_idx').on(table.status),
+    index('skills_featured_idx').on(table.featured),
   ],
 );
 
@@ -148,6 +158,29 @@ export const auditEvents = pgTable('audit_events', {
 });
 
 // ---------------------------------------------------------------------------
+// user_status
+// ---------------------------------------------------------------------------
+
+export const userStatus = pgTable(
+  'user_status',
+  {
+    id,
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    status: text('status').notNull(),
+    reason: text('reason'),
+    bannedBy: text('banned_by').references(() => user.id, { onDelete: 'set null' }),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index('user_status_user_id_idx').on(table.userId),
+    index('user_status_status_idx').on(table.status),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // scan_results
 // ---------------------------------------------------------------------------
 
@@ -211,6 +244,14 @@ export const skillsRelations = relations(skills, ({ one, many }) => ({
     fields: [skills.publisherId],
     references: [user.id],
   }),
+  statusChangedByUser: one(user, {
+    fields: [skills.statusChangedBy],
+    references: [user.id],
+  }),
+  featuredByUser: one(user, {
+    fields: [skills.featuredBy],
+    references: [user.id],
+  }),
   versions: many(skillVersions),
   downloads: many(skillDownloads),
 }));
@@ -251,5 +292,16 @@ export const skillDownloadsRelations = relations(skillDownloads, ({ one }) => ({
   version: one(skillVersions, {
     fields: [skillDownloads.versionId],
     references: [skillVersions.id],
+  }),
+}));
+
+export const userStatusRelations = relations(userStatus, ({ one }) => ({
+  user: one(user, {
+    fields: [userStatus.userId],
+    references: [user.id],
+  }),
+  bannedByUser: one(user, {
+    fields: [userStatus.bannedBy],
+    references: [user.id],
   }),
 }));

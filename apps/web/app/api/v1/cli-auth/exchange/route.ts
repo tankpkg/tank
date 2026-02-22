@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { isUserBlocked } from '@/lib/auth-helpers';
 import { consumeSession } from '@/lib/cli-auth-store';
 import { authLog } from '@/lib/logger';
 
@@ -41,6 +42,13 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Session was not properly authorized' },
         { status: 400 }
+      );
+    }
+
+    if (await isUserBlocked(session.userId)) {
+      return NextResponse.json(
+        { error: 'Account is suspended or banned' },
+        { status: 403 }
       );
     }
 
