@@ -470,20 +470,10 @@ export default async function SkillDetailPage({
                   )}
                 </div>
 
-                {/* Link to full report */}
                 {hasSecurityData && (
-                  <a
-                    href="#security"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      // Click the security tab
-                      const securityTab = document.querySelector('[data-state="inactive"][value="security"]') as HTMLElement;
-                      if (securityTab) securityTab.click();
-                    }}
-                    className="text-xs text-primary hover:underline flex items-center gap-1"
-                  >
-                    View full security report →
-                  </a>
+                  <p className="text-xs text-muted-foreground">
+                    Open the Security tab above for the full report.
+                  </p>
                 )}
               </div>
             </>
