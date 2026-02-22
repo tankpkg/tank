@@ -13,20 +13,20 @@ export function SkillReadme({ content }: SkillReadmeProps) {
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSanitize]}
         components={{
-          code: ({ className, children, ...props }) => {
+          code: ({ className, children, node: _node, ...rest }) => {
             const isInline = !className;
             if (isInline) {
               return (
                 <code
                   className="rounded bg-muted px-1.5 py-0.5 text-sm text-foreground before:content-none after:content-none"
-                  {...props}
+                  {...rest}
                 >
                   {children}
                 </code>
               );
             }
             return (
-              <code className={className} {...props}>
+              <code className={className} {...rest}>
                 {children}
               </code>
             );
