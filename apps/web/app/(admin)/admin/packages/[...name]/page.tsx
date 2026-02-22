@@ -17,6 +17,7 @@ import { StatusDialog } from './components/status-dialog';
 import { ForceDeleteCard } from './components/force-delete-card';
 import { DeleteVersionButton } from './components/delete-version-button';
 import { PublisherBanDeleteButton } from './components/publisher-ban-delete-button';
+import { VisibilityCard } from './components/visibility-card';
 
 type PackageStatus = 'active' | 'deprecated' | 'quarantined' | 'removed';
 
@@ -39,6 +40,13 @@ function statusVariant(
   if (status === 'removed') return 'destructive';
   if (status === 'quarantined') return 'outline';
   if (status === 'deprecated') return 'secondary';
+  return 'default';
+}
+
+function visibilityVariant(
+  visibility: string | null,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+  if (visibility === 'private') return 'secondary';
   return 'default';
 }
 
@@ -161,6 +169,15 @@ export default async function AdminPackageDetailPage({
 
         <Card>
           <CardHeader className="pb-2">
+            <CardDescription>Visibility</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Badge variant={visibilityVariant(skill.visibility)}>{skill.visibility ?? 'public'}</Badge>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
             <CardDescription>Featured</CardDescription>
           </CardHeader>
           <CardContent>
@@ -238,6 +255,8 @@ export default async function AdminPackageDetailPage({
 
         <div className="space-y-6">
           <StatusDialog packageName={name} currentStatus={status} />
+
+          <VisibilityCard packageName={name} currentVisibility={(skill.visibility === 'private' ? 'private' : 'public')} />
 
           <ForceDeleteCard packageName={name} />
 

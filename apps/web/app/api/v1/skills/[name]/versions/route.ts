@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { skills } from '@/lib/db/schema';
+import { resolveRequestUserId } from '@/lib/auth-helpers';
 
 /**
  * GET /api/v1/skills/[name]/versions — single query for skill + all versions.
@@ -14,8 +15,12 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ name: string }> },
 ) {
+  const requesterUserId = await resolveRequestUserId(_request);
   const { name: rawName } = await params;
   const name = decodeURIComponent(rawName);
+  const visibilityClause = requesterUserId
+    ? sql`(s.visibility = 'public' OR s.publisher_id = ${requesterUserId} OR (s.visibility = 'private' AND s.org_id IS NOT NULL AND EXISTS (SELECT 1 FROM "member" m WHERE m.organization_id = s.org_id AND m.user_id = ${requesterUserId})))`
+    : sql`s.visibility = 'public'`;
 
   const rows = await db.execute(sql`
     SELECT
@@ -27,7 +32,7 @@ export async function GET(
       sv.created_at AS "publishedAt"
     FROM ${skills} s
     LEFT JOIN skill_versions sv ON sv.skill_id = s.id
-    WHERE s.name = ${name}
+    WHERE s.name = ${name} AND ${visibilityClause}
     ORDER BY sv.created_at DESC
   `);
 

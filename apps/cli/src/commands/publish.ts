@@ -10,6 +10,8 @@ export interface PublishOptions {
   directory?: string;
   configDir?: string;
   dryRun?: boolean;
+  private?: boolean;
+  visibility?: string;
 }
 
 /**
@@ -35,7 +37,7 @@ export function formatSize(bytes: number): string {
  * 8. Print success
  */
 export async function publishCommand(options: PublishOptions = {}): Promise<void> {
-  const { directory = process.cwd(), configDir, dryRun = false } = options;
+  const { directory = process.cwd(), configDir, dryRun = false, private: privateFlag, visibility } = options;
 
   // 1. Check auth
   const config = getConfig(configDir);
@@ -59,6 +61,15 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
     throw new Error('Failed to read or parse skills.json');
   }
 
+  if (visibility && visibility !== 'public' && visibility !== 'private') {
+    throw new Error("Invalid visibility. Use 'public' or 'private'");
+  }
+
+  const effectiveVisibility = visibility ?? (privateFlag ? 'private' : undefined);
+  if (effectiveVisibility) {
+    manifest.visibility = effectiveVisibility;
+  }
+
   const name = manifest.name as string;
   const version = manifest.version as string;
 
@@ -79,6 +90,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
     spinner.stop();
     logger.info(`name:    ${name}`);
     logger.info(`version: ${version}`);
+    logger.info(`visibility: ${String(manifest.visibility ?? 'default')}`);
     logger.info(`size:    ${formatSize(totalSize)} (${fileCount} files)`);
     logger.info(`tarball: ${formatSize(tarball.length)} (compressed)`);
     logger.success('Dry run complete — no files were uploaded.');

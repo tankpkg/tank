@@ -76,9 +76,15 @@ program
   .command('publish')
   .description('Pack and publish a skill to the Tank registry')
   .option('--dry-run', 'Validate and pack without uploading')
-  .action(async (opts: { dryRun?: boolean }) => {
+  .option('--private', 'Publish skill as private')
+  .option('--visibility <mode>', 'Skill visibility (public|private)')
+  .action(async (opts: { dryRun?: boolean; private?: boolean; visibility?: string }) => {
     try {
-      await publishCommand({ dryRun: opts.dryRun });
+      await publishCommand({
+        dryRun: opts.dryRun,
+        private: opts.private,
+        visibility: opts.visibility,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Publish failed: ${msg}`);

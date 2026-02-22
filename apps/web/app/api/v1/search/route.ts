@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { resolveRequestUserId } from '@/lib/auth-helpers';
 
 /**
  * GET /api/v1/search — single-query search with count(*) OVER() window function.
@@ -11,6 +12,7 @@ import { db } from '@/lib/db';
  * Round-trips: 1 (was 2).
  */
 export async function GET(request: Request) {
+  const requesterUserId = await resolveRequestUserId(request);
   const url = new URL(request.url);
   const q = url.searchParams.get('q') ?? '';
   const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10) || 1);
@@ -30,9 +32,13 @@ export async function GET(request: Request) {
     ? sql`ts_rank(to_tsvector('english', s.name || ' ' || coalesce(s.description, '')), plainto_tsquery('english', ${q})) DESC`
     : sql`s.updated_at DESC`;
 
+  const visibilityClause = requesterUserId
+    ? sql`(s.visibility = 'public' OR s.publisher_id = ${requesterUserId} OR (s.visibility = 'private' AND s.org_id IS NOT NULL AND EXISTS (SELECT 1 FROM "member" m WHERE m.organization_id = s.org_id AND m.user_id = ${requesterUserId})))`
+    : sql`s.visibility = 'public'`;
+
   const whereClause = searchCondition
-    ? sql`WHERE ${searchCondition}`
-    : sql``;
+    ? sql`WHERE ${searchCondition} AND ${visibilityClause}`
+    : sql`WHERE ${visibilityClause}`;
 
   const results = await db.execute(sql`
     SELECT
@@ -40,6 +46,7 @@ export async function GET(request: Request) {
       s.description,
       sv.version AS "latestVersion",
       sv.audit_score AS "auditScore",
+      s.visibility,
       coalesce(u.name, '') AS publisher,
       count(*) OVER() AS total
     FROM skills s
@@ -61,8 +68,9 @@ export async function GET(request: Request) {
     name: row.name as string,
     description: row.description as string | null,
     latestVersion: (row.latestVersion as string) ?? null,
-    auditScore: row.auditScore != null ? Number(row.auditScore) : null,
-    publisher: (row.publisher as string) ?? '',
+      auditScore: row.auditScore != null ? Number(row.auditScore) : null,
+      visibility: row.visibility as 'public' | 'private',
+      publisher: (row.publisher as string) ?? '',
     downloads: 0,
   }));
 

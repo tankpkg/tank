@@ -18,11 +18,11 @@ import { user } from '@/lib/db/auth-schema';
 // @tank/skill-creator arrive as multiple path segments. Parse from URL path
 // and split off trailing action keywords (feature, status).
 
-const ACTIONS = new Set(['feature', 'status', 'publisher-ban-delete']);
+const ACTIONS = new Set(['feature', 'status', 'visibility', 'publisher-ban-delete']);
 
 type ParsedRequest = {
   name: string;
-  action: 'feature' | 'status' | 'publisher-ban-delete' | 'version' | undefined;
+  action: 'feature' | 'status' | 'visibility' | 'publisher-ban-delete' | 'version' | undefined;
   version: string | undefined;
 };
 
@@ -39,7 +39,7 @@ function parseSegments(segments: string[]): ParsedRequest {
   if (segments.length >= 2 && ACTIONS.has(last)) {
     return {
       name: segments.slice(0, -1).join('/'),
-      action: last as 'feature' | 'status' | 'publisher-ban-delete',
+      action: last as 'feature' | 'status' | 'visibility' | 'publisher-ban-delete',
       version: undefined,
     };
   }
@@ -606,6 +606,58 @@ async function handleStatus(name: string, req: NextRequest, adminUser: AdminAuth
   });
 }
 
+async function handleVisibility(name: string, req: NextRequest, adminUser: AdminAuthContext['user']): Promise<NextResponse> {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (typeof body !== 'object' || body === null) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  const { visibility } = body as Record<string, unknown>;
+  if (visibility !== 'public' && visibility !== 'private') {
+    return NextResponse.json({ error: 'Invalid visibility. Must be public or private' }, { status: 400 });
+  }
+
+  const [skill] = await db
+    .select({ id: skills.id, name: skills.name, visibility: skills.visibility })
+    .from(skills)
+    .where(eq(skills.name, name))
+    .limit(1);
+
+  if (!skill) {
+    return NextResponse.json({ error: 'Package not found' }, { status: 404 });
+  }
+
+  const previousVisibility = skill.visibility;
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(skills)
+      .set({ visibility })
+      .where(eq(skills.id, skill.id));
+
+    await tx.insert(auditEvents).values({
+      action: 'skill.visibility.update',
+      actorId: adminUser.id,
+      targetType: 'skill',
+      targetId: skill.id,
+      metadata: { previousVisibility, visibility },
+    });
+  });
+
+  return NextResponse.json({
+    success: true,
+    name: skill.name,
+    previousVisibility,
+    visibility,
+  });
+}
+
 export const GET = withAdminAuth(async (req: NextRequest): Promise<NextResponse> => {
   const { name, action } = parseRequest(req);
 
@@ -658,6 +710,10 @@ export const PATCH = withAdminAuth(async (req: NextRequest, { user: adminUser }:
 
   if (name && action === 'status') {
     return handleStatus(name, req, adminUser);
+  }
+
+  if (name && action === 'visibility') {
+    return handleVisibility(name, req, adminUser);
   }
 
   return NextResponse.json({ error: 'Not found' }, { status: 404 });
