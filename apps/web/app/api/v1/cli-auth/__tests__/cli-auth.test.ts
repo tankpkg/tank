@@ -10,13 +10,13 @@ import {
 // ─── CLI Auth Store Tests ────────────────────────────────────────────────────
 
 describe('cli-auth-store', () => {
-  beforeEach(() => {
-    clearAllSessions();
+  beforeEach(async () => {
+    await clearAllSessions();
   });
 
   describe('createSession', () => {
-    it('creates a session and returns a session code', () => {
-      const code = createSession('my-state');
+    it('creates a session and returns a session code', async () => {
+      const code = await createSession('my-state');
       expect(code).toBeTruthy();
       expect(typeof code).toBe('string');
       // UUID format
@@ -25,118 +25,118 @@ describe('cli-auth-store', () => {
       );
     });
 
-    it('creates unique session codes', () => {
-      const code1 = createSession('state-1');
-      const code2 = createSession('state-2');
+    it('creates unique session codes', async () => {
+      const code1 = await createSession('state-1');
+      const code2 = await createSession('state-2');
       expect(code1).not.toBe(code2);
     });
   });
 
   describe('getSession', () => {
-    it('returns the session for a valid code', () => {
-      const code = createSession('my-state');
-      const session = getSession(code);
+    it('returns the session for a valid code', async () => {
+      const code = await createSession('my-state');
+      const session = await getSession(code);
       expect(session).not.toBeNull();
       expect(session!.state).toBe('my-state');
       expect(session!.status).toBe('pending');
       expect(session!.userId).toBeUndefined();
     });
 
-    it('returns null for unknown code', () => {
-      expect(getSession('nonexistent')).toBeNull();
+    it('returns null for unknown code', async () => {
+      expect(await getSession('nonexistent')).toBeNull();
     });
 
-    it('returns null for expired session', () => {
-      const code = createSession('my-state');
+    it('returns null for expired session', async () => {
+      const code = await createSession('my-state');
       // Manually expire by manipulating time
       vi.useFakeTimers();
       vi.advanceTimersByTime(5 * 60 * 1000 + 1); // 5 min + 1ms
-      expect(getSession(code)).toBeNull();
+      expect(await getSession(code)).toBeNull();
       vi.useRealTimers();
     });
   });
 
   describe('authorizeSession', () => {
-    it('marks a pending session as authorized', () => {
-      const code = createSession('my-state');
-      const result = authorizeSession(code, 'user-123');
+    it('marks a pending session as authorized', async () => {
+      const code = await createSession('my-state');
+      const result = await authorizeSession(code, 'user-123');
       expect(result).toBe(true);
 
-      const session = getSession(code);
+      const session = await getSession(code);
       expect(session!.status).toBe('authorized');
       expect(session!.userId).toBe('user-123');
     });
 
-    it('returns false for unknown code', () => {
-      expect(authorizeSession('nonexistent', 'user-123')).toBe(false);
+    it('returns false for unknown code', async () => {
+      expect(await authorizeSession('nonexistent', 'user-123')).toBe(false);
     });
 
-    it('returns false for expired session', () => {
-      const code = createSession('my-state');
+    it('returns false for expired session', async () => {
+      const code = await createSession('my-state');
       vi.useFakeTimers();
       vi.advanceTimersByTime(5 * 60 * 1000 + 1);
-      expect(authorizeSession(code, 'user-123')).toBe(false);
+      expect(await authorizeSession(code, 'user-123')).toBe(false);
       vi.useRealTimers();
     });
 
-    it('returns false if session is already authorized', () => {
-      const code = createSession('my-state');
-      authorizeSession(code, 'user-123');
+    it('returns false if session is already authorized', async () => {
+      const code = await createSession('my-state');
+      await authorizeSession(code, 'user-123');
       // Second authorization attempt should fail
-      expect(authorizeSession(code, 'user-456')).toBe(false);
+      expect(await authorizeSession(code, 'user-456')).toBe(false);
     });
   });
 
   describe('consumeSession', () => {
-    it('returns and deletes an authorized session with matching state', () => {
-      const code = createSession('my-state');
-      authorizeSession(code, 'user-123');
+    it('returns and deletes an authorized session with matching state', async () => {
+      const code = await createSession('my-state');
+      await authorizeSession(code, 'user-123');
 
-      const session = consumeSession(code, 'my-state');
+      const session = await consumeSession(code, 'my-state');
       expect(session).not.toBeNull();
       expect(session!.userId).toBe('user-123');
       expect(session!.status).toBe('authorized');
 
       // Session should be deleted (one-time use)
-      expect(getSession(code)).toBeNull();
+      expect(await getSession(code)).toBeNull();
     });
 
-    it('returns null for unknown code', () => {
-      expect(consumeSession('nonexistent', 'state')).toBeNull();
+    it('returns null for unknown code', async () => {
+      expect(await consumeSession('nonexistent', 'state')).toBeNull();
     });
 
-    it('returns null for pending (not authorized) session', () => {
-      const code = createSession('my-state');
-      expect(consumeSession(code, 'my-state')).toBeNull();
+    it('returns null for pending (not authorized) session', async () => {
+      const code = await createSession('my-state');
+      expect(await consumeSession(code, 'my-state')).toBeNull();
       // Session should still exist (not consumed)
-      expect(getSession(code)).not.toBeNull();
+      expect(await getSession(code)).not.toBeNull();
     });
 
-    it('returns null for state mismatch', () => {
-      const code = createSession('my-state');
-      authorizeSession(code, 'user-123');
-      expect(consumeSession(code, 'wrong-state')).toBeNull();
+    it('returns null for state mismatch', async () => {
+      const code = await createSession('my-state');
+      await authorizeSession(code, 'user-123');
+      expect(await consumeSession(code, 'wrong-state')).toBeNull();
       // Session should still exist (not consumed due to state mismatch)
-      expect(getSession(code)).not.toBeNull();
+      expect(await getSession(code)).not.toBeNull();
     });
 
-    it('returns null for expired session', () => {
-      const code = createSession('my-state');
-      authorizeSession(code, 'user-123');
+    it('returns null for expired session', async () => {
+      const code = await createSession('my-state');
+      await authorizeSession(code, 'user-123');
       vi.useFakeTimers();
       vi.advanceTimersByTime(5 * 60 * 1000 + 1);
-      expect(consumeSession(code, 'my-state')).toBeNull();
+      expect(await consumeSession(code, 'my-state')).toBeNull();
       vi.useRealTimers();
     });
 
-    it('prevents replay — second consume returns null', () => {
-      const code = createSession('my-state');
-      authorizeSession(code, 'user-123');
+    it('prevents replay — second consume returns null', async () => {
+      const code = await createSession('my-state');
+      await authorizeSession(code, 'user-123');
 
-      const first = consumeSession(code, 'my-state');
+      const first = await consumeSession(code, 'my-state');
       expect(first).not.toBeNull();
 
-      const second = consumeSession(code, 'my-state');
+      const second = await consumeSession(code, 'my-state');
       expect(second).toBeNull();
     });
   });
@@ -167,8 +167,8 @@ vi.mock('@/lib/auth-helpers', () => ({
 }));
 
 describe('POST /api/v1/cli-auth/start', () => {
-  beforeEach(() => {
-    clearAllSessions();
+  beforeEach(async () => {
+    await clearAllSessions();
   });
 
   it('returns authUrl and sessionCode for valid state', async () => {
@@ -229,8 +229,8 @@ describe('POST /api/v1/cli-auth/start', () => {
 });
 
 describe('POST /api/v1/cli-auth/authorize', () => {
-  beforeEach(() => {
-    clearAllSessions();
+  beforeEach(async () => {
+    await clearAllSessions();
     mockGetSession.mockReset();
     mockIsUserBlocked.mockReset();
     mockIsUserBlocked.mockResolvedValue(false);
@@ -282,7 +282,7 @@ describe('POST /api/v1/cli-auth/authorize', () => {
     mockGetSession.mockResolvedValue({
       user: { id: 'user-123', name: 'Test User', email: 'test@example.com' },
     });
-    const code = createSession('my-state');
+    const code = await createSession('my-state');
 
     const { POST } = await import('../authorize/route');
     const request = new Request('http://localhost:3000/api/v1/cli-auth/authorize', {
@@ -297,7 +297,7 @@ describe('POST /api/v1/cli-auth/authorize', () => {
     const data = await response.json();
     expect(data.success).toBe(true);
 
-    const session = getSession(code);
+    const session = await getSession(code);
     expect(session!.status).toBe('authorized');
     expect(session!.userId).toBe('user-123');
     expect(session!.userName).toBe('Test User');
@@ -309,7 +309,7 @@ describe('POST /api/v1/cli-auth/authorize', () => {
       user: { id: 'user-123', name: 'Test User', email: 'test@example.com' },
     });
     mockIsUserBlocked.mockResolvedValue(true);
-    const code = createSession('my-state');
+    const code = await createSession('my-state');
 
     const { POST } = await import('../authorize/route');
     const request = new Request('http://localhost:3000/api/v1/cli-auth/authorize', {
@@ -324,8 +324,8 @@ describe('POST /api/v1/cli-auth/authorize', () => {
 });
 
 describe('POST /api/v1/cli-auth/exchange', () => {
-  beforeEach(() => {
-    clearAllSessions();
+  beforeEach(async () => {
+    await clearAllSessions();
     mockCreateApiKey.mockReset();
     mockIsUserBlocked.mockReset();
     mockIsUserBlocked.mockResolvedValue(false);
@@ -368,7 +368,7 @@ describe('POST /api/v1/cli-auth/exchange', () => {
   });
 
   it('returns 400 for pending (not authorized) session', async () => {
-    const code = createSession('my-state');
+    const code = await createSession('my-state');
 
     const { POST } = await import('../exchange/route');
     const request = new Request('http://localhost:3000/api/v1/cli-auth/exchange', {
@@ -382,8 +382,8 @@ describe('POST /api/v1/cli-auth/exchange', () => {
   });
 
   it('returns 400 for state mismatch', async () => {
-    const code = createSession('my-state');
-    authorizeSession(code, 'user-123');
+    const code = await createSession('my-state');
+    await authorizeSession(code, 'user-123');
 
     const { POST } = await import('../exchange/route');
     const request = new Request('http://localhost:3000/api/v1/cli-auth/exchange', {
@@ -397,8 +397,8 @@ describe('POST /api/v1/cli-auth/exchange', () => {
   });
 
   it('exchanges valid authorized session for API key', async () => {
-    const code = createSession('my-state');
-    authorizeSession(code, 'user-123', { name: 'Test User', email: 'test@example.com' });
+    const code = await createSession('my-state');
+    await authorizeSession(code, 'user-123', { name: 'Test User', email: 'test@example.com' });
 
     mockCreateApiKey.mockResolvedValue({ key: 'tank_abc123xyz' });
 
@@ -427,8 +427,8 @@ describe('POST /api/v1/cli-auth/exchange', () => {
   });
 
   it('prevents replay — second exchange returns 400', async () => {
-    const code = createSession('my-state');
-    authorizeSession(code, 'user-123', { name: 'Test User', email: 'test@example.com' });
+    const code = await createSession('my-state');
+    await authorizeSession(code, 'user-123', { name: 'Test User', email: 'test@example.com' });
 
     mockCreateApiKey.mockResolvedValue({ key: 'tank_abc123xyz' });
 
@@ -454,8 +454,8 @@ describe('POST /api/v1/cli-auth/exchange', () => {
   });
 
   it('returns 400 for expired session', async () => {
-    const code = createSession('my-state');
-    authorizeSession(code, 'user-123');
+    const code = await createSession('my-state');
+    await authorizeSession(code, 'user-123');
 
     vi.useFakeTimers();
     vi.advanceTimersByTime(5 * 60 * 1000 + 1);
@@ -474,8 +474,8 @@ describe('POST /api/v1/cli-auth/exchange', () => {
   });
 
   it('returns 403 when session user is blocked', async () => {
-    const code = createSession('my-state');
-    authorizeSession(code, 'user-123', { name: 'Test User', email: 'test@example.com' });
+    const code = await createSession('my-state');
+    await authorizeSession(code, 'user-123', { name: 'Test User', email: 'test@example.com' });
     mockIsUserBlocked.mockResolvedValue(true);
 
     const { POST } = await import('../exchange/route');
