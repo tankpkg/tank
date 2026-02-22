@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     // Consume the session (one-time use, validates state match + authorized status)
-    const session = consumeSession(sessionCode, state);
+    const session = await consumeSession(sessionCode, state);
     authLog.info({ action: 'exchange', sessionCode: sessionCode.slice(0, 8) + '...', consumed: !!session, state: state.slice(0, 8) + '...' }, 'Exchange attempt');
 
     if (!session) {

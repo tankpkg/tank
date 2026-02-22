@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     // Check session exists
-    const cliSession = getSession(sessionCode);
+    const cliSession = await getSession(sessionCode);
     if (!cliSession) {
       authLog.warn({ action: 'authorize', sessionCode: sessionCode?.slice(0, 8) + '...' }, 'Session not found or expired');
       return NextResponse.json(
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     }
 
     // Authorize the session with user info for later retrieval
-    const success = authorizeSession(sessionCode, session.user.id, {
+    const success = await authorizeSession(sessionCode, session.user.id, {
       name: session.user.name,
       email: session.user.email,
     });

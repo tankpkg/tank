@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const sessionCode = createSession(state);
+    const sessionCode = await createSession(state);
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const authUrl = `${baseUrl}/cli-login?session=${sessionCode}`;
