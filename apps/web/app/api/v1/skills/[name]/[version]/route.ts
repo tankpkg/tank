@@ -3,7 +3,7 @@ import { eq, and, sql, desc } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import { db } from '@/lib/db';
 import { skills, skillVersions, skillDownloads, scanResults, scanFindings } from '@/lib/db/schema';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getStorageProvider } from '@/lib/storage/provider';
 import { resolveRequestUserId } from '@/lib/auth-helpers';
 
 async function recordDownload(
@@ -128,15 +128,15 @@ export async function GET(
     const versionId = row.versionId as string;
     const tarballPath = row.tarballPath as string;
 
-    // Query 2: Supabase signed URL (external, cannot consolidate)
-    const { data: downloadData, error: downloadError } = await supabaseAdmin.storage
-      .from('packages')
-      .createSignedUrl(tarballPath, 3600);
-
-    if (downloadError || !downloadData) {
-      console.error('[Version] Supabase signed URL error:', downloadError);
+    // Query 2: signed URL (external, cannot consolidate)
+    let signedDownloadUrl: string;
+    try {
+      const downloadData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
+      signedDownloadUrl = downloadData.signedUrl;
+    } catch (error) {
+      console.error('[Version] Signed URL error:', error);
       return NextResponse.json(
-        { error: 'Failed to generate download URL', details: downloadError?.message },
+        { error: 'Failed to generate download URL' },
         { status: 500 },
       );
     }
@@ -187,7 +187,7 @@ export async function GET(
       permissions: row.permissions,
       auditScore: row.auditScore != null ? Number(row.auditScore) : null,
       auditStatus: row.auditStatus as string,
-      downloadUrl: downloadData.signedUrl,
+      downloadUrl: signedDownloadUrl,
       publishedAt: row.publishedAt as string,
       downloads: downloadCount,
       scanVerdict,

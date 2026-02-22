@@ -4,7 +4,7 @@ import { unpackTar } from 'modern-tar';
 import pako from 'pako';
 import { db } from '@/lib/db';
 import { skills, skillVersions } from '@/lib/db/schema';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getStorageProvider } from '@/lib/storage/provider';
 import { canReadSkill, resolveRequestUserId } from '@/lib/auth-helpers';
 
 export async function GET(
@@ -50,19 +50,19 @@ export async function GET(
       return NextResponse.json({ error: 'Skill or version not found' }, { status: 404 });
     }
 
-    const { data: downloadData, error: downloadError } = await supabaseAdmin.storage
-      .from('packages')
-      .createSignedUrl(tarballPath, 3600);
-
-    if (downloadError || !downloadData) {
-      console.error('[FileContent] Supabase signed URL error:', downloadError);
+    let signedDownloadUrl: string;
+    try {
+      const downloadData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
+      signedDownloadUrl = downloadData.signedUrl;
+    } catch (error) {
+      console.error('[FileContent] Signed URL error:', error);
       return NextResponse.json(
-        { error: 'Failed to generate download URL', details: downloadError?.message },
+        { error: 'Failed to generate download URL' },
         { status: 500 },
       );
     }
 
-    const response = await fetch(downloadData.signedUrl);
+    const response = await fetch(signedDownloadUrl);
     if (!response.ok) {
       return NextResponse.json({ error: 'Failed to fetch tarball' }, { status: 500 });
     }

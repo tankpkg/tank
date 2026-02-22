@@ -9,6 +9,61 @@ interface RouteParams {
   params: Promise<{ name: string }>;
 }
 
+let skillStarsTableExists: boolean | null = null;
+
+function isMissingRelationError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+  const maybeError = error as { code?: string; cause?: { code?: string } };
+  return maybeError.code === '42P01' || maybeError.cause?.code === '42P01';
+}
+
+async function hasSkillStarsTable(): Promise<boolean> {
+  if (skillStarsTableExists !== null) {
+    return skillStarsTableExists;
+  }
+
+  try {
+    const result = await db.execute(
+      sql`SELECT to_regclass('public.skill_stars') IS NOT NULL AS "exists"`,
+    ) as Array<{ exists: boolean }>;
+    skillStarsTableExists = Boolean(result[0]?.exists);
+  } catch {
+    skillStarsTableExists = false;
+  }
+
+  return skillStarsTableExists;
+}
+
+function starsUnavailableResponse(): NextResponse {
+  return NextResponse.json(
+    {
+      error: 'Stars feature is temporarily unavailable. Migration pending.',
+      code: 'STARS_UNAVAILABLE',
+    },
+    { status: 503 },
+  );
+}
+
+function starsUnavailableReadResponse(): NextResponse {
+  return NextResponse.json({ starCount: 0, isStarred: false, starsAvailable: false });
+}
+
+async function resolveSkillId(name: string): Promise<string | null> {
+  const skillRows = await db
+    .select({ id: skills.id })
+    .from(skills)
+    .where(eq(skills.name, name))
+    .limit(1);
+
+  if (skillRows.length === 0) {
+    return null;
+  }
+
+  return skillRows[0].id;
+}
+
 async function getStarCount(skillId: string): Promise<number> {
   const result = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -25,17 +80,16 @@ export async function GET(request: Request, { params }: RouteParams) {
     const session = await auth.api.getSession({ headers: await headers() });
     const userId = session?.user?.id;
 
-    const skillRows = await db
-      .select({ id: skills.id })
-      .from(skills)
-      .where(eq(skills.name, name))
-      .limit(1);
-
-    if (skillRows.length === 0) {
+    const skillId = await resolveSkillId(name);
+    if (!skillId) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
     }
 
-    const skillId = skillRows[0].id;
+    const starsTableAvailable = await hasSkillStarsTable();
+    if (!starsTableAvailable) {
+      return starsUnavailableReadResponse();
+    }
+
     const starCount = await getStarCount(skillId);
 
     let isStarred = false;
@@ -50,6 +104,10 @@ export async function GET(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({ starCount, isStarred });
   } catch (error) {
+    if (isMissingRelationError(error)) {
+      skillStarsTableExists = false;
+      return starsUnavailableReadResponse();
+    }
     console.error('[Star GET] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -69,17 +127,15 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
     const userId = session.user.id;
 
-    const skillRows = await db
-      .select({ id: skills.id })
-      .from(skills)
-      .where(eq(skills.name, name))
-      .limit(1);
-
-    if (skillRows.length === 0) {
+    const skillId = await resolveSkillId(name);
+    if (!skillId) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
     }
 
-    const skillId = skillRows[0].id;
+    const starsTableAvailable = await hasSkillStarsTable();
+    if (!starsTableAvailable) {
+      return starsUnavailableResponse();
+    }
 
     const existing = await db
       .select({ id: skillStars.id })
@@ -96,6 +152,10 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({ starCount, isStarred: true });
   } catch (error) {
+    if (isMissingRelationError(error)) {
+      skillStarsTableExists = false;
+      return starsUnavailableResponse();
+    }
     console.error('[Star POST] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -115,17 +175,15 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
     const userId = session.user.id;
 
-    const skillRows = await db
-      .select({ id: skills.id })
-      .from(skills)
-      .where(eq(skills.name, name))
-      .limit(1);
-
-    if (skillRows.length === 0) {
+    const skillId = await resolveSkillId(name);
+    if (!skillId) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
     }
 
-    const skillId = skillRows[0].id;
+    const starsTableAvailable = await hasSkillStarsTable();
+    if (!starsTableAvailable) {
+      return starsUnavailableResponse();
+    }
 
     await db
       .delete(skillStars)
@@ -135,6 +193,10 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({ starCount, isStarred: false });
   } catch (error) {
+    if (isMissingRelationError(error)) {
+      skillStarsTableExists = false;
+      return starsUnavailableResponse();
+    }
     console.error('[Star DELETE] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

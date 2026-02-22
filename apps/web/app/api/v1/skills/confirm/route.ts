@@ -4,7 +4,7 @@ import { verifyCliAuth } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { skills, skillVersions, scanResults, scanFindings } from '@/lib/db/schema';
 import { computeAuditScore, type AuditScoreInput } from '@/lib/audit-score';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getStorageProvider } from '@/lib/storage/provider';
 
 // Types for Python scan endpoint response
 interface ScanFinding {
@@ -41,12 +41,12 @@ async function triggerSecurityScan(
 ): Promise<ScanResponse | null> {
   try {
     // Generate signed download URL
-    const { data: urlData, error: urlError } = await supabaseAdmin.storage
-      .from('packages')
-      .createSignedUrl(tarballPath, 3600);
-
-    if (urlError || !urlData) {
-      console.error('Failed to generate signed URL for scan:', urlError);
+    let signedUrl: string;
+    try {
+      const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
+      signedUrl = urlData.signedUrl;
+    } catch (error) {
+      console.error('Failed to generate signed URL for scan:', error);
       return null;
     }
 
@@ -63,7 +63,7 @@ async function triggerSecurityScan(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tarball_url: urlData.signedUrl,
+        tarball_url: signedUrl,
         version_id: versionId,
         manifest,
         permissions,

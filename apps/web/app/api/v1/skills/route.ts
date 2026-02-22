@@ -5,7 +5,7 @@ import { verifyCliAuth } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { skills, skillVersions } from '@/lib/db/schema';
 import { organization, member, user, account } from '@/lib/db/auth-schema';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getStorageProvider } from '@/lib/storage/provider';
 
 export async function POST(request: Request) {
   // 1. Verify CLI auth
@@ -222,12 +222,12 @@ export async function POST(request: Request) {
     })
     .returning();
 
-  // 10. Generate signed upload URL from Supabase Storage
-  const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-    .from('packages')
-    .createSignedUploadUrl(tarballPath);
-
-  if (uploadError || !uploadData) {
+  // 10. Generate signed upload URL
+  let signedUploadUrl: string;
+  try {
+    const uploadData = await getStorageProvider().createSignedUploadUrl(tarballPath);
+    signedUploadUrl = uploadData.signedUrl;
+  } catch {
     return NextResponse.json(
       { error: 'Failed to generate upload URL' },
       { status: 500 },
@@ -236,7 +236,7 @@ export async function POST(request: Request) {
 
   // 11. Return response
   return NextResponse.json({
-    uploadUrl: uploadData.signedUrl,
+    uploadUrl: signedUploadUrl,
     skillId: skill.id,
     versionId: skillVersion.id,
   });
