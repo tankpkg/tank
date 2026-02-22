@@ -12,9 +12,7 @@ import {
 import { getSkillDetail } from '@/lib/data/skills';
 import type { SkillVersionSummary, ScanFinding } from '@/lib/data/skills';
 import { InstallCommand } from './install-command';
-import { SkillReadme } from './skill-readme';
 import { SkillTabs } from './skill-tabs';
-import { FileExplorer } from './file-explorer';
 import { DownloadButton } from './download-button';
 import {
   SecurityOverview,
@@ -189,34 +187,6 @@ export default async function SkillDetailPage({
 
   const readmeContent = data.latestVersion?.readme;
 
-  const readmeTab = readmeContent ? (
-    <div data-testid="readme-root">
-      <SkillReadme content={readmeContent} />
-    </div>
-  ) : (
-    <div className="py-12 text-center text-muted-foreground" data-testid="readme-root">
-      <p className="text-lg font-medium mb-1">No README</p>
-      <p className="text-sm">
-        This skill doesn&apos;t have a README yet. Add a SKILL.md to your
-        package and re-publish.
-      </p>
-    </div>
-  );
-
-  const versionsTab = <VersionHistory versions={data.versions} />;
-
-  const filesTab = (
-    <div data-testid="file-explorer-root">
-      <FileExplorer
-        files={fileList}
-        skillName={data.name}
-        version={data.latestVersion?.version ?? ''}
-        readme={data.latestVersion?.readme}
-        manifest={latestManifest}
-      />
-    </div>
-  );
-
   // Security tab - comprehensive security analysis
   const scanDetails = data.latestVersion?.scanDetails;
   const hasSecurityData = data.latestVersion?.auditScore != null && scanDetails != null;
@@ -316,9 +286,13 @@ export default async function SkillDetailPage({
       <div className="flex gap-8 items-start">
         <div className="flex-1 min-w-0">
           <SkillTabs
-            readmeTab={readmeTab}
-            versionsTab={versionsTab}
-            filesTab={filesTab}
+            readmeContent={readmeContent ?? null}
+            versions={data.versions}
+            files={fileList}
+            skillName={data.name}
+            version={data.latestVersion?.version ?? ''}
+            readme={data.latestVersion?.readme ?? null}
+            manifest={latestManifest}
             securityTab={securityTab}
             hasSecurityData={hasSecurityData}
           />
