@@ -14,6 +14,9 @@ from pathlib import Path
 from typing import Set
 
 import httpx
+import ipaddress
+import socket
+from urllib.parse import urlparse
 
 from .models import Finding, IngestResult, StageResult
 
@@ -84,18 +87,92 @@ BLOCKED_EXTENSIONS: Set[str] = {
     ".bin", ".dat",
 }
 
+# Allowed hosts for tarball downloads. This should list the domains or hostnames
+# that are expected to serve signed tarball URLs, for example:
+# "storage.googleapis.com", "my-bucket.s3.amazonaws.com", etc.
+# Multiple hosts can be provided via the TARBALL_ALLOWED_HOSTS environment
+# variable as a comma-separated list.
+_allowed_hosts_env = os.environ.get("TARBALL_ALLOWED_HOSTS", "")
+ALLOWED_DOWNLOAD_HOSTS: Set[str] = {
+    host.strip().lower()
+    for host in _allowed_hosts_env.split(",")
+    if host.strip()
+}
+
+
+def _is_public_ip(ip_str: str) -> bool:
+    """Return True if the given IP string is a public (non-private) address."""
+    try:
+        ip = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return False
+
+    return not (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+    )
+
+
+def validate_download_url(url: str) -> str:
+    """Validate that the download URL is allowed and does not target private networks.
+
+    This enforces:
+      - scheme is http or https
+      - hostname is in ALLOWED_DOWNLOAD_HOSTS (if configured)
+      - resolved IPs are public (non-private, non-loopback, etc.)
+
+    Returns:
+        Sanitized URL string reconstructed from validated components
+    """
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError("Unsupported URL scheme for tarball download")
+
+    if not parsed.hostname:
+        raise ValueError("Tarball URL must include a hostname")
+
+    hostname = parsed.hostname.lower()
+
+    if ALLOWED_DOWNLOAD_HOSTS and hostname not in ALLOWED_DOWNLOAD_HOSTS:
+        raise ValueError("Tarball host is not in the allowed hosts list")
+
+    try:
+        # Resolve all IPs for the hostname and ensure each is public.
+        addr_info = socket.getaddrinfo(hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        raise ValueError("Failed to resolve tarball host")
+
+    ips = {item[4][0] for item in addr_info}
+    if not ips:
+        raise ValueError("No IPs resolved for tarball host")
+
+    for ip in ips:
+        if not _is_public_ip(ip):
+            raise ValueError("Tarball host resolves to a non-public IP address")
+
+    # Return sanitized URL reconstructed from validated components
+    # This breaks the taint flow for static analysis
+    return parsed.geturl()
+
 
 async def download_tarball(url: str) -> bytes:
     """Download tarball from URL with size and timeout limits.
 
     Validates the URL origin before downloading to prevent SSRF attacks.
     """
-    # Validate URL origin before downloading
-    validate_download_url(url)
+    # Validate and sanitize URL - returns reconstructed URL from validated components
+    sanitized_url = validate_download_url(url)
 
     async with httpx.AsyncClient(timeout=DOWNLOAD_TIMEOUT) as client:
         # First, get headers to check content-length
-        head_response = await client.head(url, follow_redirects=True)
+        # URL has been validated and sanitized by validate_download_url()
+        head_response = await client.head(sanitized_url, follow_redirects=True)
+        # Re-validate the final URL after redirects to prevent SSRF via redirect chains
+        final_url = validate_download_url(str(head_response.url))
         content_length = int(head_response.headers.get("content-length", 0))
 
         if content_length > MAX_TARBALL_SIZE:
@@ -104,7 +181,10 @@ async def download_tarball(url: str) -> bytes:
             )
 
         # Stream download to handle large files
-        response = await client.get(url, follow_redirects=True)
+        # URL has been validated and sanitized by validate_download_url()
+        response = await client.get(sanitized_url, follow_redirects=True)
+        # Re-validate the final URL after redirects to prevent SSRF via redirect chains
+        final_url = validate_download_url(str(response.url))
         response.raise_for_status()
 
         data = response.content

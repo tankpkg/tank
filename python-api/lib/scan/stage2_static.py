@@ -1,14 +1,16 @@
 """Stage 2: Static Code Analysis
 
-Runs Bandit on Python files, custom AST analysis for dangerous patterns,
-regex patterns for JS/TS, and purpose cross-check against declared permissions.
+Runs Bandit (Python AST), custom AST analysis for dangerous patterns,
+regex patterns for JS/TS/shell, and cross-checks against declared permissions.
 """
 
 import ast
+import json
 import re
+import subprocess
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, List
 
 from lib.scan.models import Finding, IngestResult, StageResult
 
@@ -178,7 +180,7 @@ class PythonASTAnalyzer(ast.NodeVisitor):
                                 self._add_finding(node, pattern_type, pattern_info, func_name)
                                 return
 
-    def _get_func_name(self, node: ast.Call) -> str | None:
+    def _get_func_name(self, node: ast.Call) -> Optional[str]:
         """Extract function name from Call node."""
         if isinstance(node.func, ast.Name):
             return node.func.id
@@ -467,7 +469,7 @@ def stage2_analyze(
 ) -> StageResult:
     """Run Stage 2: Static Code Analysis.
 
-    Runs Bandit on Python files, custom AST analysis, regex patterns for JS/TS,
+    Runs Bandit (Python AST), custom AST analysis, regex patterns for JS/TS/shell,
     and cross-checks against declared permissions.
 
     Args:
@@ -512,7 +514,7 @@ def stage2_analyze(
         elif ext in SHELL_EXTENSIONS:
             shell_files.append(file_path)
 
-    # Run Bandit on Python files
+    # Run Bandit on Python files (Python-specific AST scanner)
     if python_files:
         bandit_findings = run_bandit_scan(temp_dir, python_files)
         findings.extend(bandit_findings)

@@ -12,12 +12,16 @@ interface SkillTabsProps {
   readmeTab: ReactNode;
   versionsTab: ReactNode;
   filesTab: ReactNode;
+  securityTab?: ReactNode;
+  hasSecurityData?: boolean;
 }
 
 export function SkillTabs({
   readmeTab,
   versionsTab,
   filesTab,
+  securityTab,
+  hasSecurityData = false,
 }: SkillTabsProps) {
   return (
     <Tabs defaultValue="readme" className="w-full">
@@ -40,6 +44,14 @@ export function SkillTabs({
         >
           Files
         </TabsTrigger>
+        {hasSecurityData && (
+          <TabsTrigger
+            value="security"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2"
+          >
+            Security
+          </TabsTrigger>
+        )}
       </TabsList>
       <TabsContent value="readme" className="mt-6">
         {readmeTab}
@@ -50,6 +62,11 @@ export function SkillTabs({
       <TabsContent value="files" className="mt-6">
         {filesTab}
       </TabsContent>
+      {hasSecurityData && securityTab && (
+        <TabsContent value="security" className="mt-6">
+          {securityTab}
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
