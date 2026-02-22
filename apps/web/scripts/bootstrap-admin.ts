@@ -3,10 +3,21 @@ import { db } from '../lib/db';
 import { auditEvents, user } from '../lib/db/schema';
 
 async function main() {
-  const email = process.env.FIRST_ADMIN_EMAIL?.trim().toLowerCase();
+  // Support both command-line argument and env variable
+  // Usage: pnpm admin:bootstrap --email=user@example.com
+  const args = process.argv.slice(2);
+  const emailArg = args.find((arg) => arg.startsWith('--email='));
+  const email = (emailArg?.split('=')[1] || process.env.FIRST_ADMIN_EMAIL)?.trim().toLowerCase();
 
   if (!email) {
-    throw new Error('FIRST_ADMIN_EMAIL is required.');
+    console.error('Error: Email is required.');
+    console.error('');
+    console.error('Usage:');
+    console.error('  pnpm admin:bootstrap --email=your-email@example.com');
+    console.error('');
+    console.error('Or set FIRST_ADMIN_EMAIL in your .env.local file and run:');
+    console.error('  pnpm admin:bootstrap');
+    process.exit(1);
   }
 
   const [existingUser] = await db
@@ -16,11 +27,14 @@ async function main() {
     .limit(1);
 
   if (!existingUser) {
-    throw new Error(`User with email '${email}' was not found.`);
+    console.error(`Error: User with email '${email}' was not found.`);
+    console.error('');
+    console.error('Make sure you have logged in at least once with GitHub.');
+    process.exit(1);
   }
 
   if (existingUser.role === 'admin') {
-    console.log(`User ${email} is already an admin.`);
+    console.log(`✓ User ${email} is already an admin.`);
     return;
   }
 
@@ -39,7 +53,9 @@ async function main() {
     },
   });
 
-  console.log(`Promoted ${email} to admin.`);
+  console.log(`✓ Promoted ${email} to admin.`);
+  console.log('');
+  console.log('You can now access the admin panel at: /admin');
 }
 
 main().catch((error: unknown) => {

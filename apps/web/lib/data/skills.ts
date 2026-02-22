@@ -247,6 +247,7 @@ export async function searchSkills(
     : sql`s.updated_at DESC`;
 
   // Join through user table to resolve publisher name
+  // Also fetch download count from skill_downloads table
   const results = await db.execute(sql`
     SELECT
       s.name,
@@ -254,6 +255,7 @@ export async function searchSkills(
       sv.version AS "latestVersion",
       sv.audit_score AS "auditScore",
       coalesce(u.name, '') AS publisher,
+      coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS downloads,
       count(*) OVER() AS total
     FROM skills s
     LEFT JOIN "user" u ON u.id = s.publisher_id
@@ -276,7 +278,7 @@ export async function searchSkills(
       latestVersion: (row.latestVersion as string) ?? null,
       auditScore: row.auditScore != null ? Number(row.auditScore) : null,
       publisher: (row.publisher as string) ?? '',
-      downloads: 0,
+      downloads: Number(row.downloads) || 0,
     })),
     page,
     limit,

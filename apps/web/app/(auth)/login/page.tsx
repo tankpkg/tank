@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,11 +25,32 @@ function GitHubIcon({ className }: { className?: string }) {
 }
 
 export default function LoginPage() {
-  const handleSignIn = () => {
-    authClient.signIn.social({
-      provider: 'github',
-      callbackURL: '/dashboard',
-    });
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignIn = async () => {
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const result = await authClient.signIn.social({
+        provider: 'github',
+        callbackURL: '/dashboard',
+      });
+
+      // If there's an error in the result, show it
+      if (result.error) {
+        setError(result.error.message || 'Failed to sign in with GitHub');
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'An unexpected error occurred. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -39,16 +61,30 @@ export default function LoginPage() {
           Security-first package manager for AI agent skills
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <Button
           onClick={handleSignIn}
           variant="outline"
           className="w-full"
           size="lg"
+          disabled={isLoading}
         >
           <GitHubIcon className="size-5" />
-          Sign in with GitHub
+          {isLoading ? 'Signing in...' : 'Sign in with GitHub'}
         </Button>
+
+        {error && (
+          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+            <p className="font-medium">Sign in failed</p>
+            <p className="mt-1">{error}</p>
+            {(error.includes('provider') || error.includes('config')) && (
+              <p className="mt-2 text-xs">
+                GitHub OAuth may not be configured. Check your environment
+                variables.
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
