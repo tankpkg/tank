@@ -53,7 +53,13 @@ export default async function AdminPackageDetailPage({
   params: Promise<{ name: string[] }>;
 }) {
   const { name: nameSegments } = await params;
-  const name = nameSegments.join('/');
+  const name = nameSegments.map((segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch {
+      return segment;
+    }
+  }).join('/');
 
   const [skill] = await db
     .select()
