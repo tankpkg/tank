@@ -26,6 +26,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   // ---- Fixture IDs (deterministic for cleanup) ----
   const targetUserId = 'e2e-admin-target-user';
   const targetUser2Id = 'e2e-admin-target-user-2';
+  const targetPublisherId = 'e2e-admin-target-publisher';
   const targetSkillId = 'e2e-admin-target-skill';
   const targetSkill2Id = 'e2e-admin-target-skill-2';
   const targetSkillName = '@e2etest/admin-target-skill'; // scoped
@@ -63,16 +64,21 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
       VALUES (${targetUser2Id}, 'Admin Target User 2', 'admin-target-2@tank.test', true, 'user', ${now}, ${now})
       ON CONFLICT (id) DO NOTHING
     `;
+    await sql`
+      INSERT INTO "user" (id, name, email, email_verified, role, created_at, updated_at)
+      VALUES (${targetPublisherId}, 'Admin Target Publisher', 'admin-publisher@tank.test', true, 'user', ${now}, ${now})
+      ON CONFLICT (id) DO NOTHING
+    `;
 
     // Two target skills — one scoped, one unscoped
     await sql`
       INSERT INTO skills (id, name, description, publisher_id, status, created_at, updated_at)
-      VALUES (${targetSkillId}, ${targetSkillName}, 'Scoped admin target skill', ${ctx.user.id}, 'active', ${now}, ${now})
+      VALUES (${targetSkillId}, ${targetSkillName}, 'Scoped admin target skill', ${targetPublisherId}, 'active', ${now}, ${now})
       ON CONFLICT (id) DO NOTHING
     `;
     await sql`
       INSERT INTO skills (id, name, description, publisher_id, status, created_at, updated_at)
-      VALUES (${targetSkill2Id}, ${targetSkill2Name}, 'Unscoped admin target skill', ${ctx.user.id}, 'active', ${now}, ${now})
+      VALUES (${targetSkill2Id}, ${targetSkill2Name}, 'Unscoped admin target skill', ${targetPublisherId}, 'active', ${now}, ${now})
       ON CONFLICT (id) DO NOTHING
     `;
 
@@ -107,7 +113,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
 
   afterAll(async () => {
     if (sql) {
-      const allTargetIds = [targetUserId, targetUser2Id, targetSkillId, targetSkill2Id, targetOrgId];
+      const allTargetIds = [targetUserId, targetUser2Id, targetPublisherId, targetSkillId, targetSkill2Id, targetOrgId];
       await sql`DELETE FROM audit_events WHERE actor_id = ${ctx.user.id}`;
       await sql`DELETE FROM audit_events WHERE target_id IN ${sql(allTargetIds)}`;
       await sql`DELETE FROM skill_downloads WHERE version_id IN ${sql([targetSkillVersionId, targetSkillVersion2Id])}`;
@@ -117,8 +123,8 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
       await sql`DELETE FROM "member" WHERE id IN ${sql([targetMemberId, targetMember2Id])}`;
       await sql`DELETE FROM "organization" WHERE id = ${targetOrgId}`;
       await sql`DELETE FROM skills WHERE id IN ${sql([targetSkillId, targetSkill2Id])}`;
-      await sql`DELETE FROM user_status WHERE user_id IN ${sql([targetUserId, targetUser2Id])}`;
-      await sql`DELETE FROM "user" WHERE id IN ${sql([targetUserId, targetUser2Id])}`;
+      await sql`DELETE FROM user_status WHERE user_id IN ${sql([targetUserId, targetUser2Id, targetPublisherId])}`;
+      await sql`DELETE FROM "user" WHERE id IN ${sql([targetUserId, targetUser2Id, targetPublisherId])}`;
     }
     if (ctx) {
       await cleanupE2E(ctx);
@@ -508,9 +514,38 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     const now = new Date();
     await sql`
       INSERT INTO skills (id, name, description, publisher_id, status, created_at, updated_at)
-      VALUES (${targetSkill2Id}, ${targetSkill2Name}, 'Unscoped admin target skill', ${ctx.user.id}, 'active', ${now}, ${now})
+      VALUES (${targetSkill2Id}, ${targetSkill2Name}, 'Unscoped admin target skill', ${targetPublisherId}, 'active', ${now}, ${now})
       ON CONFLICT (id) DO NOTHING
     `;
+  });
+
+  it('bans package publisher and deletes all publisher packages', async () => {
+    const res = await adminFetch(
+      `/api/admin/packages/${encodeName(targetSkillName)}/publisher-ban-delete`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          packageName: targetSkillName,
+          confirmText: 'BAN_DELETE_ALL',
+          reason: 'E2E publisher ban + delete all',
+        }),
+      },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as AdminApiResponse;
+    expect(body.publisherId).toBe(targetPublisherId);
+    expect(body.deletedPackageCount).toBeGreaterThanOrEqual(2);
+
+    const scopedDetail = await adminFetch(`/api/admin/packages/${encodeName(targetSkillName)}`);
+    expect(scopedDetail.status).toBe(404);
+    const unscopedDetail = await adminFetch(`/api/admin/packages/${encodeName(targetSkill2Name)}`);
+    expect(unscopedDetail.status).toBe(404);
+
+    const publisherDetail = await adminFetch(`/api/admin/users/${targetPublisherId}`);
+    expect(publisherDetail.status).toBe(200);
+    const publisherBody = (await publisherDetail.json()) as AdminApiResponse;
+    const statusHistory = publisherBody.statusHistory as Array<{ status: string }>;
+    expect(statusHistory[0]?.status).toBe('banned');
   });
 
   // =================================================================
@@ -673,6 +708,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     expect(actions).toContain('skill.remove');
     expect(actions).toContain('skill.version.delete');
     expect(actions).toContain('skill.force_delete');
+    expect(actions.filter((action) => action === 'user.ban').length).toBeGreaterThanOrEqual(2);
 
     // Org management
     expect(actions).toContain('org.member.remove');
@@ -686,6 +722,9 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     ).toBe(true);
     expect(
       events.some((e) => e.action === 'skill.remove' && e.targetId === targetSkill2Id),
+    ).toBe(true);
+    expect(
+      events.some((e) => e.action === 'user.ban' && e.targetId === targetPublisherId),
     ).toBe(true);
   });
 });

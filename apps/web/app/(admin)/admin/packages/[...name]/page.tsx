@@ -16,6 +16,7 @@ import { FeatureButton } from './components/feature-button';
 import { StatusDialog } from './components/status-dialog';
 import { ForceDeleteCard } from './components/force-delete-card';
 import { DeleteVersionButton } from './components/delete-version-button';
+import { PublisherBanDeleteButton } from './components/publisher-ban-delete-button';
 
 type PackageStatus = 'active' | 'deprecated' | 'quarantined' | 'removed';
 
@@ -261,6 +262,7 @@ export default async function AdminPackageDetailPage({
                   {publisher.githubUsername ? (
                     <p className="text-muted-foreground">@{publisher.githubUsername}</p>
                   ) : null}
+                  <PublisherBanDeleteButton packageName={name} publisherId={publisher.id} />
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">Unknown publisher</p>

@@ -10,6 +10,7 @@ import {
   auditEvents,
   scanResults,
   scanFindings,
+  userStatus,
 } from '@/lib/db/schema';
 import { user } from '@/lib/db/auth-schema';
 
@@ -17,11 +18,11 @@ import { user } from '@/lib/db/auth-schema';
 // @tank/skill-creator arrive as multiple path segments. Parse from URL path
 // and split off trailing action keywords (feature, status).
 
-const ACTIONS = new Set(['feature', 'status']);
+const ACTIONS = new Set(['feature', 'status', 'publisher-ban-delete']);
 
 type ParsedRequest = {
   name: string;
-  action: 'feature' | 'status' | 'version' | undefined;
+  action: 'feature' | 'status' | 'publisher-ban-delete' | 'version' | undefined;
   version: string | undefined;
 };
 
@@ -38,7 +39,7 @@ function parseSegments(segments: string[]): ParsedRequest {
   if (segments.length >= 2 && ACTIONS.has(last)) {
     return {
       name: segments.slice(0, -1).join('/'),
-      action: last as 'feature' | 'status',
+      action: last as 'feature' | 'status' | 'publisher-ban-delete',
       version: undefined,
     };
   }
@@ -333,6 +334,144 @@ async function handleDeleteVersion(
   });
 }
 
+async function handleBanPublisherAndDeleteAll(
+  name: string,
+  req: NextRequest,
+  adminUser: AdminAuthContext['user'],
+): Promise<NextResponse> {
+  const body = await readJsonBody(req);
+
+  if (!body) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  const packageName = body.packageName;
+  const confirmText = body.confirmText;
+  const reasonValue = body.reason;
+
+  if (packageName !== name || confirmText !== 'BAN_DELETE_ALL') {
+    return NextResponse.json({ error: 'Ban + delete confirmation failed' }, { status: 400 });
+  }
+
+  const [sourceSkill] = await db
+    .select({
+      id: skills.id,
+      name: skills.name,
+      publisherId: skills.publisherId,
+    })
+    .from(skills)
+    .where(eq(skills.name, name))
+    .limit(1);
+
+  if (!sourceSkill) {
+    return NextResponse.json({ error: 'Package not found' }, { status: 404 });
+  }
+
+  if (adminUser.id === sourceSkill.publisherId) {
+    return NextResponse.json({ error: 'Cannot ban your own account' }, { status: 400 });
+  }
+
+  const reason = typeof reasonValue === 'string' && reasonValue.trim().length > 0
+    ? reasonValue.trim()
+    : `Publisher banned while deleting all packages (source: ${name})`;
+
+  const publisherSkills = await db
+    .select({
+      id: skills.id,
+      name: skills.name,
+      status: skills.status,
+    })
+    .from(skills)
+    .where(eq(skills.publisherId, sourceSkill.publisherId));
+
+  if (publisherSkills.length === 0) {
+    return NextResponse.json({ error: 'Publisher has no packages to delete' }, { status: 404 });
+  }
+
+  const skillIds = publisherSkills.map((row) => row.id);
+  const versionRows = await db
+    .select({ id: skillVersions.id })
+    .from(skillVersions)
+    .where(inArray(skillVersions.skillId, skillIds));
+  const versionIds = versionRows.map((row) => row.id);
+
+  await db.transaction(async (tx) => {
+    await tx.insert(userStatus).values({
+      userId: sourceSkill.publisherId,
+      status: 'banned',
+      reason,
+      bannedBy: adminUser.id,
+      expiresAt: null,
+    });
+
+    await tx.insert(auditEvents).values({
+      action: 'user.ban',
+      actorId: adminUser.id,
+      targetType: 'user',
+      targetId: sourceSkill.publisherId,
+      metadata: {
+        reason,
+        sourcePackage: sourceSkill.name,
+        removedPackageCount: publisherSkills.length,
+      },
+    });
+
+    if (versionIds.length > 0) {
+      await tx
+        .delete(scanFindings)
+        .where(
+          sql`${scanFindings.scanId} in (
+            select ${scanResults.id}
+            from ${scanResults}
+            where ${inArray(scanResults.versionId, versionIds)}
+          )`,
+        );
+
+      await tx
+        .delete(scanResults)
+        .where(inArray(scanResults.versionId, versionIds));
+
+      await tx
+        .delete(skillDownloads)
+        .where(inArray(skillDownloads.versionId, versionIds));
+    }
+
+    await tx
+      .delete(skillDownloads)
+      .where(inArray(skillDownloads.skillId, skillIds));
+
+    await tx
+      .delete(skillVersions)
+      .where(inArray(skillVersions.skillId, skillIds));
+
+    for (const publisherSkill of publisherSkills) {
+      await tx.insert(auditEvents).values({
+        action: 'skill.force_delete',
+        actorId: adminUser.id,
+        targetType: 'skill',
+        targetId: publisherSkill.id,
+        metadata: {
+          reason,
+          previousStatus: publisherSkill.status,
+          publisherId: sourceSkill.publisherId,
+          sourcePackage: sourceSkill.name,
+        },
+      });
+    }
+
+    await tx
+      .delete(skills)
+      .where(inArray(skills.id, skillIds));
+  });
+
+  return NextResponse.json({
+    success: true,
+    publisherId: sourceSkill.publisherId,
+    deletedPackageCount: publisherSkills.length,
+    deletedPackageNames: publisherSkills.map((row) => row.name),
+  });
+}
+
 async function handleFeature(name: string, req: NextRequest, adminUser: AdminAuthContext['user']): Promise<NextResponse> {
   let body: unknown;
   try {
@@ -502,6 +641,10 @@ export const DELETE = withAdminAuth(async (req: NextRequest, { user: adminUser }
 
 export const POST = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext): Promise<NextResponse> => {
   const { name, action } = parseRequest(req);
+
+  if (name && action === 'publisher-ban-delete') {
+    return handleBanPublisherAndDeleteAll(name, req, adminUser);
+  }
 
   if (name && action === 'feature') {
     return handleFeature(name, req, adminUser);
