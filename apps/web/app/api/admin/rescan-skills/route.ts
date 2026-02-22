@@ -4,7 +4,7 @@ import { withAdminAuth, type AdminAuthContext } from '@/lib/admin-middleware';
 import { db } from '@/lib/db';
 import { skillVersions, scanResults, scanFindings } from '@/lib/db/schema';
 import { computeAuditScore, type AuditScoreInput } from '@/lib/audit-score';
-import { supabaseAdmin } from '@/lib/supabase';
+import { getStorageProvider } from '@/lib/storage/provider';
 
 interface ScanFinding {
   stage: string;
@@ -38,12 +38,12 @@ async function triggerSecurityScan(
   permissions: Record<string, unknown>,
 ): Promise<ScanResponse | null> {
   try {
-    const { data: urlData, error: urlError } = await supabaseAdmin.storage
-      .from('packages')
-      .createSignedUrl(tarballPath, 3600);
-
-    if (urlError || !urlData) {
-      console.error('Failed to generate signed URL for scan:', urlError);
+    let signedUrl: string;
+    try {
+      const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
+      signedUrl = urlData.signedUrl;
+    } catch (error) {
+      console.error('Failed to generate signed URL for scan:', error);
       return null;
     }
 
@@ -56,7 +56,7 @@ async function triggerSecurityScan(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tarball_url: urlData.signedUrl,
+        tarball_url: signedUrl,
         version_id: versionId,
         manifest,
         permissions,
