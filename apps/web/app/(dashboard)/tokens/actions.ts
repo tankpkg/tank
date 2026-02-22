@@ -2,6 +2,8 @@
 
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { auditEvents } from '@/lib/db/schema';
 
 const allowedScopes = new Set(['skills:read', 'skills:publish', 'skills:admin']);
 
@@ -55,6 +57,14 @@ export async function createToken(input: {
     },
   });
 
+  await db.insert(auditEvents).values({
+    action: 'api_key.create',
+    actorId: session.user.id,
+    targetType: 'api_key',
+    targetId: result.id,
+    metadata: { name, scopes: normalizedScopes, expiresInDays: normalizedExpiresInDays },
+  });
+
   return result;
 }
 
@@ -84,6 +94,14 @@ export async function revokeToken(keyId: string) {
   const result = await auth.api.deleteApiKey({
     body: { keyId },
     headers: reqHeaders,
+  });
+
+  await db.insert(auditEvents).values({
+    action: 'api_key.revoke',
+    actorId: session.user.id,
+    targetType: 'api_key',
+    targetId: keyId,
+    metadata: {},
   });
 
   return result;
