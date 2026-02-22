@@ -1,8 +1,29 @@
 import { auth } from './auth';
+import { db } from './db';
+import { userStatus } from './db/schema';
+import { desc, eq } from 'drizzle-orm';
 
 export interface VerifiedApiKey {
   userId: string;
   keyId: string;
+}
+
+export type ModerationStatus = 'active' | 'suspended' | 'banned';
+
+export async function getUserModerationStatus(userId: string): Promise<ModerationStatus> {
+  const latest = await db
+    .select({ status: userStatus.status })
+    .from(userStatus)
+    .where(eq(userStatus.userId, userId))
+    .orderBy(desc(userStatus.createdAt))
+    .limit(1);
+
+  return (latest[0]?.status as ModerationStatus | undefined) ?? 'active';
+}
+
+export async function isUserBlocked(userId: string): Promise<boolean> {
+  const status = await getUserModerationStatus(userId);
+  return status === 'banned' || status === 'suspended';
 }
 
 /**
@@ -25,6 +46,10 @@ export async function verifyCliAuth(request: Request): Promise<VerifiedApiKey | 
     const result = await auth.api.verifyApiKey({ body: { key: token } });
 
     if (!result.valid || !result.key) {
+      return null;
+    }
+
+    if (await isUserBlocked(result.key.userId)) {
       return null;
     }
 

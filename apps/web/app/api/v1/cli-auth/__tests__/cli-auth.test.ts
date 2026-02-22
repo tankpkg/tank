@@ -146,6 +146,7 @@ describe('cli-auth-store', () => {
 
 const mockGetSession = vi.fn();
 const mockCreateApiKey = vi.fn();
+const mockIsUserBlocked = vi.fn();
 
 vi.mock('@/lib/auth', () => ({
   auth: {
@@ -159,6 +160,10 @@ vi.mock('@/lib/auth', () => ({
 // Mock next/headers
 vi.mock('next/headers', () => ({
   headers: vi.fn().mockResolvedValue(new Headers()),
+}));
+
+vi.mock('@/lib/auth-helpers', () => ({
+  isUserBlocked: (...args: unknown[]) => mockIsUserBlocked(...args),
 }));
 
 describe('POST /api/v1/cli-auth/start', () => {
@@ -227,6 +232,8 @@ describe('POST /api/v1/cli-auth/authorize', () => {
   beforeEach(() => {
     clearAllSessions();
     mockGetSession.mockReset();
+    mockIsUserBlocked.mockReset();
+    mockIsUserBlocked.mockResolvedValue(false);
   });
 
   it('returns 401 when user is not authenticated', async () => {
@@ -296,12 +303,32 @@ describe('POST /api/v1/cli-auth/authorize', () => {
     expect(session!.userName).toBe('Test User');
     expect(session!.userEmail).toBe('test@example.com');
   });
+
+  it('returns 403 when user is blocked', async () => {
+    mockGetSession.mockResolvedValue({
+      user: { id: 'user-123', name: 'Test User', email: 'test@example.com' },
+    });
+    mockIsUserBlocked.mockResolvedValue(true);
+    const code = createSession('my-state');
+
+    const { POST } = await import('../authorize/route');
+    const request = new Request('http://localhost:3000/api/v1/cli-auth/authorize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionCode: code }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(403);
+  });
 });
 
 describe('POST /api/v1/cli-auth/exchange', () => {
   beforeEach(() => {
     clearAllSessions();
     mockCreateApiKey.mockReset();
+    mockIsUserBlocked.mockReset();
+    mockIsUserBlocked.mockResolvedValue(false);
   });
 
   it('returns 400 when sessionCode is missing', async () => {
@@ -444,5 +471,21 @@ describe('POST /api/v1/cli-auth/exchange', () => {
     expect(response.status).toBe(400);
 
     vi.useRealTimers();
+  });
+
+  it('returns 403 when session user is blocked', async () => {
+    const code = createSession('my-state');
+    authorizeSession(code, 'user-123', { name: 'Test User', email: 'test@example.com' });
+    mockIsUserBlocked.mockResolvedValue(true);
+
+    const { POST } = await import('../exchange/route');
+    const request = new Request('http://localhost:3000/api/v1/cli-auth/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionCode: code, state: 'my-state' }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(403);
   });
 });

@@ -3,6 +3,9 @@ export { skillsJsonSchema, type SkillsJson } from './schemas/skills-json.js';
 export { skillsLockSchema, type SkillsLock, type LockedSkill } from './schemas/skills-lock.js';
 export { permissionsSchema, networkPermissionsSchema, filesystemPermissionsSchema, type Permissions, type NetworkPermissions, type FilesystemPermissions } from './schemas/permissions.js';
 
+// Admin types
+export { userRoleSchema, userStatusSchema, skillStatusSchema, adminActionSchema, isAdmin, type UserRole, type UserStatus, type SkillStatus, type AdminAction } from './schemas/permissions.js';
+
 // Types
 export type { Publisher, Skill, SkillVersion } from './types/skill.js';
 export type { PublishStartRequest, PublishStartResponse, PublishConfirmRequest, SkillInfoResponse, SearchResult, SearchResponse } from './types/api.js';
