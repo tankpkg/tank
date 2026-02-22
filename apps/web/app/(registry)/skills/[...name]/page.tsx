@@ -83,6 +83,34 @@ interface SkillPermissions {
   subprocess?: boolean;
 }
 
+// Safe JSON parser that handles malformed strings
+function safeParseJson(value: unknown): Record<string, unknown> | undefined {
+  if (!value) return undefined;
+  if (typeof value === 'object') return value as Record<string, unknown>;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as Record<string, unknown>;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
+// Safe permissions parser
+function safeParsePermissions(value: unknown): SkillPermissions | null {
+  if (!value) return null;
+  if (typeof value === 'object') return value as SkillPermissions;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as SkillPermissions;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 function VersionHistory({ versions }: { versions: SkillVersionSummary[] }) {
   if (versions.length === 0) return null;
 
@@ -142,17 +170,13 @@ export default async function SkillDetailPage({
   }
 
   // manifest may be a JSONB object or a double-encoded JSON string
-  const rawManifest = data.latestVersion?.manifest;
-  const latestManifest: Record<string, unknown> | undefined =
-    typeof rawManifest === 'string'
-      ? JSON.parse(rawManifest)
-      : (rawManifest as Record<string, unknown> | undefined);
+  const latestManifest = safeParseJson(data.latestVersion?.manifest);
   const fileList: string[] = Array.isArray(latestManifest?.files)
     ? (latestManifest.files as string[])
     : [];
   const license =
     typeof latestManifest?.license === 'string' ? latestManifest.license : null;
-  const permissions = data.latestVersion?.permissions as SkillPermissions | null;
+  const permissions = safeParsePermissions(data.latestVersion?.permissions);
 
   const permItems: string[] = [];
   if (permissions?.network?.outbound?.length)
