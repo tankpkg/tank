@@ -155,7 +155,8 @@ describe('admin-middleware', () => {
         expect.objectContaining({
           user: expect.objectContaining({ id: 'user-123' }),
           session: expect.objectContaining({ id: 'session-1' }),
-        })
+        }),
+        undefined
       );
       expect(result.status).toBe(200);
     });

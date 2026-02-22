@@ -125,6 +125,17 @@ vi.mock('postgres', () => {
   return { default: vi.fn(() => mockSql) };
 });
 
+vi.mock('@tank/shared', () => ({
+  skillStatusSchema: {
+    safeParse: (value: unknown) => {
+      if (value === 'pending' || value === 'approved' || value === 'banned' || value === 'quarantined') {
+        return { success: true, data: value };
+      }
+      return { success: false, error: { errors: [{ message: 'Invalid status' }] } };
+    },
+  },
+}));
+
 function setupAdminAuth() {
   mockGetSession.mockResolvedValue({
     user: { id: 'admin-1', name: 'Admin', email: 'admin@test.com' },

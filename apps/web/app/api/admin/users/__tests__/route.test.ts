@@ -125,6 +125,25 @@ vi.mock('drizzle-orm', () => ({
   sql: vi.fn(),
 }));
 
+vi.mock('@tank/shared', () => ({
+  userRoleSchema: {
+    safeParse: (value: unknown) => {
+      if (value === 'user' || value === 'admin') {
+        return { success: true, data: value };
+      }
+      return { success: false, error: { errors: [{ message: 'Invalid role' }] } };
+    },
+  },
+  userStatusSchema: {
+    safeParse: (value: unknown) => {
+      if (value === 'active' || value === 'suspended' || value === 'banned') {
+        return { success: true, data: value };
+      }
+      return { success: false, error: { errors: [{ message: 'Invalid status' }] } };
+    },
+  },
+}));
+
 function makeGetRequest(url: string): NextRequest {
   return new NextRequest(new URL(url, 'http://localhost:3000'));
 }
