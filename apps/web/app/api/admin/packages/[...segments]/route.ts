@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and, inArray } from 'drizzle-orm';
 import { skillStatusSchema } from '@tank/shared';
 import { withAdminAuth, type AdminAuthContext } from '@/lib/admin-middleware';
 import { db } from '@/lib/db';
-import { skills, skillVersions, skillDownloads, auditEvents } from '@/lib/db/schema';
+import {
+  skills,
+  skillVersions,
+  skillDownloads,
+  auditEvents,
+  scanResults,
+  scanFindings,
+} from '@/lib/db/schema';
 import { user } from '@/lib/db/auth-schema';
 
 // Vercel CDN decodes %2F → / in URL paths, so scoped packages like
@@ -12,22 +19,46 @@ import { user } from '@/lib/db/auth-schema';
 
 const ACTIONS = new Set(['feature', 'status']);
 
-function parseSegments(segments: string[]): { name: string; action: string | undefined } {
+type ParsedRequest = {
+  name: string;
+  action: 'feature' | 'status' | 'version' | undefined;
+  version: string | undefined;
+};
+
+function parseSegments(segments: string[]): ParsedRequest {
+  if (segments.length >= 3 && segments[segments.length - 2] === 'versions') {
+    return {
+      name: segments.slice(0, -2).join('/'),
+      action: 'version',
+      version: segments[segments.length - 1],
+    };
+  }
+
   const last = segments[segments.length - 1];
   if (segments.length >= 2 && ACTIONS.has(last)) {
-    return { name: segments.slice(0, -1).join('/'), action: last };
+    return {
+      name: segments.slice(0, -1).join('/'),
+      action: last as 'feature' | 'status',
+      version: undefined,
+    };
   }
-  return { name: segments.join('/'), action: undefined };
+  return { name: segments.join('/'), action: undefined, version: undefined };
 }
 
-function parseRequest(req: NextRequest): { name: string; action: string | undefined } {
+function parseRequest(req: NextRequest): ParsedRequest {
   const segments = new URL(req.url).pathname.split('/').filter(Boolean);
   const packagesIdx = segments.indexOf('packages');
   if (packagesIdx === -1 || packagesIdx === segments.length - 1) {
-    return { name: '', action: undefined };
+    return { name: '', action: undefined, version: undefined };
   }
 
-  const packageSegments = segments.slice(packagesIdx + 1);
+  const packageSegments = segments.slice(packagesIdx + 1).map((segment) => {
+    try {
+      return decodeURIComponent(segment);
+    } catch {
+      return segment;
+    }
+  });
   return parseSegments(packageSegments);
 }
 
@@ -116,6 +147,190 @@ async function handleDelete(name: string, adminUser: AdminAuthContext['user']): 
   });
 
   return NextResponse.json({ success: true, name: skill.name, status: 'removed' });
+}
+
+async function readJsonBody(req: NextRequest): Promise<Record<string, unknown> | null> {
+  if (!req.body) {
+    return null;
+  }
+
+  try {
+    const body = await req.json();
+    if (typeof body !== 'object' || body === null) {
+      return null;
+    }
+    return body as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+async function handleForceDelete(
+  name: string,
+  req: NextRequest,
+  adminUser: AdminAuthContext['user'],
+): Promise<NextResponse> {
+  const body = await readJsonBody(req);
+
+  if (!body) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  const packageName = body.packageName;
+  const confirmText = body.confirmText;
+  const reasonValue = body.reason;
+
+  if (packageName !== name || confirmText !== 'DELETE') {
+    return NextResponse.json({ error: 'Force delete confirmation failed' }, { status: 400 });
+  }
+
+  const reason = typeof reasonValue === 'string' && reasonValue.trim().length > 0
+    ? reasonValue.trim()
+    : 'Force deleted by admin';
+
+  const [skill] = await db
+    .select({ id: skills.id, name: skills.name, status: skills.status })
+    .from(skills)
+    .where(eq(skills.name, name))
+    .limit(1);
+
+  if (!skill) {
+    return NextResponse.json({ error: 'Package not found' }, { status: 404 });
+  }
+
+  const versionRows = await db
+    .select({ id: skillVersions.id })
+    .from(skillVersions)
+    .where(eq(skillVersions.skillId, skill.id));
+
+  const versionIds = versionRows.map((row) => row.id);
+
+  await db.transaction(async (tx) => {
+    if (versionIds.length > 0) {
+      await tx
+        .delete(scanFindings)
+        .where(
+          sql`${scanFindings.scanId} in (
+            select ${scanResults.id}
+            from ${scanResults}
+            where ${inArray(scanResults.versionId, versionIds)}
+          )`,
+        );
+
+      await tx
+        .delete(scanResults)
+        .where(inArray(scanResults.versionId, versionIds));
+
+      await tx
+        .delete(skillDownloads)
+        .where(inArray(skillDownloads.versionId, versionIds));
+    }
+
+    await tx
+      .delete(skillDownloads)
+      .where(eq(skillDownloads.skillId, skill.id));
+
+    await tx
+      .delete(skillVersions)
+      .where(eq(skillVersions.skillId, skill.id));
+
+    await tx.insert(auditEvents).values({
+      action: 'skill.force_delete',
+      actorId: adminUser.id,
+      targetType: 'skill',
+      targetId: skill.id,
+      metadata: {
+        reason,
+        previousStatus: skill.status,
+        deletedVersionCount: versionIds.length,
+      },
+    });
+
+    await tx
+      .delete(skills)
+      .where(eq(skills.id, skill.id));
+  });
+
+  return NextResponse.json({
+    success: true,
+    mode: 'force',
+    name: skill.name,
+    deletedVersionCount: versionIds.length,
+  });
+}
+
+async function handleDeleteVersion(
+  name: string,
+  version: string,
+  adminUser: AdminAuthContext['user'],
+): Promise<NextResponse> {
+  const [skill] = await db
+    .select({ id: skills.id, name: skills.name })
+    .from(skills)
+    .where(eq(skills.name, name))
+    .limit(1);
+
+  if (!skill) {
+    return NextResponse.json({ error: 'Package not found' }, { status: 404 });
+  }
+
+  const [versionRow] = await db
+    .select({ id: skillVersions.id, version: skillVersions.version })
+    .from(skillVersions)
+    .where(
+      and(
+        eq(skillVersions.skillId, skill.id),
+        eq(skillVersions.version, version),
+      ),
+    )
+    .limit(1);
+
+  if (!versionRow) {
+    return NextResponse.json({ error: 'Version not found' }, { status: 404 });
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(scanFindings)
+      .where(
+        sql`${scanFindings.scanId} in (
+          select ${scanResults.id}
+          from ${scanResults}
+          where ${scanResults.versionId} = ${versionRow.id}
+        )`,
+      );
+
+    await tx
+      .delete(scanResults)
+      .where(eq(scanResults.versionId, versionRow.id));
+
+    await tx
+      .delete(skillDownloads)
+      .where(eq(skillDownloads.versionId, versionRow.id));
+
+    await tx
+      .delete(skillVersions)
+      .where(eq(skillVersions.id, versionRow.id));
+
+    await tx
+      .update(skills)
+      .set({ updatedAt: new Date() })
+      .where(eq(skills.id, skill.id));
+
+    await tx.insert(auditEvents).values({
+      action: 'skill.version.delete',
+      actorId: adminUser.id,
+      targetType: 'skill',
+      targetId: skill.id,
+      metadata: { version: versionRow.version },
+    });
+  });
+
+  return NextResponse.json({
+    success: true,
+    name: skill.name,
+    version: versionRow.version,
+  });
 }
 
 async function handleFeature(name: string, req: NextRequest, adminUser: AdminAuthContext['user']): Promise<NextResponse> {
@@ -263,10 +478,23 @@ export const GET = withAdminAuth(async (req: NextRequest): Promise<NextResponse>
 });
 
 export const DELETE = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext): Promise<NextResponse> => {
-  const { name, action } = parseRequest(req);
+  const { name, action, version } = parseRequest(req);
 
-  if (!name || action) {
+  if (!name) {
     return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  }
+
+  if (action === 'version' && version) {
+    return handleDeleteVersion(name, version, adminUser);
+  }
+
+  if (action) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  const force = req.nextUrl.searchParams.get('force') === 'true';
+  if (force) {
+    return handleForceDelete(name, req, adminUser);
   }
 
   return handleDelete(name, adminUser);

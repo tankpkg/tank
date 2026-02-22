@@ -14,6 +14,8 @@ import { skills, skillVersions, skillDownloads, auditEvents } from '@/lib/db/sch
 import { user } from '@/lib/db/auth-schema';
 import { FeatureButton } from './components/feature-button';
 import { StatusDialog } from './components/status-dialog';
+import { ForceDeleteCard } from './components/force-delete-card';
+import { DeleteVersionButton } from './components/delete-version-button';
 
 type PackageStatus = 'active' | 'deprecated' | 'quarantined' | 'removed';
 
@@ -190,7 +192,10 @@ export default async function AdminPackageDetailPage({
                           {formatDate(v.createdAt)}
                         </p>
                       </div>
-                      <Badge variant="outline">{v.auditStatus ?? 'unknown'}</Badge>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline">{v.auditStatus ?? 'unknown'}</Badge>
+                        <DeleteVersionButton packageName={name} version={v.version} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -232,6 +237,8 @@ export default async function AdminPackageDetailPage({
 
         <div className="space-y-6">
           <StatusDialog packageName={name} currentStatus={status} />
+
+          <ForceDeleteCard packageName={name} />
 
           <Card>
             <CardHeader>

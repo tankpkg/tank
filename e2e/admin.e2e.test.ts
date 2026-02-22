@@ -30,6 +30,10 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   const targetSkill2Id = 'e2e-admin-target-skill-2';
   const targetSkillName = '@e2etest/admin-target-skill'; // scoped
   const targetSkill2Name = 'admin-unscoped-skill'; // unscoped
+  const targetSkillVersionId = 'e2e-admin-target-version-1';
+  const targetSkillVersion2Id = 'e2e-admin-target-version-2';
+  const targetSkillVersion = '1.0.0';
+  const targetSkillVersion2 = '1.0.1';
   const targetOrgId = 'e2e-admin-target-org';
   const targetOrgSlug = 'e2e-admin-target-org';
   const targetMemberId = 'e2e-admin-target-member';
@@ -72,6 +76,17 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
       ON CONFLICT (id) DO NOTHING
     `;
 
+    await sql`
+      INSERT INTO skill_versions (id, skill_id, version, tarball_size, file_count, integrity, tarball_path, created_at)
+      VALUES (${targetSkillVersionId}, ${targetSkillId}, ${targetSkillVersion}, 123, 3, 'sha512-test-1', 'skills/test-1.tgz', ${now})
+      ON CONFLICT (id) DO NOTHING
+    `;
+    await sql`
+      INSERT INTO skill_versions (id, skill_id, version, tarball_size, file_count, integrity, tarball_path, created_at)
+      VALUES (${targetSkillVersion2Id}, ${targetSkillId}, ${targetSkillVersion2}, 124, 4, 'sha512-test-2', 'skills/test-2.tgz', ${now})
+      ON CONFLICT (id) DO NOTHING
+    `;
+
     // Target org with two members (owner + regular member)
     await sql`
       INSERT INTO "organization" (id, name, slug, created_at)
@@ -95,6 +110,10 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
       const allTargetIds = [targetUserId, targetUser2Id, targetSkillId, targetSkill2Id, targetOrgId];
       await sql`DELETE FROM audit_events WHERE actor_id = ${ctx.user.id}`;
       await sql`DELETE FROM audit_events WHERE target_id IN ${sql(allTargetIds)}`;
+      await sql`DELETE FROM skill_downloads WHERE version_id IN ${sql([targetSkillVersionId, targetSkillVersion2Id])}`;
+      await sql`DELETE FROM scan_findings WHERE scan_id IN (SELECT id FROM scan_results WHERE version_id IN ${sql([targetSkillVersionId, targetSkillVersion2Id])})`;
+      await sql`DELETE FROM scan_results WHERE version_id IN ${sql([targetSkillVersionId, targetSkillVersion2Id])}`;
+      await sql`DELETE FROM skill_versions WHERE id IN ${sql([targetSkillVersionId, targetSkillVersion2Id])}`;
       await sql`DELETE FROM "member" WHERE id IN ${sql([targetMemberId, targetMember2Id])}`;
       await sql`DELETE FROM "organization" WHERE id = ${targetOrgId}`;
       await sql`DELETE FROM skills WHERE id IN ${sql([targetSkillId, targetSkill2Id])}`;
@@ -449,6 +468,51 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     expect(restoreRes.status).toBe(200);
   });
 
+  it('deletes a specific version from a package', async () => {
+    const res = await adminFetch(
+      `/api/admin/packages/${encodeName(targetSkillName)}/versions/${encodeURIComponent(targetSkillVersion2)}`,
+      { method: 'DELETE' },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as AdminApiResponse;
+    expect(body.version).toBe(targetSkillVersion2);
+
+    const detailRes = await adminFetch(`/api/admin/packages/${encodeName(targetSkillName)}`);
+    expect(detailRes.status).toBe(200);
+    const detailBody = (await detailRes.json()) as AdminApiResponse;
+    const versions = detailBody.package && typeof detailBody.package === 'object'
+      ? (detailBody.package as { versions?: Array<{ version: string }> }).versions ?? []
+      : [];
+    expect(versions.some((versionItem) => versionItem.version === targetSkillVersion2)).toBe(false);
+  });
+
+  it('force deletes a package with explicit confirmation payload', async () => {
+    const res = await adminFetch(
+      `/api/admin/packages/${encodeName(targetSkill2Name)}?force=true`,
+      {
+        method: 'DELETE',
+        body: JSON.stringify({
+          packageName: targetSkill2Name,
+          confirmText: 'DELETE',
+          reason: 'E2E force delete test',
+        }),
+      },
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as AdminApiResponse;
+    expect(body.mode).toBe('force');
+
+    const detailRes = await adminFetch(`/api/admin/packages/${encodeName(targetSkill2Name)}`);
+    expect(detailRes.status).toBe(404);
+
+    const now = new Date();
+    await sql`
+      INSERT INTO skills (id, name, description, publisher_id, status, created_at, updated_at)
+      VALUES (${targetSkill2Id}, ${targetSkill2Name}, 'Unscoped admin target skill', ${ctx.user.id}, 'active', ${now}, ${now})
+      ON CONFLICT (id) DO NOTHING
+    `;
+  });
+
   // =================================================================
   //  ORGANIZATIONS — LIST
   // =================================================================
@@ -607,6 +671,8 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     expect(actions).toContain('skill.feature');
     expect(actions).toContain('skill.unfeature');
     expect(actions).toContain('skill.remove');
+    expect(actions).toContain('skill.version.delete');
+    expect(actions).toContain('skill.force_delete');
 
     // Org management
     expect(actions).toContain('org.member.remove');
