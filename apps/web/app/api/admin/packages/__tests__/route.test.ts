@@ -228,7 +228,7 @@ describe('Admin Packages API', () => {
   describe('GET /api/admin/packages/[name] (detail)', () => {
     it('returns 401 when not authenticated', async () => {
       setupNoAuth();
-      const { GET } = await import('../[name]/route');
+      const { GET } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill');
       const res = await GET(req);
       expect(res.status).toBe(401);
@@ -244,7 +244,7 @@ describe('Admin Packages API', () => {
         return Promise.resolve([]);
       });
 
-      const { GET } = await import('../[name]/route');
+      const { GET } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/nonexistent');
       const res = await GET(req);
       expect(res.status).toBe(404);
@@ -312,7 +312,7 @@ describe('Admin Packages API', () => {
         },
       }));
 
-      const { GET } = await import('../[name]/route');
+      const { GET } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill');
       const res = await GET(req);
       expect(res.status).toBe(200);
@@ -322,7 +322,7 @@ describe('Admin Packages API', () => {
   describe('DELETE /api/admin/packages/[name]', () => {
     it('returns 401 when not authenticated', async () => {
       setupNoAuth();
-      const { DELETE } = await import('../[name]/route');
+      const { DELETE } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill', { method: 'DELETE' });
       const res = await DELETE(req);
       expect(res.status).toBe(401);
@@ -338,7 +338,7 @@ describe('Admin Packages API', () => {
         return Promise.resolve([]);
       });
 
-      const { DELETE } = await import('../[name]/route');
+      const { DELETE } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/nonexistent', { method: 'DELETE' });
       const res = await DELETE(req);
       expect(res.status).toBe(404);
@@ -357,7 +357,7 @@ describe('Admin Packages API', () => {
       mockDbWhere.mockResolvedValue(undefined);
       mockDbValues.mockResolvedValue(undefined);
 
-      const { DELETE } = await import('../[name]/route');
+      const { DELETE } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill', { method: 'DELETE' });
       const res = await DELETE(req);
       expect(res.status).toBe(200);
@@ -372,7 +372,7 @@ describe('Admin Packages API', () => {
   describe('PATCH /api/admin/packages/[name]/status', () => {
     it('returns 401 when not authenticated', async () => {
       setupNoAuth();
-      const { PATCH } = await import('../[name]/status/route');
+      const { PATCH } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/status', {
         method: 'PATCH',
         body: JSON.stringify({ status: 'quarantined', reason: 'test' }),
@@ -383,7 +383,7 @@ describe('Admin Packages API', () => {
 
     it('returns 400 for invalid status', async () => {
       setupAdminAuth();
-      const { PATCH } = await import('../[name]/status/route');
+      const { PATCH } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/status', {
         method: 'PATCH',
         body: JSON.stringify({ status: 'invalid', reason: 'test' }),
@@ -396,7 +396,7 @@ describe('Admin Packages API', () => {
 
     it('returns 400 when reason is missing', async () => {
       setupAdminAuth();
-      const { PATCH } = await import('../[name]/status/route');
+      const { PATCH } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/status', {
         method: 'PATCH',
         body: JSON.stringify({ status: 'quarantined' }),
@@ -409,7 +409,7 @@ describe('Admin Packages API', () => {
 
     it('returns 400 for invalid JSON body', async () => {
       setupAdminAuth();
-      const { PATCH } = await import('../[name]/status/route');
+      const { PATCH } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/status', {
         method: 'PATCH',
         body: 'not json',
@@ -429,7 +429,7 @@ describe('Admin Packages API', () => {
         return Promise.resolve([]);
       });
 
-      const { PATCH } = await import('../[name]/status/route');
+      const { PATCH } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/nonexistent/status', {
         method: 'PATCH',
         body: JSON.stringify({ status: 'quarantined', reason: 'Suspicious activity' }),
@@ -451,7 +451,7 @@ describe('Admin Packages API', () => {
       mockDbWhere.mockResolvedValue(undefined);
       mockDbValues.mockResolvedValue(undefined);
 
-      const { PATCH } = await import('../[name]/status/route');
+      const { PATCH } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/status', {
         method: 'PATCH',
         body: JSON.stringify({ status: 'quarantined', reason: 'Suspicious activity' }),
@@ -470,7 +470,7 @@ describe('Admin Packages API', () => {
   describe('POST /api/admin/packages/[name]/feature', () => {
     it('returns 401 when not authenticated', async () => {
       setupNoAuth();
-      const { POST } = await import('../[name]/feature/route');
+      const { POST } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/feature', {
         method: 'POST',
         body: JSON.stringify({ featured: true }),
@@ -481,7 +481,7 @@ describe('Admin Packages API', () => {
 
     it('returns 400 when featured is not boolean', async () => {
       setupAdminAuth();
-      const { POST } = await import('../[name]/feature/route');
+      const { POST } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/feature', {
         method: 'POST',
         body: JSON.stringify({ featured: 'yes' }),
@@ -494,7 +494,7 @@ describe('Admin Packages API', () => {
 
     it('returns 400 for invalid JSON body', async () => {
       setupAdminAuth();
-      const { POST } = await import('../[name]/feature/route');
+      const { POST } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/feature', {
         method: 'POST',
         body: 'not json',
@@ -514,7 +514,7 @@ describe('Admin Packages API', () => {
         return Promise.resolve([]);
       });
 
-      const { POST } = await import('../[name]/feature/route');
+      const { POST } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/nonexistent/feature', {
         method: 'POST',
         body: JSON.stringify({ featured: true }),
@@ -536,7 +536,7 @@ describe('Admin Packages API', () => {
       mockDbWhere.mockResolvedValue(undefined);
       mockDbValues.mockResolvedValue(undefined);
 
-      const { POST } = await import('../[name]/feature/route');
+      const { POST } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/feature', {
         method: 'POST',
         body: JSON.stringify({ featured: true }),
@@ -563,7 +563,7 @@ describe('Admin Packages API', () => {
       mockDbWhere.mockResolvedValue(undefined);
       mockDbValues.mockResolvedValue(undefined);
 
-      const { POST } = await import('../[name]/feature/route');
+      const { POST } = await import('../[...segments]/route');
       const req = new NextRequest('http://localhost:3000/api/admin/packages/test-skill/feature', {
         method: 'POST',
         body: JSON.stringify({ featured: false }),
