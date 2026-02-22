@@ -7,9 +7,8 @@ import { skills, skillVersions, skillDownloads, auditEvents } from '@/lib/db/sch
 import { user } from '@/lib/db/auth-schema';
 
 // Vercel CDN decodes %2F → / in URL paths, so scoped packages like
-// @tank/skill-creator arrive as multiple segments. This catch-all collects
-// them and splits off trailing action keywords (feature, status).
-type RouteParams = { params: Promise<{ segments: string[] }> };
+// @tank/skill-creator arrive as multiple path segments. Parse from URL path
+// and split off trailing action keywords (feature, status).
 
 const ACTIONS = new Set(['feature', 'status']);
 
@@ -21,9 +20,15 @@ function parseSegments(segments: string[]): { name: string; action: string | und
   return { name: segments.join('/'), action: undefined };
 }
 
-async function getSegments(routeCtx: RouteParams | undefined): Promise<string[]> {
-  if (!routeCtx) throw new Error('Missing route context');
-  return (await routeCtx.params).segments;
+function parseRequest(req: NextRequest): { name: string; action: string | undefined } {
+  const segments = new URL(req.url).pathname.split('/').filter(Boolean);
+  const packagesIdx = segments.indexOf('packages');
+  if (packagesIdx === -1 || packagesIdx === segments.length - 1) {
+    return { name: '', action: undefined };
+  }
+
+  const packageSegments = segments.slice(packagesIdx + 1);
+  return parseSegments(packageSegments);
 }
 
 async function handleGetDetail(name: string): Promise<NextResponse> {
@@ -247,44 +252,40 @@ async function handleStatus(name: string, req: NextRequest, adminUser: AdminAuth
   });
 }
 
-export const GET = withAdminAuth(async (req: NextRequest, _ctx: AdminAuthContext, routeCtx?: RouteParams): Promise<NextResponse> => {
-  const segments = await getSegments(routeCtx);
-  const { name, action } = parseSegments(segments);
+export const GET = withAdminAuth(async (req: NextRequest): Promise<NextResponse> => {
+  const { name, action } = parseRequest(req);
 
-  if (action) {
+  if (!name || action) {
     return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   return handleGetDetail(name);
 });
 
-export const DELETE = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext, routeCtx?: RouteParams): Promise<NextResponse> => {
-  const segments = await getSegments(routeCtx);
-  const { name, action } = parseSegments(segments);
+export const DELETE = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext): Promise<NextResponse> => {
+  const { name, action } = parseRequest(req);
 
-  if (action) {
+  if (!name || action) {
     return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   return handleDelete(name, adminUser);
 });
 
-export const POST = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext, routeCtx?: RouteParams): Promise<NextResponse> => {
-  const segments = await getSegments(routeCtx);
-  const { name, action } = parseSegments(segments);
+export const POST = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext): Promise<NextResponse> => {
+  const { name, action } = parseRequest(req);
 
-  if (action === 'feature') {
+  if (name && action === 'feature') {
     return handleFeature(name, req, adminUser);
   }
 
   return NextResponse.json({ error: 'Not found' }, { status: 404 });
 });
 
-export const PATCH = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext, routeCtx?: RouteParams): Promise<NextResponse> => {
-  const segments = await getSegments(routeCtx);
-  const { name, action } = parseSegments(segments);
+export const PATCH = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext): Promise<NextResponse> => {
+  const { name, action } = parseRequest(req);
 
-  if (action === 'status') {
+  if (name && action === 'status') {
     return handleStatus(name, req, adminUser);
   }
 
