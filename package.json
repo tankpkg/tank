@@ -22,6 +22,13 @@
     "@tank/shared": "workspace:*",
     "ignore": "^7.0.5",
     "open": "^11.0.0",
-    "tar": "^7.5.7"
+    "tar": "^7.5.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "ajv": ">=8.18.0",
+      "hono": ">=4.11.10",
+      "minimatch": ">=10.2.1"
+    }
   }
 }
