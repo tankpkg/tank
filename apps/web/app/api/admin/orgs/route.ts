@@ -33,11 +33,11 @@ export const GET = withAdminAuth(async (req: NextRequest, _ctx: AdminAuthContext
       createdAt: organization.createdAt,
       memberCount: sql<number>`(
         SELECT count(*)::int FROM member
-        WHERE member.organization_id = ${organization.id}
+        WHERE member.organization_id = "organization"."id"
       )`,
       packageCount: sql<number>`(
         SELECT count(*)::int FROM skills
-        WHERE skills.org_id = ${organization.id}
+        WHERE skills.org_id = "organization"."id"
       )`,
     })
     .from(organization)

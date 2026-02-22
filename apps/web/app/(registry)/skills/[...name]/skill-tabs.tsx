@@ -20,9 +20,11 @@ import type { ReactNode } from 'react';
 import { FileExplorer } from './file-explorer';
 import { SkillReadme } from './skill-readme';
 
+type SerializedVersion = Omit<SkillVersionSummary, 'publishedAt'> & { publishedAt: string };
+
 interface SkillTabsProps {
   readmeContent: string | null;
-  versions: SkillVersionSummary[];
+  versions: SerializedVersion[];
   files: string[];
   skillName: string;
   version: string;
@@ -46,7 +48,7 @@ function formatAuditScore(score: number | null): string {
   return `${score}/10`;
 }
 
-function VersionHistory({ versions }: { versions: SkillVersionSummary[] }) {
+function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
   if (versions.length === 0) return null;
 
   return (

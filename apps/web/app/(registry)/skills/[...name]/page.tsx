@@ -287,7 +287,10 @@ export default async function SkillDetailPage({
         <div className="flex-1 min-w-0">
           <SkillTabs
             readmeContent={readmeContent ?? null}
-            versions={data.versions}
+            versions={data.versions.map(v => ({
+              ...v,
+              publishedAt: v.publishedAt instanceof Date ? v.publishedAt.toISOString() : String(v.publishedAt),
+            }))}
             files={fileList}
             skillName={data.name}
             version={data.latestVersion?.version ?? ''}
