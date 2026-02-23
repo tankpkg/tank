@@ -1,0 +1,97 @@
+---
+title: Secure AI Skills Checklist
+description: Security best practices checklist for publishing safe AI agent skills
+---
+
+# Secure AI Skills Checklist
+
+Use this checklist before publishing any AI agent skill to ensure it follows security best practices.
+
+## Manifest Security
+
+- [ ] **Minimal permissions** — Only declare permissions your skill actually needs
+- [ ] **Explicit network allowlist** — List specific domains, avoid wildcards
+- [ ] **Scoped filesystem access** — Use specific paths, never `/` or `~`
+- [ ] **No hardcoded secrets** — Use environment variables for credentials
+- [ ] **Version pinned dependencies** — Lock all dependency versions
+
+## Code Security
+
+- [ ] **No `eval()` or `Function()`** — Dynamic code execution is blocked
+- [ ] **No shell injection** — Sanitize all inputs to shell commands
+- [ ] **No SQL injection** — Use parameterized queries
+- [ ] **No path traversal** — Validate and sanitize file paths
+- [ ] **No SSRF vulnerabilities** — Validate and restrict URLs
+
+## Prompt Injection Prevention
+
+- [ ] **Input sanitization** — Escape or remove special characters from user input
+- [ ] **Output validation** — Check LLM outputs before executing actions
+- [ ] **Separation of concerns** — Don't mix user input with system prompts
+- [ ] **Rate limiting** — Implement request limits to prevent abuse
+
+## Secret Management
+
+- [ ] **No secrets in code** — Never hardcode API keys, tokens, or passwords
+- [ ] **Environment variables** — Use `env` permission for required secrets
+- [ ] **Secret rotation support** — Design for key rotation without code changes
+- [ ] **Audit logging** — Log when secrets are accessed (without logging values)
+
+## Dependency Security
+
+- [ ] **Minimal dependencies** — Only include what you need
+- [ ] **Trusted sources** — Only use well-maintained packages
+- [ ] **No deprecated packages** — Use actively maintained alternatives
+- [ ] **Lockfile committed** — Include `pnpm-lock.yaml` or equivalent
+
+## Permission Best Practices
+
+| Permission Type | ✅ Good Practice | ❌ Avoid |
+|----------------|------------------|----------|
+| Network | `["https://api.example.com"]` | `["*"]` or `["https://*"]` |
+| Filesystem Read | `["./data/**"]` | `["/**"]` or `["~/**"]` |
+| Filesystem Write | `["./output/**"]` | `["/**"]` or home directory |
+| Environment | `["MY_API_KEY"]` | `["*"]` or broad patterns |
+
+## Runtime Security
+
+- [ ] **Graceful degradation** — Handle permission denials without crashing
+- [ ] **Clear error messages** — Tell users what permission is needed and why
+- [ ] **No privilege escalation** — Don't attempt to bypass permission checks
+- [ ] **Secure defaults** — Fail closed, not open
+
+## Before Publishing
+
+```bash
+# Run the security verifier
+tank verify
+
+# Check for secrets accidentally committed
+git diff --cached | grep -i "api_key\|secret\|token\|password"
+
+# Audit dependencies
+pnpm audit
+```
+
+## Security Scan Results
+
+Tank's 6-stage pipeline will flag:
+
+| Severity | Examples | Result |
+|----------|----------|--------|
+| Critical | Hardcoded secrets, code injection | ❌ FAIL — Must fix |
+| High | SQL injection, path traversal | ❌ FAIL — Must fix |
+| Medium | Deprecated deps, broad permissions | ⚠️ FLAGGED — Review required |
+| Low | Missing docs, style issues | ✅ PASS with notes |
+
+## Getting Help
+
+- **Security questions**: Open an issue on [GitHub](https://github.com/tankpkg/tank)
+- **Vulnerability report**: Email security@tankpkg.com
+- **Documentation**: [Security Model](/docs/security)
+
+---
+
+<Callout type="info">
+This checklist is enforced automatically by `tank verify`. Run it early and often during development.
+</Callout>

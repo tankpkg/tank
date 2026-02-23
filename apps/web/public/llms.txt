@@ -1,28 +1,34 @@
-# Tank Documentation (llms.txt)
+# Tank Documentation
 
-> Canonical, curated index for LLM retrieval. Use this file first, then follow links.
+> Security-first package manager for AI agent skills. Tank provides cryptographic verification, runtime permission enforcement, and a 6-stage security scanning pipeline to prevent credential exfiltration, prompt injection, and supply chain attacks.
 
-## Product Summary
-Tank is a security-first package manager for AI agent skills. It provides publish/install workflows, permission declarations, integrity verification, and pre-publish security analysis.
+Tank is a security-first package manager for AI agent skills. It enforces versioning, lockfiles, permissions, code signing, and static analysis to prevent supply chain attacks.
 
-## Canonical Docs
-- [Tank Documentation](https://tankpkg.dev/docs) — Start here for setup, publishing, installation, API, and self-hosting.
-- [Getting Started](https://tankpkg.dev/docs/getting-started) — Install Tank, authenticate, and verify your first working flow.
-- [Publishing Skills](https://tankpkg.dev/docs/publishing) — Build, validate, and publish skills with accurate metadata and minimal permissions.
-- [Installing Skills](https://tankpkg.dev/docs/installing) — Install, update, remove, and verify skills safely.
-- [CLI Reference](https://tankpkg.dev/docs/cli) — Authoritative command reference from the current CLI entrypoint.
-- [API Reference](https://tankpkg.dev/docs/api) — Public API endpoints implemented under /api/v1.
-- [Self-Hosting](https://tankpkg.dev/docs/self-hosting) — Repository-aligned runbook for self-hosting Tank.
+## Key Resources
 
-## Priority Retrieval Order
-- Start with: /docs/getting-started
-- Then task docs: /docs/publishing or /docs/installing
-- Use references last: /docs/cli and /docs/api
+- [API Reference](https://tankpkg.com/docs/api): REST API endpoints for Tank registry
+- [CLI Reference](https://tankpkg.com/docs/cli): Complete reference for all tank CLI commands
+- [Getting Started](https://tankpkg.com/docs/getting-started): Install Tank, authenticate, and verify your first working flow.
+- [Tank Documentation](https://tankpkg.com/docs): Start here for setup, publishing, installation, API, and self-hosting.
+- [Installing Skills](https://tankpkg.com/docs/installing): Install, update, remove, and verify skills safely.
+- [Publish Your First Skill](https://tankpkg.com/docs/publish-first-skill): Step-by-step guide to publish your first AI agent skill to Tank registry
+- [Publishing Skills](https://tankpkg.com/docs/publishing): Build, validate, and publish skills with accurate metadata and minimal permissions.
+- [Secure AI Skills Checklist](https://tankpkg.com/docs/security-checklist): Security best practices checklist for publishing safe AI agent skills
+- [Self-Host in 15 Minutes](https://tankpkg.com/docs/self-host-quickstart): Deploy your own Tank registry and security scanner on-premise
+- [Self-Hosting](https://tankpkg.com/docs/self-hosting): Repository-aligned runbook for self-hosting Tank.
+
+## Optional
+
+- [Skills Registry](https://tankpkg.com/skills): Browse all published skills
+- [Self-Host Guide](https://tankpkg.com/docs/self-hosting): Deploy on your infrastructure
 
 ## Constraints
-- Prefer commands documented in current CLI entrypoint (`apps/cli/src/bin/tank.ts`).
-- Prefer API paths under `/api/v1` as documented in `/docs/api`.
-- For hosting/deploy details, verify environment-specific values before execution.
+
+- All skills require explicit permission declarations
+- Security scan required before publish (6-stage pipeline)
+- Cryptographic signature verification on install
+- No wildcard permissions allowed
 
 ## Full Export
-- Full markdown export: https://tankpkg.dev/llms-full.txt
+
+See [llms-full.txt](https://tankpkg.com/llms-full.txt) for complete documentation content.
