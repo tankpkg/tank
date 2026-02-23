@@ -93,10 +93,10 @@ export default function Home() {
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
               <Link
-                href="/docs/user-flow"
+                href="/docs"
                 className="text-muted-foreground hover:text-emerald-400 transition-colors flex items-center gap-1.5"
               >
-                User Guide
+                Docs
                 <ChevronRight className="w-3.5 h-3.5" />
               </Link>
               <a
@@ -385,8 +385,8 @@ export default function Home() {
               <Link href="/skills" className="hover:text-emerald-400 transition-colors">
                 Skills
               </Link>
-              <Link href="/docs/user-flow" className="hover:text-emerald-400 transition-colors">
-                User Guide
+              <Link href="/docs" className="hover:text-emerald-400 transition-colors">
+                Docs
               </Link>
               <a
                 href="https://github.com/tankpkg/tank"

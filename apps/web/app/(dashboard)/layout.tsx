@@ -36,6 +36,7 @@ export default async function DashboardLayout({
           <NavLink href="/dashboard">Dashboard</NavLink>
           <NavLink href="/tokens">Tokens</NavLink>
           <NavLink href="/orgs">Organizations</NavLink>
+          <NavLink href="/docs">Docs</NavLink>
         </nav>
         <Separator />
         <div className="px-4 py-4 space-y-3">
@@ -63,6 +64,9 @@ export default async function DashboardLayout({
             </Link>
             <Link href="/orgs" className="text-muted-foreground hover:text-foreground transition-colors">
               Orgs
+            </Link>
+            <Link href="/docs" className="text-muted-foreground hover:text-foreground transition-colors">
+              Docs
             </Link>
           </nav>
         </header>

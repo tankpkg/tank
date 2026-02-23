@@ -54,6 +54,12 @@ export default function RegistryLayout({
             >
               Browse Skills
             </Link>
+            <Link
+              href="/docs"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Docs
+            </Link>
           </nav>
           <div className="ml-auto">
             <Suspense fallback={<SignInLink />}>
