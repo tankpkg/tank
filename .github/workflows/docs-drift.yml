@@ -1,0 +1,50 @@
+name: Docs Drift Check
+
+on:
+  pull_request:
+    paths:
+      - 'apps/cli/src/**/*.ts'
+      - 'apps/web/app/api/**/*.ts'
+      - 'apps/web/content/docs/**'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/cli/src/**/*.ts'
+      - 'apps/web/app/api/**/*.ts'
+      - 'apps/web/content/docs/**'
+
+jobs:
+  check-docs-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.29.3
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Generate CLI docs
+        run: node scripts/gen-cli-docs.mjs
+      
+      - name: Generate API docs
+        run: node scripts/gen-api-docs.mjs
+      
+      - name: Generate llms.txt
+        run: node scripts/gen-llms-txt.mjs
+      
+      - name: Check for uncommitted changes
+        run: |
+          git diff --exit-code apps/web/content/docs/cli.mdx || (echo "❌ CLI docs are out of sync. Run: node scripts/gen-cli-docs.mjs" && exit 1)
+          git diff --exit-code apps/web/content/docs/api.mdx || (echo "❌ API docs are out of sync. Run: node scripts/gen-api-docs.mjs" && exit 1)
+          git diff --exit-code apps/web/public/llms.txt || (echo "❌ llms.txt is out of sync. Run: node scripts/gen-llms-txt.mjs" && exit 1)
+          git diff --exit-code apps/web/public/llms-full.txt || (echo "❌ llms-full.txt is out of sync. Run: node scripts/gen-llms-txt.mjs" && exit 1)
+          echo "✅ All generated docs are in sync"

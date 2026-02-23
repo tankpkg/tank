@@ -1,0 +1,133 @@
+---
+title: Publish Your First Skill
+description: Step-by-step guide to publish your first AI agent skill to Tank registry
+---
+
+# Publish Your First Skill
+
+This tutorial walks you through publishing your first AI agent skill to the Tank registry in under 10 minutes.
+
+## Prerequisites
+
+- Node.js 24+ installed
+- A Tank account ([sign up free](/login))
+- A skill you want to share
+
+## Step 1: Install the Tank CLI
+
+```bash
+npm install -g @tank/cli
+# or
+pnpm add -g @tank/cli
+```
+
+Verify installation:
+
+```bash
+tank --version
+```
+
+## Step 2: Authenticate
+
+```bash
+tank login
+```
+
+This opens your browser for OAuth authentication. Once complete, your API key is stored securely in `~/.tank/config.json`.
+
+## Step 3: Initialize Your Skill
+
+Navigate to your skill directory and run:
+
+```bash
+tank init
+```
+
+This creates a `tank.json` manifest file with:
+
+```json
+{
+  "name": "my-skill",
+  "version": "1.0.0",
+  "description": "A brief description",
+  "permissions": {
+    "network": [],
+    "filesystem": { "read": [], "write": [] },
+    "env": []
+  }
+}
+```
+
+### Required Fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Unique skill identifier (lowercase, hyphens only) |
+| `version` | Semantic version (semver) |
+| `description` | Short description for registry listing |
+| `permissions` | Explicit capability declarations |
+
+## Step 4: Declare Permissions
+
+Tank enforces least-privilege by default. Declare only what your skill needs:
+
+```json
+{
+  "permissions": {
+    "network": ["https://api.openai.com"],
+    "filesystem": {
+      "read": ["./data/**"],
+      "write": ["./output/**"]
+    },
+    "env": ["OPENAI_API_KEY"]
+  }
+}
+```
+
+<Tip>
+Runtime permission prompts will show users exactly what your skill requests access to.
+</Tip>
+
+## Step 5: Run Security Scan
+
+Before publishing, verify your skill passes Tank's 6-stage security pipeline:
+
+```bash
+tank verify
+```
+
+This runs:
+1. **Structure validation** — manifest integrity, file limits
+2. **Static analysis** — AST scanning for dangerous patterns
+3. **Injection detection** — prompt injection and code injection
+4. **Secret scanning** — credential exfiltration risks
+5. **Supply chain** — dependency vulnerabilities
+6. **Permission validation** — runtime boundary enforcement
+
+## Step 6: Publish
+
+```bash
+tank publish
+```
+
+Your skill is now:
+- Scanned for security issues
+- Signed with a cryptographic signature
+- Uploaded to the Tank registry
+- Available for others to install
+
+## Step 7: Verify Publication
+
+Check your skill on the registry:
+
+```bash
+tank info my-skill
+```
+
+Or visit: `https://tankpkg.com/skills/my-skill`
+
+## Next Steps
+
+- [Install a skill](/docs/installing) to see the consumer experience
+- [Read the CLI reference](/docs/cli) for all available commands
+- [Learn about security model](/docs/security) to understand permission enforcement

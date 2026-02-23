@@ -1,48 +1,144 @@
 ---
 title: API Reference
-description: Public API endpoints implemented under /api/v1.
+description: REST API endpoints for Tank registry
 ---
+The Tank API provides programmatic access to the skill registry.
 
-# API Reference
+## Authentication
 
-Base URL (hosted):
+All authenticated endpoints require a Bearer token:
 
-```text
-https://tankpkg.dev/api/v1
+```
+Authorization: Bearer tank_xxx
 ```
 
-Authentication for protected endpoints uses Bearer API keys.
+Get your API key from [Settings > Tokens](/settings/tokens).
 
-## CLI Auth Endpoints
+## Base URL
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/cli-auth/start` | POST | Start browser-auth flow |
-| `/cli-auth/authorize` | GET | User authorization step |
-| `/cli-auth/exchange` | POST | Exchange poll token for API key |
-
-## Registry Endpoints
-
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/skills` | GET | Search/list skills |
-| `/skills` | POST | Start publish flow |
-| `/skills/confirm` | POST | Confirm finalize publish |
-| `/skills/[name]` | GET | Skill metadata |
-| `/skills/[name]/versions` | GET | List versions |
-| `/skills/[name]/star` | POST/DELETE | Star/unstar |
-| `/skills/[name]/[version]` | GET | Version metadata |
-| `/skills/[name]/[version]/files/[...path]` | GET | File content retrieval |
-| `/search` | GET | Search endpoint |
-
-## Minimal Usage Example
-
-```bash
-curl -H "Authorization: Bearer $TANK_API_KEY"   https://tankpkg.dev/api/v1/skills/my-org/my-skill
+```
+https://tankpkg.com/api/v1
 ```
 
-## Stability Guidance
+For self-hosted deployments, replace with your domain.
 
-- Treat endpoint paths above as canonical.
-- For payload details, validate against current route handlers in `apps/web/app/api/v1/**`.
-- Keep clients resilient to additive response fields.
+## Rate Limits
+
+| Tier | Requests/hour |
+|------|---------------|
+| Anonymous | 100 |
+| Authenticated | 1,000 |
+| Pro | 10,000 |
+
+## /api/v1/cli-auth
+
+### POST /api/v1/cli-auth/authorize
+
+POST endpoint for /cli-auth/authorize
+
+```http
+POST /api/v1/cli-auth/authorize
+```
+
+### POST /api/v1/cli-auth/exchange
+
+POST endpoint for /cli-auth/exchange
+
+```http
+POST /api/v1/cli-auth/exchange
+```
+
+### POST /api/v1/cli-auth/start
+
+POST endpoint for /cli-auth/start
+
+```http
+POST /api/v1/cli-auth/start
+```
+
+
+## /api/v1/search
+
+### GET /api/v1/search
+
+GET /api/v1/search — single-query search with count(*) OVER() window function.
+
+```http
+GET /api/v1/search
+```
+
+
+## /api/v1/skills
+
+### GET /api/v1/skills/:name/:version/files/:...path
+
+GET endpoint for /skills/:name/:version/files/:...path
+
+```http
+GET /api/v1/skills/:name/:version/files/:...path
+```
+
+### GET /api/v1/skills/:name/:version
+
+GET /api/v1/skills/[name]/[version]
+
+```http
+GET /api/v1/skills/:name/:version
+```
+
+### GET /api/v1/skills/:name
+
+GET /api/v1/skills/[name] — single-query skill metadata with latest version.
+
+```http
+GET /api/v1/skills/:name
+```
+
+### GET /api/v1/skills/:name/star
+
+GET endpoint for /skills/:name/star
+
+```http
+GET /api/v1/skills/:name/star
+```
+
+### POST /api/v1/skills/:name/star
+
+POST endpoint for /skills/:name/star
+
+```http
+POST /api/v1/skills/:name/star
+```
+
+### DELETE /api/v1/skills/:name/star
+
+DELETE endpoint for /skills/:name/star
+
+```http
+DELETE /api/v1/skills/:name/star
+```
+
+### GET /api/v1/skills/:name/versions
+
+GET /api/v1/skills/[name]/versions — single query for skill + all versions.
+
+```http
+GET /api/v1/skills/:name/versions
+```
+
+### POST /api/v1/skills/confirm
+
+POST endpoint for /skills/confirm
+
+```http
+POST /api/v1/skills/confirm
+```
+
+### POST /api/v1/skills
+
+POST endpoint for /skills
+
+```http
+POST /api/v1/skills
+```
+

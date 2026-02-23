@@ -1,62 +1,229 @@
 ---
 title: CLI Reference
-description: Authoritative command reference from the current CLI entrypoint.
+description: Complete reference for all tank CLI commands
 ---
+The Tank CLI provides 16 commands for publishing, installing, and managing AI agent skills with security-first design.
 
-# CLI Reference
-
-Source of truth: `apps/cli/src/bin/tank.ts`.
-
-## Commands
-
-| Command | Args | Options | Purpose |
-|---|---|---|---|
-| `tank init` | - | - | Initialize `skills.json` |
-| `tank login` | - | - | Authenticate via browser |
-| `tank whoami` | - | - | Show current user |
-| `tank logout` | - | - | Clear auth token |
-| `tank publish` | - | `--dry-run`, `--private`, `--visibility <mode>` | Publish a skill |
-| `tank install` | `[name] [version-range]` | `-g, --global` | Install one/all skills |
-| `tank remove` | `<name>` | `-g, --global` | Remove installed skill |
-| `tank update` | `[name]` | `-g, --global` | Update one/all skills |
-| `tank verify` | - | - | Verify installation integrity |
-| `tank permissions` | - | - | Show resolved permissions |
-| `tank search` | `<query>` | - | Search registry |
-| `tank info` | `<name>` | - | Show package details |
-| `tank audit` | `[name]` | - | Run/read security audit |
-| `tank link` | - | - | Link local skills for agents |
-| `tank unlink` | - | - | Remove links |
-| `tank doctor` | - | - | Diagnose environment/setup |
-
-## Typical Workflows
-
-### Consumer
+## Installation
 
 ```bash
-tank login
-tank install @org/skill-name
-tank permissions
-tank verify
+npm install -g @tank/cli
+# or
+pnpm add -g @tank/cli
 ```
 
-### Publisher
+## Global Options
+
+All commands support these options:
+
+| Option | Description |
+|--------|-------------|
+| `-h, --help` | Display help for the command |
+| `-V, --version` | Display the CLI version |
+
+## tank init
+
+Create a new skills.json in the current directory
+
+```bash
+tank init
+```
+
+
+## tank login
+
+Authenticate with the Tank registry via browser
 
 ```bash
 tank login
-tank init
-tank publish --dry-run
+```
+
+
+## tank whoami
+
+Show the currently logged-in user
+
+```bash
+tank whoami
+```
+
+
+## tank logout
+
+Remove authentication token from config
+
+```bash
+tank logout
+```
+
+
+## tank publish
+
+Pack and publish a skill to the Tank registry
+
+```bash
 tank publish
 ```
 
-### Maintenance
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Validate and pack without uploading |
+| `--private` | Publish skill as private |
+| `--visibility <mode>` | Skill visibility (public|private) |
+
+
+## tank install
+
+Install a skill from the Tank registry, or all skills from lockfile
 
 ```bash
-tank update
-tank audit
+tank install [name] [version-range]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name). Omit to install from lockfile. | No |
+| `version-range` | Semver range (default: *) | No |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Install skill globally (available to all projects) |
+
+
+## tank remove
+
+Remove an installed skill
+
+```bash
+tank remove <<name>>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name) | Yes |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Remove a globally installed skill |
+
+
+## tank update
+
+Update skills to latest versions within their ranges
+
+```bash
+tank update [name]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name to update (omit to update all) | No |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Update globally installed skills |
+
+
+## tank verify
+
+Verify installed skills match the lockfile
+
+```bash
+tank verify
+```
+
+
+## tank permissions
+
+Display resolved permission summary for installed skills
+
+```bash
+tank permissions
+```
+
+
+## tank search
+
+Search for skills in the Tank registry
+
+```bash
+tank search <<query>>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `query` | Search query | Yes |
+
+
+## tank info
+
+Show detailed information about a skill
+
+```bash
+tank info <<name>>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name) | Yes |
+
+
+## tank audit
+
+Display security audit results for installed skills
+
+```bash
+tank audit [name]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name to audit (omit to audit all) | No |
+
+
+## tank link
+
+Link current skill directory to AI agent directories (for development)
+
+```bash
+tank link
+```
+
+
+## tank unlink
+
+Remove skill symlinks from AI agent directories
+
+```bash
+tank unlink
+```
+
+
+## tank doctor
+
+Diagnose agent integration health
+
+```bash
 tank doctor
 ```
 
-## Notes
-
-- Use `tank <command> --help` for runtime help text.
-- Commands not listed above are not part of current CLI entrypoint.

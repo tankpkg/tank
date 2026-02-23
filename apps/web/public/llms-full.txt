@@ -1,74 +1,400 @@
-# Tank Documentation (llms-full)
+# Tank Documentation (Full Export)
 
-> Full markdown export for offline/LLM ingestion. Canonical docs remain under `/docs`.
-
-## Table of Contents
-- [Tank Documentation](https://tankpkg.dev/docs)
-- [Getting Started](https://tankpkg.dev/docs/getting-started)
-- [Publishing Skills](https://tankpkg.dev/docs/publishing)
-- [Installing Skills](https://tankpkg.dev/docs/installing)
-- [CLI Reference](https://tankpkg.dev/docs/cli)
-- [API Reference](https://tankpkg.dev/docs/api)
-- [Self-Hosting](https://tankpkg.dev/docs/self-hosting)
+This file contains the complete Tank documentation for LLM consumption.
 
 ---
 
-## Tank Documentation
-Canonical URL: https://tankpkg.dev/docs
-Description: Start here for setup, publishing, installation, API, and self-hosting.
+# API Reference
 
-# Tank Documentation
+Source: https://tankpkg.com/docs/api
 
-Tank is a security-first package manager for AI agent skills.
+> REST API endpoints for Tank registry
 
-Use this docs set by intent:
+The Tank API provides programmatic access to the skill registry.
 
-- **Learn fast**: [Getting Started](/docs/getting-started)
-- **Ship a skill**: [Publishing](/docs/publishing)
-- **Use skills in agents**: [Installing](/docs/installing)
-- **Command lookup**: [CLI Reference](/docs/cli)
-- **Integration lookup**: [API Reference](/docs/api)
-- **Run your own registry**: [Self-Hosting](/docs/self-hosting)
+## Authentication
 
-## Product Guarantees
+All authenticated endpoints require a Bearer token:
 
-- SHA-512 integrity verification on install
-- Mandatory security scanning before publish
-- Permission declarations in `skills.json`
-- Deterministic lockfile workflow
+```
+Authorization: Bearer tank_xxx
+```
 
-## Choose Your Path
+Get your API key from [Settings > Tokens](/settings/tokens).
 
-### I am a skill publisher
+## Base URL
 
-1. Follow [Getting Started](/docs/getting-started)
-2. Implement your manifest and code via [Publishing](/docs/publishing)
-3. Validate with `tank doctor` and `tank publish --dry-run`
-4. Publish and verify via `tank info @org/name`
+```
+https://tankpkg.com/api/v1
+```
 
-### I am a skill consumer
+For self-hosted deployments, replace with your domain.
 
-1. Install a package with [Installing](/docs/installing)
-2. Review permissions with `tank permissions`
-3. Verify integrity with `tank verify`
+## Rate Limits
 
-### I need implementation details
+| Tier | Requests/hour |
+|------|---------------|
+| Anonymous | 100 |
+| Authenticated | 1,000 |
+| Pro | 10,000 |
 
-- Commands: [CLI Reference](/docs/cli)
-- Endpoints: [API Reference](/docs/api)
-- Ops: [Self-Hosting](/docs/self-hosting)
+## /api/v1/cli-auth
 
-## Canonical References
+### POST /api/v1/cli-auth/authorize
 
-- CLI entrypoint: `apps/cli/src/bin/tank.ts`
-- API routes: `apps/web/app/api/v1/**`
-- Security scanner: `python-api/lib/scan/**`
+POST endpoint for /cli-auth/authorize
+
+```http
+POST /api/v1/cli-auth/authorize
+```
+
+### POST /api/v1/cli-auth/exchange
+
+POST endpoint for /cli-auth/exchange
+
+```http
+POST /api/v1/cli-auth/exchange
+```
+
+### POST /api/v1/cli-auth/start
+
+POST endpoint for /cli-auth/start
+
+```http
+POST /api/v1/cli-auth/start
+```
+
+
+## /api/v1/search
+
+### GET /api/v1/search
+
+GET /api/v1/search — single-query search with count(*) OVER() window function.
+
+```http
+GET /api/v1/search
+```
+
+
+## /api/v1/skills
+
+### GET /api/v1/skills/:name/:version/files/:...path
+
+GET endpoint for /skills/:name/:version/files/:...path
+
+```http
+GET /api/v1/skills/:name/:version/files/:...path
+```
+
+### GET /api/v1/skills/:name/:version
+
+GET /api/v1/skills/[name]/[version]
+
+```http
+GET /api/v1/skills/:name/:version
+```
+
+### GET /api/v1/skills/:name
+
+GET /api/v1/skills/[name] — single-query skill metadata with latest version.
+
+```http
+GET /api/v1/skills/:name
+```
+
+### GET /api/v1/skills/:name/star
+
+GET endpoint for /skills/:name/star
+
+```http
+GET /api/v1/skills/:name/star
+```
+
+### POST /api/v1/skills/:name/star
+
+POST endpoint for /skills/:name/star
+
+```http
+POST /api/v1/skills/:name/star
+```
+
+### DELETE /api/v1/skills/:name/star
+
+DELETE endpoint for /skills/:name/star
+
+```http
+DELETE /api/v1/skills/:name/star
+```
+
+### GET /api/v1/skills/:name/versions
+
+GET /api/v1/skills/[name]/versions — single query for skill + all versions.
+
+```http
+GET /api/v1/skills/:name/versions
+```
+
+### POST /api/v1/skills/confirm
+
+POST endpoint for /skills/confirm
+
+```http
+POST /api/v1/skills/confirm
+```
+
+### POST /api/v1/skills
+
+POST endpoint for /skills
+
+```http
+POST /api/v1/skills
+```
+
+
 
 ---
 
-## Getting Started
-Canonical URL: https://tankpkg.dev/docs/getting-started
-Description: Install Tank, authenticate, and verify your first working flow.
+# CLI Reference
+
+Source: https://tankpkg.com/docs/cli
+
+> Complete reference for all tank CLI commands
+
+The Tank CLI provides 16 commands for publishing, installing, and managing AI agent skills with security-first design.
+
+## Installation
+
+```bash
+npm install -g @tank/cli
+# or
+pnpm add -g @tank/cli
+```
+
+## Global Options
+
+All commands support these options:
+
+| Option | Description |
+|--------|-------------|
+| `-h, --help` | Display help for the command |
+| `-V, --version` | Display the CLI version |
+
+## tank init
+
+Create a new skills.json in the current directory
+
+```bash
+tank init
+```
+
+
+## tank login
+
+Authenticate with the Tank registry via browser
+
+```bash
+tank login
+```
+
+
+## tank whoami
+
+Show the currently logged-in user
+
+```bash
+tank whoami
+```
+
+
+## tank logout
+
+Remove authentication token from config
+
+```bash
+tank logout
+```
+
+
+## tank publish
+
+Pack and publish a skill to the Tank registry
+
+```bash
+tank publish
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Validate and pack without uploading |
+| `--private` | Publish skill as private |
+| `--visibility <mode>` | Skill visibility (public|private) |
+
+
+## tank install
+
+Install a skill from the Tank registry, or all skills from lockfile
+
+```bash
+tank install [name] [version-range]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name). Omit to install from lockfile. | No |
+| `version-range` | Semver range (default: *) | No |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Install skill globally (available to all projects) |
+
+
+## tank remove
+
+Remove an installed skill
+
+```bash
+tank remove <<name>>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name) | Yes |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Remove a globally installed skill |
+
+
+## tank update
+
+Update skills to latest versions within their ranges
+
+```bash
+tank update [name]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name to update (omit to update all) | No |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Update globally installed skills |
+
+
+## tank verify
+
+Verify installed skills match the lockfile
+
+```bash
+tank verify
+```
+
+
+## tank permissions
+
+Display resolved permission summary for installed skills
+
+```bash
+tank permissions
+```
+
+
+## tank search
+
+Search for skills in the Tank registry
+
+```bash
+tank search <<query>>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `query` | Search query | Yes |
+
+
+## tank info
+
+Show detailed information about a skill
+
+```bash
+tank info <<name>>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name) | Yes |
+
+
+## tank audit
+
+Display security audit results for installed skills
+
+```bash
+tank audit [name]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name to audit (omit to audit all) | No |
+
+
+## tank link
+
+Link current skill directory to AI agent directories (for development)
+
+```bash
+tank link
+```
+
+
+## tank unlink
+
+Remove skill symlinks from AI agent directories
+
+```bash
+tank unlink
+```
+
+
+## tank doctor
+
+Diagnose agent integration health
+
+```bash
+tank doctor
+```
+
+
+
+---
+
+# Getting Started
+
+Source: https://tankpkg.com/docs/getting-started
+
+> Install Tank, authenticate, and verify your first working flow.
+
 
 # Getting Started
 
@@ -170,11 +496,294 @@ Re-run install and verify network/proxy stability. Do not bypass verification.
 
 Prefer packages with narrow, explicit permission scopes.
 
+
 ---
 
-## Publishing Skills
-Canonical URL: https://tankpkg.dev/docs/publishing
-Description: Build, validate, and publish skills with accurate metadata and minimal permissions.
+# Tank Documentation
+
+Source: https://tankpkg.com/docs
+
+> Start here for setup, publishing, installation, API, and self-hosting.
+
+
+# Tank Documentation
+
+Tank is a security-first package manager for AI agent skills.
+
+Use this docs set by intent:
+
+- **Learn fast**: [Getting Started](/docs/getting-started)
+- **Ship a skill**: [Publishing](/docs/publishing)
+- **Use skills in agents**: [Installing](/docs/installing)
+- **Command lookup**: [CLI Reference](/docs/cli)
+- **Integration lookup**: [API Reference](/docs/api)
+- **Run your own registry**: [Self-Hosting](/docs/self-hosting)
+
+## Product Guarantees
+
+- SHA-512 integrity verification on install
+- Mandatory security scanning before publish
+- Permission declarations in `skills.json`
+- Deterministic lockfile workflow
+
+## Choose Your Path
+
+### I am a skill publisher
+
+1. Follow [Getting Started](/docs/getting-started)
+2. Implement your manifest and code via [Publishing](/docs/publishing)
+3. Validate with `tank doctor` and `tank publish --dry-run`
+4. Publish and verify via `tank info @org/name`
+
+### I am a skill consumer
+
+1. Install a package with [Installing](/docs/installing)
+2. Review permissions with `tank permissions`
+3. Verify integrity with `tank verify`
+
+### I need implementation details
+
+- Commands: [CLI Reference](/docs/cli)
+- Endpoints: [API Reference](/docs/api)
+- Ops: [Self-Hosting](/docs/self-hosting)
+
+## Canonical References
+
+- CLI entrypoint: `apps/cli/src/bin/tank.ts`
+- API routes: `apps/web/app/api/v1/**`
+- Security scanner: `python-api/lib/scan/**`
+
+
+---
+
+# Installing Skills
+
+Source: https://tankpkg.com/docs/installing
+
+> Install, update, remove, and verify skills safely.
+
+
+# Installing Skills
+
+This guide covers day-2 operations for skill consumers.
+
+## Install
+
+```bash
+tank install @org/skill-name
+tank install @org/skill-name '^1.2.0'
+```
+
+Optional global mode:
+
+```bash
+tank install @org/skill-name '*' -g
+```
+
+## Update
+
+```bash
+tank update
+tank update @org/skill-name
+```
+
+Optional global mode:
+
+```bash
+tank update @org/skill-name -g
+```
+
+## Remove
+
+```bash
+tank remove @org/skill-name
+tank remove @org/skill-name -g
+```
+
+## Verify and Audit
+
+```bash
+tank verify
+tank permissions
+tank audit
+tank audit @org/skill-name
+```
+
+## Discover and Inspect
+
+```bash
+tank search "embedding"
+tank info @org/skill-name
+```
+
+## Operational Guidance
+
+- Run `tank verify` after changes to lock/install state
+- Run `tank permissions` before enabling skills in production agents
+- Prefer pinned versions for production stability
+
+## Failure Handling
+
+### Install fails
+
+Run `tank doctor`; check auth and network.
+
+### Unexpected permission scope
+
+Remove package and select an alternative with narrower access.
+
+### Verify fails
+
+Reinstall package and ensure lock state is consistent.
+
+
+---
+
+# Publish Your First Skill
+
+Source: https://tankpkg.com/docs/publish-first-skill
+
+> Step-by-step guide to publish your first AI agent skill to Tank registry
+
+
+# Publish Your First Skill
+
+This tutorial walks you through publishing your first AI agent skill to the Tank registry in under 10 minutes.
+
+## Prerequisites
+
+- Node.js 24+ installed
+- A Tank account ([sign up free](/login))
+- A skill you want to share
+
+## Step 1: Install the Tank CLI
+
+```bash
+npm install -g @tank/cli
+# or
+pnpm add -g @tank/cli
+```
+
+Verify installation:
+
+```bash
+tank --version
+```
+
+## Step 2: Authenticate
+
+```bash
+tank login
+```
+
+This opens your browser for OAuth authentication. Once complete, your API key is stored securely in `~/.tank/config.json`.
+
+## Step 3: Initialize Your Skill
+
+Navigate to your skill directory and run:
+
+```bash
+tank init
+```
+
+This creates a `tank.json` manifest file with:
+
+```json
+{
+  "name": "my-skill",
+  "version": "1.0.0",
+  "description": "A brief description",
+  "permissions": {
+    "network": [],
+    "filesystem": { "read": [], "write": [] },
+    "env": []
+  }
+}
+```
+
+### Required Fields
+
+| Field | Description |
+|-------|-------------|
+| `name` | Unique skill identifier (lowercase, hyphens only) |
+| `version` | Semantic version (semver) |
+| `description` | Short description for registry listing |
+| `permissions` | Explicit capability declarations |
+
+## Step 4: Declare Permissions
+
+Tank enforces least-privilege by default. Declare only what your skill needs:
+
+```json
+{
+  "permissions": {
+    "network": ["https://api.openai.com"],
+    "filesystem": {
+      "read": ["./data/**"],
+      "write": ["./output/**"]
+    },
+    "env": ["OPENAI_API_KEY"]
+  }
+}
+```
+
+<Tip>
+Runtime permission prompts will show users exactly what your skill requests access to.
+</Tip>
+
+## Step 5: Run Security Scan
+
+Before publishing, verify your skill passes Tank's 6-stage security pipeline:
+
+```bash
+tank verify
+```
+
+This runs:
+1. **Structure validation** — manifest integrity, file limits
+2. **Static analysis** — AST scanning for dangerous patterns
+3. **Injection detection** — prompt injection and code injection
+4. **Secret scanning** — credential exfiltration risks
+5. **Supply chain** — dependency vulnerabilities
+6. **Permission validation** — runtime boundary enforcement
+
+## Step 6: Publish
+
+```bash
+tank publish
+```
+
+Your skill is now:
+- Scanned for security issues
+- Signed with a cryptographic signature
+- Uploaded to the Tank registry
+- Available for others to install
+
+## Step 7: Verify Publication
+
+Check your skill on the registry:
+
+```bash
+tank info my-skill
+```
+
+Or visit: `https://tankpkg.com/skills/my-skill`
+
+## Next Steps
+
+- [Install a skill](/docs/installing) to see the consumer experience
+- [Read the CLI reference](/docs/cli) for all available commands
+- [Learn about security model](/docs/security) to understand permission enforcement
+
+
+---
+
+# Publishing Skills
+
+Source: https://tankpkg.com/docs/publishing
+
+> Build, validate, and publish skills with accurate metadata and minimal permissions.
+
 
 # Publishing Skills
 
@@ -262,204 +871,317 @@ Address the finding; do not bypass scanner gates.
 
 Republish with explicit `--private` or `--visibility`.
 
+
 ---
 
-## Installing Skills
-Canonical URL: https://tankpkg.dev/docs/installing
-Description: Install, update, remove, and verify skills safely.
+# Secure AI Skills Checklist
 
-# Installing Skills
+Source: https://tankpkg.com/docs/security-checklist
 
-This guide covers day-2 operations for skill consumers.
+> Security best practices checklist for publishing safe AI agent skills
 
-## Install
+
+# Secure AI Skills Checklist
+
+Use this checklist before publishing any AI agent skill to ensure it follows security best practices.
+
+## Manifest Security
+
+- [ ] **Minimal permissions** — Only declare permissions your skill actually needs
+- [ ] **Explicit network allowlist** — List specific domains, avoid wildcards
+- [ ] **Scoped filesystem access** — Use specific paths, never `/` or `~`
+- [ ] **No hardcoded secrets** — Use environment variables for credentials
+- [ ] **Version pinned dependencies** — Lock all dependency versions
+
+## Code Security
+
+- [ ] **No `eval()` or `Function()`** — Dynamic code execution is blocked
+- [ ] **No shell injection** — Sanitize all inputs to shell commands
+- [ ] **No SQL injection** — Use parameterized queries
+- [ ] **No path traversal** — Validate and sanitize file paths
+- [ ] **No SSRF vulnerabilities** — Validate and restrict URLs
+
+## Prompt Injection Prevention
+
+- [ ] **Input sanitization** — Escape or remove special characters from user input
+- [ ] **Output validation** — Check LLM outputs before executing actions
+- [ ] **Separation of concerns** — Don't mix user input with system prompts
+- [ ] **Rate limiting** — Implement request limits to prevent abuse
+
+## Secret Management
+
+- [ ] **No secrets in code** — Never hardcode API keys, tokens, or passwords
+- [ ] **Environment variables** — Use `env` permission for required secrets
+- [ ] **Secret rotation support** — Design for key rotation without code changes
+- [ ] **Audit logging** — Log when secrets are accessed (without logging values)
+
+## Dependency Security
+
+- [ ] **Minimal dependencies** — Only include what you need
+- [ ] **Trusted sources** — Only use well-maintained packages
+- [ ] **No deprecated packages** — Use actively maintained alternatives
+- [ ] **Lockfile committed** — Include `pnpm-lock.yaml` or equivalent
+
+## Permission Best Practices
+
+| Permission Type | ✅ Good Practice | ❌ Avoid |
+|----------------|------------------|----------|
+| Network | `["https://api.example.com"]` | `["*"]` or `["https://*"]` |
+| Filesystem Read | `["./data/**"]` | `["/**"]` or `["~/**"]` |
+| Filesystem Write | `["./output/**"]` | `["/**"]` or home directory |
+| Environment | `["MY_API_KEY"]` | `["*"]` or broad patterns |
+
+## Runtime Security
+
+- [ ] **Graceful degradation** — Handle permission denials without crashing
+- [ ] **Clear error messages** — Tell users what permission is needed and why
+- [ ] **No privilege escalation** — Don't attempt to bypass permission checks
+- [ ] **Secure defaults** — Fail closed, not open
+
+## Before Publishing
 
 ```bash
-tank install @org/skill-name
-tank install @org/skill-name '^1.2.0'
-```
-
-Optional global mode:
-
-```bash
-tank install @org/skill-name '*' -g
-```
-
-## Update
-
-```bash
-tank update
-tank update @org/skill-name
-```
-
-Optional global mode:
-
-```bash
-tank update @org/skill-name -g
-```
-
-## Remove
-
-```bash
-tank remove @org/skill-name
-tank remove @org/skill-name -g
-```
-
-## Verify and Audit
-
-```bash
+# Run the security verifier
 tank verify
-tank permissions
-tank audit
-tank audit @org/skill-name
+
+# Check for secrets accidentally committed
+git diff --cached | grep -i "api_key\|secret\|token\|password"
+
+# Audit dependencies
+pnpm audit
 ```
 
-## Discover and Inspect
+## Security Scan Results
 
-```bash
-tank search "embedding"
-tank info @org/skill-name
-```
+Tank's 6-stage pipeline will flag:
 
-## Operational Guidance
+| Severity | Examples | Result |
+|----------|----------|--------|
+| Critical | Hardcoded secrets, code injection | ❌ FAIL — Must fix |
+| High | SQL injection, path traversal | ❌ FAIL — Must fix |
+| Medium | Deprecated deps, broad permissions | ⚠️ FLAGGED — Review required |
+| Low | Missing docs, style issues | ✅ PASS with notes |
 
-- Run `tank verify` after changes to lock/install state
-- Run `tank permissions` before enabling skills in production agents
-- Prefer pinned versions for production stability
+## Getting Help
 
-## Failure Handling
-
-### Install fails
-
-Run `tank doctor`; check auth and network.
-
-### Unexpected permission scope
-
-Remove package and select an alternative with narrower access.
-
-### Verify fails
-
-Reinstall package and ensure lock state is consistent.
+- **Security questions**: Open an issue on [GitHub](https://github.com/tankpkg/tank)
+- **Vulnerability report**: Email security@tankpkg.com
+- **Documentation**: [Security Model](/docs/security)
 
 ---
 
-## CLI Reference
-Canonical URL: https://tankpkg.dev/docs/cli
-Description: Authoritative command reference from the current CLI entrypoint.
+<Callout type="info">
+This checklist is enforced automatically by `tank verify`. Run it early and often during development.
+</Callout>
 
-# CLI Reference
-
-Source of truth: `apps/cli/src/bin/tank.ts`.
-
-## Commands
-
-| Command | Args | Options | Purpose |
-|---|---|---|---|
-| `tank init` | - | - | Initialize `skills.json` |
-| `tank login` | - | - | Authenticate via browser |
-| `tank whoami` | - | - | Show current user |
-| `tank logout` | - | - | Clear auth token |
-| `tank publish` | - | `--dry-run`, `--private`, `--visibility <mode>` | Publish a skill |
-| `tank install` | `[name] [version-range]` | `-g, --global` | Install one/all skills |
-| `tank remove` | `<name>` | `-g, --global` | Remove installed skill |
-| `tank update` | `[name]` | `-g, --global` | Update one/all skills |
-| `tank verify` | - | - | Verify installation integrity |
-| `tank permissions` | - | - | Show resolved permissions |
-| `tank search` | `<query>` | - | Search registry |
-| `tank info` | `<name>` | - | Show package details |
-| `tank audit` | `[name]` | - | Run/read security audit |
-| `tank link` | - | - | Link local skills for agents |
-| `tank unlink` | - | - | Remove links |
-| `tank doctor` | - | - | Diagnose environment/setup |
-
-## Typical Workflows
-
-### Consumer
-
-```bash
-tank login
-tank install @org/skill-name
-tank permissions
-tank verify
-```
-
-### Publisher
-
-```bash
-tank login
-tank init
-tank publish --dry-run
-tank publish
-```
-
-### Maintenance
-
-```bash
-tank update
-tank audit
-tank doctor
-```
-
-## Notes
-
-- Use `tank <command> --help` for runtime help text.
-- Commands not listed above are not part of current CLI entrypoint.
 
 ---
 
-## API Reference
-Canonical URL: https://tankpkg.dev/docs/api
-Description: Public API endpoints implemented under /api/v1.
+# Self-Host in 15 Minutes
 
-# API Reference
+Source: https://tankpkg.com/docs/self-host-quickstart
 
-Base URL (hosted):
+> Deploy your own Tank registry and security scanner on-premise
 
-```text
-https://tankpkg.dev/api/v1
+
+# Self-Host in 15 Minutes
+
+Deploy Tank on your own infrastructure for complete control over your AI skill registry and security scanning.
+
+## Why Self-Host?
+
+- **Data sovereignty** — Skills and metadata never leave your infrastructure
+- **Air-gapped support** — Deploy in environments without internet access
+- **Custom policies** — Implement organization-specific security rules
+- **Compliance** — Meet regulatory requirements (SOC2, HIPAA, etc.)
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Your Infrastructure                       │
+│                                                              │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
+│  │   Next.js   │───▶│  PostgreSQL │    │    S3/MinIO │     │
+│  │   Web App   │    │   Database  │    │   Storage   │     │
+│  └─────────────┘    └─────────────┘    └─────────────┘     │
+│         │                                                   │
+│         ▼                                                   │
+│  ┌─────────────┐                                           │
+│  │   FastAPI   │                                           │
+│  │   Security  │                                           │
+│  │   Scanner   │                                           │
+│  └─────────────┘                                           │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-Authentication for protected endpoints uses Bearer API keys.
+## Prerequisites
 
-## CLI Auth Endpoints
+- Docker and Docker Compose
+- 4GB RAM minimum (8GB recommended)
+- PostgreSQL 17+ (or use provided Docker config)
+- S3-compatible storage (or MinIO)
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/cli-auth/start` | POST | Start browser-auth flow |
-| `/cli-auth/authorize` | GET | User authorization step |
-| `/cli-auth/exchange` | POST | Exchange poll token for API key |
-
-## Registry Endpoints
-
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/skills` | GET | Search/list skills |
-| `/skills` | POST | Start publish flow |
-| `/skills/confirm` | POST | Confirm finalize publish |
-| `/skills/[name]` | GET | Skill metadata |
-| `/skills/[name]/versions` | GET | List versions |
-| `/skills/[name]/star` | POST/DELETE | Star/unstar |
-| `/skills/[name]/[version]` | GET | Version metadata |
-| `/skills/[name]/[version]/files/[...path]` | GET | File content retrieval |
-| `/search` | GET | Search endpoint |
-
-## Minimal Usage Example
+## Step 1: Clone and Configure
 
 ```bash
-curl -H "Authorization: Bearer $TANK_API_KEY"   https://tankpkg.dev/api/v1/skills/my-org/my-skill
+git clone https://github.com/tankpkg/tank.git
+cd tank
+cp .env.example .env.local
 ```
 
-## Stability Guidance
+Edit `.env.local` with your values:
 
-- Treat endpoint paths above as canonical.
-- For payload details, validate against current route handlers in `apps/web/app/api/v1/**`.
-- Keep clients resilient to additive response fields.
+```bash
+# Database
+DATABASE_URL=postgresql://tank:password@localhost:5432/tank
+
+# Storage (choose one)
+STORAGE_PROVIDER=onprem  # or 'supabase'
+ONPREM_STORAGE_PATH=/data/tank-storage
+
+# Auth
+NEXT_PUBLIC_APP_URL=https://tank.yourcompany.com
+GITHUB_CLIENT_ID=your-github-oauth-id
+GITHUB_CLIENT_SECRET=your-github-oauth-secret
+
+# Security
+FIRST_ADMIN_EMAIL=admin@yourcompany.com
+```
+
+## Step 2: Start Services
+
+Using Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+This starts:
+- Next.js web application (port 3000)
+- PostgreSQL database (port 5432)
+- MinIO S3-compatible storage (port 9000)
+- Python security scanner (internal)
+
+## Step 3: Run Database Migrations
+
+```bash
+docker-compose exec web pnpm drizzle-kit push
+```
+
+## Step 4: Create Admin User
+
+```bash
+docker-compose exec web pnpm admin:bootstrap
+```
+
+Promotes `FIRST_ADMIN_EMAIL` to admin role.
+
+## Step 5: Configure OIDC SSO (Optional)
+
+For enterprise single sign-on, add to `.env.local`:
+
+```bash
+OIDC_ISSUER=https://sso.yourcompany.com
+OIDC_CLIENT_ID=tank-client
+OIDC_CLIENT_SECRET=your-oidc-secret
+```
+
+## Step 6: Verify Installation
+
+```bash
+# Check all services are running
+docker-compose ps
+
+# Test the API
+curl http://localhost:3000/api/v1/skills
+
+# Test security scanner
+curl -X POST http://localhost:3000/api/v1/scan \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/skill.tar.gz"}'
+```
+
+## Production Checklist
+
+- [ ] Change default passwords
+- [ ] Configure TLS/SSL certificates
+- [ ] Set up database backups
+- [ ] Configure log aggregation
+- [ ] Set up monitoring (Loki + Grafana included)
+- [ ] Review firewall rules
+
+## High Availability Setup
+
+For production deployments:
+
+### Database (PostgreSQL)
+
+```yaml
+# Use managed PostgreSQL (RDS, Cloud SQL, etc.)
+DATABASE_URL=postgresql://tank:password@postgres.example.com:5432/tank?sslmode=require
+```
+
+### Storage (S3)
+
+```yaml
+# Use AWS S3 or compatible
+STORAGE_PROVIDER=onprem
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_REGION=us-east-1
+S3_BUCKET=tank-skills
+```
+
+### Container Orchestration
+
+Deploy to Kubernetes using provided Helm charts:
+
+```bash
+helm install tank ./infra/helm/tank \
+  --set database.url=$DATABASE_URL \
+  --set storage.bucket=$S3_BUCKET
+```
+
+## Monitoring
+
+Access included observability stack:
+
+- **Grafana**: `http://localhost:3001` (admin/admin)
+- **Loki**: Log aggregation
+- **Prometheus**: Metrics collection
+
+Default dashboards:
+- Tank API performance
+- Security scan latency
+- Skill publish/download rates
+
+## Upgrading
+
+```bash
+git pull origin main
+docker-compose pull
+docker-compose up -d
+```
+
+Migrations run automatically on startup.
+
+## Support
+
+- **Documentation**: [Self-hosting docs](/docs/self-hosting)
+- **Community**: [GitHub Discussions](https://github.com/tankpkg/tank/discussions)
+- **Enterprise support**: enterprise@tankpkg.com
+
 
 ---
 
-## Self-Hosting
-Canonical URL: https://tankpkg.dev/docs/self-hosting
-Description: Repository-aligned runbook for self-hosting Tank.
+# Self-Hosting
+
+Source: https://tankpkg.com/docs/self-hosting
+
+> Repository-aligned runbook for self-hosting Tank.
+
 
 # Self-Hosting
 
@@ -545,3 +1267,7 @@ Set `BETTER_AUTH_SECRET` explicitly in deployment environment.
 ### Scanner errors
 
 Verify `PYTHON_API_URL` and scanner deployment health.
+
+
+---
+

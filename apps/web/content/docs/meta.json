@@ -1,4 +1,19 @@
 {
   "title": "Documentation",
-  "pages": ["index", "getting-started", "publishing", "installing", "cli", "api", "self-hosting"]
+  "pages": [
+    "index",
+    "getting-started",
+    {
+      "title": "Guides",
+      "pages": ["publishing", "installing", "self-hosting"]
+    },
+    {
+      "title": "Reference",
+      "pages": ["cli", "api"]
+    },
+    {
+      "title": "Quick Starts",
+      "pages": ["publish-first-skill", "security-checklist", "self-host-quickstart"]
+    }
+  ]
 }
