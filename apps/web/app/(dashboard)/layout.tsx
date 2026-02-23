@@ -23,8 +23,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar — hidden on mobile, shown on md+ */}
-      <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar text-sidebar-foreground">
+      <aside className="flex w-64 flex-col border-r bg-sidebar text-sidebar-foreground">
         <div className="flex h-14 items-center px-6 font-semibold text-lg">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Image src="/logo.png" alt="Tank" width={24} height={24} className="rounded-sm" />
@@ -48,14 +47,13 @@ export default async function DashboardLayout({
         </div>
       </aside>
 
-      {/* Mobile header */}
       <div className="flex flex-1 flex-col">
-        <header className="flex md:hidden h-14 items-center border-b px-4 gap-4">
+        <header className="flex h-14 items-center border-b px-4 gap-4">
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
             <Image src="/logo.png" alt="Tank" width={22} height={22} className="rounded-sm" />
             Tank
           </Link>
-          <nav className="flex gap-4 text-sm">
+          <nav className="flex gap-4 text-sm overflow-x-auto">
             <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
               Dashboard
             </Link>

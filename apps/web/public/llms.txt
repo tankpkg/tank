@@ -1,0 +1,18 @@
+# Tank Documentation for LLMs
+
+Tank is a security-first package manager for AI agent skills. This file indexes the canonical docs pages.
+
+## Canonical Docs Index
+- [Welcome to Tank](https://tankpkg.dev/docs) - Security-first package manager for AI agent skills
+- [Getting Started](https://tankpkg.dev/docs/getting-started) - Set up your environment and start using Tank
+- [Publishing Skills](https://tankpkg.dev/docs/publishing) - Learn how to publish skills to the Tank registry
+- [Installing Skills](https://tankpkg.dev/docs/installing) - Learn how to install and manage skills from the Tank registry
+- [CLI Reference](https://tankpkg.dev/docs/cli) - Complete reference for all Tank CLI commands
+- [API Reference](https://tankpkg.dev/docs/api) - Complete reference for the Tank REST API
+- [Self-Hosting](https://tankpkg.dev/docs/self-hosting) - Learn how to host your own Tank registry
+
+## Important Paths
+- Main docs landing: https://tankpkg.dev/docs
+- API reference: https://tankpkg.dev/docs/api
+- CLI reference: https://tankpkg.dev/docs/cli
+- Self hosting: https://tankpkg.dev/docs/self-hosting
