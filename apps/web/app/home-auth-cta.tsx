@@ -19,6 +19,9 @@ export function HomeNavAuthCta() {
       <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
         <Link href={destination}>{isLoggedIn ? 'Dashboard' : 'Sign In'}</Link>
       </Button>
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/docs">Docs</Link>
+      </Button>
       <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white">
         <Link href={destination}>{isLoggedIn ? 'Open Dashboard' : 'Get Started'}</Link>
       </Button>

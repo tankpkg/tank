@@ -1,133 +1,104 @@
 ---
 title: Getting Started
-description: Set up your environment and start using Tank
+description: Install Tank, authenticate, and verify your first working flow.
 ---
 
 # Getting Started
 
-This guide will help you set up Tank and start managing AI agent skills securely.
+This guide gets you from zero to a verified working setup.
 
 ## Prerequisites
 
-- **Node.js 24+** - Required for the CLI
-- **Python 3.14+** - Required for security scanning
-- **pnpm 10.29.3+** - Package manager (or npm/yarn)
+- Node.js 24+
+- pnpm 10+
+- GitHub account (for login)
 
-## Install the CLI
+## 1) Install the CLI
 
 ```bash
-# Using pnpm (recommended)
-pnpm install -g @tank/cli
-
-# Using npm
-npm install -g @tank/cli
-
-# Using yarn
-yarn global add @tank/cli
+pnpm add -g @tank/cli
+# or: npm i -g @tank/cli
 ```
 
-Verify the installation:
+Verify:
 
 ```bash
 tank --version
 ```
 
-## Authenticate
-
-Tank uses GitHub OAuth for authentication. Run:
+## 2) Authenticate
 
 ```bash
 tank login
 ```
 
-This will:
+This opens browser auth and stores your token in `~/.tank/config.json`.
 
-1. Open your browser to GitHub OAuth
-2. Ask you to authorize Tank
-3. Store your API key in `~/.tank/config.json`
-
-## Configuration
-
-Tank stores configuration in `~/.tank/config.json`:
-
-```json
-{
-  "apiKey": "tank_xxx...",
-  "registry": "https://tankpkg.com",
-  "defaultOrg": "my-org"
-}
-```
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `TANK_REGISTRY` | Registry URL | `https://tankpkg.com` |
-| `TANK_CONFIG_DIR` | Config directory | `~/.tank` |
-| `TANK_DEBUG` | Enable debug logging | `false` |
-
-## Directory Structure
-
-Tank creates the following structure:
-
-```
-~/.tank/
-├── config.json          # Authentication and settings
-├── skills/              # Installed skills
-│   └── @org/
-│       └── skill@1.0.0/
-└── cache/               # Tarball cache
-```
-
-## Create Your First Skill
-
-### 1. Initialize
+Check identity:
 
 ```bash
-mkdir my-skill
-cd my-skill
+tank whoami
+```
+
+## 3) Install a skill
+
+```bash
+tank install @org/skill-name
+```
+
+Optional global install:
+
+```bash
+tank install @org/skill-name '*' -g
+```
+
+## 4) Verify safety and integrity
+
+```bash
+tank permissions
+tank verify
+tank audit @org/skill-name
+```
+
+## 5) Create your first skill (publisher path)
+
+```bash
+mkdir my-skill && cd my-skill
 tank init
 ```
 
-This creates `skills.json`:
-
-```json
-{
-  "name": "my-skill",
-  "version": "1.0.0",
-  "description": "My first Tank skill",
-  "permissions": {
-    "network": {
-      "outbound": []
-    },
-    "filesystem": {
-      "read": ["./**"],
-      "write": []
-    }
-  }
-}
-```
-
-### 2. Add Your Code
-
-Create your skill's entry point:
-
-```typescript
-// index.ts
-export async function run(context: SkillContext) {
-  // Your skill logic here
-  return { success: true };
-}
-```
-
-### 3. Publish
+Then publish safely:
 
 ```bash
+tank doctor
+tank publish --dry-run
 tank publish
 ```
 
-## Next Steps
+## Success Criteria
 
-- [Publishing Skills](/docs/publishing) - Detailed publishing guide
-- [Installing Skills](/docs/installing) - Install and manage skills
-- [CLI Reference](/docs/cli) - Complete command reference
+You are done when all are true:
+
+- `tank whoami` shows your user
+- `tank install` succeeds
+- `tank verify` succeeds
+- `tank permissions` shows expected access
+
+## Troubleshooting
+
+### Login works but commands fail
+
+Run:
+
+```bash
+tank whoami
+tank doctor
+```
+
+### Install fails on integrity
+
+Re-run install and verify network/proxy stability. Do not bypass verification.
+
+### Permission output looks too broad
+
+Prefer packages with narrow, explicit permission scopes.

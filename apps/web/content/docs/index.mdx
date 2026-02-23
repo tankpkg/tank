@@ -1,83 +1,51 @@
 ---
-title: Welcome to Tank
-description: Security-first package manager for AI agent skills
+title: Tank Documentation
+description: Start here for setup, publishing, installation, API, and self-hosting.
 ---
 
-# Welcome to Tank
+# Tank Documentation
 
-Tank is a security-first package manager for AI agent skills. It prevents credential exfiltration, prompt injection, and supply chain attacks through mandatory security scanning and runtime permission enforcement.
+Tank is a security-first package manager for AI agent skills.
 
-## Why Tank?
+Use this docs set by intent:
 
-The AI agent ecosystem faces critical security challenges:
+- **Learn fast**: [Getting Started](/docs/getting-started)
+- **Ship a skill**: [Publishing](/docs/publishing)
+- **Use skills in agents**: [Installing](/docs/installing)
+- **Command lookup**: [CLI Reference](/docs/cli)
+- **Integration lookup**: [API Reference](/docs/api)
+- **Run your own registry**: [Self-Hosting](/docs/self-hosting)
 
-- **Credential Exfiltration**: Malicious skills stealing API keys and secrets
-- **Prompt Injection**: Skills that manipulate agent behavior
-- **Supply Chain Attacks**: Compromised dependencies affecting thousands of users
+## Product Guarantees
 
-Tank addresses these through:
+- SHA-512 integrity verification on install
+- Mandatory security scanning before publish
+- Permission declarations in `skills.json`
+- Deterministic lockfile workflow
 
-### Security-First Design
+## Choose Your Path
 
-Every skill goes through a **6-stage security analysis pipeline** before publication:
+### I am a skill publisher
 
-1. **Ingest** - Hash verification and tarball validation
-2. **Structure** - File structure analysis and anomaly detection
-3. **Static Analysis** - AST-based code scanning for dangerous patterns
-4. **Injection Detection** - Prompt injection and manipulation detection
-5. **Secrets Scanning** - Hardcoded credential detection
-6. **Supply Chain** - Dependency vulnerability analysis
+1. Follow [Getting Started](/docs/getting-started)
+2. Implement your manifest and code via [Publishing](/docs/publishing)
+3. Validate with `tank doctor` and `tank publish --dry-run`
+4. Publish and verify via `tank info @org/name`
 
-### Permission System
+### I am a skill consumer
 
-Skills declare their capabilities upfront:
+1. Install a package with [Installing](/docs/installing)
+2. Review permissions with `tank permissions`
+3. Verify integrity with `tank verify`
 
-```json
-{
-  "permissions": {
-    "network": {
-      "outbound": ["api.openai.com", "api.anthropic.com"]
-    },
-    "filesystem": {
-      "read": ["./data/**"],
-      "write": ["./output/**"]
-    }
-  }
-}
-```
+### I need implementation details
 
-### Cryptographic Verification
+- Commands: [CLI Reference](/docs/cli)
+- Endpoints: [API Reference](/docs/api)
+- Ops: [Self-Hosting](/docs/self-hosting)
 
-Every installed skill is verified via SHA-512 hash against the registry signature.
+## Canonical References
 
-## Quick Start
-
-### For Skill Consumers
-
-```bash
-# Install a skill
-tank install @org/skill-name
-
-# Verify integrity
-tank verify
-
-# View permissions
-tank permissions
-```
-
-### For Skill Publishers
-
-```bash
-# Initialize a new skill
-tank init
-
-# Publish to registry
-tank publish
-```
-
-## Next Steps
-
-- [Getting Started](/docs/getting-started) - Set up your environment
-- [Publishing Skills](/docs/publishing) - Learn how to publish
-- [Installing Skills](/docs/installing) - Install and manage skills
-- [Self-Hosting](/docs/self-hosting) - Host your own registry
+- CLI entrypoint: `apps/cli/src/bin/tank.ts`
+- API routes: `apps/web/app/api/v1/**`
+- Security scanner: `python-api/lib/scan/**`

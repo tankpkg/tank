@@ -1,412 +1,89 @@
 ---
 title: Self-Hosting
-description: Learn how to host your own Tank registry
+description: Repository-aligned runbook for self-hosting Tank.
 ---
 
 # Self-Hosting
 
-This guide covers deploying and maintaining your own Tank registry.
+This runbook is aligned to the current monorepo layout.
 
-## Architecture Overview
+## Architecture
 
-Tank consists of three main components:
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   CLI Client    │────▶│   Web Registry  │────▶│   PostgreSQL    │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                               │
-                               ▼
-                        ┌─────────────────┐
-                        │  Python Scanner │
-                        └─────────────────┘
-                               │
-                               ▼
-                        ┌─────────────────┐
-                        │ Object Storage  │
-                        │ (S3/Supabase)   │
-                        └─────────────────┘
-```
+- **Web app**: `apps/web` (Next.js)
+- **Scanner**: `python-api` (FastAPI pipeline)
+- **Shared contracts**: `packages/shared`
+- **Storage**: Supabase or compatible object storage
+- **Database**: PostgreSQL
 
 ## Prerequisites
 
-- **PostgreSQL 17+** - Primary database
-- **Object Storage** - S3-compatible or Supabase
-- **Node.js 24+** - Web application runtime
-- **Python 3.14+** - Security scanner
-- **Redis** (optional) - Caching
+- Node.js 24+
+- pnpm 10+
+- Python 3.14+
+- PostgreSQL instance
+- Storage credentials
 
-## Docker Deployment
-
-### 1. Clone and Configure
+## Minimum Setup
 
 ```bash
-git clone https://github.com/tankpkg/tank
-cd tank
-
+pnpm install
 cp .env.example .env.local
 ```
 
-### 2. Configure Environment
+Required envs (minimum):
 
-Edit `.env.local`:
+- `DATABASE_URL`
+- `BETTER_AUTH_SECRET`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `PYTHON_API_URL`
 
-```bash
-# Database
-DATABASE_URL=postgresql://user:pass@postgres:5432/tank
-
-# Storage (Supabase)
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=xxx
-SUPABASE_SERVICE_ROLE_KEY=xxx
-
-# Storage (S3 - alternative)
-S3_ENDPOINT=https://s3.amazonaws.com
-S3_ACCESS_KEY=xxx
-S3_SECRET_KEY=xxx
-S3_BUCKET=tank-tarballs
-
-# Auth
-BETTER_AUTH_SECRET=your-secret-key-min-32-chars
-GITHUB_CLIENT_ID=xxx
-GITHUB_CLIENT_SECRET=xxx
-
-# Email (optional)
-RESEND_API_KEY=xxx
-```
-
-### 3. Docker Compose
-
-```yaml
-# docker-compose.yml
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:17
-    environment:
-      POSTGRES_DB: tank
-      POSTGRES_USER: tank
-      POSTGRES_PASSWORD: tank
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-
-  web:
-    build: ./apps/web
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgresql://tank:tank@postgres:5432/tank
-      REDIS_URL: redis://redis:6379
-    depends_on:
-      - postgres
-      - redis
-
-  scanner:
-    build: ./python-api
-    environment:
-      DATABASE_URL: postgresql://tank:tank@postgres:5432/tank
-    depends_on:
-      - postgres
-
-volumes:
-  postgres_data:
-  redis_data:
-```
-
-### 4. Deploy
+## Build and Run
 
 ```bash
-docker-compose up -d
-
-# Run migrations
-docker-compose exec web pnpm drizzle-kit push
-
-# Create admin user
-docker-compose exec web pnpm admin:bootstrap
+pnpm turbo build --filter=@tank/web...
+pnpm --filter=@tank/web start
 ```
 
-## Manual Deployment
-
-### 1. Database Setup
-
-```bash
-# Create database
-createdb tank
-
-# Run migrations
-pnpm --filter=web drizzle-kit push
-```
-
-### 2. Web Application
-
-```bash
-cd apps/web
-
-# Install dependencies
-pnpm install
-
-# Build
-pnpm build
-
-# Start (production)
-NODE_ENV=production pnpm start
-```
-
-### 3. Python Scanner
-
-```bash
-cd python-api
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start
-uvicorn api.index:app --host 0.0.0.0 --port 8000
-```
-
-## Storage Configuration
-
-### Supabase Storage
-
-```bash
-STORAGE_PROVIDER=supabase
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=xxx
-```
-
-### S3-Compatible Storage
-
-```bash
-STORAGE_PROVIDER=s3
-S3_ENDPOINT=https://s3.amazonaws.com
-S3_ACCESS_KEY=xxx
-S3_SECRET_KEY=xxx
-S3_BUCKET=tank-tarballs
-S3_REGION=us-east-1
-```
-
-### On-Premise Storage
-
-```bash
-STORAGE_PROVIDER=local
-STORAGE_LOCAL_PATH=/data/tarballs
-```
-
-## Authentication
-
-### GitHub OAuth
-
-1. Create OAuth App at https://github.com/settings/developers
-2. Set callback URL: `https://your-domain.com/api/auth/callback/github`
-3. Configure:
-
-```bash
-GITHUB_CLIENT_ID=xxx
-GITHUB_CLIENT_SECRET=xxx
-```
-
-### OIDC SSO (Enterprise)
-
-```bash
-OIDC_ISSUER=https://your-idp.com
-OIDC_CLIENT_ID=xxx
-OIDC_CLIENT_SECRET=xxx
-```
-
-## Security Scanner
-
-### Standalone Deployment
-
-```bash
-# Deploy scanner as separate service
-cd python-api
-
-# Configure
-DATABASE_URL=postgresql://...
-
-# Run
-gunicorn api.index:app -w 4 -b 0.0.0.0:8000
-```
-
-### Sync with Web App
-
-If deploying scanner separately, ensure `apps/web/api-python/` mirrors `python-api/`:
-
-```bash
-# Sync command
-rsync -av python-api/ apps/web/api-python/
-```
-
-## Monitoring
-
-### Health Check
-
-```bash
-curl https://your-domain.com/api/health
-```
-
-Response:
-
-```json
-{
-  "status": "healthy",
-  "database": "connected",
-  "storage": "connected",
-  "scanner": "connected"
-}
-```
-
-### Logging
-
-Tank uses structured logging with pino:
-
-```bash
-# Enable debug logging
-TANK_DEBUG=1
-
-# Configure Loki endpoint
-LOKI_URL=http://loki:3100
-```
-
-### Metrics
-
-Prometheus metrics available at `/metrics`:
-
-```
-tank_skills_total 1234
-tank_downloads_total 56789
-tank_scan_duration_seconds 0.45
-```
-
-## Backup
-
-### Database Backup
-
-```bash
-# PostgreSQL backup
-pg_dump tank > tank_backup.sql
-
-# Restore
-psql tank < tank_backup.sql
-```
-
-### Storage Backup
-
-For S3:
-
-```bash
-aws s3 sync s3://tank-tarballs ./backup/tarballs
-```
-
-For local storage:
-
-```bash
-rsync -av /data/tarballs ./backup/tarballs
-```
-
-## Upgrading
-
-### 1. Backup
-
-```bash
-pg_dump tank > pre_upgrade_backup.sql
-```
-
-### 2. Pull Changes
-
-```bash
-git pull origin main
-```
-
-### 3. Run Migrations
+## Schema / Migrations
 
 ```bash
 pnpm --filter=web drizzle-kit generate
 pnpm --filter=web drizzle-kit push
 ```
 
-### 4. Restart Services
+## Admin Bootstrap
 
 ```bash
-docker-compose restart web scanner
+pnpm --filter=web admin:bootstrap
 ```
 
-## Scaling
+## Health and Verification
 
-### Horizontal Scaling
+- Web health endpoint: `/api/health`
+- Validate publish/install flows with CLI in a clean environment
+- Confirm scanner connectivity via `PYTHON_API_URL`
 
-```yaml
-# docker-compose.yml
-services:
-  web:
-    deploy:
-      replicas: 3
+## Operational Notes
 
-  scanner:
-    deploy:
-      replicas: 2
-```
-
-### Load Balancing
-
-Use nginx or your preferred load balancer:
-
-```nginx
-upstream tank_web {
-  server web1:3000;
-  server web2:3000;
-  server web3:3000;
-}
-
-server {
-  listen 80;
-  server_name tank.yourdomain.com;
-  
-  location / {
-    proxy_pass http://tank_web;
-  }
-}
-```
+- Keep `python-api/` and `apps/web/api-python/` in sync when scanner logic changes.
+- Use Turbo builds for dependency-aware monorepo builds.
+- Do not bypass auth secret requirements in production.
 
 ## Troubleshooting
 
-### Database Connection Issues
+### Build fails with workspace package resolution
+
+Use monorepo-aware build command:
 
 ```bash
-# Check connection
-psql $DATABASE_URL -c "SELECT 1"
-
-# Check migrations
-pnpm --filter=web drizzle-kit push --dry-run
+pnpm turbo build --filter=@tank/web...
 ```
 
-### Storage Upload Failures
+### Auth runtime errors
 
-```bash
-# Test S3 access
-aws s3 ls s3://tank-tarballs
+Set `BETTER_AUTH_SECRET` explicitly in deployment environment.
 
-# Test Supabase access
-curl -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-  "$SUPABASE_URL/storage/v1/bucket"
-```
+### Scanner errors
 
-### Scanner Not Running
-
-```bash
-# Check scanner health
-curl http://scanner:8000/
-
-# Check Python dependencies
-pip list | grep -E "fastapi|pydantic"
-```
+Verify `PYTHON_API_URL` and scanner deployment health.

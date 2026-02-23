@@ -1,277 +1,90 @@
 ---
 title: Publishing Skills
-description: Learn how to publish skills to the Tank registry
+description: Build, validate, and publish skills with accurate metadata and minimal permissions.
 ---
 
 # Publishing Skills
 
-This guide covers everything you need to know about publishing skills to the Tank registry.
+This is a task-focused guide for shipping production-grade skills.
 
-## Prerequisites
+## Preflight Checklist
 
-Before publishing, ensure you have:
+Before publishing, ensure:
 
-1. **Tank CLI installed** - See [Getting Started](/docs/getting-started)
-2. **Authenticated** - Run `tank login`
-3. **Organization membership** - Skills are published under organizations
+- `skills.json` exists and is valid
+- Version is correct (SemVer)
+- Permissions are minimal
+- README and usage examples exist
+- `tank login` already completed
 
-## skills.json
-
-Every skill must have a `skills.json` manifest in its root directory:
+## skills.json (minimal example)
 
 ```json
 {
   "name": "my-skill",
   "version": "1.0.0",
-  "description": "A skill that does something useful",
-  "author": {
-    "name": "Your Name",
-    "email": "you@example.com"
-  },
-  "repository": "https://github.com/org/my-skill",
-  "license": "MIT",
-  "keywords": ["ai", "agent", "automation"],
+  "description": "Does one thing well",
   "permissions": {
-    "network": {
-      "outbound": ["api.openai.com"]
-    },
-    "filesystem": {
-      "read": ["./data/**"],
-      "write": ["./output/**"]
-    },
+    "network": { "outbound": ["api.openai.com"] },
+    "filesystem": { "read": ["./data/**"], "write": ["./output/**"] },
     "subprocess": false,
     "environment": ["OPENAI_API_KEY"]
-  },
-  "dependencies": {
-    "@org/other-skill": "^1.0.0"
   }
 }
 ```
 
-### Required Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Skill name (must be unique in org) |
-| `version` | string | Semver version |
-
-### Optional Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `description` | string | Brief description |
-| `author` | object | Author information |
-| `repository` | string | Source repository URL |
-| `license` | string | SPDX license identifier |
-| `keywords` | string[] | Search keywords |
-| `permissions` | object | Permission declarations |
-| `dependencies` | object | Skill dependencies |
-
-## Permission Model
-
-Tank uses a capability-based permission system. Skills must declare what they need access to.
-
-### Network Permissions
-
-```json
-{
-  "permissions": {
-    "network": {
-      "outbound": ["api.openai.com", "api.anthropic.com"],
-      "inbound": false
-    }
-  }
-}
-```
-
-### Filesystem Permissions
-
-```json
-{
-  "permissions": {
-    "filesystem": {
-      "read": ["./data/**", "./config.json"],
-      "write": ["./output/**", "./logs/**"]
-    }
-  }
-}
-```
-
-Glob patterns supported:
-- `*` - Match any single segment
-- `**` - Match zero or more segments
-- `?` - Match single character
-- `[...]` - Match character range
-
-### Subprocess Permissions
-
-```json
-{
-  "permissions": {
-    "subprocess": true
-  }
-}
-```
-
-### Environment Permissions
-
-```json
-{
-  "permissions": {
-    "environment": ["API_KEY", "DATABASE_URL"]
-  }
-}
-```
-
-### Secrets Permissions
-
-```json
-{
-  "permissions": {
-    "secrets": ["production-api-key"]
-  }
-}
-```
-
-## Publishing Process
-
-### 1. Initialize
+## Publish Flow
 
 ```bash
-mkdir my-skill && cd my-skill
-tank init
-```
-
-### 2. Develop Your Skill
-
-Create your skill's code:
-
-```typescript
-// index.ts
-import type { SkillContext, SkillResult } from '@tank/types';
-
-export async function run(context: SkillContext): Promise<SkillResult> {
-  const { logger, config, fs } = context;
-  
-  logger.info('Starting skill execution');
-  
-  // Your skill logic here
-  
-  return { success: true, data: {} };
-}
-```
-
-### 3. Test Locally
-
-Before publishing, test your skill:
-
-```bash
-# Validate skills.json
 tank doctor
-
-# Check permissions are reasonable
-tank permissions
-```
-
-### 4. Publish
-
-```bash
+tank publish --dry-run
 tank publish
 ```
 
-This command:
+Supported publish flags:
 
-1. Validates `skills.json`
-2. Creates a tarball excluding ignored files
-3. Runs security scan on the tarball
-4. Uploads to registry
-5. Returns published URL
+- `--dry-run`
+- `--private`
+- `--visibility <mode>`
 
-### Ignored Files
+## Versioning Policy
 
-These are always excluded from the tarball:
+- **Patch**: bug fixes
+- **Minor**: backward-compatible features
+- **Major**: breaking changes
 
-```
-.git/
-node_modules/
-.env*
-.DS_Store
-*.log
-dist/
-build/
-.tank/
-```
+Update version before each release.
 
-## Security Scanning
-
-Every skill is scanned before publication. The pipeline checks for:
-
-### Critical Findings (Block Publication)
-
-- Hardcoded API keys or secrets
-- Obfuscated malicious code
-- Known vulnerability patterns
-
-### High Findings (Flagged for Review)
-
-- Suspicious network patterns
-- Dynamic code execution
-- Potential prompt injection
-
-### Medium/Low Findings (Warnings)
-
-- Missing README
-- Missing LICENSE
-- Unusual file patterns
-
-### Scan Results
+## Post-publish Validation
 
 ```bash
+tank info @org/my-skill
 tank audit @org/my-skill
 ```
 
-## Version Management
+Confirm:
 
-### Semantic Versioning
+- package appears in registry
+- permissions are accurate
+- no unexpected high/critical findings
 
-Tank follows semver:
+## Security Publishing Rules
 
-- `MAJOR` - Breaking changes
-- `MINOR` - New features, backward compatible
-- `PATCH` - Bug fixes
+- Request only permissions your code actually needs
+- Avoid broad wildcards for network/filesystem
+- Never embed secrets in source
+- Keep dependencies pinned and reviewed
 
-### Updating Versions
+## Common Failures
 
-```bash
-# Update version
-npm version patch  # or minor, major
+### Validation failure
 
-# Publish new version
-tank publish
-```
+Fix `skills.json` shape and rerun `tank publish --dry-run`.
 
-### Deprecating Versions
+### Security finding blocks release
 
-```bash
-tank deprecate @org/my-skill@1.0.0 --reason "Security vulnerability"
-```
+Address the finding; do not bypass scanner gates.
 
-## Organization Skills
+### Wrong visibility
 
-Skills are published under organizations:
-
-```bash
-# Publish to your org
-tank publish --org my-org
-
-# Skill becomes available as
-tank install @my-org/my-skill
-```
-
-## Best Practices
-
-1. **Minimal Permissions** - Only request what you need
-2. **Clear Descriptions** - Help users understand your skill
-3. **Version Properly** - Follow semver strictly
-4. **Include Examples** - Add a README with usage examples
-5. **Test Thoroughly** - Verify before publishing
+Republish with explicit `--private` or `--visibility`.

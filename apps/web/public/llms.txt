@@ -1,18 +1,28 @@
-# Tank Documentation for LLMs
+# Tank Documentation (llms.txt)
 
-Tank is a security-first package manager for AI agent skills. This file indexes the canonical docs pages.
+> Canonical, curated index for LLM retrieval. Use this file first, then follow links.
 
-## Canonical Docs Index
-- [Welcome to Tank](https://tankpkg.dev/docs) - Security-first package manager for AI agent skills
-- [Getting Started](https://tankpkg.dev/docs/getting-started) - Set up your environment and start using Tank
-- [Publishing Skills](https://tankpkg.dev/docs/publishing) - Learn how to publish skills to the Tank registry
-- [Installing Skills](https://tankpkg.dev/docs/installing) - Learn how to install and manage skills from the Tank registry
-- [CLI Reference](https://tankpkg.dev/docs/cli) - Complete reference for all Tank CLI commands
-- [API Reference](https://tankpkg.dev/docs/api) - Complete reference for the Tank REST API
-- [Self-Hosting](https://tankpkg.dev/docs/self-hosting) - Learn how to host your own Tank registry
+## Product Summary
+Tank is a security-first package manager for AI agent skills. It provides publish/install workflows, permission declarations, integrity verification, and pre-publish security analysis.
 
-## Important Paths
-- Main docs landing: https://tankpkg.dev/docs
-- API reference: https://tankpkg.dev/docs/api
-- CLI reference: https://tankpkg.dev/docs/cli
-- Self hosting: https://tankpkg.dev/docs/self-hosting
+## Canonical Docs
+- [Tank Documentation](https://tankpkg.dev/docs) — Start here for setup, publishing, installation, API, and self-hosting.
+- [Getting Started](https://tankpkg.dev/docs/getting-started) — Install Tank, authenticate, and verify your first working flow.
+- [Publishing Skills](https://tankpkg.dev/docs/publishing) — Build, validate, and publish skills with accurate metadata and minimal permissions.
+- [Installing Skills](https://tankpkg.dev/docs/installing) — Install, update, remove, and verify skills safely.
+- [CLI Reference](https://tankpkg.dev/docs/cli) — Authoritative command reference from the current CLI entrypoint.
+- [API Reference](https://tankpkg.dev/docs/api) — Public API endpoints implemented under /api/v1.
+- [Self-Hosting](https://tankpkg.dev/docs/self-hosting) — Repository-aligned runbook for self-hosting Tank.
+
+## Priority Retrieval Order
+- Start with: /docs/getting-started
+- Then task docs: /docs/publishing or /docs/installing
+- Use references last: /docs/cli and /docs/api
+
+## Constraints
+- Prefer commands documented in current CLI entrypoint (`apps/cli/src/bin/tank.ts`).
+- Prefer API paths under `/api/v1` as documented in `/docs/api`.
+- For hosting/deploy details, verify environment-specific values before execution.
+
+## Full Export
+- Full markdown export: https://tankpkg.dev/llms-full.txt

@@ -1,371 +1,48 @@
 ---
 title: API Reference
-description: Complete reference for the Tank REST API
+description: Public API endpoints implemented under /api/v1.
 ---
 
 # API Reference
 
-Complete reference for the Tank REST API.
+Base URL (hosted):
 
-## Base URL
-
-```
-https://tankpkg.com/api/v1
+```text
+https://tankpkg.dev/api/v1
 ```
 
-## Authentication
+Authentication for protected endpoints uses Bearer API keys.
 
-### API Keys
+## CLI Auth Endpoints
 
-Include your API key in the Authorization header:
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/cli-auth/start` | POST | Start browser-auth flow |
+| `/cli-auth/authorize` | GET | User authorization step |
+| `/cli-auth/exchange` | POST | Exchange poll token for API key |
+
+## Registry Endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/skills` | GET | Search/list skills |
+| `/skills` | POST | Start publish flow |
+| `/skills/confirm` | POST | Confirm finalize publish |
+| `/skills/[name]` | GET | Skill metadata |
+| `/skills/[name]/versions` | GET | List versions |
+| `/skills/[name]/star` | POST/DELETE | Star/unstar |
+| `/skills/[name]/[version]` | GET | Version metadata |
+| `/skills/[name]/[version]/files/[...path]` | GET | File content retrieval |
+| `/search` | GET | Search endpoint |
+
+## Minimal Usage Example
 
 ```bash
-curl -H "Authorization: Bearer tank_xxx..." https://tankpkg.com/api/v1/skills
+curl -H "Authorization: Bearer $TANK_API_KEY"   https://tankpkg.dev/api/v1/skills/my-org/my-skill
 ```
 
-### OAuth (CLI)
-
-CLI authentication uses OAuth flow:
-
-1. `POST /cli-auth/start` - Start flow
-2. `GET /cli-auth/authorize` - User authorization
-3. `POST /cli-auth/exchange` - Exchange for API key
-
-## Skills
-
-### List Skills
-
-```http
-GET /skills
-```
-
-**Query Parameters**:
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `q` | string | Search query |
-| `org` | string | Filter by organization |
-| `limit` | number | Results per page (default: 20) |
-| `offset` | number | Pagination offset |
-
-**Response**:
-
-```json
-{
-  "skills": [
-    {
-      "name": "@org/skill-name",
-      "description": "A useful skill",
-      "version": "1.0.0",
-      "author": { "name": "Author" },
-      "downloads": 1234,
-      "stars": 56
-    }
-  ],
-  "total": 100,
-  "limit": 20,
-  "offset": 0
-}
-```
-
-### Get Skill
-
-```http
-GET /skills/{name}
-```
-
-**Response**:
-
-```json
-{
-  "name": "@org/skill-name",
-  "description": "A useful skill",
-  "versions": ["1.0.0", "0.9.0"],
-  "latest": "1.0.0",
-  "author": {
-    "name": "Author",
-    "email": "author@example.com"
-  },
-  "repository": "https://github.com/org/skill",
-  "license": "MIT",
-  "keywords": ["ai", "agent"],
-  "downloads": 1234,
-  "stars": 56,
-  "permissions": {
-    "network": { "outbound": ["api.openai.com"] }
-  }
-}
-```
-
-### Publish Skill
-
-```http
-POST /skills
-```
-
-**Request Body**:
-
-```json
-{
-  "name": "skill-name",
-  "version": "1.0.0",
-  "org": "my-org",
-  "description": "A useful skill",
-  "permissions": { },
-  "tarball": "base64-encoded-tarball"
-}
-```
-
-**Response**:
-
-```json
-{
-  "uploadUrl": "https://storage.example.com/signed-url",
-  "expiresAt": "2024-01-01T00:00:00Z"
-}
-```
-
-### Confirm Publication
-
-```http
-POST /skills/confirm
-```
-
-**Request Body**:
-
-```json
-{
-  "name": "@org/skill-name",
-  "version": "1.0.0"
-}
-```
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "url": "https://tankpkg.com/skills/@org/skill-name"
-}
-```
-
-### Get Version
-
-```http
-GET /skills/{name}/{version}
-```
-
-**Response**:
-
-```json
-{
-  "name": "@org/skill-name",
-  "version": "1.0.0",
-  "tarball": "https://storage.example.com/tarball.tgz",
-  "integrity": "sha512-abc123...",
-  "permissions": { },
-  "dependencies": { }
-}
-```
-
-### Star Skill
-
-```http
-POST /skills/{name}/star
-```
-
-**Response**:
-
-```json
-{
-  "starred": true,
-  "stars": 57
-}
-```
-
-### Unstar Skill
-
-```http
-DELETE /skills/{name}/star
-```
-
-**Response**:
-
-```json
-{
-  "starred": false,
-  "stars": 56
-}
-```
-
-## Search
-
-### Search Skills
-
-```http
-GET /search
-```
-
-**Query Parameters**:
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `q` | string | Search query (required) |
-| `limit` | number | Results per page |
-
-**Response**:
-
-```json
-{
-  "results": [
-    {
-      "name": "@org/skill-name",
-      "description": "A useful skill",
-      "version": "1.0.0",
-      "score": 0.95
-    }
-  ],
-  "total": 50
-}
-```
-
-## CLI Authentication
-
-### Start OAuth Flow
-
-```http
-POST /cli-auth/start
-```
-
-**Request Body**:
-
-```json
-{
-  "deviceName": "MacBook Pro"
-}
-```
-
-**Response**:
-
-```json
-{
-  "pollToken": "poll_xxx",
-  "authorizeUrl": "https://tankpkg.com/cli-auth/authorize?token=xxx",
-  "expiresAt": "2024-01-01T00:05:00Z"
-}
-```
-
-### Exchange Token
-
-```http
-POST /cli-auth/exchange
-```
-
-**Request Body**:
-
-```json
-{
-  "pollToken": "poll_xxx"
-}
-```
-
-**Response** (pending):
-
-```json
-{
-  "status": "pending"
-}
-```
-
-**Response** (complete):
-
-```json
-{
-  "status": "complete",
-  "apiKey": "tank_xxx",
-  "user": {
-    "id": "user_xxx",
-    "email": "user@example.com"
-  }
-}
-```
-
-## Admin API
-
-All admin endpoints require admin role.
-
-### List Users
-
-```http
-GET /admin/users
-```
-
-### Update User
-
-```http
-PUT /admin/users/{userId}
-```
-
-### List Organizations
-
-```http
-GET /admin/orgs
-```
-
-### Rescan Skills
-
-```http
-POST /admin/rescan-skills
-```
-
-**Request Body**:
-
-```json
-{
-  "skills": ["@org/skill1", "@org/skill2"]
-}
-```
-
-## Error Responses
-
-All errors follow this format:
-
-```json
-{
-  "error": {
-    "code": "SKILL_NOT_FOUND",
-    "message": "Skill @org/nonexistent not found",
-    "details": {}
-  }
-}
-```
-
-### Error Codes
-
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `UNAUTHORIZED` | 401 | Authentication required |
-| `FORBIDDEN` | 403 | Permission denied |
-| `NOT_FOUND` | 404 | Resource not found |
-| `VALIDATION_ERROR` | 400 | Invalid request |
-| `SKILL_EXISTS` | 409 | Skill already exists |
-| `VERSION_EXISTS` | 409 | Version already exists |
-| `SECURITY_SCAN_FAILED` | 400 | Security scan failed |
-| `RATE_LIMITED` | 429 | Too many requests |
-
-## Rate Limits
-
-| Endpoint | Limit |
-|----------|-------|
-| Search | 100/minute |
-| Publish | 10/hour |
-| Download | 1000/hour |
-| Auth | 10/minute |
-
-Rate limit headers included in responses:
-
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1704067200
-```
+## Stability Guidance
+
+- Treat endpoint paths above as canonical.
+- For payload details, validate against current route handlers in `apps/web/app/api/v1/**`.
+- Keep clients resilient to additive response fields.

@@ -1,313 +1,62 @@
 ---
 title: CLI Reference
-description: Complete reference for all Tank CLI commands
+description: Authoritative command reference from the current CLI entrypoint.
 ---
 
 # CLI Reference
 
-Complete reference for all Tank CLI commands.
+Source of truth: `apps/cli/src/bin/tank.ts`.
 
-## Global Options
+## Commands
 
-| Option | Description |
-|--------|-------------|
-| `--help` | Show help |
-| `--version` | Show version |
-| `--debug` | Enable debug logging |
-| `--registry <url>` | Use custom registry |
-| `--config-dir <path>` | Use custom config directory |
+| Command | Args | Options | Purpose |
+|---|---|---|---|
+| `tank init` | - | - | Initialize `skills.json` |
+| `tank login` | - | - | Authenticate via browser |
+| `tank whoami` | - | - | Show current user |
+| `tank logout` | - | - | Clear auth token |
+| `tank publish` | - | `--dry-run`, `--private`, `--visibility <mode>` | Publish a skill |
+| `tank install` | `[name] [version-range]` | `-g, --global` | Install one/all skills |
+| `tank remove` | `<name>` | `-g, --global` | Remove installed skill |
+| `tank update` | `[name]` | `-g, --global` | Update one/all skills |
+| `tank verify` | - | - | Verify installation integrity |
+| `tank permissions` | - | - | Show resolved permissions |
+| `tank search` | `<query>` | - | Search registry |
+| `tank info` | `<name>` | - | Show package details |
+| `tank audit` | `[name]` | - | Run/read security audit |
+| `tank link` | - | - | Link local skills for agents |
+| `tank unlink` | - | - | Remove links |
+| `tank doctor` | - | - | Diagnose environment/setup |
 
-## Authentication
+## Typical Workflows
 
-### `tank login`
-
-Authenticate with the Tank registry via GitHub OAuth.
+### Consumer
 
 ```bash
-tank login [options]
-
-Options:
-  --browser    Open browser automatically (default: true)
-  --port       Local port for OAuth callback (default: 3000)
+tank login
+tank install @org/skill-name
+tank permissions
+tank verify
 ```
 
-**Flow**:
-
-1. Opens browser to GitHub OAuth
-2. Waits for authorization
-3. Exchanges token for API key
-4. Stores in `~/.tank/config.json`
-
-### `tank logout`
-
-Clear stored credentials.
+### Publisher
 
 ```bash
-tank logout
+tank login
+tank init
+tank publish --dry-run
+tank publish
 ```
 
-### `tank whoami`
-
-Display current user information.
+### Maintenance
 
 ```bash
-tank whoami
-
-# Output:
-# Logged in as: username
-# Email: user@example.com
-# Organizations: org1, org2
-```
-
-## Skill Management
-
-### `tank init`
-
-Initialize a new skill project.
-
-```bash
-tank init [options]
-
-Options:
-  --name        Skill name (default: directory name)
-  --org         Organization to publish under
-  --template    Use a template (basic, typescript, python)
-```
-
-Creates:
-- `skills.json` - Manifest file
-- `index.ts` - Entry point
-- `.gitignore` - Git ignore rules
-
-### `tank publish`
-
-Publish a skill to the registry.
-
-```bash
-tank publish [options]
-
-Options:
-  --org         Organization to publish under
-  --access      Access level: public, private (default: public)
-  --dry-run     Validate without publishing
-  --tag         Distribution tag (default: latest)
-```
-
-**Process**:
-
-1. Validate `skills.json`
-2. Pack tarball
-3. Run security scan
-4. Upload to registry
-5. Confirm publication
-
-### `tank install`
-
-Install a skill from the registry.
-
-```bash
-tank install <skill> [options]
-
-Arguments:
-  skill         Skill to install (@org/name[@version])
-
-Options:
-  --save        Add to skills.json dependencies
-  --save-dev    Add to devDependencies
-  --no-verify   Skip hash verification (not recommended)
-```
-
-**Examples**:
-
-```bash
-tank install @org/skill
-tank install @org/skill@1.2.0
-tank install @org/skill@^1.0.0
-```
-
-### `tank update`
-
-Update installed skills.
-
-```bash
-tank update [skill] [options]
-
-Arguments:
-  skill         Specific skill to update (omit for all)
-
-Options:
-  --latest      Update to latest (ignore semver range)
-  --dry-run     Show what would be updated
-```
-
-### `tank remove`
-
-Remove an installed skill.
-
-```bash
-tank remove <skill> [options]
-
-Arguments:
-  skill         Skill to remove (@org/name)
-
-Options:
-  --clean       Also remove from cache
-```
-
-### `tank search`
-
-Search for skills in the registry.
-
-```bash
-tank search <query> [options]
-
-Arguments:
-  query         Search query
-
-Options:
-  --limit       Max results (default: 20)
-  --json        Output as JSON
-```
-
-### `tank info`
-
-Get detailed information about a skill.
-
-```bash
-tank info <skill> [options]
-
-Arguments:
-  skill         Skill to query (@org/name)
-
-Options:
-  --versions    List all available versions
-  --json        Output as JSON
-```
-
-## Verification
-
-### `tank verify`
-
-Verify installed skills against lockfile.
-
-```bash
-tank verify [options]
-
-Options:
-  --fix         Update lockfile to match installed
-  --strict      Also verify file contents
-```
-
-### `tank permissions`
-
-Display skill permissions.
-
-```bash
-tank permissions [skill] [options]
-
-Arguments:
-  skill         Specific skill (omit for all)
-
-Options:
-  --summary     Show summarized view
-  --json        Output as JSON
-```
-
-### `tank audit`
-
-Run security audit on installed skills.
-
-```bash
-tank audit [skill] [options]
-
-Arguments:
-  skill         Specific skill (omit for all)
-
-Options:
-  --json        Output as JSON
-  --fix         Attempt to fix issues
-```
-
-## Linking
-
-### `tank link`
-
-Link a skill to an agent workspace.
-
-```bash
-tank link <skill> [options]
-
-Arguments:
-  skill         Skill to link (@org/name)
-
-Options:
-  --agent       Agent directory (default: current)
-  --name        Custom link name
-```
-
-### `tank unlink`
-
-Remove a skill link.
-
-```bash
-tank unlink <skill> [options]
-
-Arguments:
-  skill         Skill to unlink (@org/name)
-
-Options:
-  --agent       Agent directory (default: current)
-```
-
-## Diagnostics
-
-### `tank doctor`
-
-Diagnose common issues.
-
-```bash
+tank update
+tank audit
 tank doctor
-
-# Checks:
-# - Node.js version
-# - Configuration
-# - Authentication
-# - Network connectivity
-# - Registry status
 ```
 
-### `tank cache`
+## Notes
 
-Manage the local cache.
-
-```bash
-tank cache <command>
-
-Commands:
-  ls            List cached tarballs
-  clear [skill] Clear cache (all or specific skill)
-  verify        Verify cache integrity
-```
-
-## Exit Codes
-
-| Code | Meaning |
-|------|---------|
-| 0 | Success |
-| 1 | General error |
-| 2 | Invalid arguments |
-| 3 | Authentication required |
-| 4 | Network error |
-| 5 | Permission denied |
-| 6 | Not found |
-| 7 | Verification failed |
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `TANK_REGISTRY` | Registry URL |
-| `TANK_CONFIG_DIR` | Config directory |
-| `TANK_CACHE_DIR` | Cache directory |
-| `TANK_DEBUG` | Enable debug logging |
-| `NO_COLOR` | Disable colored output |
+- Use `tank <command> --help` for runtime help text.
+- Commands not listed above are not part of current CLI entrypoint.
