@@ -50,12 +50,12 @@ describe('init command', () => {
 
   it('creates skills.json with prompted values', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('my-cool-skill', '1.0.0', 'A cool skill', 'Test Author');
+    mockPrompts('@test-org/my-cool-skill', '1.0.0', 'A cool skill', 'Test Author');
 
     await initCommand();
 
     const content = readOutput();
-    expect(content.name).toBe('my-cool-skill');
+    expect(content.name).toBe('@test-org/my-cool-skill');
     expect(content.version).toBe('1.0.0');
     expect(content.description).toBe('A cool skill');
     expect(content.skills).toEqual({});
@@ -68,7 +68,7 @@ describe('init command', () => {
 
   it('omits description when empty', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('my-skill', '0.1.0', '', '');
+    mockPrompts('@test-org/my-skill', '0.1.0', '', '');
 
     await initCommand();
 
@@ -79,7 +79,7 @@ describe('init command', () => {
   it('generates output that passes strict schema validation', async () => {
     const { initCommand } = await import('../commands/init.js');
     const { skillsJsonSchema } = await import('@tank/shared');
-    mockPrompts('my-skill', '1.2.3', 'A test skill', 'Author Name');
+    mockPrompts('@test-org/my-skill', '1.2.3', 'A test skill', 'Author Name');
 
     await initCommand();
 
@@ -90,7 +90,7 @@ describe('init command', () => {
 
   it('writes pretty-printed JSON with trailing newline', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('my-skill', '0.1.0', '', '');
+    mockPrompts('@test-org/my-skill', '0.1.0', '', '');
 
     await initCommand();
 
@@ -110,7 +110,7 @@ describe('init command', () => {
 
   it('prints success message', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('my-skill', '0.1.0', '', '');
+    mockPrompts('@test-org/my-skill', '0.1.0', '', '');
 
     await initCommand();
 
@@ -124,11 +124,11 @@ describe('init command', () => {
     fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
 
     mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
-    mockPrompts('new-skill', '0.1.0', '', '');
+    mockPrompts('@test-org/new-skill', '0.1.0', '', '');
 
     await initCommand();
 
-    expect(readOutput().name).toBe('new-skill');
+    expect(readOutput().name).toBe('@test-org/new-skill');
     expect(mockConfirm).toHaveBeenCalledTimes(2);
   });
 
@@ -153,7 +153,7 @@ describe('init command', () => {
     mockInput.mockImplementation(async (opts: { validate?: (v: string) => string | true }) => {
       callIdx++;
       if (callIdx === 1 && opts.validate) nameValidate = opts.validate;
-      if (callIdx === 1) return 'valid-name';
+      if (callIdx === 1) return '@test-org/valid-name';
       if (callIdx === 2) return '0.1.0';
       return '';
     });
@@ -165,9 +165,9 @@ describe('init command', () => {
     expect(nameValidate!('has spaces')).not.toBe(true);
     expect(nameValidate!('')).not.toBe(true);
     expect(nameValidate!('a'.repeat(215))).not.toBe(true);
-    expect(nameValidate!('valid-name')).toBe(true);
+    expect(nameValidate!('@test-org/valid-name')).toBe(true);
     expect(nameValidate!('@org/my-skill')).toBe(true);
-    expect(nameValidate!('simple')).toBe(true);
+    expect(nameValidate!('@test-org/simple')).toBe(true);
   });
 
   it('validates version: rejects non-semver', async () => {
@@ -178,7 +178,7 @@ describe('init command', () => {
     mockInput.mockImplementation(async (opts: { validate?: (v: string) => string | true }) => {
       callIdx++;
       if (callIdx === 2 && opts.validate) versionValidate = opts.validate;
-      if (callIdx === 1) return 'test-skill';
+      if (callIdx === 1) return '@test-org/test-skill';
       if (callIdx === 2) return '0.1.0';
       return '';
     });
@@ -194,7 +194,7 @@ describe('init command', () => {
 
   it('does not include author in output (strict schema)', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('my-skill', '0.1.0', '', 'Some Author');
+    mockPrompts('@test-org/my-skill', '0.1.0', '', 'Some Author');
 
     await initCommand();
 

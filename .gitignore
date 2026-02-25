@@ -31,6 +31,9 @@ out/
 
 # Test
 coverage/
+test-results/
+e2e/bdd/.features-gen/
+e2e/bdd/reports/
 
 # Debug
 npm-debug.log*

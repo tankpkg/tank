@@ -39,7 +39,7 @@ describe('linkCommand', () => {
   it('links the current skill directory when SKILL.md has frontmatter', async () => {
     const skillName = '@tank/my-skill';
     writeSkillsJson(skillDir, { name: skillName, description: 'Test skill' });
-    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: my-skill\n---\n\n# Title\n');
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: @tank/my-skill\n---\n\n# Title\n');
 
     await linkCommand({ directory: skillDir, homedir: fakeHome });
 

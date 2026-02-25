@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { skills, skillStars } from '@/lib/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { canReadSkill, resolveRequestUserId } from '@/lib/auth-helpers';
 
 interface RouteParams {
   params: Promise<{ name: string }>;
@@ -50,9 +51,17 @@ function starsUnavailableReadResponse(): NextResponse {
   return NextResponse.json({ starCount: 0, isStarred: false, starsAvailable: false });
 }
 
-async function resolveSkillId(name: string): Promise<string | null> {
+async function resolveSkillWithAccess(
+  name: string,
+  userId: string | null,
+): Promise<string | null> {
   const skillRows = await db
-    .select({ id: skills.id })
+    .select({
+      id: skills.id,
+      visibility: skills.visibility,
+      publisherId: skills.publisherId,
+      orgId: skills.orgId,
+    })
     .from(skills)
     .where(eq(skills.name, name))
     .limit(1);
@@ -61,7 +70,18 @@ async function resolveSkillId(name: string): Promise<string | null> {
     return null;
   }
 
-  return skillRows[0].id;
+  const row = skillRows[0];
+  const normalizedVisibility = row.visibility === 'private' ? 'private' : 'public';
+  const allowed = await canReadSkill(
+    { skillId: row.id, visibility: normalizedVisibility, publisherId: row.publisherId, orgId: row.orgId },
+    userId,
+  );
+
+  if (!allowed) {
+    return null;
+  }
+
+  return row.id;
 }
 
 async function getStarCount(skillId: string): Promise<number> {
@@ -78,9 +98,9 @@ export async function GET(request: Request, { params }: RouteParams) {
     const name = decodeURIComponent(rawName);
 
     const session = await auth.api.getSession({ headers: await headers() });
-    const userId = session?.user?.id;
+    const userId = session?.user?.id ?? await resolveRequestUserId(request);
 
-    const skillId = await resolveSkillId(name);
+    const skillId = await resolveSkillWithAccess(name, userId ?? null);
     if (!skillId) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
     }
@@ -127,7 +147,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
     const userId = session.user.id;
 
-    const skillId = await resolveSkillId(name);
+    const skillId = await resolveSkillWithAccess(name, userId);
     if (!skillId) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
     }
@@ -175,7 +195,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     }
     const userId = session.user.id;
 
-    const skillId = await resolveSkillId(name);
+    const skillId = await resolveSkillWithAccess(name, userId);
     if (!skillId) {
       return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
     }
