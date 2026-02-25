@@ -3,11 +3,14 @@
   "pages": [
     "index",
     "getting-started",
+    "---Guides---",
     "publishing",
     "installing",
     "self-hosting",
+    "---Reference---",
     "cli",
     "api",
+    "---Quick Starts---",
     "publish-first-skill",
     "security-checklist",
     "self-host-quickstart"

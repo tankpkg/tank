@@ -91,7 +91,7 @@ function makeRequest(url: string, body: unknown, token?: string) {
 }
 
 const validManifest = {
-  name: 'my-skill',
+  name: '@testorg/my-skill',
   version: '1.0.0',
   description: 'A test skill',
 };
@@ -101,6 +101,14 @@ const scopedManifest = {
   version: '1.0.0',
   description: 'A scoped skill',
 };
+
+/** Set up org + member mocks for @testorg scoped packages */
+function mockOrgMembership() {
+  // Org lookup returns existing org
+  mockLimit.mockResolvedValueOnce([{ id: 'org-test', slug: 'testorg', name: 'Test Org' }]);
+  // Member lookup returns user as member
+  mockLimit.mockResolvedValueOnce([{ id: 'mem-1', organizationId: 'org-test', userId: 'user-1', role: 'owner' }]);
+}
 
 // ─── POST /api/v1/skills (Step 1: Validate + Upload URL) ────────────────────
 
@@ -153,7 +161,7 @@ describe('POST /api/v1/skills', () => {
     const { POST } = await import('../route');
     const request = makeRequest(
       'http://localhost:3000/api/v1/skills',
-      { manifest: { name: 'my-skill', version: 'not-semver' } },
+      { manifest: { name: '@testorg/my-skill', version: 'not-semver' } },
       'tank_valid',
     );
     const response = await POST(request);
@@ -197,10 +205,11 @@ describe('POST /api/v1/skills', () => {
 
     // User lookup returns existing user with githubUsername
     mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
+    mockOrgMembership();
     // Skill lookup returns empty (new skill)
     mockLimit.mockResolvedValueOnce([]);
     // Skill insert
-    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill' }]);
+    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: '@testorg/my-skill' }]);
     // Version conflict check returns empty
     mockLimit.mockResolvedValueOnce([]);
     // Version insert
@@ -212,16 +221,13 @@ describe('POST /api/v1/skills', () => {
     });
 
     const { POST } = await import('../route');
-    // Name has uppercase — should be normalized
     const request = makeRequest(
       'http://localhost:3000/api/v1/skills',
-      { manifest: { name: 'My-Skill', version: '1.0.0' } },
+      { manifest: { name: '@TestOrg/My-Skill', version: '1.0.0' } },
       'tank_valid',
     );
     const response = await POST(request);
 
-    // The name validation happens AFTER normalization, so lowercase 'my-skill' should pass
-    // If it returns 200, the normalization worked
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.skillId).toBe('skill-1');
@@ -271,8 +277,9 @@ describe('POST /api/v1/skills', () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
     // User lookup
     mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
+    mockOrgMembership();
     // Skill lookup returns existing skill
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill', publisherId: 'user-1' }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: '@testorg/my-skill', publisherId: 'user-1' }]);
     // Version conflict check returns existing version
     mockLimit.mockResolvedValueOnce([{ id: 'version-existing', version: '1.0.0' }]);
 
@@ -293,10 +300,11 @@ describe('POST /api/v1/skills', () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
     // User lookup returns existing user with githubUsername
     mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
+    mockOrgMembership();
     // Skill lookup returns empty (new skill)
     mockLimit.mockResolvedValueOnce([]);
     // Skill insert
-    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill' }]);
+    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: '@testorg/my-skill' }]);
     // Version conflict check returns empty
     mockLimit.mockResolvedValueOnce([]);
     // Version insert
@@ -334,10 +342,11 @@ describe('POST /api/v1/skills', () => {
       ok: true,
       json: async () => ({ login: 'testuser' }),
     }) as unknown as typeof fetch;
+    mockOrgMembership();
     // Skill lookup returns empty (new skill)
     mockLimit.mockResolvedValueOnce([]);
     // Skill insert
-    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill' }]);
+    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: '@testorg/my-skill' }]);
     // Version conflict check returns empty
     mockLimit.mockResolvedValueOnce([]);
     // Version insert
@@ -404,8 +413,9 @@ describe('POST /api/v1/skills', () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
     // User lookup
     mockLimit.mockResolvedValueOnce([{ name: 'Test User', githubUsername: 'testuser' }]);
+    mockOrgMembership();
     // Skill lookup returns existing skill
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-existing', name: 'my-skill', publisherId: 'user-1' }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-existing', name: '@testorg/my-skill', publisherId: 'user-1' }]);
     // Version conflict check returns empty (new version)
     mockLimit.mockResolvedValueOnce([]);
     // Version insert
@@ -432,8 +442,9 @@ describe('POST /api/v1/skills', () => {
   it('includes repositoryUrl in skill insert when manifest has repository', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
     mockLimit.mockResolvedValueOnce([{ githubUsername: 'testuser' }]);
+    mockOrgMembership();
     mockLimit.mockResolvedValueOnce([]);
-    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill' }]);
+    mockReturning.mockResolvedValueOnce([{ id: 'skill-1', name: '@testorg/my-skill' }]);
     mockLimit.mockResolvedValueOnce([]);
     mockReturning.mockResolvedValueOnce([{ id: 'version-1' }]);
     mockCreateSignedUploadUrl.mockResolvedValue({
@@ -463,7 +474,8 @@ describe('POST /api/v1/skills', () => {
   it('updates repositoryUrl on existing skill re-publish', async () => {
     mockVerifyCliAuth.mockResolvedValue({ userId: 'user-1', keyId: 'key-1' });
     mockLimit.mockResolvedValueOnce([{ githubUsername: 'testuser' }]);
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-existing', name: 'my-skill', publisherId: 'user-1', orgId: null }]);
+    mockOrgMembership();
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-existing', name: '@testorg/my-skill', publisherId: 'user-1', orgId: null }]);
     mockLimit.mockResolvedValueOnce([]);
     mockReturning.mockResolvedValueOnce([{ id: 'version-1' }]);
     mockCreateSignedUploadUrl.mockResolvedValue({
@@ -559,6 +571,7 @@ describe('POST /api/v1/skills/confirm', () => {
       skillId: 'skill-1',
       version: '1.0.0',
       auditStatus: 'published',
+      publishedBy: 'user-1',
     }]);
 
     const { POST } = await import('../confirm/route');
@@ -581,12 +594,13 @@ describe('POST /api/v1/skills/confirm', () => {
       skillId: 'skill-1',
       version: '1.0.0',
       auditStatus: 'pending-upload',
-      manifest: { name: 'my-skill', version: '1.0.0', description: 'A test skill' },
+      publishedBy: 'user-1',
+      manifest: { name: '@testorg/my-skill', version: '1.0.0', description: 'A test skill' },
       permissions: { network: { outbound: ['*.example.com'] } },
       readme: '# My Skill\nA test skill.',
       tarballPath: 'skills/my-skill/1.0.0.tgz',
     }]);
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'my-skill' }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: '@testorg/my-skill' }]);
     mockUpdateWhere.mockResolvedValueOnce(undefined);
 
     // Mock the security scan flow
@@ -617,7 +631,7 @@ describe('POST /api/v1/skills/confirm', () => {
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.success).toBe(true);
-    expect(data.name).toBe('my-skill');
+    expect(data.name).toBe('@testorg/my-skill');
     expect(data.version).toBe('1.0.0');
     expect(typeof data.auditScore).toBe('number');
   });
@@ -647,12 +661,13 @@ describe('POST /api/v1/skills/confirm', () => {
       skillId: 'skill-1',
       version: '1.0.0',
       auditStatus: 'pending-upload',
-      manifest: { name: 'test-skill', version: '1.0.0', description: 'A test skill' },
+      publishedBy: 'user-1',
+      manifest: { name: '@testorg/test-skill', version: '1.0.0', description: 'A test skill' },
       permissions: { network: { outbound: ['*.example.com'] } },
       readme: '# Test Skill',
       tarballPath: 'skills/test-skill/1.0.0.tgz',
     }]);
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'test-skill' }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: '@testorg/test-skill' }]);
     mockUpdateWhere.mockResolvedValueOnce(undefined);
 
     // Mock the security scan flow
@@ -697,12 +712,13 @@ describe('POST /api/v1/skills/confirm', () => {
       skillId: 'skill-1',
       version: '1.0.0',
       auditStatus: 'pending-upload',
-      manifest: { name: 'test-skill', version: '1.0.0' },
+      publishedBy: 'user-1',
+      manifest: { name: '@testorg/test-skill', version: '1.0.0' },
       permissions: {},
       readme: null,
       tarballPath: 'skills/test-skill/1.0.0.tgz',
     }]);
-    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: 'test-skill' }]);
+    mockLimit.mockResolvedValueOnce([{ id: 'skill-1', name: '@testorg/test-skill' }]);
     mockUpdateWhere.mockResolvedValueOnce(undefined);
 
     // Mock the security scan flow to fail (no signed URL)

@@ -7,7 +7,7 @@ import { pack, type PackResult } from '../lib/packer.js';
 
 // Minimal valid skills.json content
 const VALID_SKILLS_JSON = JSON.stringify({
-  name: 'test-skill',
+  name: '@test-org/test-skill',
   version: '1.0.0',
   description: 'A test skill',
 });

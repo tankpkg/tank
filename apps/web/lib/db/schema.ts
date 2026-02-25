@@ -66,7 +66,7 @@ export const skills = pgTable(
     // Name format: optional @scope/ prefix, then lowercase alphanumeric + hyphens
     check(
       'skills_name_format',
-      sql`${table.name} ~ '^(@[a-z0-9-]+\/)?[a-z0-9][a-z0-9-]*$'`,
+      sql`${table.name} ~ '^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$'`,
     ),
     // Max 214 characters (npm convention)
     check('skills_name_length', sql`length(${table.name}) <= 214`),
