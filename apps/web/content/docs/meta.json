@@ -3,17 +3,13 @@
   "pages": [
     "index",
     "getting-started",
-    {
-      "title": "Guides",
-      "pages": ["publishing", "installing", "self-hosting"]
-    },
-    {
-      "title": "Reference",
-      "pages": ["cli", "api"]
-    },
-    {
-      "title": "Quick Starts",
-      "pages": ["publish-first-skill", "security-checklist", "self-host-quickstart"]
-    }
+    "publishing",
+    "installing",
+    "self-hosting",
+    "cli",
+    "api",
+    "publish-first-skill",
+    "security-checklist",
+    "self-host-quickstart"
   ]
 }
