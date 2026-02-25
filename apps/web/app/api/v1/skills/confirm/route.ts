@@ -128,6 +128,13 @@ export async function POST(request: Request) {
 
   const version = existingVersions[0];
 
+  if (version.publishedBy !== verified.userId) {
+    return NextResponse.json(
+      { error: 'Skill version not found' },
+      { status: 404 },
+    );
+  }
+
   // 4. Verify version is in pending-upload status
   if (version.auditStatus !== 'pending-upload') {
     return NextResponse.json(

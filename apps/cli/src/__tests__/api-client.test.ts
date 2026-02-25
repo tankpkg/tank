@@ -78,7 +78,7 @@ describe('ApiClient', () => {
 
     it('POST sends JSON body and Content-Type', async () => {
       const client = new ApiClient(configWithToken);
-      const body = { name: 'test-skill' };
+      const body = { name: '@test-org/test-skill' };
       await client.post('/api/v1/skills', body);
 
       const [url, options] = mockFetch.mock.calls[0];

@@ -88,8 +88,8 @@ describe('agents', () => {
       expect(getSymlinkName('@myorg/cool-skill')).toBe('myorg--cool-skill');
     });
 
-    it('passes through unscoped names', () => {
-      expect(getSymlinkName('my-skill')).toBe('my-skill');
+    it('maps scoped names with dashes in skill name', () => {
+      expect(getSymlinkName('@test-org/my-skill')).toBe('test-org--my-skill');
     });
 
     it('maps generic scoped names', () => {

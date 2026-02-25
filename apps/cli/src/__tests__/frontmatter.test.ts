@@ -64,8 +64,8 @@ describe('frontmatter', () => {
       expect(stripScope('@org/name')).toBe('name');
     });
 
-    it('returns unscoped names as-is', () => {
-      expect(stripScope('my-skill')).toBe('my-skill');
+    it('returns scoped names with dashes in skill name', () => {
+      expect(stripScope('@test-org/my-skill')).toBe('my-skill');
     });
   });
 
