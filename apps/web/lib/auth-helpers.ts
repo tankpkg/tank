@@ -104,7 +104,8 @@ export async function verifyCliAuth(
         return null;
       }
     } catch {
-      return null;
+      // DB error checking service account status — don't block auth for regular users.
+      // Only service accounts have rows in this table; most users have none.
     }
 
     const scopes = parseScopes(result.key.permissions);
@@ -130,7 +131,9 @@ export interface SkillAccessSubject {
 }
 
 export async function resolveRequestUserId(request: Request): Promise<string | null> {
-  const cliVerified = await verifyCliAuth(request, ['skills:read']);
+  // Identity resolution: accept ANY valid API key (no scope requirement).
+  // Scope checks belong on specific write operations, not on user identification.
+  const cliVerified = await verifyCliAuth(request);
   if (cliVerified) {
     return cliVerified.userId;
   }

@@ -140,7 +140,7 @@ export async function POST(request: Request) {
     orgId = org.id;
   }
 
-  const resolvedVisibility = manifest.visibility ?? (orgId ? 'private' : 'public');
+  const resolvedVisibility = manifest.visibility ?? 'public';
 
   // 7. Find or create skill record
   const existingSkills = await db
