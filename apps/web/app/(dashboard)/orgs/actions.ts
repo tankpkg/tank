@@ -105,6 +105,42 @@ export async function inviteMember(data: { organizationId: string; email: string
   return result;
 }
 
+export async function acceptInvitation(invitationId: string) {
+  const reqHeaders = await headers();
+  const session = await auth.api.getSession({ headers: reqHeaders });
+
+  if (!session) {
+    throw new Error('Unauthorized');
+  }
+
+  const result = await auth.api.acceptInvitation({
+    body: {
+      invitationId,
+    },
+    headers: reqHeaders,
+  });
+
+  return result;
+}
+
+export async function getInvitation(invitationId: string) {
+  const reqHeaders = await headers();
+  const session = await auth.api.getSession({ headers: reqHeaders });
+
+  if (!session) {
+    throw new Error('Unauthorized');
+  }
+
+  const result = await auth.api.getInvitation({
+    query: {
+      id: invitationId,
+    },
+    headers: reqHeaders,
+  });
+
+  return result;
+}
+
 export async function removeMember(data: { organizationId: string; memberIdOrEmail: string }) {
   const reqHeaders = await headers();
   const session = await auth.api.getSession({ headers: reqHeaders });

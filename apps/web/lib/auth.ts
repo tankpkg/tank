@@ -4,7 +4,7 @@ import { nextCookies } from 'better-auth/next-js';
 import { apiKey, genericOAuth, organization } from 'better-auth/plugins';
 import { db } from './db';
 import { sendEmail, getFromAddress, getProvider } from './email/service';
-import { checkVerificationRateLimit } from './email/rate-limiter';
+import { checkVerificationRateLimit, checkEmailRateLimit } from './email/rate-limiter';
 
 const enabledProviders = new Set(
   (process.env.AUTH_PROVIDERS || 'github,credentials')
@@ -113,6 +113,64 @@ export const auth = betterAuth({
     }),
     organization({
       allowUserToCreateOrganization: true,
+      async sendInvitationEmail(data) {
+        const rateLimit = await checkEmailRateLimit(data.email)
+        if (!rateLimit.allowed) {
+          throw new Error(`Too many emails sent. Please wait ${Math.ceil(rateLimit.resetIn / 60000)} minutes before retrying.`)
+        }
+
+        const from = getFromAddress()
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        const appName = process.env.APP_NAME || 'Tank'
+        const acceptUrl = `${appUrl}/orgs/accept-invitation?id=${data.id}`
+        const inviterName = data.inviter.user.name || data.inviter.user.email
+        const expiresAt = new Date(data.invitation.expiresAt).toLocaleDateString('en-US', {
+          month: 'long', day: 'numeric', year: 'numeric',
+        })
+
+        const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">${appName}</h1>
+            </div>
+            <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+              <p style="margin-bottom: 20px;">Hello,</p>
+              <p style="margin-bottom: 20px;"><strong>${inviterName}</strong> has invited you to join <strong>${data.organization.name}</strong> as a <strong>${data.role}</strong>.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${acceptUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accept Invitation</a>
+              </div>
+              <p style="margin-bottom: 20px; color: #666; font-size: 14px;">Or copy this link to your browser:<br><code style="word-break: break-all; background: #eee; padding: 5px; border-radius: 3px;">${acceptUrl}</code></p>
+              <p style="margin-bottom: 0; color: #999; font-size: 12px;">This invitation expires on ${expiresAt}. If you weren't expecting this, you can safely ignore it.</p>
+            </div>
+          </body>
+          </html>
+        `
+
+        const text = `Hello,\n\n${inviterName} has invited you to join ${data.organization.name} as a ${data.role}.\n\nAccept the invitation: ${acceptUrl}\n\nThis invitation expires on ${expiresAt}. If you weren't expecting this, you can safely ignore it.`
+
+        const result = await sendEmail({
+          from,
+          to: data.email,
+          subject: `You've been invited to join ${data.organization.name} on ${appName}`,
+          html,
+          text,
+        })
+
+        if (!result.success) {
+          console.error(`Failed to send invitation email to ${data.email}:`, result.error)
+          throw new Error('Failed to send invitation email. Please try again later.')
+        }
+
+        if (getProvider() === 'console') {
+          console.log(`Invitation link for ${data.email}: ${acceptUrl}`)
+        }
+      },
     }),
     ...(oidcEnabled
       ? [
