@@ -26,6 +26,7 @@ vi.mock('next/headers', () => ({
 vi.mock('postgres', () => {
   const mockSql = Object.assign(vi.fn().mockReturnValue([{ ok: 1 }]), {
     end: vi.fn(),
+    unsafe: vi.fn().mockReturnValue([]),
     options: {
       parsers: {},
       serializers: {},
@@ -64,7 +65,7 @@ describe('token server actions', () => {
       });
 
       const { createToken } = await import('../actions');
-      const result = await createToken('My Token');
+      const result = await createToken({ name: 'My Token' });
 
       expect(result).toBeDefined();
       expect((result as { key: string }).key).toBe('tank_abc123def456');
@@ -74,6 +75,7 @@ describe('token server actions', () => {
           userId: 'user-123',
           expiresIn: 90 * 24 * 60 * 60,
           rateLimitMax: 1000,
+          permissions: { skills: ['skills:read'] },
         },
       });
     });
@@ -148,6 +150,7 @@ describe('token server actions', () => {
       expect(mockDeleteApiKey).toHaveBeenCalledWith(
         expect.objectContaining({
           body: { keyId: 'key-1' },
+          headers: expect.anything(),
         })
       );
     });
