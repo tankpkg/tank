@@ -158,12 +158,15 @@ class PythonASTAnalyzer(ast.NodeVisitor):
         if not func_name:
             return
 
+        # Get source lines for evidence capture
+        source_lines = getattr(self, 'source_lines', None)
+
         # Check against dangerous patterns
         for pattern_type, pattern_info in DANGEROUS_PYTHON_PATTERNS.items():
             for module, func in pattern_info["functions"]:
                 # Check direct call: eval(...)
                 if func_name == func and module == "builtins":
-                    self._add_finding(node, pattern_type, pattern_info, func)
+                    self._add_finding(node, pattern_type, pattern_info, func, source_lines)
                     return
 
                 # Check module call: os.system(...)
@@ -175,7 +178,7 @@ class PythonASTAnalyzer(ast.NodeVisitor):
                         if imported_as in self.imports:
                             actual_module = self.imports[imported_as]
                             if actual_module.split(".")[0] == module.split(".")[0]:
-                                self._add_finding(node, pattern_type, pattern_info, func_name)
+                                self._add_finding(node, pattern_type, pattern_info, func_name, source_lines)
                                 return
 
     def _get_func_name(self, node: ast.Call) -> str | None:
@@ -199,9 +202,17 @@ class PythonASTAnalyzer(ast.NodeVisitor):
         node: ast.Call,
         pattern_type: str,
         pattern_info: dict,
-        func_name: str
+        func_name: str,
+        source_lines: list[str] | None = None
     ) -> None:
         """Add a finding for a dangerous function call."""
+        # Capture the actual code line as evidence
+        evidence = None
+        if source_lines and 0 < node.lineno <= len(source_lines):
+            evidence = source_lines[node.lineno - 1].strip()
+            if len(evidence) > 200:
+                evidence = evidence[:200] + "..."
+
         self.findings.append(Finding(
             stage="stage2",
             severity=pattern_info["severity"],
@@ -210,6 +221,7 @@ class PythonASTAnalyzer(ast.NodeVisitor):
             location=f"{self.file_path}:{node.lineno}",
             confidence=0.9,
             tool="stage2_ast",
+            evidence=evidence,
         ))
 
 
@@ -246,6 +258,13 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
             if issue.test_id in ("B102", "B307"):  # exec, eval
                 severity = "critical"
 
+            # Capture code evidence if available
+            evidence = None
+            if hasattr(issue, 'code') and issue.code:
+                evidence = str(issue.code).strip()
+                if len(evidence) > 200:
+                    evidence = evidence[:200] + "..."
+
             findings.append(Finding(
                 stage="stage2",
                 severity=severity,
@@ -254,6 +273,7 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
                 location=f"{issue.fname}:{issue.lineno}",
                 confidence=issue.confidence / 100.0 if issue.confidence else 0.8,
                 tool="bandit",
+                evidence=evidence,
             ))
 
     except ImportError:
@@ -287,8 +307,12 @@ def analyze_python_file(temp_dir: str, file_path: str) -> list[Finding]:
         except SyntaxError:
             return findings  # Skip files with syntax errors
 
-        # Run AST analyzer
+        # Split source into lines for evidence capture
+        source_lines = source.split("\n")
+
+        # Run AST analyzer with source lines for evidence
         analyzer = PythonASTAnalyzer(file_path)
+        analyzer.source_lines = source_lines
         analyzer.visit(tree)
         findings.extend(analyzer.findings)
 
@@ -313,30 +337,45 @@ def analyze_python_file(temp_dir: str, file_path: str) -> list[Finding]:
 def detect_obfuscation(source: str, file_path: str) -> list[Finding]:
     """Detect obfuscation patterns in source code."""
     findings: list[Finding] = []
+    lines = source.split("\n")
 
     # Check for base64 + exec pattern
-    if re.search(r"base64\.b64decode\s*\([^)]*\).*exec\s*\(", source, re.DOTALL):
-        findings.append(Finding(
-            stage="stage2",
-            severity="critical",
-            type="obfuscation",
-            description="Base64 decode followed by exec - obfuscated code execution",
-            location=file_path,
-            confidence=0.9,
-            tool="stage2_obfuscation",
-        ))
+    base64_exec_pattern = r"base64\.b64decode\s*\([^)]*\).*exec\s*\("
+    for line_num, line in enumerate(lines, 1):
+        if re.search(base64_exec_pattern, line):
+            evidence = line.strip()
+            if len(evidence) > 200:
+                evidence = evidence[:200] + "..."
+            findings.append(Finding(
+                stage="stage2",
+                severity="critical",
+                type="obfuscation",
+                description="Base64 decode followed by exec - obfuscated code execution",
+                location=f"{file_path}:{line_num}",
+                confidence=0.9,
+                tool="stage2_obfuscation",
+                evidence=evidence,
+            ))
+            break  # Only report once per file
 
-    # Check for ROT13
-    if re.search(r"codecs\.decode\s*\([^,]+,\s*['\"]rot13['\"]", source):
-        findings.append(Finding(
-            stage="stage2",
-            severity="high",
-            type="obfuscation",
-            description="ROT13 encoding detected - potential obfuscation",
-            location=file_path,
-            confidence=0.7,
-            tool="stage2_obfuscation",
-        ))
+    # Check for ROT13 - also try to find the specific line
+    rot13_pattern = r"codecs\.decode\s*\([^,]+,\s*['\"]rot13['\"]"
+    for line_num, line in enumerate(lines, 1):
+        if re.search(rot13_pattern, line):
+            evidence = line.strip()
+            if len(evidence) > 200:
+                evidence = evidence[:200] + "..."
+            findings.append(Finding(
+                stage="stage2",
+                severity="high",
+                type="obfuscation",
+                description="ROT13 encoding detected - potential obfuscation",
+                location=f"{file_path}:{line_num}",
+                confidence=0.7,
+                tool="stage2_obfuscation",
+                evidence=evidence,
+            ))
+            break  # Only report once per file
 
     return findings
 
@@ -355,6 +394,11 @@ def analyze_js_file(temp_dir: str, file_path: str) -> list[Finding]:
         for pattern, severity, description in JS_DANGEROUS_PATTERNS:
             for line_num, line in enumerate(lines, 1):
                 if re.search(pattern, line):
+                    # Capture the actual code line as evidence
+                    evidence = line.strip()
+                    if len(evidence) > 200:
+                        evidence = evidence[:200] + "..."
+
                     findings.append(Finding(
                         stage="stage2",
                         severity=severity,
@@ -363,6 +407,7 @@ def analyze_js_file(temp_dir: str, file_path: str) -> list[Finding]:
                         location=f"{file_path}:{line_num}",
                         confidence=0.8,
                         tool="stage2_js_regex",
+                        evidence=evidence,
                     ))
 
     except Exception as e:
@@ -393,6 +438,11 @@ def analyze_shell_file(temp_dir: str, file_path: str) -> list[Finding]:
         for pattern, severity, description in SHELL_DANGEROUS_PATTERNS:
             for line_num, line in enumerate(lines, 1):
                 if re.search(pattern, line):
+                    # Capture the actual code line as evidence
+                    evidence = line.strip()
+                    if len(evidence) > 200:
+                        evidence = evidence[:200] + "..."
+
                     findings.append(Finding(
                         stage="stage2",
                         severity=severity,
@@ -401,6 +451,7 @@ def analyze_shell_file(temp_dir: str, file_path: str) -> list[Finding]:
                         location=f"{file_path}:{line_num}",
                         confidence=0.8,
                         tool="stage2_shell_regex",
+                        evidence=evidence,
                     ))
 
     except Exception as e:
