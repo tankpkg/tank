@@ -32,10 +32,11 @@ export async function whoamiCommand(options: WhoamiOptions = {}): Promise<void> 
     if (!res.ok) {
       if (config.user) {
         printUserInfo(config.user);
-        logger.warn('Could not verify token with server.');
+        logger.warn('Could not verify token with server. Run: tank login');
       } else {
-        logger.error('Could not verify token. Server returned an error.');
+        logger.error('Could not verify token. Server returned an error. Run: tank login');
       }
+      process.exitCode = 1;
       return;
     }
 
@@ -48,10 +49,11 @@ export async function whoamiCommand(options: WhoamiOptions = {}): Promise<void> 
     if (config.user) {
       logger.info(`Logged in as: ${config.user.name ?? 'unknown'} (offline)`);
       logger.info(`Email: ${config.user.email ?? 'unknown'}`);
-      logger.warn('Could not reach server to verify token.');
+      logger.warn('Could not reach server to verify token. Run: tank login');
     } else {
       logger.error('Could not verify token. Check your network connection.');
     }
+    process.exitCode = 1;
   }
 }
 

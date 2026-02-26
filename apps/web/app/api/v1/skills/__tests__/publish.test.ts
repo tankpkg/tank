@@ -270,7 +270,7 @@ describe('POST /api/v1/skills', () => {
     );
     const response = await POST(request);
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(404);
   });
 
   it('returns 409 for duplicate version', async () => {

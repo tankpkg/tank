@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     if (orgs.length === 0) {
       return NextResponse.json(
         { error: `Organization '${orgSlug}' not found. You must create the org before publishing scoped packages.` },
-        { status: 403 },
+        { status: 404 },
       );
     }
 

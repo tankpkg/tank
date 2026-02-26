@@ -38,6 +38,17 @@ For self-hosted deployments, replace with your domain.
 | Authenticated | 1,000 |
 | Pro | 10,000 |
 
+## /api/v1/auth
+
+### GET /api/v1/auth/whoami
+
+GET endpoint for /auth/whoami
+
+```http
+GET /api/v1/auth/whoami
+```
+
+
 ## /api/v1/cli-auth
 
 ### POST /api/v1/cli-auth/authorize

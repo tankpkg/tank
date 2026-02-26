@@ -126,7 +126,7 @@ describe('whoamiCommand', () => {
     errorSpy.mockRestore();
   });
 
-  it('handles network error gracefully', async () => {
+  it('handles network error gracefully and sets exit code 1', async () => {
     fs.writeFileSync(
       path.join(tmpDir, 'config.json'),
       JSON.stringify({
@@ -142,14 +142,49 @@ describe('whoamiCommand', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
+    process.exitCode = 0;
     await whoamiCommand({ configDir: tmpDir });
 
     const allOutput = [...logSpy.mock.calls, ...errorSpy.mock.calls]
       .map((c) => c.join(' '))
       .join('\n');
-    // Should show cached user info or error message
-    expect(allOutput).toMatch(/error|failed|could not/i);
+    expect(allOutput).toMatch(/could not/i);
+    expect(process.exitCode).toBe(1);
 
+    process.exitCode = 0;
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it('sets exit code 1 when server returns non-401 error', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'config.json'),
+      JSON.stringify({
+        token: 'tank_server-err',
+        user: { name: 'Server User', email: 'srv@e.com' },
+        registry: 'https://tankpkg.dev',
+      }),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Internal error' }), { status: 500 }),
+    );
+
+    const { whoamiCommand } = await import('../commands/whoami.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    process.exitCode = 0;
+    await whoamiCommand({ configDir: tmpDir });
+
+    const allOutput = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(allOutput).toContain('Could not verify token');
+    expect(allOutput).toContain('tank login');
+    expect(process.exitCode).toBe(1);
+
+    process.exitCode = 0;
     logSpy.mockRestore();
     errorSpy.mockRestore();
   });

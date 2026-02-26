@@ -85,7 +85,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
 
   const { tarball, integrity, fileCount, totalSize, readme, files } = packResult;
 
-  // 4. Dry run — print summary and exit
+  // 4. Dry run — print summary, verify auth with server, and exit
   if (dryRun) {
     spinner.stop();
     logger.info(`name:    ${name}`);
@@ -93,6 +93,28 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
     logger.info(`visibility: ${String(manifest.visibility ?? 'default')}`);
     logger.info(`size:    ${formatSize(totalSize)} (${fileCount} files)`);
     logger.info(`tarball: ${formatSize(tarball.length)} (compressed)`);
+
+    // Verify token with server to catch stale auth before real publish
+    try {
+      const verifyRes = await fetch(`${config.registry}/api/v1/auth/whoami`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${config.token}`,
+          'User-Agent': USER_AGENT,
+        },
+      });
+
+      if (verifyRes.status === 401) {
+        logger.warn('Token is invalid or expired. Run: tank login');
+      } else if (!verifyRes.ok) {
+        logger.warn('Could not verify token with server. Publish may fail.');
+      } else {
+        logger.success('Auth verified with server.');
+      }
+    } catch {
+      logger.warn('Could not reach server to verify token. Publish may fail.');
+    }
+
     logger.success('Dry run complete — no files were uploaded.');
     return;
   }
@@ -117,14 +139,16 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
     const errorMsg = body.error ?? step1Res.statusText;
 
     if (step1Res.status === 401) {
-      throw new Error('Authentication failed. Run: tank login');
+      throw new Error('Authentication failed. Your token may be expired or invalid. Run: tank login');
     }
     if (step1Res.status === 403) {
-      if ((body.error ?? '').includes('skills:publish')) {
-        throw new Error('Token lacks required scope: skills:publish');
-      }
       throw new Error(
-        "You don't have permission to publish to this organization",
+        `Publish failed: ${errorMsg}`,
+      );
+    }
+    if (step1Res.status === 404) {
+      throw new Error(
+        `Publish failed: ${errorMsg}`,
       );
     }
     if (step1Res.status === 409) {

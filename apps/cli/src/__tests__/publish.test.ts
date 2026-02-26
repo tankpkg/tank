@@ -165,18 +165,51 @@ describe('publishCommand', () => {
     });
   });
 
-  it('dry run: packs and prints summary without uploading', async () => {
+  it('dry run: packs, prints summary, and verifies auth with server', async () => {
     const { publishCommand } = await import('../commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ valid: true }), { status: 200 }),
+    );
+
     await publishCommand({ directory: tmpDir, configDir, dryRun: true });
 
-    // Verify pack was called
     expect(mockPack).toHaveBeenCalledWith(tmpDir);
 
-    // Verify NO fetch calls were made (no API calls)
-    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [url, opts] = mockFetch.mock.calls[0];
+    expect(url).toContain('/api/v1/auth/whoami');
+    expect(opts.headers['Authorization']).toBe('Bearer tank_test-token');
+  });
+
+  it('dry run: warns when server auth check fails', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }),
+    );
+
+    await publishCommand({ directory: tmpDir, configDir, dryRun: true });
+
+    const allOutput = getAllOutput();
+    expect(allOutput).toMatch(/expired|invalid/i);
+  });
+
+  it('dry run: warns when server is unreachable', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+    await publishCommand({ directory: tmpDir, configDir, dryRun: true });
+
+    const allOutput = getAllOutput();
+    expect(allOutput).toMatch(/could not reach server/i);
   });
 
   it('sets manifest.visibility=private when private option is enabled', async () => {
@@ -267,7 +300,6 @@ describe('publishCommand', () => {
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
-    // Step 1 returns 401
     mockFetch.mockResolvedValueOnce(
       new Response(
         JSON.stringify({ error: 'Unauthorized' }),
@@ -280,12 +312,11 @@ describe('publishCommand', () => {
     ).rejects.toThrow(/Authentication failed/);
   });
 
-  it('handles API 403 with permission error message', async () => {
+  it('handles API 403 by forwarding server error message', async () => {
     const { publishCommand } = await import('../commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
-    // Step 1 returns 403
     mockFetch.mockResolvedValueOnce(
       new Response(
         JSON.stringify({ error: "You are not a member of org 'test-org'" }),
@@ -295,10 +326,10 @@ describe('publishCommand', () => {
 
     await expect(
       publishCommand({ directory: tmpDir, configDir }),
-    ).rejects.toThrow(/permission/i);
+    ).rejects.toThrow(/not a member of org/i);
   });
 
-  it('handles API 403 with explicit scope message', async () => {
+  it('handles API 403 with scope error by forwarding message', async () => {
     const { publishCommand } = await import('../commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
@@ -313,6 +344,23 @@ describe('publishCommand', () => {
     await expect(
       publishCommand({ directory: tmpDir, configDir }),
     ).rejects.toThrow(/skills:publish/i);
+  });
+
+  it('handles API 404 for org not found', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ error: "Organization 'solarai' not found. You must create the org before publishing scoped packages." }),
+        { status: 404 },
+      ),
+    );
+
+    await expect(
+      publishCommand({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/not found/i);
   });
 
   it('handles API 409 with version conflict message', async () => {
