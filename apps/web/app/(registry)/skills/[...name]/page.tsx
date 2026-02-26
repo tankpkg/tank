@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -154,6 +155,39 @@ function VersionHistory({ versions }: { versions: SkillVersionSummary[] }) {
 
 interface SkillDetailPageProps {
   params: Promise<{ name: string[] }>;
+}
+
+export async function generateMetadata({ params }: SkillDetailPageProps): Promise<Metadata> {
+  const { name: nameParts } = await params;
+  const skillName = decodeURIComponent(nameParts.join('/'));
+  const data = await getSkillDetail(skillName);
+
+  if (!data) {
+    return { title: 'Skill not found' };
+  }
+
+  const version = data.latestVersion?.version;
+  const title = version ? `${skillName}@${version}` : skillName;
+  const description = data.description
+    ?? `AI agent skill published on Tank by ${data.publisher.name}.`;
+  const url = `https://tankpkg.dev/skills/${encodeURIComponent(skillName)}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: `${title} — Tank`,
+      description,
+      url,
+      type: 'website',
+      siteName: 'Tank',
+    },
+    twitter: {
+      card: 'summary',
+      title: `${title} — Tank`,
+      description,
+    },
+  };
 }
 
 export default async function SkillDetailPage({
