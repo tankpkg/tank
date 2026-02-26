@@ -183,7 +183,7 @@ export async function generateMetadata({ params }: SkillDetailPageProps): Promis
       siteName: 'Tank',
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: `${title} — Tank`,
       description,
     },

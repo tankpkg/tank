@@ -1,0 +1,92 @@
+name: 'Tank Publish'
+description: 'Publish AI agent skills to the Tank registry with security scanning'
+author: 'Tank Team'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  token:
+    description: 'Tank API token (from tank login or dashboard)'
+    required: true
+  registry:
+    description: 'Registry URL (default: https://tankpkg.dev)'
+    required: false
+    default: 'https://tankpkg.dev'
+  directory:
+    description: 'Skill directory containing SKILL.md (default: .)'
+    required: false
+    default: '.'
+  dry-run:
+    description: 'Validate and pack without publishing'
+    required: false
+    default: 'false'
+
+outputs:
+  name:
+    description: 'Published skill name'
+  version:
+    description: 'Published version'
+  audit-score:
+    description: 'Audit score (0-10)'
+  badge-url:
+    description: 'Badge URL for README embedding'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+
+    - name: Install Tank CLI
+      shell: bash
+      run: npm install -g @tankpkg/cli@latest
+
+    - name: Configure Tank
+      shell: bash
+      run: |
+        mkdir -p ~/.tank
+        echo '{"token":"${{ inputs.token }}","registryUrl":"${{ inputs.registry }}"}' > ~/.tank/config.json
+
+    - name: Validate skill
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      run: tank publish --dry-run
+
+    - name: Publish skill
+      if: inputs.dry-run != 'true'
+      id: publish
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      env:
+        TANK_REGISTRY_URL: ${{ inputs.registry }}
+      run: |
+        OUTPUT=$(tank publish 2>&1)
+        echo "$OUTPUT"
+
+        NAME=$(echo "$OUTPUT" | grep -oP '(?<=Published )\S+' || echo "")
+        VERSION=$(echo "$OUTPUT" | grep -oP '(?<=@)\d+\.\d+\.\d+' | tail -1 || echo "")
+
+        echo "name=$NAME" >> "$GITHUB_OUTPUT"
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "badge-url=${{ inputs.registry }}/api/v1/badge/${NAME}" >> "$GITHUB_OUTPUT"
+
+    - name: Publish summary
+      if: inputs.dry-run != 'true'
+      shell: bash
+      run: |
+        echo "### 🛡️ Tank Publish" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+        echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Skill | \`${{ steps.publish.outputs.name }}\` |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Version | \`${{ steps.publish.outputs.version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+        echo "| Badge | \`![Tank Score](${{ steps.publish.outputs.badge-url }})\` |" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "Add this badge to your README:" >> "$GITHUB_STEP_SUMMARY"
+        echo "\`\`\`markdown" >> "$GITHUB_STEP_SUMMARY"
+        echo "[![Tank Score](${{ steps.publish.outputs.badge-url }})](https://tankpkg.dev/skills/${{ steps.publish.outputs.name }})" >> "$GITHUB_STEP_SUMMARY"
+        echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
