@@ -325,6 +325,10 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
   const resolvedHome = homedir ?? os.homedir();
   const config = getConfig(configDir);
 
+  const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (config.token) {
+    requestHeaders.Authorization = `Bearer ${config.token}`;
+  }
   const lockPath = global
     ? path.join(resolvedHome, '.tank', 'skills.lock')
     : path.join(directory, 'skills.lock');
@@ -364,7 +368,7 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
       let metaRes: Response;
       try {
         metaRes = await fetch(metaUrl, {
-          headers: { 'User-Agent': USER_AGENT },
+          headers: requestHeaders,
         });
       } catch (err) {
         throw new Error(`Network error fetching ${key}: ${err instanceof Error ? err.message : String(err)}`);

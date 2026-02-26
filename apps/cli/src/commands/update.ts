@@ -119,6 +119,10 @@ async function updateSingle(
   }
 
   const config = getConfig(configDir);
+  const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (config.token) {
+    requestHeaders.Authorization = `Bearer ${config.token}`;
+  }
 
   // 3. Fetch available versions from registry
   const encodedName = encodeURIComponent(name);
@@ -127,7 +131,7 @@ async function updateSingle(
   let versionsRes: Response;
   try {
     versionsRes = await fetch(versionsUrl, {
-      headers: { 'User-Agent': USER_AGENT },
+      headers: requestHeaders,
     });
   } catch (err) {
     throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
@@ -207,6 +211,10 @@ async function updateAll(
 
   for (const [name] of skillEntries) {
     const config = getConfig(configDir);
+    const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+    if (config.token) {
+      requestHeaders.Authorization = `Bearer ${config.token}`;
+    }
     const versionRange = skills[name];
 
     // Fetch available versions
@@ -216,7 +224,7 @@ async function updateAll(
     let versionsRes: Response;
     try {
       versionsRes = await fetch(versionsUrl, {
-        headers: { 'User-Agent': USER_AGENT },
+        headers: requestHeaders,
       });
     } catch (err) {
       throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
@@ -295,13 +303,17 @@ async function updateSingleGlobal(
   }
 
   const config = getConfig(configDir);
+  const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (config.token) {
+    requestHeaders.Authorization = `Bearer ${config.token}`;
+  }
   const encodedName = encodeURIComponent(name);
   const versionsUrl = `${config.registry}/api/v1/skills/${encodedName}/versions`;
 
   let versionsRes: Response;
   try {
     versionsRes = await fetch(versionsUrl, {
-      headers: { 'User-Agent': USER_AGENT },
+      headers: requestHeaders,
     });
   } catch (err) {
     throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
@@ -362,6 +374,10 @@ async function updateAllGlobal(
     if (!parsed) continue;
     const { name } = parsed;
     const config = getConfig(configDir);
+    const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+    if (config.token) {
+      requestHeaders.Authorization = `Bearer ${config.token}`;
+    }
     const versionRange = '*';
 
     const encodedName = encodeURIComponent(name);
@@ -370,7 +386,7 @@ async function updateAllGlobal(
     let versionsRes: Response;
     try {
       versionsRes = await fetch(versionsUrl, {
-        headers: { 'User-Agent': USER_AGENT },
+        headers: requestHeaders,
       });
     } catch (err) {
       throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
