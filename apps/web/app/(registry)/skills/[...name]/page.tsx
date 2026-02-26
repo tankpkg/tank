@@ -171,6 +171,7 @@ export async function generateMetadata({ params }: SkillDetailPageProps): Promis
   const description = data.description
     ?? `AI agent skill published on Tank by ${data.publisher.name}.`;
   const url = `https://tankpkg.dev/skills/${encodeURIComponent(skillName)}`;
+  const ogImageUrl = `https://tankpkg.dev/api/og/${encodeURIComponent(skillName)}`;
 
   return {
     title,
@@ -181,11 +182,13 @@ export async function generateMetadata({ params }: SkillDetailPageProps): Promis
       url,
       type: 'website',
       siteName: 'Tank',
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `${skillName} — Tank` }],
     },
     twitter: {
       card: 'summary_large_image',
       title: `${title} — Tank`,
       description,
+      images: [ogImageUrl],
     },
   };
 }
