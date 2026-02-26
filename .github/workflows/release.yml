@@ -55,6 +55,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Inject version from git tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node -e "const p=require('./apps/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./apps/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
+
       - name: Build bundle and binary
         working-directory: apps/cli
         env:
@@ -226,6 +231,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Inject version from git tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node -e "const p=require('./apps/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./apps/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
 
       - name: Build CLI package
         run: |
