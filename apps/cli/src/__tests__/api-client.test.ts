@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApiClient } from '../lib/api-client.js';
 import type { TankConfig } from '../lib/config.js';
+import { USER_AGENT } from '../version.js';
 
 // Mock global fetch
 const mockFetch = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
@@ -46,7 +47,7 @@ describe('ApiClient', () => {
       await client.get('/api/v1/skills');
 
       const [, options] = mockFetch.mock.calls[0];
-      expect(options.headers['User-Agent']).toBe('tank-cli/0.1.0');
+      expect(options.headers['User-Agent']).toBe(USER_AGENT);
     });
 
     it('sets User-Agent on POST requests', async () => {
@@ -54,7 +55,7 @@ describe('ApiClient', () => {
       await client.post('/api/v1/skills', { name: 'test' });
 
       const [, options] = mockFetch.mock.calls[0];
-      expect(options.headers['User-Agent']).toBe('tank-cli/0.1.0');
+      expect(options.headers['User-Agent']).toBe(USER_AGENT);
     });
   });
 
