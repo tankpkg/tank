@@ -187,6 +187,26 @@ describe('updateCommand', () => {
     );
   });
 
+  it('sends bearer token when config contains token', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    const { installCommand } = await import('../commands/install.js');
+
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev', token: 'tank_ci_token' }),
+    );
+
+    writeSkillsJson();
+    writeLockfile();
+
+    mockVersionsResponse(['2.0.0', '2.1.0']);
+
+    await updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir });
+
+    const [, versionsOpts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect((versionsOpts.headers as Record<string, string>).Authorization).toBe('Bearer tank_ci_token');
+  });
+
   it('prints "Already at latest" when no newer version', async () => {
     const { updateCommand } = await import('../commands/update.js');
     const { installCommand } = await import('../commands/install.js');

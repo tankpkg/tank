@@ -929,6 +929,43 @@ describe('installFromLockfile', () => {
     expect(fs.existsSync(extractDir)).toBe(true);
   });
 
+  it('sends bearer token when config contains token', async () => {
+    const { installFromLockfile } = await import('../commands/install.js');
+
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev', token: 'tank_ci_token' }),
+    );
+
+    writeLockfile({
+      '@test-org/my-skill@2.0.0': {
+        resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+        integrity: fakeTarball1Integrity,
+        permissions: {},
+        audit_score: 8.0,
+      },
+    });
+
+    // Mock API metadata response
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        name: '@test-org/my-skill',
+        version: '2.0.0',
+        integrity: fakeTarball1Integrity,
+        downloadUrl: 'https://storage.example.com/my-skill-2.0.0.tgz',
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
+    // Mock tarball download
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball1), { status: 200 }),
+    );
+
+    await installFromLockfile({ directory: tmpDir, configDir });
+
+    const [, metaOpts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect((metaOpts.headers as Record<string, string>).Authorization).toBe('Bearer tank_ci_token');
+  });
+
   it('aborts entire install when integrity mismatch on any skill', async () => {
     const { installFromLockfile } = await import('../commands/install.js');
 
