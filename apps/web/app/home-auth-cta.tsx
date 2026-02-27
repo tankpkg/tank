@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSession } from '@/lib/auth-client';
+import { trackCtaClick } from '@/lib/analytics';
 
 function getDestination(isLoggedIn: boolean): string {
   return isLoggedIn ? '/dashboard' : '/login';
@@ -17,13 +18,13 @@ export function HomeNavAuthCta() {
   return (
     <div className="flex items-center gap-2 sm:gap-3">
       <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-        <Link href={destination}>{isLoggedIn ? 'Dashboard' : 'Sign In'}</Link>
+        <Link href={destination} onClick={() => trackCtaClick(isLoggedIn ? 'Dashboard' : 'Sign In', destination)}>{isLoggedIn ? 'Dashboard' : 'Sign In'}</Link>
       </Button>
       <Button variant="ghost" size="sm" asChild>
-        <Link href="/docs">Docs</Link>
+        <Link href="/docs" onClick={() => trackCtaClick('Docs', '/docs')}>Docs</Link>
       </Button>
       <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white">
-        <Link href={destination}>{isLoggedIn ? 'Open Dashboard' : 'Get Started'}</Link>
+        <Link href={destination} onClick={() => trackCtaClick(isLoggedIn ? 'Open Dashboard' : 'Get Started', destination)}>{isLoggedIn ? 'Open Dashboard' : 'Get Started'}</Link>
       </Button>
     </div>
   );
@@ -42,7 +43,7 @@ export function HomePrimaryAuthCta({
 
   return (
     <Button size={size} asChild className="bg-emerald-600 hover:bg-emerald-500 text-white group">
-      <Link href={destination} data-testid={testId}>
+      <Link href={destination} data-testid={testId} onClick={() => trackCtaClick(isLoggedIn ? 'Open Dashboard' : 'Get Started', destination)}>
         {isLoggedIn ? 'Open Dashboard' : 'Get Started'}
         <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
       </Link>

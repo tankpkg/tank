@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { trackSkillSearch } from '@/lib/analytics';
 
 export function SearchBar({ defaultValue }: { defaultValue: string }) {
   const router = useRouter();
@@ -16,6 +17,9 @@ export function SearchBar({ defaultValue }: { defaultValue: string }) {
       params.set('q', query.trim());
     }
     const qs = params.toString();
+    if (query.trim()) {
+      trackSkillSearch(query.trim());
+    }
     router.push(`/skills${qs ? `?${qs}` : ''}`);
   };
 

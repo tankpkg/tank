@@ -8,6 +8,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { trackInstallCopy } from '@/lib/analytics';
 
 export function InstallCommand({ name }: { name: string }) {
   const projectCommand = `tank install ${name}`;
@@ -21,6 +22,7 @@ export function InstallCommand({ name }: { name: string }) {
     try {
       await navigator.clipboard.writeText(command);
       setCopied(target);
+      trackInstallCopy(name, target);
       setTimeout(() => setCopied(null), 2000);
     } catch {
       // Clipboard API not available — ignore silently

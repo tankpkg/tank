@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/skills/'],
+        allow: ['/', '/skills/', '/docs/'],
         disallow: ['/api/', '/dashboard/', '/settings/', '/_next/'],
       },
       // Allow LLM crawlers to access llms.txt files

@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { trackSkillStar } from '@/lib/analytics';
 
 interface StarButtonProps {
   skillName: string;
@@ -32,6 +33,7 @@ export function StarButton({
           const data = await res.json();
           setStarCount(data.starCount);
           setIsStarred(data.isStarred);
+          trackSkillStar(skillName, data.isStarred);
         }
       } catch (error) {
         console.error('Failed to toggle star:', error);

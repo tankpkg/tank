@@ -54,7 +54,7 @@ shared/src/
 
 | Export | Source | Value |
 |--------|--------|-------|
-| `REGISTRY_URL` | `registry.ts` | `https://tankpkg.com` (or override) |
+| `REGISTRY_URL` | `registry.ts` | `https://tankpkg.dev` (or override) |
 | `MAX_PACKAGE_SIZE` | `registry.ts` | `50 * 1024 * 1024` (50MB) |
 | `MAX_FILE_COUNT` | `registry.ts` | `1000` |
 | `LOCKFILE_VERSION` | `registry.ts` | `1` |
