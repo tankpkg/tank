@@ -9,39 +9,22 @@ This guide covers automated skill installation in CI/CD pipelines — GitHub Act
 
 ## How It Works
 
-1. Create a **service account** with an API key
-2. Store the key as `TANK_TOKEN` in your CI secrets
+1. Create an **API token** from your dashboard
+2. Store it as `TANK_TOKEN` in your CI secrets
 3. Commit `skills.json` and `skills.lock` to your repo
 4. Run `tank install` in CI — it reads `TANK_TOKEN` automatically
 
 The CLI checks `TANK_TOKEN` before reading `~/.tank/config.json`. No interactive login needed.
 
-## 1) Create a Service Account
+## 1) Create an API Token
 
-Service accounts are created by admins via the Tank API:
+Go to [Settings → Tokens](/dashboard/tokens) and create a new token:
 
-```bash
-curl -X POST https://tankpkg.dev/api/admin/service-accounts \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "displayName": "CI Bot",
-    "description": "GitHub Actions automation",
-    "scopes": ["skills:read"],
-    "expiresInDays": 90,
-    "keyName": "ci-key"
-  }'
-```
+- **Name**: something descriptive (e.g. `github-actions-ci`)
+- **Scopes**: `skills:read` is enough for installing skills
+- **Expiry**: 90 days recommended, 365 max
 
-Response includes the API key (shown once):
-
-```json
-{
-  "serviceAccount": { "id": "..." },
-  "apiKey": { "key": "tank_abc123..." },
-  "scopes": ["skills:read"]
-}
-```
+Copy the token immediately — it's shown once.
 
 Available scopes:
 
@@ -55,7 +38,7 @@ Use `skills:read` for CI consumers. Use `skills:publish` only for release pipeli
 
 ## 2) Store the Token
 
-Add the API key as a CI secret named `TANK_TOKEN`.
+Add the token as a CI secret named `TANK_TOKEN`.
 
 **GitHub Actions**: Settings → Secrets → Actions → New repository secret
 
@@ -184,10 +167,35 @@ Skills are installed to `.tank/skills/` relative to the working directory (local
 
 For global installs (shared across projects), use `tank install -g`. Global skills go to `~/.tank/skills/`.
 
+## Service Accounts (Teams & Enterprise)
+
+For teams that need a shared CI identity (not tied to a personal account), admins can create service accounts via the API:
+
+```bash
+curl -X POST https://tankpkg.dev/api/admin/service-accounts \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "displayName": "CI Bot",
+    "description": "GitHub Actions automation",
+    "scopes": ["skills:read"],
+    "expiresInDays": 90,
+    "keyName": "ci-key"
+  }'
+```
+
+Service account tokens work identically to personal tokens — set `TANK_TOKEN` and `tank install` picks it up.
+
+Use service accounts when:
+
+- Multiple repos share one CI identity
+- You need audit trails separate from personal accounts
+- Team members leave and you don't want to rotate personal tokens
+
 ## Security Best Practices
 
 - **Scope minimization**: CI consumers need `skills:read` only
-- **Key rotation**: Set `expiresInDays` (max 365) and rotate before expiry
+- **Key rotation**: Set short expiry and rotate before it lapses
 - **Never log the token**: Mask `TANK_TOKEN` in CI output
 - **Pin lockfile**: Always commit `skills.lock` — never run `tank install @org/skill` directly in CI
 - **Audit scores**: Prefer skills with audit score ≥ 8/10
@@ -197,7 +205,7 @@ For global installs (shared across projects), use `tank install -g`. Global skil
 
 ### `401 Unauthorized`
 
-Token is invalid or expired. Create a new API key for the service account.
+Token is invalid or expired. Create a new one from [Settings → Tokens](/dashboard/tokens).
 
 ### `tank install` resolves versions instead of using lockfile
 
