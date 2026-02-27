@@ -42,6 +42,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const handleSignIn = async () => {
     setError(null);
@@ -117,6 +118,8 @@ export default function LoginPage() {
 
         if (result.error) {
           setError(result.error.message || 'Failed to create account');
+        } else {
+          setVerificationSent(true);
         }
       }
     } catch (err) {
@@ -139,6 +142,27 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {verificationSent ? (
+          <div className="text-center space-y-3 py-4">
+            <div className="text-4xl">📧</div>
+            <h3 className="text-lg font-semibold">Check your email</h3>
+            <p className="text-sm text-muted-foreground">
+              We sent a verification link to <strong>{email}</strong>.
+              Click the link to activate your account.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Didn&apos;t get it? Check your spam folder or{' '}
+              <button
+                type="button"
+                className="underline hover:text-foreground"
+                onClick={() => setVerificationSent(false)}
+              >
+                try again
+              </button>.
+            </p>
+          </div>
+        ) : (
+        <>
         <div className="grid grid-cols-2 gap-2">
           <Button
             type="button"
@@ -260,6 +284,8 @@ export default function LoginPage() {
               </p>
             )}
           </div>
+        )}
+        </>
         )}
       </CardContent>
     </Card>
