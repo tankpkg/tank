@@ -1,41 +1,15 @@
 import { NextResponse } from 'next/server';
-import { eq, and, sql, desc } from 'drizzle-orm';
-import { createHash } from 'node:crypto';
+import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { skills, skillVersions, skillDownloads, scanResults, scanFindings } from '@/lib/db/schema';
 import { getStorageProvider } from '@/lib/storage/provider';
 import { resolveRequestUserId } from '@/lib/auth-helpers';
 
-async function recordDownload(
-  request: Request,
-  skillId: string,
-  versionId: string,
-): Promise<void> {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = forwarded?.split(',')[0]?.trim() ?? 'unknown';
-  const ipHash = createHash('sha256').update(ip).digest('hex');
-
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  const existing = await db
-    .select({ id: skillDownloads.id })
-    .from(skillDownloads)
-    .where(
-      and(
-        eq(skillDownloads.skillId, skillId),
-        eq(skillDownloads.ipHash, ipHash),
-        sql`${skillDownloads.createdAt} > ${oneHourAgo}`,
-      ),
-    )
-    .limit(1);
-
-  if (existing.length > 0) return;
-
-  await db.insert(skillDownloads).values({
-    skillId,
-    versionId,
-    ipHash,
-    userAgent: request.headers.get('user-agent') ?? null,
-  });
+async function recordDownload(skillId: string): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO skill_download_daily (id, skill_id, date, count)
+    VALUES (gen_random_uuid(), ${skillId}, CURRENT_DATE, 1)
+    ON CONFLICT (skill_id, date) DO UPDATE SET count = skill_download_daily.count + 1
+  `);
 }
 
 /**
@@ -142,12 +116,12 @@ export async function GET(
     }
 
     // Fire-and-forget download recording
-    recordDownload(request, skillId, versionId).catch(() => {});
+    recordDownload(skillId).catch(() => {});
 
     // Query 3: download count + scan verdict + findings in one query
     const metaRows = await db.execute(sql`
       SELECT
-        (SELECT count(*)::int FROM skill_downloads WHERE skill_id = ${skillId}) AS "downloadCount",
+        coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = ${skillId} AND date >= CURRENT_DATE - 7), 0) AS "downloadCount",
         sr.verdict AS "scanVerdict",
         sf.stage AS "findingStage",
         sf.severity AS "findingSeverity",

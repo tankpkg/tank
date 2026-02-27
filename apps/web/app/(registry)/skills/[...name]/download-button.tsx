@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
+import { trackSkillDownload } from '@/lib/analytics';
 
 interface DownloadButtonProps {
   name: string;
@@ -47,6 +48,8 @@ export function DownloadButton({ name, version }: DownloadButtonProps) {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
+
+      trackSkillDownload(name, version);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download failed');
     } finally {

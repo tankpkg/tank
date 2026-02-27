@@ -17,6 +17,8 @@ export interface UserFixture {
 
 export interface BddState {
   lastResult?: CliResult;
+  lastResponse?: Response;
+  lastResponseBody?: Record<string, unknown>;
   lastActor?: string;
   skill?: SkillFixture;
   skillName?: string;

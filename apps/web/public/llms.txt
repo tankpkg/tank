@@ -6,21 +6,22 @@ Tank is a security-first package manager for AI agent skills. It enforces versio
 
 ## Key Resources
 
-- [API Reference](https://tankpkg.com/docs/api): REST API endpoints for Tank registry
-- [CLI Reference](https://tankpkg.com/docs/cli): Complete reference for all tank CLI commands
-- [Getting Started](https://tankpkg.com/docs/getting-started): Install Tank, authenticate, and verify your first working flow.
-- [Tank Documentation](https://tankpkg.com/docs): Start here for setup, publishing, installation, API, and self-hosting.
-- [Installing Skills](https://tankpkg.com/docs/installing): Install, update, remove, and verify skills safely.
-- [Publish Your First Skill](https://tankpkg.com/docs/publish-first-skill): Step-by-step guide to publish your first AI agent skill to Tank registry
-- [Publishing Skills](https://tankpkg.com/docs/publishing): Build, validate, and publish skills with accurate metadata and minimal permissions.
-- [Secure AI Skills Checklist](https://tankpkg.com/docs/security-checklist): Security best practices checklist for publishing safe AI agent skills
-- [Self-Host in 15 Minutes](https://tankpkg.com/docs/self-host-quickstart): Deploy your own Tank registry and security scanner on-premise
-- [Self-Hosting](https://tankpkg.com/docs/self-hosting): Repository-aligned runbook for self-hosting Tank.
+- [API Reference](https://tankpkg.dev/docs/api): REST API endpoints for Tank registry
+- [CI/CD Integration](https://tankpkg.dev/docs/cicd): Install and verify Tank skills in automated pipelines.
+- [CLI Reference](https://tankpkg.dev/docs/cli): Complete reference for all tank CLI commands
+- [Getting Started](https://tankpkg.dev/docs/getting-started): Install Tank, authenticate, and verify your first working flow.
+- [Tank Documentation](https://tankpkg.dev/docs): Start here for setup, publishing, installation, API, and self-hosting.
+- [Installing Skills](https://tankpkg.dev/docs/installing): Install, update, remove, and verify skills safely.
+- [Publish Your First Skill](https://tankpkg.dev/docs/publish-first-skill): Step-by-step guide to publish your first AI agent skill to Tank registry
+- [Publishing Skills](https://tankpkg.dev/docs/publishing): Build, validate, and publish skills with accurate metadata and minimal permissions.
+- [Secure AI Skills Checklist](https://tankpkg.dev/docs/security-checklist): Security best practices checklist for publishing safe AI agent skills
+- [Self-Host in 15 Minutes](https://tankpkg.dev/docs/self-host-quickstart): Deploy your own Tank registry and security scanner on-premise
+- [Self-Hosting](https://tankpkg.dev/docs/self-hosting): Repository-aligned runbook for self-hosting Tank.
 
 ## Optional
 
-- [Skills Registry](https://tankpkg.com/skills): Browse all published skills
-- [Self-Host Guide](https://tankpkg.com/docs/self-hosting): Deploy on your infrastructure
+- [Skills Registry](https://tankpkg.dev/skills): Browse all published skills
+- [Self-Host Guide](https://tankpkg.dev/docs/self-hosting): Deploy on your infrastructure
 
 ## Constraints
 
@@ -31,4 +32,4 @@ Tank is a security-first package manager for AI agent skills. It enforces versio
 
 ## Full Export
 
-See [llms-full.txt](https://tankpkg.com/llms-full.txt) for complete documentation content.
+See [llms-full.txt](https://tankpkg.dev/llms-full.txt) for complete documentation content.

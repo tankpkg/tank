@@ -107,7 +107,7 @@ vi.mock('@/lib/db', () => ({
 vi.mock('@/lib/db/schema', () => ({
   skills: { id: 'skills.id', name: 'skills.name', status: 'skills.status', featured: 'skills.featured', publisherId: 'skills.publisher_id' },
   skillVersions: { id: 'sv.id', skillId: 'sv.skill_id', createdAt: 'sv.created_at' },
-  skillDownloads: { skillId: 'sd.skill_id' },
+  skillDownloadDaily: { skillId: 'sdd.skill_id' },
   auditEvents: { id: 'ae.id', targetId: 'ae.target_id', targetType: 'ae.target_type', createdAt: 'ae.created_at' },
   user: { id: 'user.id', role: 'user.role' },
 }));

@@ -90,12 +90,14 @@ No circular dependencies. CLI and Web are independent consumers of shared.
 - **Test files** — `__tests__/*.test.ts` colocated with source (never `.spec.ts`)
 - **Vitest** for TypeScript, **pytest** for Python
 - **No ESLint/Prettier** — relies on TypeScript strict mode + `.editorconfig`
+- **react-doctor** — React linting for the web app (60+ rules: security, performance, correctness, architecture). Runs as part of `pnpm lint`. Config in `apps/web/react-doctor.config.json`
 
 ### Web App
 - **Server Components by default** — `'use client'` only when needed
 - **Tailwind CSS v4** via `@tailwindcss/postcss`
 - **Zod for all validation** — never trust raw input
 - **Drizzle ORM** — never raw SQL or Prisma
+- **react-doctor** — Scans for React anti-patterns, dead code, and security issues. Score 75+ = Great, 50-74 = Needs work, <50 = Critical
 
 ### Python
 - **Pydantic 2** for all models — strict validation
@@ -144,6 +146,7 @@ cp .env.example .env.local        # Configure credentials
 # Development
 pnpm dev                          # Start all dev servers (Turbo)
 pnpm build                        # Build all packages
+pnpm lint                         # Run all linters (Next.js lint + react-doctor)
 pnpm test                         # Run all unit tests (461 TS + 16 Python)
 pnpm test:e2e                     # Run E2E tests (needs .env.local)
 pnpm test:perf                    # Run performance tests (needs real DB)

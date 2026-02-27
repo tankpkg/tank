@@ -103,7 +103,7 @@ Get your API key from [Settings > Tokens](/settings/tokens).
 ## Base URL
 
 \`\`\`
-https://tankpkg.com/api/v1
+https://tankpkg.dev/api/v1
 \`\`\`
 
 For self-hosted deployments, replace with your domain.

@@ -17,6 +17,7 @@ import { InstallCommand } from './install-command';
 import { SkillTabs } from './skill-tabs';
 import { DownloadButton } from './download-button';
 import { StarButton } from './star-button';
+import { SkillViewTracker } from './skill-view-tracker';
 import {
   SecurityOverview,
   ScanningToolsStrip,
@@ -355,6 +356,7 @@ export default async function SkillDetailPage({
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
+    <SkillViewTracker name={data.name} score={data.latestVersion?.auditScore ?? null} />
     <div className="max-w-6xl mx-auto" data-testid="skill-detail-root">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
@@ -463,7 +465,7 @@ export default async function SkillDetailPage({
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Downloads</dt>
+                <dt className="text-muted-foreground">Weekly</dt>
                 <dd>{data.downloadCount.toLocaleString()}</dd>
               </div>
               {data.latestVersion && (

@@ -12,7 +12,7 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 import Script from 'next/script';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tankpkg.com';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tankpkg.dev';
 
 async function getRawContent(slug: string[]): Promise<string> {
   try {

@@ -15,8 +15,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/tankpkg/tank/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://github.com/tankpkg/tank"><img src="https://img.shields.io/badge/status-early%20development-orange" alt="Status: Early Development"></a>
+  <a href="https://github.com/tankpkg/tank/stargazers"><img src="https://img.shields.io/github/stars/tankpkg/tank?style=flat&color=22c55e" alt="GitHub Stars"></a>
+  <a href="https://github.com/tankpkg/tank/blob/main/LICENSE"><img src="https://img.shields.io/github/license/tankpkg/tank?color=3b82f6" alt="License"></a>
+  <a href="https://www.npmjs.com/package/@tankpkg/cli"><img src="https://img.shields.io/npm/v/@tankpkg/cli?color=22c55e&label=cli" alt="npm"></a>
+  <a href="https://github.com/tankpkg/tank/actions"><img src="https://img.shields.io/github/actions/workflow/status/tankpkg/tank/ci.yml?branch=main&label=CI" alt="CI"></a>
 </p>
 
 ---

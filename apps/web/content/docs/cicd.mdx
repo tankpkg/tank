@@ -1,0 +1,208 @@
+---
+title: CI/CD Integration
+description: Install and verify Tank skills in automated pipelines.
+---
+
+# CI/CD Integration
+
+This guide covers automated skill installation in CI/CD pipelines — GitHub Actions, GitLab CI, or any environment where `tank install` runs without a browser.
+
+## How It Works
+
+1. Create a **service account** with an API key
+2. Store the key as `TANK_TOKEN` in your CI secrets
+3. Commit `skills.json` and `skills.lock` to your repo
+4. Run `tank install` in CI — it reads `TANK_TOKEN` automatically
+
+The CLI checks `TANK_TOKEN` before reading `~/.tank/config.json`. No interactive login needed.
+
+## 1) Create a Service Account
+
+Service accounts are created by admins via the Tank API:
+
+```bash
+curl -X POST https://tankpkg.dev/api/admin/service-accounts \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "displayName": "CI Bot",
+    "description": "GitHub Actions automation",
+    "scopes": ["skills:read"],
+    "expiresInDays": 90,
+    "keyName": "ci-key"
+  }'
+```
+
+Response includes the API key (shown once):
+
+```json
+{
+  "serviceAccount": { "id": "..." },
+  "apiKey": { "key": "tank_abc123..." },
+  "scopes": ["skills:read"]
+}
+```
+
+Available scopes:
+
+| Scope | Grants |
+|-------|--------|
+| `skills:read` | Install, search, info, audit |
+| `skills:publish` | Publish new versions |
+| `skills:admin` | Full access (implies `skills:read`) |
+
+Use `skills:read` for CI consumers. Use `skills:publish` only for release pipelines that publish skills.
+
+## 2) Store the Token
+
+Add the API key as a CI secret named `TANK_TOKEN`.
+
+**GitHub Actions**: Settings → Secrets → Actions → New repository secret
+
+**GitLab CI**: Settings → CI/CD → Variables → Add variable (masked)
+
+**Generic**: Set `TANK_TOKEN` as an environment variable in your CI runner.
+
+## 3) Commit Your Lockfile
+
+Your repo should contain both files:
+
+```
+my-project/
+├── skills.json       # Skill dependencies + permission budget
+└── skills.lock       # Resolved versions + SHA-512 hashes
+```
+
+Generate the lockfile locally:
+
+```bash
+tank install
+git add skills.json skills.lock
+git commit -m "chore: add skill dependencies"
+```
+
+When `skills.lock` exists, `tank install` does a **deterministic lockfile install** — exact versions, SHA-512 verified, no resolution step. Same behavior as `npm ci`.
+
+## 4) Pipeline Examples
+
+### GitHub Actions
+
+```yaml
+name: Setup Agent Skills
+on: [push]
+
+jobs:
+  install-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install Tank CLI
+        run: npm i -g @tankpkg/cli
+
+      - name: Install skills
+        env:
+          TANK_TOKEN: ${{ secrets.TANK_TOKEN }}
+        run: tank install
+
+      - name: Verify integrity
+        run: tank verify
+
+      - name: Check permissions
+        run: tank permissions
+```
+
+### GitLab CI
+
+```yaml
+install-skills:
+  image: node:24
+  variables:
+    TANK_TOKEN: $TANK_TOKEN
+  script:
+    - npm i -g @tankpkg/cli
+    - tank install
+    - tank verify
+    - tank permissions
+```
+
+### Docker
+
+```dockerfile
+FROM node:24-slim
+
+RUN npm i -g @tankpkg/cli
+
+WORKDIR /app
+COPY skills.json skills.lock ./
+
+ARG TANK_TOKEN
+ENV TANK_TOKEN=$TANK_TOKEN
+
+RUN tank install && tank verify
+
+COPY . .
+```
+
+Build with:
+
+```bash
+docker build --build-arg TANK_TOKEN="$TANK_TOKEN" -t my-agent .
+```
+
+## 5) Verification Steps
+
+Always run these after `tank install` in CI:
+
+```bash
+tank verify        # SHA-512 integrity check
+tank permissions   # Print resolved permission summary
+```
+
+Optional security audit:
+
+```bash
+tank audit         # Show security scan results for all installed skills
+```
+
+If any command exits non-zero, the pipeline fails. This is intentional — do not suppress exit codes.
+
+## 6) Install Location
+
+Skills are installed to `.tank/skills/` relative to the working directory (local mode, default).
+
+```
+.tank/skills/@org/skill-name/
+├── SKILL.md
+├── skills.json
+└── ...
+```
+
+For global installs (shared across projects), use `tank install -g`. Global skills go to `~/.tank/skills/`.
+
+## Security Best Practices
+
+- **Scope minimization**: CI consumers need `skills:read` only
+- **Key rotation**: Set `expiresInDays` (max 365) and rotate before expiry
+- **Never log the token**: Mask `TANK_TOKEN` in CI output
+- **Pin lockfile**: Always commit `skills.lock` — never run `tank install @org/skill` directly in CI
+- **Audit scores**: Prefer skills with audit score ≥ 8/10
+- **Review permission changes**: If `tank permissions` output changes unexpectedly after `tank update`, investigate before merging
+
+## Troubleshooting
+
+### `401 Unauthorized`
+
+Token is invalid or expired. Create a new API key for the service account.
+
+### `tank install` resolves versions instead of using lockfile
+
+`skills.lock` is missing or out of sync. Run `tank install` locally, commit the lockfile, push.
+
+### Permission budget exceeded
+
+A skill requests permissions beyond your `skills.json` budget. Either widen the budget (review carefully) or choose a different skill.

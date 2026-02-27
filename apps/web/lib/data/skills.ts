@@ -188,7 +188,7 @@ export async function getSkillDetail(
       s.updated_at AS "skillUpdatedAt",
       coalesce(u.name, '') AS "publisherName",
       u.github_username AS "publisherGithubUsername",
-      coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS "downloadCount",
+      coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) AS "downloadCount",
       ${starCountSql} AS "starCount",
       ${isStarredSql} AS "isStarred",
       s.repository_url AS "skillRepositoryUrl",
@@ -342,7 +342,7 @@ export async function searchSkills(
       sv.version AS "latestVersion",
       sv.audit_score AS "auditScore",
       coalesce(u.name, '') AS publisher,
-      coalesce((SELECT count(*)::int FROM skill_downloads WHERE skill_id = s.id), 0) AS downloads,
+      coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) AS downloads,
       ${starsSql} AS stars,
       count(*) OVER() AS total
     FROM skills s

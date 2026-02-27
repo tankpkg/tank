@@ -62,7 +62,7 @@ function hashApiKey(plainKey: string): string {
  * This is cryptographically secure (not Math.random()).
  */
 export async function setupE2E(
-  registry = 'http://localhost:3000',
+  registry = process.env.E2E_REGISTRY_URL || 'http://localhost:3000',
 ): Promise<E2EContext> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -167,7 +167,7 @@ export async function cleanupE2E(ctx: E2EContext): Promise<void> {
     await safeDelete(sql`DELETE FROM scan_results WHERE version_id IN (${versionIds})`);
     await safeDelete(sql`DELETE FROM skill_stars WHERE skill_id IN (${skillIds})`);
     await safeDelete(sql`DELETE FROM skill_access WHERE skill_id IN (${skillIds})`);
-    await sql`DELETE FROM skill_downloads WHERE skill_id IN (${skillIds})`;
+    await safeDelete(sql`DELETE FROM skill_download_daily WHERE skill_id IN (${skillIds})`);
     await sql`DELETE FROM skill_versions WHERE skill_id IN (${skillIds})`;
     await sql`DELETE FROM skills WHERE publisher_id = ${userId}`;
 
