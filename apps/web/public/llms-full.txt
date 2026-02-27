@@ -198,7 +198,7 @@ The CLI checks `TANK_TOKEN` before reading `~/.tank/config.json`. No interactive
 
 ## 1) Create an API Token
 
-Go to [Settings → Tokens](/dashboard/tokens) and create a new token:
+Go to [Settings → Tokens](/tokens) and create a new token:
 
 - **Name**: something descriptive (e.g. `github-actions-ci`)
 - **Scopes**: `skills:read` is enough for installing skills
@@ -385,7 +385,7 @@ Use service accounts when:
 
 ### `401 Unauthorized`
 
-Token is invalid or expired. Create a new one from [Settings → Tokens](/dashboard/tokens).
+Token is invalid or expired. Create a new one from [Settings → Tokens](/tokens).
 
 ### `tank install` resolves versions instead of using lockfile
 
