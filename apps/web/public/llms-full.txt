@@ -6,7 +6,7 @@ This file contains the complete Tank documentation for LLM consumption.
 
 # API Reference
 
-Source: https://tankpkg.dev/docs/api
+Source: https://tankpkg.com/docs/api
 
 > REST API endpoints for Tank registry
 
@@ -25,7 +25,7 @@ Get your API key from [Settings > Tokens](/settings/tokens).
 ## Base URL
 
 ```
-https://tankpkg.dev/api/v1
+https://tankpkg.com/api/v1
 ```
 
 For self-hosted deployments, replace with your domain.
@@ -46,6 +46,17 @@ GET endpoint for /auth/whoami
 
 ```http
 GET /api/v1/auth/whoami
+```
+
+
+## /api/v1/badge
+
+### GET /api/v1/badge/:...name
+
+GET endpoint for /badge/:...name
+
+```http
+GET /api/v1/badge/:...name
 ```
 
 
@@ -167,7 +178,7 @@ POST /api/v1/skills
 
 # CLI Reference
 
-Source: https://tankpkg.dev/docs/cli
+Source: https://tankpkg.com/docs/cli
 
 > Complete reference for all tank CLI commands
 
@@ -402,7 +413,7 @@ tank doctor
 
 # Getting Started
 
-Source: https://tankpkg.dev/docs/getting-started
+Source: https://tankpkg.com/docs/getting-started
 
 > Install Tank, authenticate, and verify your first working flow.
 
@@ -512,7 +523,7 @@ Prefer packages with narrow, explicit permission scopes.
 
 # Tank Documentation
 
-Source: https://tankpkg.dev/docs
+Source: https://tankpkg.com/docs
 
 > Start here for setup, publishing, installation, API, and self-hosting.
 
@@ -569,7 +580,7 @@ Use this docs set by intent:
 
 # Installing Skills
 
-Source: https://tankpkg.dev/docs/installing
+Source: https://tankpkg.com/docs/installing
 
 > Install, update, remove, and verify skills safely.
 
@@ -652,7 +663,7 @@ Reinstall package and ensure lock state is consistent.
 
 # Publish Your First Skill
 
-Source: https://tankpkg.dev/docs/publish-first-skill
+Source: https://tankpkg.com/docs/publish-first-skill
 
 > Step-by-step guide to publish your first AI agent skill to Tank registry
 
@@ -791,7 +802,7 @@ Or visit: `https://tankpkg.dev/skills/my-skill`
 
 # Publishing Skills
 
-Source: https://tankpkg.dev/docs/publishing
+Source: https://tankpkg.com/docs/publishing
 
 > Build, validate, and publish skills with accurate metadata and minimal permissions.
 
@@ -887,7 +898,7 @@ Republish with explicit `--private` or `--visibility`.
 
 # Secure AI Skills Checklist
 
-Source: https://tankpkg.dev/docs/security-checklist
+Source: https://tankpkg.com/docs/security-checklist
 
 > Security best practices checklist for publishing safe AI agent skills
 
@@ -990,7 +1001,7 @@ This checklist is enforced automatically by `tank verify`. Run it early and ofte
 
 # Self-Host in 15 Minutes
 
-Source: https://tankpkg.dev/docs/self-host-quickstart
+Source: https://tankpkg.com/docs/self-host-quickstart
 
 > Deploy your own Tank registry and security scanner on-premise
 
@@ -1189,7 +1200,7 @@ Migrations run automatically on startup.
 
 # Self-Hosting
 
-Source: https://tankpkg.dev/docs/self-hosting
+Source: https://tankpkg.com/docs/self-hosting
 
 > Repository-aligned runbook for self-hosting Tank.
 

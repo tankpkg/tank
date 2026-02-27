@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "lint": "next lint && react-doctor .",
+    "lint": "npx react-doctor .",
     "admin:list": "npx tsx scripts/list-users.ts",
     "admin:bootstrap": "npx tsx scripts/bootstrap-admin.ts",
     "perf:test": "bash scripts/perf-test.sh",
