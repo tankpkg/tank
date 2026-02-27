@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import {
   skills,
   skillVersions,
-  skillDownloads,
+  skillDownloadDaily,
   auditEvents,
   scanResults,
   scanFindings,
@@ -88,9 +88,9 @@ async function handleGetDetail(name: string): Promise<NextResponse> {
     .orderBy(desc(skillVersions.createdAt));
 
   const downloadCountResult = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(skillDownloads)
-    .where(eq(skillDownloads.skillId, skill.id));
+    .select({ count: sql<number>`coalesce(sum(count), 0)::int` })
+    .from(skillDownloadDaily)
+    .where(eq(skillDownloadDaily.skillId, skill.id));
   const downloadCount = downloadCountResult[0]?.count ?? 0;
 
   const statusHistory = await db
@@ -223,14 +223,11 @@ async function handleForceDelete(
         .delete(scanResults)
         .where(inArray(scanResults.versionId, versionIds));
 
-      await tx
-        .delete(skillDownloads)
-        .where(inArray(skillDownloads.versionId, versionIds));
     }
 
     await tx
-      .delete(skillDownloads)
-      .where(eq(skillDownloads.skillId, skill.id));
+      .delete(skillDownloadDaily)
+      .where(eq(skillDownloadDaily.skillId, skill.id));
 
     await tx
       .delete(skillVersions)
@@ -305,10 +302,6 @@ async function handleDeleteVersion(
     await tx
       .delete(scanResults)
       .where(eq(scanResults.versionId, versionRow.id));
-
-    await tx
-      .delete(skillDownloads)
-      .where(eq(skillDownloads.versionId, versionRow.id));
 
     await tx
       .delete(skillVersions)
@@ -432,14 +425,11 @@ async function handleBanPublisherAndDeleteAll(
         .delete(scanResults)
         .where(inArray(scanResults.versionId, versionIds));
 
-      await tx
-        .delete(skillDownloads)
-        .where(inArray(skillDownloads.versionId, versionIds));
     }
 
     await tx
-      .delete(skillDownloads)
-      .where(inArray(skillDownloads.skillId, skillIds));
+      .delete(skillDownloadDaily)
+      .where(inArray(skillDownloadDaily.skillId, skillIds));
 
     await tx
       .delete(skillVersions)

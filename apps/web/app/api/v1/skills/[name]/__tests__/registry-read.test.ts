@@ -50,13 +50,11 @@ vi.mock('@/lib/db/schema', () => ({
     publishedBy: 'skill_versions.published_by',
     createdAt: 'skill_versions.created_at',
   },
-  skillDownloads: {
-    id: 'skill_downloads.id',
-    skillId: 'skill_downloads.skill_id',
-    versionId: 'skill_downloads.version_id',
-    ipHash: 'skill_downloads.ip_hash',
-    userAgent: 'skill_downloads.user_agent',
-    createdAt: 'skill_downloads.created_at',
+  skillDownloadDaily: {
+    id: 'skill_download_daily.id',
+    skillId: 'skill_download_daily.skill_id',
+    date: 'skill_download_daily.date',
+    count: 'skill_download_daily.count',
   },
   scanResults: {
     id: 'scan_results.id',
@@ -262,8 +260,7 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
       data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
       error: null,
     });
-    // recordDownload dedup check
-    mockLimit.mockResolvedValueOnce([]);
+    mockExecute.mockResolvedValueOnce(undefined);
     setupMetaExecute(0);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
@@ -324,7 +321,7 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
       data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
       error: null,
     });
-    mockLimit.mockResolvedValueOnce([]);
+    mockExecute.mockResolvedValueOnce(undefined);
     setupMetaExecute(0);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');
@@ -342,7 +339,7 @@ describe('GET /api/v1/skills/[name]/[version]', () => {
       data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
       error: null,
     });
-    mockLimit.mockResolvedValueOnce([]);
+    mockExecute.mockResolvedValueOnce(undefined);
     setupMetaExecute(0);
 
     const { GET } = await import('@/app/api/v1/skills/[name]/[version]/route');

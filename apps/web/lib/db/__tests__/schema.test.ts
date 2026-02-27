@@ -3,11 +3,11 @@ import { getTableName, getTableColumns } from 'drizzle-orm';
 import {
   skills,
   skillVersions,
-  skillDownloads,
+  skillDownloadDaily,
   auditEvents,
   skillsRelations,
   skillVersionsRelations,
-  skillDownloadsRelations,
+  skillDownloadDailyRelations,
 } from '../schema';
 import { user } from '../auth-schema';
 
@@ -15,7 +15,7 @@ describe('schema exports', () => {
   it('exports all 4 business tables', () => {
     expect(skills).toBeDefined();
     expect(skillVersions).toBeDefined();
-    expect(skillDownloads).toBeDefined();
+    expect(skillDownloadDaily).toBeDefined();
     expect(auditEvents).toBeDefined();
   });
 
@@ -26,7 +26,7 @@ describe('schema exports', () => {
   it('exports all relation definitions', () => {
     expect(skillsRelations).toBeDefined();
     expect(skillVersionsRelations).toBeDefined();
-    expect(skillDownloadsRelations).toBeDefined();
+    expect(skillDownloadDailyRelations).toBeDefined();
   });
 });
 
@@ -129,24 +129,22 @@ describe('skill_versions table', () => {
   });
 });
 
-describe('skill_downloads table', () => {
+describe('skill_download_daily table', () => {
   it('has correct table name', () => {
-    expect(getTableName(skillDownloads)).toBe('skill_downloads');
+    expect(getTableName(skillDownloadDaily)).toBe('skill_download_daily');
   });
 
   it('has expected columns', () => {
-    const cols = getTableColumns(skillDownloads);
+    const cols = getTableColumns(skillDownloadDaily);
     expect(cols.id).toBeDefined();
     expect(cols.skillId).toBeDefined();
-    expect(cols.versionId).toBeDefined();
-    expect(cols.ipHash).toBeDefined();
-    expect(cols.userAgent).toBeDefined();
-    expect(cols.createdAt).toBeDefined();
+    expect(cols.date).toBeDefined();
+    expect(cols.count).toBeDefined();
   });
 
-  it('ipHash is nullable for privacy', () => {
-    const cols = getTableColumns(skillDownloads);
-    expect(cols.ipHash.notNull).toBe(false);
+  it('count is not null', () => {
+    const cols = getTableColumns(skillDownloadDaily);
+    expect(cols.count.notNull).toBe(true);
   });
 });
 
@@ -182,14 +180,14 @@ describe('type inference', () => {
     type User = typeof user.$inferSelect;
     type Skill = typeof skills.$inferSelect;
     type SkillVersion = typeof skillVersions.$inferSelect;
-    type SkillDownload = typeof skillDownloads.$inferSelect;
+    type SkillDownloadDaily = typeof skillDownloadDaily.$inferSelect;
     type AuditEvent = typeof auditEvents.$inferSelect;
 
     // Type-level assertions — if these compile, types are correct
     const _userCheck: User = {} as User;
     const _skillCheck: Skill = {} as Skill;
     const _versionCheck: SkillVersion = {} as SkillVersion;
-    const _downloadCheck: SkillDownload = {} as SkillDownload;
+    const _downloadCheck: SkillDownloadDaily = {} as SkillDownloadDaily;
     const _auditCheck: AuditEvent = {} as AuditEvent;
 
     expect(_userCheck).toBeDefined();

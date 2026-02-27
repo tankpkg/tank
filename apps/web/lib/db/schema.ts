@@ -10,6 +10,7 @@ import { user, organization } from './auth-schema';
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -18,6 +19,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -172,26 +174,21 @@ export const skillVersions = pgTable(
 );
 
 // ---------------------------------------------------------------------------
-// skill_downloads
+// skill_download_daily — one row per skill per day (npm-style counting)
 // ---------------------------------------------------------------------------
 
-export const skillDownloads = pgTable(
-  'skill_downloads',
+export const skillDownloadDaily = pgTable(
+  'skill_download_daily',
   {
     id,
     skillId: uuid('skill_id')
       .notNull()
-      .references(() => skills.id),
-    versionId: uuid('version_id')
-      .notNull()
-      .references(() => skillVersions.id),
-    ipHash: text('ip_hash'),
-    userAgent: text('user_agent'),
-    createdAt,
+      .references(() => skills.id, { onDelete: 'cascade' }),
+    date: date('date').notNull().defaultNow(),
+    count: integer('count').notNull().default(0),
   },
   (table) => [
-    index('skill_downloads_skill_id_idx').on(table.skillId),
-    index('skill_downloads_created_at_idx').on(table.createdAt),
+    uniqueIndex('skill_download_daily_skill_date_idx').on(table.skillId, table.date),
   ],
 );
 
@@ -328,7 +325,7 @@ export const skillsRelations = relations(skills, ({ one, many }) => ({
     references: [user.id],
   }),
   versions: many(skillVersions),
-  downloads: many(skillDownloads),
+  downloads: many(skillDownloadDaily),
   stars: many(skillStars),
   accessGrants: many(skillAccess),
 }));
@@ -387,7 +384,6 @@ export const skillVersionsRelations = relations(skillVersions, ({ one, many }) =
     fields: [skillVersions.publishedBy],
     references: [user.id],
   }),
-  downloads: many(skillDownloads),
   scanResults: many(scanResults),
 }));
 
@@ -406,14 +402,10 @@ export const scanFindingsRelations = relations(scanFindings, ({ one }) => ({
   }),
 }));
 
-export const skillDownloadsRelations = relations(skillDownloads, ({ one }) => ({
+export const skillDownloadDailyRelations = relations(skillDownloadDaily, ({ one }) => ({
   skill: one(skills, {
-    fields: [skillDownloads.skillId],
+    fields: [skillDownloadDaily.skillId],
     references: [skills.id],
-  }),
-  version: one(skillVersions, {
-    fields: [skillDownloads.versionId],
-    references: [skillVersions.id],
   }),
 }));
 

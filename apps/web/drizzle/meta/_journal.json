@@ -57,6 +57,13 @@
       "when": 1771794387395,
       "tag": "0007_mute_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772224523771,
+      "tag": "0008_download_daily_aggregate",
+      "breakpoints": true
     }
   ]
 }

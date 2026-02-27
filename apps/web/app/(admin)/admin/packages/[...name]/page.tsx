@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, gte } from 'drizzle-orm';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { db } from '@/lib/db';
-import { skills, skillVersions, skillDownloads, auditEvents } from '@/lib/db/schema';
+import { skills, skillVersions, skillDownloadDaily, auditEvents } from '@/lib/db/schema';
 import { user } from '@/lib/db/auth-schema';
 import { FeatureButton } from './components/feature-button';
 import { StatusDialog } from './components/status-dialog';
@@ -110,9 +110,12 @@ export default async function AdminPackageDetailPage({
     .orderBy(desc(skillVersions.createdAt));
 
   const downloadCountResult = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(skillDownloads)
-    .where(eq(skillDownloads.skillId, skill.id));
+    .select({ count: sql<number>`COALESCE(SUM(${skillDownloadDaily.count}), 0)::int` })
+    .from(skillDownloadDaily)
+    .where(and(
+      eq(skillDownloadDaily.skillId, skill.id),
+      gte(skillDownloadDaily.date, sql`CURRENT_DATE - INTERVAL '7 days'`),
+    ));
   const downloadCount = downloadCountResult[0]?.count ?? 0;
 
   const statusHistory = await db

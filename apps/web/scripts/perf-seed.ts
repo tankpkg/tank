@@ -35,7 +35,7 @@ const TEST_MEMBER_ID = deterministicUUID('test-member', 0);
 
 const SKILL_COUNT = 200;
 const VERSIONS_PER_SKILL = 5;
-const DOWNLOADS_PER_VERSION = 3;
+const DOWNLOAD_DAYS = 7;
 
 // Deterministic UUID generator: SHA-256 of namespace + index → UUID v4 format
 function deterministicUUID(namespace: string, index: number): string {
@@ -135,7 +135,7 @@ async function cleanupPerfData(sql: postgres.Sql) {
         }
       }
 
-      await sql`DELETE FROM skill_downloads WHERE version_id = ANY(${versionIds})`;
+      await sql`DELETE FROM skill_download_daily WHERE skill_id = ANY(${skillIds})`;
       await sql`DELETE FROM skill_versions WHERE id = ANY(${versionIds})`;
     }
 
@@ -271,10 +271,8 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
   const allDownloads: Array<{
     id: string;
     skill_id: string;
-    version_id: string;
-    ip_hash: string;
-    user_agent: string;
-    created_at: Date;
+    date: string;
+    count: number;
   }> = [];
 
   const allScanResults: Array<{
@@ -379,23 +377,6 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
         created_at: publishedDate,
       });
 
-      // Downloads (deterministic)
-      for (let d = 0; d < DOWNLOADS_PER_VERSION; d++) {
-        const downloadId = deterministicUUID(`download:${skill.index}:${v}`, d);
-        const ipHash = createHash('sha256')
-          .update(`perf-ip-${skill.index}-${v}-${d}`)
-          .digest('hex');
-
-        allDownloads.push({
-          id: downloadId,
-          skill_id: skill.id,
-          version_id: versionId,
-          ip_hash: ipHash,
-          user_agent: 'tank-cli/0.1.0 (perf-seed)',
-          created_at: deterministicDate(skill.index * VERSIONS_PER_SKILL + v + d),
-        });
-      }
-
       // Scan results for latest version only (v === VERSIONS_PER_SKILL - 1)
       if (v === VERSIONS_PER_SKILL - 1) {
         const scanId = deterministicUUID(`scan:${skill.index}`, 0);
@@ -429,6 +410,20 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
         });
       }
     }
+
+    for (let d = 0; d < DOWNLOAD_DAYS; d++) {
+      const downloadId = deterministicUUID(`download:${skill.index}`, d);
+      const dateObj = new Date();
+      dateObj.setDate(dateObj.getDate() - d);
+      const dateStr = dateObj.toISOString().split('T')[0];
+
+      allDownloads.push({
+        id: downloadId,
+        skill_id: skill.id,
+        date: dateStr,
+        count: 10 + skill.index + d,
+      });
+    }
   }
 
   // Batch insert versions (chunks of 100)
@@ -445,17 +440,16 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
   }
   console.log(`[perf-seed]   Inserted ${allVersions.length} versions.`);
 
-  // Batch insert downloads (chunks of 500)
   for (let batch = 0; batch < allDownloads.length; batch += 500) {
     const chunk = allDownloads.slice(batch, batch + 500);
     await sql`
-      INSERT INTO skill_downloads ${sql(
+      INSERT INTO skill_download_daily ${sql(
         chunk,
-        'id', 'skill_id', 'version_id', 'ip_hash', 'user_agent', 'created_at',
+        'id', 'skill_id', 'date', 'count',
       )}
     `;
   }
-  console.log(`[perf-seed]   Inserted ${allDownloads.length} downloads.`);
+  console.log(`[perf-seed]   Inserted ${allDownloads.length} daily download rows.`);
 
   // Scan tables may not exist if migration 0001 hasn't been applied
   const scanTableExists = await sql<{ exists: boolean }[]>`

@@ -83,9 +83,9 @@ export const GET = withAdminAuth(async (req: NextRequest, _ctx: AdminAuthContext
       WHERE sv.skill_id = s.id
     ) vc ON true
     LEFT JOIN LATERAL (
-      SELECT count(*)::int AS download_count
-      FROM skill_downloads sd
-      WHERE sd.skill_id = s.id
+      SELECT coalesce(sum(count), 0)::int AS download_count
+      FROM skill_download_daily sdd
+      WHERE sdd.skill_id = s.id
     ) dc ON true
     ${whereClause}
     ORDER BY s.updated_at DESC

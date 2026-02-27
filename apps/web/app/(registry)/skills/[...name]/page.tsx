@@ -465,7 +465,7 @@ export default async function SkillDetailPage({
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-muted-foreground">Downloads</dt>
+                <dt className="text-muted-foreground">Weekly</dt>
                 <dd>{data.downloadCount.toLocaleString()}</dd>
               </div>
               {data.latestVersion && (
