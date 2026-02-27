@@ -66,9 +66,41 @@ const cliCommands = [
   { cmd: 'tank publish', desc: 'Publish with 6-stage analysis' },
 ];
 
+const homepageJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      name: 'Tank',
+      url: 'https://tankpkg.dev',
+      logo: 'https://tankpkg.dev/logo.png',
+      description:
+        'Security-first package registry for AI agent skills. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
+      sameAs: [
+        'https://github.com/tankpkg',
+        'https://x.com/tankpkg',
+      ],
+    },
+    {
+      '@type': 'WebSite',
+      name: 'Tank',
+      url: 'https://tankpkg.dev',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: 'https://tankpkg.dev/skills?q={search_term_string}',
+        'query-input': 'required name=search_term_string',
+      },
+    },
+  ],
+};
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-background tank-gradient-bg tank-grid-overlay">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageJsonLd) }}
+      />
       {/* Decorative orbs - Matrix green only */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="tank-orb tank-orb-green w-[600px] h-[600px] -top-48 -left-48 opacity-30" />

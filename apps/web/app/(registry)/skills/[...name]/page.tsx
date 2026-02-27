@@ -176,6 +176,8 @@ export async function generateMetadata({ params }: SkillDetailPageProps): Promis
   return {
     title,
     description,
+    keywords: [skillName, 'AI agent skill', 'Tank', 'security verified', data.publisher.name].filter(Boolean),
+    alternates: { canonical: url },
     openGraph: {
       title: `${title} — Tank`,
       description,
@@ -304,7 +306,55 @@ export default async function SkillDetailPage({
     </div>
   ) : null;
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'SoftwareSourceCode',
+        name: data.name,
+        description: data.description ?? undefined,
+        url: `https://tankpkg.dev/skills/${encodeURIComponent(data.name)}`,
+        codeRepository: data.repositoryUrl ?? undefined,
+        version: data.latestVersion?.version ?? undefined,
+        datePublished: data.createdAt.toISOString(),
+        dateModified: data.updatedAt.toISOString(),
+        author: {
+          '@type': 'Person',
+          name: data.publisher.name,
+          ...(data.publisher.githubUsername
+            ? { url: `https://github.com/${data.publisher.githubUsername}` }
+            : {}),
+        },
+        programmingLanguage: 'Markdown',
+        runtimePlatform: 'Tank CLI',
+        applicationCategory: 'DeveloperTool',
+        ...(data.downloadCount > 0
+          ? {
+              interactionStatistic: {
+                '@type': 'InteractionCounter',
+                interactionType: 'https://schema.org/DownloadAction',
+                userInteractionCount: data.downloadCount,
+              },
+            }
+          : {}),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'Tank', item: 'https://tankpkg.dev' },
+          { '@type': 'ListItem', position: 2, name: 'Skills', item: 'https://tankpkg.dev/skills' },
+          { '@type': 'ListItem', position: 3, name: data.name, item: `https://tankpkg.dev/skills/${encodeURIComponent(data.name)}` },
+        ],
+      },
+    ],
+  };
+
   return (
+    <>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
     <div className="max-w-6xl mx-auto" data-testid="skill-detail-root">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-1">
@@ -567,5 +617,6 @@ export default async function SkillDetailPage({
         </aside>
       </div>
     </div>
+    </>
   );
 }

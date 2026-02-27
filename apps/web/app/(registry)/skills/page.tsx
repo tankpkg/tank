@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
 import { Star, Download } from 'lucide-react';
@@ -14,8 +15,22 @@ import { searchSkills } from '@/lib/data/skills';
 import type { SkillSearchResult } from '@/lib/data/skills';
 import { SearchBar } from './search-bar';
 
-// ISR: cache page at CDN for 60s, survives serverless cold starts (PERF-005/006)
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: 'Browse AI Agent Skills',
+  description:
+    'Discover, compare, and install security-verified AI agent skills. Every skill is scanned for credential theft, prompt injection, and supply chain attacks.',
+  alternates: { canonical: 'https://tankpkg.dev/skills' },
+  openGraph: {
+    title: 'Browse AI Agent Skills — Tank',
+    description:
+      'Discover, compare, and install security-verified AI agent skills.',
+    url: 'https://tankpkg.dev/skills',
+    type: 'website',
+    siteName: 'Tank',
+  },
+};
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
