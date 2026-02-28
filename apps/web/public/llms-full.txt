@@ -501,6 +501,28 @@ tank doctor
 ```
 
 
+## tank upgrade
+
+Update tank to the latest version
+
+```bash
+tank upgrade [version]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `version` | Target version (default: latest) | No |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Check for updates without installing |
+| `--force` | Reinstall even if already on the target version |
+
+
 
 ---
 

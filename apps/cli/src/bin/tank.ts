@@ -16,6 +16,8 @@ import { auditCommand } from '../commands/audit.js';
 import { linkCommand } from '../commands/link.js';
 import { unlinkCommand } from '../commands/unlink.js';
 import { doctorCommand } from '../commands/doctor.js';
+import { upgradeCommand } from '../commands/upgrade.js';
+import { checkForUpgrade } from '../lib/upgrade-check.js';
 import { flushLogs } from '../lib/debug-logger.js';
 import { VERSION } from '../version.js';
 
@@ -256,5 +258,25 @@ program
       process.exit(1);
     }
   });
+
+program
+  .command('upgrade')
+  .description('Update tank to the latest version')
+  .argument('[version]', 'Target version (default: latest)')
+  .option('--dry-run', 'Check for updates without installing')
+  .option('--force', 'Reinstall even if already on the target version')
+  .action(async (version: string | undefined, opts: { dryRun?: boolean; force?: boolean }) => {
+    try {
+      await upgradeCommand({ version, dryRun: opts.dryRun, force: opts.force });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Upgrade failed: ${msg}`);
+      await flushLogs();
+      process.exit(1);
+    }
+    await flushLogs();
+  });
+
+checkForUpgrade().catch(() => {});
 
 program.parse();
