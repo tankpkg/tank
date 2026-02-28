@@ -11,9 +11,17 @@ export interface UpgradeOptions {
   force?: boolean;
 }
 
+function resolveCurrentBinary(): string {
+  try {
+    return fs.realpathSync(process.argv[1]);
+  } catch {
+    return process.execPath;
+  }
+}
+
 export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
-  const resolvedArgv1 = fs.realpathSync(process.argv[1]);
-  if (resolvedArgv1.includes('/Cellar/') || resolvedArgv1.includes('/homebrew/')) {
+  const currentBinaryPath = resolveCurrentBinary();
+  if (currentBinaryPath.includes('/Cellar/') || currentBinaryPath.includes('/homebrew/')) {
     console.log(chalk.yellow('Tank was installed via Homebrew. Run `brew upgrade tank` instead.'));
     return;
   }
@@ -101,7 +109,6 @@ export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
 
     fs.chmodSync(tmpBin, 0o755);
 
-    const currentBinaryPath = fs.realpathSync(process.argv[1]);
     fs.copyFileSync(tmpBin, currentBinaryPath);
     fs.chmodSync(currentBinaryPath, 0o755);
 
