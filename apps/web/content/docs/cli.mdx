@@ -57,87 +57,6 @@ tank logout
 ```
 
 
-## tank publish
-
-Pack and publish a skill to the Tank registry
-
-```bash
-tank publish
-```
-
-### Options
-
-| Flag | Description |
-|------|-------------|
-| `--dry-run` | Validate and pack without uploading |
-| `--private` | Publish skill as private |
-| `--visibility <mode>` | Skill visibility (public|private) |
-
-
-## tank install
-
-Install a skill from the Tank registry, or all skills from lockfile
-
-```bash
-tank install [name] [version-range]
-```
-
-### Arguments
-
-| Name | Description | Required |
-|------|-------------|----------|
-| `name` | Skill name (e.g., @org/skill-name). Omit to install from lockfile. | No |
-| `version-range` | Semver range (default: *) | No |
-
-### Options
-
-| Flag | Description |
-|------|-------------|
-| `-g, --global` | Install skill globally (available to all projects) |
-
-
-## tank remove
-
-Remove an installed skill
-
-```bash
-tank remove <<name>>
-```
-
-### Arguments
-
-| Name | Description | Required |
-|------|-------------|----------|
-| `name` | Skill name (e.g., @org/skill-name) | Yes |
-
-### Options
-
-| Flag | Description |
-|------|-------------|
-| `-g, --global` | Remove a globally installed skill |
-
-
-## tank update
-
-Update skills to latest versions within their ranges
-
-```bash
-tank update [name]
-```
-
-### Arguments
-
-| Name | Description | Required |
-|------|-------------|----------|
-| `name` | Skill name to update (omit to update all) | No |
-
-### Options
-
-| Flag | Description |
-|------|-------------|
-| `-g, --global` | Update globally installed skills |
-
-
 ## tank verify
 
 Verify installed skills match the lockfile
@@ -145,45 +64,6 @@ Verify installed skills match the lockfile
 ```bash
 tank verify
 ```
-
-
-## tank permissions
-
-Display resolved permission summary for installed skills
-
-```bash
-tank permissions
-```
-
-
-## tank search
-
-Search for skills in the Tank registry
-
-```bash
-tank search <<query>>
-```
-
-### Arguments
-
-| Name | Description | Required |
-|------|-------------|----------|
-| `query` | Search query | Yes |
-
-
-## tank info
-
-Show detailed information about a skill
-
-```bash
-tank info <<name>>
-```
-
-### Arguments
-
-| Name | Description | Required |
-|------|-------------|----------|
-| `name` | Skill name (e.g., @org/skill-name) | Yes |
 
 
 ## tank audit
@@ -199,15 +79,6 @@ tank audit [name]
 | Name | Description | Required |
 |------|-------------|----------|
 | `name` | Skill name to audit (omit to audit all) | No |
-
-
-## tank link
-
-Link current skill directory to AI agent directories (for development)
-
-```bash
-tank link
-```
 
 
 ## tank unlink
