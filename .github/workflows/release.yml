@@ -139,6 +139,7 @@ jobs:
         run: sha256sum tank-* *.deb > SHA256SUMS
 
       - name: Update in-repo Homebrew formula
+        continue-on-error: true
         run: |
           VERSION_NO_V="${VERSION#v}"
 
