@@ -74,6 +74,7 @@ program
 
 program
   .command('publish')
+  .alias('pub')
   .description('Pack and publish a skill to the Tank registry')
   .option('--dry-run', 'Validate and pack without uploading')
   .option('--private', 'Publish skill as private')
@@ -94,6 +95,7 @@ program
 
 program
   .command('install')
+  .alias('i')
   .description('Install a skill from the Tank registry, or all skills from lockfile')
   .argument('[name]', 'Skill name (e.g., @org/skill-name). Omit to install from lockfile.')
   .argument('[version-range]', 'Semver range (default: *)', '*')
@@ -114,6 +116,7 @@ program
 
 program
   .command('remove')
+  .aliases(['rm', 'r'])
   .description('Remove an installed skill')
   .argument('<name>', 'Skill name (e.g., @org/skill-name)')
   .option('-g, --global', 'Remove a globally installed skill')
@@ -129,6 +132,7 @@ program
 
 program
   .command('update')
+  .alias('up')
   .description('Update skills to latest versions within their ranges')
   .argument('[name]', 'Skill name to update (omit to update all)')
   .option('-g, --global', 'Update globally installed skills')
@@ -157,6 +161,7 @@ program
 
 program
   .command('permissions')
+  .alias('perms')
   .description('Display resolved permission summary for installed skills')
   .action(async () => {
     try {
@@ -170,6 +175,7 @@ program
 
 program
   .command('search')
+  .alias('s')
   .description('Search for skills in the Tank registry')
   .argument('<query>', 'Search query')
   .action(async (query: string) => {
@@ -184,6 +190,7 @@ program
 
 program
   .command('info')
+  .alias('show')
   .description('Show detailed information about a skill')
   .argument('<name>', 'Skill name (e.g., @org/skill-name)')
   .action(async (name: string) => {
@@ -212,6 +219,7 @@ program
 
 program
   .command('link')
+  .alias('ln')
   .description('Link current skill directory to AI agent directories (for development)')
   .action(async () => {
     try {
