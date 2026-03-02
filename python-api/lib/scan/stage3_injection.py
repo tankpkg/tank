@@ -12,6 +12,7 @@ from typing import List, Tuple
 
 from lib.scan.models import Finding, IngestResult, StageResult
 from lib.scan.cisco_scanner import run_skill_scanner
+from lib.scan.snyk_scanner import run_snyk_scanner
 
 # ==============================================================================
 # PROMPT INJECTION REGEX PATTERNS
@@ -365,6 +366,23 @@ def stage3_detect_injection(ingest_result: IngestResult) -> StageResult:
             severity="low",
             type="cisco_scanner_error",
             description=f"Cisco skill-scanner encountered an error: {str(e)}",
+            location=None,
+            confidence=0.5,
+            tool="stage3_injection",
+        ))
+
+    # Run Snyk Agent Scan as an optional additive scanner
+    # NOTE: Snyk sends data to cloud - used for corroboration only
+    try:
+        snyk_findings = run_snyk_scanner(temp_dir)
+        findings.extend(snyk_findings)
+    except Exception as e:
+        # Non-blocking: continue if Snyk scanner fails
+        findings.append(Finding(
+            stage="stage3",
+            severity="low",
+            type="snyk_scanner_error",
+            description=f"Snyk Agent Scan encountered an error: {str(e)}",
             location=None,
             confidence=0.5,
             tool="stage3_injection",

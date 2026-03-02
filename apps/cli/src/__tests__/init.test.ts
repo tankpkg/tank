@@ -36,12 +36,19 @@ describe('init command', () => {
     vi.restoreAllMocks();
   });
 
-  function mockPrompts(name: string, version: string, description: string, author: string) {
+  function mockPrompts(
+    name: string,
+    version: string,
+    description: string,
+    author: string,
+    privateSkill: boolean = false
+  ) {
     mockInput
       .mockResolvedValueOnce(name)
       .mockResolvedValueOnce(version)
       .mockResolvedValueOnce(description)
       .mockResolvedValueOnce(author);
+    mockConfirm.mockResolvedValueOnce(privateSkill);
   }
 
   function readOutput(): Record<string, unknown> {
@@ -50,7 +57,7 @@ describe('init command', () => {
 
   it('creates skills.json with prompted values', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('@test-org/my-cool-skill', '1.0.0', 'A cool skill', 'Test Author');
+    mockPrompts('@test-org/my-cool-skill', '1.0.0', 'A cool skill', 'Test Author', false);
 
     await initCommand();
 
@@ -68,7 +75,7 @@ describe('init command', () => {
 
   it('omits description when empty', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('@test-org/my-skill', '0.1.0', '', '');
+    mockPrompts('@test-org/my-skill', '0.1.0', '', '', false);
 
     await initCommand();
 
@@ -79,7 +86,7 @@ describe('init command', () => {
   it('generates output that passes strict schema validation', async () => {
     const { initCommand } = await import('../commands/init.js');
     const { skillsJsonSchema } = await import('@tank/shared');
-    mockPrompts('@test-org/my-skill', '1.2.3', 'A test skill', 'Author Name');
+    mockPrompts('@test-org/my-skill', '1.2.3', 'A test skill', 'Author Name', false);
 
     await initCommand();
 
@@ -90,7 +97,7 @@ describe('init command', () => {
 
   it('writes pretty-printed JSON with trailing newline', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('@test-org/my-skill', '0.1.0', '', '');
+    mockPrompts('@test-org/my-skill', '0.1.0', '', '', false);
 
     await initCommand();
 
@@ -101,7 +108,7 @@ describe('init command', () => {
 
   it('supports scoped package names', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('@myorg/cool-skill', '2.0.0', 'Scoped skill', '');
+    mockPrompts('@myorg/cool-skill', '2.0.0', 'Scoped skill', '', false);
 
     await initCommand();
 

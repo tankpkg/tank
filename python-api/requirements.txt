@@ -18,6 +18,10 @@ bandit>=1.8.0
 # Cisco AI Defense Skill Scanner (stage3 - behavioral analysis)
 skill-scanner>=1.0.0
 
+# Snyk Agent Scan (stage3 - optional cloud-dependent scanner)
+# Invoked via: uvx snyk-agent-scan@latest --skills <dir> --json --opt-out
+# Note: Sends data to Snyk's cloud - used for corroboration only
+
 # Secrets detection (stage4)
 detect-secrets>=1.5.0
 
