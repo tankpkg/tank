@@ -24,7 +24,6 @@ describe('init command', () => {
     mockConfirm = prompts.confirm as ReturnType<typeof vi.fn>;
     mockInput.mockReset();
     mockConfirm.mockReset();
-    mockConfirm.mockResolvedValue(false);
 
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -43,11 +42,13 @@ describe('init command', () => {
     author: string,
     privateSkill: boolean = false
   ) {
+    // Set up input mocks for: name, version, description, author
     mockInput
       .mockResolvedValueOnce(name)
       .mockResolvedValueOnce(version)
       .mockResolvedValueOnce(description)
       .mockResolvedValueOnce(author);
+    // Add confirm mock for private skill question to the queue
     mockConfirm.mockResolvedValueOnce(privateSkill);
   }
 
@@ -130,8 +131,9 @@ describe('init command', () => {
     const { initCommand } = await import('../commands/init.js');
     fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
 
-    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
-    mockPrompts('@test-org/new-skill', '0.1.0', '', '');
+    // First confirm: overwrite (true), then mockPrompts sets up private confirm (false)
+    mockConfirm.mockResolvedValueOnce(true); // overwrite
+    mockPrompts('@test-org/new-skill', '0.1.0', '', '', false); // private = false
 
     await initCommand();
 
@@ -144,7 +146,8 @@ describe('init command', () => {
     const original = '{"name":"old"}';
     fs.writeFileSync(path.join(tmpDir, 'skills.json'), original);
 
-    mockConfirm.mockResolvedValueOnce(false);
+    // Set up confirm to decline overwrite
+    mockConfirm.mockResolvedValue(false);
 
     await initCommand();
 
