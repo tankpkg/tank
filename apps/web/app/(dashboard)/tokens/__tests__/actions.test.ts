@@ -84,7 +84,7 @@ describe('token server actions', () => {
       mockGetSession.mockResolvedValue(null);
 
       const { createToken } = await import('../actions');
-      await expect(createToken('My Token')).rejects.toThrow('Unauthorized');
+      await expect(createToken({ name: 'My Token' })).rejects.toThrow('Unauthorized');
     });
   });
 
