@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "$comment": "Vercel deploys from apps/web (rootDirectory setting). We need to run commands from monorepo root for turbo to resolve workspace dependencies correctly.",
   "installCommand": "cd ../.. && pnpm install",
   "buildCommand": "cd ../.. && pnpm turbo build --filter=@tank/web..."
 }
