@@ -84,6 +84,23 @@ Tank's 6-stage pipeline will flag:
 | Medium | Deprecated deps, broad permissions | ⚠️ FLAGGED — Review required |
 | Low | Missing docs, style issues | ✅ PASS with notes |
 
+## Scanning Tools
+
+Tank uses multiple security scanners in a 6-stage pipeline:
+
+| Stage | Tool | Purpose |
+|-------|------|---------|
+| Stage 2 | Semgrep | Static analysis for code patterns |
+| Stage 2 | Bandit | Python security linter |
+| Stage 3 | Cisco Skill Scanner | AI agent threat detection |
+| Stage 3 | Snyk Agent Scan | Prompt injection & tool poisoning detection |
+| Stage 4 | detect-secrets | Secret/credential detection |
+| Stage 5 | OSV API | Dependency vulnerability scanning |
+
+<Callout type="info">
+Snyk Agent Scan is optional and cloud-dependent. If unavailable, scanning continues with local tools.
+</Callout>
+
 ## Getting Help
 
 - **Security questions**: Open an issue on [GitHub](https://github.com/tankpkg/tank)

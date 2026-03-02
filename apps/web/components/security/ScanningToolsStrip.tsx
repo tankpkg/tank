@@ -15,6 +15,7 @@ const DEFAULT_TOOLS: ScanTool[] = [
   { name: 'Semgrep', category: 'SAST', ran: false, findingCount: 0 },
   { name: 'Bandit', category: 'Python AST', ran: false, findingCount: 0 },
   { name: 'Cisco Skill Scanner', category: 'Agent Threats', ran: false, findingCount: 0 },
+  { name: 'Snyk Agent Scan', category: 'AI Threats', ran: false, findingCount: 0 },
   { name: 'detect-secrets', category: 'Secrets', ran: false, findingCount: 0 },
   { name: 'OSV API', category: 'SCA', ran: false, findingCount: 0 },
 ];
