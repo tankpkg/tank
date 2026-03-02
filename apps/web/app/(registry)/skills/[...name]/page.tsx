@@ -255,7 +255,8 @@ export default async function SkillDetailPage({
           tools={[
             { name: 'Semgrep', category: 'SAST', ran: scanDetails?.stagesRun?.includes('stage2') ?? false, findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage2' && f.tool?.includes('semgrep')).length ?? 0 },
             { name: 'Bandit', category: 'Python AST', ran: scanDetails?.stagesRun?.includes('stage2') ?? false, findingCount: scanDetails?.findings?.filter(f => f.tool === 'bandit').length ?? 0 },
-            { name: 'Cisco Skill Scanner', category: 'Agent Threats', ran: scanDetails?.stagesRun?.includes('stage3') ?? false, findingCount: 0 },
+            { name: 'Cisco Skill Scanner', category: 'Agent Threats', ran: scanDetails?.stagesRun?.includes('stage3') ?? false, findingCount: scanDetails?.findings?.filter(f => f.tool === 'cisco-skill-scanner').length ?? 0 },
+            { name: 'Snyk Agent Scan', category: 'AI Threats', ran: scanDetails?.stagesRun?.includes('stage3') ?? false, findingCount: scanDetails?.findings?.filter(f => f.tool === 'snyk-agent-scan').length ?? 0 },
             { name: 'detect-secrets', category: 'Secrets', ran: scanDetails?.stagesRun?.includes('stage4') ?? false, findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage4').length ?? 0 },
             { name: 'OSV API', category: 'SCA', ran: scanDetails?.stagesRun?.includes('stage5') ?? false, findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage5').length ?? 0 },
           ]}

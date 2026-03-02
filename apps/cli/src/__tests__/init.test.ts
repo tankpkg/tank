@@ -24,7 +24,6 @@ describe('init command', () => {
     mockConfirm = prompts.confirm as ReturnType<typeof vi.fn>;
     mockInput.mockReset();
     mockConfirm.mockReset();
-    mockConfirm.mockResolvedValue(false);
 
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -36,12 +35,21 @@ describe('init command', () => {
     vi.restoreAllMocks();
   });
 
-  function mockPrompts(name: string, version: string, description: string, author: string) {
+  function mockPrompts(
+    name: string,
+    version: string,
+    description: string,
+    author: string,
+    privateSkill: boolean = false
+  ) {
+    // Set up input mocks for: name, version, description, author
     mockInput
       .mockResolvedValueOnce(name)
       .mockResolvedValueOnce(version)
       .mockResolvedValueOnce(description)
       .mockResolvedValueOnce(author);
+    // Add confirm mock for private skill question to the queue
+    mockConfirm.mockResolvedValueOnce(privateSkill);
   }
 
   function readOutput(): Record<string, unknown> {
@@ -50,7 +58,7 @@ describe('init command', () => {
 
   it('creates skills.json with prompted values', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('@test-org/my-cool-skill', '1.0.0', 'A cool skill', 'Test Author');
+    mockPrompts('@test-org/my-cool-skill', '1.0.0', 'A cool skill', 'Test Author', false);
 
     await initCommand();
 
@@ -68,7 +76,7 @@ describe('init command', () => {
 
   it('omits description when empty', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('@test-org/my-skill', '0.1.0', '', '');
+    mockPrompts('@test-org/my-skill', '0.1.0', '', '', false);
 
     await initCommand();
 
@@ -79,7 +87,7 @@ describe('init command', () => {
   it('generates output that passes strict schema validation', async () => {
     const { initCommand } = await import('../commands/init.js');
     const { skillsJsonSchema } = await import('@tank/shared');
-    mockPrompts('@test-org/my-skill', '1.2.3', 'A test skill', 'Author Name');
+    mockPrompts('@test-org/my-skill', '1.2.3', 'A test skill', 'Author Name', false);
 
     await initCommand();
 
@@ -90,7 +98,7 @@ describe('init command', () => {
 
   it('writes pretty-printed JSON with trailing newline', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('@test-org/my-skill', '0.1.0', '', '');
+    mockPrompts('@test-org/my-skill', '0.1.0', '', '', false);
 
     await initCommand();
 
@@ -101,7 +109,7 @@ describe('init command', () => {
 
   it('supports scoped package names', async () => {
     const { initCommand } = await import('../commands/init.js');
-    mockPrompts('@myorg/cool-skill', '2.0.0', 'Scoped skill', '');
+    mockPrompts('@myorg/cool-skill', '2.0.0', 'Scoped skill', '', false);
 
     await initCommand();
 
@@ -123,8 +131,9 @@ describe('init command', () => {
     const { initCommand } = await import('../commands/init.js');
     fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
 
-    mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
-    mockPrompts('@test-org/new-skill', '0.1.0', '', '');
+    // First confirm: overwrite (true), then mockPrompts sets up private confirm (false)
+    mockConfirm.mockResolvedValueOnce(true); // overwrite
+    mockPrompts('@test-org/new-skill', '0.1.0', '', '', false); // private = false
 
     await initCommand();
 
@@ -137,7 +146,8 @@ describe('init command', () => {
     const original = '{"name":"old"}';
     fs.writeFileSync(path.join(tmpDir, 'skills.json'), original);
 
-    mockConfirm.mockResolvedValueOnce(false);
+    // Set up confirm to decline overwrite
+    mockConfirm.mockResolvedValue(false);
 
     await initCommand();
 
