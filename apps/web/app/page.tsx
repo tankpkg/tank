@@ -362,11 +362,11 @@ export default async function Home() {
                   {'\n'}
                   {'    '}<span className="text-emerald-400">"@community/seo-audit"</span><span className="text-slate-500">:</span> <span className="text-amber-400">"3.0.0"</span>
                   {'\n'}
-                  {'  '}<span className="text-slate-500">{'],'}</span>
+                  {'  '}<span className="text-slate-500">{'}'}</span>
                   {'\n'}
                   {'  '}<span className="text-emerald-400">"permissions"</span><span className="text-slate-500">: {'{'}</span>
                   {'\n'}
-                  {'    '}<span className="text-emerald-400">"network"</span><span className="text-slate-500">: {'{'}</span> <span className="text-emerald-400">"outbound"</span><span className="text-slate-500">:</span> <span className="text-amber-400">["*.anthropic.com"]</span> <span className="text-slate-500">{'],'}</span>
+                  {'    '}<span className="text-emerald-400">"network"</span><span className="text-slate-500">: {'{'}</span> <span className="text-emerald-400">"outbound"</span><span className="text-slate-500">:</span> <span className="text-amber-400">["*.anthropic.com"]</span> <span className="text-slate-500">{'}'}</span>
                   {'\n'}
                   {'    '}<span className="text-emerald-400">"filesystem"</span><span className="text-slate-500">: {'{'}</span>
                   {'\n'}
@@ -374,13 +374,13 @@ export default async function Home() {
                   {'\n'}
                   {'      '}<span className="text-emerald-400">"write"</span><span className="text-slate-500">:</span> <span className="text-amber-400">["./output/**"]</span>
                   {'\n'}
-                  {'    '}<span className="text-slate-500">{'],'}</span>
+                  {'    '}<span className="text-slate-500">{'}'}</span>
                   {'\n'}
                   {'    '}<span className="text-emerald-400">"subprocess"</span><span className="text-slate-500">:</span> <span className="text-pink-400">false</span>
                   {'\n'}
-                  {'  '}<span className="text-slate-500">{'],'}</span>
+                  {'  '}<span className="text-slate-500">{'}'}</span>
                   {'\n'}
-                  <span className="text-slate-500">{')'}</span>
+                  <span className="text-slate-500">{'}'}</span>
                 </code>
               </pre>
             </div>
