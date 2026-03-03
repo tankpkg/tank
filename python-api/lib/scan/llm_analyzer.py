@@ -13,12 +13,11 @@ high-confidence patterns (weight=1.0, Claude format) bypass LLM entirely.
 """
 
 import asyncio
-import hashlib
 import json
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -37,6 +36,11 @@ MAX_FINDINGS_PER_CALL = 12
 
 # Default timeout in milliseconds
 DEFAULT_TIMEOUT_MS = 8000
+
+# Default model names (can be overridden via environment variables)
+DEFAULT_GROQ_8B_MODEL = "llama-3.1-8b-instant"
+DEFAULT_GROQ_70B_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_OPENROUTER_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"
 
 # System prompt for LLM analysis
 LLM_SYSTEM_PROMPT = """You are a security analyst reviewing flagged content from MCP skill files.
@@ -150,33 +154,36 @@ class LLMAnalyzer:
         # 2. Built-in Groq chain
         groq_key = os.environ.get("GROQ_API_KEY")
         if groq_key and not (api_key and base_url):  # Only add if no custom provider
+            groq_8b_model = os.environ.get("GROQ_8B_MODEL", DEFAULT_GROQ_8B_MODEL)
+            groq_70b_model = os.environ.get("GROQ_70B_MODEL", DEFAULT_GROQ_70B_MODEL)
             self.providers.append(LLMProviderConfig(
                 name="groq_8b",
                 base_url="https://api.groq.com/openai/v1",
                 api_key=groq_key,
-                model="llama-3.1-8b-instant",
+                model=groq_8b_model,
                 timeout_seconds=min(5.0, timeout_sec),
             ))
             self.providers.append(LLMProviderConfig(
                 name="groq_70b",
                 base_url="https://api.groq.com/openai/v1",
                 api_key=groq_key,
-                model="llama-3.3-70b-versatile",
+                model=groq_70b_model,
                 timeout_seconds=timeout_sec,
             ))
-            logger.info("LLM analyzer: Groq providers configured (8b primary, 70b fallback)")
+            logger.info(f"LLM analyzer: Groq providers configured ({groq_8b_model} primary, {groq_70b_model} fallback)")
 
         # 3. Built-in OpenRouter fallback
         or_key = os.environ.get("OPENROUTER_API_KEY")
         if or_key and not (api_key and base_url) and not groq_key:
+            openrouter_model = os.environ.get("OPENROUTER_MODEL", DEFAULT_OPENROUTER_MODEL)
             self.providers.append(LLMProviderConfig(
                 name="openrouter_nemotron",
                 base_url="https://openrouter.ai/api/v1",
                 api_key=or_key,
-                model="nvidia/nemotron-3-nano-30b-a3b:free",
+                model=openrouter_model,
                 timeout_seconds=timeout_sec,
             ))
-            logger.info("LLM analyzer: OpenRouter provider configured")
+            logger.info(f"LLM analyzer: OpenRouter provider configured ({openrouter_model})")
 
         if not self.providers:
             logger.info("LLM analyzer: no providers configured (regex-only mode)")
@@ -421,7 +428,7 @@ Classify each finding and respond with ONLY a JSON array."""
             logger.warning(f"Failed to parse LLM response as JSON: {e}")
             return []
         except Exception as e:
-            logger.error(f"Unexpected error parsing LLM response: {e}")
+            logger.warning(f"Unexpected error parsing LLM response: {e}")
             return []
 
     async def analyze_findings(
