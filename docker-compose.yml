@@ -98,11 +98,6 @@ services:
 
       # Tuning
       LLM_SCAN_TIMEOUT_MS: ${LLM_SCAN_TIMEOUT_MS:-8000}
-
-      # Advanced: Custom model selection (rarely needed)
-      # GROQ_8B_MODEL: ${GROQ_8B_MODEL:-}
-      # GROQ_70B_MODEL: ${GROQ_70B_MODEL:-}
-      # OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
     depends_on:
       postgres:
         condition: service_healthy
