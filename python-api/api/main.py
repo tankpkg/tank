@@ -7,6 +7,7 @@ Endpoints:
 - POST /api/analyze/security - Quick security check
 - POST /api/analyze/permissions - Permission extraction
 - GET /api/analyze/scan/health - Health check
+- GET /health/llm - LLM provider health status
 """
 
 from fastapi import FastAPI
@@ -16,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.analyze.scan import app as scan_app
 from api.analyze.security import app as security_app
 from api.analyze.permissions import app as permissions_app
+from lib.scan.llm_analyzer import check_llm_health
 
 # Create main app
 app = FastAPI(
@@ -71,6 +73,16 @@ async def root():
 async def health():
     """Health check endpoint."""
     return {"status": "healthy"}
+
+
+@app.get("/health/llm")
+async def llm_health():
+    """Check LLM provider health status.
+
+    Returns configuration and health status for all configured LLM providers.
+    Does NOT expose API keys - only shows whether keys are configured.
+    """
+    return await check_llm_health()
 
 
 # Export for uvicorn

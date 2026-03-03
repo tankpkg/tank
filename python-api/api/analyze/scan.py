@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 
 from lib.scan.models import (
     Finding,
+    LLMAnalysis,
     ScanRequest,
     ScanResponse,
     StageResult,
@@ -145,6 +146,7 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
     start = time.monotonic()
     stage_results: List[StageResult] = []
     file_hashes: Dict[str, str] = {}
+    llm_analysis: Optional[LLMAnalysis] = None
 
     # Stage 0: Ingestion & Quarantine (REQUIRED - provides temp dir)
     try:
@@ -176,6 +178,7 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                 stage_results=stage_results,
                 duration_ms=duration_ms,
                 file_hashes=file_hashes,
+                llm_analysis=llm_analysis,
             )
 
     except Exception as e:
@@ -205,6 +208,7 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
             stage_results=stage_results,
             duration_ms=duration_ms,
             file_hashes={},
+            llm_analysis=None,
         )
 
     temp_dir = ingest_result.temp_dir
@@ -248,12 +252,12 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                     error=str(e),
                 ))
 
-        # Stage 3: Prompt Injection Detection
+        # Stage 3: Prompt Injection Detection (with LLM corroboration)
         elapsed = int((time.monotonic() - start) * 1000)
         remaining_budget = MAX_SCAN_DURATION_MS - elapsed
         if remaining_budget > 5000:
             try:
-                result = stage3_detect_injection(ingest_result)
+                result, llm_analysis = stage3_detect_injection(ingest_result, llm_analysis)
                 stage_results.append(result)
             except Exception as e:
                 stage_results.append(StageResult(
@@ -314,6 +318,8 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
             "confidence": f.confidence,
             "tool": f.tool,
             "evidence": f.evidence,
+            "llm_verdict": f.llm_verdict,
+            "llm_reviewed": f.llm_reviewed,
         }
         for f in all_findings
     ])
@@ -343,10 +349,13 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
             confidence=f.get("confidence"),
             tool=f.get("tool"),
             evidence=f.get("evidence"),
+            llm_verdict=f.get("llm_verdict"),
+            llm_reviewed=f.get("llm_reviewed", False),
         ) for f in deduped_findings],
         stage_results=stage_results,
         duration_ms=duration_ms,
         file_hashes=file_hashes,
+        llm_analysis=llm_analysis,
     )
 
 
@@ -390,6 +399,7 @@ async def scan_handler(request: ScanRequest) -> ScanResponse:
             )],
             duration_ms=0,
             file_hashes={},
+            llm_analysis=None,
         )
 
 

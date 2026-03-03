@@ -2,17 +2,20 @@
 
 Detects prompt injection attempts in markdown files using regex patterns,
 heuristic scoring, hidden content detection, Claude-specific format analysis,
-and the Cisco skill-scanner for behavioral analysis.
+LLM corroboration for ambiguous findings, and the Cisco skill-scanner for
+behavioral analysis.
 """
 
+import asyncio
 import re
 import time
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
-from lib.scan.models import Finding, IngestResult, StageResult
+from lib.scan.models import Finding, IngestResult, LLMAnalysis, StageResult
 from lib.scan.cisco_scanner import run_skill_scanner
 from lib.scan.snyk_scanner import run_snyk_scanner
+from lib.scan.llm_analyzer import LLMAnalyzer
 
 # ==============================================================================
 # PROMPT INJECTION REGEX PATTERNS
@@ -303,7 +306,10 @@ def analyze_markdown_file(temp_dir: str, file_path: str) -> List[Finding]:
     return findings
 
 
-def stage3_detect_injection(ingest_result: IngestResult) -> StageResult:
+def stage3_detect_injection(
+    ingest_result: IngestResult,
+    llm_analysis: Optional[LLMAnalysis] = None,
+) -> Tuple[StageResult, Optional[LLMAnalysis]]:
     """Run Stage 3: Prompt Injection Detection.
 
     Scans all markdown files for:
@@ -315,12 +321,14 @@ def stage3_detect_injection(ingest_result: IngestResult) -> StageResult:
     - Claude-specific format injection
     - Hidden content in comments
     - Heuristic suspicion scoring
+    - LLM corroboration for ambiguous findings
 
     Args:
         ingest_result: Result from Stage 0
+        llm_analysis: Optional LLMAnalysis to populate (modified in place)
 
     Returns:
-        StageResult with findings
+        Tuple of (StageResult with findings, LLMAnalysis metadata)
     """
     start = time.monotonic()
     findings: List[Finding] = []
@@ -340,7 +348,7 @@ def stage3_detect_injection(ingest_result: IngestResult) -> StageResult:
             )],
             duration_ms=int((time.monotonic() - start) * 1000),
             error="Stage 0 did not provide temp directory",
-        )
+        ), llm_analysis
 
     # Find all markdown files
     md_files: List[str] = []
@@ -353,6 +361,78 @@ def stage3_detect_injection(ingest_result: IngestResult) -> StageResult:
     for md_file in md_files:
         md_findings = analyze_markdown_file(temp_dir, md_file)
         findings.extend(md_findings)
+
+    # ========================================================================
+    # LLM CORROBORATION LAYER
+    # Split findings into ambiguous (send to LLM) vs deterministic (keep as-is)
+    # ========================================================================
+    llm_analyzer = LLMAnalyzer()
+    llm_result = None
+
+    if llm_analyzer.is_enabled() and findings:
+        # Initialize LLM analysis metadata if not provided
+        if llm_analysis is None:
+            llm_analysis = LLMAnalysis(
+                enabled=True,
+                mode=llm_analyzer.mode,
+            )
+
+        # Filter to only ambiguous findings
+        ambiguous_findings, deterministic_findings = llm_analyzer.filter_ambiguous_findings(findings)
+
+        llm_analysis.findings_reviewed = len(ambiguous_findings)
+
+        if ambiguous_findings:
+            try:
+                # Run async LLM analysis
+                llm_result = asyncio.run(
+                    llm_analyzer.analyze_findings(ambiguous_findings, temp_dir)
+                )
+
+                # Update metadata
+                llm_analysis.provider_used = llm_result.provider_used
+                llm_analysis.latency_ms = llm_result.latency_ms
+                llm_analysis.cache_hit = llm_result.cache_hit
+
+                if llm_result.error:
+                    llm_analysis.error = llm_result.error
+                else:
+                    # Apply verdicts to ambiguous findings
+                    reviewed_findings = llm_analyzer.apply_verdicts(
+                        ambiguous_findings, llm_result.verdicts
+                    )
+
+                    # Count verdicts
+                    for finding in reviewed_findings:
+                        if finding.llm_verdict == "likely_benign":
+                            llm_analysis.findings_dismissed += 1
+                        elif finding.llm_verdict == "confirmed_threat":
+                            llm_analysis.findings_confirmed += 1
+                        elif finding.llm_verdict == "uncertain":
+                            llm_analysis.findings_uncertain += 1
+
+                    # Merge: reviewed ambiguous + deterministic
+                    findings = reviewed_findings + deterministic_findings
+
+            except Exception as e:
+                llm_analysis.error = f"llm_analysis_failed: {str(e)}"
+                # Keep original findings on error
+        else:
+            # No ambiguous findings to review
+            llm_analysis.findings_reviewed = 0
+
+    elif not llm_analyzer.is_enabled():
+        # LLM not configured
+        if llm_analysis is None:
+            llm_analysis = LLMAnalysis(
+                enabled=False,
+                mode="disabled",
+                reason="no_api_keys_configured",
+            )
+
+    # ========================================================================
+    # EXTERNAL SCANNERS (Cisco, Snyk)
+    # ========================================================================
 
     # Run Cisco skill-scanner for behavioral analysis (cross-file dataflow)
     # This detects patterns like: read creds in file A, encode in B, send to network in C
@@ -397,4 +477,4 @@ def stage3_detect_injection(ingest_result: IngestResult) -> StageResult:
         status=status,
         findings=findings,
         duration_ms=int((time.monotonic() - start) * 1000),
-    )
+    ), llm_analysis

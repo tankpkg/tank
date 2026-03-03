@@ -28,6 +28,10 @@ class Finding(BaseModel):
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Confidence score 0-1")
     tool: Optional[str] = Field(None, description="Tool or rule that found this")
     evidence: Optional[str] = Field(None, description="Raw snippet or pattern matched")
+    llm_verdict: Optional[str] = Field(
+        None, description="LLM classification: 'confirmed_threat', 'likely_benign', or 'uncertain'"
+    )
+    llm_reviewed: bool = Field(False, description="True if LLM analyzed this finding")
 
 
 class StageResult(BaseModel):
@@ -40,6 +44,24 @@ class StageResult(BaseModel):
     findings: List[Finding] = Field(default_factory=list, description="Findings from this stage")
     duration_ms: int = Field(..., description="Stage execution time in milliseconds")
     error: Optional[str] = Field(None, description="Error message if status is 'errored'")
+
+
+class LLMAnalysis(BaseModel):
+    """LLM analysis metadata for a scan."""
+
+    enabled: bool = Field(..., description="Whether LLM analysis was enabled")
+    mode: str = Field(
+        "disabled", description="Mode: 'byollm', 'builtin', or 'disabled'"
+    )
+    provider_used: Optional[str] = Field(None, description="Provider name and model")
+    findings_reviewed: int = Field(0, description="Number of findings sent to LLM")
+    findings_dismissed: int = Field(0, description="Findings marked as likely_benign")
+    findings_confirmed: int = Field(0, description="Findings confirmed as threats")
+    findings_uncertain: int = Field(0, description="Findings LLM couldn't classify")
+    latency_ms: Optional[int] = Field(None, description="LLM call latency")
+    cache_hit: bool = Field(False, description="Whether result was from cache")
+    error: Optional[str] = Field(None, description="Error if LLM analysis failed")
+    reason: Optional[str] = Field(None, description="Reason if disabled")
 
 
 class ScanRequest(BaseModel):
@@ -63,6 +85,9 @@ class ScanResponse(BaseModel):
     duration_ms: int = Field(..., description="Total scan time in milliseconds")
     file_hashes: Dict[str, str] = Field(
         default_factory=dict, description="SHA-256 hashes per file path"
+    )
+    llm_analysis: Optional[LLMAnalysis] = Field(
+        None, description="LLM analysis metadata"
     )
 
 

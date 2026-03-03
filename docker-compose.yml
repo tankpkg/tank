@@ -80,6 +80,24 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-tank}@postgres:5432/${POSTGRES_DB:-tank}
+
+      # LLM Security Analysis (optional - choose one option)
+      # Option 1: Disable LLM entirely (regex-only scanning)
+      # LLM_SCAN_ENABLED: "false"
+
+      # Option 2: Use your own LLM provider (any OpenAI-compatible API)
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+
+      # Option 3: Use free Groq models (recommended, no cost)
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+
+      # Option 4: Use free OpenRouter models (fallback)
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+
+      # Tuning
+      LLM_SCAN_TIMEOUT_MS: ${LLM_SCAN_TIMEOUT_MS:-8000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -161,6 +179,25 @@ services:
     networks:
       - tank-network
 
+  # ===================
+  # Optional: Local LLM (Ollama)
+  # ===================
+  # For air-gapped / zero-cost LLM analysis
+  # Start with: docker compose --profile llm-local up
+  ollama:
+    image: ollama/ollama:latest
+    container_name: tank-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - tank-network
+    profiles:
+      - llm-local  # Only starts with: docker compose --profile llm-local up
+    # Uncomment to expose Ollama API directly
+    # ports:
+    #   - "11434:11434"
+
 # ===================
 # Networks
 # ===================
@@ -175,3 +212,4 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
+  ollama_data:
