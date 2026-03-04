@@ -299,6 +299,8 @@ export const scanFindings = pgTable(
     confidence: real('confidence'), // 0.0-1.0
     tool: text('tool'), // which tool/rule found it
     evidence: text('evidence'), // raw snippet or pattern matched
+    llmVerdict: text('llm_verdict'), // LLM classification: 'confirmed_threat', 'likely_benign', 'uncertain'
+    llmReviewed: boolean('llm_reviewed').default(false), // whether LLM analyzed this finding
     createdAt,
   },
   (table) => [
