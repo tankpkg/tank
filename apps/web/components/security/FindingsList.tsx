@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, FileCode, AlertTriangle, Lightbulb, Info } from 'lucide-react';
+import { ExternalLink, FileCode, AlertTriangle, Lightbulb, Info, Brain, Sparkles } from 'lucide-react';
 
 interface Finding {
   stage: string;
@@ -14,6 +14,8 @@ interface Finding {
   evidence: string | null;
   corroborated?: boolean;
   corroborationCount?: number;
+  llm_verdict?: string | null;
+  llm_reviewed?: boolean;
 }
 
 interface FindingsListProps {
@@ -411,6 +413,20 @@ export function FindingsList({ findings }: FindingsListProps) {
                     {finding.corroborated && (
                       <span className="text-xs text-blue-600 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded">
                         Corroborated by {finding.corroborationCount} tools
+                      </span>
+                    )}
+                    {finding.llm_reviewed && finding.llm_verdict && (
+                      <span className={`text-xs flex items-center gap-1 px-2 py-0.5 rounded ${
+                        finding.llm_verdict === 'likely_benign'
+                          ? 'text-emerald-600 bg-emerald-50'
+                          : finding.llm_verdict === 'confirmed_threat'
+                          ? 'text-red-600 bg-red-50'
+                          : 'text-amber-600 bg-amber-50'
+                      }`}>
+                        <Brain className="w-3 h-3" />
+                        {finding.llm_verdict === 'likely_benign' && 'LLM: Likely Benign'}
+                        {finding.llm_verdict === 'confirmed_threat' && 'LLM: Confirmed Threat'}
+                        {finding.llm_verdict === 'uncertain' && 'LLM: Uncertain'}
                       </span>
                     )}
                   </div>
