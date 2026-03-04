@@ -237,16 +237,26 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           node -e "const p=require('./apps/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./apps/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
+          node -e "const p=require('./packages/mcp-server/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/mcp-server/package.json', JSON.stringify(p, null, 2)+'\n')"
 
-      - name: Build CLI package
+      - name: Build packages
         run: |
           pnpm --filter @tank/shared build
           pnpm --filter ./apps/cli build
+          pnpm --filter @tankpkg/mcp-server build
 
-      - name: Publish to npm
+      - name: Publish CLI to npm
         continue-on-error: true
         if: ${{ env.NPM_TOKEN != '' }}
         working-directory: apps/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+        run: pnpm publish --no-git-checks --access public
+
+      - name: Publish MCP server to npm
+        continue-on-error: true
+        if: ${{ env.NPM_TOKEN != '' }}
+        working-directory: packages/mcp-server
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
         run: pnpm publish --no-git-checks --access public
