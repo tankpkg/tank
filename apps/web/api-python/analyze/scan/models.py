@@ -28,6 +28,8 @@ class Finding(BaseModel):
     confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Confidence score 0-1")
     tool: Optional[str] = Field(None, description="Tool or rule that found this")
     evidence: Optional[str] = Field(None, description="Raw snippet or pattern matched")
+    llm_verdict: Optional[str] = Field(None, description="LLM classification: likely_benign, confirmed_threat, uncertain")
+    llm_reviewed: bool = Field(False, description="Whether LLM analyzed this finding")
 
 
 class StageResult(BaseModel):
@@ -51,6 +53,24 @@ class ScanRequest(BaseModel):
     permissions: Dict[str, Any] = Field(..., description="Declared permissions from database")
 
 
+class LLMProviderStatus(BaseModel):
+    """Status of a single LLM provider."""
+    name: str = Field(..., description="Provider name")
+    model: str = Field(..., description="Model identifier")
+    api_key_configured: bool = Field(..., description="Whether API key is set")
+    base_url: str = Field(..., description="API base URL")
+    status: str = Field(..., description="healthy, unhealthy, rate_limited, etc.")
+    latency_ms: Optional[int] = Field(None, description="Response latency")
+    error: Optional[str] = Field(None, description="Error message if unhealthy")
+
+
+class LLMAnalysis(BaseModel):
+    """LLM analysis metadata for a scan."""
+    enabled: bool = Field(..., description="Whether LLM analysis was enabled")
+    mode: str = Field(..., description="byollm, builtin, or disabled")
+    providers: List[LLMProviderStatus] = Field(default_factory=list, description="Provider statuses")
+
+
 class ScanResponse(BaseModel):
     """Response from a full security scan."""
 
@@ -64,6 +84,7 @@ class ScanResponse(BaseModel):
     file_hashes: Dict[str, str] = Field(
         default_factory=dict, description="SHA-256 hashes per file path"
     )
+    llm_analysis: Optional[LLMAnalysis] = Field(None, description="LLM analysis metadata")
 
 
 class IngestResult(BaseModel):

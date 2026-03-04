@@ -24,6 +24,8 @@ from .scan.models import (
     ScanResponse,
     StageResult,
     ScanVerdict,
+    LLMAnalysis,
+    LLMProviderStatus,
 )
 from .scan.stage0_ingest import stage0_ingest, cleanup_ingest
 from .scan.stage1_structure import stage1_validate
@@ -292,6 +294,68 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                     error=str(e),
                 ))
 
+        # Collect all findings
+        all_findings: List[Finding] = [f for sr in stage_results for f in sr.findings]
+
+        # LLM Analysis - corroborate ambiguous findings (runs BEFORE cleanup)
+        llm_analysis_data: Optional[LLMAnalysis] = None
+        try:
+            from .scan.llm_analyzer import LLMAnalyzer, check_llm_health
+
+            analyzer = LLMAnalyzer()
+
+            if analyzer.is_enabled():
+                # Filter ambiguous findings for LLM review
+                ambiguous, deterministic = analyzer.filter_ambiguous_findings(all_findings)
+
+                if ambiguous:
+                    print(f"[LLM] Analyzing {len(ambiguous)} ambiguous findings...")
+                    llm_result = await analyzer.analyze_findings(ambiguous, temp_dir)
+
+                    if llm_result.verdicts:
+                        # Apply LLM verdicts to ambiguous findings
+                        updated_ambiguous = analyzer.apply_verdicts(ambiguous, llm_result.verdicts)
+
+                        # Merge back: updated ambiguous + deterministic (unchanged)
+                        all_findings = updated_ambiguous + deterministic
+
+                        print(f"[LLM] Applied {len(llm_result.verdicts)} verdicts, {len(all_findings)} total findings")
+                else:
+                    print("[LLM] No ambiguous findings to analyze")
+
+                # Get provider status for response
+                health = await check_llm_health()
+                llm_analysis_data = LLMAnalysis(
+                    enabled=health.get("llm_scan_enabled", False),
+                    mode=health.get("mode", "disabled"),
+                    providers=[
+                        LLMProviderStatus(
+                            name=p.get("name", "unknown"),
+                            model=p.get("model", "unknown"),
+                            api_key_configured=p.get("api_key_configured", False),
+                            base_url=p.get("base_url", ""),
+                            status=p.get("status", "unknown"),
+                            latency_ms=p.get("latency_ms"),
+                            error=p.get("error"),
+                        )
+                        for p in health.get("providers", [])
+                    ],
+                )
+            else:
+                print(f"[LLM] Analysis disabled (mode={analyzer.mode})")
+                llm_analysis_data = LLMAnalysis(
+                    enabled=False,
+                    mode=analyzer.mode,
+                    providers=[],
+                )
+        except Exception as e:
+            print(f"[LLM] Analysis error: {e}")
+            llm_analysis_data = LLMAnalysis(
+                enabled=False,
+                mode="error",
+                providers=[],
+            )
+
     finally:
         # Always cleanup temp directory
         cleanup_ingest(temp_dir)
@@ -309,13 +373,17 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
         file_hashes,
     )
 
+    # Get all findings after LLM analysis (they're modified in place)
+    final_findings: List[Finding] = [f for sr in stage_results for f in sr.findings]
+
     return ScanResponse(
         scan_id=scan_id,
         verdict=verdict.value,
-        findings=[f for sr in stage_results for f in sr.findings],
+        findings=final_findings,
         stage_results=stage_results,
         duration_ms=duration_ms,
         file_hashes=file_hashes,
+        llm_analysis=llm_analysis_data,
     )
 
 
