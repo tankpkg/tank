@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   HelpCircle,
   Star,
+  Cpu,
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { skills } from '@/lib/db/schema';
@@ -86,6 +87,13 @@ const cliCommands = [
   { cmd: 'tank permissions', desc: 'See what your agent can do' },
   { cmd: 'tank audit', desc: 'Check security scan results' },
   { cmd: 'tank publish', desc: 'Publish with 6-stage analysis' },
+];
+
+const mcpEditors = [
+  { name: 'Claude Code', config: '.claude/settings.json', logo: 'claude' },
+  { name: 'Cursor', config: '~/.cursor/mcp.json', logo: 'cursor' },
+  { name: 'VS Code', config: '.vscode/mcp.json', logo: 'vscode' },
+  { name: 'Windsurf', config: 'MCP settings', logo: 'windsurf' },
 ];
 
 const faqItems = [
@@ -471,6 +479,76 @@ export default async function Home() {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* MCP Integration */}
+        <section className="container mx-auto px-4 py-16 md:py-24">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+                <Cpu className="w-6 h-6 text-emerald-400" />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">
+                Use Tank from your <span className="text-emerald-400">AI assistant</span>
+              </h2>
+              <p className="text-muted-foreground max-w-xl mx-auto">
+                Scan, publish, and search skills directly from Claude Code, Cursor, VS Code Copilot, and other MCP-compatible AI tools.
+              </p>
+            </div>
+
+            <div className="tank-terminal tank-scanlines rounded-xl overflow-hidden mb-8">
+              {/* Terminal header */}
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-emerald-500/20 bg-[#0c1222]">
+                <span className="size-3 rounded-full bg-red-500/80" />
+                <span className="size-3 rounded-full bg-amber-500/80" />
+                <span className="size-3 rounded-full bg-emerald-500/80" />
+                <span className="ml-3 text-xs text-emerald-400/60 font-mono">.claude/settings.json</span>
+              </div>
+
+              {/* Code content */}
+              <pre className="p-4 md:p-6 text-sm md:text-base overflow-x-auto leading-relaxed font-mono">
+                <code>
+                  <span className="text-slate-500">{'{'}</span>
+                  {'\n'}
+                  {'  '}<span className="text-emerald-400">"mcpServers"</span><span className="text-slate-500">: {'{'}</span>
+                  {'\n'}
+                  {'    '}<span className="text-emerald-400">"tank"</span><span className="text-slate-500">: {'{'}</span>
+                  {'\n'}
+                  {'      '}<span className="text-emerald-400">"command"</span><span className="text-slate-500">:</span> <span className="text-amber-400">"npx"</span><span className="text-slate-500">,</span>
+                  {'\n'}
+                  {'      '}<span className="text-emerald-400">"args"</span><span className="text-slate-500">:</span> <span className="text-amber-400">["-y", "@tankpkg/mcp-server"]</span>
+                  {'\n'}
+                  {'    '}<span className="text-slate-500">{'}'}</span>
+                  {'\n'}
+                  {'  '}<span className="text-slate-500">{'}'}</span>
+                  {'\n'}
+                  <span className="text-slate-500">{'}'}</span>
+                </code>
+              </pre>
+            </div>
+
+            {/* Supported tools */}
+            <div className="flex flex-wrap justify-center gap-3">
+              {['Claude Code', 'Cursor', 'VS Code Copilot', 'Windsurf', 'Zed'].map((tool) => (
+                <div
+                  key={tool}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-sm text-muted-foreground"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  {tool}
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center mt-6">
+              <Button variant="outline" asChild>
+                <Link href="/docs/mcp">
+                  View MCP Documentation
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+              </Button>
             </div>
           </div>
         </section>

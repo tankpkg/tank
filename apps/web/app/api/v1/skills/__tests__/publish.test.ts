@@ -51,6 +51,31 @@ vi.mock('@/lib/db/schema', () => ({
     publishedBy: 'skill_versions.published_by',
     createdAt: 'skill_versions.created_at',
   },
+  scanResults: {
+    id: 'scan_results.id',
+    versionId: 'scan_results.version_id',
+    verdict: 'scan_results.verdict',
+    totalFindings: 'scan_results.total_findings',
+    criticalCount: 'scan_results.critical_count',
+    highCount: 'scan_results.high_count',
+    mediumCount: 'scan_results.medium_count',
+    lowCount: 'scan_results.low_count',
+    stagesRun: 'scan_results.stages_run',
+    durationMs: 'scan_results.duration_ms',
+    fileHashes: 'scan_results.file_hashes',
+  },
+  scanFindings: {
+    id: 'scan_findings.id',
+    scanId: 'scan_findings.scan_id',
+    stage: 'scan_findings.stage',
+    severity: 'scan_findings.severity',
+    type: 'scan_findings.type',
+    description: 'scan_findings.description',
+    location: 'scan_findings.location',
+    confidence: 'scan_findings.confidence',
+    tool: 'scan_findings.tool',
+    evidence: 'scan_findings.evidence',
+  },
 }));
 
 vi.mock('drizzle-orm', () => ({
