@@ -1,6 +1,18 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
+import { Brain, Sparkles } from 'lucide-react';
+
+interface LLMAnalysisInfo {
+  enabled: boolean;
+  mode: string;
+  providers?: Array<{
+    name: string;
+    model: string;
+    status: string;
+    latency_ms: number | null;
+  }>;
+}
 
 interface SecurityOverviewProps {
   score: number | null;
@@ -11,6 +23,7 @@ interface SecurityOverviewProps {
   highCount: number;
   mediumCount: number;
   lowCount: number;
+  llmAnalysis?: LLMAnalysisInfo | null;
 }
 
 function timeAgo(date: string): string {
@@ -68,6 +81,7 @@ export function SecurityOverview({
   highCount,
   mediumCount,
   lowCount,
+  llmAnalysis,
 }: SecurityOverviewProps) {
   const verdictStyles = getVerdictStyles(verdict);
   const displayScore = score ?? 0;
@@ -147,6 +161,22 @@ export function SecurityOverview({
             </div>
           )}
         </div>
+
+        {/* LLM Analysis Status */}
+        {llmAnalysis && llmAnalysis.enabled && (
+          <div className="flex items-center gap-2 text-sm">
+            <Brain className="w-4 h-4 text-purple-500" />
+            <span className="text-muted-foreground">LLM Analysis:</span>
+            <Badge variant="outline" className="text-xs bg-purple-50 border-purple-200 text-purple-700">
+              {llmAnalysis.mode === 'byollm' ? 'Custom LLM' : llmAnalysis.mode === 'builtin' ? 'Built-in' : 'Disabled'}
+            </Badge>
+            {llmAnalysis.providers && llmAnalysis.providers.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                ({llmAnalysis.providers[0].model})
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

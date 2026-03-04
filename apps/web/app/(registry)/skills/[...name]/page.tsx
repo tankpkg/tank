@@ -246,6 +246,7 @@ export default async function SkillDetailPage({
         highCount={scanDetails?.highCount ?? 0}
         mediumCount={scanDetails?.mediumCount ?? 0}
         lowCount={scanDetails?.lowCount ?? 0}
+        llmAnalysis={scanDetails?.llm_analysis ?? null}
       />
 
       {/* Scanning Tools Used */}
@@ -259,6 +260,7 @@ export default async function SkillDetailPage({
             { name: 'Snyk Agent Scan', category: 'AI Threats', ran: scanDetails?.stagesRun?.includes('stage3') ?? false, findingCount: scanDetails?.findings?.filter(f => f.tool === 'snyk-agent-scan').length ?? 0 },
             { name: 'detect-secrets', category: 'Secrets', ran: scanDetails?.stagesRun?.includes('stage4') ?? false, findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage4').length ?? 0 },
             { name: 'OSV API', category: 'SCA', ran: scanDetails?.stagesRun?.includes('stage5') ?? false, findingCount: scanDetails?.findings?.filter(f => f.stage === 'stage5').length ?? 0 },
+            { name: 'LLM Corroboration', category: scanDetails?.llm_analysis?.mode === 'byollm' ? 'Custom LLM' : 'Built-in', ran: scanDetails?.llm_analysis?.enabled ?? false, findingCount: scanDetails?.findings?.filter(f => f.llm_reviewed).length ?? 0 },
           ]}
         />
       </div>

@@ -27,6 +27,22 @@ export interface ScanFinding {
   confidence: number | null;
   tool: string | null;
   evidence: string | null;
+  llm_verdict?: string | null;
+  llm_reviewed?: boolean;
+}
+
+export interface LLMAnalysisInfo {
+  enabled: boolean;
+  mode: string;
+  providers?: Array<{
+    name: string;
+    model: string;
+    api_key_configured: boolean;
+    base_url: string;
+    status: string;
+    latency_ms: number | null;
+    error: string | null;
+  }>;
 }
 
 export interface ScanDetails {
@@ -38,6 +54,7 @@ export interface ScanDetails {
   highCount: number;
   mediumCount: number;
   lowCount: number;
+  llm_analysis?: LLMAnalysisInfo | null;
 }
 
 export interface SkillVersionDetail {
