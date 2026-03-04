@@ -12,6 +12,7 @@ Tank is a security-first package manager for AI agent skills. It enforces versio
 - [Getting Started](https://tankpkg.dev/docs/getting-started): Install Tank, authenticate, and verify your first working flow.
 - [Tank Documentation](https://tankpkg.dev/docs): Start here for setup, publishing, installation, API, and self-hosting.
 - [Installing Skills](https://tankpkg.dev/docs/installing): Install, update, remove, and verify skills safely.
+- [MCP Server Integration](https://tankpkg.dev/docs/mcp): Use Tank directly from Claude Code, Cursor, VS Code Copilot, and other MCP-compatible AI tools.
 - [Publish Your First Skill](https://tankpkg.dev/docs/publish-first-skill): Step-by-step guide to publish your first AI agent skill to Tank registry
 - [Publishing Skills](https://tankpkg.dev/docs/publishing): Build, validate, and publish skills with accurate metadata and minimal permissions.
 - [Secure AI Skills Checklist](https://tankpkg.dev/docs/security-checklist): Security best practices checklist for publishing safe AI agent skills

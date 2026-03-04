@@ -17,7 +17,7 @@ psycopg[binary]>=3.2.0
 bandit>=1.8.0
 
 # Cisco AI Defense Skill Scanner (stage3 - behavioral analysis)
-skill-scanner>=1.0.0
+skill-scanner>=0.2.0
 
 # Snyk Agent Scan (stage3 - optional cloud-dependent scanner)
 # Invoked via: uvx snyk-agent-scan@latest --skills <dir> --json --opt-out
