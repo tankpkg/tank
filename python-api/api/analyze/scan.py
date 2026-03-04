@@ -115,6 +115,8 @@ async def store_scan_results(
                             f.confidence,
                             f.tool,
                             f.evidence,
+                            f.llm_verdict,
+                            f.llm_reviewed,
                         )
                         for f in all_findings
                     ]
@@ -123,8 +125,8 @@ async def store_scan_results(
                         """
                         INSERT INTO scan_findings
                         (scan_id, stage, severity, type, description, location,
-                         confidence, tool, evidence)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                         confidence, tool, evidence, llm_verdict, llm_reviewed)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         finding_values,
                     )

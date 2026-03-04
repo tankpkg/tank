@@ -787,6 +787,281 @@ Reinstall package and ensure lock state is consistent.
 
 ---
 
+# MCP Server Integration
+
+Source: https://tankpkg.dev/docs/mcp
+
+> Use Tank directly from Claude Code, Cursor, VS Code Copilot, and other MCP-compatible AI tools.
+
+
+# MCP Server Integration
+
+The Tank MCP (Model Context Protocol) server lets you interact with Tank directly from your AI assistant. Scan skills, publish packages, search the registry - all without leaving your conversation.
+
+## What is MCP?
+
+MCP is an open protocol by Anthropic that enables AI assistants to connect to external tools and data sources. With the Tank MCP server, your AI assistant can:
+
+- Scan your skills for security issues
+- Publish skills to the Tank registry
+- Search for existing skills
+- Get detailed skill information
+- Authenticate with Tank
+
+## Supported AI Tools
+
+| Tool | MCP Support | Setup |
+|--------|-------------|-------|
+| Claude Code | Native | `.claude/settings.json` |
+| Cursor | Native | `~/.cursor/mcp.json` |
+| VS Code Copilot | Native | `.vscode/mcp.json` |
+| Windsurf | Native | MCP settings |
+| Zed | Via extension | MCP configuration |
+
+## Installation
+
+### Quick Start (Claude Code)
+
+Add to `.claude/settings.json` in your project or globally:
+
+```json
+{
+  "mcpServers": {
+    "tank": {
+      "command": "npx",
+      "args": ["-y", "@tankpkg/mcp-server"]
+    }
+  }
+}
+```
+
+### Cursor
+
+Add to `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "tank": {
+      "command": "npx",
+      "args": ["-y", "@tankpkg/mcp-server"]
+    }
+  }
+}
+```
+
+### VS Code (Copilot)
+
+Add to `.vscode/mcp.json` in your workspace:
+
+```json
+{
+  "servers": {
+    "tank": {
+      "command": "npx",
+      "args": ["-y", "@tankpkg/mcp-server"]
+    }
+  }
+}
+```
+
+## Authentication
+
+The MCP server shares authentication with the Tank CLI. If you've already run `tank login`, you're authenticated!
+
+### Option 1: CLI Sync (Recommended)
+
+```bash
+tank login
+```
+
+The MCP server automatically uses the token stored in `~/.tank/config.json`.
+
+### Option 2: Environment Variable
+
+Set the `TANK_TOKEN` environment variable in your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "tank": {
+      "command": "npx",
+      "args": ["-y", "@tankpkg/mcp-server"],
+      "env": {
+        "TANK_TOKEN": "tank_your_token_here"
+      }
+    }
+  }
+}
+```
+
+### Option 3: In-Session Login
+
+Ask your AI agent to run the login tool:
+
+```
+"Log me into Tank"
+```
+
+This initiates a GitHub OAuth device flow - your AI will provide a code and open a browser for authorization.
+
+## Available Tools
+
+Once configured, these tools are available to your AI assistant:
+
+### scan-skill
+
+Scan a skill directory for security issues.
+
+**Parameters:**
+- `directory` (optional): Directory to scan (default: current directory)
+
+**Example prompts:**
+```
+"Scan my skill in ./my-skill for security issues"
+"Run a security scan on the current directory"
+"What's the audit score of my skill?"
+```
+
+### publish-skill
+
+Publish a skill to the Tank registry.
+
+**Parameters:**
+- `directory` (optional): Directory to publish (default: current directory)
+- `visibility` (optional): "public" or "private" (default: public)
+- `dryRun` (optional): Validate without publishing (default: false)
+
+**Example prompts:**
+```
+"Publish my skill as a public package"
+"Do a dry run publish to check if everything looks good"
+"Publish ./my-skill privately"
+```
+
+### search-skills
+
+Search the Tank registry for skills.
+
+**Parameters:**
+- `query` (required): Search query
+- `limit` (optional): Max results (1-50, default: 10)
+
+**Example prompts:**
+```
+"Search Tank for code review skills"
+"Find skills related to testing"
+"Search for @tankpkg skills"
+```
+
+### skill-info
+
+Get detailed information about a specific skill.
+
+**Parameters:**
+- `name` (required): Skill name (e.g., @org/skill-name)
+
+**Example prompts:**
+```
+"Get info about @tankpkg/code-review"
+"Show me details for the @vercel/next-skill"
+"What permissions does @org/my-skill require?"
+```
+
+### login
+
+Authenticate with Tank via GitHub OAuth.
+
+**Parameters:**
+- `timeout` (optional): Authorization timeout in ms (default: 5 minutes)
+
+**Example prompts:**
+```
+"Log me into Tank"
+"I need to authenticate with Tank"
+```
+
+## Usage Examples
+
+### Scanning Before Publish
+
+```
+User: I just finished my new skill. Can you check if it's ready to publish?
+
+AI: I'll scan your skill for security issues first.
+
+[Uses scan-skill tool]
+
+Your skill passed with a score of 8.5/10. There are no critical issues.
+The skill is ready to publish. Would you like me to do a dry-run publish
+to verify everything is configured correctly?
+```
+
+### Publishing a Skill
+
+```
+User: Publish my skill as a public package.
+
+AI: [Uses publish-skill tool with visibility="public"]
+
+Your skill @org/my-skill v1.0.0 has been published successfully!
+Audit score: 8.5/10
+View at: https://tankpkg.dev/skills/@org/my-skill
+```
+
+### Discovering Skills
+
+```
+User: I need a skill that can help with database migrations.
+
+AI: [Uses search-skills tool with query="database migrations"]
+
+I found these relevant skills:
+
+| Skill | Score | Description |
+|-------|-------|-------------|
+| @tank/db-migrate | 9.2 | Safe database migrations with rollback support |
+| @community/pg-migrator | 8.1 | PostgreSQL migration toolkit |
+
+Would you like more details on any of these?
+```
+
+## Troubleshooting
+
+### "Not authenticated" errors
+
+Run `tank login` in your terminal, or ask your AI to use the `login` tool.
+
+### MCP server not found
+
+Make sure you're using `npx -y @tankpkg/mcp-server` (note the `-y` flag for automatic installation).
+
+### Commands timeout
+
+For slow connections, the login tool accepts a `timeout` parameter in milliseconds.
+
+### Token not recognized
+
+Check that your token is valid:
+```bash
+tank whoami
+```
+
+## Security Notes
+
+- Tokens are stored in `~/.tank/config.json` with file permissions `600`
+- The MCP server only communicates with `tankpkg.dev` over HTTPS
+- Your token is never logged or transmitted to third parties
+
+## Related
+
+- [CLI Reference](/docs/cli) - Full command documentation
+- [Publishing Guide](/docs/publishing) - How to prepare skills for publication
+- [API Reference](/docs/api) - REST API endpoints
+
+
+---
+
 # Publish Your First Skill
 
 Source: https://tankpkg.dev/docs/publish-first-skill
