@@ -13,6 +13,22 @@ interface ScanFinding {
   confidence: number | null;
   tool: string | null;
   evidence: string | null;
+  llm_verdict?: string | null;         // LLM classification for "likely_benign", "confirmed_threat", "uncertain"
+  llm_reviewed?: boolean;     // Whether LLM analyzed this finding
+}
+
+interface LLMAnalysis {
+  enabled: boolean;
+  mode: string;          // "byollm", "builtin", "disabled"
+  providers: Array<{
+    name: string;
+    model: string;
+    api_key_configured: boolean;
+    base_url: string;
+    status: string;
+    latency_ms: number | null;
+    error: string | null;
+  }>;
 }
 
 interface ScanResponse {
@@ -28,6 +44,7 @@ interface ScanResponse {
   }>;
   duration_ms: number;
   file_hashes: Record<string, string>;
+  llm_analysis?: LLMAnalysis | null;
 }
 
 // Call Python scan endpoint
@@ -135,6 +152,7 @@ export async function POST(request: Request) {
     const scanResult = await triggerSecurityScan(tarballBuffer, manifest);
 
     // 6. Return scan results
+    console.log('[Scan] LLM analysis:', scanResult.llm_analysis);
     return NextResponse.json({
       scan_id: scanResult.scan_id,
       verdict: scanResult.verdict,
@@ -143,6 +161,7 @@ export async function POST(request: Request) {
       stage_results: scanResult.stage_results,
       duration_ms: scanResult.duration_ms,
       file_hashes: scanResult.file_hashes,
+      llm_analysis: scanResult.llm_analysis,
     });
   } catch (error) {
     console.error('Scan error:', error);

@@ -270,6 +270,14 @@ class LLMAnalyzer:
             else:
                 deterministic.append(finding)
 
+        logger.info(
+            f"LLM filtering: {len(ambiguous)} ambiguous (to LLM), "
+            f"{len(deterministic)} deterministic (bypass LLM)"
+        )
+        if deterministic:
+            det_types = {f.type for f in deterministic}
+            logger.debug(f"Deterministic finding types: {det_types}")
+
         return ambiguous, deterministic
 
     def _build_prompt(self, findings: List[Finding], temp_dir: str) -> str:
@@ -435,7 +443,11 @@ Classify each finding and respond with ONLY a JSON array."""
         self, findings: List[Finding], temp_dir: str, timeout_ms: int = DEFAULT_TIMEOUT_MS
     ) -> LLMAnalyzerResult:
         """Try each provider in chain. Return verdicts or empty list on total failure."""
+        # Log startup configuration
+        logger.info(f"LLM analyze_findings called: enabled={self.is_enabled()}, mode={self.mode}, providers={len(self.providers)}")
+
         if not self.is_enabled():
+            logger.info("LLM analysis is disabled, returning empty verdicts")
             return LLMAnalyzerResult(
                 verdicts=[],
                 error="LLM analysis disabled",
@@ -496,7 +508,10 @@ Classify each finding and respond with ONLY a JSON array."""
         Safety: LLM can only downgrade severity, never upgrade.
         """
         if not verdicts:
+            logger.info("No LLM verdicts to apply, returning original findings")
             return findings
+
+        logger.info(f"Applying {len(verdicts)} LLM verdicts to {len(findings)} findings")
 
         # Map verdicts by index
         verdict_map = {v.finding_index: v for v in verdicts}
@@ -523,6 +538,7 @@ Classify each finding and respond with ONLY a JSON array."""
 
             if verdict.classification == "likely_benign" and verdict.confidence > 0.8:
                 # Downgrade severity (safety: only reduce, never increase)
+                original_severity = finding.severity
                 if finding.severity == "critical":
                     finding.severity = "medium"
                 elif finding.severity == "high":
@@ -531,20 +547,47 @@ Classify each finding and respond with ONLY a JSON array."""
                     finding.severity = "low"
                 elif finding.severity == "low":
                     # Remove low-severity dismissed findings by not adding them
+                    logger.info(
+                        f"Finding {i} dismissed by LLM: {finding.type} "
+                        f"(confidence={verdict.confidence:.2f}, reason={verdict.reasoning[:50]}...)"
+                    )
                     continue
 
                 # Reduce confidence
                 if finding.confidence:
                     finding.confidence = finding.confidence * 0.5
 
+                logger.info(
+                    f"Finding {i} downgraded: {original_severity} -> {finding.severity} "
+                    f"({finding.type}, reason={verdict.reasoning[:50]}...)"
+                )
+
             elif verdict.classification == "confirmed_threat":
                 # Boost confidence slightly
                 if finding.confidence:
                     finding.confidence = min(1.0, finding.confidence + 0.1)
+                logger.info(
+                    f"Finding {i} confirmed as threat: {finding.type} "
+                    f"(confidence={verdict.confidence:.2f})"
+                )
 
             # "uncertain" - no change to severity or confidence
+            else:
+                logger.debug(
+                    f"Finding {i} uncertain: {finding.type} "
+                    f"(confidence={verdict.confidence:.2f})"
+                )
 
             updated_findings.append(finding)
+
+        # Summary logging
+        downgraded = sum(1 for v in verdicts if v.classification == "likely_benign")
+        confirmed = sum(1 for v in verdicts if v.classification == "confirmed_threat")
+        uncertain = sum(1 for v in verdicts if v.classification == "uncertain")
+        logger.info(
+            f"LLM verdicts summary: {downgraded} downgraded, {confirmed} confirmed, "
+            f"{uncertain} uncertain, {len(findings) - len(updated_findings)} removed"
+        )
 
         return updated_findings
 
