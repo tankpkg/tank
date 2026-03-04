@@ -66,10 +66,10 @@ jobs:
         run: pnpm test
 
       - name: Install Python dependencies
-        run: pip install -r apps/web/requirements.txt pytest
+        run: pip install -r python-api/requirements.txt
 
       - name: Run Python tests
-        run: python -m pytest apps/web/api-python/analyze/tests/ -v
+        run: python -m pytest python-api/lib/scan/test_llm_analyzer.py -v
 
   performance:
     runs-on: ubuntu-latest
