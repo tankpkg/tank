@@ -150,6 +150,95 @@ export async function pack(directory: string): Promise<PackResult> {
 }
 
 /**
+ * Pack a directory into a .tgz tarball for security scanning.
+ *
+ * Unlike pack(), this function does NOT require skills.json or SKILL.md.
+ * It applies the same security checks (no symlinks, no path traversal, etc.)
+ * and returns the same PackResult interface.
+ *
+ * Validates:
+ * - Directory exists
+ * - No symlinks or hardlinks
+ * - No path traversal (.. components)
+ * - No absolute paths
+ * - File count <= 1000
+ * - Tarball size <= 50MB
+ *
+ * Does NOT validate:
+ * - skills.json existence or validity
+ * - SKILL.md existence (but reads it if present)
+ */
+export async function packForScan(directory: string): Promise<PackResult> {
+  const absDir = path.resolve(directory);
+
+  // 1. Verify directory exists
+  if (!fs.existsSync(absDir)) {
+    throw new Error(`Directory does not exist: ${absDir}`);
+  }
+
+  const stat = fs.statSync(absDir);
+  if (!stat.isDirectory()) {
+    throw new Error(`Not a directory: ${absDir}`);
+  }
+
+  // 2. Try to read SKILL.md if it exists (optional for scan)
+  let readmeContent = '';
+  const skillMdPath = path.join(absDir, 'SKILL.md');
+  if (fs.existsSync(skillMdPath)) {
+    try {
+      readmeContent = fs.readFileSync(skillMdPath, 'utf-8');
+    } catch {
+      // If we can't read it, just use empty string
+      readmeContent = '';
+    }
+  }
+
+  // 3. Build ignore filter
+  const ig = buildIgnoreFilter(absDir);
+
+  // 4. Collect files with validation
+  const files = collectFiles(absDir, absDir, ig);
+
+  // 5. Enforce file count limit
+  if (files.length > MAX_FILE_COUNT) {
+    throw new Error(
+      `Too many files: ${files.length} exceeds maximum of ${MAX_FILE_COUNT}`,
+    );
+  }
+
+  // 6. Calculate total size of source files
+  let totalSize = 0;
+  for (const file of files) {
+    const filePath = path.join(absDir, file);
+    const fileStat = fs.statSync(filePath);
+    totalSize += fileStat.size;
+  }
+
+  // 7. Create tarball
+  const tarball = await createTarball(absDir, files);
+
+  // 8. Enforce tarball size limit
+  if (tarball.length > MAX_PACKAGE_SIZE) {
+    throw new Error(
+      `Tarball too large: ${tarball.length} bytes exceeds maximum of ${MAX_PACKAGE_SIZE} bytes (50MB)`,
+    );
+  }
+
+  // 9. Compute integrity hash
+  const hash = crypto.createHash('sha512').update(tarball).digest('base64');
+  const integrity = `sha512-${hash}`;
+
+  return {
+    tarball,
+    integrity,
+    fileCount: files.length,
+    totalSize,
+    readme: readmeContent,
+    files,
+  };
+}
+
+/**
  * Build an ignore filter from .tankignore, .gitignore, or defaults.
  */
 function buildIgnoreFilter(dir: string): ReturnType<typeof ignore> {

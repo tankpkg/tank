@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import { pack, type PackResult } from '../lib/packer.js';
+import { pack, packForScan, type PackResult } from '../lib/packer.js';
 
 // Minimal valid skills.json content
 const VALID_SKILLS_JSON = JSON.stringify({
@@ -258,6 +258,83 @@ describe('pack()', () => {
         Buffer.byteLength(content1) +
         Buffer.byteLength(content2);
       expect(result.totalSize).toBe(expectedSize);
+    });
+  });
+});
+
+describe('packForScan()', () => {
+  beforeEach(() => {
+    tmpDir = createTmpDir();
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  describe('optional files', () => {
+    it('should pack directory without skills.json', async () => {
+      writeFile(tmpDir, 'README.md', '# My Skill\n');
+      writeFile(tmpDir, 'src/index.py', 'print("hello")');
+
+      const result = await packForScan(tmpDir);
+
+      expect(result.tarball).toBeInstanceOf(Buffer);
+      expect(result.tarball.length).toBeGreaterThan(0);
+      expect(result.fileCount).toBe(2); // README.md, src/index.py
+      expect(result.totalSize).toBeGreaterThan(0);
+      expect(result.integrity).toMatch(/^sha512-[A-Za-z0-9+/]+=*$/);
+      expect(result.readme).toBe(''); // No SKILL.md
+    });
+
+    it('should pack directory without SKILL.md', async () => {
+      writeFile(tmpDir, 'src/main.ts', 'export const main = () => {};');
+      writeFile(tmpDir, 'package.json', JSON.stringify({ name: 'test' }));
+
+      const result = await packForScan(tmpDir);
+
+      expect(result.tarball).toBeInstanceOf(Buffer);
+      expect(result.fileCount).toBe(2);
+      expect(result.readme).toBe('');
+    });
+
+    it('should include SKILL.md content in readme if present', async () => {
+      const skillMdContent = '# Test Skill\n\nThis is a test skill for scanning.\n';
+      writeFile(tmpDir, 'SKILL.md', skillMdContent);
+      writeFile(tmpDir, 'src/index.ts', 'export const x = 1;');
+
+      const result = await packForScan(tmpDir);
+
+      expect(result.readme).toBe(skillMdContent);
+      expect(result.fileCount).toBe(2); // SKILL.md, src/index.ts
+    });
+  });
+
+  describe('security checks', () => {
+    it('should enforce file count limit', async () => {
+      writeFile(tmpDir, 'src/index.ts', 'export const x = 1;');
+
+      // Create 1001 files (exceeds limit of 1000)
+      for (let i = 0; i < 1001; i++) {
+        writeFile(tmpDir, `files/file-${i}.txt`, `content-${i}`);
+      }
+
+      await expect(packForScan(tmpDir)).rejects.toThrow(
+        /file count|too many files|1000/i,
+      );
+    });
+
+    it('should reject symlinks', async () => {
+      writeFile(tmpDir, 'src/index.ts', 'export const x = 1;');
+      // Create a symlink
+      fs.symlinkSync('/etc/passwd', path.join(tmpDir, 'evil-link'));
+
+      await expect(packForScan(tmpDir)).rejects.toThrow(/symlink/i);
+    });
+
+    it('should reject non-existent directory', async () => {
+      await expect(packForScan('/nonexistent/path/to/skill')).rejects.toThrow(
+        /does not exist|no such|ENOENT/i,
+      );
     });
   });
 });
