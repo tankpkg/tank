@@ -203,4 +203,43 @@ describe('doctorCommand', () => {
     expect(output).toContain('Detected Agents');
     expect(output).toContain('No agents detected');
   });
+
+  it('handles corrupt skills.json gracefully', async () => {
+    fs.mkdirSync(path.join(fakeHome, '.claude'), { recursive: true });
+    fs.writeFileSync(path.join(projectDir, 'skills.json'), 'invalid json {');
+
+    await doctorCommand({ directory: projectDir, homedir: fakeHome });
+
+    const output = collectOutput(logSpy);
+    expect(output).toContain('Doctor report failed');
+  });
+
+  it('reports multiple global skills from lockfile', async () => {
+    fs.mkdirSync(path.join(fakeHome, '.claude'), { recursive: true });
+    writeGlobalLockfile(fakeHome, {
+      '@tank/python@1.0.0': {
+        resolved: 'https://example.com/python.tgz',
+        integrity: 'sha512-abc',
+        permissions: {},
+        audit_score: 8.0,
+      },
+      '@tank/javascript@2.0.0': {
+        resolved: 'https://example.com/javascript.tgz',
+        integrity: 'sha512-def',
+        permissions: {},
+        audit_score: 7.5,
+      },
+      '@tank/rust@1.5.0': {
+        resolved: 'https://example.com/rust.tgz',
+        integrity: 'sha512-ghi',
+        permissions: {},
+        audit_score: 9.0,
+      },
+    });
+
+    await doctorCommand({ directory: projectDir, homedir: fakeHome });
+
+    const output = collectOutput(logSpy);
+    expect(output).toContain('Global Skills (3)');
+  });
 });

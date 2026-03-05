@@ -1500,3 +1500,159 @@ describe('installAll (no-args dispatch)', () => {
     expect(fs.existsSync(path.join(tmpDir, 'skills.lock'))).toBe(true);
   });
 });
+
+describe('installCommand — additional error paths', () => {
+  let tmpDir: string;
+  let configDir: string;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
+  const versionsResponse = {
+    name: '@test-org/my-skill',
+    versions: [
+      { version: '2.0.0', integrity: 'sha512-ghi789', auditScore: 7.0, auditStatus: 'published', publishedAt: '2026-02-01T00:00:00Z' },
+    ],
+  };
+
+  const versionMetadata = {
+    name: '@test-org/my-skill',
+    version: '2.0.0',
+    description: 'A test skill',
+    integrity: 'sha512-placeholder',
+    permissions: {},
+    auditScore: 7.0,
+    auditStatus: 'published',
+    downloadUrl: 'https://storage.example.com/download/my-skill-2.0.0.tgz',
+    publishedAt: '2026-02-01T00:00:00Z',
+  };
+
+  let fakeTarball: Buffer;
+  let fakeTarballIntegrity: string;
+
+  beforeEach(async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-install-extra-test-'));
+    configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-install-extra-config-'));
+
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev' }),
+    );
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.json'),
+      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2),
+    );
+
+    fakeTarball = Buffer.from('fake-tarball-content-for-extra-tests');
+    const hash = crypto.createHash('sha512').update(fakeTarball).digest('base64');
+    fakeTarballIntegrity = `sha512-${hash}`;
+
+    mockFetch.mockReset();
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(configDir, { recursive: true, force: true });
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it('throws network error when fetch rejects on versions endpoint', async () => {
+    const { installCommand } = await import('../commands/install.js');
+
+    mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED: Connection refused'));
+
+    await expect(
+      installCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
+    ).rejects.toThrow(/network/i);
+  });
+
+  it('throws when tarball download returns non-ok status', async () => {
+    const { installCommand } = await import('../commands/install.js');
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(versionsResponse), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ...versionMetadata, integrity: fakeTarballIntegrity }), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response('Not Found', { status: 404, statusText: 'Not Found' }),
+    );
+
+    await expect(
+      installCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
+    ).rejects.toThrow(/404|download|failed/i);
+  });
+
+  it('throws network error when fetch rejects on tarball download', async () => {
+    const { installCommand } = await import('../commands/install.js');
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(versionsResponse), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ...versionMetadata, integrity: fakeTarballIntegrity }), { status: 200 }),
+    );
+    mockFetch.mockRejectedValueOnce(new Error('Connection reset'));
+
+    await expect(
+      installCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
+    ).rejects.toThrow(/network/i);
+  });
+
+  it('recovers gracefully when skills.lock contains invalid JSON', async () => {
+    const { installCommand } = await import('../commands/install.js');
+
+    fs.writeFileSync(path.join(tmpDir, 'skills.lock'), '{ this is not valid json !!!');
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(versionsResponse), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ...versionMetadata, integrity: fakeTarballIntegrity }), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(new Uint8Array(fakeTarball), { status: 200 }),
+    );
+
+    await expect(
+      installCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
+    ).resolves.toBeUndefined();
+
+    const lockRaw = fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8');
+    const lock = JSON.parse(lockRaw);
+    expect(lock.lockfileVersion).toBe(1);
+    expect(lock.skills['@test-org/my-skill@2.0.0']).toBeDefined();
+  });
+
+  it('throws when skills.json contains invalid JSON (installAll)', async () => {
+    const { installAll } = await import('../commands/install.js');
+
+    fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{ invalid json here !!!');
+
+    await expect(
+      installAll({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/skills\.json|parse/i);
+  });
+
+  it('prints nothing-to-install message when skills.json has empty skills map', async () => {
+    const { installAll } = await import('../commands/install.js');
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.json'),
+      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2),
+    );
+
+    await installAll({ directory: tmpDir, configDir });
+
+    expect(mockFetch).not.toHaveBeenCalled();
+
+    const output = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(output).toMatch(/no skills|nothing to install/i);
+  });
+});

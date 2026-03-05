@@ -372,4 +372,195 @@ describe('loginCommand', () => {
 
     logSpy.mockRestore();
   });
+
+  it('handles start endpoint non-JSON error body with statusText fallback', async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response('not json', { status: 500, statusText: 'Internal Server Error' }),
+    );
+
+    const { loginCommand } = await import('../commands/login.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(
+      loginCommand({ configDir: tmpDir, timeout: 2000 }),
+    ).rejects.toThrow('Failed to start auth session: Internal Server Error');
+
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it('recovers from transient network errors during polling', async () => {
+    // Start succeeds
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          authUrl: 'https://tankpkg.dev/cli-login?session=sess-network',
+          sessionCode: 'sess-network',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    // First exchange: network error (transient)
+    mockFetch.mockRejectedValueOnce(new Error('ECONNRESET'));
+
+    // Second exchange: succeeds
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          token: 'tank_recovered',
+          user: { name: 'Recovered User', email: 'recovered@e.com' },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { loginCommand } = await import('../commands/login.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await loginCommand({ configDir: tmpDir, timeout: 10000, pollInterval: 10 });
+
+    // Verify config was written with successful result
+    const config = JSON.parse(
+      fs.readFileSync(path.join(tmpDir, 'config.json'), 'utf-8'),
+    );
+    expect(config.token).toBe('tank_recovered');
+    expect(config.user.name).toBe('Recovered User');
+
+    logSpy.mockRestore();
+  });
+
+  it('displays email when user name is null', async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          authUrl: 'https://tankpkg.dev/cli-login?session=sess-null-name',
+          sessionCode: 'sess-null-name',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          token: 'tank_null_name',
+          user: { name: null, email: 'test@example.com' },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { loginCommand } = await import('../commands/login.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await loginCommand({ configDir: tmpDir, timeout: 2000 });
+
+    const allOutput = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(allOutput).toContain('Logged in as test@example.com');
+
+    logSpy.mockRestore();
+  });
+
+  it('displays unknown when both name and email are null', async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          authUrl: 'https://tankpkg.dev/cli-login?session=sess-null-both',
+          sessionCode: 'sess-null-both',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          token: 'tank_null_both',
+          user: { name: null, email: null },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { loginCommand } = await import('../commands/login.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await loginCommand({ configDir: tmpDir, timeout: 2000 });
+
+    const allOutput = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(allOutput).toContain('Logged in as unknown');
+
+    logSpy.mockRestore();
+  });
+
+  it('uses custom registry URL from config', async () => {
+    // Write custom config with registry URL
+    fs.mkdirSync(tmpDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'config.json'),
+      JSON.stringify({ registry: 'https://custom.example.com' }),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          authUrl: 'https://custom.example.com/cli-login?session=sess-custom',
+          sessionCode: 'sess-custom',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          token: 'tank_custom',
+          user: { name: 'Custom', email: 'c@e.com' },
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const { loginCommand } = await import('../commands/login.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await loginCommand({ configDir: tmpDir, timeout: 2000 });
+
+    // Verify first fetch call (start) used custom registry URL
+    const [startUrl] = mockFetch.mock.calls[0];
+    expect(startUrl).toContain('https://custom.example.com');
+    expect(startUrl).toContain('/api/v1/cli-auth/start');
+
+    logSpy.mockRestore();
+  });
+
+  it('handles exchange non-400 error with non-JSON body', async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          authUrl: 'https://tankpkg.dev/cli-login?session=sess-exchange-error',
+          sessionCode: 'sess-exchange-error',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    // Exchange returns 500 with non-JSON body
+    mockFetch.mockResolvedValueOnce(
+      new Response('Internal Server Error', { status: 500, statusText: 'Internal Server Error' }),
+    );
+
+    const { loginCommand } = await import('../commands/login.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(
+      loginCommand({ configDir: tmpDir, timeout: 2000 }),
+    ).rejects.toThrow('Exchange failed: Internal Server Error');
+
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
 });

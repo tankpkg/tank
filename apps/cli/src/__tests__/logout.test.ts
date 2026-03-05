@@ -106,4 +106,90 @@ describe('logout', () => {
     expect(config.token).toBeUndefined();
     expect(config.user).toBeUndefined();
   });
+
+  it('logout with token but no user clears token and prints success', async () => {
+    // Arrange: Set up config with token but no user field
+    setConfig(
+      {
+        token: 'tok123',
+      },
+      tmpDir,
+    );
+
+    const consoleSpy = { calls: [] as string[] };
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => {
+      consoleSpy.calls.push(args.map(String).join(' '));
+    };
+
+    try {
+      // Act: Call logout
+      await logoutCommand({ configDir: tmpDir });
+
+      // Assert: Token is cleared and success message is printed
+      const config = getConfig(tmpDir);
+      expect(config.token).toBeUndefined();
+      expect(consoleSpy.calls.some((call) => call.includes('Logged out'))).toBe(true);
+    } finally {
+      console.log = originalLog;
+    }
+  });
+
+  it('double logout is idempotent (first succeeds, second prints "Not logged in")', async () => {
+    // Arrange: Set up a logged-in config
+    setConfig(
+      {
+        token: 'test-token-123',
+        user: { name: 'Test User', email: 'test@example.com' },
+      },
+      tmpDir,
+    );
+
+    const consoleSpy = { calls: [] as string[] };
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => {
+      consoleSpy.calls.push(args.map(String).join(' '));
+    };
+
+    try {
+      // Act: Call logout first time
+      await logoutCommand({ configDir: tmpDir });
+
+      // Assert: First logout succeeds
+      expect(consoleSpy.calls.some((call) => call.includes('Logged out'))).toBe(true);
+
+      // Clear spy for second call
+      consoleSpy.calls = [];
+
+      // Act: Call logout second time
+      await logoutCommand({ configDir: tmpDir });
+
+      // Assert: Second logout prints "Not logged in" and doesn't throw
+      expect(consoleSpy.calls.some((call) => call.includes('Not logged in'))).toBe(true);
+    } finally {
+      console.log = originalLog;
+    }
+  });
+
+  it('logout when config file does not exist prints "Not logged in" and does not throw', async () => {
+    // Arrange: tmpDir has no config.json at all
+    const configPath = path.join(tmpDir, 'config.json');
+    expect(fs.existsSync(configPath)).toBe(false);
+
+    const consoleSpy = { calls: [] as string[] };
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => {
+      consoleSpy.calls.push(args.map(String).join(' '));
+    };
+
+    try {
+      // Act: Call logout (should not throw)
+      await logoutCommand({ configDir: tmpDir });
+
+      // Assert: Prints "Not logged in" and doesn't throw
+      expect(consoleSpy.calls.some((call) => call.includes('Not logged in'))).toBe(true);
+    } finally {
+      console.log = originalLog;
+    }
+  });
 });

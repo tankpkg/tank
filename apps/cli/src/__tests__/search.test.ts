@@ -199,4 +199,65 @@ describe('searchCommand', () => {
     expect(output).toContain('5.0');
     expect(output).toContain('2.0');
   });
+
+  it('includes auth token when present in config', async () => {
+    const { searchCommand } = await import('../commands/search.js');
+
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev', token: 'tank_test-token-123' }),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ results: [], page: 1, limit: 20, total: 0 }), { status: 200 }),
+    );
+
+    await searchCommand({ query: 'test', configDir });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [, options] = mockFetch.mock.calls[0];
+    expect(options.headers.Authorization).toBe('Bearer tank_test-token-123');
+  });
+
+  it('non-200 with non-JSON body uses statusText fallback', async () => {
+    const { searchCommand } = await import('../commands/search.js');
+
+    mockFetch.mockResolvedValueOnce(
+      new Response('Server Error', { status: 500, statusText: 'Internal Server Error' }),
+    );
+
+    await expect(
+      searchCommand({ query: 'test', configDir }),
+    ).rejects.toThrow('Internal Server Error');
+  });
+
+  it('single result uses singular "skill" in count', async () => {
+    const { searchCommand } = await import('../commands/search.js');
+
+    const singleResult = {
+      results: [
+        {
+          name: '@org/single',
+          description: 'Single skill',
+          latestVersion: '1.0.0',
+          auditScore: 7.5,
+          publisher: 'org',
+          downloads: 100,
+        },
+      ],
+      page: 1,
+      limit: 20,
+      total: 1,
+    };
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(singleResult), { status: 200 }),
+    );
+
+    await searchCommand({ query: 'single', configDir });
+
+    const output = getAllOutput();
+    expect(output).toContain('1 skill found');
+    expect(output).not.toContain('1 skills found');
+  });
 });

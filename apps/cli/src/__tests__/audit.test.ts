@@ -482,4 +482,48 @@ describe('auditCommand', () => {
     // Should still show the skill but with an error/unknown status
     expect(output).toContain('@test/skill-a');
   });
+
+  // ── Test 14: Network error for specific skill audit throws ──
+
+  it('throws on network error when auditing specific skill', async () => {
+    const { auditCommand } = await import('../commands/audit.js');
+
+    writeLockfile({
+      '@test/skill-a@1.0.0': {
+        resolved: 'https://storage.tankpkg.dev/skill-a-1.0.0.tgz',
+        integrity: 'sha512-abc',
+        permissions: {},
+        audit_score: null,
+      },
+    });
+
+    mockFetch.mockRejectedValueOnce(new Error('Connection refused'));
+
+    await expect(
+      auditCommand({ name: '@test/skill-a', configDir }),
+    ).rejects.toThrow(/network/i);
+  });
+
+  // ── Test 15: API error for specific skill audit throws ──
+
+  it('throws on API error when auditing specific skill', async () => {
+    const { auditCommand } = await import('../commands/audit.js');
+
+    writeLockfile({
+      '@test/skill-a@1.0.0': {
+        resolved: 'https://storage.tankpkg.dev/skill-a-1.0.0.tgz',
+        integrity: 'sha512-abc',
+        permissions: {},
+        audit_score: null,
+      },
+    });
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Not found' }), { status: 404 }),
+    );
+
+    await expect(
+      auditCommand({ name: '@test/skill-a', configDir }),
+    ).rejects.toThrow(/API error/i);
+  });
 });
