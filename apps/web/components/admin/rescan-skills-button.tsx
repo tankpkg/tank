@@ -26,6 +26,7 @@ export function RescanSkillsButton() {
     try {
       const response = await fetch('/api/admin/rescan-skills', {
         method: 'POST',
+        credentials: 'include',
       });
 
       const data = await response.json();

@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eq } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 import { withAdminAuth, type AdminAuthContext } from '@/lib/admin-middleware';
 import { db } from '@/lib/db';
 import { skillVersions } from '@/lib/db/schema';
 import { rescanVersion } from '@/lib/rescan';
 
+// Statuses that indicate a version has been scanned and can be rescanned
+const RESCANNABLE_STATUSES = ['completed', 'flagged', 'scan-failed'] as const;
+
 const handler = async (_req: NextRequest, _context: AdminAuthContext): Promise<NextResponse> => {
   try {
-    // Get all published skill versions
+    // Get all published skill versions with rescannable statuses
     const versions = await db
       .select({
         id: skillVersions.id,
@@ -21,7 +24,7 @@ const handler = async (_req: NextRequest, _context: AdminAuthContext): Promise<N
         tarballSize: skillVersions.tarballSize,
       })
       .from(skillVersions)
-      .where(eq(skillVersions.auditStatus, 'completed'));
+      .where(inArray(skillVersions.auditStatus, [...RESCANNABLE_STATUSES]));
 
     if (versions.length === 0) {
       return NextResponse.json({
@@ -65,3 +68,14 @@ const handler = async (_req: NextRequest, _context: AdminAuthContext): Promise<N
 };
 
 export const POST = withAdminAuth(handler);
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
