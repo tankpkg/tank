@@ -1079,6 +1079,39 @@ tank whoami
 - The MCP server only communicates with `tankpkg.dev` over HTTPS
 - Your token is never logged or transmitted to third parties
 
+## Understanding LLM Analysis
+
+When LLM-assisted scanning is enabled, Tank uses AI to review ambiguous findings and reduce false positives. The scan output includes an **LLM Analysis** section when active:
+
+| Field | Description |
+|-------|-------------|
+| **Mode** | `byollm` (custom provider), `builtin` (Groq/OpenRouter), or `disabled` |
+| **Provider** | The specific LLM used for analysis |
+| **Findings Reviewed** | Number of ambiguous findings sent to LLM |
+| **False Positives Dismissed** | Findings classified as benign by LLM |
+| **Threats Confirmed** | Findings confirmed as genuine threats |
+| **Uncertain** | Findings the LLM couldn't confidently classify |
+
+### Enabling LLM Analysis
+
+The scan automatically uses LLM analysis when configured. Set environment variables on your server or in the Python API:
+
+```bash
+# Option 1: Use your own OpenAI-compatible LLM
+LLM_API_KEY=your-api-key
+LLM_BASE_URL=https://api.example.com/v1
+LLM_MODEL=gpt-4o-mini
+
+# Option 2: Use built-in Groq (free tier available)
+GROQ_API_KEY=gsk_xxx
+
+# Option 3: Use OpenRouter
+OPENROUTER_API_KEY=sk-or-xxx
+
+# Option 4: Disable LLM entirely (regex-only scanning)
+LLM_SCAN_ENABLED=false
+```
+
 ## Related
 
 - [CLI Reference](/docs/cli) - Full command documentation
