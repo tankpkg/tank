@@ -16,6 +16,7 @@ import { FeatureButton } from './components/feature-button';
 import { StatusDialog } from './components/status-dialog';
 import { ForceDeleteCard } from './components/force-delete-card';
 import { DeleteVersionButton } from './components/delete-version-button';
+import { RescanVersionButton } from './components/rescan-version-button';
 import { PublisherBanDeleteButton } from './components/publisher-ban-delete-button';
 import { VisibilityCard } from './components/visibility-card';
 import { AccessGrantsCard } from './components/access-grants-card';
@@ -216,6 +217,7 @@ export default async function AdminPackageDetailPage({
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge variant="outline">{v.auditStatus ?? 'unknown'}</Badge>
+                        <RescanVersionButton packageName={name} version={v.version} />
                         <DeleteVersionButton packageName={name} version={v.version} />
                       </div>
                     </div>

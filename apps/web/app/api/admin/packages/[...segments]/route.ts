@@ -14,6 +14,7 @@ import {
   skillAccess,
 } from '@/lib/db/schema';
 import { user, organization } from '@/lib/db/auth-schema';
+import { rescanVersion } from '@/lib/rescan';
 
 // Vercel CDN decodes %2F → / in URL paths, so scoped packages like
 // @tank/skill-creator arrive as multiple path segments. Parse from URL path
@@ -23,11 +24,25 @@ const ACTIONS = new Set(['feature', 'status', 'visibility', 'access-grants', 'pu
 
 type ParsedRequest = {
   name: string;
-  action: 'feature' | 'status' | 'visibility' | 'access-grants' | 'publisher-ban-delete' | 'version' | undefined;
+  action: 'feature' | 'status' | 'visibility' | 'access-grants' | 'publisher-ban-delete' | 'version' | 'rescan-version' | undefined;
   version: string | undefined;
 };
 
 function parseSegments(segments: string[]): ParsedRequest {
+  // Match: {name}/versions/{version}/rescan
+  if (
+    segments.length >= 4
+    && segments[segments.length - 3] === 'versions'
+    && segments[segments.length - 1] === 'rescan'
+  ) {
+    return {
+      name: segments.slice(0, -3).join('/'),
+      action: 'rescan-version',
+      version: segments[segments.length - 2],
+    };
+  }
+
+  // Match: {name}/versions/{version}
   if (segments.length >= 3 && segments[segments.length - 2] === 'versions') {
     return {
       name: segments.slice(0, -2).join('/'),
@@ -813,8 +828,79 @@ export const DELETE = withAdminAuth(async (req: NextRequest, { user: adminUser }
   return handleDelete(name, adminUser);
 });
 
+async function handleRescanVersion(
+  name: string,
+  version: string,
+  adminUser: AdminAuthContext['user'],
+): Promise<NextResponse> {
+  const [skill] = await db
+    .select({ id: skills.id, name: skills.name })
+    .from(skills)
+    .where(eq(skills.name, name))
+    .limit(1);
+
+  if (!skill) {
+    return NextResponse.json({ error: 'Package not found' }, { status: 404 });
+  }
+
+  const [versionRow] = await db
+    .select({
+      id: skillVersions.id,
+      skillId: skillVersions.skillId,
+      version: skillVersions.version,
+      tarballPath: skillVersions.tarballPath,
+      manifest: skillVersions.manifest,
+      permissions: skillVersions.permissions,
+      readme: skillVersions.readme,
+      fileCount: skillVersions.fileCount,
+      tarballSize: skillVersions.tarballSize,
+    })
+    .from(skillVersions)
+    .where(
+      and(
+        eq(skillVersions.skillId, skill.id),
+        eq(skillVersions.version, version),
+      ),
+    )
+    .limit(1);
+
+  if (!versionRow) {
+    return NextResponse.json({ error: 'Version not found' }, { status: 404 });
+  }
+
+  const result = await rescanVersion(versionRow);
+
+  await db.insert(auditEvents).values({
+    action: 'skill.version.rescan',
+    actorId: adminUser.id,
+    targetType: 'skill',
+    targetId: skill.id,
+    metadata: {
+      version: versionRow.version,
+      success: result.success,
+      verdict: result.verdict ?? null,
+      error: result.error ?? null,
+    },
+  });
+
+  return NextResponse.json({
+    success: result.success,
+    name: skill.name,
+    version: versionRow.version,
+    verdict: result.verdict ?? null,
+    auditStatus: result.success
+      ? ({ pass: 'completed', pass_with_notes: 'completed', flagged: 'flagged', fail: 'failed' }[result.verdict ?? ''] ?? 'completed')
+      : 'scan-failed',
+    error: result.error ?? null,
+  });
+}
+
 export const POST = withAdminAuth(async (req: NextRequest, { user: adminUser }: AdminAuthContext): Promise<NextResponse> => {
-  const { name, action } = parseRequest(req);
+  const { name, action, version } = parseRequest(req);
+
+  if (name && action === 'rescan-version' && version) {
+    return handleRescanVersion(name, version, adminUser);
+  }
 
   if (name && action === 'publisher-ban-delete') {
     return handleBanPublisherAndDeleteAll(name, req, adminUser);
