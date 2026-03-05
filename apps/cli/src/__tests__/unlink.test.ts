@@ -184,4 +184,18 @@ describe('unlinkCommand', () => {
     const manifest = readLinks(linksDir);
     expect(manifest.links[skillName]).toBeUndefined();
   });
+
+  it('throws when skills.json is invalid JSON', async () => {
+    fs.writeFileSync(path.join(skillDir, 'skills.json'), '{invalid json}');
+    await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome }))
+      .rejects
+      .toThrow(/failed to read or parse skills\.json/i);
+  });
+
+  it('throws when name is empty or whitespace', async () => {
+    writeSkillsJson(skillDir, { name: '' });
+    await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome }))
+      .rejects
+      .toThrow(/missing 'name'/i);
+  });
 });

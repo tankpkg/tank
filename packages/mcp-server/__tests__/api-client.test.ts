@@ -113,12 +113,14 @@ describe('TankApiClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ user: { name: 'Test User', email: 'test@example.com' } }),
+        json: async () => ({ name: 'Test User', email: 'test@example.com', userId: 'u1' }),
       });
 
       const result = await client.verifyAuth();
       expect(result.valid).toBe(true);
-      expect(result.user?.name).toBe('Test User');
+      if (result.valid) {
+        expect(result.user.name).toBe('Test User');
+      }
     });
 
     it('returns invalid when token is invalid', async () => {

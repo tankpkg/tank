@@ -78,22 +78,26 @@ export class TankApiClient {
     }
   }
 
-  /**
-   * Verify current auth token is valid.
-   */
-  async verifyAuth(): Promise<{ valid: boolean; user?: { name: string | null; email: string | null } }> {
+  async verifyAuth(): Promise<
+    | { valid: true; user: { name: string | null; email: string | null } }
+    | { valid: false; reason: 'no-token' | 'unauthorized' | 'network-error'; error?: string }
+  > {
     if (!this.config.token) {
-      return { valid: false };
+      return { valid: false, reason: 'no-token' };
     }
 
-    const result = await this.fetch<{ user: { name: string | null; email: string | null } }>(
+    const result = await this.fetch<{ name: string | null; email: string | null; userId: string }>(
       '/api/v1/auth/whoami',
     );
 
     if (result.ok) {
-      return { valid: true, user: result.data.user };
+      return { valid: true, user: { name: result.data.name, email: result.data.email } };
     }
 
-    return { valid: false };
+    if (result.status === 0) {
+      return { valid: false, reason: 'network-error', error: result.error };
+    }
+
+    return { valid: false, reason: 'unauthorized' };
   }
 }

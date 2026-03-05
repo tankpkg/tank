@@ -470,4 +470,106 @@ describe('publishCommand', () => {
     expect(formatSize(1048576)).toBe('1.0 MB');
     expect(formatSize(2621440)).toBe('2.5 MB');
   });
+
+  it('errors when skills.json is invalid JSON', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    // Write invalid JSON to skills.json
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.json'),
+      '{ invalid json }',
+    );
+
+    await expect(
+      publishCommand({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/skills\.json/);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('errors when visibility option is invalid', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    await expect(
+      publishCommand({ directory: tmpDir, configDir, visibility: 'internal' }),
+    ).rejects.toThrow(/Invalid visibility/);
+
+    expect(mockPack).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('errors when pack fails', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockRejectedValueOnce(new Error('Missing required file: SKILL.md'));
+
+    await expect(
+      publishCommand({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/Missing required file/);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('dry run: warns when server returns non-ok, non-401 status', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+
+    // Mock whoami to return 500
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Server error' }), { status: 500 }),
+    );
+
+    await publishCommand({ directory: tmpDir, configDir, dryRun: true });
+
+    const allOutput = getAllOutput();
+    expect(allOutput).toMatch(/could not verify token/i);
+  });
+
+  it('step 1 non-ok with non-JSON body uses statusText', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+
+    // Step 1 returns 500 with plain text body (not JSON)
+    mockFetch.mockResolvedValueOnce(
+      new Response('Internal Server Error', { status: 500, statusText: 'Internal Server Error' }),
+    );
+
+    await expect(
+      publishCommand({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/Internal Server Error/);
+  });
+
+  it('confirm step non-ok with non-JSON body uses statusText', async () => {
+    const { publishCommand } = await import('../commands/publish.js');
+
+    mockPack.mockResolvedValueOnce(mockPackResult);
+
+    // Step 1 succeeds
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          uploadUrl: 'https://storage.example.com/upload?token=abc',
+          skillId: 'skill-123',
+          versionId: 'version-456',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    // Step 2: Upload succeeds
+    mockFetch.mockResolvedValueOnce(
+      new Response(null, { status: 200 }),
+    );
+
+    // Step 3: Confirm fails with plain text body
+    mockFetch.mockResolvedValueOnce(
+      new Response('Service Unavailable', { status: 503, statusText: 'Service Unavailable' }),
+    );
+
+    await expect(
+      publishCommand({ directory: tmpDir, configDir }),
+    ).rejects.toThrow(/Service Unavailable/);
+  });
 });

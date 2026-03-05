@@ -551,4 +551,75 @@ describe('updateCommand', () => {
       }),
     );
   });
+
+  it('errors when skills.json is corrupt (invalid JSON)', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    
+    // Write invalid JSON to skills.json
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.json'),
+      '{ invalid json content }',
+    );
+
+    await expect(
+      updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
+    ).rejects.toThrow(/skills\.json|parse/i);
+  });
+
+  it('errors when registry returns 404 for single skill update', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    writeSkillsJson();
+    writeLockfile();
+
+    // Mock fetch to return 404
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Not found' }), { status: 404 }),
+    );
+
+    await expect(
+      updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it('errors when no version satisfies range for single skill update', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    
+    // Write skills.json with a version range that won't be satisfied
+    writeSkillsJson({
+      name: 'my-project',
+      version: '1.0.0',
+      skills: {
+        '@test-org/my-skill': '^3.0.0',
+      },
+      permissions: {},
+    });
+    writeLockfile();
+
+    // Registry returns versions that don't satisfy ^3.0.0
+    mockVersionsResponse(['1.0.0', '2.0.0']);
+
+    await expect(
+      updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
+    ).rejects.toThrow(/no version|satisfies/i);
+  });
+
+  it('logs message when updating all skills with empty skills map', async () => {
+    const { updateCommand } = await import('../commands/update.js');
+    const { logger } = await import('../lib/logger.js');
+    
+    // Write skills.json with empty skills object
+    writeSkillsJson({
+      name: 'my-project',
+      version: '1.0.0',
+      skills: {},
+      permissions: {},
+    });
+
+    await updateCommand({ directory: tmpDir, configDir });
+
+    // Should log "No skills defined"
+    expect(vi.mocked(logger.info)).toHaveBeenCalledWith(
+      expect.stringMatching(/no skills/i),
+    );
+  });
 });

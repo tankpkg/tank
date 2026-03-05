@@ -169,4 +169,79 @@ describe('verifyCommand', () => {
     // It will fail because there's no lockfile in cwd, which is expected
     await expect(verifyCommand()).rejects.toThrow();
   });
+
+  it('passes when lockfile has empty skills object', async () => {
+    writeLockfile({});
+
+    await verifyCommand({ directory: tmpDir });
+
+    expect(logger.success).toHaveBeenCalledWith(
+      expect.stringMatching(/no skills to verify/i),
+    );
+  });
+
+  it('fails when skill directory exists but is empty', async () => {
+    writeLockfile({
+      'empty-skill@1.0.0': {
+        resolved: 'https://example.com/empty.tgz',
+        integrity: 'sha512-empty',
+        permissions: {},
+        audit_score: 8.0,
+      },
+    });
+    // Create directory but don't add any files
+    const skillDir = path.join(tmpDir, '.tank', 'skills', 'empty-skill');
+    fs.mkdirSync(skillDir, { recursive: true });
+
+    await expect(verifyCommand({ directory: tmpDir })).rejects.toThrow(
+      /verification failed/i,
+    );
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringMatching(/empty-skill.*empty/i),
+    );
+  });
+
+  it('error message includes issue count', async () => {
+    writeLockfile({
+      'skill-1@1.0.0': {
+        resolved: 'https://example.com/1.tgz',
+        integrity: 'sha512-111',
+        permissions: {},
+        audit_score: 8.0,
+      },
+      'skill-2@2.0.0': {
+        resolved: 'https://example.com/2.tgz',
+        integrity: 'sha512-222',
+        permissions: {},
+        audit_score: 7.0,
+      },
+      'skill-3@3.0.0': {
+        resolved: 'https://example.com/3.tgz',
+        integrity: 'sha512-333',
+        permissions: {},
+        audit_score: 9.0,
+      },
+    });
+    // Don't create any skill directories
+
+    await expect(verifyCommand({ directory: tmpDir })).rejects.toThrow(
+      /3 issues/i,
+    );
+  });
+
+  it('throws when lockfile key is invalid (no version separator)', async () => {
+    writeLockfile({
+      'badkey': {
+        resolved: 'https://example.com/bad.tgz',
+        integrity: 'sha512-bad',
+        permissions: {},
+        audit_score: 5.0,
+      },
+    });
+
+    await expect(verifyCommand({ directory: tmpDir })).rejects.toThrow(
+      /invalid lockfile key/i,
+    );
+  });
 });

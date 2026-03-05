@@ -388,4 +388,63 @@ describe('removeCommand', () => {
     expect(fs.existsSync(agentSkillDir)).toBe(false);
     fs.rmSync(homeDir, { recursive: true, force: true });
   });
+
+  it('errors when skills.json is corrupt (invalid JSON)', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    // Write invalid JSON to skills.json
+    fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{invalid json}');
+
+    await expect(
+      removeCommand({ name: '@test-org/my-skill', directory: tmpDir }),
+    ).rejects.toThrow(/skills\.json|parse/i);
+  });
+
+  it('handles corrupt lockfile gracefully (initializes fresh)', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    writeSkillsJson();
+    // Write invalid JSON to lockfile
+    fs.writeFileSync(path.join(tmpDir, 'skills.lock'), '{invalid json}');
+
+    // Should not throw — lockfile parse error is caught and fresh lockfile is created
+    await expect(
+      removeCommand({ name: '@test-org/my-skill', directory: tmpDir }),
+    ).resolves.toBeUndefined();
+
+    // Verify skill was removed from skills.json
+    const updated = readSkillsJson();
+    expect((updated.skills as Record<string, string>)['@test-org/my-skill']).toBeUndefined();
+
+    // Verify lockfile was created fresh (empty skills)
+    const lock = readLockfile() as { skills: Record<string, unknown> };
+    expect(lock.skills['@test-org/my-skill@2.0.0']).toBeUndefined();
+    expect(lock.skills['@test-org/my-skill@2.1.0']).toBeUndefined();
+  });
+
+  it('removes unscoped skill directory from .tank/skills/', async () => {
+    const { removeCommand } = await import('../commands/remove.js');
+    const skillsJson = {
+      ...baseSkillsJson,
+      skills: {
+        'simple-skill': '^1.0.0',
+      },
+    };
+    writeSkillsJson(skillsJson);
+    writeLockfile();
+
+    // Create unscoped skill directory
+    const skillDir = path.join(tmpDir, '.tank', 'skills', 'simple-skill');
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, 'index.js'), 'module.exports = {}');
+
+    await removeCommand({ name: 'simple-skill', directory: tmpDir });
+
+    // Unscoped directory should be removed
+    expect(fs.existsSync(skillDir)).toBe(false);
+    // skills.json should not have the skill
+    const updated = readSkillsJson();
+    expect((updated.skills as Record<string, string>)['simple-skill']).toBeUndefined();
+    // Lockfile should not have the skill
+    const lock = readLockfile() as { skills: Record<string, unknown> };
+    expect(lock.skills['simple-skill@1.0.0']).toBeUndefined();
+  });
 });

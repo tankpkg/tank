@@ -210,4 +210,170 @@ describe('init command', () => {
 
     expect(readOutput()).not.toHaveProperty('author');
   });
+
+  it('sets visibility to private when user chooses private', async () => {
+    const { initCommand } = await import('../commands/init.js');
+    mockPrompts('@test-org/my-skill', '0.1.0', 'A test skill', '', true);
+
+    await initCommand();
+
+    const content = readOutput();
+    expect(content.visibility).toBe('private');
+  });
+
+  it('sets visibility to public when user chooses public', async () => {
+    const { initCommand } = await import('../commands/init.js');
+    mockPrompts('@test-org/my-skill', '0.1.0', 'A test skill', '', false);
+
+    await initCommand();
+
+    const content = readOutput();
+    expect(content.visibility).toBe('public');
+  });
+
+  it('unscoped name defaults private confirm to false', async () => {
+    const { initCommand } = await import('../commands/init.js');
+    mockPrompts('my-unscoped-skill', '0.1.0', '', '', false);
+
+    await initCommand();
+
+    // Check that confirm was called with default: false for unscoped name
+    const confirmCalls = mockConfirm.mock.calls;
+    const privateConfirm = confirmCalls.find((call: unknown[]) => {
+      const opts = call[0] as Record<string, unknown>;
+      return opts.message === 'Make this skill private?';
+    });
+    expect(privateConfirm).toBeDefined();
+    expect((privateConfirm![0] as Record<string, unknown>).default).toBe(false);
+  });
+
+  it('scoped name defaults private confirm to true', async () => {
+    const { initCommand } = await import('../commands/init.js');
+    mockPrompts('@org/my-skill', '0.1.0', '', '', false);
+
+    await initCommand();
+
+    // Check that confirm was called with default: true for scoped name
+    const confirmCalls = mockConfirm.mock.calls;
+    const privateConfirm = confirmCalls.find((call: unknown[]) => {
+      const opts = call[0] as Record<string, unknown>;
+      return opts.message === 'Make this skill private?';
+    });
+    expect(privateConfirm).toBeDefined();
+    expect((privateConfirm![0] as Record<string, unknown>).default).toBe(true);
+  });
+
+  describe('non-interactive mode (--yes)', () => {
+    it('creates skills.json with explicit values', async () => {
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand({
+        yes: true,
+        name: '@test-org/my-cool-skill',
+        version: '1.0.0',
+        description: 'A cool skill',
+      });
+
+      const content = readOutput();
+      expect(content.name).toBe('@test-org/my-cool-skill');
+      expect(content.version).toBe('1.0.0');
+      expect(content.description).toBe('A cool skill');
+      expect(content.visibility).toBe('public');
+      expect(content.skills).toEqual({});
+      expect(content.permissions).toEqual({
+        network: { outbound: [] },
+        filesystem: { read: [], write: [] },
+        subprocess: false,
+      });
+      expect(mockInput).not.toHaveBeenCalled();
+      expect(mockConfirm).not.toHaveBeenCalled();
+    });
+
+    it('creates skills.json with defaults when only --yes and name provided', async () => {
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand({ yes: true, name: '@test-org/default-skill' });
+
+      const content = readOutput();
+      expect(content.name).toBe('@test-org/default-skill');
+      expect(content.version).toBe('0.1.0');
+      expect(content).not.toHaveProperty('description');
+      expect(content.visibility).toBe('public');
+      expect(content.skills).toEqual({});
+      expect(mockInput).not.toHaveBeenCalled();
+      expect(mockConfirm).not.toHaveBeenCalled();
+    });
+
+    it('errors on invalid name', async () => {
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand({ yes: true, name: 'UPPERCASE' });
+
+      expect(fs.existsSync(path.join(tmpDir, 'skills.json'))).toBe(false);
+      const errorCalls = (console.error as ReturnType<typeof vi.fn>).mock.calls;
+      const allOutput = errorCalls.map((c: unknown[]) => c.join(' ')).join('\n');
+      expect(allOutput).toContain('lowercase');
+      expect(mockInput).not.toHaveBeenCalled();
+    });
+
+    it('errors on invalid version', async () => {
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand({ yes: true, name: '@test-org/valid-name', version: 'not-semver' });
+
+      expect(fs.existsSync(path.join(tmpDir, 'skills.json'))).toBe(false);
+      const errorCalls = (console.error as ReturnType<typeof vi.fn>).mock.calls;
+      const allOutput = errorCalls.map((c: unknown[]) => c.join(' ')).join('\n');
+      expect(allOutput).toContain('semver');
+      expect(mockInput).not.toHaveBeenCalled();
+    });
+
+    it('errors when skills.json exists without --force', async () => {
+      const { initCommand } = await import('../commands/init.js');
+      fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
+
+      await initCommand({ yes: true, name: '@test-org/valid-name' });
+
+      const content = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+      expect(content).toBe('{"name":"old"}');
+      const errorCalls = (console.error as ReturnType<typeof vi.fn>).mock.calls;
+      const allOutput = errorCalls.map((c: unknown[]) => c.join(' ')).join('\n');
+      expect(allOutput).toContain('already exists');
+      expect(mockInput).not.toHaveBeenCalled();
+      expect(mockConfirm).not.toHaveBeenCalled();
+    });
+
+    it('overwrites when --force is set', async () => {
+      const { initCommand } = await import('../commands/init.js');
+      fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
+
+      await initCommand({ yes: true, name: '@test-org/new-skill', version: '2.0.0', force: true });
+
+      const content = readOutput();
+      expect(content.name).toBe('@test-org/new-skill');
+      expect(content.version).toBe('2.0.0');
+      expect(mockInput).not.toHaveBeenCalled();
+      expect(mockConfirm).not.toHaveBeenCalled();
+    });
+
+    it('sets visibility to private when --private passed', async () => {
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand({ yes: true, name: '@test-org/my-skill', private: true });
+
+      const content = readOutput();
+      expect(content.visibility).toBe('private');
+      expect(mockInput).not.toHaveBeenCalled();
+    });
+
+    it('omits description when empty', async () => {
+      const { initCommand } = await import('../commands/init.js');
+
+      await initCommand({ yes: true, name: '@test-org/my-skill', description: '' });
+
+      const content = readOutput();
+      expect(content).not.toHaveProperty('description');
+      expect(mockInput).not.toHaveBeenCalled();
+    });
+  });
 });

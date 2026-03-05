@@ -29,6 +29,17 @@ Create a new skills.json in the current directory
 tank init
 ```
 
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-y, --yes` | Skip prompts, use defaults |
+| `--name <name>` | Skill name |
+| `--skill-version <version>` | Skill version (default: 0.1.0) |
+| `--description <desc>` | Skill description |
+| `--private` | Make skill private |
+| `--force` | Overwrite existing skills.json |
+
 
 ## tank login
 
@@ -79,6 +90,21 @@ tank audit [name]
 | Name | Description | Required |
 |------|-------------|----------|
 | `name` | Skill name to audit (omit to audit all) | No |
+
+
+## tank scan
+
+Scan a local skill for security issues without publishing
+
+```bash
+tank scan
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-d, --directory <path>` | Directory to scan (default: current directory) |
 
 
 ## tank unlink

@@ -138,4 +138,18 @@ describe('linkCommand', () => {
     const lastCall = successSpy.mock.calls[successSpy.mock.calls.length - 1]?.[0];
     expect(lastCall).toBe(`Linked ${skillName} to 2 agent(s)`);
   });
+
+  it('throws when skills.json is invalid JSON', async () => {
+    fs.writeFileSync(path.join(skillDir, 'skills.json'), '{not valid json}');
+    await expect(linkCommand({ directory: skillDir, homedir: fakeHome }))
+      .rejects
+      .toThrow(/failed to read or parse skills\.json/i);
+  });
+
+  it('throws when name is empty string', async () => {
+    writeSkillsJson(skillDir, { name: '  ' });
+    await expect(linkCommand({ directory: skillDir, homedir: fakeHome }))
+      .rejects
+      .toThrow(/missing 'name'/i);
+  });
 });

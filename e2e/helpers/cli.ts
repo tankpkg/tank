@@ -2,7 +2,7 @@
  * CLI helper — spawns the tank binary as a child process.
  * ZERO mocks: real binary, real HTTP to the live server.
  */
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 
@@ -30,6 +30,8 @@ export async function runTank(
     home?: string;
     env?: Record<string, string>;
     timeoutMs?: number;
+    /** Data to pipe to the child process's stdin. When provided, uses spawn instead of execFile. */
+    stdin?: string;
   } = {},
 ): Promise<CliResult> {
   const env = {
@@ -41,6 +43,10 @@ export async function runTank(
     FORCE_COLOR: '0',
     ...opts.env,
   };
+
+  if (opts.stdin !== undefined) {
+    return runTankWithStdin(args, env, opts);
+  }
 
   try {
     const { stdout, stderr } = await execFileAsync('node', [TANK_BIN, ...args], {
@@ -72,6 +78,66 @@ export async function runTank(
       exitCode: typeof e.code === 'number' ? e.code : 1,
     };
   }
+}
+
+function runTankWithStdin(
+  args: string[],
+  env: Record<string, string | undefined>,
+  opts: { cwd?: string; timeoutMs?: number; stdin?: string },
+): Promise<CliResult> {
+  return new Promise((resolve) => {
+    const timeout = opts.timeoutMs ?? 30_000;
+    const child = spawn('node', [TANK_BIN, ...args], {
+      cwd: opts.cwd,
+      env: env as NodeJS.ProcessEnv,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let killed = false;
+
+    child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+    child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+
+    const timer = setTimeout(() => {
+      killed = true;
+      child.kill('SIGTERM');
+    }, timeout);
+
+    if (opts.stdin) {
+      child.stdin.write(opts.stdin);
+    }
+    child.stdin.end();
+
+    child.on('close', (code) => {
+      clearTimeout(timer);
+
+      if (killed) {
+        resolve({
+          stdout,
+          stderr: stderr + '\n[TIMEOUT]',
+          exitCode: 124,
+        });
+        return;
+      }
+
+      resolve({
+        stdout,
+        stderr,
+        exitCode: code ?? 1,
+      });
+    });
+
+    child.on('error', () => {
+      clearTimeout(timer);
+      resolve({
+        stdout,
+        stderr,
+        exitCode: 1,
+      });
+    });
+  });
 }
 
 /**

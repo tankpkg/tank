@@ -205,4 +205,63 @@ describe('infoCommand', () => {
     expect(output).toMatch(/subprocess/i);
     expect(output).toMatch(/no/i);
   });
+
+  it('uses statusText when non-200 non-404 response has non-JSON body', async () => {
+    const { infoCommand } = await import('../commands/info.js');
+
+    // Mock 500 response with plain text body (not JSON)
+    mockFetch.mockResolvedValueOnce(
+      new Response('Internal Server Error', { status: 500, statusText: 'Internal Server Error' }),
+    );
+
+    await expect(
+      infoCommand({ name: '@vercel/next-skill', configDir }),
+    ).rejects.toThrow(/Internal Server Error|Failed to fetch/);
+  });
+
+  it('skips version details when version fetch returns non-ok status', async () => {
+    const { infoCommand } = await import('../commands/info.js');
+
+    // Mock successful meta fetch
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(skillMetadata), { status: 200 }),
+    );
+
+    // Mock failed version fetch (500)
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Server error' }), { status: 500 }),
+    );
+
+    // Should not throw — version fetch failure is non-fatal
+    await infoCommand({ name: '@vercel/next-skill', configDir });
+
+    const output = getAllOutput();
+    // Should still show basic info
+    expect(output).toContain('@vercel/next-skill');
+    expect(output).toContain('2.1.0');
+    // But should not show permissions (which come from version details)
+    expect(output).not.toMatch(/permissions/i);
+  });
+
+  it('shows visibility field when present in metadata', async () => {
+    const { infoCommand } = await import('../commands/info.js');
+
+    // Mock meta with visibility field
+    const metaWithVisibility = {
+      ...skillMetadata,
+      visibility: 'private' as const,
+    };
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(metaWithVisibility), { status: 200 }),
+    );
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify(versionDetails), { status: 200 }),
+    );
+
+    await infoCommand({ name: '@vercel/next-skill', configDir });
+
+    const output = getAllOutput();
+    expect(output).toContain('private');
+  });
 });

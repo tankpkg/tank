@@ -212,4 +212,59 @@ describe('upgradeCommand', () => {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('throws when latest release fetch fails', async () => {
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch;
+
+    mockFetch.mockResolvedValueOnce(new Response(
+      JSON.stringify({ error: 'Not Found' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } },
+    ));
+
+    await expect(upgradeCommand()).rejects.toThrow(/failed to fetch latest release/i);
+  });
+
+  it('throws when binary download fails', async () => {
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch;
+
+    // 1. Latest version response
+    mockFetch.mockResolvedValueOnce(new Response(
+      JSON.stringify({ tag_name: 'v99.0.0' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ));
+
+    // 2. Binary download fails
+    mockFetch.mockResolvedValueOnce(new Response(
+      JSON.stringify({ error: 'Not Found' }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } },
+    ));
+
+    await expect(upgradeCommand()).rejects.toThrow(/failed to download binary/i);
+  });
+
+  it('throws when SHA256SUMS download fails', async () => {
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch;
+
+    const fakeBinary = new Uint8Array([0xCA, 0xFE, 0xBA, 0xBE]);
+
+    // 1. Latest version response
+    mockFetch.mockResolvedValueOnce(new Response(
+      JSON.stringify({ tag_name: 'v99.0.0' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ));
+
+    // 2. Binary download succeeds
+    mockFetch.mockResolvedValueOnce(new Response(fakeBinary, { status: 200 }));
+
+    // 3. SHA256SUMS download fails
+    mockFetch.mockResolvedValueOnce(new Response(
+      JSON.stringify({ error: 'Not Found' }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } },
+    ));
+
+    await expect(upgradeCommand()).rejects.toThrow(/failed to download SHA256SUMS/i);
+  });
 });

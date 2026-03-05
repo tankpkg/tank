@@ -340,4 +340,57 @@ describe('permissionsCommand', () => {
     expect(anthropicLine).toContain('@vercel/next-skill');
     expect(anthropicLine).toContain('@other/skill');
   });
+
+  it('displays permissions when skills.json does not exist (no budget)', async () => {
+    writeLockfile({
+      '@vercel/next-skill@2.1.0': {
+        resolved: 'https://registry.example.com/download/next-skill-2.1.0.tgz',
+        integrity: 'sha512-abc123',
+        permissions: {
+          filesystem: { write: ['./output/**'] },
+        },
+        audit_score: 8.5,
+      },
+    });
+    // Intentionally do NOT write skills.json
+
+    await permissionsCommand({ directory: tmpDir });
+
+    const output = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+    // Should display the resolved permissions
+    expect(output).toContain('Resolved permissions for this project');
+    expect(output).toContain('Filesystem (write)');
+    expect(output).toContain('./output/**');
+    expect(output).toContain('@vercel/next-skill');
+    // Should show "No budget defined" instead of PASS/FAIL
+    expect(output).toContain('No budget defined');
+  });
+
+  it('shows budget status FAIL for filesystem write violation', async () => {
+    writeLockfile({
+      '@vercel/next-skill@2.1.0': {
+        resolved: 'https://registry.example.com/download/next-skill-2.1.0.tgz',
+        integrity: 'sha512-abc123',
+        permissions: {
+          filesystem: { write: ['./secrets/**'] },
+        },
+        audit_score: 8.5,
+      },
+    });
+    writeSkillsJson({
+      name: 'my-project',
+      version: '1.0.0',
+      permissions: {
+        filesystem: { write: ['./output/**'] },
+      },
+    });
+
+    await permissionsCommand({ directory: tmpDir });
+
+    const output = logSpy.mock.calls.map(c => c.join(' ')).join('\n');
+    expect(output).toContain('FAIL');
+    expect(output).toContain('filesystem write');
+    expect(output).toContain('./secrets/**');
+    expect(output).toContain('not in budget');
+  });
 });

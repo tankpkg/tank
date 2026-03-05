@@ -13,6 +13,7 @@ import { permissionsCommand } from '../commands/permissions.js';
 import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
 import { auditCommand } from '../commands/audit.js';
+import { scanCommand } from '../commands/scan.js';
 import { linkCommand } from '../commands/link.js';
 import { unlinkCommand } from '../commands/unlink.js';
 import { doctorCommand } from '../commands/doctor.js';
@@ -31,7 +32,28 @@ program
 program
   .command('init')
   .description('Create a new skills.json in the current directory')
-  .action(initCommand);
+  .option('-y, --yes', 'Skip prompts, use defaults')
+  .option('--name <name>', 'Skill name')
+  .option('--skill-version <version>', 'Skill version (default: 0.1.0)')
+  .option('--description <desc>', 'Skill description')
+  .option('--private', 'Make skill private')
+  .option('--force', 'Overwrite existing skills.json')
+  .action(async (opts: { yes?: boolean; name?: string; skillVersion?: string; description?: string; private?: boolean; force?: boolean }) => {
+    try {
+      await initCommand({
+        yes: opts.yes,
+        name: opts.name,
+        version: opts.skillVersion,
+        description: opts.description,
+        private: opts.private,
+        force: opts.force,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Init failed: ${msg}`);
+      process.exit(1);
+    }
+  });
 
 program
   .command('login')
@@ -215,6 +237,20 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Audit failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('scan')
+  .description('Scan a local skill for security issues without publishing')
+  .option('-d, --directory <path>', 'Directory to scan (default: current directory)')
+  .action(async (opts: { directory?: string }) => {
+    try {
+      await scanCommand({ directory: opts.directory });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Scan failed: ${msg}`);
       process.exit(1);
     }
   });

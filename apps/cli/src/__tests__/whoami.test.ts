@@ -188,4 +188,152 @@ describe('whoamiCommand', () => {
     logSpy.mockRestore();
     errorSpy.mockRestore();
   });
+
+  it('prints "Logged in (token verified)" when token exists, no user in config, server returns 200', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'config.json'),
+      JSON.stringify({
+        token: 'tank_no-user-token',
+        registry: 'https://tankpkg.dev',
+      }),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ valid: true }), { status: 200 }),
+    );
+
+    const { whoamiCommand } = await import('../commands/whoami.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    process.exitCode = 0;
+    await whoamiCommand({ configDir: tmpDir });
+
+    const allOutput = logSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(allOutput).toContain('Logged in (token verified)');
+    expect(process.exitCode).toBe(0);
+
+    process.exitCode = 0;
+    logSpy.mockRestore();
+  });
+
+  it('sets exit code 1 when token exists, no user in config, server returns non-401 error', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'config.json'),
+      JSON.stringify({
+        token: 'tank_no-user-500',
+        registry: 'https://tankpkg.dev',
+      }),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Internal error' }), { status: 500 }),
+    );
+
+    const { whoamiCommand } = await import('../commands/whoami.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    process.exitCode = 0;
+    await whoamiCommand({ configDir: tmpDir });
+
+    const allOutput = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(allOutput).toContain('Could not verify token');
+    expect(allOutput).toContain('Server returned an error');
+    expect(process.exitCode).toBe(1);
+
+    process.exitCode = 0;
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it('sets exit code 1 when token exists, no user in config, network error', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'config.json'),
+      JSON.stringify({
+        token: 'tank_no-user-network',
+        registry: 'https://tankpkg.dev',
+      }),
+    );
+
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+    const { whoamiCommand } = await import('../commands/whoami.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    process.exitCode = 0;
+    await whoamiCommand({ configDir: tmpDir });
+
+    const allOutput = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(allOutput).toContain('Could not verify token');
+    expect(allOutput).toContain('Check your network connection');
+    expect(process.exitCode).toBe(1);
+
+    process.exitCode = 0;
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it('uses custom registry URL when verifying token', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'config.json'),
+      JSON.stringify({
+        token: 'tank_custom-registry',
+        user: { name: 'Custom User', email: 'custom@e.com' },
+        registry: 'https://custom.example.dev',
+      }),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ valid: true }), { status: 200 }),
+    );
+
+    const { whoamiCommand } = await import('../commands/whoami.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await whoamiCommand({ configDir: tmpDir });
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('https://custom.example.dev');
+    expect(url).toContain('/api/v1/auth/whoami');
+
+    logSpy.mockRestore();
+  });
+
+  it('does NOT set exit code 1 when token is invalid (401)', async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, 'config.json'),
+      JSON.stringify({
+        token: 'tank_401-test',
+        user: { name: 'Test User', email: 'test@e.com' },
+        registry: 'https://tankpkg.dev',
+      }),
+    );
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }),
+    );
+
+    const { whoamiCommand } = await import('../commands/whoami.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    process.exitCode = 0;
+    await whoamiCommand({ configDir: tmpDir });
+
+    const allOutput = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((c) => c.join(' '))
+      .join('\n');
+    expect(allOutput).toContain('expired');
+    expect(process.exitCode).toBe(0);
+
+    process.exitCode = 0;
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
 });
