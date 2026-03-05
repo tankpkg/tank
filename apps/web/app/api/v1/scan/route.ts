@@ -123,15 +123,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing tarball file' }, { status: 400 });
   }
 
-  if (!manifestStr || typeof manifestStr !== 'string') {
-    return NextResponse.json({ error: 'Missing manifest' }, { status: 400 });
-  }
-
   let manifest: Record<string, unknown>;
-  try {
-    manifest = JSON.parse(manifestStr);
-  } catch {
-    return NextResponse.json({ error: 'Invalid manifest JSON' }, { status: 400 });
+  if (manifestStr && typeof manifestStr === 'string') {
+    try {
+      manifest = JSON.parse(manifestStr);
+    } catch {
+      return NextResponse.json({ error: 'Invalid manifest JSON' }, { status: 400 });
+    }
+  } else {
+    manifest = {};
   }
 
   // 3. Convert Blob to Buffer
