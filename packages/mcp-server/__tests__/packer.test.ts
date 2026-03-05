@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { pack } from '../src/lib/packer.js';
+import { pack, packForScan } from '../src/lib/packer.js';
 
 describe('packer', () => {
   let tempDir: string;
@@ -144,6 +144,81 @@ describe('packer', () => {
 
       expect(result.files).not.toContain('debug.log');
       expect(result.files).not.toContainEqual(expect.stringContaining('test/'));
+    });
+  });
+
+  describe('packForScan', () => {
+    it('fails when directory does not exist', async () => {
+      await expect(packForScan('/nonexistent/path')).rejects.toThrow('Directory does not exist');
+    });
+
+    it('fails when path is not a directory', async () => {
+      const filePath = path.join(tempDir, 'file.txt');
+      fs.writeFileSync(filePath, 'test');
+
+      await expect(packForScan(filePath)).rejects.toThrow('Not a directory');
+    });
+
+    it('fails when directory is empty', async () => {
+      await expect(packForScan(tempDir)).rejects.toThrow('No files to scan');
+    });
+
+    it('packs a directory without skills.json', async () => {
+      fs.writeFileSync(path.join(tempDir, 'index.ts'), 'export function run() {}');
+      fs.writeFileSync(path.join(tempDir, 'utils.ts'), 'export const x = 1;');
+
+      const result = await packForScan(tempDir);
+
+      expect(result.tarball).toBeInstanceOf(Buffer);
+      expect(result.tarball.length).toBeGreaterThan(0);
+      expect(result.integrity).toMatch(/^sha512-/);
+      expect(result.fileCount).toBe(2);
+      expect(result.files).toContain('index.ts');
+      expect(result.files).toContain('utils.ts');
+      expect(result.readme).toBe('');
+    });
+
+    it('synthesises a manifest with directory name', async () => {
+      fs.writeFileSync(path.join(tempDir, 'index.ts'), 'export function run() {}');
+
+      const result = await packForScan(tempDir);
+
+      expect(result.manifest).toEqual(
+        expect.objectContaining({
+          name: path.basename(tempDir),
+          version: '0.0.0',
+          description: 'Local scan',
+        }),
+      );
+    });
+
+    it('reads SKILL.md if present', async () => {
+      fs.writeFileSync(path.join(tempDir, 'index.ts'), 'export function run() {}');
+      fs.writeFileSync(path.join(tempDir, 'SKILL.md'), '# My Skill\n\nDescription.');
+
+      const result = await packForScan(tempDir);
+
+      expect(result.readme).toContain('# My Skill');
+    });
+
+    it('ignores node_modules and .git', async () => {
+      fs.writeFileSync(path.join(tempDir, 'index.ts'), 'export function run() {}');
+      fs.mkdirSync(path.join(tempDir, 'node_modules', 'pkg'), { recursive: true });
+      fs.writeFileSync(path.join(tempDir, 'node_modules', 'pkg', 'index.js'), '');
+      fs.mkdirSync(path.join(tempDir, '.git'), { recursive: true });
+      fs.writeFileSync(path.join(tempDir, '.git', 'config'), '[core]');
+
+      const result = await packForScan(tempDir);
+
+      expect(result.files).not.toContainEqual(expect.stringContaining('node_modules'));
+      expect(result.files).not.toContainEqual(expect.stringContaining('.git'));
+    });
+
+    it('rejects symlinks', async () => {
+      fs.writeFileSync(path.join(tempDir, 'real.txt'), 'content');
+      fs.symlinkSync(path.join(tempDir, 'real.txt'), path.join(tempDir, 'link.txt'));
+
+      await expect(packForScan(tempDir)).rejects.toThrow('Symlink detected');
     });
   });
 });

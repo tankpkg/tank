@@ -1,8 +1,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import fs from 'node:fs';
 import path from 'node:path';
 import { TankApiClient } from '../lib/api-client.js';
-import { pack } from '../lib/packer.js';
+import { pack, packForScan } from '../lib/packer.js';
 import { getConfig, setConfig } from '../lib/config.js';
 
 interface ScanFinding {
@@ -66,19 +67,39 @@ export function registerScanSkillTool(server: McpServer): void {
         };
       }
 
-      // Pack the skill
-      let packResult;
-      try {
-        packResult = await pack(absDir);
-      } catch (err) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Failed to pack skill: ${err instanceof Error ? err.message : String(err)}`,
-            },
-          ],
-        };
+      let packResult: Awaited<ReturnType<typeof pack>>;
+      let usedSynthesisedManifest = false;
+
+      const skillsJsonPath = path.join(absDir, 'skills.json');
+      const hasSkillsJson = fs.existsSync(skillsJsonPath);
+
+      if (hasSkillsJson) {
+        try {
+          packResult = await pack(absDir);
+        } catch (err) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: `Failed to pack skill: ${err instanceof Error ? err.message : String(err)}`,
+              },
+            ],
+          };
+        }
+      } else {
+        try {
+          packResult = await packForScan(absDir);
+          usedSynthesisedManifest = true;
+        } catch (err) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: `Failed to pack directory for scan: ${err instanceof Error ? err.message : String(err)}`,
+              },
+            ],
+          };
+        }
       }
 
       const manifest = packResult.manifest as { name?: string; version?: string };
@@ -132,12 +153,23 @@ export function registerScanSkillTool(server: McpServer): void {
       const lines: string[] = [
         `## Scan Results for ${skillName}@${skillVersion}`,
         '',
+      ];
+
+      if (usedSynthesisedManifest) {
+        lines.push('> **Note:** No `skills.json` found. A synthesised manifest was used for scanning.');
+        lines.push('');
+      }
+
+      const auditScore = scanResult.audit_score ?? 0;
+      const durationMs = scanResult.duration_ms ?? 0;
+
+      lines.push(
         `**Verdict:** ${verdictEmoji[scanResult.verdict] ?? ''} ${scanResult.verdict.toUpperCase()}`,
-        `**Score:** ${scanResult.audit_score.toFixed(1)}/10`,
-        `**Duration:** ${(scanResult.duration_ms / 1000).toFixed(1)}s`,
+        `**Score:** ${auditScore.toFixed(1)}/10`,
+        `**Duration:** ${(durationMs / 1000).toFixed(1)}s`,
         `**Files:** ${packResult.fileCount} (${(packResult.totalSize / 1024).toFixed(1)}KB)`,
         '',
-      ];
+      );
 
       if (scanResult.findings.length > 0) {
         lines.push(`### Findings (${scanResult.findings.length})`);
