@@ -365,7 +365,7 @@ describe('installCommand', () => {
     expect(fs.existsSync(lockPath)).toBe(true);
 
     const lock = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
-    expect(lock.lockfileVersion).toBe(1);
+    expect(lock.lockfileVersion).toBe(2);
     expect(lock.skills['@test-org/my-skill@2.0.0']).toBeDefined();
 
     const entry = lock.skills['@test-org/my-skill@2.0.0'];
@@ -1624,7 +1624,7 @@ describe('installCommand — additional error paths', () => {
 
     const lockRaw = fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8');
     const lock = JSON.parse(lockRaw);
-    expect(lock.lockfileVersion).toBe(1);
+    expect(lock.lockfileVersion).toBe(2);
     expect(lock.skills['@test-org/my-skill@2.0.0']).toBeDefined();
   });
 
@@ -1654,5 +1654,300 @@ describe('installCommand — additional error paths', () => {
       .map((c) => c.join(' '))
       .join('\n');
     expect(output).toMatch(/no skills|nothing to install/i);
+  });
+});
+
+describe('installCommand — transitive dependency resolution', () => {
+  let tmpDir: string;
+  let configDir: string;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
+  let fakeTarball: Buffer;
+  let fakeTarballIntegrity: string;
+
+  const primaryVersionsResponse = {
+    name: '@test-org/my-skill',
+    versions: [
+      { version: '1.0.0', integrity: 'sha512-abc', auditScore: 8.0, auditStatus: 'published', publishedAt: '2026-01-01T00:00:00Z' },
+    ],
+  };
+
+  const depVersionsResponse = {
+    name: '@dep/helper',
+    versions: [
+      { version: '1.0.0', integrity: 'sha512-dep1', auditScore: 9.0, auditStatus: 'published', publishedAt: '2026-01-01T00:00:00Z' },
+      { version: '1.1.0', integrity: 'sha512-dep2', auditScore: 9.0, auditStatus: 'published', publishedAt: '2026-01-15T00:00:00Z' },
+    ],
+  };
+
+  beforeEach(async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-transitive-test-'));
+    configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-transitive-config-'));
+
+    fs.writeFileSync(
+      path.join(configDir, 'config.json'),
+      JSON.stringify({ registry: 'https://tankpkg.dev' }),
+    );
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.json'),
+      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2),
+    );
+
+    fakeTarball = Buffer.from('fake-tarball-transitive-test');
+    const hash = crypto.createHash('sha512').update(fakeTarball).digest('base64');
+    fakeTarballIntegrity = `sha512-${hash}`;
+
+    mockFetch.mockReset();
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(configDir, { recursive: true, force: true });
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  function makeMeta(name: string, version: string) {
+    return {
+      name,
+      version,
+      description: `Test skill ${name}`,
+      integrity: fakeTarballIntegrity,
+      permissions: {},
+      auditScore: 8.0,
+      auditStatus: 'published',
+      downloadUrl: `https://storage.example.com/${name}-${version}.tgz`,
+      publishedAt: '2026-01-01T00:00:00Z',
+    };
+  }
+
+  it('installs transitive dependencies declared in extracted skills.json', async () => {
+    const { installCommand } = await import('../commands/install.js');
+    const { extract } = await import('tar');
+
+    // Primary skill's extract writes a skills.json with a dependency
+    vi.mocked(extract)
+      .mockImplementationOnce(async (opts: unknown) => {
+        const { cwd } = opts as { cwd: string };
+        fs.writeFileSync(
+          path.join(cwd, 'skills.json'),
+          JSON.stringify({
+            name: '@test-org/my-skill',
+            version: '1.0.0',
+            skills: { '@dep/helper': '^1.0.0' },
+          }),
+        );
+      })
+      .mockImplementationOnce(async () => {
+        // Dependency has no further deps
+      });
+
+    // Fetch sequence: primary versions, primary meta, primary tarball,
+    //                  dep versions, dep meta, dep tarball
+    mockFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify(primaryVersionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@test-org/my-skill', '1.0.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(depVersionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@dep/helper', '1.1.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)));
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir: tmpDir,
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(6);
+
+    const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8'));
+    expect(lock.skills['@test-org/my-skill@1.0.0']).toBeDefined();
+    expect(lock.skills['@dep/helper@1.1.0']).toBeDefined();
+  });
+
+  it('does not add transitive deps to project skills.json', async () => {
+    const { installCommand } = await import('../commands/install.js');
+    const { extract } = await import('tar');
+
+    vi.mocked(extract)
+      .mockImplementationOnce(async (opts: unknown) => {
+        const { cwd } = opts as { cwd: string };
+        fs.writeFileSync(
+          path.join(cwd, 'skills.json'),
+          JSON.stringify({
+            name: '@test-org/my-skill',
+            version: '1.0.0',
+            skills: { '@dep/helper': '^1.0.0' },
+          }),
+        );
+      })
+      .mockImplementationOnce(async () => {});
+
+    mockFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify(primaryVersionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@test-org/my-skill', '1.0.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(depVersionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@dep/helper', '1.1.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)));
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir: tmpDir,
+    });
+
+    const skillsJson = JSON.parse(fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8'));
+    expect(skillsJson.skills['@test-org/my-skill']).toBe('^1.0.0');
+    expect(skillsJson.skills['@dep/helper']).toBeUndefined();
+  });
+
+  it('skips already-installed transitive deps', async () => {
+    const { installCommand } = await import('../commands/install.js');
+    const { extract } = await import('tar');
+
+    // Pre-populate lockfile with the dependency already installed
+    fs.writeFileSync(
+      path.join(tmpDir, 'skills.lock'),
+      JSON.stringify({
+        lockfileVersion: 1,
+        skills: {
+          '@dep/helper@1.1.0': {
+            resolved: 'https://storage.example.com/dep-helper-1.1.0.tgz',
+            integrity: fakeTarballIntegrity,
+            permissions: {},
+            audit_score: 9.0,
+          },
+        },
+      }, null, 2),
+    );
+
+    vi.mocked(extract)
+      .mockImplementationOnce(async (opts: unknown) => {
+        const { cwd } = opts as { cwd: string };
+        fs.writeFileSync(
+          path.join(cwd, 'skills.json'),
+          JSON.stringify({
+            name: '@test-org/my-skill',
+            version: '1.0.0',
+            skills: { '@dep/helper': '^1.0.0' },
+          }),
+        );
+      });
+
+    // Primary: 3 fetches. Dep: only versions fetch (then skipped as already installed)
+    mockFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify(primaryVersionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@test-org/my-skill', '1.0.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(depVersionsResponse)));
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir: tmpDir,
+    });
+
+    // 3 for primary + 1 versions fetch for dep (skipped after resolution)
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+  });
+
+  it('handles circular dependencies without infinite recursion', async () => {
+    const { installCommand } = await import('../commands/install.js');
+    const { extract } = await import('tar');
+
+    const circularDepVersions = {
+      name: '@dep/circular',
+      versions: [
+        { version: '1.0.0', integrity: 'sha512-circ', auditScore: 8.0, auditStatus: 'published', publishedAt: '2026-01-01T00:00:00Z' },
+      ],
+    };
+
+    // Primary depends on @dep/circular, @dep/circular depends back on primary
+    vi.mocked(extract)
+      .mockImplementationOnce(async (opts: unknown) => {
+        const { cwd } = opts as { cwd: string };
+        fs.writeFileSync(
+          path.join(cwd, 'skills.json'),
+          JSON.stringify({
+            name: '@test-org/my-skill',
+            version: '1.0.0',
+            skills: { '@dep/circular': '^1.0.0' },
+          }),
+        );
+      })
+      .mockImplementationOnce(async (opts: unknown) => {
+        const { cwd } = opts as { cwd: string };
+        fs.writeFileSync(
+          path.join(cwd, 'skills.json'),
+          JSON.stringify({
+            name: '@dep/circular',
+            version: '1.0.0',
+            skills: { '@test-org/my-skill': '^1.0.0' },
+          }),
+        );
+      });
+
+    // Primary: versions, meta, tarball
+    // @dep/circular: versions, meta, tarball
+    // @test-org/my-skill (cycle): versions fetch → already in lockfile → skip
+    mockFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify(primaryVersionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@test-org/my-skill', '1.0.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(circularDepVersions)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@dep/circular', '1.0.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(primaryVersionsResponse)));
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir: tmpDir,
+    });
+
+    // 3 primary + 3 dep + 1 cycle detection = 7
+    expect(mockFetch).toHaveBeenCalledTimes(7);
+
+    const lock = JSON.parse(fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8'));
+    expect(lock.skills['@test-org/my-skill@1.0.0']).toBeDefined();
+    expect(lock.skills['@dep/circular@1.0.0']).toBeDefined();
+  });
+
+  it('works normally when skill has no dependencies', async () => {
+    const { installCommand } = await import('../commands/install.js');
+    const { extract } = await import('tar');
+
+    // Extract writes a skills.json with no skills field
+    vi.mocked(extract).mockImplementationOnce(async (opts: unknown) => {
+      const { cwd } = opts as { cwd: string };
+      fs.writeFileSync(
+        path.join(cwd, 'skills.json'),
+        JSON.stringify({ name: '@test-org/my-skill', version: '1.0.0' }),
+      );
+    });
+
+    mockFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify(primaryVersionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@test-org/my-skill', '1.0.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)));
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir: tmpDir,
+    });
+
+    // Only 3 fetches for the primary skill
+    expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 });
