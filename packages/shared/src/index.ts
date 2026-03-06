@@ -1,6 +1,6 @@
 // Schemas
 export { skillsJsonSchema, type SkillsJson } from './schemas/skills-json.js';
-export { skillsLockSchema, type SkillsLock, type LockedSkill } from './schemas/skills-lock.js';
+export { skillsLockSchema, skillsLockV1Schema, type SkillsLock, type LockedSkill, type LockedSkillV1 } from './schemas/skills-lock.js';
 export { permissionsSchema, networkPermissionsSchema, filesystemPermissionsSchema, type Permissions, type NetworkPermissions, type FilesystemPermissions } from './schemas/permissions.js';
 
 // Admin types

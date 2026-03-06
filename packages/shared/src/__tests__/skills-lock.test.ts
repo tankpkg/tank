@@ -61,10 +61,49 @@ describe('skillsLockSchema', () => {
 
   it('rejects wrong lockfileVersion', () => {
     const result = skillsLockSchema.safeParse({
-      lockfileVersion: 2,
+      lockfileVersion: 99,
       skills: {},
     });
     expect(result.success).toBe(false);
+  });
+
+  it('accepts lockfileVersion 2', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {},
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts v2 lockfile with dependencies field', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@test/skill@1.0.0': {
+          resolved: 'https://tankpkg.dev/v1/skills/test-skill/1.0.0',
+          integrity: 'sha512-abc',
+          permissions: {},
+          audit_score: 8.0,
+          dependencies: { '@dep/helper': '1.2.0' },
+        },
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts v2 lockfile without dependencies field (optional)', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@test/skill@1.0.0': {
+          resolved: 'https://tankpkg.dev/v1/skills/test-skill/1.0.0',
+          integrity: 'sha512-abc',
+          permissions: {},
+          audit_score: null,
+        },
+      },
+    });
+    expect(result.success).toBe(true);
   });
 
   it('rejects invalid integrity (not sha512-)', () => {
