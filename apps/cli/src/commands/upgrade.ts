@@ -3,12 +3,21 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import chalk from 'chalk';
+import { resolve } from '@tank/shared';
 import { VERSION, USER_AGENT } from '../version.js';
 
 export interface UpgradeOptions {
   version?: string;
   dryRun?: boolean;
   force?: boolean;
+}
+
+function isNewerVersion(candidateVersion: string, currentVersion: string): boolean {
+  if (candidateVersion === currentVersion) {
+    return false;
+  }
+
+  return resolve('*', [candidateVersion, currentVersion]) === candidateVersion;
 }
 
 function resolveCurrentBinary(): string {
@@ -41,7 +50,7 @@ export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
     targetVersion = data.tag_name.replace(/^v/, '');
   }
 
-  if (targetVersion === VERSION && !opts?.force) {
+  if (!isNewerVersion(targetVersion, VERSION) && !opts?.force) {
     console.log(chalk.green(`✓ Already on latest version: ${VERSION}`));
     return;
   }
