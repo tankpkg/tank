@@ -59,7 +59,8 @@ ModuleNotFoundError: No module named 'fastapi'
 
 ### Deployment Configuration
 
-- **Runtime**: Python 3.12 (specified in `python-api/runtime.txt`)
+- **Runtime**: Python 3.12 (specified in `.python-version`)
+- **Dependencies**: `pyproject.toml` (modern Python packaging)
 - **Entrypoint**: `index.py` (imports FastAPI app from `api/main.py`)
 - **Framework**: Auto-detected by Vercel
 - **Routing**: Configured via `vercel.json` rewrites
@@ -84,9 +85,9 @@ Without this configuration, Vercel won't route requests to the Python serverless
 
 If deployment fails with module import errors:
 
-1. Verify root `requirements.txt` exists with redirect
-2. Check `python-api/runtime.txt` specifies Python version
-3. Ensure `api/index.py` entrypoint exists
+1. Verify `pyproject.toml` exists with dependencies
+2. Check `.python-version` specifies Python 3.12
+3. Ensure `index.py` entrypoint exists at root
 4. **Verify `vercel.json` exists with rewrites configuration**
 5. Review Vercel deployment logs for specific errors
 
@@ -94,6 +95,7 @@ If you see `FUNCTION_INVOCATION_FAILED`:
 - Check that `vercel.json` has the rewrites configuration
 - Verify the `index.py` entrypoint exists
 - Check Vercel function logs for runtime errors
+- Ensure `pyproject.toml` has the `[project.scripts]` section pointing to `api.main:app`
 
 ## Testing
 
