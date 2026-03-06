@@ -1,0 +1,2 @@
+# Vercel Python dependencies - redirects to python-api
+-r python-api/requirements.txt
