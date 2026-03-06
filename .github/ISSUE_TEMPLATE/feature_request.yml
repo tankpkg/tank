@@ -6,13 +6,21 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for suggesting a feature! Please describe the problem you're trying to solve and your proposed solution.
+        Thanks for suggesting a feature! Focus on the problem you're trying to solve — we'll figure out the best solution together.
+
+  - type: checkboxes
+    id: pre-submission
+    attributes:
+      label: Pre-Submission Checklist
+      options:
+        - label: I have searched existing issues and this feature has not been requested.
+          required: true
 
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: What problem does this feature solve? What's the use case?
+      label: Problem Statement
+      description: What problem does this feature solve? What's the use case? Focus on the problem, not the solution.
       placeholder: "I'm always frustrated when..."
     validations:
       required: true
@@ -21,7 +29,7 @@ body:
     id: solution
     attributes:
       label: Proposed Solution
-      description: How would you like this to work? Be as specific as you can.
+      description: How would you like this to work? Include API design, CLI UX, or configuration examples if applicable.
     validations:
       required: true
 
@@ -32,20 +40,38 @@ body:
       description: Have you considered any alternative solutions or workarounds?
 
   - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this to your workflow?
+      options:
+        - Critical — blocking my use of Tank
+        - High — significantly impacts my workflow
+        - Medium — would be a meaningful improvement
+        - Low — nice to have
+      default: 2
+    validations:
+      required: true
+
+  - type: dropdown
     id: scope
     attributes:
-      label: Scope
-      description: Which part of Tank does this relate to?
+      label: Affected Areas
+      description: Which parts of Tank does this relate to?
+      multiple: true
       options:
         - CLI
-        - Registry API
-        - Permission system
-        - Audit / security
+        - MCP Server
+        - Registry / Web
+        - Security Scanner
+        - Permissions
+        - Skills Resolution
         - Documentation
+        - GitHub Action
         - Other
 
   - type: textarea
     id: context
     attributes:
       label: Additional Context
-      description: Any other context, mockups, or examples.
+      description: Links to related issues, prior art, mockups, or other supporting context.
