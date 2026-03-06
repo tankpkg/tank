@@ -15,6 +15,7 @@ if (
 ) {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    ui_host: 'https://eu.posthog.com',
     // GDPR: don't track until user accepts cookies
     opt_out_capturing_by_default: true,
     opt_out_capturing_persistence_type: 'localStorage',
