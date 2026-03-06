@@ -11,12 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### CLI Dependency Graph Resolver (`@tankpkg/cli` 0.5.0 → 0.6.0)
+#### CLI + MCP Release Alignment (`@tankpkg/cli` 0.5.0 → 0.6.0, `@tankpkg/mcp-server` 0.2.0 → 0.6.0)
 
 - `tank install` now resolves the full skill dependency graph up front from registry metadata before downloading tarballs
 - Transitive skill dependencies are recorded in `skills.lock`, making the resolved graph reconstructable from lockfile data alone
 - Shared dependencies are deduplicated into a single resolved version per skill name during install planning
 - Tarball downloads for resolved skills now run in parallel with a bounded concurrency limit
+- `@tankpkg/mcp-server` is version-aligned with the CLI for the `v0.6.0` repo release
 
 ### Changed
 
