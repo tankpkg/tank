@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "tank-scanner"
 version = "2.0.0"
@@ -23,3 +27,7 @@ dev = [
 
 [project.scripts]
 app = "api.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["api*", "lib*"]
