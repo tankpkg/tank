@@ -1,12 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
+import { resolve } from '@tank/shared';
 import { getConfigDir } from './config.js';
 import { VERSION } from '../version.js';
 
 interface UpgradeCache {
   lastCheck: number;
   latestVersion: string;
+}
+
+function isNewerVersion(candidateVersion: string, currentVersion: string): boolean {
+  if (candidateVersion === currentVersion) {
+    return false;
+  }
+
+  return resolve('*', [candidateVersion, currentVersion]) === candidateVersion;
 }
 
 export async function checkForUpgrade(configDir?: string): Promise<void> {
@@ -29,7 +38,7 @@ export async function checkForUpgrade(configDir?: string): Promise<void> {
     const isFresh = cache !== null && (Date.now() - cache.lastCheck) < 24 * 60 * 60 * 1000;
 
     if (isFresh && cache !== null) {
-      if (cache.latestVersion !== VERSION) {
+      if (isNewerVersion(cache.latestVersion, VERSION)) {
         console.error(`\n  ${chalk.cyan('ℹ')} New version available: ${chalk.gray(VERSION)} → ${chalk.green(cache.latestVersion)}`);
         console.error(`  Run ${chalk.cyan('`tank upgrade`')} to update.\n`);
       }
@@ -52,7 +61,7 @@ export async function checkForUpgrade(configDir?: string): Promise<void> {
     const newCache: UpgradeCache = { lastCheck: Date.now(), latestVersion };
     fs.writeFileSync(cachePath, JSON.stringify(newCache, null, 2) + '\n');
 
-    if (latestVersion !== VERSION) {
+    if (isNewerVersion(latestVersion, VERSION)) {
       console.error(`\n  ${chalk.cyan('ℹ')} New version available: ${chalk.gray(VERSION)} → ${chalk.green(latestVersion)}`);
       console.error(`  Run ${chalk.cyan('`tank upgrade`')} to update.\n`);
     }

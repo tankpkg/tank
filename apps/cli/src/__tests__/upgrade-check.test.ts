@@ -75,6 +75,19 @@ describe('checkForUpgrade', () => {
     expect(output).toContain('99.0.0');
   });
 
+  it('does not show banner when cached version is older than current version', async () => {
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch;
+
+    const cache = { lastCheck: Date.now(), latestVersion: '0.5.0' };
+    fs.writeFileSync(path.join(tmpDir, 'upgrade_check.json'), JSON.stringify(cache));
+
+    await checkForUpgrade(tmpDir);
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(collectOutput(errorSpy)).toBe('');
+  });
+
   it('fetches from GitHub when cache is stale', async () => {
     const mockFetch = vi.fn();
     globalThis.fetch = mockFetch;
@@ -109,6 +122,20 @@ describe('checkForUpgrade', () => {
     expect(output).toContain('New version available');
     expect(output).toContain('99.0.0');
     expect(output).toContain('tank upgrade');
+  });
+
+  it('does not show banner when fetched version is older than current version', async () => {
+    const mockFetch = vi.fn();
+    globalThis.fetch = mockFetch;
+
+    mockFetch.mockResolvedValueOnce(new Response(
+      JSON.stringify({ tag_name: 'v0.5.0' }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
+    ));
+
+    await checkForUpgrade(tmpDir);
+
+    expect(collectOutput(errorSpy)).toBe('');
   });
 
   it('silently swallows fetch errors', async () => {
