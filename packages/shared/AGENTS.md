@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Pure library package — Zod schemas, TypeScript types, constants, and a semver resolver. Zero side effects, consumed by both CLI and Web. This is the ONLY shared dependency between apps.
+Pure library package — Zod schemas, TypeScript types, constants, and a semver resolver. Zero side effects, consumed by CLI, MCP server, and Web. This is the ONLY shared dependency between apps.
 
 ## STRUCTURE
 
@@ -67,6 +67,20 @@ shared/src/
 | `resolve` | `resolver.ts` | `(range: string, versions: string[]) => string \| null` |
 | `sortVersions` | `resolver.ts` | `(versions: string[]) => string[]` |
 
+## CONSUMERS
+
+```
+@tank/shared
+     ↑                    ↑                    ↑
+     │                    │                    │
+  apps/cli         packages/mcp-server     apps/web
+ (9 imports)        (schemas, types)     (1 import, hoisted)
+```
+
+- **CLI**: lockfile, packer, validator use schemas + resolver + constants
+- **MCP server**: packer, tools use schemas + types + constants
+- **Web**: skill route uses `skillsJsonSchema.safeParse()` — imported undeclared via pnpm hoisting
+
 ## WHERE TO LOOK
 
 | Task | Location | Notes |
@@ -77,93 +91,25 @@ shared/src/
 | Add helper function | `lib/*.ts` | Must be pure, no side effects |
 | Add test | `__tests__/*.test.ts` | Colocated with source |
 
-## PERMISSION SCHEMA
-
-```typescript
-permissionsSchema = z.object({
-  network: z.object({
-    outbound: z.array(z.string()).optional(),  // Domains allowed
-    inbound: z.boolean().optional(),
-  }).optional(),
-  filesystem: z.object({
-    read: z.array(z.string()).optional(),   // Glob patterns
-    write: z.array(z.string()).optional(),
-  }).optional(),
-  subprocess: z.boolean().optional(),
-  environment: z.array(z.string()).optional(),  // Env var names
-  secrets: z.array(z.string()).optional(),      // Secret names
-})
-```
-
-## LOCKFILE SCHEMA
-
-```typescript
-skillsLockSchema = z.object({
-  version: z.literal(1),  // LOCKFILE_VERSION
-  skills: z.record(z.string(), z.object({
-    version: z.string(),
-    resolved: z.string(),    // tarball URL
-    integrity: z.string(),   // SHA-512 hash
-    permissions: permissionsSchema.optional(),
-  })),
-})
-```
-
-## SKILLS.JSON SCHEMA
-
-```typescript
-skillsJsonSchema = z.object({
-  name: z.string(),
-  version: z.string(),
-  description: z.string().optional(),
-  permissions: permissionsSchema.optional(),
-  dependencies: z.record(z.string(), z.string()).optional(),
-  author: z.object({
-    name: z.string(),
-    email: z.string().optional(),
-  }).optional(),
-  repository: z.string().optional(),
-  license: z.string().optional(),
-  keywords: z.array(z.string()).optional(),
-})
-```
-
 ## CONVENTIONS
 
+> Universal conventions (strict TS, ESM, Zod safeParse, no cross-app imports) in root AGENTS.md.
+
 - **Barrel export only** — all public API via `index.ts`, no deep imports
-- **Zod v4** — `safeParse()` for validation, never `parse()` (throws)
 - **Pure library** — no side effects, no I/O, no runtime dependencies beyond `zod` + `semver`
-- **ESM + declarations** — compiled with `tsc`, emits `.js` + `.d.ts`
 - **LOCKFILE_VERSION = 1** — bump only on breaking lockfile format changes
 - **All types immutable** — use `readonly` where possible
 
 ## ANTI-PATTERNS
 
-- **Never add side-effect dependencies** — this package must stay pure
-- **Never import from `apps/cli` or `apps/web`** — dependency flows one way
+> Universal anti-patterns (type suppression, cross-app imports, frozen constants) in root AGENTS.md.
+
 - **Never use deep import paths** — always import from `@tank/shared`
-- **Never mutate exported constants** — treat as frozen
-- **Never use `parse()` from Zod** — always `safeParse()` to avoid throwing
 - **Never add runtime dependencies** — only `zod` and `semver` allowed
 
 ## TESTING
 
 ```bash
-# Run shared package tests
 pnpm test --filter=shared
-
-# Run specific test
 pnpm test --filter=shared -- resolver.test.ts
 ```
-
-## BUILD OUTPUT
-
-```bash
-pnpm build --filter=shared
-```
-
-Produces:
-- `dist/index.js` — ESM entry point
-- `dist/index.d.ts` — TypeScript declarations
-- `dist/**/*.js` — Compiled modules
-- `dist/**/*.d.ts` — Declaration files
