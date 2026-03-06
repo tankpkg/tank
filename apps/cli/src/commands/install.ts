@@ -1,9 +1,8 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import os from 'node:os';
 import ora from 'ora';
-import { extract } from 'tar';
 import { resolve, type Permissions, type SkillsLock, LOCKFILE_VERSION } from '@tank/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
@@ -11,8 +10,27 @@ import { prepareAgentSkillDir } from '../lib/frontmatter.js';
 import { linkSkillToAgents } from '../lib/linker.js';
 import { detectInstalledAgents, getGlobalSkillsDir, getGlobalAgentSkillsDir } from '../lib/agents.js';
 import { USER_AGENT } from '../version.js';
-
-const MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024; // 100MB
+import {
+  resolveDependencyTree,
+  buildSkillKey,
+  type RegistryFetcher,
+  type RegistrySkillMeta,
+  type RegistryVersionInfo,
+  type ResolvedNode,
+} from '../lib/dependency-resolver.js';
+import { checkPermissionBudget } from '../lib/permission-checker.js';
+import {
+  downloadAllParallel,
+  extractSafely,
+  getExtractDir,
+  getGlobalExtractDir,
+  getResolvedNodesInOrder,
+  parseLockKey,
+  parseVersionFromLockKey,
+  readExtractedDependencies,
+  verifyExtractedDependencies,
+  writeLockfileWithResolvedGraph,
+} from '../lib/install-pipeline.js';
 
 export interface InstallOptions {
   name: string;
@@ -21,6 +39,7 @@ export interface InstallOptions {
   configDir?: string;
   global?: boolean;
   homedir?: string;
+  isTransitive?: boolean;
 }
 
 export interface LockfileInstallOptions {
@@ -37,14 +56,6 @@ export interface InstallAllOptions {
   homedir?: string;
 }
 
-interface VersionInfo {
-  version: string;
-  integrity: string;
-  auditScore: number;
-  auditStatus: string;
-  publishedAt: string;
-}
-
 interface VersionMetadata {
   name: string;
   version: string;
@@ -57,22 +68,322 @@ interface VersionMetadata {
   publishedAt: string;
 }
 
-/**
- * Install a skill from the Tank registry.
- *
- * Flow:
- * 1. Read skills.json from directory (must exist)
- * 2. Fetch available versions
- * 3. Resolve best version using semver
- * 4. Check if already installed (skip if same version in lockfile)
- * 5. Fetch version metadata + download URL
- * 6. Check permission budget
- * 7. Download tarball
- * 8. Verify integrity (sha512)
- * 9. Extract tarball safely
- * 10. Update skills.json
- * 11. Update skills.lock
- */
+interface ExecuteInstallPipelineOptions {
+  directory: string;
+  configDir?: string;
+  global: boolean;
+  homedir?: string;
+  resolvedHome: string;
+  lock: SkillsLock;
+  lockPath: string;
+  resolvedNodes: ResolvedNode[];
+  nodesToInstall: ResolvedNode[];
+  rootSkillNames: string[];
+  projectPermissions?: Permissions;
+  auditMinScore?: number;
+  spinner: ReturnType<typeof ora>;
+}
+
+function createRegistryFetcher(
+  registry: string,
+  headers: Record<string, string>,
+): RegistryFetcher {
+  const versionsCache = new Map<string, RegistryVersionInfo[]>();
+  const metadataCache = new Map<string, RegistrySkillMeta>();
+
+  return {
+    async fetchVersions(name: string): Promise<RegistryVersionInfo[]> {
+      const cached = versionsCache.get(name);
+      if (cached) {
+        return cached;
+      }
+
+      const encoded = encodeURIComponent(name);
+      let res: Response;
+      try {
+        res = await fetch(`${registry}/api/v1/skills/${encoded}/versions`, { headers });
+      } catch (err) {
+        throw new Error(`Network error fetching versions: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      if (!res.ok) {
+        if (res.status === 403) throw new Error('Token lacks required scope: skills:read');
+        if (res.status === 404) throw new Error(`Skill not found or no access: ${name}`);
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(body.error ?? res.statusText);
+      }
+      const data = await res.json() as { name: string; versions: RegistryVersionInfo[] };
+      versionsCache.set(name, data.versions);
+      return data.versions;
+    },
+    async fetchMetadata(name: string, version: string): Promise<RegistrySkillMeta> {
+      const cacheKey = buildSkillKey(name, version);
+      const cached = metadataCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      const encoded = encodeURIComponent(name);
+      let res: Response;
+      try {
+        res = await fetch(`${registry}/api/v1/skills/${encoded}/${version}`, { headers });
+      } catch (err) {
+        throw new Error(`Network error fetching metadata: ${err instanceof Error ? err.message : String(err)}`);
+      }
+
+      if (!res.ok) {
+        if (res.status === 403) throw new Error('Token lacks required scope: skills:read');
+        if (res.status === 404) throw new Error(`Skill not found or no access: ${name}@${version}`);
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(body.error ?? res.statusText);
+      }
+
+      const data = await res.json() as RegistrySkillMeta;
+      const normalized: RegistrySkillMeta = {
+        ...data,
+        dependencies: data.dependencies ?? {},
+      };
+      metadataCache.set(cacheKey, normalized);
+      return normalized;
+    },
+  };
+}
+
+function readSkillsJson(skillsJsonPath: string): Record<string, unknown> {
+  try {
+    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    throw new Error('Failed to read or parse skills.json');
+  }
+}
+
+function readOrCreateSkillsJson(skillsJsonPath: string): Record<string, unknown> {
+  if (!fs.existsSync(skillsJsonPath)) {
+    const skillsJson: Record<string, unknown> = { skills: {} };
+    fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+    logger.info('Created skills.json');
+    return skillsJson;
+  }
+
+  return readSkillsJson(skillsJsonPath);
+}
+
+function readLockOrFresh(lockPath: string): SkillsLock {
+  if (!fs.existsSync(lockPath)) {
+    return { lockfileVersion: LOCKFILE_VERSION, skills: {} };
+  }
+
+  try {
+    const raw = fs.readFileSync(lockPath, 'utf-8');
+    return JSON.parse(raw) as SkillsLock;
+  } catch {
+    return { lockfileVersion: LOCKFILE_VERSION, skills: {} };
+  }
+}
+
+function buildLockedVersionByName(lock: SkillsLock): Map<string, string> {
+  const lockedVersionByName = new Map<string, string>();
+  for (const key of Object.keys(lock.skills)) {
+    lockedVersionByName.set(parseLockKey(key), parseVersionFromLockKey(key));
+  }
+  return lockedVersionByName;
+}
+
+function createExtractDirResolver(directory: string, global: boolean, resolvedHome: string): (skillName: string) => string {
+  return (skillName: string): string => (
+    global ? getGlobalExtractDir(resolvedHome, skillName) : getExtractDir(directory, skillName)
+  );
+}
+
+function validateResolvedNodes(
+  resolvedNodes: ResolvedNode[],
+  projectPermissions: Permissions | undefined,
+  auditMinScore: number | undefined,
+): void {
+  if (!projectPermissions) {
+    logger.warn('No permission budget defined in skills.json. Install proceeding without permission checks.');
+  }
+
+  for (const node of resolvedNodes) {
+    if (projectPermissions) {
+      checkPermissionBudget(projectPermissions, node.meta.permissions as Permissions, node.name);
+    }
+
+    if (auditMinScore !== undefined) {
+      if (node.meta.auditScore === null || node.meta.auditScore === undefined) {
+        logger.warn(`Audit score not yet available for ${node.name}. Install proceeding without audit score check.`);
+      } else if (node.meta.auditScore < auditMinScore) {
+        throw new Error(
+          `Audit score ${node.meta.auditScore} for ${node.name} is below minimum threshold ${auditMinScore} defined in skills.json`,
+        );
+      }
+    }
+  }
+}
+
+async function runLegacyFallback(options: {
+  rootSkillNames: string[];
+  resolvedNodeByName: Map<string, ResolvedNode>;
+  extractDirForSkill: (skillName: string) => string;
+  directory: string;
+  configDir?: string;
+  global: boolean;
+  homedir?: string;
+}): Promise<void> {
+  const { rootSkillNames, resolvedNodeByName, extractDirForSkill, directory, configDir, global, homedir } = options;
+
+  for (const skillName of rootSkillNames) {
+    const node = resolvedNodeByName.get(skillName);
+    if (!node || Object.keys(node.meta.dependencies).length > 0) {
+      continue;
+    }
+
+    const extractedDeps = readExtractedDependencies(extractDirForSkill(skillName));
+    for (const [depName, depRange] of Object.entries(extractedDeps)) {
+      if (depName === skillName) {
+        continue;
+      }
+
+      await installCommand({
+        name: depName,
+        versionRange: depRange,
+        directory,
+        configDir,
+        global,
+        homedir,
+        isTransitive: true,
+      });
+    }
+  }
+}
+
+function linkInstalledRoots(options: {
+  rootSkillNames: string[];
+  resolvedNodeByName: Map<string, ResolvedNode>;
+  extractDirForSkill: (skillName: string) => string;
+  directory: string;
+  global: boolean;
+  resolvedHome: string;
+  homedir?: string;
+}): void {
+  const { rootSkillNames, resolvedNodeByName, extractDirForSkill, directory, global, resolvedHome, homedir } = options;
+
+  const agentSkillsBaseDir = global
+    ? getGlobalAgentSkillsDir(resolvedHome)
+    : path.join(directory, '.tank', 'agent-skills');
+  const linksDir = global ? path.join(resolvedHome, '.tank') : path.join(directory, '.tank');
+
+  for (const skillName of rootSkillNames) {
+    try {
+      const node = resolvedNodeByName.get(skillName);
+      if (!node) {
+        continue;
+      }
+
+      const agentSkillDir = prepareAgentSkillDir({
+        skillName,
+        extractDir: extractDirForSkill(skillName),
+        agentSkillsBaseDir,
+        description: node.meta.description,
+      });
+      const linkResult = linkSkillToAgents({
+        skillName,
+        sourceDir: agentSkillDir,
+        linksDir,
+        source: global ? 'global' : 'local',
+        homedir,
+      });
+
+      if (linkResult.linked.length > 0) {
+        logger.info(`Linked to ${linkResult.linked.length} agent(s)`);
+      }
+      if (linkResult.failed.length > 0) {
+        for (const failedLink of linkResult.failed) {
+          logger.warn(`Failed to link to ${failedLink.agentId}: ${failedLink.error}`);
+        }
+      }
+    } catch {
+      if (rootSkillNames.length === 1) {
+        logger.warn('Agent linking skipped (non-fatal)');
+      } else {
+        logger.warn(`Agent linking skipped for ${skillName} (non-fatal)`);
+      }
+    }
+  }
+
+  const detectedAgents = detectInstalledAgents(homedir);
+  if (detectedAgents.length === 0) {
+    logger.warn('No agents detected for linking');
+  }
+}
+
+async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): Promise<SkillsLock> {
+  const {
+    directory,
+    configDir,
+    global,
+    homedir,
+    resolvedHome,
+    lock,
+    lockPath,
+    resolvedNodes,
+    nodesToInstall,
+    rootSkillNames,
+    projectPermissions,
+    auditMinScore,
+    spinner,
+  } = options;
+
+  if (!global) {
+    validateResolvedNodes(resolvedNodes, projectPermissions, auditMinScore);
+  }
+
+  const extractDirForSkill = createExtractDirResolver(directory, global, resolvedHome);
+  const resolvedNodeByName = new Map(resolvedNodes.map((node) => [node.name, node]));
+  const downloaded = await downloadAllParallel(nodesToInstall, spinner);
+
+  for (const node of nodesToInstall) {
+    const payload = downloaded.get(node.name);
+    if (!payload) {
+      throw new Error(`Missing downloaded tarball for ${node.name}@${node.version}`);
+    }
+
+    spinner.text = `Extracting ${node.name}@${node.version}...`;
+    const extractDir = extractDirForSkill(node.name);
+    fs.mkdirSync(extractDir, { recursive: true });
+    await extractSafely(payload.buffer, extractDir);
+    verifyExtractedDependencies(extractDir, node);
+  }
+
+  lock.lockfileVersion = LOCKFILE_VERSION;
+  const updatedLock = writeLockfileWithResolvedGraph(lock, resolvedNodes, downloaded);
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  fs.writeFileSync(lockPath, JSON.stringify(updatedLock, null, 2) + '\n');
+
+  await runLegacyFallback({
+    rootSkillNames,
+    resolvedNodeByName,
+    extractDirForSkill,
+    directory,
+    configDir,
+    global,
+    homedir,
+  });
+
+  linkInstalledRoots({
+    rootSkillNames,
+    resolvedNodeByName,
+    extractDirForSkill,
+    directory,
+    global,
+    resolvedHome,
+    homedir,
+  });
+
+  return updatedLock;
+}
+
 export async function installCommand(options: InstallOptions): Promise<void> {
   const {
     name,
@@ -81,6 +392,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     configDir,
     global = false,
     homedir,
+    isTransitive = false,
   } = options;
 
   const config = getConfig(configDir);
@@ -90,246 +402,90 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  // 1. Read or create skills.json
   const skillsJsonPath = path.join(directory, 'skills.json');
-  let skillsJson: Record<string, unknown> = { skills: {} };
-  if (!global) {
-    if (!fs.existsSync(skillsJsonPath)) {
-      skillsJson = { skills: {} };
-      fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
-      logger.info('Created skills.json');
-    } else {
-      try {
-        const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
-        skillsJson = JSON.parse(raw) as Record<string, unknown>;
-      } catch {
-        throw new Error('Failed to read or parse skills.json');
-      }
-    }
-  }
-
-  // Read existing lockfile if present
+  const skillsJson = global ? { skills: {} } : readOrCreateSkillsJson(skillsJsonPath);
   const lockPath = global
     ? path.join(resolvedHome, '.tank', 'skills.lock')
     : path.join(directory, 'skills.lock');
-  let lock: SkillsLock = { lockfileVersion: LOCKFILE_VERSION, skills: {} };
-  if (fs.existsSync(lockPath)) {
-    try {
-      const raw = fs.readFileSync(lockPath, 'utf-8');
-      lock = JSON.parse(raw) as SkillsLock;
-    } catch {
-      // If lockfile is corrupt, start fresh
-      lock = { lockfileVersion: LOCKFILE_VERSION, skills: {} };
-    }
-  }
+  const lock = readLockOrFresh(lockPath);
+  const spinner = ora('Resolving dependency graph...').start();
 
-  const spinner = ora('Resolving versions...').start();
-
-  // 2. Fetch available versions
-  const encodedName = encodeURIComponent(name);
-  const versionsUrl = `${config.registry}/api/v1/skills/${encodedName}/versions`;
-
-  let versionsRes: Response;
   try {
-    versionsRes = await fetch(versionsUrl, {
-      headers: requestHeaders,
-    });
-  } catch (err) {
-    spinner.fail('Failed to fetch versions');
-    throw new Error(`Network error fetching versions: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  if (!versionsRes.ok) {
-    spinner.fail('Failed to fetch versions');
-    if (versionsRes.status === 403) {
-      throw new Error('Token lacks required scope: skills:read');
-    }
-    if (versionsRes.status === 404) {
-      throw new Error(`Skill not found or no access: ${name}`);
-    }
-    const body = await versionsRes.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? versionsRes.statusText);
-  }
-
-  const versionsData = await versionsRes.json() as { name: string; versions: VersionInfo[] };
-  const availableVersions = versionsData.versions.map((v) => v.version);
-
-  // 3. Resolve best version
-  const resolved = resolve(versionRange, availableVersions);
-  if (!resolved) {
-    spinner.fail('Version resolution failed');
-    throw new Error(
-      `No version of ${name} satisfies range "${versionRange}". Available: ${availableVersions.join(', ')}`,
-    );
-  }
-
-  // 4. Check if already installed
-  const lockKey = `${name}@${resolved}`;
-  if (lock.skills[lockKey]) {
-    spinner.stop();
-    logger.info(`${name}@${resolved} is already installed`);
-    return;
-  }
-
-  // 5. Fetch version metadata
-  spinner.text = `Fetching ${name}@${resolved}...`;
-  const metaUrl = `${config.registry}/api/v1/skills/${encodedName}/${resolved}`;
-
-  let metaRes: Response;
-  try {
-    metaRes = await fetch(metaUrl, {
-      headers: requestHeaders,
-    });
-  } catch (err) {
-    spinner.fail('Failed to fetch version metadata');
-    throw new Error(`Network error fetching metadata: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  if (!metaRes.ok) {
-    spinner.fail('Failed to fetch version metadata');
-    if (metaRes.status === 403) {
-      throw new Error('Token lacks required scope: skills:read');
-    }
-    if (metaRes.status === 404) {
-      throw new Error(`Skill not found or no access: ${name}@${resolved}`);
-    }
-    const body = await metaRes.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? metaRes.statusText);
-  }
-
-  const metadata = await metaRes.json() as VersionMetadata;
-
-  // 6. Check permission budget
-  const projectPermissions = global ? undefined : skillsJson.permissions as Permissions | undefined;
-  const skillPermissions = metadata.permissions;
-
-  if (!global) {
-    if (!projectPermissions) {
-      logger.warn('No permission budget defined in skills.json. Install proceeding without permission checks.');
-    } else {
-      checkPermissionBudget(projectPermissions, skillPermissions, name);
-    }
-  }
-
-  // 6.5. Check audit score threshold
-  const auditMinScore = global ? undefined : (skillsJson.audit as { min_score?: number } | undefined)?.min_score;
-  if (!global && auditMinScore !== undefined) {
-    if (metadata.auditScore === null || metadata.auditScore === undefined) {
-      logger.warn(`Audit score not yet available for ${name}. Install proceeding without audit score check.`);
-    } else if (metadata.auditScore < auditMinScore) {
+    const fetcher = createRegistryFetcher(config.registry, requestHeaders);
+    const requestedVersions = await fetcher.fetchVersions(name);
+    const requestedAvailableVersions = requestedVersions.map((versionInfo) => versionInfo.version);
+    const requestedResolvedVersion = resolve(versionRange, requestedAvailableVersions);
+    if (!requestedResolvedVersion) {
       throw new Error(
-        `Audit score ${metadata.auditScore} for ${name} is below minimum threshold ${auditMinScore} defined in skills.json`,
+        `No version of ${name} satisfies range "${versionRange}". Available: ${requestedAvailableVersions.join(', ')}`,
       );
     }
-  }
 
-  // 7. Download tarball
-  spinner.text = `Downloading ${name}@${resolved}...`;
-  let downloadRes: Response;
-  try {
-    downloadRes = await fetch(metadata.downloadUrl);
-  } catch (err) {
-    spinner.fail('Download failed');
-    throw new Error(`Network error downloading tarball: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  if (!downloadRes.ok) {
-    spinner.fail('Download failed');
-    throw new Error(`Failed to download tarball: ${downloadRes.status} ${downloadRes.statusText}`);
-  }
-
-  const tarballBuffer = Buffer.from(await downloadRes.arrayBuffer());
-
-  // 8. Verify integrity
-  spinner.text = 'Verifying integrity...';
-  const hash = crypto.createHash('sha512').update(tarballBuffer).digest('base64');
-  const computedIntegrity = `sha512-${hash}`;
-
-  if (computedIntegrity !== metadata.integrity) {
-    spinner.fail('Integrity check failed');
-    throw new Error(
-      `Integrity mismatch for ${name}@${resolved}. Expected: ${metadata.integrity}, Got: ${computedIntegrity}`,
-    );
-  }
-
-  // 9. Extract tarball safely
-  spinner.text = `Extracting ${name}@${resolved}...`;
-  const extractDir = global
-    ? getGlobalExtractDir(resolvedHome, name)
-    : getExtractDir(directory, name);
-
-  // Create extraction directory
-  fs.mkdirSync(extractDir, { recursive: true });
-
-  // Extract with safety checks
-  await extractSafely(tarballBuffer, extractDir);
-
-  // 10. Update skills.json
-  if (!global) {
-    const skills = (skillsJson.skills ?? {}) as Record<string, string>;
-    // Use the provided range if explicit, otherwise use ^{resolved}
-    skills[name] = versionRange === '*' ? `^${resolved}` : versionRange;
-    skillsJson.skills = skills;
-
-    fs.writeFileSync(
-      skillsJsonPath,
-      JSON.stringify(skillsJson, null, 2) + '\n',
-    );
-  }
-
-  // 11. Update skills.lock
-  lock.skills[lockKey] = {
-    resolved: metadata.downloadUrl,
-    integrity: computedIntegrity,
-    permissions: skillPermissions ?? {},
-    audit_score: metadata.auditScore ?? null,
-  };
-
-  // Sort keys alphabetically
-  const sortedSkills: Record<string, unknown> = {};
-  for (const key of Object.keys(lock.skills).sort()) {
-    sortedSkills[key] = lock.skills[key];
-  }
-  lock.skills = sortedSkills as SkillsLock['skills'];
-
-  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
-  fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
-
-  // 12. Agent linking (always-on, failures are warnings)
-  try {
-    const agentSkillsBaseDir = global
-      ? getGlobalAgentSkillsDir(resolvedHome)
-      : path.join(directory, '.tank', 'agent-skills');
-    const agentSkillDir = prepareAgentSkillDir({
-      skillName: name,
-      extractDir,
-      agentSkillsBaseDir,
-      description: metadata.description,
-    });
-    const linkResult = linkSkillToAgents({
-      skillName: name,
-      sourceDir: agentSkillDir,
-      linksDir: global ? path.join(resolvedHome, '.tank') : path.join(directory, '.tank'),
-      source: global ? 'global' : 'local',
-      homedir: options.homedir,
-    });
-    const detectedAgents = detectInstalledAgents(options.homedir);
-    if (detectedAgents.length === 0) {
-      logger.warn('No agents detected for linking');
+    const requestedLockKey = buildSkillKey(name, requestedResolvedVersion);
+    if (lock.skills[requestedLockKey]) {
+      logger.info(`${name}@${requestedResolvedVersion} is already installed`);
+      spinner.succeed(`${name}@${requestedResolvedVersion} is already installed`);
+      return;
     }
-    if (linkResult.linked.length > 0) {
-      logger.info(`Linked to ${linkResult.linked.length} agent(s)`);
-    }
-    if (linkResult.failed.length > 0) {
-      for (const f of linkResult.failed) {
-        logger.warn(`Failed to link to ${f.agentId}: ${f.error}`);
+
+    const rootDependencies: Record<string, string> = {};
+    if (!global && !isTransitive) {
+      const existingSkills = (skillsJson.skills ?? {}) as Record<string, string>;
+      const lockedVersionByName = buildLockedVersionByName(lock);
+
+      for (const [skillName, range] of Object.entries(existingSkills)) {
+        if (typeof range !== 'string') {
+          continue;
+        }
+
+        rootDependencies[skillName] = lockedVersionByName.get(skillName) ?? range;
       }
     }
-  } catch {
-    logger.warn('Agent linking skipped (non-fatal)');
-  }
+    rootDependencies[name] = versionRange;
 
-  spinner.succeed(`Installed ${name}@${resolved}`);
+    const resolvedGraph = await resolveDependencyTree(rootDependencies, fetcher);
+    const resolvedNodes = getResolvedNodesInOrder(resolvedGraph.nodes, resolvedGraph.installOrder);
+    const rootNode = resolvedGraph.nodes.get(name);
+    if (!rootNode) {
+      throw new Error(`Failed to resolve requested skill: ${name}`);
+    }
+
+    const nodesToInstall = resolvedNodes.filter((node) => {
+      const lockKey = buildSkillKey(node.name, node.version);
+      return !lock.skills[lockKey];
+    });
+
+    const projectPermissions = global ? undefined : skillsJson.permissions as Permissions | undefined;
+    const auditMinScore = global ? undefined : (skillsJson.audit as { min_score?: number } | undefined)?.min_score;
+
+    await executeInstallPipeline({
+      directory,
+      configDir,
+      global,
+      homedir,
+      resolvedHome,
+      lock,
+      lockPath,
+      resolvedNodes,
+      nodesToInstall,
+      rootSkillNames: [name],
+      projectPermissions,
+      auditMinScore,
+      spinner,
+    });
+
+    if (!global && !isTransitive) {
+      const skills = (skillsJson.skills ?? {}) as Record<string, string>;
+      skills[name] = versionRange === '*' ? `^${rootNode.version}` : versionRange;
+      skillsJson.skills = skills;
+      fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+    }
+
+    spinner.succeed(`Installed ${name}@${rootNode.version}`);
+  } catch (err) {
+    spinner.fail('Install failed');
+    throw err;
+  }
 }
 
 export async function installFromLockfile(options: LockfileInstallOptions): Promise<void> {
@@ -341,6 +497,7 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
   if (config.token) {
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
+
   const lockPath = global
     ? path.join(resolvedHome, '.tank', 'skills.lock')
     : path.join(directory, 'skills.lock');
@@ -373,10 +530,9 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
       const version = parseVersionFromLockKey(key);
       spinner.text = `Installing ${key}...`;
 
-      // Fetch metadata from API to record download and get fresh signed URL
       const encodedName = encodeURIComponent(skillName);
       const metaUrl = `${config.registry}/api/v1/skills/${encodedName}/${version}`;
-      
+
       let metaRes: Response;
       try {
         metaRes = await fetch(metaUrl, {
@@ -396,17 +552,13 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
 
       const metadata = await metaRes.json() as VersionMetadata;
       const downloadUrl = metadata.downloadUrl;
-
       const downloadRes = await fetch(downloadUrl);
       if (!downloadRes.ok) {
         throw new Error(`Failed to download ${key}: ${downloadRes.status} ${downloadRes.statusText}`);
       }
 
       const tarballBuffer = Buffer.from(await downloadRes.arrayBuffer());
-
-      const hash = crypto.createHash('sha512').update(tarballBuffer).digest('base64');
-      const computedIntegrity = `sha512-${hash}`;
-
+      const computedIntegrity = buildIntegrity(tarballBuffer);
       if (computedIntegrity !== entry.integrity) {
         throw new Error(
           `Integrity mismatch for ${key}. Expected: ${entry.integrity}, Got: ${computedIntegrity}`,
@@ -447,8 +599,8 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
             logger.info(`Linked to ${linkResult.linked.length} agent(s)`);
           }
           if (linkResult.failed.length > 0) {
-            for (const f of linkResult.failed) {
-              logger.warn(`Failed to link to ${f.agentId}: ${f.error}`);
+            for (const failedLink of linkResult.failed) {
+              logger.warn(`Failed to link to ${failedLink.agentId}: ${failedLink.error}`);
             }
           }
         } catch {
@@ -470,6 +622,11 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
 export async function installAll(options: InstallAllOptions): Promise<void> {
   const { directory = process.cwd(), configDir, global = false, homedir } = options;
   const resolvedHome = homedir ?? os.homedir();
+  const config = getConfig(configDir);
+  const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (config.token) {
+    requestHeaders.Authorization = `Bearer ${config.token}`;
+  }
 
   const lockPath = global
     ? path.join(resolvedHome, '.tank', 'skills.lock')
@@ -490,14 +647,7 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
     return;
   }
 
-  let skillsJson: Record<string, unknown>;
-  try {
-    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
-    skillsJson = JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    throw new Error('Failed to read or parse skills.json');
-  }
-
+  const skillsJson = readSkillsJson(skillsJsonPath);
   const skills = (skillsJson.skills ?? {}) as Record<string, string>;
   const skillEntries = Object.entries(skills);
 
@@ -506,172 +656,47 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
     return;
   }
 
-  for (const [name, versionRange] of skillEntries) {
-    await installCommand({ name, versionRange, directory, configDir, global, homedir });
-  }
-}
-
-function parseLockKey(key: string): string {
-  const lastAt = key.lastIndexOf('@');
-  if (lastAt <= 0) {
-    throw new Error(`Invalid lockfile key: ${key}`);
-  }
-  return key.slice(0, lastAt);
-}
-
-function parseVersionFromLockKey(key: string): string {
-  const lastAt = key.lastIndexOf('@');
-  if (lastAt <= 0 || lastAt === key.length - 1) {
-    throw new Error(`Invalid lockfile key: ${key}`);
-  }
-  return key.slice(lastAt + 1);
-}
-
-function getExtractDir(projectDir: string, skillName: string): string {
-  if (skillName.startsWith('@')) {
-    const [scope, name] = skillName.split('/');
-    return path.join(projectDir, '.tank', 'skills', scope, name);
-  }
-  return path.join(projectDir, '.tank', 'skills', skillName);
-}
-
-function getGlobalExtractDir(homedir: string, skillName: string): string {
-  const globalDir = path.join(homedir, '.tank', 'skills');
-  if (skillName.startsWith('@')) {
-    const [scope, name] = skillName.split('/');
-    return path.join(globalDir, scope, name);
-  }
-  return path.join(globalDir, skillName);
-}
-
-/**
- * Extract a tarball safely with security checks.
- * Rejects: absolute paths, path traversal (..), symlinks/hardlinks.
- * Enforces max uncompressed size.
- */
-async function extractSafely(tarball: Buffer, destDir: string): Promise<void> {
-  // Write tarball to a temp file for extraction
-  const tmpTarball = path.join(destDir, '.tmp-tarball.tgz');
-  fs.writeFileSync(tmpTarball, tarball);
+  const spinner = ora('Resolving dependency graph...').start();
 
   try {
-    await extract({
-      file: tmpTarball,
-      cwd: destDir,
-      // Safety: reject entries that try to escape the extraction directory
-      filter: (entryPath: string) => {
-        // Reject absolute paths
-        if (path.isAbsolute(entryPath)) {
-          throw new Error(`Absolute path in tarball: ${entryPath}`);
-        }
-        // Reject path traversal
-        if (entryPath.split('/').includes('..') || entryPath.split(path.sep).includes('..')) {
-          throw new Error(`Path traversal in tarball: ${entryPath}`);
-        }
-        return true;
-      },
-      onReadEntry: (entry) => {
-        // Reject symlinks and hardlinks
-        if (entry.type === 'SymbolicLink' || entry.type === 'Link') {
-          throw new Error(`Symlink/hardlink in tarball: ${entry.path}`);
-        }
-      },
+    const rootDependencies: Record<string, string> = {};
+    for (const [skillName, range] of skillEntries) {
+      if (typeof range === 'string') {
+        rootDependencies[skillName] = range;
+      }
+    }
+
+    const fetcher = createRegistryFetcher(config.registry, requestHeaders);
+    const resolvedGraph = await resolveDependencyTree(rootDependencies, fetcher);
+    const resolvedNodes = getResolvedNodesInOrder(resolvedGraph.nodes, resolvedGraph.installOrder);
+    const lock: SkillsLock = { lockfileVersion: LOCKFILE_VERSION, skills: {} };
+    const projectPermissions = skillsJson.permissions as Permissions | undefined;
+    const auditMinScore = (skillsJson.audit as { min_score?: number } | undefined)?.min_score;
+
+    await executeInstallPipeline({
+      directory,
+      configDir,
+      global,
+      homedir,
+      resolvedHome,
+      lock,
+      lockPath,
+      resolvedNodes,
+      nodesToInstall: resolvedNodes,
+      rootSkillNames: skillEntries.map(([skillName]) => skillName),
+      projectPermissions,
+      auditMinScore,
+      spinner,
     });
-  } finally {
-    // Clean up temp tarball
-    if (fs.existsSync(tmpTarball)) {
-      fs.unlinkSync(tmpTarball);
-    }
+
+    spinner.succeed(`Installed ${skillEntries.length} root skill${skillEntries.length === 1 ? '' : 's'}`);
+  } catch (err) {
+    spinner.fail('Install failed');
+    throw err;
   }
 }
 
-/**
- * Check if a skill's permissions fit within the project's permission budget.
- * Throws if any permission exceeds the budget.
- */
-function checkPermissionBudget(
-  budget: Permissions,
-  skillPerms: Permissions | undefined,
-  skillName: string,
-): void {
-  if (!skillPerms) return;
-
-  // Check subprocess
-  if (skillPerms.subprocess === true && budget.subprocess !== true) {
-    throw new Error(
-      `Permission denied: ${skillName} requires subprocess access, but project budget does not allow it`,
-    );
-  }
-
-  // Check network outbound
-  if (skillPerms.network?.outbound && skillPerms.network.outbound.length > 0) {
-    const budgetDomains = budget.network?.outbound ?? [];
-    for (const domain of skillPerms.network.outbound) {
-      if (!isDomainAllowed(domain, budgetDomains)) {
-        throw new Error(
-          `Permission denied: ${skillName} requests network access to "${domain}", which is not in the project's permission budget`,
-        );
-      }
-    }
-  }
-
-  // Check filesystem read
-  if (skillPerms.filesystem?.read && skillPerms.filesystem.read.length > 0) {
-    const budgetPaths = budget.filesystem?.read ?? [];
-    for (const p of skillPerms.filesystem.read) {
-      if (!isPathAllowed(p, budgetPaths)) {
-        throw new Error(
-          `Permission denied: ${skillName} requests filesystem read access to "${p}", which is not in the project's permission budget`,
-        );
-      }
-    }
-  }
-
-  // Check filesystem write
-  if (skillPerms.filesystem?.write && skillPerms.filesystem.write.length > 0) {
-    const budgetPaths = budget.filesystem?.write ?? [];
-    for (const p of skillPerms.filesystem.write) {
-      if (!isPathAllowed(p, budgetPaths)) {
-        throw new Error(
-          `Permission denied: ${skillName} requests filesystem write access to "${p}", which is not in the project's permission budget`,
-        );
-      }
-    }
-  }
-}
-
-/**
- * Check if a domain is allowed by the budget's domain list.
- * Supports wildcard matching: *.example.com matches sub.example.com
- */
-function isDomainAllowed(domain: string, allowedDomains: string[]): boolean {
-  for (const allowed of allowedDomains) {
-    if (allowed === domain) return true;
-    // Wildcard matching: *.example.com
-    if (allowed.startsWith('*.')) {
-      const suffix = allowed.slice(1); // .example.com
-      if (domain.endsWith(suffix) || domain === allowed.slice(2)) {
-        return true;
-      }
-      // Also match if the skill requests the same wildcard pattern
-      if (domain === allowed) return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Check if a path is allowed by the budget's path list.
- * Simple subset check: skill path must match one of the budget paths.
- */
-function isPathAllowed(requestedPath: string, allowedPaths: string[]): boolean {
-  for (const allowed of allowedPaths) {
-    if (allowed === requestedPath) return true;
-    // If budget allows ./src/** and skill requests ./src/foo, it's allowed
-    if (allowed.endsWith('/**')) {
-      const prefix = allowed.slice(0, -3); // ./src
-      if (requestedPath.startsWith(prefix)) return true;
-    }
-  }
-  return false;
+function buildIntegrity(buffer: Buffer): string {
+  const hash = crypto.createHash('sha512').update(buffer).digest('base64');
+  return `sha512-${hash}`;
 }

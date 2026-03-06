@@ -72,7 +72,8 @@ export async function GET(
         sv.audit_score AS "auditScore",
         sv.audit_status AS "auditStatus",
         sv.tarball_path AS "tarballPath",
-        sv.created_at AS "publishedAt"
+        sv.created_at AS "publishedAt",
+        sv.manifest->'skills' AS "dependencies"
       FROM skills s
       INNER JOIN skill_versions sv ON sv.skill_id = s.id AND sv.version = ${version}
       WHERE s.name = ${name} AND ${visibilityClause}
@@ -153,6 +154,8 @@ export async function GET(
         location: (r.findingLocation as string | null),
       }));
 
+    const dependencies = (row.dependencies as Record<string, string> | null) ?? {};
+
     return NextResponse.json({
       name: row.name as string,
       version: row.version as string,
@@ -166,6 +169,7 @@ export async function GET(
       downloads: downloadCount,
       scanVerdict,
       scanFindings: scanFindingsList,
+      dependencies,
     });
   } catch (error) {
     console.error('[Version] Error:', error);
