@@ -8,7 +8,9 @@ import { rescanVersion } from '@/lib/rescan';
 // Statuses that indicate a version has been scanned and can be rescanned
 const RESCANNABLE_STATUSES = ['completed', 'flagged', 'scan-failed'] as const;
 
-const handler = async (_req: NextRequest, _context: AdminAuthContext): Promise<NextResponse> => {
+export const dynamic = 'force-dynamic';
+
+async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<NextResponse> {
   try {
     // Get only the latest version of each skill by ordering and filtering
     const versions = await db
