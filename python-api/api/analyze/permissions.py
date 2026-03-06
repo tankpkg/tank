@@ -31,7 +31,7 @@ class PermissionsResponse(BaseModel):
     method: str = "static_analysis"
 
 
-@app.post("/api/analyze/permissions")
+@app.post("/permissions")
 async def extract_permissions_endpoint(request: PermissionsRequest):
     """Extract permissions from skill code using static analysis.
 

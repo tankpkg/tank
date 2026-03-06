@@ -255,7 +255,7 @@ class RescanResponse(BaseModel):
     results: List[Dict[str, Any]]
 
 
-@app.post("/api/analyze/rescan")
+@app.post("/rescan")
 async def rescan_handler(
     authorization: Optional[str] = Header(None)
 ) -> RescanResponse:
@@ -282,7 +282,7 @@ async def rescan_handler(
     return RescanResponse(processed=len(results), results=results)
 
 
-@app.get("/api/analyze/rescan/health")
+@app.get("/rescan/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "ok", "service": "tank-rescan"}
