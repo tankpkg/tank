@@ -9,18 +9,41 @@ Real CLI-to-registry integration tests. Spawns the actual `tank` binary against 
 ```
 e2e/
 ├── producer.e2e.test.ts          # Publish flow (runs first)
-│                                  # - Tests: login, init, publish, info
 ├── consumer.e2e.test.ts          # Install flow (runs second)
-│                                  # - Tests: install, update, verify, remove
 ├── integration.e2e.test.ts       # Cross-cutting scenarios
-│                                  # - Tests: search, permissions, audit
 ├── admin.e2e.test.ts             # Admin operations (730 lines)
-│                                  # - Tests: user management, org management, moderation
 ├── helpers/
 │   ├── cli.ts                    # runTank() — spawns real CLI binary
 │   ├── fixtures.ts               # createSkillFixture(), createConsumerFixture()
 │   └── setup.ts                  # setupE2E() — creates user + API key + org
+├── bdd/                          # BDD feature files + step definitions
+│   ├── features/                 # Gherkin feature files (private-packages)
+│   └── steps/                    # Step definitions (8 files)
 └── vitest.config.ts              # Sequential execution, extended timeouts
+```
+
+### BDD Tests (Root `.bdd/` Directory)
+
+```
+.bdd/
+├── steps/                        # 12 step definition files
+│   ├── auth.steps.ts             # Login/logout/whoami
+│   ├── install.steps.ts          # Install flow
+│   ├── init.steps.ts             # Init flow
+│   ├── scan.steps.ts             # Security scanning
+│   ├── audit.steps.ts            # Audit display
+│   ├── verify.steps.ts           # Lockfile verification
+│   ├── link.steps.ts             # Agent linking
+│   ├── permissions.steps.ts      # Permission checking
+│   ├── remove.steps.ts           # Skill removal
+│   ├── update.steps.ts           # Update flow
+│   ├── doctor.steps.ts           # Diagnostics
+│   └── admin-rescan.steps.ts     # Admin rescan
+├── features/                     # Gherkin feature files
+│   ├── admin/                    # Admin scenarios
+│   └── mcp/                      # MCP tool scenarios
+├── support/                      # Test support utilities
+└── vitest.config.ts              # Sequential, 60s timeout
 ```
 
 ## TEST FILES
@@ -37,81 +60,19 @@ e2e/
 ### runTank() Helper
 
 ```typescript
-// From helpers/cli.ts
 export async function runTank(
   args: string[],
-  options: {
-    cwd?: string;
-    env?: Record<string, string>;
-    configDir?: string;  // Isolation: separate config per test
-  } = {}
+  options: { cwd?: string; env?: Record<string, string>; configDir?: string } = {}
 ): Promise<{ stdout: string; stderr: string; exitCode: number }>
 ```
 
 Spawns `node dist/bin/tank.js` as a subprocess with real network calls.
 
-### Fixture Creation
-
-```typescript
-// From helpers/fixtures.ts
-export async function createSkillFixture(options: {
-  name: string;
-  version: string;
-  permissions?: Permissions;
-  files?: Record<string, string>;
-}): Promise<{ dir: string; cleanup: () => Promise<void> }>
-
-export async function createConsumerFixture(): Promise<{
-  dir: string;
-  configDir: string;
-  cleanup: () => Promise<void> }>
-```
-
-Creates temporary directories in `os.tmpdir()` with proper cleanup.
-
-### E2E Setup
-
-```typescript
-// From helpers/setup.ts
-export async function setupE2E(): Promise<{
-  runId: string;          // Unique ID for this test run
-  user: { id: string; email: string };
-  apiKey: string;         // tank_* API key
-  org: { id: string; name: string };
-  cleanup: () => Promise<void>;
-}>
-```
-
-Creates test user, API key, and organization for the test run.
-
-## TEST ISOLATION
-
-### Per-Test Isolation
+### Test Isolation
 - **Unique `runId`**: Generated per test run (UUID)
 - **Separate `configDir`**: Each test gets its own `~/.tank/` equivalent
 - **Temp fixtures**: Created in `os.tmpdir()`, cleaned in `afterEach`
 - **Unique skill names**: Prefixed with `runId` to avoid collisions
-
-### Environment Variables
-```bash
-# Required in .env.local
-DATABASE_URL=postgres://...
-SUPABASE_URL=https://...
-SUPABASE_SERVICE_ROLE_KEY=...
-BETTER_AUTH_SECRET=...
-```
-
-### Sequential Execution
-```typescript
-// vitest.config.ts
-export default defineConfig({
-  test: {
-    fileParallelism: false,    // CRITICAL: run sequentially
-    testTimeout: 60000,        // 60s per test
-    hookTimeout: 120000,       // 120s for setup/teardown
-  },
-})
-```
 
 ## WHERE TO LOOK
 
@@ -121,9 +82,9 @@ export default defineConfig({
 | Add consumer test | `consumer.e2e.test.ts` | Tests that install skills |
 | Add integration test | `integration.e2e.test.ts` | Cross-cutting scenarios |
 | Add admin test | `admin.e2e.test.ts` | Admin-only operations |
+| Add BDD step | `.bdd/steps/*.steps.ts` | Root `.bdd/` directory |
+| Add BDD feature | `.bdd/features/` | Gherkin scenarios |
 | Modify CLI helper | `helpers/cli.ts` | runTank() implementation |
-| Add fixture helper | `helpers/fixtures.ts` | Test data creation |
-| Modify setup | `helpers/setup.ts` | E2E environment setup |
 
 ## CONVENTIONS
 
@@ -131,10 +92,7 @@ export default defineConfig({
 - **Real CLI spawning** — `node dist/bin/tank.js` (requires `pnpm build` first)
 - **Zero mocks** — real HTTP, real DB, real Supabase storage
 - **Unique `runId`** per test run — prevents collision between runs
-- **Temp fixtures** — created in `os.tmpdir()`, cleaned in `afterEach`
 - **File pattern** — `*.e2e.test.ts` (not `.test.ts`)
-- **NO_COLOR=1** — disables chalk for parseable output
-- **Env from root `.env.local`** — needs real credentials
 - **Timeout**: 60s per test, 120s for hooks
 
 ## ANTI-PATTERNS
@@ -143,74 +101,29 @@ export default defineConfig({
 - **Never mock HTTP or DB** — defeats the purpose
 - **Never add to Turbo `test` task** — E2E runs via `pnpm test:e2e` separately
 - **Never skip cleanup** — fixtures accumulate and pollute runs
-- **Never use `.test.ts`** — use `.e2e.test.ts` to distinguish from unit tests
-- **Never hardcode credentials** — use environment variables
 - **Never share `runId` between test files** — each file gets its own
 
-## RUNNING E2E TESTS
+## RUNNING TESTS
 
 ```bash
-# Prerequisites
-pnpm build                  # Build CLI first
-cp .env.example .env.local  # Configure real credentials
+# E2E tests
+pnpm build && pnpm test:e2e
 
-# Run all E2E tests
-pnpm test:e2e
+# BDD tests
+pnpm test:bdd
 
-# Run specific test file
+# Specific E2E file
 pnpm vitest run e2e/producer.e2e.test.ts
 
-# Run with debug output
+# Debug output
 TANK_DEBUG=1 pnpm test:e2e
-
-# Run single test
-pnpm vitest run e2e/producer.e2e.test.ts -t "should publish skill"
 ```
 
 ## TEST ORDER
 
 ```
-1. producer.e2e.test.ts
-   └── login, init, publish, info
-
-2. consumer.e2e.test.ts
-   └── install, update, verify, permissions, remove
-
-3. integration.e2e.test.ts
-   └── search, audit, full lifecycle
-
-4. admin.e2e.test.ts
-   └── user CRUD, org management, package moderation
+1. producer.e2e.test.ts   → login, init, publish, info
+2. consumer.e2e.test.ts   → install, update, verify, permissions, remove
+3. integration.e2e.test.ts → search, audit, full lifecycle
+4. admin.e2e.test.ts      → user CRUD, org management, package moderation
 ```
-
-## DEBUGGING FAILED TESTS
-
-```bash
-# Check CLI output
-TANK_DEBUG=1 pnpm test:e2e 2>&1 | tee e2e-debug.log
-
-# Run single test with verbose output
-pnpm vitest run e2e/producer.e2e.test.ts --reporter=verbose
-
-# Check database state
-psql $DATABASE_URL -c "SELECT * FROM skills WHERE name LIKE 'test-%';"
-
-# Check storage
-# Use Supabase dashboard to inspect uploaded tarballs
-```
-
-## CI INTEGRATION
-
-E2E tests run in CI after unit tests pass:
-
-```yaml
-# .github/workflows/test.yml
-- name: Run E2E tests
-  run: pnpm test:e2e
-  env:
-    DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-    SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-    # ... other secrets
-```
-
-Note: E2E requires real credentials, not fake ones like unit tests.

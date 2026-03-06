@@ -39,6 +39,7 @@ python-api/
 │   └── test_*.py                 # Test modules
 ├── requirements.txt              # Python dependencies
 ├── pyproject.toml                # Project config
+├── Dockerfile                    # Container for on-prem deployment
 └── vercel.json                   # Standalone Vercel deployment
 ```
 
@@ -51,123 +52,16 @@ python-api/
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
-### Stage 0: Ingest
-**File**: `stage0_ingest.py` (~200 lines)
-
-**Purpose**: Download and extract tarball, compute hashes
-
-**Checks**:
-- Download tarball from URL
-- Extract to temp directory
-- Compute SHA-256 hash for each file
-- Validate tarball structure
-- Reject encrypted archives
-- Reject archives with suspicious paths
-
-**Output**: `StageResult` with extracted files and hashes
-
-### Stage 1: Structure
-**File**: `stage1_structure.py` (~300 lines)
-
-**Purpose**: Validate file structure, detect anomalies
-
-**Checks**:
-- Required files present (skills.json)
-- File count within limits (<1000)
-- Total size within limits (<50MB)
-- No binary executables
-- No compiled Python (.pyc, .pyo)
-- No hidden files in unexpected places
-- File extension validation
-
-**Output**: `StageResult` with structure findings
-
-### Stage 2: Static Analysis
-**File**: `stage2_static.py` (~550 lines) — LARGEST STAGE
-
-**Purpose**: Static code analysis via AST and pattern matching
-
-**Checks**:
-- Python AST analysis
-- JavaScript pattern matching
-- Dangerous function calls (`eval`, `exec`, `compile`)
-- File system operations (suspicious paths)
-- Network operations (exfiltration patterns)
-- Subprocess spawning
-- Dynamic code generation
-- Obfuscation detection
-- Base64-encoded payloads
-- Suspicious imports
-
-**Output**: `StageResult` with code analysis findings
-
-### Stage 3: Injection Detection
-**File**: `stage3_injection.py` (~350 lines)
-
-**Purpose**: Detect prompt injection and manipulation attempts
-
-**Checks**:
-- Prompt injection patterns
-- System prompt extraction attempts
-- Role confusion attacks
-- Instruction override attempts
-- Multi-turn attack patterns
-- Unicode homoglyphs
-- Hidden instructions
-- Chain-of-thought manipulation
-
-**Output**: `StageResult` with injection findings
-
-### Stage 4: Secrets Scanning
-**File**: `stage4_secrets.py` (~250 lines)
-
-**Purpose**: Detect hardcoded secrets and credentials
-
-**Checks**:
-- API keys (various formats)
-- AWS credentials
-- GitHub tokens
-- Private keys (RSA, SSH)
-- Database connection strings
-- Password patterns
-- Generic secret patterns
-
-**Output**: `StageResult` with secret findings
-
-### Stage 5: Supply Chain
-**File**: `stage5_supply.py` (~544 lines)
-
-**Purpose**: Analyze supply chain risks
-
-**Checks**:
-- Dependency analysis
-- Known vulnerable packages
-- Package typosquatting detection
-- Dependency confusion attacks
-- Malicious package detection
-- Unpinned dependencies
-- Deprecated packages
-
-**Output**: `StageResult` with supply chain findings
+| Stage | File | Lines | Purpose |
+|-------|------|-------|---------|
+| 0 | `stage0_ingest.py` | ~200 | Download tarball, extract, compute SHA-256 hashes |
+| 1 | `stage1_structure.py` | ~300 | Validate file structure, detect anomalies |
+| 2 | `stage2_static.py` | ~550 | AST analysis, dangerous functions, obfuscation |
+| 3 | `stage3_injection.py` | ~350 | Prompt injection, system prompt extraction |
+| 4 | `stage4_secrets.py` | ~250 | API keys, credentials, private keys |
+| 5 | `stage5_supply.py` | ~544 | Dependencies, typosquatting, known vulnerabilities |
 
 ## VERDICT RULES
-
-```python
-# From verdict.py
-def compute_verdict(findings: list[Finding]) -> ScanVerdict:
-    critical_count = sum(1 for f in findings if f.severity == "critical")
-    high_count = sum(1 for f in findings if f.severity == "high")
-    
-    if critical_count >= 1:
-        return ScanVerdict.FAIL
-    if high_count >= 4:
-        return ScanVerdict.FAIL
-    if high_count >= 1:
-        return ScanVerdict.FLAGGED
-    if len(findings) > 0:
-        return ScanVerdict.PASS_WITH_NOTES
-    return ScanVerdict.PASS
-```
 
 | Condition | Verdict | Meaning |
 |-----------|---------|---------|
@@ -180,55 +74,16 @@ def compute_verdict(findings: list[Finding]) -> ScanVerdict:
 ## DATA MODELS
 
 ```python
-# From models.py
-
-class FindingSeverity(str, Enum):
-    CRITICAL = "critical"
-    HIGH = "high"
-    MEDIUM = "medium"
-    LOW = "low"
-
-class StageStatus(str, Enum):
-    PASSED = "passed"
-    FAILED = "failed"
-    ERRORED = "errored"
-    SKIPPED = "skipped"
-
-class ScanVerdict(str, Enum):
-    PASS = "pass"
-    PASS_WITH_NOTES = "pass_with_notes"
-    FLAGGED = "flagged"
-    FAIL = "fail"
-
 class Finding(BaseModel):
     id: str                    # Unique identifier
     stage: int                 # Stage number (0-5)
-    severity: FindingSeverity
+    severity: FindingSeverity  # critical/high/medium/low
     confidence: float          # 0.0 to 1.0
     message: str               # Human-readable description
     file: str | None           # File path if applicable
     line: int | None           # Line number if applicable
     code_snippet: str | None   # Relevant code snippet
     cwe: str | None            # CWE identifier
-
-class StageResult(BaseModel):
-    stage: int
-    status: StageStatus
-    findings: list[Finding]
-    duration_ms: int
-    error: str | None
-
-class ScanRequest(BaseModel):
-    tarball_url: str
-    skill_name: str
-    skill_version: str
-
-class ScanResponse(BaseModel):
-    verdict: ScanVerdict
-    findings: list[Finding]
-    stages: list[StageResult]
-    file_hashes: dict[str, str]  # path -> SHA-256
-    duration_ms: int
 ```
 
 ## WHERE TO LOOK
@@ -238,7 +93,6 @@ class ScanResponse(BaseModel):
 | Add security check | `lib/scan/stage{N}*.py` | Pick appropriate stage |
 | Add new stage | `lib/scan/stage{N}_name.py` | Wire into `scan.py` pipeline |
 | Add detection pattern | `lib/patterns/` | Extensible pattern library |
-| Add analysis rule | `lib/rules/` | Extensible rule library |
 | Modify verdict logic | `lib/scan/verdict.py` | Threshold-based rules |
 | Add/modify data models | `lib/scan/models.py` | Pydantic 2 models |
 | Add API endpoint | `api/analyze/new.py` | FastAPI route handler |
@@ -246,37 +100,35 @@ class ScanResponse(BaseModel):
 
 ## CONVENTIONS
 
-- **Pydantic 2** for all models — strict validation
-- **pytest** for testing — `test_*.py` pattern
-- **Each stage is independent** — can error without blocking others
+> Universal conventions (strict TS, ESM, Zod safeParse) in root AGENTS.md. Python-specific below.
+
 - **Findings carry confidence** — 0.0 to 1.0 float
-- **SHA-256 file hashes** computed in stage0, returned in response
 - **SARIF output** supported for CI integration
 - **Finding deduplication** in `dedup.py`
 
 ## ANTI-PATTERNS
 
-- **Never modify without syncing to `apps/web/api-python/`** — both locations must match
-- **Never skip stage0 (ingest)** — all other stages depend on its output
-- **Never swallow stage errors silently** — use `errored` status, not empty results
+> Universal anti-patterns (sync with api-python, stage0 required, no silent errors) in root AGENTS.md.
+
 - **Never hardcode detection patterns** — use `lib/patterns/` and `lib/rules/`
 - **Never skip confidence scoring** — all findings must have confidence value
-- **Never add runtime dependencies** without updating requirements.txt
 
 ## TESTING
 
 ```bash
-# Run all Python tests
-cd python-api && pytest
+cd python-api && pytest                   # All Python tests
+pytest tests/test_stage2.py               # Specific test
+pytest --cov=lib/scan                     # With coverage
+pytest tests/ -k "malicious"              # Test specific fixture
+```
 
-# Run specific test
-pytest tests/test_stage2.py
+## SYNC WITH WEB APP
 
-# Run with coverage
-pytest --cov=lib/scan
+**CRITICAL**: Any changes to `python-api/` must be mirrored to `apps/web/api-python/`:
 
-# Test specific fixture
-pytest tests/ -k "malicious"
+```bash
+cp -r python-api/lib/scan/* apps/web/api-python/analyze/scan/
+cp -r python-api/api/analyze/* apps/web/api-python/analyze/
 ```
 
 ## API ENDPOINTS
@@ -288,15 +140,3 @@ pytest tests/ -k "malicious"
 | `/analyze/rescan` | POST | Re-run on existing skill |
 | `/analyze/security` | POST | Security-only (stages 2-4) |
 | `/analyze/permissions` | POST | Extract permissions |
-
-## SYNC WITH WEB APP
-
-**CRITICAL**: Any changes to `python-api/` must be mirrored to `apps/web/api-python/`:
-
-```bash
-# After modifying python-api/
-cp -r python-api/lib/scan/* apps/web/api-python/analyze/scan/
-cp -r python-api/api/analyze/* apps/web/api-python/analyze/
-```
-
-This ensures Vercel serverless functions have the same code as the standalone deployment.
