@@ -17,7 +17,7 @@ class AnalyzeResponse(BaseModel):
     content_length: Optional[int] = None
 
 
-@app.post("/api/analyze")
+@app.post("/")
 async def analyze(request: AnalyzeRequest = AnalyzeRequest()) -> AnalyzeResponse:
     """Health check endpoint. Optionally echoes metadata about provided skill content."""
     return AnalyzeResponse(

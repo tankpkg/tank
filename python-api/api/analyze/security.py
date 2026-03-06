@@ -60,7 +60,7 @@ class SecurityResponse(BaseModel):
     method: str = "static_analysis"
 
 
-@app.post("/api/analyze/security")
+@app.post("/security")
 async def scan_security(request: SecurityRequest) -> SecurityResponse:
     """Scan content for security threats using deterministic pattern matching.
 

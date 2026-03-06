@@ -17,6 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.analyze.scan import app as scan_app
 from api.analyze.security import app as security_app
 from api.analyze.permissions import app as permissions_app
+from api.analyze.index import app as analyze_index_app
+from api.analyze.rescan import app as rescan_app
 from lib.scan.llm_analyzer import check_llm_health
 
 # Create main app
@@ -52,10 +54,11 @@ app.add_middleware(
 )
 
 # Mount sub-apps
-# Note: In production, these would be included directly in the routing
+app.include_router(analyze_index_app.router, prefix="/api/analyze", tags=["analyze"])
 app.include_router(scan_app.router, prefix="/api/analyze", tags=["scan"])
 app.include_router(security_app.router, prefix="/api/analyze", tags=["security"])
 app.include_router(permissions_app.router, prefix="/api/analyze", tags=["permissions"])
+app.include_router(rescan_app.router, prefix="/api/analyze", tags=["rescan"])
 
 
 @app.get("/")

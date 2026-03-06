@@ -361,7 +361,7 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
     )
 
 
-@app.post("/api/analyze/scan")
+@app.post("/scan")
 async def scan_handler(request: ScanRequest) -> ScanResponse:
     """Run a full security scan on a skill package.
 
@@ -405,7 +405,7 @@ async def scan_handler(request: ScanRequest) -> ScanResponse:
         )
 
 
-@app.get("/api/analyze/scan/health")
+@app.get("/scan/health")
 async def health_check():
     """Health check endpoint for the scan service."""
     return {"status": "ok", "service": "tank-security-scan"}
