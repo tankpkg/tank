@@ -1,0 +1,60 @@
+name: Documentation
+description: Report incorrect, missing, or unclear documentation
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve the docs! Whether it's a typo, missing info, or a confusing explanation — we want to hear about it.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: What kind of documentation issue is this?
+      options:
+        - Incorrect / outdated information
+        - Missing documentation
+        - Unclear or confusing explanation
+        - Typo or formatting issue
+        - New documentation request
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Page URL or File Path
+      description: Link to the page or path to the file with the issue.
+      placeholder: "https://tank.dev/docs/... or apps/web/content/docs/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What's wrong or missing? Be as specific as possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Fix
+      description: If you have a proposed fix or improvement, describe it here.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Documentation Area
+      options:
+        - Getting Started / Installation
+        - CLI Reference
+        - MCP Server
+        - Skills Authoring
+        - Security / Permissions
+        - API Reference
+        - Contributing Guide
+        - Other
