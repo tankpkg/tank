@@ -41,7 +41,7 @@ function skillName(suffix: string): string {
 // ── Helpers (real SQL, no mocks) ───────────────────────────────────────────
 
 function escapeLike(input: string): string {
-  return input.replace(/%/g, '\\%').replace(/_/g, '\\_');
+  return input.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 
 async function hybridSearch(
