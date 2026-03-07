@@ -141,12 +141,12 @@ export async function scanCommand(options: ScanOptions = {}): Promise<void> {
 
   if (!scanRes.ok) {
     spinner.fail('Scan failed');
-    const body = await scanRes.json().catch(() => ({})) as { error?: string };
+    const body = await scanRes.json().catch(() => null) as { error?: string } | null;
 
     if (scanRes.status === 401) {
       throw new Error('Authentication failed. Your token may be expired or invalid. Run: tank login');
     }
-    throw new Error(body.error ?? scanRes.statusText);
+    throw new Error(body?.error ?? scanRes.statusText);
   }
 
   const result = await scanRes.json() as ScanResponse;

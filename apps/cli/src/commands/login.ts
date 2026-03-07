@@ -43,10 +43,10 @@ export async function loginCommand(options: LoginOptions = {}): Promise<void> {
   });
 
   if (!startRes.ok) {
-    const body = await startRes.json().catch(() => ({}));
-    authFlowLog.error({ status: startRes.status, error: (body as { error?: string }).error }, 'Start request failed');
+    const body = await startRes.json().catch(() => null) as { error?: string } | null;
+    authFlowLog.error({ status: startRes.status, error: body?.error }, 'Start request failed');
     throw new Error(
-      `Failed to start auth session: ${(body as { error?: string }).error ?? startRes.statusText}`,
+      `Failed to start auth session: ${body?.error ?? startRes.statusText}`,
     );
   }
 
@@ -101,9 +101,9 @@ export async function loginCommand(options: LoginOptions = {}): Promise<void> {
       // 400 means session not yet authorized — keep polling
       // Any other error is unexpected
       if (exchangeRes.status !== 400) {
-        const body = await exchangeRes.json().catch(() => ({}));
+        const body = await exchangeRes.json().catch(() => null) as { error?: string } | null;
         throw new Error(
-          `Exchange failed: ${(body as { error?: string }).error ?? exchangeRes.statusText}`,
+          `Exchange failed: ${body?.error ?? exchangeRes.statusText}`,
         );
       }
     } catch (err) {
