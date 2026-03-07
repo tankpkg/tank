@@ -1,4 +1,5 @@
 {
   "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "cd ../.. && pnpm turbo build --filter=@tank/web..."
+  "buildCommand": "cd ../.. && pnpm turbo build --filter=@tank/web...",
+  "ignoreCommand": "[ \"$VERCEL_ENV\" != \"production\" ]"
 }

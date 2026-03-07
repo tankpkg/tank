@@ -75,11 +75,11 @@ export const skills = pgTable(
     check('skills_visibility_valid', sql`${table.visibility} in ('public', 'private')`),
     // Index for filtering by org
     index('skills_org_id_idx').on(table.orgId),
-    // GIN index for full-text search
     index('skills_search_idx').using(
       'gin',
       sql`to_tsvector('english', ${table.name} || ' ' || coalesce(${table.description}, ''))`,
     ),
+    index('skills_name_trgm_idx').using('gin', sql`${table.name} gin_trgm_ops`),
     // JOIN key: every read query joins publishers ON p.id = s.publisher_id
     index('skills_publisher_id_idx').on(table.publisherId),
     // Default browse ORDER BY updated_at DESC (non-search list path)

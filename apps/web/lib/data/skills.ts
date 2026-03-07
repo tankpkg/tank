@@ -320,18 +320,32 @@ export async function getSkillDetail(
 
 // ── Skills Search ────────────────────────────────────────────────────────────
 
+function escapeLike(input: string): string {
+  return input.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
 /**
- * Search/browse skills in ONE query using `count(*) OVER()` for pagination.
+ * Hybrid search combining three strategies:
+ *   1. ILIKE on name — partial, prefix, org-scoped matches
+ *   2. pg_trgm similarity on name — typo/fuzzy tolerance
+ *   3. Full-text search on name+description — full-word relevance
  *
- * Window function gives us total count in each row, eliminating the need
- * for a separate COUNT query (saves ~200ms round-trip).
+ * Results are ranked by a weighted composite score so exact/prefix name
+ * matches always surface first, followed by fuzzy hits, then description-
+ * only keyword matches.
+ *
+ * Pass `requesterUserId` from API route handlers; omit it when calling
+ * from Server Components (falls back to session-based resolution).
  */
 export async function searchSkills(
   q: string,
   page: number,
   limit: number,
+  requesterUserId?: string | null,
 ): Promise<SkillSearchResponse> {
-  const viewerUserId = await resolveViewerUserId();
+  const viewerUserId = requesterUserId !== undefined
+    ? requesterUserId
+    : await resolveViewerUserId();
   const starsTableAvailable = await hasSkillStarsTable();
   const visClause = visibilityClause(viewerUserId);
   const offset = (page - 1) * limit;
@@ -339,17 +353,34 @@ export async function searchSkills(
     ? sql`coalesce((SELECT count(*)::int FROM skill_stars WHERE skill_id = s.id), 0)`
     : sql`0`;
 
-  const searchCondition = q
-    ? sql`to_tsvector('english', s.name || ' ' || coalesce(s.description, '')) @@ plainto_tsquery('english', ${q})`
-    : undefined;
+  if (!q) {
+    const results = await db.execute(sql`
+      SELECT
+        s.name,
+        s.description,
+        s.visibility,
+        sv.version AS "latestVersion",
+        sv.audit_score AS "auditScore",
+        coalesce(u.name, '') AS publisher,
+        coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) AS downloads,
+        ${starsSql} AS stars,
+        count(*) OVER() AS total
+      FROM skills s
+      LEFT JOIN "user" u ON u.id = s.publisher_id
+      LEFT JOIN skill_versions sv ON sv.skill_id = s.id
+        AND sv.created_at = (
+          SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
+        )
+      WHERE ${visClause}
+      ORDER BY s.updated_at DESC
+      OFFSET ${offset}
+      LIMIT ${limit}
+    `) as Record<string, unknown>[];
 
-  const whereClause = searchCondition
-    ? sql`WHERE ${searchCondition} AND ${visClause}`
-    : sql`WHERE ${visClause}`;
+    return mapSearchResults(results, page, limit);
+  }
 
-  const orderClause = q
-    ? sql`ts_rank(to_tsvector('english', s.name || ' ' || coalesce(s.description, '')), plainto_tsquery('english', ${q})) DESC`
-    : sql`s.updated_at DESC`;
+  const escaped = escapeLike(q);
 
   const results = await db.execute(sql`
     SELECT
@@ -368,16 +399,41 @@ export async function searchSkills(
       AND sv.created_at = (
         SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
       )
-    ${whereClause}
-    ORDER BY ${orderClause}
+    WHERE (
+      s.name ILIKE ${'%' + escaped + '%'}
+      OR similarity(s.name, ${q}) > 0.15
+      OR similarity(split_part(s.name, '/', 2), ${q}) > 0.15
+      OR to_tsvector('english', s.name || ' ' || coalesce(s.description, ''))
+         @@ plainto_tsquery('english', ${q})
+    )
+    AND ${visClause}
+    ORDER BY (
+      CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
+      + CASE WHEN s.name ILIKE ${q + '%'} THEN 800 ELSE 0 END
+      + CASE WHEN s.name ILIKE ${'%/' + escaped + '%'} THEN 600 ELSE 0 END
+      + CASE WHEN s.name ILIKE ${'%' + escaped + '%'} THEN 400 ELSE 0 END
+      + (greatest(similarity(s.name, ${q}), similarity(split_part(s.name, '/', 2), ${q})) * 300)::int
+      + (ts_rank(
+          to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
+          plainto_tsquery('english', ${q})
+        ) * 100)::int
+    ) DESC, s.updated_at DESC
     OFFSET ${offset}
     LIMIT ${limit}
   `) as Record<string, unknown>[];
 
-  const total = results.length > 0 ? Number(results[0].total) : 0;
+  return mapSearchResults(results, page, limit);
+}
 
-  const response: SkillSearchResponse = {
-    results: results.map((row) => ({
+function mapSearchResults(
+  rows: Record<string, unknown>[],
+  page: number,
+  limit: number,
+): SkillSearchResponse {
+  const total = rows.length > 0 ? Number(rows[0].total) : 0;
+
+  return {
+    results: rows.map((row) => ({
       name: row.name as string,
       description: (row.description as string | null),
       visibility: (row.visibility as 'public' | 'private') ?? 'public',
@@ -391,6 +447,4 @@ export async function searchSkills(
     limit,
     total,
   };
-
-  return response;
 }
