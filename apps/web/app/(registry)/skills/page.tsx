@@ -80,6 +80,7 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
     sort,
     visibility,
     scoreBucket,
+    requesterUserId: session?.user?.id ?? null,
   });
 
   const totalPages = Math.max(1, Math.ceil(data.total / limit));
