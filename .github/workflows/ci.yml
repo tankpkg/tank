@@ -170,6 +170,11 @@ jobs:
       - name: Build all packages
         run: pnpm build
 
+      - name: Enable PostgreSQL extensions
+        run: psql "$DATABASE_URL" -c "CREATE EXTENSION IF NOT EXISTS pg_trgm"
+        env:
+          DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
+
       - name: Provision database schema
         run: pnpm --filter=web exec drizzle-kit push --force
         env:
