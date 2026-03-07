@@ -1,19 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
-import { Star, Download } from 'lucide-react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { searchSkills } from '@/lib/data/skills';
-import type { SkillSearchResult } from '@/lib/data/skills';
+import type { SortOption, VisibilityFilter, ScoreBucket } from '@/lib/data/skills';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 import { SearchBar } from './search-bar';
+import { SkillsFilters } from './skills-filters';
+import { SkillsResults } from './skills-results';
 
 export const revalidate = 60;
 
@@ -32,26 +28,65 @@ export const metadata: Metadata = {
   },
 };
 
-// ── Page ─────────────────────────────────────────────────────────────────────
-
 interface SkillsPageProps {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    page?: string;
+    sort?: string;
+    visibility?: string;
+    score?: string;
+  }>;
+}
+
+const VALID_SORTS: SortOption[] = ['updated', 'downloads', 'stars', 'score', 'name'];
+const VALID_VISIBILITY: VisibilityFilter[] = ['all', 'public', 'private'];
+const VALID_SCORE: ScoreBucket[] = ['all', 'high', 'medium', 'low'];
+
+function parseSortParam(raw: string | undefined): SortOption {
+  if (raw && (VALID_SORTS as string[]).includes(raw)) return raw as SortOption;
+  return 'updated';
+}
+
+function parseVisibilityParam(raw: string | undefined): VisibilityFilter {
+  if (raw && (VALID_VISIBILITY as string[]).includes(raw)) return raw as VisibilityFilter;
+  return 'all';
+}
+
+function parseScoreParam(raw: string | undefined): ScoreBucket {
+  if (raw && (VALID_SCORE as string[]).includes(raw)) return raw as ScoreBucket;
+  return 'all';
 }
 
 export default async function SkillsPage({ searchParams }: SkillsPageProps) {
-  // Bypass ISR cache for perf tests so every request hits the DB
   if (process.env.TANK_PERF_MODE === '1') noStore();
+
   const params = await searchParams;
   const query = params.q ?? '';
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
   const limit = 20;
+  const sort = parseSortParam(params.sort);
+  const visibility = parseVisibilityParam(params.visibility);
+  const scoreBucket = parseScoreParam(params.score);
 
-  // Direct DB query — no HTTP self-fetch to /api/v1/search
-  const data = await searchSkills(query, page, limit);
+  if (query) noStore();
+
+  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+  const isLoggedIn = Boolean(session?.user);
+
+  const data = await searchSkills({
+    q: query,
+    page,
+    limit,
+    sort,
+    visibility,
+    scoreBucket,
+    requesterUserId: session?.user?.id ?? null,
+  });
+
   const totalPages = Math.max(1, Math.ceil(data.total / limit));
 
   return (
-    <div className="space-y-8" data-testid="skills-list-root">
+    <div className="space-y-6" data-testid="skills-list-root">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Browse Skills</h1>
         <p className="mt-2 text-muted-foreground">
@@ -59,86 +94,39 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
         </p>
       </div>
 
-      <SearchBar defaultValue={query} />
+      <div className="flex flex-col md:flex-row gap-6 items-start">
+        <Suspense>
+          <SkillsFilters
+            currentVisibility={visibility}
+            currentScoreBucket={scoreBucket}
+            isLoggedIn={isLoggedIn}
+          />
+        </Suspense>
 
-      {data.results.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.results.map((skill) => (
-              <SkillCard key={skill.name} skill={skill} />
-            ))}
-          </div>
+        <div className="flex-1 min-w-0 space-y-4">
+          <SearchBar defaultValue={query} />
+
+          <Suspense>
+            <SkillsResults
+              results={data.results}
+              totalCount={data.total}
+              currentSort={sort}
+              currentQuery={query}
+            />
+          </Suspense>
 
           {totalPages > 1 && (
             <Pagination
               page={page}
               totalPages={totalPages}
               query={query}
+              sort={sort}
+              visibility={visibility}
+              scoreBucket={scoreBucket}
             />
           )}
-        </>
-      ) : (
-        <EmptyState query={query} />
-      )}
-    </div>
-  );
-}
-
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-function SkillCard({ skill }: { skill: SkillSearchResult }) {
-  return (
-    <Link href={`/skills/${encodeURIComponent(skill.name)}`}>
-      <Card className="h-full hover:border-primary/50 transition-colors cursor-pointer">
-        <CardHeader>
-          <CardTitle className="text-base">{skill.name}</CardTitle>
-          {skill.description && (
-            <CardDescription className="line-clamp-2">
-              {skill.description}
-            </CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {skill.latestVersion && (
-              <Badge variant="secondary">v{skill.latestVersion}</Badge>
-            )}
-            {skill.visibility === 'private' && (
-              <Badge variant="outline">Private</Badge>
-            )}
-            {skill.auditScore !== null && (
-              <Badge
-                variant={skill.auditScore >= 7 ? 'default' : 'destructive'}
-              >
-                Score: {skill.auditScore}
-              </Badge>
-            )}
-            <span className="flex items-center gap-1">
-              <Download className="h-3.5 w-3.5" />
-              {skill.downloads.toLocaleString()}
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="h-3.5 w-3.5" />
-              {skill.stars.toLocaleString()}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
-
-function EmptyState({ query }: { query: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
-      <p className="text-lg font-medium">
-        {query ? 'No skills found' : 'No skills published yet'}
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {query
-          ? `No results for "${query}". Try a different search term.`
-          : 'Be the first to publish a skill!'}
-      </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -147,21 +135,30 @@ function Pagination({
   page,
   totalPages,
   query,
+  sort,
+  visibility,
+  scoreBucket,
 }: {
   page: number;
   totalPages: number;
   query: string;
+  sort: SortOption;
+  visibility: VisibilityFilter;
+  scoreBucket: ScoreBucket;
 }) {
   function buildHref(p: number) {
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    if (p > 1) params.set('page', String(p));
-    const qs = params.toString();
+    const urlParams = new URLSearchParams();
+    if (query) urlParams.set('q', query);
+    if (sort !== 'updated') urlParams.set('sort', sort);
+    if (visibility !== 'all') urlParams.set('visibility', visibility);
+    if (scoreBucket !== 'all') urlParams.set('score', scoreBucket);
+    if (p > 1) urlParams.set('page', String(p));
+    const qs = urlParams.toString();
     return `/skills${qs ? `?${qs}` : ''}`;
   }
 
   return (
-    <div className="flex items-center justify-center gap-4">
+    <div className="flex items-center justify-center gap-4" data-testid="skills-pagination">
       {page > 1 ? (
         <Button variant="outline" size="sm" asChild>
           <Link href={buildHref(page - 1)}>Previous</Link>

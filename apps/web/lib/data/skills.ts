@@ -103,6 +103,7 @@ export interface SkillSearchResult {
   publisher: string;
   downloads: number;
   stars: number;
+  updatedAt?: Date;
 }
 
 export interface SkillSearchResponse {
@@ -110,6 +111,22 @@ export interface SkillSearchResponse {
   page: number;
   limit: number;
   total: number;
+}
+
+// ── Search params ─────────────────────────────────────────────────────────────
+
+export type SortOption = 'updated' | 'downloads' | 'stars' | 'score' | 'name';
+export type VisibilityFilter = 'all' | 'public' | 'private';
+export type ScoreBucket = 'all' | 'high' | 'medium' | 'low';
+
+export interface SkillsSearchParams {
+  q: string;
+  page: number;
+  limit: number;
+  sort: SortOption;
+  visibility: VisibilityFilter;
+  scoreBucket: ScoreBucket;
+  requesterUserId?: string | null;
 }
 
 async function resolveViewerUserId(): Promise<string | null> {
@@ -325,6 +342,60 @@ function escapeLike(input: string): string {
 }
 
 /**
+ * Build the primary ORDER BY expression (without final tiebreaker).
+ * The tiebreaker (`s.id ASC`) is appended separately so that other
+ * ranking criteria (e.g. relevance during text search) can be inserted
+ * between the primary sort and the deterministic tiebreaker.
+ *
+ * `starsAvailable` must be passed to guard against the `st` alias
+ * being absent when the `skill_stars` table doesn't exist.
+ */
+function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
+  switch (sort) {
+    case 'downloads':
+      return sql`coalesce(dl.downloads_7d, 0) DESC`;
+    case 'stars':
+      return starsAvailable
+        ? sql`coalesce(st.stars_count, 0) DESC`
+        : sql`s.updated_at DESC`;
+    case 'score':
+      return sql`coalesce(sv.audit_score, 0) DESC`;
+    case 'name':
+      return sql`s.name ASC`;
+    case 'updated':
+    default:
+      return sql`s.updated_at DESC`;
+  }
+}
+
+/**
+ * Build score bucket WHERE fragment.
+ */
+function buildScoreBucketClause(scoreBucket: ScoreBucket) {
+  switch (scoreBucket) {
+    case 'high':
+      return sql`AND coalesce(sv.audit_score, 0) >= 7`;
+    case 'medium':
+      return sql`AND coalesce(sv.audit_score, 0) >= 4 AND coalesce(sv.audit_score, 0) < 7`;
+    case 'low':
+      return sql`AND sv.audit_score IS NOT NULL AND sv.audit_score < 4`;
+    case 'all':
+    default:
+      return sql``;
+  }
+}
+
+/**
+ * Build visibility filter WHERE fragment (applied on top of the access-control clause).
+ * Only meaningful when the user is logged in and wants to see only public or only private.
+ */
+function buildVisibilityFilterClause(visibility: VisibilityFilter) {
+  if (visibility === 'public') return sql`AND s.visibility = 'public'`;
+  if (visibility === 'private') return sql`AND s.visibility = 'private'`;
+  return sql``;
+}
+
+/**
  * Hybrid search combining three strategies:
  *   1. ILIKE on name — partial, prefix, org-scoped matches
  *   2. pg_trgm similarity on name — typo/fuzzy tolerance
@@ -336,22 +407,77 @@ function escapeLike(input: string): string {
  *
  * Pass `requesterUserId` from API route handlers; omit it when calling
  * from Server Components (falls back to session-based resolution).
+ *
+ * Supports new filter params: sort, visibility, scoreBucket.
+ * Old positional signature (q, page, limit, requesterUserId?) still works
+ * for backward compatibility with existing callers.
  */
 export async function searchSkills(
-  q: string,
-  page: number,
-  limit: number,
+  paramsOrQ: SkillsSearchParams | string,
+  page?: number,
+  limit?: number,
   requesterUserId?: string | null,
 ): Promise<SkillSearchResponse> {
-  const viewerUserId = requesterUserId !== undefined
-    ? requesterUserId
+  // Normalize: support both new object API and old positional API
+  let params: SkillsSearchParams;
+  if (typeof paramsOrQ === 'string') {
+    params = {
+      q: paramsOrQ,
+      page: page ?? 1,
+      limit: limit ?? 20,
+      sort: 'updated',
+      visibility: 'all',
+      scoreBucket: 'all',
+      requesterUserId,
+    };
+  } else {
+    params = paramsOrQ;
+  }
+
+  const { q, sort, visibility, scoreBucket } = params;
+  const resolvedPage = params.page;
+  const resolvedLimit = params.limit;
+
+  const viewerUserId = params.requesterUserId !== undefined
+    ? params.requesterUserId
     : await resolveViewerUserId();
   const starsTableAvailable = await hasSkillStarsTable();
   const visClause = visibilityClause(viewerUserId);
-  const offset = (page - 1) * limit;
+  const offset = (resolvedPage - 1) * resolvedLimit;
+
+  // Determine which aggregation JOINs are needed
+  const needsDownloads = sort === 'downloads';
+
+  // Pre-aggregated subquery JOINs (only included when needed for sort)
+  const downloadJoin = needsDownloads
+    ? sql`LEFT JOIN (
+        SELECT skill_id, SUM(count)::int AS downloads_7d
+        FROM skill_download_daily
+        WHERE date >= CURRENT_DATE - 7
+        GROUP BY skill_id
+      ) dl ON dl.skill_id = s.id`
+    : sql``;
+
+  const starsJoin = starsTableAvailable
+    ? sql`LEFT JOIN (
+        SELECT skill_id, COUNT(*)::int AS stars_count
+        FROM skill_stars
+        GROUP BY skill_id
+      ) st ON st.skill_id = s.id`
+    : sql``;
+
+  // Inline downloads for display (when not using the aggregated join)
+  const downloadsSql = needsDownloads
+    ? sql`coalesce(dl.downloads_7d, 0)`
+    : sql`coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0)`;
+
   const starsSql = starsTableAvailable
-    ? sql`coalesce((SELECT count(*)::int FROM skill_stars WHERE skill_id = s.id), 0)`
+    ? sql`coalesce(st.stars_count, 0)`
     : sql`0`;
+
+  const primarySort = buildPrimarySort(sort, starsTableAvailable);
+  const scoreBucketClause = buildScoreBucketClause(scoreBucket);
+  const visibilityFilterClause = buildVisibilityFilterClause(visibility);
 
   if (!q) {
     const results = await db.execute(sql`
@@ -359,10 +485,11 @@ export async function searchSkills(
         s.name,
         s.description,
         s.visibility,
+        s.updated_at AS "updatedAt",
         sv.version AS "latestVersion",
         sv.audit_score AS "auditScore",
         coalesce(u.name, '') AS publisher,
-        coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) AS downloads,
+        ${downloadsSql} AS downloads,
         ${starsSql} AS stars,
         count(*) OVER() AS total
       FROM skills s
@@ -371,13 +498,17 @@ export async function searchSkills(
         AND sv.created_at = (
           SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
         )
+      ${downloadJoin}
+      ${starsJoin}
       WHERE ${visClause}
-      ORDER BY s.updated_at DESC
+      ${visibilityFilterClause}
+      ${scoreBucketClause}
+      ORDER BY ${primarySort}, s.id ASC
       OFFSET ${offset}
-      LIMIT ${limit}
+      LIMIT ${resolvedLimit}
     `) as Record<string, unknown>[];
 
-    return mapSearchResults(results, page, limit);
+    return mapSearchResults(results, resolvedPage, resolvedLimit);
   }
 
   const escaped = escapeLike(q);
@@ -387,10 +518,11 @@ export async function searchSkills(
       s.name,
       s.description,
       s.visibility,
+      s.updated_at AS "updatedAt",
       sv.version AS "latestVersion",
       sv.audit_score AS "auditScore",
       coalesce(u.name, '') AS publisher,
-      coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) AS downloads,
+      ${downloadsSql} AS downloads,
       ${starsSql} AS stars,
       count(*) OVER() AS total
     FROM skills s
@@ -399,6 +531,8 @@ export async function searchSkills(
       AND sv.created_at = (
         SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
       )
+    ${downloadJoin}
+    ${starsJoin}
     WHERE (
       s.name ILIKE ${'%' + escaped + '%'}
       OR similarity(s.name, ${q}) > 0.15
@@ -407,7 +541,9 @@ export async function searchSkills(
          @@ plainto_tsquery('english', ${q})
     )
     AND ${visClause}
-    ORDER BY (
+    ${visibilityFilterClause}
+    ${scoreBucketClause}
+    ORDER BY ${sort !== 'updated' ? sql`${primarySort},` : sql``} (
       CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
       + CASE WHEN s.name ILIKE ${q + '%'} THEN 800 ELSE 0 END
       + CASE WHEN s.name ILIKE ${'%/' + escaped + '%'} THEN 600 ELSE 0 END
@@ -417,12 +553,12 @@ export async function searchSkills(
           to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
           plainto_tsquery('english', ${q})
         ) * 100)::int
-    ) DESC, s.updated_at DESC
+    ) DESC, s.updated_at DESC, s.id ASC
     OFFSET ${offset}
-    LIMIT ${limit}
+    LIMIT ${resolvedLimit}
   `) as Record<string, unknown>[];
 
-  return mapSearchResults(results, page, limit);
+  return mapSearchResults(results, resolvedPage, resolvedLimit);
 }
 
 function mapSearchResults(
@@ -442,6 +578,7 @@ function mapSearchResults(
       publisher: (row.publisher as string) ?? '',
       downloads: Number(row.downloads) || 0,
       stars: Number(row.stars) || 0,
+      updatedAt: row.updatedAt ? new Date(row.updatedAt as string) : undefined,
     })),
     page,
     limit,
