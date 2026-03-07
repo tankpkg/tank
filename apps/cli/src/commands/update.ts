@@ -24,6 +24,8 @@ interface VersionInfo {
   publishedAt: string;
 }
 
+const VERSION_CHECK_CONCURRENCY = 8;
+
 export async function updateCommand(options: UpdateOptions): Promise<void> {
   const {
     name,
@@ -104,6 +106,85 @@ function getGlobalLockPath(homedir?: string): string {
   return path.join(path.dirname(globalSkillsDir), 'skills.lock');
 }
 
+async function fetchAvailableVersions(
+  name: string,
+  registry: string,
+  headers: Record<string, string>,
+): Promise<string[]> {
+  const encodedName = encodeURIComponent(name);
+  const versionsUrl = `${registry}/api/v1/skills/${encodedName}/versions`;
+
+  let versionsRes: Response;
+  try {
+    versionsRes = await fetch(versionsUrl, { headers });
+  } catch (err) {
+    throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  if (!versionsRes.ok) {
+    if (versionsRes.status === 404) {
+      throw new Error(`Skill not found in registry: ${name}`);
+    }
+    const body = await versionsRes.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error ?? versionsRes.statusText);
+  }
+
+  const versionsData = await versionsRes.json() as { name: string; versions: VersionInfo[] };
+  return versionsData.versions.map((v) => v.version);
+}
+
+/**
+ * Deduplicate lockfile entries by skill name.
+ * When multiple versions of the same skill exist in the lockfile (e.g. from
+ * transitive dependencies), keeps only the highest version per skill name.
+ */
+function deduplicateByName(entries: string[]): Map<string, string> {
+  const versionsByName = new Map<string, string[]>();
+  for (const key of entries) {
+    const parsed = parseLockKey(key);
+    if (!parsed) continue;
+    const versions = versionsByName.get(parsed.name) ?? [];
+    versions.push(parsed.version);
+    versionsByName.set(parsed.name, versions);
+  }
+
+  const latestByName = new Map<string, string>();
+  for (const [name, versions] of versionsByName) {
+    const latest = resolve('*', versions);
+    if (latest) latestByName.set(name, latest);
+  }
+
+  return latestByName;
+}
+
+async function fetchVersionsBatch(
+  skillNames: string[],
+  registry: string,
+  headers: Record<string, string>,
+): Promise<Map<string, string[]>> {
+  const results = new Map<string, string[]>();
+
+  for (let i = 0; i < skillNames.length; i += VERSION_CHECK_CONCURRENCY) {
+    const batch = skillNames.slice(i, i + VERSION_CHECK_CONCURRENCY);
+    const settled = await Promise.allSettled(
+      batch.map(async (name) => {
+        const versions = await fetchAvailableVersions(name, registry, headers);
+        return { name, versions };
+      }),
+    );
+
+    for (const result of settled) {
+      if (result.status === 'fulfilled') {
+        results.set(result.value.name, result.value.versions);
+      } else {
+        throw result.reason;
+      }
+    }
+  }
+
+  return results;
+}
+
 async function updateSingle(
   name: string,
   skills: Record<string, string>,
@@ -112,7 +193,6 @@ async function updateSingle(
   global = false,
   homedir?: string,
 ): Promise<void> {
-  // 2. Get version range from skills.json
   const versionRange = skills[name];
   if (!versionRange) {
     throw new Error(`Skill "${name}" is not installed (not found in skills.json)`);
@@ -124,31 +204,8 @@ async function updateSingle(
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  // 3. Fetch available versions from registry
-  const encodedName = encodeURIComponent(name);
-  const versionsUrl = `${config.registry}/api/v1/skills/${encodedName}/versions`;
+  const availableVersions = await fetchAvailableVersions(name, config.registry, requestHeaders);
 
-  let versionsRes: Response;
-  try {
-    versionsRes = await fetch(versionsUrl, {
-      headers: requestHeaders,
-    });
-  } catch (err) {
-    throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  if (!versionsRes.ok) {
-    if (versionsRes.status === 404) {
-      throw new Error(`Skill not found in registry: ${name}`);
-    }
-    const body = await versionsRes.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? versionsRes.statusText);
-  }
-
-  const versionsData = await versionsRes.json() as { name: string; versions: VersionInfo[] };
-  const availableVersions = versionsData.versions.map((v) => v.version);
-
-  // 4. Resolve best version
   const resolved = resolve(versionRange, availableVersions);
   if (!resolved) {
     throw new Error(
@@ -156,7 +213,6 @@ async function updateSingle(
     );
   }
 
-  // 5. Read lockfile to find current installed version
   const lockPath = global
     ? getGlobalLockPath(homedir)
     : path.join(directory, 'skills.lock');
@@ -174,13 +230,11 @@ async function updateSingle(
     }
   }
 
-  // 6. If resolved === current, already at latest
   if (resolved === currentVersion) {
     logger.info(`Already at latest: ${name}@${resolved}`);
     return;
   }
 
-  // 7. Install the newer version
   await installCommand({
     name,
     versionRange,
@@ -207,61 +261,56 @@ async function updateAll(
     return;
   }
 
-  let updatedCount = 0;
+  const config = getConfig(configDir);
+  const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (config.token) {
+    requestHeaders.Authorization = `Bearer ${config.token}`;
+  }
 
-  for (const [name] of skillEntries) {
-    const config = getConfig(configDir);
-    const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
-    if (config.token) {
-      requestHeaders.Authorization = `Bearer ${config.token}`;
+  const lockPath = global
+    ? getGlobalLockPath(homedir)
+    : path.join(directory, 'skills.lock');
+  const lock = readLockfile(lockPath);
+
+  const currentVersionByName = new Map<string, string>();
+  if (lock) {
+    for (const key of Object.keys(lock.skills)) {
+      const parsed = parseLockKey(key);
+      if (!parsed) continue;
+      const existing = currentVersionByName.get(parsed.name);
+      if (!existing) {
+        currentVersionByName.set(parsed.name, parsed.version);
+      } else {
+        const higher = resolve('*', [existing, parsed.version]);
+        if (higher) currentVersionByName.set(parsed.name, higher);
+      }
     }
-    const versionRange = skills[name];
+  }
 
-    // Fetch available versions
-    const encodedName = encodeURIComponent(name);
-    const versionsUrl = `${config.registry}/api/v1/skills/${encodedName}/versions`;
+  const skillNames = skillEntries.map(([name]) => name);
+  const allVersions = await fetchVersionsBatch(skillNames, config.registry, requestHeaders);
 
-    let versionsRes: Response;
-    try {
-      versionsRes = await fetch(versionsUrl, {
-        headers: requestHeaders,
-      });
-    } catch (err) {
-      throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
-    }
+  const toUpdate: Array<{ name: string; versionRange: string }> = [];
 
-    if (!versionsRes.ok) {
-      throw new Error(`Failed to fetch versions for ${name}: ${versionsRes.statusText}`);
-    }
-
-    const versionsData = await versionsRes.json() as { name: string; versions: VersionInfo[] };
-    const availableVersions = versionsData.versions.map((v) => v.version);
+  for (const [name, versionRange] of skillEntries) {
+    const availableVersions = allVersions.get(name);
+    if (!availableVersions) continue;
 
     const resolved = resolve(versionRange, availableVersions);
     if (!resolved) continue;
 
-    // Check current version from lockfile
-    const lockPath = global
-      ? getGlobalLockPath(homedir)
-      : path.join(directory, 'skills.lock');
-    let currentVersion: string | null = null;
+    const currentVersion = currentVersionByName.get(name) ?? null;
+    if (resolved === currentVersion) continue;
 
-    const lock = readLockfile(lockPath);
-    if (lock) {
-      for (const key of Object.keys(lock.skills)) {
-        const parsed = parseLockKey(key);
-        if (!parsed) continue;
-        if (parsed.name === name) {
-          currentVersion = parsed.version;
-          break;
-        }
-      }
-    }
+    toUpdate.push({ name, versionRange });
+  }
 
-    if (resolved === currentVersion) {
-      continue;
-    }
+  if (toUpdate.length === 0) {
+    logger.info('All skills up to date');
+    return;
+  }
 
+  for (const { name, versionRange } of toUpdate) {
     await installCommand({
       name,
       versionRange,
@@ -270,14 +319,9 @@ async function updateAll(
       global,
       homedir,
     });
-    updatedCount++;
   }
 
-  if (updatedCount === 0) {
-    logger.info('All skills up to date');
-  } else {
-    logger.success(`Updated ${updatedCount} skill${updatedCount === 1 ? '' : 's'}`);
-  }
+  logger.success(`Updated ${toUpdate.length} skill${toUpdate.length === 1 ? '' : 's'}`);
 }
 
 async function updateSingleGlobal(
@@ -307,28 +351,8 @@ async function updateSingleGlobal(
   if (config.token) {
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
-  const encodedName = encodeURIComponent(name);
-  const versionsUrl = `${config.registry}/api/v1/skills/${encodedName}/versions`;
 
-  let versionsRes: Response;
-  try {
-    versionsRes = await fetch(versionsUrl, {
-      headers: requestHeaders,
-    });
-  } catch (err) {
-    throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  if (!versionsRes.ok) {
-    if (versionsRes.status === 404) {
-      throw new Error(`Skill not found in registry: ${name}`);
-    }
-    const body = await versionsRes.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? versionsRes.statusText);
-  }
-
-  const versionsData = await versionsRes.json() as { name: string; versions: VersionInfo[] };
-  const availableVersions = versionsData.versions.map((v) => v.version);
+  const availableVersions = await fetchAvailableVersions(name, config.registry, requestHeaders);
   const versionRange = `>=${currentVersion}`;
   const resolved = resolve(versionRange, availableVersions);
 
@@ -367,58 +391,45 @@ async function updateAllGlobal(
     return;
   }
 
-  let updatedCount = 0;
+  const config = getConfig(configDir);
+  const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
+  if (config.token) {
+    requestHeaders.Authorization = `Bearer ${config.token}`;
+  }
 
-  for (const key of entries) {
-    const parsed = parseLockKey(key);
-    if (!parsed) continue;
-    const { name } = parsed;
-    const config = getConfig(configDir);
-    const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
-    if (config.token) {
-      requestHeaders.Authorization = `Bearer ${config.token}`;
-    }
-    const versionRange = '*';
+  const latestByName = deduplicateByName(entries);
+  const skillNames = Array.from(latestByName.keys());
 
-    const encodedName = encodeURIComponent(name);
-    const versionsUrl = `${config.registry}/api/v1/skills/${encodedName}/versions`;
+  const allVersions = await fetchVersionsBatch(skillNames, config.registry, requestHeaders);
 
-    let versionsRes: Response;
-    try {
-      versionsRes = await fetch(versionsUrl, {
-        headers: requestHeaders,
-      });
-    } catch (err) {
-      throw new Error(`Network error fetching versions for ${name}: ${err instanceof Error ? err.message : String(err)}`);
-    }
+  const toUpdate: string[] = [];
 
-    if (!versionsRes.ok) {
-      throw new Error(`Failed to fetch versions for ${name}: ${versionsRes.statusText}`);
-    }
+  for (const [name, currentVersion] of latestByName) {
+    const availableVersions = allVersions.get(name);
+    if (!availableVersions) continue;
 
-    const versionsData = await versionsRes.json() as { name: string; versions: VersionInfo[] };
-    const availableVersions = versionsData.versions.map((v) => v.version);
-    const resolved = resolve(versionRange, availableVersions);
+    const resolved = resolve('*', availableVersions);
     if (!resolved) continue;
 
-    const currentVersion = parsed.version;
-    if (resolved === currentVersion) {
-      continue;
-    }
+    if (resolved === currentVersion) continue;
 
+    toUpdate.push(name);
+  }
+
+  if (toUpdate.length === 0) {
+    logger.info('All skills up to date');
+    return;
+  }
+
+  for (const name of toUpdate) {
     await installCommand({
       name,
-      versionRange,
+      versionRange: '*',
       global: true,
       homedir,
       configDir,
     });
-    updatedCount++;
   }
 
-  if (updatedCount === 0) {
-    logger.info('All skills up to date');
-  } else {
-    logger.success(`Updated ${updatedCount} skill${updatedCount === 1 ? '' : 's'}`);
-  }
+  logger.success(`Updated ${toUpdate.length} skill${toUpdate.length === 1 ? '' : 's'}`);
 }
