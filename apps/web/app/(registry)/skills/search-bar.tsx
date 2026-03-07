@@ -12,14 +12,17 @@ export function SearchBar({ defaultValue }: { defaultValue: string }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams();
+    const currentParams = new URLSearchParams(window.location.search);
     if (query.trim()) {
-      params.set('q', query.trim());
+      currentParams.set('q', query.trim());
+    } else {
+      currentParams.delete('q');
     }
-    const qs = params.toString();
+    currentParams.delete('page');
     if (query.trim()) {
       trackSkillSearch(query.trim());
     }
+    const qs = currentParams.toString();
     router.push(`/skills${qs ? `?${qs}` : ''}`);
   };
 
@@ -30,7 +33,7 @@ export function SearchBar({ defaultValue }: { defaultValue: string }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search skills..."
-        className="max-w-md"
+        className="flex-1"
         data-testid="skills-filter-input"
       />
       <Button type="submit" variant="secondary">
