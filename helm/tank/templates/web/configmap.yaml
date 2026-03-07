@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tank.webConfigmapName" . }}
+  labels:
+    {{- include "tank.web.labels" . | nindent 4 }}
+data:
+  HOSTNAME: "0.0.0.0"
+  PORT: "3000"
+  NODE_ENV: {{ .Values.web.nodeEnv | quote }}
+  BETTER_AUTH_URL: {{ .Values.web.betterAuthUrl | quote }}
+  AUTH_PROVIDERS: {{ .Values.web.authProviders | quote }}
+  NEXT_PUBLIC_AUTH_PROVIDERS: {{ .Values.web.nextPublicAuthProviders | quote }}
+  NEXT_PUBLIC_APP_URL: {{ .Values.web.nextPublicAppUrl | quote }}
+  SESSION_STORE: {{ .Values.web.sessionStore | quote }}
+  EMAIL_FROM: {{ .Values.web.emailFrom | quote }}
+  {{- if .Values.web.githubClientId }}
+  GITHUB_CLIENT_ID: {{ .Values.web.githubClientId | quote }}
+  {{- end }}
+  {{- if .Values.web.firstAdminEmail }}
+  FIRST_ADMIN_EMAIL: {{ .Values.web.firstAdminEmail | quote }}
+  {{- end }}
+  {{- if .Values.web.oidc.issuerUrl }}
+  OIDC_ISSUER_URL: {{ .Values.web.oidc.issuerUrl | quote }}
+  {{- end }}
+  OIDC_PROVIDER_ID: {{ .Values.web.oidc.providerId | quote }}
+  NEXT_PUBLIC_OIDC_PROVIDER_ID: {{ .Values.web.oidc.nextPublicProviderId | quote }}
+  {{- if .Values.web.oidc.discoveryUrl }}
+  OIDC_DISCOVERY_URL: {{ .Values.web.oidc.discoveryUrl | quote }}
+  {{- end }}
+  {{- if .Values.web.oidc.clientId }}
+  OIDC_CLIENT_ID: {{ .Values.web.oidc.clientId | quote }}
+  {{- end }}
+  {{- if .Values.web.oidc.authorizationUrl }}
+  OIDC_AUTHORIZATION_URL: {{ .Values.web.oidc.authorizationUrl | quote }}
+  {{- end }}
+  {{- if .Values.web.oidc.tokenUrl }}
+  OIDC_TOKEN_URL: {{ .Values.web.oidc.tokenUrl | quote }}
+  {{- end }}
+  {{- if .Values.web.oidc.userInfoUrl }}
+  OIDC_USER_INFO_URL: {{ .Values.web.oidc.userInfoUrl | quote }}
+  {{- end }}
