@@ -34,6 +34,14 @@ jobs:
             platform: darwin-x64
             target: bun-darwin-x64
             output: tank-darwin-x64
+          - runner: windows-latest
+            platform: windows-x64
+            target: bun-windows-x64
+            output: tank-windows-x64.exe
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout code
@@ -71,17 +79,50 @@ jobs:
           pnpm run build:bundle
           pnpm run build:sea
 
-      - name: Package tarball
+      - name: Package tarball (unix)
+        if: runner.os != 'Windows'
         working-directory: apps/cli/build
         run: tar -czf ${{ matrix.output }}.tar.gz ${{ matrix.output }}
 
+      - name: Package zip (windows)
+        if: runner.os == 'Windows'
+        working-directory: apps/cli/build
+        shell: pwsh
+        run: Compress-Archive -Path ${{ matrix.output }} -DestinationPath tank-windows-x64.zip
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Generate icon from favicon
+          powershell -ExecutionPolicy Bypass -File installer/windows/create-icon.ps1
+
+          # Install Inno Setup
+          choco install innosetup -y --no-progress
+
+          # Build installer with version from tag
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DVERSION=$version installer\windows\tank-installer.iss
+
       - name: Upload binary artifact
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.output }}
           path: |
             apps/cli/build/${{ matrix.output }}
             apps/cli/build/${{ matrix.output }}.tar.gz
+          if-no-files-found: error
+
+      - name: Upload Windows artifacts
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: |
+            apps/cli/build/${{ matrix.output }}
+            apps/cli/build/tank-windows-x64.zip
+            apps/cli/build/tank-windows-x64-setup.exe
           if-no-files-found: error
 
   release:
@@ -136,7 +177,7 @@ jobs:
 
       - name: Generate checksums
         working-directory: release
-        run: sha256sum tank-* *.deb > SHA256SUMS
+        run: sha256sum tank-* *.deb *.exe 2>/dev/null | sort > SHA256SUMS
 
       - name: Update in-repo Homebrew formula
         continue-on-error: true
@@ -202,10 +243,13 @@ jobs:
             release/tank-linux-arm64
             release/tank-darwin-x64
             release/tank-darwin-arm64
+            release/tank-windows-x64.exe
             release/tank-linux-x64.tar.gz
             release/tank-linux-arm64.tar.gz
             release/tank-darwin-x64.tar.gz
             release/tank-darwin-arm64.tar.gz
+            release/tank-windows-x64.zip
+            release/tank-windows-x64-setup.exe
             release/tank_*.deb
             release/SHA256SUMS
 
