@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm turbo build --filter=@tank/web...",
   "installCommand": "pnpm install",
-  "devCommand": "pnpm --filter=@tank/web dev"
+  "devCommand": "pnpm --filter=@tank/web dev",
+  "ignoreCommand": "[ \"$VERCEL_ENV\" != \"production\" ]"
 }
