@@ -440,7 +440,6 @@ export async function searchSkills(
 
   // Determine which aggregation JOINs are needed
   const needsDownloads = sort === 'downloads';
-  const needsStars = sort === 'stars' || starsTableAvailable;
 
   // Pre-aggregated subquery JOINs (only included when needed for sort)
   const downloadJoin = needsDownloads
@@ -537,7 +536,7 @@ export async function searchSkills(
     AND ${visClause}
     ${visibilityFilterClause}
     ${scoreBucketClause}
-    ORDER BY (
+    ORDER BY ${sort !== 'updated' ? sql`${orderBy},` : sql``} (
       CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
       + CASE WHEN s.name ILIKE ${q + '%'} THEN 800 ELSE 0 END
       + CASE WHEN s.name ILIKE ${'%/' + escaped + '%'} THEN 600 ELSE 0 END
@@ -547,7 +546,7 @@ export async function searchSkills(
           to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
           plainto_tsquery('english', ${q})
         ) * 100)::int
-    ) DESC, s.updated_at DESC, s.id ASC
+    ) DESC, s.id ASC
     OFFSET ${offset}
     LIMIT ${resolvedLimit}
   `) as Record<string, unknown>[];

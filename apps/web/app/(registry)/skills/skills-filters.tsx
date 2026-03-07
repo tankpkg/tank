@@ -24,11 +24,18 @@ export function SkillsFilters({
   const hasActiveFilters =
     currentVisibility !== 'all' || currentScoreBucket !== 'all';
 
+  const DEFAULTS: Record<string, string> = { visibility: 'all', score: 'all' };
+
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    params.set(key, value);
+    if (DEFAULTS[key] === value) {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
     params.delete('page');
-    router.replace(`${pathname}?${params.toString()}`);
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ''}`);
   }
 
   function clearFilters() {
@@ -36,7 +43,8 @@ export function SkillsFilters({
     params.delete('visibility');
     params.delete('score');
     params.delete('page');
-    router.replace(`${pathname}?${params.toString()}`);
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ''}`);
   }
 
   const scoreBuckets: { value: ScoreBucket; label: string }[] = [

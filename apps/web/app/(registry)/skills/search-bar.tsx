@@ -22,7 +22,8 @@ export function SearchBar({ defaultValue }: { defaultValue: string }) {
     if (query.trim()) {
       trackSkillSearch(query.trim());
     }
-    router.push(`/skills?${currentParams.toString()}`);
+    const qs = currentParams.toString();
+    router.push(`/skills${qs ? `?${qs}` : ''}`);
   };
 
   return (

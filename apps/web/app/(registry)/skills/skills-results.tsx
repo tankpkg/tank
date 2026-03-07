@@ -81,9 +81,14 @@ export function SkillsResults({
 
   function handleSortChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    params.set('sort', value);
+    if (value === 'updated') {
+      params.delete('sort');
+    } else {
+      params.set('sort', value);
+    }
     params.delete('page');
-    router.push(`${pathname}?${params.toString()}`);
+    const qs = params.toString();
+    router.push(`${pathname}${qs ? `?${qs}` : ''}`);
   }
 
   const countLabel = currentQuery
