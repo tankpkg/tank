@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-06
+
+### Added
+
+#### CLI + MCP Release Alignment (`@tankpkg/cli` 0.5.0 → 0.6.0, `@tankpkg/mcp-server` 0.2.0 → 0.6.0)
+
+- `tank install` now resolves the full skill dependency graph up front from registry metadata before downloading tarballs
+- Transitive skill dependencies are recorded in `skills.lock`, making the resolved graph reconstructable from lockfile data alone
+- Shared dependencies are deduplicated into a single resolved version per skill name during install planning
+- Tarball downloads for resolved skills now run in parallel with a bounded concurrency limit
+- `@tankpkg/mcp-server` is version-aligned with the CLI for the `v0.6.0` repo release
+
+### Changed
+
+- Existing locked skills are treated as exact pins during new installs, preventing silent upgrades while resolving additional dependencies
+- `install.ts` was refactored into shared install pipeline and permission checker modules to remove duplicated install logic between `installCommand` and `installAll`
+- Lockfile writes happen before legacy manifest fallback recursion so recursive installs do not overwrite resolved dependency state
+
+### Fixed
+
+- Installs now fail fast when two skills require incompatible versions of the same dependency instead of partially installing a broken tree
+- Dependency verification compares extracted manifest dependency ranges against registry metadata for better mismatch detection
+- Agent linking in `installAll` now handles per-skill failures without aborting the entire install run
+
 ## [0.5.0] - 2026-03-05
 
 ### Added
