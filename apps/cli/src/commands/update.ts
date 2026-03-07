@@ -125,8 +125,8 @@ async function fetchAvailableVersions(
     if (versionsRes.status === 404) {
       throw new Error(`Skill not found in registry: ${name}`);
     }
-    const body = await versionsRes.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? versionsRes.statusText);
+    const body = await versionsRes.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error ?? versionsRes.statusText);
   }
 
   const versionsData = await versionsRes.json() as { name: string; versions: VersionInfo[] };
