@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
-import { Suspense } from 'react';
+import { Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { searchSkills } from '@/lib/data/skills';
-import type { SortOption, VisibilityFilter, ScoreBucket } from '@/lib/data/skills';
+import type { SkillSearchResult, SortOption, VisibilityFilter, ScoreBucket } from '@/lib/data/skills';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { SearchBar } from './search-bar';
-import { SkillsFilters } from './skills-filters';
-import { SkillsResults } from './skills-results';
 
 export const revalidate = 60;
 
@@ -86,7 +86,7 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
   const totalPages = Math.max(1, Math.ceil(data.total / limit));
 
   return (
-    <div className="space-y-6" data-testid="skills-list-root">
+    <div className="space-y-8" data-testid="skills-list-root">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Browse Skills</h1>
         <p className="mt-2 text-muted-foreground">
@@ -94,26 +94,15 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        <Suspense>
-          <SkillsFilters
-            currentVisibility={visibility}
-            currentScoreBucket={scoreBucket}
-            isLoggedIn={isLoggedIn}
-          />
-        </Suspense>
+      <SearchBar defaultValue={query} />
 
-        <div className="flex-1 min-w-0 space-y-4">
-          <SearchBar defaultValue={query} />
-
-          <Suspense>
-            <SkillsResults
-              results={data.results}
-              totalCount={data.total}
-              currentSort={sort}
-              currentQuery={query}
-            />
-          </Suspense>
+      {data.results.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="skills-grid">
+            {data.results.map((skill) => (
+              <SkillCard key={skill.name} skill={skill} isLoggedIn={isLoggedIn} />
+            ))}
+          </div>
 
           {totalPages > 1 && (
             <Pagination
@@ -125,8 +114,62 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
               scoreBucket={scoreBucket}
             />
           )}
-        </div>
-      </div>
+        </>
+      ) : (
+        <EmptyState query={query} />
+      )}
+    </div>
+  );
+}
+
+function SkillCard({
+  skill,
+  isLoggedIn,
+}: {
+  skill: SkillSearchResult;
+  isLoggedIn: boolean;
+}) {
+  return (
+    <Link href={`/skills/${encodeURIComponent(skill.name)}`}>
+      <Card className="h-full cursor-pointer transition-colors hover:border-primary/50">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
+            {isLoggedIn && skill.visibility === 'private' && (
+              <Lock className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+            )}
+          </div>
+          {skill.description && (
+            <CardDescription className="line-clamp-2">{skill.description}</CardDescription>
+          )}
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            {skill.latestVersion && <Badge variant="secondary">v{skill.latestVersion}</Badge>}
+            {skill.auditScore !== null && (
+              <Badge variant={skill.auditScore >= 7 ? 'default' : 'destructive'}>
+                Score: {skill.auditScore}
+              </Badge>
+            )}
+            <span>{skill.downloads.toLocaleString()} downloads</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function EmptyState({ query }: { query: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
+      <p className="text-lg font-medium">
+        {query ? 'No skills found' : 'No skills published yet'}
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {query
+          ? `No results for "${query}". Try a different search term.`
+          : 'Be the first to publish a skill!'}
+      </p>
     </div>
   );
 }
