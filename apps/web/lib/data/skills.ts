@@ -342,22 +342,29 @@ function escapeLike(input: string): string {
 }
 
 /**
- * Build ORDER BY SQL fragment from sort option.
- * Downloads/stars use pre-aggregated subquery aliases (dl, st).
+ * Build the primary ORDER BY expression (without final tiebreaker).
+ * The tiebreaker (`s.id ASC`) is appended separately so that other
+ * ranking criteria (e.g. relevance during text search) can be inserted
+ * between the primary sort and the deterministic tiebreaker.
+ *
+ * `starsAvailable` must be passed to guard against the `st` alias
+ * being absent when the `skill_stars` table doesn't exist.
  */
-function buildOrderBy(sort: SortOption) {
+function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
   switch (sort) {
     case 'downloads':
-      return sql`coalesce(dl.downloads_7d, 0) DESC, s.id ASC`;
+      return sql`coalesce(dl.downloads_7d, 0) DESC`;
     case 'stars':
-      return sql`coalesce(st.stars_count, 0) DESC, s.id ASC`;
+      return starsAvailable
+        ? sql`coalesce(st.stars_count, 0) DESC`
+        : sql`s.updated_at DESC`;
     case 'score':
-      return sql`coalesce(sv.audit_score, 0) DESC, s.id ASC`;
+      return sql`coalesce(sv.audit_score, 0) DESC`;
     case 'name':
-      return sql`s.name ASC, s.id ASC`;
+      return sql`s.name ASC`;
     case 'updated':
     default:
-      return sql`s.updated_at DESC, s.id ASC`;
+      return sql`s.updated_at DESC`;
   }
 }
 
@@ -371,7 +378,7 @@ function buildScoreBucketClause(scoreBucket: ScoreBucket) {
     case 'medium':
       return sql`AND coalesce(sv.audit_score, 0) >= 4 AND coalesce(sv.audit_score, 0) < 7`;
     case 'low':
-      return sql`AND coalesce(sv.audit_score, 0) < 4`;
+      return sql`AND sv.audit_score IS NOT NULL AND sv.audit_score < 4`;
     case 'all':
     default:
       return sql``;
@@ -468,7 +475,7 @@ export async function searchSkills(
     ? sql`coalesce(st.stars_count, 0)`
     : sql`0`;
 
-  const orderBy = buildOrderBy(sort);
+  const primarySort = buildPrimarySort(sort, starsTableAvailable);
   const scoreBucketClause = buildScoreBucketClause(scoreBucket);
   const visibilityFilterClause = buildVisibilityFilterClause(visibility);
 
@@ -496,7 +503,7 @@ export async function searchSkills(
       WHERE ${visClause}
       ${visibilityFilterClause}
       ${scoreBucketClause}
-      ORDER BY ${orderBy}
+      ORDER BY ${primarySort}, s.id ASC
       OFFSET ${offset}
       LIMIT ${resolvedLimit}
     `) as Record<string, unknown>[];
@@ -536,7 +543,7 @@ export async function searchSkills(
     AND ${visClause}
     ${visibilityFilterClause}
     ${scoreBucketClause}
-    ORDER BY ${sort !== 'updated' ? sql`${orderBy},` : sql``} (
+    ORDER BY ${sort !== 'updated' ? sql`${primarySort},` : sql``} (
       CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
       + CASE WHEN s.name ILIKE ${q + '%'} THEN 800 ELSE 0 END
       + CASE WHEN s.name ILIKE ${'%/' + escaped + '%'} THEN 600 ELSE 0 END
@@ -546,7 +553,7 @@ export async function searchSkills(
           to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
           plainto_tsquery('english', ${q})
         ) * 100)::int
-    ) DESC, s.id ASC
+    ) DESC, s.updated_at DESC, s.id ASC
     OFFSET ${offset}
     LIMIT ${resolvedLimit}
   `) as Record<string, unknown>[];
