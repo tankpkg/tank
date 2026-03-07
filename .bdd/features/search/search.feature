@@ -67,6 +67,23 @@ Feature: Skill discovery via hybrid search
     When I search for "auth"
     Then the first result name contains "auth"
 
+  # ── Bare org-name matching (C10) ──────────────────────────────────
+
+  @high
+  Scenario: Bare org name without @ finds all org skills (E11)
+    When I search for the bare org name without @
+    Then the results contain all 5 seeded skills
+
+  @medium
+  Scenario: Bare org name match ranks org skills above unrelated hits (E12)
+    When I search for the bare org name without @
+    Then every result from the seeded org has a positive score
+
+  @medium
+  Scenario: Org name search is case-insensitive (E13)
+    When I search for the org name in mixed case
+    Then the results contain all 5 seeded skills
+
   # ── Safety & edge cases (C4) ───────────────────────────────────────
 
   @high

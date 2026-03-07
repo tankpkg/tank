@@ -49,6 +49,7 @@ No new tables. Extends the existing `skills` table with a GIN trigram index.
 | C7 | Results include: name, description, visibility, latestVersion, auditScore, publisher, downloads, stars | CLI and web UI depend on this response shape | Unit test |
 | C8 | Requires `pg_trgm` extension and GIN index on `skills.name` | Without the extension, `similarity()` calls fail at runtime | Migration + CI |
 | C9 | API route delegates entirely to `searchSkills()` — no duplicated SQL | Prevents logic drift between API and Server Component consumers | Code review |
+| C10 | Bare org name (without `@`) must match the org portion of scoped names | Users type "tank" not "@tank" — the search must split on `@`/`/` and match the org segment | BDD scenario |
 
 ---
 
@@ -66,3 +67,6 @@ No new tables. Extends the existing `skills` table with a GIN trigram index.
 | E8 | `searchSkills("auth", ...)` where `auth-patterns` exists plus a description-only match | Name-contains match ranks above description-only match |
 | E9 | `searchSkills("zzzyyyxxx-nonexistent", ...)` | Returns zero results for the seeded org |
 | E10 | `searchSkills("'; DROP TABLE skills;--", ...)` | No SQL error, returns empty or unrelated results — input safely escaped |
+| E11 | `searchSkills("myorg", ...)` where 5 `@myorg/*` skills exist | Returns all 5 skills — bare org name matches the org segment before `/` |
+| E12 | `searchSkills("myorg", ...)` ranking | Org-prefix matches rank above unrelated description-only hits |
+| E13 | `searchSkills("Myorg", ...)` (mixed case) | Case-insensitive — returns same results as lowercase |

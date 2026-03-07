@@ -3,5 +3,5 @@
   "buildCommand": "pnpm turbo build --filter=@tank/web...",
   "installCommand": "pnpm install",
   "devCommand": "pnpm --filter=@tank/web dev",
-  "ignoreCommand": "[ \"$VERCEL_ENV\" != \"production\" ]"
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"main\" ]; then exit 1; fi; exit 0"
 }
