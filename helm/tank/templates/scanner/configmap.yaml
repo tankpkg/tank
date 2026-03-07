@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tank.scannerConfigmapName" . }}
+  labels:
+    {{- include "tank.scanner.labels" . | nindent 4 }}
+data:
+  LLM_SCAN_TIMEOUT_MS: {{ .Values.scanner.llmScanTimeoutMs | quote }}
+  {{- if .Values.scanner.llmBaseUrl }}
+  LLM_BASE_URL: {{ .Values.scanner.llmBaseUrl | quote }}
+  {{- end }}
+  {{- if .Values.scanner.llmModel }}
+  LLM_MODEL: {{ .Values.scanner.llmModel | quote }}
+  {{- end }}
+  {{- if .Values.scanner.groq8bModel }}
+  GROQ_8B_MODEL: {{ .Values.scanner.groq8bModel | quote }}
+  {{- end }}
+  {{- if .Values.scanner.groq70bModel }}
+  GROQ_70B_MODEL: {{ .Values.scanner.groq70bModel | quote }}
+  {{- end }}
+  {{- if .Values.scanner.openrouterModel }}
+  OPENROUTER_MODEL: {{ .Values.scanner.openrouterModel | quote }}
+  {{- end }}
+  {{- if .Values.ollama.enabled }}
+  LLM_BASE_URL: {{ printf "http://%s-ollama:%s/v1" (include "tank.fullname" .) (toString .Values.ollama.service.port) | quote }}
+  {{- end }}

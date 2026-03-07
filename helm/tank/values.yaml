@@ -1,0 +1,513 @@
+# =============================================================================
+# Tank Helm Chart — values.yaml
+# =============================================================================
+# Default values for the Tank on-premises deployment.
+# All defaults are self-consistent for a local deployment with subcharts enabled.
+# =============================================================================
+
+# -- Override the chart name
+nameOverride: ""
+# -- Override the full release name
+fullnameOverride: ""
+
+# =============================================================================
+# Global configuration — shared across all Tank services
+# =============================================================================
+global:
+  # -- PostgreSQL connection parameters (used to construct DATABASE_URL)
+  postgresql:
+    auth:
+      username: tank
+      password: tank
+      database: tank
+    # -- Port for PostgreSQL connections
+    port: 5432
+    # -- External host (only used when postgresql.enabled=false)
+    externalHost: ""
+
+  # -- Redis connection parameters
+  redis:
+    auth:
+      # -- Redis password (empty = no auth, matches Bitnami default when auth disabled)
+      password: ""
+    # -- Port for Redis connections
+    port: 6379
+    # -- External host (only used when redis.enabled=false)
+    externalHost: ""
+
+  # -- S3-compatible storage configuration
+  storage:
+    # -- Storage backend: "s3" or "supabase"
+    backend: s3
+    s3:
+      # -- S3 endpoint URL (auto-constructed from MinIO subchart when minio.enabled=true)
+      endpoint: ""
+      # -- S3 access key (matches MinIO root user when using subchart)
+      accessKey: tank
+      # -- S3 secret key (matches MinIO root password when using subchart)
+      secretKey: tank123456
+      # -- S3 bucket name for skill tarballs
+      bucket: packages
+      # -- S3 region
+      region: us-east-1
+
+# =============================================================================
+# Service Account
+# =============================================================================
+serviceAccount:
+  # -- Create a service account
+  create: true
+  # -- Annotations to add to the service account
+  annotations: {}
+  # -- The name of the service account to use (auto-generated if not set)
+  name: ""
+
+# =============================================================================
+# Secrets
+# =============================================================================
+secrets:
+  # -- Use an existing Kubernetes Secret instead of creating one.
+  # When set, the chart will NOT create a Secret resource and will reference
+  # this secret name in all envFrom blocks. The existing secret must contain
+  # all required keys (BETTER_AUTH_SECRET, etc.).
+  existingSecret: ""
+
+  # -- Values below are only used when existingSecret is empty.
+  # In production, use existingSecret or an External Secrets Operator.
+
+  # -- (REQUIRED) Secret for better-auth session signing. Generate with: openssl rand -base64 32
+  betterAuthSecret: "changeme-generate-with-openssl-rand-base64-32"
+
+  # -- GitHub OAuth client secret (optional, only if AUTH_PROVIDERS includes "github")
+  githubClientSecret: ""
+
+  # -- OIDC client secret (optional, only if AUTH_PROVIDERS includes "oidc")
+  oidcClientSecret: ""
+
+  # -- Resend API key for transactional email (optional)
+  resendApiKey: ""
+
+  # -- LLM API key for custom OpenAI-compatible provider (optional)
+  llmApiKey: ""
+
+  # -- Groq API key for free LLM scanning (optional)
+  groqApiKey: ""
+
+  # -- OpenRouter API key for free LLM scanning fallback (optional)
+  openrouterApiKey: ""
+
+# =============================================================================
+# Web Application (Next.js 15)
+# =============================================================================
+web:
+  # -- Number of web replicas
+  replicaCount: 2
+
+  image:
+    # -- Web app container image repository
+    repository: tank-web
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag (defaults to Chart.appVersion)
+    tag: ""
+
+  # -- Image pull secrets for private registries
+  imagePullSecrets: []
+
+  service:
+    # -- Service type
+    type: ClusterIP
+    # -- Service port
+    port: 3000
+
+  # -- Pod annotations
+  podAnnotations: {}
+
+  # -- Pod security context
+  podSecurityContext: {}
+
+  # -- Container security context
+  securityContext: {}
+
+  # -- Resource requests and limits
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # -- Node selector
+  nodeSelector: {}
+
+  # -- Tolerations
+  tolerations: []
+
+  # -- Affinity rules
+  affinity: {}
+
+  # -- Startup probe configuration
+  startupProbe:
+    httpGet:
+      path: /api/health
+      port: http
+    failureThreshold: 30
+    periodSeconds: 10
+
+  # -- Liveness probe configuration
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: http
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # -- Readiness probe configuration
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # ---------------------------------------------------------------------------
+  # Web environment variables
+  # ---------------------------------------------------------------------------
+
+  # -- better-auth URL (the public-facing URL of the web app)
+  betterAuthUrl: "http://localhost:3000"
+
+  # -- Auth providers to enable. Comma-separated: "credentials", "github", "oidc"
+  authProviders: "credentials"
+
+  # -- Public auth providers (exposed to the browser)
+  nextPublicAuthProviders: "credentials"
+
+  # -- GitHub OAuth client ID (optional)
+  githubClientId: ""
+
+  # -- OIDC SSO configuration (all optional)
+  oidc:
+    issuerUrl: ""
+    providerId: "enterprise-oidc"
+    nextPublicProviderId: "enterprise-oidc"
+    discoveryUrl: ""
+    clientId: ""
+    authorizationUrl: ""
+    tokenUrl: ""
+    userInfoUrl: ""
+
+  # -- Session store backend: "redis" or "memory"
+  sessionStore: "redis"
+
+  # -- Public app URL (used for NEXT_PUBLIC_APP_URL)
+  nextPublicAppUrl: "http://localhost:3000"
+
+  # -- Email sender address
+  emailFrom: "no-reply@tank.local"
+
+  # -- First admin email for initial bootstrap (optional)
+  firstAdminEmail: ""
+
+  # -- Node.js environment
+  nodeEnv: "production"
+
+# =============================================================================
+# Ingress
+# =============================================================================
+ingress:
+  # -- Enable ingress
+  enabled: false
+  # -- Ingress class name (e.g., "nginx", "traefik")
+  className: ""
+  # -- Ingress annotations
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: tank.local
+      paths:
+        - path: /
+          pathType: Prefix
+  # -- TLS configuration
+  tls: []
+  #  - secretName: tank-tls
+  #    hosts:
+  #      - tank.local
+
+# =============================================================================
+# Horizontal Pod Autoscaler (Web)
+# =============================================================================
+autoscaling:
+  # -- Enable HPA for the web deployment
+  enabled: false
+  # -- Minimum replicas
+  minReplicas: 2
+  # -- Maximum replicas
+  maxReplicas: 10
+  # -- Target CPU utilization percentage
+  targetCPUUtilizationPercentage: 75
+  # -- Target memory utilization percentage (optional)
+  # targetMemoryUtilizationPercentage: 80
+
+# =============================================================================
+# Python Security Scanner (FastAPI)
+# =============================================================================
+scanner:
+  # -- Number of scanner replicas
+  replicaCount: 1
+
+  image:
+    # -- Scanner container image repository
+    repository: tank-scanner
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Image tag (defaults to Chart.appVersion)
+    tag: ""
+
+  # -- Image pull secrets for private registries
+  imagePullSecrets: []
+
+  service:
+    # -- Service type
+    type: ClusterIP
+    # -- Service port
+    port: 8000
+
+  # -- Pod annotations
+  podAnnotations: {}
+
+  # -- Pod security context
+  podSecurityContext: {}
+
+  # -- Container security context
+  securityContext: {}
+
+  # -- Resource requests and limits
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+  # -- Node selector
+  nodeSelector: {}
+
+  # -- Tolerations
+  tolerations: []
+
+  # -- Affinity rules
+  affinity: {}
+
+  # -- Startup probe configuration
+  startupProbe:
+    httpGet:
+      path: /health
+      port: http
+    failureThreshold: 15
+    periodSeconds: 10
+
+  # -- Liveness probe configuration
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # -- Readiness probe configuration
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  # ---------------------------------------------------------------------------
+  # Scanner LLM configuration
+  # ---------------------------------------------------------------------------
+
+  # -- Custom LLM provider base URL (any OpenAI-compatible API)
+  llmBaseUrl: ""
+
+  # -- Custom LLM model name
+  llmModel: ""
+
+  # -- LLM scan timeout in milliseconds
+  llmScanTimeoutMs: "8000"
+
+  # -- Advanced: Override default Groq 8B model
+  groq8bModel: ""
+
+  # -- Advanced: Override default Groq 70B model
+  groq70bModel: ""
+
+  # -- Advanced: Override default OpenRouter model
+  openrouterModel: ""
+
+# =============================================================================
+# Ollama (Optional — air-gapped LLM for security scanning)
+# =============================================================================
+ollama:
+  # -- Enable Ollama deployment
+  enabled: false
+
+  image:
+    # -- Ollama container image repository
+    repository: ollama/ollama
+    # -- Image tag
+    tag: latest
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+
+  # -- Number of replicas (typically 1)
+  replicaCount: 1
+
+  service:
+    # -- Service type
+    type: ClusterIP
+    # -- Service port
+    port: 11434
+
+  # -- Resource requests and limits
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+    limits:
+      cpu: "4"
+      memory: 8Gi
+
+  # -- Persistent volume for model storage
+  persistence:
+    # -- Enable persistent storage for Ollama models
+    enabled: true
+    # -- Storage class (empty = default)
+    storageClass: ""
+    # -- Volume size
+    size: 20Gi
+    # -- Access modes
+    accessModes:
+      - ReadWriteOnce
+
+  # -- Node selector
+  nodeSelector: {}
+
+  # -- Tolerations
+  tolerations: []
+
+  # -- Affinity rules
+  affinity: {}
+
+# =============================================================================
+# Database Migration Job
+# =============================================================================
+dbMigration:
+  # -- Enable the post-install/post-upgrade DB migration job
+  enabled: true
+  # -- Override image (defaults to web image)
+  image: {}
+  # -- Resource requests and limits for the migration job
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# =============================================================================
+# MinIO Bucket Init Job
+# =============================================================================
+minioInit:
+  # -- Enable the post-install MinIO bucket creation job
+  enabled: true
+  image:
+    # -- MinIO client image
+    repository: minio/mc
+    # -- Image tag
+    tag: latest
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+  # -- Resource requests and limits
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# =============================================================================
+# PostgreSQL Subchart (Bitnami)
+# =============================================================================
+postgresql:
+  # -- Enable the PostgreSQL subchart
+  enabled: true
+  auth:
+    username: tank
+    password: tank
+    database: tank
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+
+# =============================================================================
+# Redis Subchart (Bitnami)
+# =============================================================================
+redis:
+  # -- Enable the Redis subchart
+  enabled: true
+  architecture: standalone
+  auth:
+    # -- Disable Redis auth for simplicity (enable in production)
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
+
+# =============================================================================
+# MinIO Subchart
+# =============================================================================
+minio:
+  # -- Enable the MinIO subchart
+  enabled: true
+  mode: standalone
+  rootUser: tank
+  rootPassword: tank123456
+  persistence:
+    enabled: true
+    size: 10Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # -- Expose MinIO console (optional)
+  consoleIngress:
+    enabled: false

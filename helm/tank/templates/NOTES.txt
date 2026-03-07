@@ -1,0 +1,56 @@
+
+=======================================================
+  Tank — Security-first package manager for AI skills
+=======================================================
+
+Thank you for installing {{ .Chart.Name }} (v{{ .Chart.Version }}).
+
+1. Get the application URL:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else if contains "NodePort" .Values.web.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "tank.fullname" . }}-web)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "Tank URL: http://$NODE_IP:$NODE_PORT"
+{{- else if contains "LoadBalancer" .Values.web.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  Watch status with: kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "tank.fullname" . }}-web
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "tank.fullname" . }}-web --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo "Tank URL: http://$SERVICE_IP:{{ .Values.web.service.port }}"
+{{- else }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "tank.fullname" . }}-web {{ .Values.web.service.port }}:{{ .Values.web.service.port }}
+  echo "Tank URL: http://localhost:{{ .Values.web.service.port }}"
+{{- end }}
+
+2. Bootstrap the first admin user:
+{{- if .Values.web.firstAdminEmail }}
+   The first admin email is set to: {{ .Values.web.firstAdminEmail }}
+   After the first login with that email, run:
+     kubectl exec -it deploy/{{ include "tank.fullname" . }}-web -- npx admin:bootstrap
+{{- else }}
+   Set web.firstAdminEmail in your values, then after first login run:
+     kubectl exec -it deploy/{{ include "tank.fullname" . }}-web -- npx admin:bootstrap
+{{- end }}
+
+{{- if .Values.minio.enabled }}
+
+3. Access MinIO Console:
+   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-minio-console 9001:9001
+   echo "MinIO Console: http://localhost:9001"
+   Credentials: {{ .Values.global.storage.s3.accessKey }} / {{ .Values.global.storage.s3.secretKey }}
+{{- end }}
+
+4. Security Reminder:
+   - Change BETTER_AUTH_SECRET from the default value!
+   - In production, use secrets.existingSecret to reference a pre-created K8s Secret
+     or use an External Secrets Operator (ESO).
+   - Change default PostgreSQL and MinIO passwords.
+
+{{- if .Values.ollama.enabled }}
+
+5. Ollama (Local LLM):
+   Ollama is enabled. Pull a model to start LLM-assisted scanning:
+     kubectl exec -it deploy/{{ include "tank.fullname" . }}-ollama -- ollama pull llama3.1:8b
+{{- end }}

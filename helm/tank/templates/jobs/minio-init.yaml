@@ -1,0 +1,58 @@
+{{- if and .Values.minio.enabled .Values.minioInit.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "tank.fullname" . }}-minio-init-{{ .Release.Revision }}
+  labels:
+    {{- include "tank.labels" . | nindent 4 }}
+    app.kubernetes.io/component: minio-init
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "-3"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 120
+  template:
+    metadata:
+      labels:
+        {{- include "tank.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: minio-init
+    spec:
+      serviceAccountName: {{ include "tank.serviceAccountName" . }}
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-minio
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ .Release.Name }}-minio 9000; do
+                echo "Waiting for MinIO..."
+                sleep 2
+              done
+              echo "MinIO is ready"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+      containers:
+        - name: mc
+          image: "{{ .Values.minioInit.image.repository }}:{{ .Values.minioInit.image.tag }}"
+          imagePullPolicy: {{ .Values.minioInit.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              mc alias set tank http://{{ .Release.Name }}-minio:9000 {{ .Values.global.storage.s3.accessKey }} {{ .Values.global.storage.s3.secretKey }}
+              mc mb --ignore-existing tank/{{ .Values.global.storage.s3.bucket }}
+              echo "Bucket '{{ .Values.global.storage.s3.bucket }}' is ready."
+          {{- with .Values.minioInit.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
