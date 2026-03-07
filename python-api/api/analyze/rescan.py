@@ -11,14 +11,14 @@ from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
-from .scan.models import Finding, ScanVerdict, StageResult
-from .scan.stage0_ingest import stage0_ingest, cleanup_ingest
-from .scan.stage1_structure import stage1_validate
-from .scan.stage2_static import stage2_analyze
-from .scan.stage3_injection import stage3_detect_injection
-from .scan.stage4_secrets import stage4_scan_secrets
-from .scan.stage5_supply import stage5_audit_deps
-from .scan.verdict import compute_verdict
+from lib.scan.models import Finding, ScanVerdict, StageResult
+from lib.scan.stage0_ingest import stage0_ingest, cleanup_ingest
+from lib.scan.stage1_structure import stage1_validate
+from lib.scan.stage2_static import stage2_analyze
+from lib.scan.stage3_injection import stage3_detect_injection
+from lib.scan.stage4_secrets import stage4_scan_secrets
+from lib.scan.stage5_supply import stage5_audit_deps
+from lib.scan.verdict import compute_verdict
 
 app = FastAPI(title="Tank Rescan", version="1.0.0")
 
