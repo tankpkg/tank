@@ -1,15 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
-import { Lock } from 'lucide-react';
+import { Download, Lock, Star } from 'lucide-react';
+import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { searchSkills } from '@/lib/data/skills';
-import type { SkillSearchResult, SortOption, VisibilityFilter, ScoreBucket } from '@/lib/data/skills';
+import type { SkillSearchResult, SortOption, VisibilityFilter, ScoreBucket, FreshnessBucket, PopularityBucket } from '@/lib/data/skills';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { SearchBar } from './search-bar';
+import { SkillsFilters } from './skills-filters';
+import { SkillsSort } from './skills-sort';
 
 export const revalidate = 60;
 
@@ -35,12 +38,17 @@ interface SkillsPageProps {
     sort?: string;
     visibility?: string;
     score?: string;
+    freshness?: string;
+    popularity?: string;
+    docs?: string;
   }>;
 }
 
 const VALID_SORTS: SortOption[] = ['updated', 'downloads', 'stars', 'score', 'name'];
 const VALID_VISIBILITY: VisibilityFilter[] = ['all', 'public', 'private'];
 const VALID_SCORE: ScoreBucket[] = ['all', 'high', 'medium', 'low'];
+const VALID_FRESHNESS: FreshnessBucket[] = ['all', 'week', 'month', 'year'];
+const VALID_POPULARITY: PopularityBucket[] = ['all', 'popular', 'growing', 'new'];
 
 function parseSortParam(raw: string | undefined): SortOption {
   if (raw && (VALID_SORTS as string[]).includes(raw)) return raw as SortOption;
@@ -57,6 +65,16 @@ function parseScoreParam(raw: string | undefined): ScoreBucket {
   return 'all';
 }
 
+function parseFreshnessParam(raw: string | undefined): FreshnessBucket {
+  if (raw && (VALID_FRESHNESS as string[]).includes(raw)) return raw as FreshnessBucket;
+  return 'all';
+}
+
+function parsePopularityParam(raw: string | undefined): PopularityBucket {
+  if (raw && (VALID_POPULARITY as string[]).includes(raw)) return raw as PopularityBucket;
+  return 'all';
+}
+
 export default async function SkillsPage({ searchParams }: SkillsPageProps) {
   if (process.env.TANK_PERF_MODE === '1') noStore();
 
@@ -67,6 +85,9 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
   const sort = parseSortParam(params.sort);
   const visibility = parseVisibilityParam(params.visibility);
   const scoreBucket = parseScoreParam(params.score);
+  const freshness = parseFreshnessParam(params.freshness);
+  const popularity = parsePopularityParam(params.popularity);
+  const hasReadme = params.docs === '1';
 
   if (query) noStore();
 
@@ -80,13 +101,20 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
     sort,
     visibility,
     scoreBucket,
+    freshness,
+    popularity,
+    hasReadme: hasReadme || undefined,
     requesterUserId: session?.user?.id ?? null,
   });
 
   const totalPages = Math.max(1, Math.ceil(data.total / limit));
 
+  const countLabel = query
+    ? `${data.total.toLocaleString()} result${data.total !== 1 ? 's' : ''} for "${query}"`
+    : `${data.total.toLocaleString()} skill${data.total !== 1 ? 's' : ''}`;
+
   return (
-    <div className="space-y-8" data-testid="skills-list-root">
+    <div className="space-y-6" data-testid="skills-list-root">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Browse Skills</h1>
         <p className="mt-2 text-muted-foreground">
@@ -96,29 +124,77 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
 
       <SearchBar defaultValue={query} />
 
-      {data.results.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="skills-grid">
-            {data.results.map((skill) => (
-              <SkillCard key={skill.name} skill={skill} isLoggedIn={isLoggedIn} />
-            ))}
+      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <Suspense fallback={<FiltersSkeleton />}>
+          <SkillsFilters
+            currentVisibility={visibility}
+            currentScoreBucket={scoreBucket}
+            currentFreshness={freshness}
+            currentPopularity={popularity}
+            currentHasReadme={hasReadme}
+            isLoggedIn={isLoggedIn}
+          />
+        </Suspense>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-sm text-muted-foreground" data-testid="skills-count">
+              {countLabel}
+            </p>
+            <Suspense fallback={null}>
+              <SkillsSort currentSort={sort} />
+            </Suspense>
           </div>
 
-          {totalPages > 1 && (
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              query={query}
-              sort={sort}
-              visibility={visibility}
-              scoreBucket={scoreBucket}
-            />
+          {data.results.length > 0 ? (
+            <>
+              <div
+                className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                data-testid="skills-grid"
+              >
+                {data.results.map((skill) => (
+                  <SkillCard key={skill.name} skill={skill} isLoggedIn={isLoggedIn} />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  query={query}
+                  sort={sort}
+                  visibility={visibility}
+                  scoreBucket={scoreBucket}
+                  freshness={freshness}
+                  popularity={popularity}
+                  hasReadme={hasReadme}
+                />
+              )}
+            </>
+          ) : (
+            <EmptyState query={query} />
           )}
-        </>
-      ) : (
-        <EmptyState query={query} />
-      )}
+        </div>
+      </div>
     </div>
+  );
+}
+
+/* ── Inline components ──────────────────────────────────────────────────── */
+
+function FiltersSkeleton() {
+  return (
+    <aside>
+      <div className="rounded-lg border border-border/60 bg-card/50 p-4 space-y-5 animate-pulse">
+        <div className="h-4 w-16 rounded bg-muted" />
+        <div className="space-y-2">
+          <div className="h-3 w-20 rounded bg-muted" />
+          <div className="h-7 w-full rounded bg-muted" />
+          <div className="h-7 w-full rounded bg-muted" />
+          <div className="h-7 w-full rounded bg-muted" />
+        </div>
+      </div>
+    </aside>
   );
 }
 
@@ -132,7 +208,7 @@ function SkillCard({
   return (
     <Link href={`/skills/${encodeURIComponent(skill.name)}`}>
       <Card className="h-full cursor-pointer transition-colors hover:border-primary/50">
-        <CardHeader>
+        <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
             {isLoggedIn && skill.visibility === 'private' && (
@@ -140,18 +216,29 @@ function SkillCard({
             )}
           </div>
           {skill.description && (
-            <CardDescription className="line-clamp-2">{skill.description}</CardDescription>
+            <CardDescription className="line-clamp-2 text-xs">
+              {skill.description}
+            </CardDescription>
           )}
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            {skill.latestVersion && <Badge variant="secondary">v{skill.latestVersion}</Badge>}
-            {skill.auditScore !== null && (
-              <Badge variant={skill.auditScore >= 7 ? 'default' : 'destructive'}>
-                Score: {skill.auditScore}
+        <CardContent className="pt-0">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {skill.latestVersion && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                v{skill.latestVersion}
               </Badge>
             )}
-            <span>{skill.downloads.toLocaleString()} downloads</span>
+            {skill.auditScore !== null && (
+              <ScoreBadge score={skill.auditScore} />
+            )}
+            <span className="flex items-center gap-1 ml-auto">
+              <Download className="size-3" />
+              {skill.downloads.toLocaleString()}
+            </span>
+            <span className="flex items-center gap-1">
+              <Star className="size-3" />
+              {skill.stars.toLocaleString()}
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -159,15 +246,37 @@ function SkillCard({
   );
 }
 
+function ScoreBadge({ score }: { score: number }) {
+  if (score >= 7) {
+    return (
+      <Badge className="text-[10px] px-1.5 py-0 tank-badge-success border">
+        Score: {score}
+      </Badge>
+    );
+  }
+  if (score >= 4) {
+    return (
+      <Badge className="text-[10px] px-1.5 py-0 tank-badge-warning border">
+        Score: {score}
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+      Score: {score}
+    </Badge>
+  );
+}
+
 function EmptyState({ query }: { query: string }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16 text-center">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/40 py-16 text-center">
       <p className="text-lg font-medium">
         {query ? 'No skills found' : 'No skills published yet'}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">
         {query
-          ? `No results for "${query}". Try a different search term.`
+          ? `No results for "${query}". Try a different search term or adjust filters.`
           : 'Be the first to publish a skill!'}
       </p>
     </div>
@@ -181,6 +290,9 @@ function Pagination({
   sort,
   visibility,
   scoreBucket,
+  freshness,
+  popularity,
+  hasReadme,
 }: {
   page: number;
   totalPages: number;
@@ -188,6 +300,9 @@ function Pagination({
   sort: SortOption;
   visibility: VisibilityFilter;
   scoreBucket: ScoreBucket;
+  freshness: FreshnessBucket;
+  popularity: PopularityBucket;
+  hasReadme: boolean;
 }) {
   function buildHref(p: number) {
     const urlParams = new URLSearchParams();
@@ -195,6 +310,9 @@ function Pagination({
     if (sort !== 'updated') urlParams.set('sort', sort);
     if (visibility !== 'all') urlParams.set('visibility', visibility);
     if (scoreBucket !== 'all') urlParams.set('score', scoreBucket);
+    if (freshness !== 'all') urlParams.set('freshness', freshness);
+    if (popularity !== 'all') urlParams.set('popularity', popularity);
+    if (hasReadme) urlParams.set('docs', '1');
     if (p > 1) urlParams.set('page', String(p));
     const qs = urlParams.toString();
     return `/skills${qs ? `?${qs}` : ''}`;

@@ -3,6 +3,7 @@ import Script from 'next/script';
 import { Inter } from 'next/font/google';
 import { RootProvider } from 'fumadocs-ui/provider/next';
 import { CookieConsentManager } from '@/components/cookie-consent-manager';
+import { CommandMenu } from '@/components/command-menu';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -112,7 +113,10 @@ gtag('config','${process.env.NEXT_PUBLIC_GA_ID}',{send_page_view:false});`}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
-        <RootProvider>{children}</RootProvider>
+        <RootProvider search={{ enabled: false }}>
+          {children}
+          <CommandMenu />
+        </RootProvider>
         <CookieConsentManager />
       </body>
     </html>
