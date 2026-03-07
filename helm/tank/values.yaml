@@ -412,6 +412,11 @@ ollama:
 dbMigration:
   # -- Enable the post-install/post-upgrade DB migration job
   enabled: true
+  # -- Use --force flag with drizzle-kit push (skips confirmation for destructive changes).
+  # WARNING: When true, column drops, type changes, and other destructive DDL run without
+  # confirmation. Set to false in production and run migrations manually after reviewing
+  # the generated SQL with `drizzle-kit push --dry-run`.
+  force: true
   # -- Override image (defaults to web image)
   image: {}
   # -- Resource requests and limits for the migration job

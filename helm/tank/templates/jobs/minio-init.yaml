@@ -44,11 +44,22 @@ spec:
         - name: mc
           image: "{{ .Values.minioInit.image.repository }}:{{ .Values.minioInit.image.tag }}"
           imagePullPolicy: {{ .Values.minioInit.image.pullPolicy }}
+          env:
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tank.secretName" . }}
+                  key: S3_ACCESS_KEY
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tank.secretName" . }}
+                  key: S3_SECRET_KEY
           command:
             - sh
             - -c
             - |
-              mc alias set tank http://{{ .Release.Name }}-minio:9000 {{ .Values.global.storage.s3.accessKey }} {{ .Values.global.storage.s3.secretKey }}
+              mc alias set tank http://{{ .Release.Name }}-minio:9000 "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
               mc mb --ignore-existing tank/{{ .Values.global.storage.s3.bucket }}
               echo "Bucket '{{ .Values.global.storage.s3.bucket }}' is ready."
           {{- with .Values.minioInit.resources }}

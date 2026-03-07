@@ -20,7 +20,6 @@
 *.tmproj
 .vscode/
 # Helm
-charts/*.tgz
 # CI
 .github/
 .gitlab-ci.yml

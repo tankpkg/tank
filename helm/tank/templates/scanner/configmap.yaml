@@ -8,6 +8,8 @@ data:
   LLM_SCAN_TIMEOUT_MS: {{ .Values.scanner.llmScanTimeoutMs | quote }}
   {{- if .Values.scanner.llmBaseUrl }}
   LLM_BASE_URL: {{ .Values.scanner.llmBaseUrl | quote }}
+  {{- else if .Values.ollama.enabled }}
+  LLM_BASE_URL: {{ printf "http://%s-ollama:%s/v1" (include "tank.fullname" .) (toString .Values.ollama.service.port) | quote }}
   {{- end }}
   {{- if .Values.scanner.llmModel }}
   LLM_MODEL: {{ .Values.scanner.llmModel | quote }}
@@ -20,7 +22,4 @@ data:
   {{- end }}
   {{- if .Values.scanner.openrouterModel }}
   OPENROUTER_MODEL: {{ .Values.scanner.openrouterModel | quote }}
-  {{- end }}
-  {{- if .Values.ollama.enabled }}
-  LLM_BASE_URL: {{ printf "http://%s-ollama:%s/v1" (include "tank.fullname" .) (toString .Values.ollama.service.port) | quote }}
   {{- end }}

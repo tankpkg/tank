@@ -39,7 +39,7 @@ Thank you for installing {{ .Chart.Name }} (v{{ .Chart.Version }}).
 3. Access MinIO Console:
    kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-minio-console 9001:9001
    echo "MinIO Console: http://localhost:9001"
-   Credentials: {{ .Values.global.storage.s3.accessKey }} / {{ .Values.global.storage.s3.secretKey }}
+    Credentials: {{ .Values.global.storage.s3.accessKey }} / *** (retrieve with: kubectl get secret {{ include "tank.secretName" . }} -n {{ .Release.Namespace }} -o jsonpath='{.data.S3_SECRET_KEY}' | base64 -d)
 {{- end }}
 
 4. Security Reminder:
@@ -47,6 +47,11 @@ Thank you for installing {{ .Chart.Name }} (v{{ .Chart.Version }}).
    - In production, use secrets.existingSecret to reference a pre-created K8s Secret
      or use an External Secrets Operator (ESO).
    - Change default PostgreSQL and MinIO passwords.
+
+   WARNING: Database migrations run automatically on install/upgrade using
+   `drizzle-kit push --force`. Review schema changes before upgrading in
+   production — destructive changes (column drops, type changes) will be
+   applied without confirmation.
 
 {{- if .Values.ollama.enabled }}
 

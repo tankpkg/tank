@@ -53,7 +53,7 @@ spec:
             - -c
             - |
               echo "Running database migrations..."
-              npx drizzle-kit push --force
+              npx drizzle-kit push {{ if .Values.dbMigration.force }}--force{{ end }}
               echo "Migrations complete."
           envFrom:
             - configMapRef:
