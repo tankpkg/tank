@@ -61,8 +61,8 @@ export async function searchCommand(options: SearchOptions): Promise<void> {
   }
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? `Search failed: ${res.statusText}`);
+    const body = await res.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error ?? `Search failed: ${res.statusText}`);
   }
 
   const data = await res.json() as SearchResponse;

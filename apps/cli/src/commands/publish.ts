@@ -135,8 +135,8 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
 
   if (!step1Res.ok) {
     spinner.fail('Publish failed');
-    const body = await step1Res.json().catch(() => ({})) as { error?: string };
-    const errorMsg = body.error ?? step1Res.statusText;
+    const body = await step1Res.json().catch(() => null) as { error?: string } | null;
+    const errorMsg = body?.error ?? step1Res.statusText;
 
     if (step1Res.status === 401) {
       throw new Error('Authentication failed. Your token may be expired or invalid. Run: tank login');
@@ -196,9 +196,9 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
 
   if (!confirmRes.ok) {
     spinner.fail('Publish confirmation failed');
-    const body = await confirmRes.json().catch(() => ({})) as { error?: string };
+    const body = await confirmRes.json().catch(() => null) as { error?: string } | null;
     throw new Error(
-      `Failed to confirm publish: ${body.error ?? confirmRes.statusText}`,
+      `Failed to confirm publish: ${body?.error ?? confirmRes.statusText}`,
     );
   }
 

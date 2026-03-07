@@ -70,8 +70,8 @@ export async function infoCommand(options: InfoOptions): Promise<void> {
   }
 
   if (!metaRes.ok) {
-    const body = await metaRes.json().catch(() => ({})) as { error?: string };
-    throw new Error(body.error ?? `Failed to fetch skill info: ${metaRes.statusText}`);
+    const body = await metaRes.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error ?? `Failed to fetch skill info: ${metaRes.statusText}`);
   }
 
   const meta = await metaRes.json() as SkillMetadata;

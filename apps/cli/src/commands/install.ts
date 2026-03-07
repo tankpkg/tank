@@ -109,8 +109,8 @@ function createRegistryFetcher(
       if (!res.ok) {
         if (res.status === 403) throw new Error('Token lacks required scope: skills:read');
         if (res.status === 404) throw new Error(`Skill not found or no access: ${name}`);
-        const body = await res.json().catch(() => ({})) as { error?: string };
-        throw new Error(body.error ?? res.statusText);
+        const body = await res.json().catch(() => null) as { error?: string } | null;
+        throw new Error(body?.error ?? res.statusText);
       }
       const data = await res.json() as { name: string; versions: RegistryVersionInfo[] };
       versionsCache.set(name, data.versions);
@@ -134,8 +134,8 @@ function createRegistryFetcher(
       if (!res.ok) {
         if (res.status === 403) throw new Error('Token lacks required scope: skills:read');
         if (res.status === 404) throw new Error(`Skill not found or no access: ${name}@${version}`);
-        const body = await res.json().catch(() => ({})) as { error?: string };
-        throw new Error(body.error ?? res.statusText);
+        const body = await res.json().catch(() => null) as { error?: string } | null;
+        throw new Error(body?.error ?? res.statusText);
       }
 
       const data = await res.json() as RegistrySkillMeta;
@@ -546,8 +546,8 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
         if (metaRes.status === 404) {
           throw new Error(`Skill or version not found: ${key}`);
         }
-        const body = await metaRes.json().catch(() => ({})) as { error?: string };
-        throw new Error(`Failed to fetch ${key}: ${body.error ?? metaRes.statusText}`);
+        const body = await metaRes.json().catch(() => null) as { error?: string } | null;
+        throw new Error(`Failed to fetch ${key}: ${body?.error ?? metaRes.statusText}`);
       }
 
       const metadata = await metaRes.json() as VersionMetadata;
