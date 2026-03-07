@@ -64,6 +64,20 @@
       "when": 1772224523771,
       "tag": "0008_download_daily_aggregate",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772330000000,
+      "tag": "0009_llm_analysis_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772410000000,
+      "tag": "0010_fuzzy_search_trgm",
+      "breakpoints": true
     }
   ]
 }
