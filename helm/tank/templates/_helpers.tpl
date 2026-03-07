@@ -114,7 +114,7 @@ Construct the DATABASE_URL from components.
 */}}
 {{- define "tank.databaseUrl" -}}
 {{- $host := include "tank.postgresHost" . -}}
-{{- printf "postgresql://%s:%s@%s:%s/%s" .Values.global.postgresql.auth.username .Values.global.postgresql.auth.password $host (toString .Values.global.postgresql.port) .Values.global.postgresql.auth.database }}
+{{- printf "postgresql://%s:%s@%s:%s/%s" (.Values.global.postgresql.auth.username | urlquery) (.Values.global.postgresql.auth.password | urlquery) $host (toString .Values.global.postgresql.port) .Values.global.postgresql.auth.database }}
 {{- end }}
 
 {{/*
@@ -136,7 +136,7 @@ Construct the REDIS_URL.
 {{- define "tank.redisUrl" -}}
 {{- $host := include "tank.redisHost" . -}}
 {{- if .Values.global.redis.auth.password }}
-{{- printf "redis://:%s@%s:%s" .Values.global.redis.auth.password $host (toString .Values.global.redis.port) }}
+{{- printf "redis://:%s@%s:%s" (.Values.global.redis.auth.password | urlquery) $host (toString .Values.global.redis.port) }}
 {{- else }}
 {{- printf "redis://%s:%s" $host (toString .Values.global.redis.port) }}
 {{- end }}

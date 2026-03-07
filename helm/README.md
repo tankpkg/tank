@@ -212,10 +212,13 @@ Install into a dedicated namespace:
 helm install tank helm/tank/ \
   --namespace tank \
   --create-namespace \
-  --set secrets.betterAuthSecret="$(openssl rand -base64 32)"
+  --set secrets.betterAuthSecret="$(openssl rand -base64 32)" \
+  --set dbMigration.force=true
 ```
 
-> **Note:** Pass `secrets.betterAuthSecret` on the command line or via an existing Kubernetes Secret (see [Using existing secrets](#using-existing-kubernetes-secrets)). Never commit a real secret into `values.yaml`.
+> **Note:** `--set dbMigration.force=true` is needed for initial installs to create the schema. On subsequent upgrades, omit it to review migrations before applying destructive changes.
+>
+> Pass `secrets.betterAuthSecret` on the command line or via an existing Kubernetes Secret (see [Using existing secrets](#using-existing-kubernetes-secrets)). Never commit a real secret into `values.yaml`.
 
 Check rollout status:
 
@@ -235,7 +238,8 @@ helm install tank helm/tank/ \
   --namespace tank \
   --create-namespace \
   -f helm/tank/values-local.yaml \
-  --set secrets.betterAuthSecret="$(openssl rand -base64 32)"
+  --set secrets.betterAuthSecret="$(openssl rand -base64 32)" \
+  --set dbMigration.force=true
 ```
 
 ### Custom values
@@ -504,6 +508,7 @@ Before exposing Tank to production traffic:
 | Key | Default | Description |
 |-----|---------|-------------|
 | `dbMigration.enabled` | `true` | Run DB migrations as a post-install/post-upgrade Helm hook |
+| `dbMigration.force` | `false` | Pass `--force` to `drizzle-kit push` (skips confirmation for destructive DDL). Use `--set dbMigration.force=true` for initial installs. |
 | `dbMigration.resources.requests.cpu` | `100m` | CPU request |
 | `dbMigration.resources.requests.memory` | `256Mi` | Memory request |
 

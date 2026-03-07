@@ -5,8 +5,7 @@ metadata:
   labels:
     {{- include "tank.labels" . | nindent 4 }}
 data:
-  # DATABASE_URL is in the Secret (contains password)
-  REDIS_URL: {{ include "tank.redisUrl" . | quote }}
+  # DATABASE_URL and REDIS_URL are in the Secret (may contain passwords)
   S3_ENDPOINT: {{ include "tank.s3Endpoint" . | quote }}
   S3_BUCKET: {{ .Values.global.storage.s3.bucket | quote }}
   S3_REGION: {{ .Values.global.storage.s3.region | quote }}
