@@ -8,6 +8,9 @@ import { rescanVersion } from '@/lib/rescan';
 // Statuses that indicate a version has been scanned and can be rescanned
 const RESCANNABLE_STATUSES = ['completed', 'flagged', 'scan-failed'] as const;
 
+// Delay between scans to prevent database connection pool exhaustion
+const SCAN_DELAY_MS = 500;
+
 export const dynamic = 'force-dynamic';
 
 async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<NextResponse> {
@@ -46,7 +49,7 @@ async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<N
       });
     }
 
-    // Rescan all versions (in series to avoid overwhelming the scan service)
+    // Rescan all versions (in series with delay to prevent connection pool exhaustion)
     const results = {
       total: versionsToScan.length,
       success: 0,
@@ -54,7 +57,8 @@ async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<N
       errors: [] as Array<{ versionId: string; error: string }>,
     };
 
-    for (const version of versionsToScan) {
+    for (let i = 0; i < versionsToScan.length; i++) {
+      const version = versionsToScan[i];
       const result = await rescanVersion(version);
       if (result.success) {
         results.success++;
@@ -64,6 +68,11 @@ async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<N
           versionId: version.id,
           error: result.error || 'Unknown error',
         });
+      }
+
+      // Add delay between scans to allow DB connections to be released
+      if (i < versionsToScan.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, SCAN_DELAY_MS));
       }
     }
 
