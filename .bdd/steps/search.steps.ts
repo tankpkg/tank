@@ -158,6 +158,14 @@ function thenRanksAbove(higherName: string, lowerName: string): void {
   }
 }
 
+function thenEverySeededOrgResultHasPositiveScore(): void {
+  const ourResults = world.lastResults.filter((r) => r.name.startsWith(`@${world.org}/`));
+  expect(ourResults.length).toBeGreaterThanOrEqual(1);
+  for (const r of ourResults) {
+    expect(r.score).toBeGreaterThan(0);
+  }
+}
+
 function thenNoResultsMatchSeededOrg(): void {
   const ourResults = world.lastResults.filter((r) => r.name.startsWith(`@${world.org}/`));
   expect(ourResults.length).toBe(0);
@@ -247,6 +255,30 @@ describe('Feature: Skill discovery via hybrid search', () => {
     it('runs Given/When/Then', async () => {
       await whenISearchFor('auth');
       thenFirstResultNameContains('auth');
+    });
+  });
+
+  // ── Bare org-name matching ──────────────────────────────────────────
+
+  describe('Scenario: Bare org name without @ finds all org skills (E11)', () => {
+    it('runs Given/When/Then', async () => {
+      await whenISearchFor(world.org);
+      thenResultsContainAllSeeded();
+    });
+  });
+
+  describe('Scenario: Bare org name match ranks org skills above unrelated hits (E12)', () => {
+    it('runs Given/When/Then', async () => {
+      await whenISearchFor(world.org);
+      thenEverySeededOrgResultHasPositiveScore();
+    });
+  });
+
+  describe('Scenario: Org name search is case-insensitive (E13)', () => {
+    it('runs Given/When/Then', async () => {
+      const mixedCase = world.org.charAt(0).toUpperCase() + world.org.slice(1);
+      await whenISearchFor(mixedCase);
+      thenResultsContainAllSeeded();
     });
   });
 
