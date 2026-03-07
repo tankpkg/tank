@@ -1,20 +1,34 @@
 'use client';
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { X, SlidersHorizontal } from 'lucide-react';
+import { X, SlidersHorizontal, Clock, TrendingUp, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { ScoreBucket, VisibilityFilter } from '@/lib/data/skills';
+import type { ScoreBucket, VisibilityFilter, FreshnessBucket, PopularityBucket } from '@/lib/data/skills';
 
 interface SkillsFiltersProps {
   currentVisibility: VisibilityFilter;
   currentScoreBucket: ScoreBucket;
+  currentFreshness: FreshnessBucket;
+  currentPopularity: PopularityBucket;
+  currentHasReadme: boolean;
   isLoggedIn: boolean;
 }
+
+const PARAM_DEFAULTS: Record<string, string> = {
+  visibility: 'all',
+  score: 'all',
+  freshness: 'all',
+  popularity: 'all',
+  docs: '',
+};
 
 export function SkillsFilters({
   currentVisibility,
   currentScoreBucket,
+  currentFreshness,
+  currentPopularity,
+  currentHasReadme,
   isLoggedIn,
 }: SkillsFiltersProps) {
   const router = useRouter();
@@ -22,16 +36,30 @@ export function SkillsFilters({
   const searchParams = useSearchParams();
 
   const hasActiveFilters =
-    currentVisibility !== 'all' || currentScoreBucket !== 'all';
-
-  const DEFAULTS: Record<string, string> = { visibility: 'all', score: 'all' };
+    currentVisibility !== 'all' ||
+    currentScoreBucket !== 'all' ||
+    currentFreshness !== 'all' ||
+    currentPopularity !== 'all' ||
+    currentHasReadme;
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (DEFAULTS[key] === value) {
+    if (PARAM_DEFAULTS[key] === value) {
       params.delete(key);
     } else {
       params.set(key, value);
+    }
+    params.delete('page');
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ''}`);
+  }
+
+  function toggleParam(key: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (params.has(key)) {
+      params.delete(key);
+    } else {
+      params.set(key, '1');
     }
     params.delete('page');
     const qs = params.toString();
@@ -42,23 +70,16 @@ export function SkillsFilters({
     const params = new URLSearchParams(searchParams.toString());
     params.delete('visibility');
     params.delete('score');
+    params.delete('freshness');
+    params.delete('popularity');
+    params.delete('docs');
     params.delete('page');
     const qs = params.toString();
     router.replace(`${pathname}${qs ? `?${qs}` : ''}`);
   }
 
-  const scoreBuckets: { value: ScoreBucket; label: string }[] = [
-    { value: 'all', label: 'All' },
-    { value: 'high', label: 'High (7+)' },
-    { value: 'medium', label: 'Med (4–6)' },
-    { value: 'low', label: 'Low (<4)' },
-  ];
-
   return (
-    <aside
-      className="w-full md:w-56 shrink-0"
-      data-testid="skills-filters-sidebar"
-    >
+    <aside data-testid="skills-filters-sidebar">
       <div
         className={cn(
           'rounded-lg border border-border/60 bg-card/50 p-4 space-y-5',
@@ -86,71 +107,88 @@ export function SkillsFilters({
 
         {isLoggedIn && (
           <FilterSection label="Visibility">
-            <div className="flex flex-col gap-1.5">
-              {(['all', 'public', 'private'] as VisibilityFilter[]).map((v) => (
-                <button
-                  type="button"
-                  key={v}
-                  onClick={() => updateParam('visibility', v)}
-                  data-testid={`filter-visibility-${v}`}
-                  className={cn(
-                    'w-full text-left px-2.5 py-1.5 rounded-md text-sm transition-all',
-                    currentVisibility === v
-                      ? 'text-foreground font-medium'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
-                  )}
-                  style={
-                    currentVisibility === v
-                      ? {
-                          background: 'rgba(0, 212, 255, 0.08)',
-                          borderLeft: '2px solid var(--tank-cyan)',
-                          paddingLeft: '8px',
-                          boxShadow: 'inset 0 0 12px rgba(0, 212, 255, 0.05)',
-                        }
-                      : undefined
-                  }
-                >
-                  {v === 'all' ? 'All' : v === 'public' ? 'Public' : 'Private'}
-                </button>
-              ))}
-            </div>
+            <FilterOptionList
+              options={[
+                { value: 'all', label: 'All' },
+                { value: 'public', label: 'Public' },
+                { value: 'private', label: 'Private' },
+              ]}
+              current={currentVisibility}
+              paramKey="visibility"
+              onSelect={updateParam}
+            />
           </FilterSection>
         )}
 
         <FilterSection label="Security Score">
-          <div className="flex flex-col gap-1.5">
-            {scoreBuckets.map(({ value, label }) => (
-              <button
-                type="button"
-                key={value}
-                onClick={() => updateParam('score', value)}
-                data-testid={`filter-score-${value}`}
-                className={cn(
-                  'w-full text-left px-2.5 py-1.5 rounded-md text-sm transition-all',
-                  currentScoreBucket === value
-                    ? 'text-foreground font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
-                )}
-                style={
-                  currentScoreBucket === value
-                    ? {
-                        background: 'rgba(0, 212, 255, 0.08)',
-                        borderLeft: '2px solid var(--tank-cyan)',
-                        paddingLeft: '8px',
-                        boxShadow: 'inset 0 0 12px rgba(0, 212, 255, 0.05)',
-                      }
-                    : undefined
-                }
-              >
-                <span className="flex items-center gap-2">
-                  {value !== 'all' && (
-                    <ScoreDot bucket={value} />
-                  )}
-                  {label}
-                </span>
-              </button>
-            ))}
-          </div>
+          <FilterOptionList
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'high', label: 'High (7+)', dot: 'var(--tank-matrix-green)' },
+              { value: 'medium', label: 'Med (4–6)', dot: 'var(--tank-amber)' },
+              { value: 'low', label: 'Low (<4)', dot: '#ef4444' },
+            ]}
+            current={currentScoreBucket}
+            paramKey="score"
+            onSelect={updateParam}
+          />
+        </FilterSection>
+
+        <FilterSection label="Updated">
+          <FilterOptionList
+            options={[
+              { value: 'all', label: 'Any time' },
+              { value: 'week', label: 'This week' },
+              { value: 'month', label: 'This month' },
+              { value: 'year', label: 'This year' },
+            ]}
+            current={currentFreshness}
+            paramKey="freshness"
+            onSelect={updateParam}
+            icon={<Clock className="size-3 text-muted-foreground/50" />}
+          />
+        </FilterSection>
+
+        <FilterSection label="Downloads">
+          <FilterOptionList
+            options={[
+              { value: 'all', label: 'Any' },
+              { value: 'popular', label: 'Popular (10+)' },
+              { value: 'growing', label: 'Growing (1–9)' },
+              { value: 'new', label: 'New (0)' },
+            ]}
+            current={currentPopularity}
+            paramKey="popularity"
+            onSelect={updateParam}
+            icon={<TrendingUp className="size-3 text-muted-foreground/50" />}
+          />
+        </FilterSection>
+
+        <FilterSection label="Quality">
+          <button
+            type="button"
+            onClick={() => toggleParam('docs')}
+            data-testid="filter-has-readme"
+            className={cn(
+              'flex w-full items-center gap-2 text-left px-2.5 py-1.5 rounded-md text-sm transition-all',
+              currentHasReadme
+                ? 'text-foreground font-medium'
+                : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
+            )}
+            style={
+              currentHasReadme
+                ? {
+                    background: 'rgba(0, 212, 255, 0.08)',
+                    borderLeft: '2px solid var(--tank-cyan)',
+                    paddingLeft: '8px',
+                    boxShadow: 'inset 0 0 12px rgba(0, 212, 255, 0.05)',
+                  }
+                : undefined
+            }
+          >
+            <FileText className="size-3" />
+            Has documentation
+          </button>
         </FilterSection>
 
         {hasActiveFilters && (
@@ -187,16 +225,62 @@ function FilterSection({
   );
 }
 
-function ScoreDot({ bucket }: { bucket: ScoreBucket }) {
-  const colors: Record<string, string> = {
-    high: 'var(--tank-matrix-green)',
-    medium: 'var(--tank-amber)',
-    low: '#ef4444',
-  };
+interface FilterOption {
+  value: string;
+  label: string;
+  dot?: string;
+}
+
+function FilterOptionList({
+  options,
+  current,
+  paramKey,
+  onSelect,
+  icon,
+}: {
+  options: FilterOption[];
+  current: string;
+  paramKey: string;
+  onSelect: (key: string, value: string) => void;
+  icon?: React.ReactNode;
+}) {
   return (
-    <span
-      className="inline-block size-2 rounded-full shrink-0"
-      style={{ background: colors[bucket] ?? 'currentColor' }}
-    />
+    <div className="flex flex-col gap-1.5">
+      {options.map(({ value, label, dot }) => (
+        <button
+          type="button"
+          key={value}
+          onClick={() => onSelect(paramKey, value)}
+          data-testid={`filter-${paramKey}-${value}`}
+          className={cn(
+            'w-full text-left px-2.5 py-1.5 rounded-md text-sm transition-all',
+            current === value
+              ? 'text-foreground font-medium'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
+          )}
+          style={
+            current === value
+              ? {
+                  background: 'rgba(0, 212, 255, 0.08)',
+                  borderLeft: '2px solid var(--tank-cyan)',
+                  paddingLeft: '8px',
+                  boxShadow: 'inset 0 0 12px rgba(0, 212, 255, 0.05)',
+                }
+              : undefined
+          }
+        >
+          <span className="flex items-center gap-2">
+            {dot && (
+              <span
+                className="inline-block size-2 rounded-full shrink-0"
+                style={{ background: dot }}
+              />
+            )}
+            {icon && value === options[0].value && icon}
+            {label}
+          </span>
+        </button>
+      ))}
+    </div>
   );
 }

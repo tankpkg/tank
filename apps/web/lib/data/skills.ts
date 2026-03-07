@@ -118,6 +118,8 @@ export interface SkillSearchResponse {
 export type SortOption = 'updated' | 'downloads' | 'stars' | 'score' | 'name';
 export type VisibilityFilter = 'all' | 'public' | 'private';
 export type ScoreBucket = 'all' | 'high' | 'medium' | 'low';
+export type FreshnessBucket = 'all' | 'week' | 'month' | 'year';
+export type PopularityBucket = 'all' | 'popular' | 'growing' | 'new';
 
 export interface SkillsSearchParams {
   q: string;
@@ -126,6 +128,9 @@ export interface SkillsSearchParams {
   sort: SortOption;
   visibility: VisibilityFilter;
   scoreBucket: ScoreBucket;
+  freshness?: FreshnessBucket;
+  popularity?: PopularityBucket;
+  hasReadme?: boolean;
   requesterUserId?: string | null;
 }
 
@@ -395,6 +400,37 @@ function buildVisibilityFilterClause(visibility: VisibilityFilter) {
   return sql``;
 }
 
+function buildFreshnessClause(freshness: FreshnessBucket | undefined) {
+  switch (freshness) {
+    case 'week':
+      return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '7 days'`;
+    case 'month':
+      return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '30 days'`;
+    case 'year':
+      return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '365 days'`;
+    default:
+      return sql``;
+  }
+}
+
+function buildPopularityClause(popularity: PopularityBucket | undefined) {
+  switch (popularity) {
+    case 'popular':
+      return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) >= 10`;
+    case 'growing':
+      return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) BETWEEN 1 AND 9`;
+    case 'new':
+      return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) = 0`;
+    default:
+      return sql``;
+  }
+}
+
+function buildReadmeClause(hasReadme: boolean | undefined) {
+  if (hasReadme) return sql`AND sv.readme IS NOT NULL AND sv.readme != ''`;
+  return sql``;
+}
+
 /**
  * Hybrid search combining three strategies:
  *   1. ILIKE on name — partial, prefix, org-scoped matches
@@ -434,7 +470,7 @@ export async function searchSkills(
     params = paramsOrQ;
   }
 
-  const { q, sort, visibility, scoreBucket } = params;
+  const { q, sort, visibility, scoreBucket, freshness, popularity, hasReadme } = params;
   const resolvedPage = params.page;
   const resolvedLimit = params.limit;
 
@@ -445,7 +481,6 @@ export async function searchSkills(
   const visClause = visibilityClause(viewerUserId);
   const offset = (resolvedPage - 1) * resolvedLimit;
 
-  // Determine which aggregation JOINs are needed
   const needsDownloads = sort === 'downloads';
 
   // Pre-aggregated subquery JOINs (only included when needed for sort)
@@ -478,6 +513,9 @@ export async function searchSkills(
   const primarySort = buildPrimarySort(sort, starsTableAvailable);
   const scoreBucketClause = buildScoreBucketClause(scoreBucket);
   const visibilityFilterClause = buildVisibilityFilterClause(visibility);
+  const freshnessClause = buildFreshnessClause(freshness);
+  const popularityClause = buildPopularityClause(popularity);
+  const readmeClause = buildReadmeClause(hasReadme);
 
   if (!q) {
     const results = await db.execute(sql`
@@ -503,6 +541,9 @@ export async function searchSkills(
       WHERE ${visClause}
       ${visibilityFilterClause}
       ${scoreBucketClause}
+      ${freshnessClause}
+      ${popularityClause}
+      ${readmeClause}
       ORDER BY ${primarySort}, s.id ASC
       OFFSET ${offset}
       LIMIT ${resolvedLimit}
@@ -543,6 +584,9 @@ export async function searchSkills(
     AND ${visClause}
     ${visibilityFilterClause}
     ${scoreBucketClause}
+    ${freshnessClause}
+    ${popularityClause}
+    ${readmeClause}
     ORDER BY ${sort !== 'updated' ? sql`${primarySort},` : sql``} (
       CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
       + CASE WHEN s.name ILIKE ${q + '%'} THEN 800 ELSE 0 END
