@@ -1,9 +1,5 @@
 # TANK — PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-03-06
-**Commit:** 133e5ea
-**Branch:** fix/posthog-env-newline
-
 ## OVERVIEW
 
 Security-first package manager for AI agent skills. Monorepo: CLI (`tank` command) + MCP server (`tank-mcp`) + Next.js 15 web registry + shared schemas package. TypeScript-first with a Python security analysis pipeline (6-stage scanning). Inspired by the ClawHavoc incident (341 malicious skills, 12% of a major marketplace) — Tank enforces versioning, lockfiles, permissions, code signing, and static analysis from day one.
