@@ -213,7 +213,8 @@ async def rescan_version(version: Dict[str, Any]) -> Dict[str, Any]:
                 ))
 
                 # Stage 3
-                stage_results.append(stage3_detect_injection(ingest))
+                stage3_result, _ = await stage3_detect_injection(ingest)
+                stage_results.append(stage3_result)
 
                 # Stage 4
                 stage_results.append(stage4_scan_secrets(ingest))

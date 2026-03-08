@@ -32,3 +32,4 @@ pip-audit>=2.7.0
 
 # SARIF output support (required by skill-scanner)
 sarif-om>=1.0.0
+jschema-to-python>=1.2.0

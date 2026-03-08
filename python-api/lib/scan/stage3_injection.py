@@ -306,7 +306,7 @@ def analyze_markdown_file(temp_dir: str, file_path: str) -> List[Finding]:
     return findings
 
 
-def stage3_detect_injection(
+async def stage3_detect_injection(
     ingest_result: IngestResult,
     llm_analysis: Optional[LLMAnalysis] = None,
 ) -> Tuple[StageResult, Optional[LLMAnalysis]]:
@@ -385,9 +385,7 @@ def stage3_detect_injection(
         if ambiguous_findings:
             try:
                 # Run async LLM analysis
-                llm_result = asyncio.run(
-                    llm_analyzer.analyze_findings(ambiguous_findings, temp_dir)
-                )
+                llm_result = await llm_analyzer.analyze_findings(ambiguous_findings, temp_dir)
 
                 # Update metadata
                 llm_analysis.provider_used = llm_result.provider_used
