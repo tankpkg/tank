@@ -1,0 +1,26 @@
+name: Discord Release Notification
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    name: notify-discord
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Post to Discord #releases
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}
+          nodetail: true
+          title: "${{ github.event.release.tag_name }} released"
+          description: |
+            **${{ github.event.release.name }}**
+
+            ${{ github.event.release.body }}
+
+            [View release](${{ github.event.release.html_url }}) | [Install](https://tankpkg.dev)
+          color: 0x5EBB4D
+          username: Tank Releases
+          avatar_url: https://avatars.githubusercontent.com/u/211694667
