@@ -6,44 +6,7 @@ Security-first package manager for AI agent skills. Monorepo: CLI (`tank` comman
 
 **Core Value Proposition:** Prevent credential exfiltration, prompt injection, and supply chain attacks in AI agent skills through mandatory security scanning and runtime permission enforcement.
 
-## STRUCTURE
-
-```
-tank/
-├── apps/
-│   ├── cli/              # `tank` CLI — Commander.js, 18 commands
-│   │   ├── bin/tank.ts   # Entry point, registers all commands
-│   │   └── src/
-│   │       ├── commands/ # 1-file-per-command pattern
-│   │       └── lib/      # API client, config, lockfile, packer, linker, agents
-│   └── web/              # Next.js 15 registry + API + Python serverless stubs
-│       ├── app/          # App Router: (auth), (dashboard), (admin), (registry), api/
-│       ├── lib/          # DB, auth, storage, email, audit-score, data
-│       ├── api-python/   # Mirrors python-api/ for Vercel serverless
-│       └── content/docs/ # 13 MDX documentation pages (Fumadocs)
-├── packages/
-│   ├── shared/           # @tank/shared — Zod schemas, types, constants, resolver
-│   └── mcp-server/       # @tankpkg/mcp-server — MCP tools for editors (17 tools)
-│       └── src/tools/    # 1-file-per-tool, full CLI parity
-├── python-api/           # Standalone security scanner — FastAPI, 6-stage pipeline
-│   ├── api/analyze/      # REST endpoints: scan, rescan, security, permissions
-│   └── lib/scan/         # stage0–stage5, models, verdict, dedup, sarif
-├── e2e/                  # End-to-end tests (sequential, real CLI spawning)
-│   └── fixtures/         # Test fixtures (test-skill/)
-├── .bdd/                 # BDD tests (Playwright-based, 12 step files)
-│   ├── steps/            # Step definitions per command
-│   └── features/         # Gherkin feature files (admin, mcp)
-├── action/               # GitHub Action: `tank-publish` (composite action)
-├── build/                # Pre-compiled CLI binaries (tank, tank-bun, tank-sea)
-├── Formula/              # Homebrew formula for macOS distribution
-├── docs/                 # Product brief, architecture, roadmap, performance testing
-│   ├── mockups/          # Design mockup screenshots
-│   ├── plans/            # Planning documents
-│   └── references/       # Internal reference docs (Playwright, sources)
-├── infra/                # Loki + Grafana configs for observability
-├── scripts/              # One-off utilities (backfill-readme.mjs, onprem/)
-└── supabase/             # Supabase local dev config (storage only, not DB)
-```
+`@tank/shared` is consumed by CLI, MCP server, and Web. `python-api` is independent (no TS deps).
 
 ## WHERE TO LOOK
 
@@ -73,21 +36,6 @@ tank/
 | GitHub Action | `action/action.yml` | Composite action for CI/CD publishing |
 | Documentation pages | `apps/web/content/docs/` | MDX files (Fumadocs) |
 | Data access layer | `apps/web/lib/data/skills.ts` | Optimized DB queries |
-
-## DEPENDENCY GRAPH
-
-```
-@tank/shared (schemas, types, constants, resolver)
-     ↑                    ↑                    ↑
-     │                    │                    │
-  apps/cli         packages/mcp-server     apps/web
- (9 files)          (tools + lib)        (1 file, pnpm hoisted)
-
-python-api ← independent (no TS deps)
-apps/web/api-python/ ← mirrors python-api/ (Vercel serverless stubs)
-```
-
-No circular dependencies. CLI, MCP server, and Web are independent consumers of shared.
 
 ## CONVENTIONS
 
