@@ -8,6 +8,12 @@ import { rescanVersion } from '@/lib/rescan';
 // Statuses that indicate a version has been scanned and can be rescanned
 const RESCANNABLE_STATUSES = ['completed', 'flagged', 'scan-failed'] as const;
 
+// Process in batches to avoid connection pool exhaustion
+// Supabase free tier has ~15-20 connection limit
+const BATCH_SIZE = 3; // Process 3 scans at a time
+const BATCH_DELAY_MS = 3000; // 3 second pause between batches
+const SCAN_DELAY_MS = 1000; // 1 second between individual scans in a batch
+
 export const dynamic = 'force-dynamic';
 
 async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<NextResponse> {
@@ -46,7 +52,7 @@ async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<N
       });
     }
 
-    // Rescan all versions (in series to avoid overwhelming the scan service)
+    // Rescan all versions in batches to prevent connection pool exhaustion
     const results = {
       total: versionsToScan.length,
       success: 0,
@@ -54,7 +60,8 @@ async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<N
       errors: [] as Array<{ versionId: string; error: string }>,
     };
 
-    for (const version of versionsToScan) {
+    for (let i = 0; i < versionsToScan.length; i++) {
+      const version = versionsToScan[i];
       const result = await rescanVersion(version);
       if (result.success) {
         results.success++;
@@ -64,6 +71,17 @@ async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<N
           versionId: version.id,
           error: result.error || 'Unknown error',
         });
+      }
+
+      // Add delay between individual scans
+      if (i < versionsToScan.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, SCAN_DELAY_MS));
+      }
+
+      // Add longer pause after each batch
+      if ((i + 1) % BATCH_SIZE === 0 && i < versionsToScan.length - 1) {
+        console.log(`[Rescan] Completed batch of ${BATCH_SIZE}, pausing ${BATCH_DELAY_MS}ms...`);
+        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
       }
     }
 

@@ -1,6 +1,6 @@
 ---
 title: Secure AI Skills Checklist
-description: Security best practices checklist for publishing safe AI agent skills
+description: Security best practices checklist for publishing safe AI agent skills — covering permissions, code security, prompt injection prevention, and dependency management.
 ---
 
 # Secure AI Skills Checklist
@@ -63,7 +63,10 @@ Use this checklist before publishing any AI agent skill to ensure it follows sec
 ## Before Publishing
 
 ```bash
-# Run the security verifier
+# Run the security scanner (6-stage pipeline)
+tank scan
+
+# Verify lockfile integrity
 tank verify
 
 # Check for secrets accidentally committed
@@ -110,5 +113,5 @@ Snyk Agent Scan is optional and cloud-dependent. If unavailable, scanning contin
 ---
 
 <Callout type="info">
-This checklist is enforced automatically by `tank verify`. Run it early and often during development.
+This checklist is enforced automatically by `tank scan` and the 6-stage security pipeline. Run it early and often during development. See the [Security Model](/docs/security) for a deep dive into each stage.
 </Callout>

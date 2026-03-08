@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Generate API reference documentation from Next.js route handlers.
+ * Generate comprehensive API reference documentation.
+ * Scans route files to count endpoints, then outputs rich MDX template.
  * Run: node scripts/gen-api-docs.mjs
  */
 
@@ -17,7 +18,7 @@ const DOCS_OUTPUT = join(ROOT, 'apps/web/content/docs/api.mdx');
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 // Parse route file and extract endpoint info
-function parseRoute(filePath, basePath) {
+function parseRoute(filePath) {
   const source = readFileSync(filePath, 'utf-8');
   const endpoints = [];
   
@@ -31,29 +32,9 @@ function parseRoute(filePath, basePath) {
   METHODS.forEach(method => {
     const methodRegex = new RegExp(`export\\s+async\\s+function\\s+${method}\\s*\\(`, 'i');
     if (methodRegex.test(source)) {
-      // Try to extract JSDoc comment
-      const jsdocRegex = new RegExp(`\\/\\*\\*[\\s\\S]*?\\*\\/\\s*export\\s+async\\s+function\\s+${method}`, 'i');
-      const jsdocMatch = source.match(jsdocRegex);
-      let description = '';
-      
-      if (jsdocMatch) {
-        const jsdoc = jsdocMatch[0];
-        const descMatch = jsdoc.match(/@description\s+(.+)/);
-        if (descMatch) {
-          description = descMatch[1];
-        } else {
-          // Extract first line of JSDoc
-          const lines = jsdoc.split('\n').filter(l => l.includes('*') && !l.includes('/**'));
-          if (lines.length > 0) {
-            description = lines[0].replace(/\s*\*\s*/, '').trim();
-          }
-        }
-      }
-      
       endpoints.push({
         method: method.toUpperCase(),
         path: `/api/v1${routePath}`,
-        description: description || `${method.toUpperCase()} endpoint for ${routePath}`,
       });
     }
   });
@@ -80,75 +61,759 @@ function findRoutes(dir) {
   return routes;
 }
 
-// Generate MDX documentation
-function generateMdx(endpoints) {
-  const frontmatter = `---
+// Generate comprehensive MDX documentation
+function generateMdx(endpointCount) {
+  return `---
 title: API Reference
-description: REST API endpoints for Tank registry
----`;
+description: Complete REST API reference for the Tank skill registry — authentication, search, publishing, version management, and security scanning endpoints.
+---
 
-  const intro = `
-The Tank API provides programmatic access to the skill registry.
+## Overview
 
-## Authentication
+The Tank REST API gives you programmatic access to every capability in the registry: searching skills, publishing new versions, managing stars, triggering security scans, and the full CLI OAuth flow. All endpoints live under a single base URL and follow consistent JSON conventions.
 
-All authenticated endpoints require a Bearer token:
-
-\`\`\`
-Authorization: Bearer tank_xxx
-\`\`\`
-
-Get your API key from [Settings > Tokens](/settings/tokens).
-
-## Base URL
+**Base URL**
 
 \`\`\`
 https://tankpkg.dev/api/v1
 \`\`\`
 
-For self-hosted deployments, replace with your domain.
+For self-hosted deployments, replace the host with your own domain. The \`/api/v1\` prefix is always required.
+
+---
+
+## Authentication
+
+Authenticated endpoints require a Bearer token in the \`Authorization\` header.
+
+\`\`\`http
+Authorization: Bearer tank_xxxxxxxxxxxxxxxxxxxxxxxx
+\`\`\`
+
+**Obtaining a token**
+
+- **CLI:** run \`tank login\` — opens GitHub OAuth in your browser, then stores the issued key in \`~/.tank/config.json\` automatically.
+- **Dashboard:** go to **Settings → Tokens** and create a token with the scopes you need.
+
+**Token prefix**
+
+All Tank API keys begin with \`tank_\`. Tokens without this prefix are rejected with \`401\`.
+
+**Scopes**
+
+| Scope | Grants |
+|---|---|
+| \`skills:read\` | Read skill metadata, versions, files, stars |
+| \`skills:publish\` | Publish new skills and new versions |
+| \`skills:admin\` | Administrative actions (moderation, user management) |
+
+<Callout type="info">
+  Tokens inherit the minimum scope needed. A token with only \`skills:read\` cannot publish; you will receive a \`403\` if you try.
+</Callout>
+
+---
 
 ## Rate Limits
 
-| Tier | Requests/hour |
-|------|---------------|
+Rate limits are applied per IP for anonymous requests and per token for authenticated requests.
+
+| Tier | Requests / hour |
+|---|---|
 | Anonymous | 100 |
 | Authenticated | 1,000 |
 | Pro | 10,000 |
 
-`;
+When you exceed your limit, the API returns \`429 Too Many Requests\`. The response includes a \`Retry-After\` header indicating how many seconds to wait before retrying.
 
-  // Group endpoints by resource
-  const grouped = {};
-  endpoints.forEach(ep => {
-    const resource = ep.path.split('/').slice(0, 4).join('/');
-    if (!grouped[resource]) {
-      grouped[resource] = [];
+---
+
+## Error Responses
+
+All errors follow a consistent envelope. The \`error\` field contains a machine-readable code and the \`message\` field contains a human-readable explanation.
+
+\`\`\`json
+{
+  "error": "UNAUTHORIZED",
+  "message": "Bearer token is missing or invalid."
+}
+\`\`\`
+
+**Common HTTP status codes**
+
+| Status | Error Code | When it occurs |
+|---|---|---|
+| \`401\` | \`UNAUTHORIZED\` | Token missing, malformed, or revoked |
+| \`403\` | \`FORBIDDEN\` | Token valid but lacks the required scope |
+| \`404\` | \`NOT_FOUND\` | Skill, version, or resource does not exist |
+| \`409\` | \`VERSION_EXISTS\` | You attempted to publish an already-existing version |
+| \`422\` | \`VALIDATION_ERROR\` | Request body failed Zod schema validation |
+| \`429\` | \`RATE_LIMITED\` | Hourly request limit exceeded |
+
+**Validation error shape**
+
+When a \`422\` is returned, the \`issues\` array mirrors the Zod validation output so you can map errors back to specific fields.
+
+\`\`\`json
+{
+  "error": "VALIDATION_ERROR",
+  "message": "Request body validation failed.",
+  "issues": [
+    {
+      "path": ["manifest", "version"],
+      "message": "Invalid semver string."
     }
-    grouped[resource].push(ep);
-  });
+  ]
+}
+\`\`\`
 
-  const sections = Object.entries(grouped).map(([resource, eps]) => {
-    let section = `## ${resource}\n\n`;
-    
-    eps.forEach(ep => {
-      section += `### ${ep.method} ${ep.path}\n\n`;
-      section += `${ep.description}\n\n`;
-      section += '```http\n';
-      section += `${ep.method} ${ep.path}\n`;
-      section += '```\n\n';
-    });
-    
-    return section;
-  }).join('\n');
+---
 
-  return `${frontmatter}${intro}${sections}`;
+## Search
+
+### \`GET /api/v1/search\`
+
+Full-text search across all public skills. Uses a hybrid strategy: \`ILIKE\` for exact prefix matching, \`pg_trgm\` trigram similarity for fuzzy matching, and a PostgreSQL \`tsvector\` full-text index with weighted ranking. Results are ranked by relevance score, then by download count as a tiebreaker.
+
+**Authentication:** Not required. Private skills are hidden from anonymous results.
+
+**Query parameters**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| \`q\` | string | — | Search query. Matched against skill name, description, and author. |
+| \`page\` | number | \`1\` | Page number. Minimum \`1\`. |
+| \`limit\` | number | \`20\` | Results per page. Range \`1\`–\`50\`. |
+
+**Response**
+
+\`\`\`json
+{
+  "results": [
+    {
+      "name": "@vercel/next-skill",
+      "description": "Teaches agents to scaffold, build, and deploy Next.js apps.",
+      "visibility": "public",
+      "latestVersion": "2.3.1",
+      "auditScore": 9,
+      "publisher": "vercel",
+      "downloads": 14820,
+      "stars": 312,
+      "updatedAt": "2026-03-01T11:00:00.000Z"
+    }
+  ],
+  "page": 1,
+  "limit": 20,
+  "total": 142
+}
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl "https://tankpkg.dev/api/v1/search?q=seo+audit&limit=5"
+\`\`\`
+
+---
+
+## Skills
+
+### \`POST /api/v1/skills\` — Publish a skill
+
+Initiates skill publication. The response includes a pre-signed \`uploadUrl\`; you must PUT the tarball to that URL and then call \`POST /api/v1/skills/confirm\` to finalize.
+
+**Authentication:** Required — \`skills:publish\` scope.
+
+**Request body**
+
+\`\`\`json
+{
+  "manifest": {
+    "name": "@acme/my-skill",
+    "version": "1.0.0",
+    "description": "Does something useful for AI agents.",
+    "visibility": "public",
+    "permissions": {
+      "network": { "outbound": ["*.acme.com"] },
+      "filesystem": { "read": ["./src/**"] }
+    },
+    "repository": "https://github.com/acme/my-skill"
+  },
+  "readme": "# My Skill\\nInstall with \`tank install @acme/my-skill\`.",
+  "files": ["skills.json", "README.md", "index.md"]
+}
+\`\`\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`manifest.name\` | string | Yes | Scoped or unscoped skill name. Scoped names (\`@org/name\`) require org membership. |
+| \`manifest.version\` | string | Yes | Semver string. Must not already exist for this skill. |
+| \`manifest.description\` | string | Yes | Short description shown in search results. |
+| \`manifest.visibility\` | \`"public"\` \\| \`"private"\` | Yes | Public skills are visible to everyone. Private skills require auth. |
+| \`manifest.permissions\` | object | Yes | Declared permission budget. Validated against Zod schema. |
+| \`manifest.repository\` | string | No | Source repository URL for provenance display. |
+| \`readme\` | string | No | Markdown content for the skill's registry page. |
+| \`files\` | string[] | No | List of file paths included in the tarball. |
+
+**Validation rules**
+
+- \`manifest.name\` must match \`/^(@[a-z0-9-]+\\/)?[a-z0-9-]+$/\`
+- \`manifest.version\` must be a valid semver string
+- Scoped skill names require the authenticated user to be a member of that organization
+- Version conflict: publishing \`1.0.0\` when \`1.0.0\` already exists returns \`409\`
+- Permission escalation: PATCH bumps with new permissions, or MINOR bumps adding dangerous permissions (\`network\`, \`subprocess\`), are rejected with \`422\`
+
+**Response \`201 Created\`**
+
+\`\`\`json
+{
+  "uploadUrl": "https://storage.tankpkg.dev/tarballs/abc123?token=...",
+  "skillId": "skill_01HXYZ",
+  "versionId": "ver_01HABC"
+}
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl -X POST https://tankpkg.dev/api/v1/skills \\
+  -H "Authorization: Bearer tank_xxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "manifest": {
+      "name": "@acme/my-skill",
+      "version": "1.0.0",
+      "description": "Does something useful.",
+      "visibility": "public",
+      "permissions": {}
+    }
+  }'
+\`\`\`
+
+---
+
+### \`GET /api/v1/skills/:name\` — Get skill metadata
+
+Returns top-level metadata for a skill plus its latest published version.
+
+**Authentication:** Not required for public skills. Private skills require a token with \`skills:read\` scope and membership in the owning organization.
+
+**Path parameters**
+
+| Parameter | Description |
+|---|---|
+| \`name\` | Skill name, URL-encoded. Scoped names use \`@org%2Fskill\` or \`@org/skill\` (both accepted). |
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{
+  "name": "@vercel/next-skill",
+  "description": "Teaches agents to scaffold, build, and deploy Next.js apps.",
+  "visibility": "public",
+  "latestVersion": "2.3.1",
+  "publisher": {
+    "name": "vercel"
+  },
+  "createdAt": "2025-11-15T08:30:00.000Z",
+  "updatedAt": "2026-03-01T11:00:00.000Z"
+}
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill \\
+  -H "Authorization: Bearer tank_xxx"
+\`\`\`
+
+---
+
+### \`GET /api/v1/skills/:name/versions\` — List all versions
+
+Returns every published version for a skill, ordered newest first.
+
+**Authentication:** Same access control as \`GET /api/v1/skills/:name\`.
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{
+  "name": "@vercel/next-skill",
+  "versions": [
+    {
+      "version": "2.3.1",
+      "publishedAt": "2026-03-01T11:00:00.000Z",
+      "auditScore": 9,
+      "verdict": "PASS"
+    },
+    {
+      "version": "2.3.0",
+      "publishedAt": "2026-02-15T09:22:00.000Z",
+      "auditScore": 8,
+      "verdict": "PASS"
+    }
+  ]
+}
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/versions
+\`\`\`
+
+---
+
+### \`GET /api/v1/skills/:name/:version\` — Get version metadata
+
+Returns full metadata for a specific published version, including its permissions declaration and security scan verdict.
+
+**Authentication:** Same access control as \`GET /api/v1/skills/:name\`.
+
+**Path parameters**
+
+| Parameter | Description |
+|---|---|
+| \`name\` | Skill name. |
+| \`version\` | Exact semver string (e.g. \`2.3.1\`). |
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{
+  "name": "@vercel/next-skill",
+  "version": "2.3.1",
+  "description": "Teaches agents to scaffold, build, and deploy Next.js apps.",
+  "visibility": "public",
+  "permissions": {
+    "network": { "outbound": ["*.vercel.com", "*.anthropic.com"] },
+    "filesystem": { "read": ["./src/**"], "write": ["./dist/**"] },
+    "subprocess": false
+  },
+  "repository": "https://github.com/vercel/next-skill",
+  "auditScore": 9,
+  "verdict": "PASS",
+  "integrity": "sha512-abc123...",
+  "publishedAt": "2026-03-01T11:00:00.000Z"
+}
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/2.3.1
+\`\`\`
+
+---
+
+### \`GET /api/v1/skills/:name/:version/files/:path\` — Get file content
+
+Returns the raw content of a specific file within a skill version's tarball. Useful for previewing \`SKILL.md\`, \`README.md\`, or any other file without downloading the full archive.
+
+**Authentication:** Same access control as \`GET /api/v1/skills/:name\`.
+
+**Path parameters**
+
+| Parameter | Description |
+|---|---|
+| \`name\` | Skill name. |
+| \`version\` | Exact semver string. |
+| \`path\` | File path within the tarball (e.g. \`SKILL.md\`, \`src/index.ts\`). |
+
+**Response**
+
+Returns the raw file bytes with an appropriate \`Content-Type\` header (e.g. \`text/markdown\` for \`.md\` files, \`text/plain\` for unknown extensions).
+
+**Example**
+
+\`\`\`bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/2.3.1/files/SKILL.md
+\`\`\`
+
+---
+
+### \`POST /api/v1/skills/confirm\` — Finalize publication
+
+After uploading the tarball to the \`uploadUrl\` returned by \`POST /api/v1/skills\`, call this endpoint to finalize the publish. Tank verifies the SHA-512 integrity hash, triggers the security scanner, and marks the version as published.
+
+**Authentication:** Required — \`skills:publish\` scope.
+
+**Request body**
+
+\`\`\`json
+{
+  "skillId": "skill_01HXYZ",
+  "versionId": "ver_01HABC",
+  "integrity": "sha512-ZnVuZ3MtYXJlLWNvb2wuanNvbg=="
+}
+\`\`\`
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| \`skillId\` | string | Yes | \`skillId\` from the publish initiation response. |
+| \`versionId\` | string | Yes | \`versionId\` from the publish initiation response. |
+| \`integrity\` | string | Yes | SHA-512 hash of the tarball in the format \`sha512-<base64>\`. |
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{
+  "name": "@acme/my-skill",
+  "version": "1.0.0",
+  "status": "published",
+  "auditScore": 8,
+  "verdict": "PASS"
+}
+\`\`\`
+
+<Callout type="info">
+  The security scan runs synchronously during confirmation. The \`verdict\` in the response reflects the result of the 6-stage pipeline. A \`FAIL\` verdict does not block publication but is prominently displayed on the skill page and in \`tank audit\` output.
+</Callout>
+
+**Example**
+
+\`\`\`bash
+curl -X POST https://tankpkg.dev/api/v1/skills/confirm \\
+  -H "Authorization: Bearer tank_xxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "skillId": "skill_01HXYZ",
+    "versionId": "ver_01HABC",
+    "integrity": "sha512-ZnVuZ3MtYXJlLWNvb2wuanNvbg=="
+  }'
+\`\`\`
+
+---
+
+## Stars
+
+### \`POST /api/v1/skills/:name/star\` — Star a skill
+
+Adds a star to a skill on behalf of the authenticated user. Idempotent — starring an already-starred skill returns \`200\` without creating a duplicate.
+
+**Authentication:** Required — \`skills:read\` scope.
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{ "starred": true, "stars": 313 }
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl -X POST https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/star \\
+  -H "Authorization: Bearer tank_xxx"
+\`\`\`
+
+---
+
+### \`DELETE /api/v1/skills/:name/star\` — Unstar a skill
+
+Removes a star from a skill. Idempotent — unstarring a skill that was not starred returns \`200\`.
+
+**Authentication:** Required — \`skills:read\` scope.
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{ "starred": false, "stars": 312 }
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl -X DELETE https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/star \\
+  -H "Authorization: Bearer tank_xxx"
+\`\`\`
+
+---
+
+### \`GET /api/v1/skills/:name/star\` — Check star status
+
+Returns whether the authenticated user has starred a skill.
+
+**Authentication:** Required — \`skills:read\` scope.
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{ "starred": true, "stars": 312 }
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/star \\
+  -H "Authorization: Bearer tank_xxx"
+\`\`\`
+
+---
+
+## Security Scanning
+
+### \`POST /api/v1/scan\` — Scan a tarball
+
+Upload a \`.tar.gz\` tarball to run Tank's 6-stage security pipeline without publishing. Useful for CI/CD validation or auditing third-party skills before installing them.
+
+**Authentication:** Not required. Unauthenticated scans are rate-limited more aggressively.
+
+**Request**
+
+Send the tarball as a \`multipart/form-data\` upload with the field name \`file\`.
+
+\`\`\`bash
+curl -X POST https://tankpkg.dev/api/v1/scan \\
+  -H "Authorization: Bearer tank_xxx" \\
+  -F "file=@my-skill-1.0.0.tgz"
+\`\`\`
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{
+  "verdict": "PASS_WITH_NOTES",
+  "auditScore": 7,
+  "summary": {
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 2
+  },
+  "findings": [
+    {
+      "stage": "static",
+      "severity": "medium",
+      "rule": "HARDCODED_URL",
+      "message": "Hardcoded external URL detected in src/index.ts at line 42.",
+      "file": "src/index.ts",
+      "line": 42
+    }
+  ],
+  "stages": {
+    "stage0": "ok",
+    "stage1": "ok",
+    "stage2": "ok",
+    "stage3": "ok",
+    "stage4": "ok",
+    "stage5": "ok"
+  }
+}
+\`\`\`
+
+**Verdict rules**
+
+| Verdict | Condition |
+|---|---|
+| \`PASS\` | Zero findings, or only informational notes. |
+| \`PASS_WITH_NOTES\` | Low-severity findings only. |
+| \`FLAGGED\` | 1–3 high-severity findings. |
+| \`FAIL\` | Any critical finding, or 4+ high-severity findings. |
+
+**Pipeline stages**
+
+| Stage | Name | What it checks |
+|---|---|---|
+| \`stage0\` | Ingest | Tarball structure, SHA-512 hashing, extraction safety (no symlinks, no path traversal, no absolute paths) |
+| \`stage1\` | Structure | Required files (\`SKILL.md\`, manifest), file count (under 100), total size (under 50 MB) |
+| \`stage2\` | Static | AST analysis — eval, exec, obfuscated code, suspicious imports |
+| \`stage3\` | Injection | Prompt injection patterns in Markdown and skill definition files |
+| \`stage4\` | Secrets | Hardcoded credentials, API keys, tokens using entropy analysis |
+| \`stage5\` | Supply chain | Dependency tree analysis, known-malicious package hashes |
+
+<Callout type="info">
+  Each stage is independent. A failure in one stage does not prevent subsequent stages from running. All findings are aggregated into the final verdict.
+</Callout>
+
+---
+
+## CLI Auth Flow
+
+The CLI uses a browser-based OAuth flow to obtain an API key without requiring users to copy-paste tokens manually. The three-step sequence is: **start → (user authorizes in browser) → exchange**.
+
+### \`POST /api/v1/cli-auth/start\` — Begin OAuth flow
+
+Generates a short-lived poll token and constructs the browser authorization URL.
+
+**Authentication:** Not required.
+
+**Request body**
+
+\`\`\`json
+{ "deviceName": "MacBook Pro (work)" }
+\`\`\`
+
+**Response \`200 OK\`**
+
+\`\`\`json
+{
+  "pollToken": "poll_01HXYZ...",
+  "authUrl": "https://tankpkg.dev/api/v1/cli-auth/authorize?token=poll_01HXYZ...",
+  "expiresIn": 300
+}
+\`\`\`
+
+The \`authUrl\` should be opened in the user's browser. \`expiresIn\` is in seconds (5 minutes). After this window the poll token is invalidated and the flow must be restarted.
+
+**Example**
+
+\`\`\`bash
+curl -X POST https://tankpkg.dev/api/v1/cli-auth/start \\
+  -H "Content-Type: application/json" \\
+  -d '{"deviceName": "MacBook Pro (work)"}'
+\`\`\`
+
+---
+
+### \`GET /api/v1/cli-auth/authorize\` — Grant access
+
+This URL is opened in the user's browser (not called directly by the CLI). The user is shown a consent screen, authenticates with GitHub if not already signed in, and approves the token issuance.
+
+**Query parameters**
+
+| Parameter | Description |
+|---|---|
+| \`token\` | The \`pollToken\` from the start response. |
+
+After the user approves, the browser is redirected back to the CLI callback and the poll token transitions to an authorized state. The CLI can now exchange it.
+
+---
+
+### \`POST /api/v1/cli-auth/exchange\` — Exchange for API key
+
+Exchanges an authorized poll token for a permanent API key. The CLI polls this endpoint after opening the browser URL, backing off until the user completes the authorization or the token expires.
+
+**Authentication:** Not required.
+
+**Request body**
+
+\`\`\`json
+{ "pollToken": "poll_01HXYZ..." }
+\`\`\`
+
+**Response \`200 OK\`** (authorized)
+
+\`\`\`json
+{
+  "apiKey": "tank_xxxxxxxxxxxxxxxxxxxxxxxx",
+  "scopes": ["skills:read", "skills:publish"]
+}
+\`\`\`
+
+**Response \`202 Accepted\`** (pending — user has not yet authorized)
+
+\`\`\`json
+{ "status": "pending" }
+\`\`\`
+
+**Response \`410 Gone\`** (expired or already consumed)
+
+\`\`\`json
+{ "error": "POLL_TOKEN_EXPIRED", "message": "The poll token has expired or already been used." }
+\`\`\`
+
+<Callout type="info">
+  Poll tokens have a 5-minute TTL and are single-use. Once exchanged successfully, the token is invalidated. The CLI (\`tank login\`) handles polling and backoff automatically.
+</Callout>
+
+**Example**
+
+\`\`\`bash
+# Poll until authorized (simplified — real CLI uses backoff)
+curl -X POST https://tankpkg.dev/api/v1/cli-auth/exchange \\
+  -H "Content-Type: application/json" \\
+  -d '{"pollToken": "poll_01HXYZ..."}'
+\`\`\`
+
+---
+
+## Badge
+
+### \`GET /api/v1/badge/:name\` — Audit score badge
+
+Returns an SVG badge displaying a skill's current audit score. Designed to embed directly in GitHub READMEs and documentation.
+
+**Authentication:** Not required.
+
+**Path parameters**
+
+| Parameter | Description |
+|---|---|
+| \`name\` | Skill name, URL-encoded (e.g. \`@vercel%2Fnext-skill\`). |
+
+**Response**
+
+Returns \`image/svg+xml\` content. The badge color encodes the score tier:
+
+| Score | Color | Meaning |
+|---|---|---|
+| 9–10 | Green | Excellent |
+| 7–8 | Yellow-green | Good |
+| 5–6 | Yellow | Fair |
+| 3–4 | Orange | Poor |
+| 0–2 | Red | Failing |
+
+**Usage in Markdown**
+
+\`\`\`md
+![Tank Audit Score](https://tankpkg.dev/api/v1/badge/@vercel%2Fnext-skill)
+\`\`\`
+
+**Example**
+
+\`\`\`bash
+curl https://tankpkg.dev/api/v1/badge/%40vercel%2Fnext-skill -o badge.svg
+\`\`\`
+
+---
+
+## Full Publish Workflow
+
+The following shows the complete three-step flow the \`tank publish\` CLI command performs internally.
+
+\`\`\`bash
+# Step 1 — Initiate publish, get a pre-signed upload URL
+RESPONSE=$(curl -s -X POST https://tankpkg.dev/api/v1/skills \\
+  -H "Authorization: Bearer tank_xxx" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "manifest": {
+      "name": "@acme/my-skill",
+      "version": "1.2.0",
+      "description": "Does something useful.",
+      "visibility": "public",
+      "permissions": {}
+    }
+  }')
+
+UPLOAD_URL=$(echo $RESPONSE | jq -r '.uploadUrl')
+SKILL_ID=$(echo $RESPONSE | jq -r '.skillId')
+VERSION_ID=$(echo $RESPONSE | jq -r '.versionId')
+
+# Step 2 — Upload the tarball to the pre-signed URL
+curl -X PUT "$UPLOAD_URL" \\
+  -H "Content-Type: application/gzip" \\
+  --data-binary @my-skill-1.2.0.tgz
+
+# Step 3 — Compute SHA-512 and confirm
+INTEGRITY="sha512-$(openssl dgst -sha512 -binary my-skill-1.2.0.tgz | base64)"
+
+curl -X POST https://tankpkg.dev/api/v1/skills/confirm \\
+  -H "Authorization: Bearer tank_xxx" \\
+  -H "Content-Type: application/json" \\
+  -d "{
+    \\"skillId\\": \\"$SKILL_ID\\",
+    \\"versionId\\": \\"$VERSION_ID\\",
+    \\"integrity\\": \\"$INTEGRITY\\"
+  }"
+\`\`\`
+`;
 }
 
 // Main
 const routeFiles = findRoutes(API_DIR);
-const allEndpoints = routeFiles.flatMap(f => parseRoute(f, API_DIR));
-const mdx = generateMdx(allEndpoints);
+const allEndpoints = routeFiles.flatMap(f => parseRoute(f));
+const mdx = generateMdx(allEndpoints.length);
 
 writeFileSync(DOCS_OUTPUT, mdx);
 console.log(`Generated API docs with ${allEndpoints.length} endpoints from ${routeFiles.length} route files`);

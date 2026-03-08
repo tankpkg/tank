@@ -49,6 +49,7 @@ export interface ScanDetails {
   verdict: string | null;
   stagesRun: string[];
   durationMs: number | null;
+  scannedAt: Date | null;
   findings: ScanFinding[];
   criticalCount: number;
   highCount: number;
@@ -245,7 +246,8 @@ export async function getSkillDetail(
       (SELECT row_to_json(t) FROM (
         SELECT sr.verdict, sr.stages_run AS "stagesRun", sr.duration_ms AS "durationMs",
                sr.critical_count AS "criticalCount", sr.high_count AS "highCount",
-               sr.medium_count AS "mediumCount", sr.low_count AS "lowCount"
+               sr.medium_count AS "mediumCount", sr.low_count AS "lowCount",
+               sr.created_at AS "scannedAt"
         FROM scan_results sr WHERE sr.version_id = sv.id
         ORDER BY sr.created_at DESC LIMIT 1
       ) t) AS "scanResult",
@@ -293,6 +295,7 @@ export async function getSkillDetail(
         verdict: scanResultJson.verdict as string | null,
         stagesRun: (scanResultJson.stagesRun as string[]) || [],
         durationMs: scanResultJson.durationMs as number | null,
+        scannedAt: scanResultJson.scannedAt ? new Date(scanResultJson.scannedAt as string) : null,
         findings: scanFindingsJson || [],
         criticalCount: Number(scanResultJson.criticalCount) || 0,
         highCount: Number(scanResultJson.highCount) || 0,
@@ -300,7 +303,7 @@ export async function getSkillDetail(
         lowCount: Number(scanResultJson.lowCount) || 0,
       }
     : {
-        verdict: null, stagesRun: [], durationMs: null, findings: [],
+        verdict: null, stagesRun: [], durationMs: null, scannedAt: null, findings: [],
         criticalCount: 0, highCount: 0, mediumCount: 0, lowCount: 0,
       };
 

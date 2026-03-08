@@ -17,6 +17,8 @@ export interface ScanFinding {
   confidence: number | null;
   tool: string | null;
   evidence: string | null;
+  llm_verdict?: string | null;
+  llm_reviewed?: boolean;
 }
 
 export interface ScanResponse {
@@ -132,41 +134,46 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
         },
       });
 
-      // Store scan results
-      try {
-        const [scanResultRecord] = await db
-          .insert(scanResults)
-          .values({
-            versionId: version.id,
-            verdict: scanResult.verdict,
-            totalFindings: scanResult.findings.length,
-            criticalCount: scanResult.findings.filter(f => f.severity === 'critical').length,
-            highCount: scanResult.findings.filter(f => f.severity === 'high').length,
-            mediumCount: scanResult.findings.filter(f => f.severity === 'medium').length,
-            lowCount: scanResult.findings.filter(f => f.severity === 'low').length,
-            stagesRun: scanResult.stage_results?.map(s => s.stage) || [],
-            durationMs: scanResult.duration_ms || null,
-            fileHashes: scanResult.file_hashes || null,
-          })
-          .returning();
+      // Store scan results (only if Python API didn't already store them)
+      // Python API returns scan_id when it successfully stored results
+      if (!scanResult.scan_id) {
+        try {
+          const [scanResultRecord] = await db
+            .insert(scanResults)
+            .values({
+              versionId: version.id,
+              verdict: scanResult.verdict,
+              totalFindings: scanResult.findings.length,
+              criticalCount: scanResult.findings.filter(f => f.severity === 'critical').length,
+              highCount: scanResult.findings.filter(f => f.severity === 'high').length,
+              mediumCount: scanResult.findings.filter(f => f.severity === 'medium').length,
+              lowCount: scanResult.findings.filter(f => f.severity === 'low').length,
+              stagesRun: scanResult.stage_results?.map(s => s.stage) || [],
+              durationMs: scanResult.duration_ms || null,
+              fileHashes: scanResult.file_hashes || null,
+            })
+            .returning();
 
-        if (scanResultRecord && scanResult.findings.length > 0) {
-          await db.insert(scanFindings).values(
-            scanResult.findings.map(f => ({
-              scanId: scanResultRecord.id,
-              stage: f.stage,
-              severity: f.severity,
-              type: f.type,
-              description: f.description,
-              location: f.location || null,
-              confidence: f.confidence || null,
-              tool: f.tool || null,
-              evidence: f.evidence || null,
-            }))
-          );
+          if (scanResultRecord && scanResult.findings.length > 0) {
+            await db.insert(scanFindings).values(
+              scanResult.findings.map(f => ({
+                scanId: scanResultRecord.id,
+                stage: f.stage,
+                severity: f.severity,
+                type: f.type,
+                description: f.description,
+                location: f.location || null,
+                confidence: f.confidence || null,
+                tool: f.tool || null,
+                evidence: f.evidence || null,
+                llmVerdict: f.llm_verdict || null,
+                llmReviewed: f.llm_reviewed || false,
+              }))
+            );
+          }
+        } catch (dbError) {
+          console.error('Failed to store scan results:', dbError);
         }
-      } catch (dbError) {
-        console.error('Failed to store scan results:', dbError);
       }
 
       // Map verdict to audit status

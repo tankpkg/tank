@@ -1,24 +1,24 @@
 ---
 title: Publish Your First Skill
-description: Step-by-step guide to publish your first AI agent skill to Tank registry
+description: Step-by-step tutorial to publish your first AI agent skill to the Tank registry in under 10 minutes — with security scanning and permission declarations.
 ---
 
 # Publish Your First Skill
 
-This tutorial walks you through publishing your first AI agent skill to the Tank registry in under 10 minutes.
+This tutorial walks you through publishing your first AI agent skill to the Tank registry in under 10 minutes. By the end, your skill will be scanned, versioned, and available for others to install.
 
 ## Prerequisites
 
 - Node.js 24+ installed
 - A Tank account ([sign up free](/login))
-- A skill you want to share
+- A skill directory you want to share
 
 ## Step 1: Install the Tank CLI
 
 ```bash
-npm install -g @tank/cli
+npm install -g @tankpkg/cli
 # or
-pnpm add -g @tank/cli
+pnpm add -g @tankpkg/cli
 ```
 
 Verify installation:
@@ -33,7 +33,7 @@ tank --version
 tank login
 ```
 
-This opens your browser for OAuth authentication. Once complete, your API key is stored securely in `~/.tank/config.json`.
+This opens your browser for GitHub OAuth authentication. Once complete, your API key is stored securely in `~/.tank/config.json`.
 
 ## Step 3: Initialize Your Skill
 
@@ -43,7 +43,7 @@ Navigate to your skill directory and run:
 tank init
 ```
 
-This creates a `tank.json` manifest file with:
+This creates a `skills.json` manifest file:
 
 ```json
 {
@@ -69,10 +69,13 @@ This creates a `tank.json` manifest file with:
 
 ## Step 4: Declare Permissions
 
-Tank enforces least-privilege by default. Declare only what your skill needs:
+Tank enforces least-privilege by default. Declare only what your skill actually needs:
 
 ```json
 {
+  "name": "my-skill",
+  "version": "1.0.0",
+  "description": "Audits SEO for a given URL",
   "permissions": {
     "network": ["https://api.openai.com"],
     "filesystem": {
@@ -85,36 +88,48 @@ Tank enforces least-privilege by default. Declare only what your skill needs:
 ```
 
 <Callout type="info">
-Runtime permission prompts will show users exactly what your skill requests access to.
+Runtime permission prompts will show users exactly what your skill requests access to. Skills with minimal, specific permissions earn higher audit scores and build more user trust.
 </Callout>
+
+See the [Permissions reference](/docs/permissions) for the full permission schema and best practices.
 
 ## Step 5: Run Security Scan
 
-Before publishing, verify your skill passes Tank's 6-stage security pipeline:
+Before publishing, run Tank's 6-stage security scanner locally to catch issues early:
 
 ```bash
-tank verify
+tank scan
 ```
 
 This runs:
-1. **Structure validation** — manifest integrity, file limits
-2. **Static analysis** — AST scanning for dangerous patterns
-3. **Injection detection** — prompt injection and code injection
-4. **Secret scanning** — credential exfiltration risks
-5. **Supply chain** — dependency vulnerabilities
-6. **Permission validation** — runtime boundary enforcement
+1. **Ingest** — Hashes files, validates tarball structure
+2. **Structure validation** — Manifest integrity, file count and size limits
+3. **Static analysis** — AST scanning for dangerous patterns (Semgrep, Bandit)
+4. **Injection detection** — Prompt injection and code injection patterns
+5. **Secret scanning** — Credential and API key detection
+6. **Supply chain** — Dependency vulnerability scanning (OSV API)
+
+Fix any `CRITICAL` or `HIGH` findings before proceeding. The registry will reject skills that fail the mandatory security pipeline.
+
+<Callout type="info">
+`tank scan` runs the local security check. `tank verify` checks lockfile integrity for installed skills — these are different commands with different purposes.
+</Callout>
 
 ## Step 6: Publish
 
 ```bash
+# Validate first (no upload)
+tank publish --dry-run
+
+# Publish for real
 tank publish
 ```
 
 Your skill is now:
-- Scanned for security issues
-- Signed with a cryptographic signature
-- Uploaded to the Tank registry
-- Available for others to install
+- Scanned for security issues by the full 6-stage pipeline
+- Assigned an audit score (0–10) based on quality and security
+- Uploaded to the Tank registry as a signed tarball
+- Available for others to install with `tank install @you/my-skill`
 
 ## Step 7: Verify Publication
 
@@ -126,8 +141,16 @@ tank info my-skill
 
 Or visit: `https://tankpkg.dev/skills/my-skill`
 
+You'll see:
+- The audit score and security scan results
+- Version history and semver metadata
+- Declared permissions
+- Download and star counts
+
 ## Next Steps
 
-- [Install a skill](/docs/installing) to see the consumer experience
-- [Read the CLI reference](/docs/cli) for all available commands
-- [Learn about security model](/docs/security) to understand permission enforcement
+- [Install a skill](/docs/installing) to see the consumer experience end-to-end
+- [Read the CLI reference](/docs/cli) for all available commands and flags
+- [Learn about the security model](/docs/security) to understand how the 6-stage pipeline works
+- [Security checklist](/docs/security-checklist) to review your skill against best practices before publishing
+- [CI/CD Integration](/docs/cicd) to automate publishing with the [GitHub Action](/docs/github-action)
