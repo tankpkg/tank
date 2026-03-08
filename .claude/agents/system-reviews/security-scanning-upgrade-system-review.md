@@ -2,7 +2,7 @@
 
 **Feature:** Security Scanning Upgrade
 **Date:** 2026-02-20
-**Plan:** `security-scanning-upgrade-plan.md`
+**Plan:** `docs/plans/security-scanning-upgrade-plan.md`
 **Plan Quality Score:** 8/10
 **Implementation Success:** One-pass with minor fixes
 **Overall Assessment:** Good - Plan was comprehensive and enabled efficient implementation
