@@ -9,16 +9,97 @@ import { rescanVersion } from '@/lib/rescan';
 const RESCANNABLE_STATUSES = ['completed', 'flagged', 'scan-failed'] as const;
 
 // Process in batches to avoid connection pool exhaustion
-// Supabase free tier has ~15-20 connection limit
-const BATCH_SIZE = 3; // Process 3 scans at a time
-const BATCH_DELAY_MS = 3000; // 3 second pause between batches
-const SCAN_DELAY_MS = 1000; // 1 second between individual scans in a batch
+const BATCH_SIZE = 3;
+const BATCH_DELAY_MS = 3000;
+const SCAN_DELAY_MS = 1000;
 
 export const dynamic = 'force-dynamic';
 
-async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<NextResponse> {
+// In-memory job tracking (resets on server restart, but fine for this use case)
+const jobs = new Map<string, {
+  status: 'running' | 'completed' | 'failed';
+  total: number;
+  processed: number;
+  success: number;
+  failed: number;
+  errors: Array<{ versionId: string; error: string }>;
+  startedAt: Date;
+  completedAt?: Date;
+}>();
+
+async function processRescanJob(jobId: string, versionsToScan: Array<{
+  id: string;
+  skillId: string;
+  version: string;
+  tarballPath: string;
+  manifest: unknown;
+  permissions: unknown;
+  readme: string | null;
+  fileCount: number;
+  tarballSize: number;
+}>) {
+  const job = jobs.get(jobId);
+  if (!job) return;
+
+  for (let i = 0; i < versionsToScan.length; i++) {
+    // Check if job was cancelled (status changed externally)
+    if (job.status !== 'running') break;
+
+    const version = versionsToScan[i];
+    try {
+      const result = await rescanVersion(version);
+      if (result.success) {
+        job.success++;
+      } else {
+        job.failed++;
+        job.errors.push({
+          versionId: version.id,
+          error: result.error || 'Unknown error',
+        });
+      }
+    } catch (error) {
+      job.failed++;
+      job.errors.push({
+        versionId: version.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+
+    job.processed = i + 1;
+
+    // Add delay between individual scans
+    if (i < versionsToScan.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, SCAN_DELAY_MS));
+    }
+
+    // Add longer pause after each batch
+    if ((i + 1) % BATCH_SIZE === 0 && i < versionsToScan.length - 1) {
+      console.log(`[Rescan ${jobId}] Completed batch of ${BATCH_SIZE}, pausing...`);
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+    }
+  }
+
+  job.status = 'completed';
+  job.completedAt = new Date();
+  console.log(`[Rescan ${jobId}] Job completed: ${job.success} success, ${job.failed} failed`);
+}
+
+async function handler(req: NextRequest, _context: AdminAuthContext): Promise<NextResponse> {
+  // Check if this is a status check request
+  const url = new URL(req.url);
+  const jobId = url.searchParams.get('jobId');
+
+  if (jobId) {
+    // Return job status
+    const job = jobs.get(jobId);
+    if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    }
+    return NextResponse.json(job);
+  }
+
   try {
-    // Get only the latest version of each skill by ordering and filtering
+    // Get only the latest version of each skill
     const versions = await db
       .select({
         id: skillVersions.id,
@@ -34,69 +115,66 @@ async function handler(_req: NextRequest, _context: AdminAuthContext): Promise<N
       .from(skillVersions)
       .where(inArray(skillVersions.auditStatus, [...RESCANNABLE_STATUSES]))
       .orderBy(skillVersions.skillId, desc(skillVersions.createdAt))
-      .limit(1000); // Safety limit
+      .limit(1000);
 
-    // Filter to keep only the latest version per skill (first occurrence of each skillId)
+    // Filter to keep only the latest version per skill
     const latestVersions = new Map<string, typeof versions[0]>();
     for (const v of versions) {
       if (!latestVersions.has(v.skillId)) {
         latestVersions.set(v.skillId, v);
       }
     }
-    const versionsToScan = Array.from(latestVersions.values());
+    const versionsToScan = Array.from(latestVersions.values()).map(v => ({
+      ...v,
+      fileCount: v.fileCount ?? 0,
+      tarballSize: v.tarballSize ?? 0,
+    }));
 
     if (versionsToScan.length === 0) {
       return NextResponse.json({
         message: 'No published versions to rescan',
-        scanned: 0,
+        jobId: null,
+        total: 0,
       });
     }
 
-    // Rescan all versions in batches to prevent connection pool exhaustion
-    const results = {
+    // Create a new job
+    const newJobId = `rescan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    jobs.set(newJobId, {
+      status: 'running',
       total: versionsToScan.length,
+      processed: 0,
       success: 0,
       failed: 0,
-      errors: [] as Array<{ versionId: string; error: string }>,
-    };
+      errors: [],
+      startedAt: new Date(),
+    });
 
-    for (let i = 0; i < versionsToScan.length; i++) {
-      const version = versionsToScan[i];
-      const result = await rescanVersion(version);
-      if (result.success) {
-        results.success++;
-      } else {
-        results.failed++;
-        results.errors.push({
-          versionId: version.id,
-          error: result.error || 'Unknown error',
-        });
+    // Start processing in background (don't await)
+    processRescanJob(newJobId, versionsToScan).catch(error => {
+      console.error(`[Rescan ${newJobId}] Job failed:`, error);
+      const job = jobs.get(newJobId);
+      if (job) {
+        job.status = 'failed';
+        job.completedAt = new Date();
       }
+    });
 
-      // Add delay between individual scans
-      if (i < versionsToScan.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, SCAN_DELAY_MS));
-      }
-
-      // Add longer pause after each batch
-      if ((i + 1) % BATCH_SIZE === 0 && i < versionsToScan.length - 1) {
-        console.log(`[Rescan] Completed batch of ${BATCH_SIZE}, pausing ${BATCH_DELAY_MS}ms...`);
-        await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
-      }
-    }
-
+    // Return immediately with job ID
     return NextResponse.json({
-      message: `Rescanned ${results.total} skill versions (latest only)`,
-      ...results,
+      message: `Rescan job started for ${versionsToScan.length} skill versions`,
+      jobId: newJobId,
+      total: versionsToScan.length,
+      statusUrl: `/api/admin/rescan-skills?jobId=${newJobId}`,
     });
   } catch (error) {
     console.error('Rescan all skills error:', error);
     return NextResponse.json(
-      { error: 'Failed to rescan skills' },
+      { error: 'Failed to start rescan job' },
       { status: 500 }
     );
   }
-};
+}
 
 export const POST = withAdminAuth(handler);
 

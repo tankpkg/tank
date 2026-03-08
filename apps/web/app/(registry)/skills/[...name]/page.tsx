@@ -299,13 +299,19 @@ export default async function SkillDetailPage({
             { label: 'SKILL.md present', passed: !!data.latestVersion?.readme, points: data.latestVersion?.readme ? 1 : 0, maxPoints: 1 },
             { label: 'Description provided', passed: !!data.description, points: data.description ? 1 : 0, maxPoints: 1 },
             { label: 'Permissions declared', passed: !!data.latestVersion?.permissions && Object.keys(data.latestVersion.permissions).length > 0, points: data.latestVersion?.permissions && Object.keys(data.latestVersion.permissions).length > 0 ? 1 : 0, maxPoints: 1 },
-            { label: 'No security issues', passed: (scanDetails?.findings?.length ?? 0) === 0, points: (scanDetails?.findings?.length ?? 0) === 0 ? 2 : 0, maxPoints: 2 },
+            {
+              label: 'No critical/high security issues',
+              passed: (scanDetails?.findings?.filter(f => f.severity === 'critical' || f.severity === 'high').length ?? 0) === 0,
+              points: (scanDetails?.findings?.filter(f => f.severity === 'critical' || f.severity === 'high').length ?? 0) === 0 ? 2 : 0,
+              maxPoints: 2
+            },
             { label: 'Permissions match detected usage', passed: true, points: 2, maxPoints: 2 },
             { label: 'File count under 100', passed: (data.latestVersion?.fileCount ?? 0) < 100, points: (data.latestVersion?.fileCount ?? 0) < 100 ? 1 : 0, maxPoints: 1 },
             { label: 'README documentation', passed: !!data.latestVersion?.readme, points: data.latestVersion?.readme ? 1 : 0, maxPoints: 1 },
             { label: 'Package under 5MB', passed: (data.latestVersion?.tarballSize ?? 0) < 5 * 1024 * 1024, points: (data.latestVersion?.tarballSize ?? 0) < 5 * 1024 * 1024 ? 1 : 0, maxPoints: 1 },
           ]}
           totalScore={data.latestVersion?.auditScore ?? 0}
+          llmAnalysis={scanDetails?.llm_analysis}
         />
       </div>
     </div>
