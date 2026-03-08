@@ -173,7 +173,7 @@ Initiates skill publication. The response includes a pre-signed `uploadUrl`; you
     },
     "repository": "https://github.com/acme/my-skill"
   },
-  "readme": "# My Skill\n\nInstall with `tank install @acme/my-skill`.",
+  "readme": "# My Skill\nInstall with `tank install @acme/my-skill`.",
   "files": ["skills.json", "README.md", "index.md"]
 }
 ```
@@ -550,7 +550,7 @@ curl -X POST https://tankpkg.dev/api/v1/scan \
 | Stage | Name | What it checks |
 |---|---|---|
 | `stage0` | Ingest | Tarball structure, SHA-512 hashing, extraction safety (no symlinks, no path traversal, no absolute paths) |
-| `stage1` | Structure | Required files (`SKILL.md`, manifest), file count (<100), total size (<50 MB) |
+| `stage1` | Structure | Required files (`SKILL.md`, manifest), file count (under 100), total size (under 50 MB) |
 | `stage2` | Static | AST analysis — eval, exec, obfuscated code, suspicious imports |
 | `stage3` | Injection | Prompt injection patterns in Markdown and skill definition files |
 | `stage4` | Secrets | Hardcoded credentials, API keys, tokens using entropy analysis |
