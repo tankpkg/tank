@@ -44,3 +44,9 @@ pnpm-debug.log*
 # OS
 Thumbs.db
 .vercel
+
+# Tool artifacts
+.playwright-mcp/
+.sisyphus/
+.idd/
+.plans/
