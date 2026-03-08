@@ -16,6 +16,7 @@ dependencies = [
     "detect-secrets>=1.5.0",
     "pip-audit>=2.7.0",
     "sarif-om>=1.0.0",
+    "jschema-to-python>=1.2.0",
 ]
 
 [project.optional-dependencies]
