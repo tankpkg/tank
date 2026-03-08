@@ -247,7 +247,7 @@ export async function getSkillDetail(
         SELECT sr.verdict, sr.stages_run AS "stagesRun", sr.duration_ms AS "durationMs",
                sr.critical_count AS "criticalCount", sr.high_count AS "highCount",
                sr.medium_count AS "mediumCount", sr.low_count AS "lowCount",
-               sr.created_at AS "scannedAt"
+               sr.created_at AS "scannedAt", sr.llm_analysis AS "llm_analysis"
         FROM scan_results sr WHERE sr.version_id = sv.id
         ORDER BY sr.created_at DESC LIMIT 1
       ) t) AS "scanResult",
@@ -301,10 +301,11 @@ export async function getSkillDetail(
         highCount: Number(scanResultJson.highCount) || 0,
         mediumCount: Number(scanResultJson.mediumCount) || 0,
         lowCount: Number(scanResultJson.lowCount) || 0,
+        llm_analysis: scanResultJson.llm_analysis as LLMAnalysisInfo | null,
       }
     : {
         verdict: null, stagesRun: [], durationMs: null, scannedAt: null, findings: [],
-        criticalCount: 0, highCount: 0, mediumCount: 0, lowCount: 0,
+        criticalCount: 0, highCount: 0, mediumCount: 0, lowCount: 0, llm_analysis: null,
       };
 
   const latestVersion: SkillVersionDetail | null = latestRow

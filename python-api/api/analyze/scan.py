@@ -50,6 +50,7 @@ async def store_scan_results(
     stage_results: List[StageResult],
     duration_ms: int,
     file_hashes: Dict[str, str],
+    llm_analysis: Optional[LLMAnalysis] = None,
 ) -> Optional[str]:
     """Store scan results in PostgreSQL.
 
@@ -75,8 +76,8 @@ async def store_scan_results(
                     """
                     INSERT INTO scan_results
                     (version_id, verdict, total_findings, critical_count, high_count,
-                     medium_count, low_count, stages_run, duration_ms, file_hashes)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                     medium_count, low_count, stages_run, duration_ms, file_hashes, llm_analysis)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """,
                     (
@@ -90,6 +91,7 @@ async def store_scan_results(
                         stages_run,
                         duration_ms,
                         file_hashes if file_hashes else None,
+                        llm_analysis.model_dump() if llm_analysis else None,
                     ),
                 )
                 row = await cur.fetchone()
@@ -168,6 +170,7 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                 stage_results,
                 duration_ms,
                 file_hashes,
+                llm_analysis,
             )
 
             # Cleanup
@@ -337,6 +340,7 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
         stage_results,
         duration_ms,
         file_hashes,
+        llm_analysis,
     )
 
     return ScanResponse(

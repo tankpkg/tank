@@ -272,6 +272,18 @@ export const scanResults = pgTable(
     stagesRun: jsonb('stages_run').notNull().$type<string[]>(),
     durationMs: integer('duration_ms'),
     fileHashes: jsonb('file_hashes').$type<Record<string, string>>(),
+    llmAnalysis: jsonb('llm_analysis').$type<{
+      enabled: boolean;
+      mode: string;
+      providers?: Array<{ name: string; model: string; status: string; latency_ms: number | null }>;
+      findings_reviewed?: number;
+      findings_dismissed?: number;
+      findings_confirmed?: number;
+      findings_uncertain?: number;
+      provider_used?: string;
+      latency_ms?: number;
+      error?: string;
+    }>(),
     createdAt,
   },
   (table) => [

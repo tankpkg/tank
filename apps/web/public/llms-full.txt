@@ -4783,6 +4783,17 @@ The LLM is asked to determine:
 
 The LLM response is used to **raise or lower** the pending finding's severity, or to dismiss it as a false positive. It cannot promote a finding above what pattern matching already established — it can only reduce severity or confirm it.
 
+### Built-in Providers
+
+Tank's hosted registry at tankpkg.dev includes built-in LLM analysis powered by:
+
+| Provider | Model | Configuration |
+|----------|-------|---------------|
+| **Groq** | Llama models | Set `GROQ_API_KEY` environment variable |
+| **OpenRouter** | Various models | Set `OPENROUTER_API_KEY` environment variable |
+
+When either API key is configured in the Python API deployment, LLM analysis is automatically enabled for all scans. The system tries each provider in order and uses the first available one.
+
 ### Modes
 
 Configure LLM analysis via the `LLM_ANALYSIS_MODE` environment variable on the Python API server:
@@ -4790,8 +4801,21 @@ Configure LLM analysis via the `LLM_ANALYSIS_MODE` environment variable on the P
 | Mode | Behavior |
 |------|---------|
 | `byollm` | Use your own LLM endpoint — configure `LLM_ENDPOINT` and `LLM_API_KEY` |
-| `builtin` | Use the registry's configured LLM (registry operators only) |
+| `builtin` | Use the registry's configured LLM (Groq/OpenRouter with API keys) |
 | `disabled` | Skip LLM corroboration entirely — pattern matching only |
+
+If no mode is specified, the system automatically enables `builtin` mode when `GROQ_API_KEY` or `OPENROUTER_API_KEY` is present.
+
+### UI Indicator
+
+When LLM analysis is used during a scan, the skill's security page displays an indicator showing:
+
+- **Mode**: Whether built-in providers or custom LLM was used
+- **Findings reviewed**: Number of ambiguous findings sent for LLM review
+- **False positives dismissed**: Findings the LLM determined were safe
+- **Threats confirmed**: Findings the LLM verified as genuine security issues
+
+This transparency helps users understand the depth of analysis performed on each skill.
 
 ### On-Premises Deployments
 

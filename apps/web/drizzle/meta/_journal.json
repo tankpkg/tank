@@ -78,6 +78,13 @@
       "when": 1772410000000,
       "tag": "0010_fuzzy_search_trgm",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1772500000000,
+      "tag": "0011_add_llm_analysis",
+      "breakpoints": true
     }
   ]
 }
