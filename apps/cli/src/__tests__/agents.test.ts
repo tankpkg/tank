@@ -9,6 +9,7 @@ import {
   getSymlinkName,
   getGlobalSkillsDir,
   getGlobalAgentSkillsDir,
+  SUPPORTED_AGENTS,
 } from '../lib/agents.js';
 
 describe('agents', () => {
@@ -104,6 +105,46 @@ describe('agents', () => {
 
     it('returns the global agent skills directory', () => {
       expect(getGlobalAgentSkillsDir(tmpDir)).toBe(path.join(tmpDir, '.tank', 'agent-skills'));
+    });
+  });
+
+  describe('Windows path support', () => {
+    it('cursor includes APPDATA path on Windows', () => {
+      const cursor = SUPPORTED_AGENTS.find((a) => a.id === 'cursor')!;
+      const dirs = cursor.configDirs(tmpDir);
+      if (process.platform === 'win32' && process.env.APPDATA) {
+        expect(dirs).toContain(path.join(process.env.APPDATA, 'Cursor'));
+      }
+      // Always includes the homedir-relative path
+      expect(dirs).toContain(path.join(tmpDir, '.cursor'));
+    });
+
+    it('opencode includes APPDATA path on Windows', () => {
+      const opencode = SUPPORTED_AGENTS.find((a) => a.id === 'opencode')!;
+      const dirs = opencode.configDirs(tmpDir);
+      if (process.platform === 'win32' && process.env.APPDATA) {
+        expect(dirs).toContain(path.join(process.env.APPDATA, 'opencode'));
+      }
+      // Always includes the homedir-relative path
+      expect(dirs).toContain(path.join(tmpDir, '.config', 'opencode'));
+    });
+
+    it('detects agents at Windows APPDATA paths', () => {
+      if (process.platform !== 'win32' || !process.env.APPDATA) return;
+
+      // Simulate OpenCode installed at APPDATA location
+      const appDataOpencode = path.join(process.env.APPDATA, 'opencode');
+      const existed = fs.existsSync(appDataOpencode);
+      if (!existed) fs.mkdirSync(appDataOpencode, { recursive: true });
+
+      try {
+        const agents = detectInstalledAgents(tmpDir);
+        const opencode = agents.find((a) => a.id === 'opencode');
+        expect(opencode).toBeDefined();
+        expect(opencode!.skillsDir).toBe(path.join(appDataOpencode, 'skills'));
+      } finally {
+        if (!existed) fs.rmSync(appDataOpencode, { recursive: true, force: true });
+      }
     });
   });
 });
