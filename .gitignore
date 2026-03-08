@@ -50,3 +50,6 @@ Thumbs.db
 .sisyphus/
 .idd/
 .plans/
+
+# Worktrees
+.worktrees/
