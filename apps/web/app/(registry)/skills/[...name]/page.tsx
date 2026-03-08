@@ -242,7 +242,7 @@ export default async function SkillDetailPage({
         score={data.latestVersion?.auditScore ?? null}
         verdict={scanDetails?.verdict ?? null}
         durationMs={scanDetails?.durationMs ?? null}
-        scannedAt={data.latestVersion?.publishedAt ? String(data.latestVersion.publishedAt) : null}
+        scannedAt={scanDetails?.scannedAt ? String(scanDetails.scannedAt) : null}
         criticalCount={scanDetails?.criticalCount ?? 0}
         highCount={scanDetails?.highCount ?? 0}
         mediumCount={scanDetails?.mediumCount ?? 0}
