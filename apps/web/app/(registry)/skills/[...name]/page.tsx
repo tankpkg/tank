@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { encodeSkillName } from '@tank/shared';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -171,8 +172,8 @@ export async function generateMetadata({ params }: SkillDetailPageProps): Promis
   const title = version ? `${skillName}@${version}` : skillName;
   const description = data.description
     ?? `AI agent skill published on Tank by ${data.publisher.name}.`;
-  const url = `https://tankpkg.dev/skills/${encodeURIComponent(skillName)}`;
-  const ogImageUrl = `https://tankpkg.dev/api/og/${encodeURIComponent(skillName)}`;
+  const url = `https://tankpkg.dev/skills/${encodeSkillName(skillName)}`;
+  const ogImageUrl = `https://tankpkg.dev/api/og/${encodeSkillName(skillName)}`;
 
   return {
     title,
@@ -317,7 +318,7 @@ export default async function SkillDetailPage({
         '@type': 'SoftwareSourceCode',
         name: data.name,
         description: data.description ?? undefined,
-        url: `https://tankpkg.dev/skills/${encodeURIComponent(data.name)}`,
+        url: `https://tankpkg.dev/skills/${encodeSkillName(data.name)}`,
         codeRepository: data.repositoryUrl ?? undefined,
         version: data.latestVersion?.version ?? undefined,
         datePublished: data.createdAt.toISOString(),
@@ -347,7 +348,7 @@ export default async function SkillDetailPage({
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Tank', item: 'https://tankpkg.dev' },
           { '@type': 'ListItem', position: 2, name: 'Skills', item: 'https://tankpkg.dev/skills' },
-          { '@type': 'ListItem', position: 3, name: data.name, item: `https://tankpkg.dev/skills/${encodeURIComponent(data.name)}` },
+          { '@type': 'ListItem', position: 3, name: data.name, item: `https://tankpkg.dev/skills/${encodeSkillName(data.name)}` },
         ],
       },
     ],
