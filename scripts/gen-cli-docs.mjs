@@ -3,7 +3,8 @@
  * Generate CLI reference documentation from source code.
  * Run: node scripts/gen-cli-docs.mjs
  * 
- * This script parses the CLI entry point and extracts command definitions.
+ * This script parses the CLI entry point and extracts command definitions,
+ * then generates a comprehensive MDX reference page.
  */
 
 import { readFileSync, writeFileSync } from 'fs';
@@ -19,15 +20,32 @@ const DOCS_OUTPUT = join(ROOT, 'apps/web/content/docs/cli.mdx');
 function parseCommands(source) {
   const commands = [];
   
-  // Match program.command() blocks with description, arguments, options, and action
-  const commandRegex = /program\s*\.\s*command\s*\(\s*['"]([^'"]+)['"]\s*\)\s*\.description\s*\(\s*['"]([^'"]+)['"]\s*\)([^;]+)\.action/gs;
-  
-  let match;
-  // biome-ignore lint/suspicious/noAssignInExpressions: regex assignment pattern
-  while ((match = commandRegex.exec(source)) !== null) {
-    const name = match[1];
-    const description = match[2];
-    const block = match[3];
+  // Split source into command blocks (each starts with "program\n  .command(")
+  const blocks = source.split(/(?=program\s*\n\s*\.command\s*\()/g).filter(b => b.includes('.command('));
+
+  for (const block of blocks) {
+    // Extract command name
+    const nameMatch = block.match(/\.command\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+    if (!nameMatch) continue;
+    const name = nameMatch[1];
+    
+    // Extract description
+    const descMatch = block.match(/\.description\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+    const description = descMatch ? descMatch[1] : '';
+    
+    // Extract alias (singular)
+    const aliasMatch = block.match(/\.alias\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+    const alias = aliasMatch ? [aliasMatch[1]] : [];
+    
+    // Extract aliases (plural)
+    const aliasesMatch = block.match(/\.aliases\s*\(\s*\[([^\]]+)\]\s*\)/);
+    if (aliasesMatch) {
+      const aliasStr = aliasesMatch[1];
+      const parsed = aliasStr.match(/['"]([^'"]+)['"]/g);
+      if (parsed) {
+        alias.push(...parsed.map(a => a.replace(/['"]/g, '')));
+      }
+    }
     
     // Extract arguments
     const args = [];
@@ -35,12 +53,10 @@ function parseCommands(source) {
     let argMatch;
     // biome-ignore lint/suspicious/noAssignInExpressions: regex assignment pattern
     while ((argMatch = argRegex.exec(block)) !== null) {
-      const argName = argMatch[1];
-      const argDesc = argMatch[2] || '';
       args.push({
-        name: argName,
-        description: argDesc,
-        optional: argName.startsWith('['),
+        name: argMatch[1],
+        description: argMatch[2] || '',
+        optional: argMatch[1].startsWith('['),
       });
     }
     
@@ -56,12 +72,7 @@ function parseCommands(source) {
       });
     }
     
-    commands.push({
-      name,
-      description,
-      args,
-      options,
-    });
+    commands.push({ name, description, alias, args, options });
   }
   
   return commands;
@@ -71,18 +82,19 @@ function parseCommands(source) {
 function generateMdx(commands) {
   const frontmatter = `---
 title: CLI Reference
-description: Complete reference for all tank CLI commands
+description: Complete reference for all ${commands.length} Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 ---`;
 
   const intro = `
-The Tank CLI provides 16 commands for publishing, installing, and managing AI agent skills with security-first design.
+
+The Tank CLI provides ${commands.length} commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
 \`\`\`bash
-npm install -g @tank/cli
+npm install -g @tankpkg/cli
 # or
-pnpm add -g @tank/cli
+pnpm add -g @tankpkg/cli
 \`\`\`
 
 ## Global Options
@@ -97,17 +109,19 @@ All commands support these options:
 `;
 
   const commandSections = commands.map(cmd => {
-    let section = `## tank ${cmd.name}\n\n${cmd.description}\n\n`;
+    let section = `## tank ${cmd.name}\n\n`;
+    section += `${cmd.description}\n\n`;
+    
+    if (cmd.alias.length > 0) {
+      section += `**Aliases:** ${cmd.alias.map(a => `\`${a}\``).join(', ')}\n\n`;
+    }
+    
     section += '```bash\n';
     section += `tank ${cmd.name}`;
     
     if (cmd.args.length > 0) {
       cmd.args.forEach(arg => {
-        if (arg.optional) {
-          section += ` [${arg.name.replace(/[[\]]/g, '')}]`;
-        } else {
-          section += ` <${arg.name}>`;
-        }
+        section += ` ${arg.name}`;
       });
     }
     
@@ -137,7 +151,44 @@ All commands support these options:
     return section;
   }).join('\n');
 
-  return `${frontmatter}${intro}${commandSections}`;
+  const quickRef = `
+## Quick Reference
+
+| Command | Alias(es) | Description |
+|---------|-----------|-------------|
+${commands.map(cmd => {
+    const aliases = cmd.alias.length > 0 ? cmd.alias.map(a => `\`${a}\``).join(', ') : '—';
+    return `| \`tank ${cmd.name}\` | ${aliases} | ${cmd.description} |`;
+  }).join('\n')}
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| \`TANK_TOKEN\` | API token — overrides \`~/.tank/config.json\` (used in CI/CD) |
+| \`TANK_DEBUG=1\` | Enable debug logging (pino → Loki structured logs) |
+| \`REGISTRY_URL\` | Override the default registry URL |
+
+## Configuration Files
+
+| File | Purpose |
+|------|---------|
+| \`~/.tank/config.json\` | Auth token and registry URL (permissions: \`0600\`) |
+| \`skills.json\` | Project manifest — skill metadata, dependencies, and permission budget |
+| \`skills.lock\` | Deterministic lockfile — pinned versions with SHA-512 hashes |
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| \`0\` | Success |
+| \`1\` | General error (invalid arguments, network failure, auth error) |
+| \`2\` | Security check failed (\`tank verify\`, \`tank audit\`, or \`tank scan\` with a \`FAIL\` verdict) |
+`;
+
+  return `${frontmatter}${intro}${commandSections}${quickRef}`;
 }
 
 // Main
