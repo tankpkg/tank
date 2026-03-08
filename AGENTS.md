@@ -33,18 +33,20 @@ tank/
 │   ├── api/analyze/      # REST endpoints: scan, rescan, security, permissions
 │   └── lib/scan/         # stage0–stage5, models, verdict, dedup, sarif
 ├── e2e/                  # End-to-end tests (sequential, real CLI spawning)
+│   └── fixtures/         # Test fixtures (test-skill/)
 ├── .bdd/                 # BDD tests (Playwright-based, 12 step files)
 │   ├── steps/            # Step definitions per command
 │   └── features/         # Gherkin feature files (admin, mcp)
 ├── action/               # GitHub Action: `tank-publish` (composite action)
 ├── build/                # Pre-compiled CLI binaries (tank, tank-bun, tank-sea)
-├── packaging/homebrew/   # Homebrew formula for macOS distribution
+├── Formula/              # Homebrew formula for macOS distribution
 ├── docs/                 # Product brief, architecture, roadmap, performance testing
+│   ├── mockups/          # Design mockup screenshots
+│   ├── plans/            # Planning documents
+│   └── references/       # Internal reference docs (Playwright, sources)
 ├── infra/                # Loki + Grafana configs for observability
 ├── scripts/              # One-off utilities (backfill-readme.mjs, onprem/)
-├── supabase/             # Supabase local dev config (storage only, not DB)
-├── references/           # Internal reference docs (Playwright, sources)
-└── test-skill/           # Fixture skill for E2E testing
+└── supabase/             # Supabase local dev config (storage only, not DB)
 ```
 
 ## WHERE TO LOOK
@@ -224,7 +226,7 @@ pnpm --filter=web admin:bootstrap       # Promote FIRST_ADMIN_EMAIL to admin rol
 ### Distribution
 - **npm**: `@tankpkg/cli` (CLI), `@tankpkg/mcp-server` (MCP)
 - **GitHub Action**: `action/action.yml` — composite action for CI/CD publishing
-- **Homebrew**: formula in `packaging/homebrew/`
+- **Homebrew**: formula in `Formula/`
 - **Pre-built binaries**: `build/` — tank, tank-bun, tank-sea (Single Executable Application)
 
 ### On-Prem Deployment
