@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { encodeSkillName } from '@tank/shared';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -270,7 +271,7 @@ async function PackagesTable({ searchParams }: { searchParams: SearchParams }) {
                 data.packages.map((pkg) => (
                   <TableRow key={pkg.id} className="hover:bg-muted/40">
                     <TableCell>
-                      <Link href={`/admin/packages/${encodeURIComponent(pkg.name)}`} className="block">
+                      <Link href={`/admin/packages/${encodeSkillName(pkg.name)}`} className="block">
                         <div className="font-medium text-foreground">{pkg.name}</div>
                         {pkg.description && (
                           <div className="text-xs text-muted-foreground truncate max-w-xs">
@@ -280,14 +281,14 @@ async function PackagesTable({ searchParams }: { searchParams: SearchParams }) {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Link href={`/admin/packages/${encodeURIComponent(pkg.name)}`} className="block">
+                      <Link href={`/admin/packages/${encodeSkillName(pkg.name)}`} className="block">
                         <Badge variant={statusVariant(pkg.status)}>
                           {pkg.status}
                         </Badge>
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Link href={`/admin/packages/${encodeURIComponent(pkg.name)}`} className="block">
+                      <Link href={`/admin/packages/${encodeSkillName(pkg.name)}`} className="block">
                         {pkg.featured ? (
                           <Badge variant="default">Featured</Badge>
                         ) : (
@@ -296,22 +297,22 @@ async function PackagesTable({ searchParams }: { searchParams: SearchParams }) {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Link href={`/admin/packages/${encodeURIComponent(pkg.name)}`} className="block text-muted-foreground">
+                      <Link href={`/admin/packages/${encodeSkillName(pkg.name)}`} className="block text-muted-foreground">
                         {pkg.publisher?.name ?? pkg.publisher?.email ?? 'Unknown'}
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Link href={`/admin/packages/${encodeURIComponent(pkg.name)}`} className="block text-muted-foreground">
+                      <Link href={`/admin/packages/${encodeSkillName(pkg.name)}`} className="block text-muted-foreground">
                         {pkg.versionCount}
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Link href={`/admin/packages/${encodeURIComponent(pkg.name)}`} className="block text-muted-foreground">
+                      <Link href={`/admin/packages/${encodeSkillName(pkg.name)}`} className="block text-muted-foreground">
                         {formatNumber(pkg.downloadCount)}
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Link href={`/admin/packages/${encodeURIComponent(pkg.name)}`} className="block text-muted-foreground">
+                      <Link href={`/admin/packages/${encodeSkillName(pkg.name)}`} className="block text-muted-foreground">
                         {formatDate(pkg.createdAt)}
                       </Link>
                     </TableCell>

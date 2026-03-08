@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { skills } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import type { MetadataRoute } from 'next';
+import { encodeSkillName } from '@tank/shared';
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tankpkg.dev';
 
@@ -25,7 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .where(eq(skills.visibility, 'public'));
 
     skillPages = publicSkills.map((skill) => ({
-      url: `${BASE_URL}/skills/${encodeURIComponent(skill.name)}`,
+      url: `${BASE_URL}/skills/${encodeSkillName(skill.name)}`,
       lastModified: skill.updatedAt,
       changeFrequency: 'weekly' as const,
       priority: 0.7,

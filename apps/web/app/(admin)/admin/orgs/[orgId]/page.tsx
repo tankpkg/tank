@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { encodeSkillName } from '@tank/shared';
 import { headers } from 'next/headers';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -131,7 +132,7 @@ export default async function AdminOrgDetailPage({
                   key={pkg.id}
                   className="rounded-md border p-3 flex items-center justify-between gap-3"
                 >
-                  <Link href={`/admin/packages/${encodeURIComponent(pkg.name)}`} className="font-medium">
+                  <Link href={`/admin/packages/${encodeSkillName(pkg.name)}`} className="font-medium">
                     {pkg.name}
                   </Link>
                   <Badge variant="outline">{pkg.status}</Badge>
