@@ -21,6 +21,24 @@ export interface ScanFinding {
   llm_reviewed?: boolean;
 }
 
+export interface LLMAnalysisInfo {
+  enabled: boolean;
+  mode: string;
+  providers?: Array<{
+    name: string;
+    model: string;
+    status: string;
+    latency_ms: number | null;
+  }>;
+  findings_reviewed?: number;
+  findings_dismissed?: number;
+  findings_confirmed?: number;
+  findings_uncertain?: number;
+  provider_used?: string;
+  latency_ms?: number;
+  error?: string;
+}
+
 export interface ScanResponse {
   scan_id: string | null;
   verdict: 'pass' | 'pass_with_notes' | 'flagged' | 'fail';
@@ -33,6 +51,7 @@ export interface ScanResponse {
   }>;
   duration_ms: number;
   file_hashes: Record<string, string>;
+  llm_analysis?: LLMAnalysisInfo | null;
 }
 
 export interface RescanVersionInput {
@@ -151,6 +170,7 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
               stagesRun: scanResult.stage_results?.map(s => s.stage) || [],
               durationMs: scanResult.duration_ms || null,
               fileHashes: scanResult.file_hashes || null,
+              llmAnalysis: scanResult.llm_analysis || null,
             })
             .returning();
 
