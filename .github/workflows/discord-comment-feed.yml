@@ -1,0 +1,29 @@
+name: Discord Comment Feed
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  notify:
+    name: forward-comment
+    runs-on: ubuntu-22.04
+    if: >-
+      github.event.comment.user.login != 'vercel[bot]' &&
+      github.event.comment.user.login != 'github-actions[bot]' &&
+      github.event.comment.user.login != 'dependabot[bot]'
+    steps:
+      - name: Post to Discord
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_GITHUB_FEED_WEBHOOK }}
+          nodetail: true
+          username: GitHub
+          avatar_url: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
+          color: 0x57F287
+          title: "Comment on #${{ github.event.issue.number }}"
+          description: |
+            **${{ github.event.comment.user.login }}** commented on [#${{ github.event.issue.number }} ${{ github.event.issue.title }}](${{ github.event.comment.html_url }})
+
+            > ${{ github.event.comment.body }}
+          url: ${{ github.event.comment.html_url }}
