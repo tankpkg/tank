@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { encodeSkillName } from '@tank/shared';
 import Link from 'next/link';
 import { unstable_noStore as noStore } from 'next/cache';
 import { Download, Lock, Star } from 'lucide-react';
@@ -206,7 +207,7 @@ function SkillCard({
   isLoggedIn: boolean;
 }) {
   return (
-    <Link href={`/skills/${encodeURIComponent(skill.name)}`}>
+    <Link href={`/skills/${encodeSkillName(skill.name)}`}>
       <Card className="h-full cursor-pointer transition-colors hover:border-primary/50">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">

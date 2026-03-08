@@ -16,3 +16,6 @@ export { PERMISSION_CATEGORIES, DEFAULT_PERMISSIONS, type PermissionCategory } f
 
 // Resolver
 export { resolve, sortVersions } from './lib/resolver.js';
+
+// URL helpers
+export { encodeSkillName } from './lib/url.js';
