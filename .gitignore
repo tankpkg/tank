@@ -36,10 +36,7 @@ e2e/bdd/web/.features-gen/
 e2e/bdd/web/reports/
 
 # Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+*.log
 
 # OS
 Thumbs.db
@@ -49,6 +46,9 @@ Thumbs.db
 .playwright-mcp/
 .sisyphus/
 .plans/
+
+# Claude Code
+.claude/settings.local.json
 
 # Worktrees
 .worktrees/
