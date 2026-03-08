@@ -8,181 +8,748 @@ This file contains the complete Tank documentation for LLM consumption.
 
 Source: https://tankpkg.dev/docs/api
 
-> REST API endpoints for Tank registry
+> Complete REST API reference for the Tank skill registry — authentication, search, publishing, version management, and security scanning endpoints.
 
-The Tank API provides programmatic access to the skill registry.
 
-## Authentication
+## Overview
 
-All authenticated endpoints require a Bearer token:
+The Tank REST API gives you programmatic access to every capability in the registry: searching skills, publishing new versions, managing stars, triggering security scans, and the full CLI OAuth flow. All endpoints live under a single base URL and follow consistent JSON conventions.
 
-```
-Authorization: Bearer tank_xxx
-```
-
-Get your API key from [Settings > Tokens](/settings/tokens).
-
-## Base URL
+**Base URL**
 
 ```
 https://tankpkg.dev/api/v1
 ```
 
-For self-hosted deployments, replace with your domain.
+For self-hosted deployments, replace the host with your own domain. The `/api/v1` prefix is always required.
+
+---
+
+## Authentication
+
+Authenticated endpoints require a Bearer token in the `Authorization` header.
+
+```http
+Authorization: Bearer tank_xxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+**Obtaining a token**
+
+- **CLI:** run `tank login` — opens GitHub OAuth in your browser, then stores the issued key in `~/.tank/config.json` automatically.
+- **Dashboard:** go to **Settings → Tokens** and create a token with the scopes you need.
+
+**Token prefix**
+
+All Tank API keys begin with `tank_`. Tokens without this prefix are rejected with `401`.
+
+**Scopes**
+
+| Scope | Grants |
+|---|---|
+| `skills:read` | Read skill metadata, versions, files, stars |
+| `skills:publish` | Publish new skills and new versions |
+| `skills:admin` | Administrative actions (moderation, user management) |
+
+<Callout type="info">
+  Tokens inherit the minimum scope needed. A token with only `skills:read` cannot publish; you will receive a `403` if you try.
+</Callout>
+
+---
 
 ## Rate Limits
 
-| Tier | Requests/hour |
-|------|---------------|
+Rate limits are applied per IP for anonymous requests and per token for authenticated requests.
+
+| Tier | Requests / hour |
+|---|---|
 | Anonymous | 100 |
 | Authenticated | 1,000 |
 | Pro | 10,000 |
 
-## /api/v1/auth
+When you exceed your limit, the API returns `429 Too Many Requests`. The response includes a `Retry-After` header indicating how many seconds to wait before retrying.
 
-### GET /api/v1/auth/whoami
+---
 
-GET endpoint for /auth/whoami
+## Error Responses
 
-```http
-GET /api/v1/auth/whoami
+All errors follow a consistent envelope. The `error` field contains a machine-readable code and the `message` field contains a human-readable explanation.
+
+```json
+{
+  "error": "UNAUTHORIZED",
+  "message": "Bearer token is missing or invalid."
+}
 ```
 
+**Common HTTP status codes**
 
-## /api/v1/badge
+| Status | Error Code | When it occurs |
+|---|---|---|
+| `401` | `UNAUTHORIZED` | Token missing, malformed, or revoked |
+| `403` | `FORBIDDEN` | Token valid but lacks the required scope |
+| `404` | `NOT_FOUND` | Skill, version, or resource does not exist |
+| `409` | `VERSION_EXISTS` | You attempted to publish an already-existing version |
+| `422` | `VALIDATION_ERROR` | Request body failed Zod schema validation |
+| `429` | `RATE_LIMITED` | Hourly request limit exceeded |
 
-### GET /api/v1/badge/:...name
+**Validation error shape**
 
-GET endpoint for /badge/:...name
+When a `422` is returned, the `issues` array mirrors the Zod validation output so you can map errors back to specific fields.
 
-```http
-GET /api/v1/badge/:...name
+```json
+{
+  "error": "VALIDATION_ERROR",
+  "message": "Request body validation failed.",
+  "issues": [
+    {
+      "path": ["manifest", "version"],
+      "message": "Invalid semver string."
+    }
+  ]
+}
 ```
 
+---
 
-## /api/v1/cli-auth
+## Search
 
-### POST /api/v1/cli-auth/authorize
+### `GET /api/v1/search`
 
-POST endpoint for /cli-auth/authorize
+Full-text search across all public skills. Uses a hybrid strategy: `ILIKE` for exact prefix matching, `pg_trgm` trigram similarity for fuzzy matching, and a PostgreSQL `tsvector` full-text index with weighted ranking. Results are ranked by relevance score, then by download count as a tiebreaker.
 
-```http
-POST /api/v1/cli-auth/authorize
+**Authentication:** Not required. Private skills are hidden from anonymous results.
+
+**Query parameters**
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `q` | string | — | Search query. Matched against skill name, description, and author. |
+| `page` | number | `1` | Page number. Minimum `1`. |
+| `limit` | number | `20` | Results per page. Range `1`–`50`. |
+
+**Response**
+
+```json
+{
+  "results": [
+    {
+      "name": "@vercel/next-skill",
+      "description": "Teaches agents to scaffold, build, and deploy Next.js apps.",
+      "visibility": "public",
+      "latestVersion": "2.3.1",
+      "auditScore": 9,
+      "publisher": "vercel",
+      "downloads": 14820,
+      "stars": 312,
+      "updatedAt": "2026-03-01T11:00:00.000Z"
+    }
+  ],
+  "page": 1,
+  "limit": 20,
+  "total": 142
+}
 ```
 
-### POST /api/v1/cli-auth/exchange
+**Example**
 
-POST endpoint for /cli-auth/exchange
-
-```http
-POST /api/v1/cli-auth/exchange
+```bash
+curl "https://tankpkg.dev/api/v1/search?q=seo+audit&limit=5"
 ```
 
-### POST /api/v1/cli-auth/start
+---
 
-POST endpoint for /cli-auth/start
+## Skills
 
-```http
-POST /api/v1/cli-auth/start
+### `POST /api/v1/skills` — Publish a skill
+
+Initiates skill publication. The response includes a pre-signed `uploadUrl`; you must PUT the tarball to that URL and then call `POST /api/v1/skills/confirm` to finalize.
+
+**Authentication:** Required — `skills:publish` scope.
+
+**Request body**
+
+```json
+{
+  "manifest": {
+    "name": "@acme/my-skill",
+    "version": "1.0.0",
+    "description": "Does something useful for AI agents.",
+    "visibility": "public",
+    "permissions": {
+      "network": { "outbound": ["*.acme.com"] },
+      "filesystem": { "read": ["./src/**"] }
+    },
+    "repository": "https://github.com/acme/my-skill"
+  },
+  "readme": "# My Skill\nInstall with `tank install @acme/my-skill`.",
+  "files": ["skills.json", "README.md", "index.md"]
+}
 ```
 
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `manifest.name` | string | Yes | Scoped or unscoped skill name. Scoped names (`@org/name`) require org membership. |
+| `manifest.version` | string | Yes | Semver string. Must not already exist for this skill. |
+| `manifest.description` | string | Yes | Short description shown in search results. |
+| `manifest.visibility` | `"public"` \| `"private"` | Yes | Public skills are visible to everyone. Private skills require auth. |
+| `manifest.permissions` | object | Yes | Declared permission budget. Validated against Zod schema. |
+| `manifest.repository` | string | No | Source repository URL for provenance display. |
+| `readme` | string | No | Markdown content for the skill's registry page. |
+| `files` | string[] | No | List of file paths included in the tarball. |
 
-## /api/v1/scan
+**Validation rules**
 
-### POST /api/v1/scan
+- `manifest.name` must match `/^(@[a-z0-9-]+\/)?[a-z0-9-]+$/`
+- `manifest.version` must be a valid semver string
+- Scoped skill names require the authenticated user to be a member of that organization
+- Version conflict: publishing `1.0.0` when `1.0.0` already exists returns `409`
+- Permission escalation: PATCH bumps with new permissions, or MINOR bumps adding dangerous permissions (`network`, `subprocess`), are rejected with `422`
 
-POST endpoint for /scan
+**Response `201 Created`**
 
-```http
-POST /api/v1/scan
+```json
+{
+  "uploadUrl": "https://storage.tankpkg.dev/tarballs/abc123?token=...",
+  "skillId": "skill_01HXYZ",
+  "versionId": "ver_01HABC"
+}
 ```
 
+**Example**
 
-## /api/v1/search
-
-### GET /api/v1/search
-
-GET endpoint for /search
-
-```http
-GET /api/v1/search
+```bash
+curl -X POST https://tankpkg.dev/api/v1/skills \
+  -H "Authorization: Bearer tank_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "manifest": {
+      "name": "@acme/my-skill",
+      "version": "1.0.0",
+      "description": "Does something useful.",
+      "visibility": "public",
+      "permissions": {}
+    }
+  }'
 ```
 
+---
 
-## /api/v1/skills
+### `GET /api/v1/skills/:name` — Get skill metadata
 
-### GET /api/v1/skills/:name/:version/files/:...path
+Returns top-level metadata for a skill plus its latest published version.
 
-GET endpoint for /skills/:name/:version/files/:...path
+**Authentication:** Not required for public skills. Private skills require a token with `skills:read` scope and membership in the owning organization.
 
-```http
-GET /api/v1/skills/:name/:version/files/:...path
+**Path parameters**
+
+| Parameter | Description |
+|---|---|
+| `name` | Skill name, URL-encoded. Scoped names use `@org%2Fskill` or `@org/skill` (both accepted). |
+
+**Response `200 OK`**
+
+```json
+{
+  "name": "@vercel/next-skill",
+  "description": "Teaches agents to scaffold, build, and deploy Next.js apps.",
+  "visibility": "public",
+  "latestVersion": "2.3.1",
+  "publisher": {
+    "name": "vercel"
+  },
+  "createdAt": "2025-11-15T08:30:00.000Z",
+  "updatedAt": "2026-03-01T11:00:00.000Z"
+}
 ```
 
-### GET /api/v1/skills/:name/:version
+**Example**
 
-GET /api/v1/skills/[name]/[version]
-
-```http
-GET /api/v1/skills/:name/:version
+```bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill \
+  -H "Authorization: Bearer tank_xxx"
 ```
 
-### GET /api/v1/skills/:name
+---
 
-GET /api/v1/skills/[name] — single-query skill metadata with latest version.
+### `GET /api/v1/skills/:name/versions` — List all versions
 
-```http
-GET /api/v1/skills/:name
+Returns every published version for a skill, ordered newest first.
+
+**Authentication:** Same access control as `GET /api/v1/skills/:name`.
+
+**Response `200 OK`**
+
+```json
+{
+  "name": "@vercel/next-skill",
+  "versions": [
+    {
+      "version": "2.3.1",
+      "publishedAt": "2026-03-01T11:00:00.000Z",
+      "auditScore": 9,
+      "verdict": "PASS"
+    },
+    {
+      "version": "2.3.0",
+      "publishedAt": "2026-02-15T09:22:00.000Z",
+      "auditScore": 8,
+      "verdict": "PASS"
+    }
+  ]
+}
 ```
 
-### GET /api/v1/skills/:name/star
+**Example**
 
-GET endpoint for /skills/:name/star
-
-```http
-GET /api/v1/skills/:name/star
+```bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/versions
 ```
 
-### POST /api/v1/skills/:name/star
+---
 
-POST endpoint for /skills/:name/star
+### `GET /api/v1/skills/:name/:version` — Get version metadata
 
-```http
-POST /api/v1/skills/:name/star
+Returns full metadata for a specific published version, including its permissions declaration and security scan verdict.
+
+**Authentication:** Same access control as `GET /api/v1/skills/:name`.
+
+**Path parameters**
+
+| Parameter | Description |
+|---|---|
+| `name` | Skill name. |
+| `version` | Exact semver string (e.g. `2.3.1`). |
+
+**Response `200 OK`**
+
+```json
+{
+  "name": "@vercel/next-skill",
+  "version": "2.3.1",
+  "description": "Teaches agents to scaffold, build, and deploy Next.js apps.",
+  "visibility": "public",
+  "permissions": {
+    "network": { "outbound": ["*.vercel.com", "*.anthropic.com"] },
+    "filesystem": { "read": ["./src/**"], "write": ["./dist/**"] },
+    "subprocess": false
+  },
+  "repository": "https://github.com/vercel/next-skill",
+  "auditScore": 9,
+  "verdict": "PASS",
+  "integrity": "sha512-abc123...",
+  "publishedAt": "2026-03-01T11:00:00.000Z"
+}
 ```
 
-### DELETE /api/v1/skills/:name/star
+**Example**
 
-DELETE endpoint for /skills/:name/star
-
-```http
-DELETE /api/v1/skills/:name/star
+```bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/2.3.1
 ```
 
-### GET /api/v1/skills/:name/versions
+---
 
-GET /api/v1/skills/[name]/versions — single query for skill + all versions.
+### `GET /api/v1/skills/:name/:version/files/:path` — Get file content
 
-```http
-GET /api/v1/skills/:name/versions
+Returns the raw content of a specific file within a skill version's tarball. Useful for previewing `SKILL.md`, `README.md`, or any other file without downloading the full archive.
+
+**Authentication:** Same access control as `GET /api/v1/skills/:name`.
+
+**Path parameters**
+
+| Parameter | Description |
+|---|---|
+| `name` | Skill name. |
+| `version` | Exact semver string. |
+| `path` | File path within the tarball (e.g. `SKILL.md`, `src/index.ts`). |
+
+**Response**
+
+Returns the raw file bytes with an appropriate `Content-Type` header (e.g. `text/markdown` for `.md` files, `text/plain` for unknown extensions).
+
+**Example**
+
+```bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/2.3.1/files/SKILL.md
 ```
 
-### POST /api/v1/skills/confirm
+---
 
-POST endpoint for /skills/confirm
+### `POST /api/v1/skills/confirm` — Finalize publication
 
-```http
-POST /api/v1/skills/confirm
+After uploading the tarball to the `uploadUrl` returned by `POST /api/v1/skills`, call this endpoint to finalize the publish. Tank verifies the SHA-512 integrity hash, triggers the security scanner, and marks the version as published.
+
+**Authentication:** Required — `skills:publish` scope.
+
+**Request body**
+
+```json
+{
+  "skillId": "skill_01HXYZ",
+  "versionId": "ver_01HABC",
+  "integrity": "sha512-ZnVuZ3MtYXJlLWNvb2wuanNvbg=="
+}
 ```
 
-### POST /api/v1/skills
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `skillId` | string | Yes | `skillId` from the publish initiation response. |
+| `versionId` | string | Yes | `versionId` from the publish initiation response. |
+| `integrity` | string | Yes | SHA-512 hash of the tarball in the format `sha512-<base64>`. |
 
-POST endpoint for /skills
+**Response `200 OK`**
 
-```http
-POST /api/v1/skills
+```json
+{
+  "name": "@acme/my-skill",
+  "version": "1.0.0",
+  "status": "published",
+  "auditScore": 8,
+  "verdict": "PASS"
+}
 ```
 
+<Callout type="info">
+  The security scan runs synchronously during confirmation. The `verdict` in the response reflects the result of the 6-stage pipeline. A `FAIL` verdict does not block publication but is prominently displayed on the skill page and in `tank audit` output.
+</Callout>
+
+**Example**
+
+```bash
+curl -X POST https://tankpkg.dev/api/v1/skills/confirm \
+  -H "Authorization: Bearer tank_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "skillId": "skill_01HXYZ",
+    "versionId": "ver_01HABC",
+    "integrity": "sha512-ZnVuZ3MtYXJlLWNvb2wuanNvbg=="
+  }'
+```
+
+---
+
+## Stars
+
+### `POST /api/v1/skills/:name/star` — Star a skill
+
+Adds a star to a skill on behalf of the authenticated user. Idempotent — starring an already-starred skill returns `200` without creating a duplicate.
+
+**Authentication:** Required — `skills:read` scope.
+
+**Response `200 OK`**
+
+```json
+{ "starred": true, "stars": 313 }
+```
+
+**Example**
+
+```bash
+curl -X POST https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/star \
+  -H "Authorization: Bearer tank_xxx"
+```
+
+---
+
+### `DELETE /api/v1/skills/:name/star` — Unstar a skill
+
+Removes a star from a skill. Idempotent — unstarring a skill that was not starred returns `200`.
+
+**Authentication:** Required — `skills:read` scope.
+
+**Response `200 OK`**
+
+```json
+{ "starred": false, "stars": 312 }
+```
+
+**Example**
+
+```bash
+curl -X DELETE https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/star \
+  -H "Authorization: Bearer tank_xxx"
+```
+
+---
+
+### `GET /api/v1/skills/:name/star` — Check star status
+
+Returns whether the authenticated user has starred a skill.
+
+**Authentication:** Required — `skills:read` scope.
+
+**Response `200 OK`**
+
+```json
+{ "starred": true, "stars": 312 }
+```
+
+**Example**
+
+```bash
+curl https://tankpkg.dev/api/v1/skills/%40vercel%2Fnext-skill/star \
+  -H "Authorization: Bearer tank_xxx"
+```
+
+---
+
+## Security Scanning
+
+### `POST /api/v1/scan` — Scan a tarball
+
+Upload a `.tar.gz` tarball to run Tank's 6-stage security pipeline without publishing. Useful for CI/CD validation or auditing third-party skills before installing them.
+
+**Authentication:** Not required. Unauthenticated scans are rate-limited more aggressively.
+
+**Request**
+
+Send the tarball as a `multipart/form-data` upload with the field name `file`.
+
+```bash
+curl -X POST https://tankpkg.dev/api/v1/scan \
+  -H "Authorization: Bearer tank_xxx" \
+  -F "file=@my-skill-1.0.0.tgz"
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "verdict": "PASS_WITH_NOTES",
+  "auditScore": 7,
+  "summary": {
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 2
+  },
+  "findings": [
+    {
+      "stage": "static",
+      "severity": "medium",
+      "rule": "HARDCODED_URL",
+      "message": "Hardcoded external URL detected in src/index.ts at line 42.",
+      "file": "src/index.ts",
+      "line": 42
+    }
+  ],
+  "stages": {
+    "stage0": "ok",
+    "stage1": "ok",
+    "stage2": "ok",
+    "stage3": "ok",
+    "stage4": "ok",
+    "stage5": "ok"
+  }
+}
+```
+
+**Verdict rules**
+
+| Verdict | Condition |
+|---|---|
+| `PASS` | Zero findings, or only informational notes. |
+| `PASS_WITH_NOTES` | Low-severity findings only. |
+| `FLAGGED` | 1–3 high-severity findings. |
+| `FAIL` | Any critical finding, or 4+ high-severity findings. |
+
+**Pipeline stages**
+
+| Stage | Name | What it checks |
+|---|---|---|
+| `stage0` | Ingest | Tarball structure, SHA-512 hashing, extraction safety (no symlinks, no path traversal, no absolute paths) |
+| `stage1` | Structure | Required files (`SKILL.md`, manifest), file count (under 100), total size (under 50 MB) |
+| `stage2` | Static | AST analysis — eval, exec, obfuscated code, suspicious imports |
+| `stage3` | Injection | Prompt injection patterns in Markdown and skill definition files |
+| `stage4` | Secrets | Hardcoded credentials, API keys, tokens using entropy analysis |
+| `stage5` | Supply chain | Dependency tree analysis, known-malicious package hashes |
+
+<Callout type="info">
+  Each stage is independent. A failure in one stage does not prevent subsequent stages from running. All findings are aggregated into the final verdict.
+</Callout>
+
+---
+
+## CLI Auth Flow
+
+The CLI uses a browser-based OAuth flow to obtain an API key without requiring users to copy-paste tokens manually. The three-step sequence is: **start → (user authorizes in browser) → exchange**.
+
+### `POST /api/v1/cli-auth/start` — Begin OAuth flow
+
+Generates a short-lived poll token and constructs the browser authorization URL.
+
+**Authentication:** Not required.
+
+**Request body**
+
+```json
+{ "deviceName": "MacBook Pro (work)" }
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "pollToken": "poll_01HXYZ...",
+  "authUrl": "https://tankpkg.dev/api/v1/cli-auth/authorize?token=poll_01HXYZ...",
+  "expiresIn": 300
+}
+```
+
+The `authUrl` should be opened in the user's browser. `expiresIn` is in seconds (5 minutes). After this window the poll token is invalidated and the flow must be restarted.
+
+**Example**
+
+```bash
+curl -X POST https://tankpkg.dev/api/v1/cli-auth/start \
+  -H "Content-Type: application/json" \
+  -d '{"deviceName": "MacBook Pro (work)"}'
+```
+
+---
+
+### `GET /api/v1/cli-auth/authorize` — Grant access
+
+This URL is opened in the user's browser (not called directly by the CLI). The user is shown a consent screen, authenticates with GitHub if not already signed in, and approves the token issuance.
+
+**Query parameters**
+
+| Parameter | Description |
+|---|---|
+| `token` | The `pollToken` from the start response. |
+
+After the user approves, the browser is redirected back to the CLI callback and the poll token transitions to an authorized state. The CLI can now exchange it.
+
+---
+
+### `POST /api/v1/cli-auth/exchange` — Exchange for API key
+
+Exchanges an authorized poll token for a permanent API key. The CLI polls this endpoint after opening the browser URL, backing off until the user completes the authorization or the token expires.
+
+**Authentication:** Not required.
+
+**Request body**
+
+```json
+{ "pollToken": "poll_01HXYZ..." }
+```
+
+**Response `200 OK`** (authorized)
+
+```json
+{
+  "apiKey": "tank_xxxxxxxxxxxxxxxxxxxxxxxx",
+  "scopes": ["skills:read", "skills:publish"]
+}
+```
+
+**Response `202 Accepted`** (pending — user has not yet authorized)
+
+```json
+{ "status": "pending" }
+```
+
+**Response `410 Gone`** (expired or already consumed)
+
+```json
+{ "error": "POLL_TOKEN_EXPIRED", "message": "The poll token has expired or already been used." }
+```
+
+<Callout type="info">
+  Poll tokens have a 5-minute TTL and are single-use. Once exchanged successfully, the token is invalidated. The CLI (`tank login`) handles polling and backoff automatically.
+</Callout>
+
+**Example**
+
+```bash
+# Poll until authorized (simplified — real CLI uses backoff)
+curl -X POST https://tankpkg.dev/api/v1/cli-auth/exchange \
+  -H "Content-Type: application/json" \
+  -d '{"pollToken": "poll_01HXYZ..."}'
+```
+
+---
+
+## Badge
+
+### `GET /api/v1/badge/:name` — Audit score badge
+
+Returns an SVG badge displaying a skill's current audit score. Designed to embed directly in GitHub READMEs and documentation.
+
+**Authentication:** Not required.
+
+**Path parameters**
+
+| Parameter | Description |
+|---|---|
+| `name` | Skill name, URL-encoded (e.g. `@vercel%2Fnext-skill`). |
+
+**Response**
+
+Returns `image/svg+xml` content. The badge color encodes the score tier:
+
+| Score | Color | Meaning |
+|---|---|---|
+| 9–10 | Green | Excellent |
+| 7–8 | Yellow-green | Good |
+| 5–6 | Yellow | Fair |
+| 3–4 | Orange | Poor |
+| 0–2 | Red | Failing |
+
+**Usage in Markdown**
+
+```md
+![Tank Audit Score](https://tankpkg.dev/api/v1/badge/@vercel%2Fnext-skill)
+```
+
+**Example**
+
+```bash
+curl https://tankpkg.dev/api/v1/badge/%40vercel%2Fnext-skill -o badge.svg
+```
+
+---
+
+## Full Publish Workflow
+
+The following shows the complete three-step flow the `tank publish` CLI command performs internally.
+
+```bash
+# Step 1 — Initiate publish, get a pre-signed upload URL
+RESPONSE=$(curl -s -X POST https://tankpkg.dev/api/v1/skills \
+  -H "Authorization: Bearer tank_xxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "manifest": {
+      "name": "@acme/my-skill",
+      "version": "1.2.0",
+      "description": "Does something useful.",
+      "visibility": "public",
+      "permissions": {}
+    }
+  }')
+
+UPLOAD_URL=$(echo $RESPONSE | jq -r '.uploadUrl')
+SKILL_ID=$(echo $RESPONSE | jq -r '.skillId')
+VERSION_ID=$(echo $RESPONSE | jq -r '.versionId')
+
+# Step 2 — Upload the tarball to the pre-signed URL
+curl -X PUT "$UPLOAD_URL" \
+  -H "Content-Type: application/gzip" \
+  --data-binary @my-skill-1.2.0.tgz
+
+# Step 3 — Compute SHA-512 and confirm
+INTEGRITY="sha512-$(openssl dgst -sha512 -binary my-skill-1.2.0.tgz | base64)"
+
+curl -X POST https://tankpkg.dev/api/v1/skills/confirm \
+  -H "Authorization: Bearer tank_xxx" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"skillId\": \"$SKILL_ID\",
+    \"versionId\": \"$VERSION_ID\",
+    \"integrity\": \"$INTEGRITY\"
+  }"
+```
 
 
 ---
@@ -191,12 +758,12 @@ POST /api/v1/skills
 
 Source: https://tankpkg.dev/docs/cicd
 
-> Install and verify Tank skills in automated pipelines.
+> Automate AI agent skill installation and publishing in CI/CD pipelines — GitHub Actions, GitLab CI, Docker, and the official Tank GitHub Action.
 
 
 # CI/CD Integration
 
-This guide covers automated skill installation in CI/CD pipelines — GitHub Actions, GitLab CI, or any environment where `tank install` runs without a browser.
+This guide covers automated skill installation and publishing in CI/CD pipelines — GitHub Actions, GitLab CI, or any environment where `tank install` or `tank publish` runs without a browser.
 
 ## How It Works
 
@@ -206,6 +773,71 @@ This guide covers automated skill installation in CI/CD pipelines — GitHub Act
 4. Run `tank install` in CI — it reads `TANK_TOKEN` automatically
 
 The CLI checks `TANK_TOKEN` before reading `~/.tank/config.json`. No interactive login needed.
+
+## Official GitHub Action
+
+The fastest way to integrate Tank into GitHub Actions is the official `tankpkg/tank@v1` action. It handles CLI installation, authentication, and run execution in one step.
+
+```yaml
+- uses: tankpkg/tank@v1
+  with:
+    token: ${{ secrets.TANK_TOKEN }}
+```
+
+### Action Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `token` | **Yes** | — | Tank API token (`TANK_TOKEN`) |
+| `registry` | No | `https://tankpkg.dev` | Registry URL (for self-hosted installs) |
+| `directory` | No | `.` | Working directory containing `skills.json` |
+| `dry-run` | No | `false` | Validate without publishing (publish workflows only) |
+
+### Action Outputs
+
+| Output | Description |
+|--------|-------------|
+| `name` | Published skill name (e.g. `@org/skill-name`) |
+| `version` | Published semantic version |
+| `audit-score` | Security audit score (0–10) |
+| `badge-url` | SVG badge URL for README embedding |
+
+See [GitHub Action reference](/docs/github-action) for the full input/output specification and advanced usage.
+
+## Publish in CI with the GitHub Action
+
+Use `tankpkg/tank@v1` in your release pipeline to publish automatically on tag push:
+
+```yaml
+name: Publish Skill
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish to Tank registry
+        id: tank
+        uses: tankpkg/tank@v1
+        with:
+          token: ${{ secrets.TANK_TOKEN }}
+
+      - name: Print audit score
+        run: echo "Published ${{ steps.tank.outputs.name }}@${{ steps.tank.outputs.version }} — audit score ${{ steps.tank.outputs.audit-score }}/10"
+```
+
+<Callout type="info">
+The `tankpkg/tank@v1` action installs the CLI, authenticates with your token, and runs `tank publish` automatically. No manual `npm install -g @tankpkg/cli` step needed.
+</Callout>
 
 ## 1) Create an API Token
 
@@ -259,7 +891,7 @@ When `skills.lock` exists, `tank install` does a **deterministic lockfile instal
 
 ## 4) Pipeline Examples
 
-### GitHub Actions
+### GitHub Actions (install only)
 
 ```yaml
 name: Setup Agent Skills
@@ -290,6 +922,26 @@ jobs:
         run: tank permissions
 ```
 
+### GitHub Actions (publish using official action)
+
+```yaml
+name: Publish Skill on Release
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: tankpkg/tank@v1
+        with:
+          token: ${{ secrets.TANK_TOKEN }}
+          dry-run: false
+```
+
 ### GitLab CI
 
 ```yaml
@@ -302,6 +954,17 @@ install-skills:
     - tank install
     - tank verify
     - tank permissions
+
+publish-skill:
+  image: node:24
+  stage: release
+  only:
+    - tags
+  variables:
+    TANK_TOKEN: $TANK_TOKEN
+  script:
+    - npm i -g @tankpkg/cli
+    - tank publish
 ```
 
 ### Docker
@@ -406,6 +1069,10 @@ Token is invalid or expired. Create a new one from [Settings → Tokens](/tokens
 
 A skill requests permissions beyond your `skills.json` budget. Either widen the budget (review carefully) or choose a different skill.
 
+### GitHub Action not found
+
+Ensure the action is referenced as `tankpkg/tank@v1` (not `tank/tank`). See the [GitHub Action docs](/docs/github-action) for the full reference.
+
 
 ---
 
@@ -413,16 +1080,17 @@ A skill requests permissions beyond your `skills.json` budget. Either widen the 
 
 Source: https://tankpkg.dev/docs/cli
 
-> Complete reference for all tank CLI commands
+> Complete reference for all 18 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 
-The Tank CLI provides 16 commands for publishing, installing, and managing AI agent skills with security-first design.
+
+The Tank CLI provides 18 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
 ```bash
-npm install -g @tank/cli
+npm install -g @tankpkg/cli
 # or
-pnpm add -g @tank/cli
+pnpm add -g @tankpkg/cli
 ```
 
 ## Global Options
@@ -481,6 +1149,95 @@ tank logout
 ```
 
 
+## tank publish
+
+Pack and publish a skill to the Tank registry
+
+**Aliases:** `pub`
+
+```bash
+tank publish
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Validate and pack without uploading |
+| `--private` | Publish skill as private |
+| `--visibility <mode>` | Skill visibility (public|private) |
+
+
+## tank install
+
+Install a skill from the Tank registry, or all skills from lockfile
+
+**Aliases:** `i`
+
+```bash
+tank install [name] [version-range]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name). Omit to install from lockfile. | No |
+| `version-range` | Semver range (default: *) | No |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Install skill globally (available to all projects) |
+
+
+## tank remove
+
+Remove an installed skill
+
+**Aliases:** `rm`, `r`
+
+```bash
+tank remove <name>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name) | Yes |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Remove a globally installed skill |
+
+
+## tank update
+
+Update skills to latest versions within their ranges
+
+**Aliases:** `up`
+
+```bash
+tank update [name]
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name to update (omit to update all) | No |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Update globally installed skills |
+
+
 ## tank verify
 
 Verify installed skills match the lockfile
@@ -488,6 +1245,51 @@ Verify installed skills match the lockfile
 ```bash
 tank verify
 ```
+
+
+## tank permissions
+
+Display resolved permission summary for installed skills
+
+**Aliases:** `perms`
+
+```bash
+tank permissions
+```
+
+
+## tank search
+
+Search for skills in the Tank registry
+
+**Aliases:** `s`
+
+```bash
+tank search <query>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `query` | Search query | Yes |
+
+
+## tank info
+
+Show detailed information about a skill
+
+**Aliases:** `show`
+
+```bash
+tank info <name>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `name` | Skill name (e.g., @org/skill-name) | Yes |
 
 
 ## tank audit
@@ -518,6 +1320,17 @@ tank scan
 | Flag | Description |
 |------|-------------|
 | `-d, --directory <path>` | Directory to scan (default: current directory) |
+
+
+## tank link
+
+Link current skill directory to AI agent directories (for development)
+
+**Aliases:** `ln`
+
+```bash
+tank link
+```
 
 
 ## tank unlink
@@ -560,115 +1373,540 @@ tank upgrade [version]
 | `--force` | Reinstall even if already on the target version |
 
 
+## Quick Reference
+
+| Command | Alias(es) | Description |
+|---------|-----------|-------------|
+| `tank init` | — | Create a new skills.json in the current directory |
+| `tank login` | — | Authenticate with the Tank registry via browser |
+| `tank whoami` | — | Show the currently logged-in user |
+| `tank logout` | — | Remove authentication token from config |
+| `tank publish` | `pub` | Pack and publish a skill to the Tank registry |
+| `tank install` | `i` | Install a skill from the Tank registry, or all skills from lockfile |
+| `tank remove` | `rm`, `r` | Remove an installed skill |
+| `tank update` | `up` | Update skills to latest versions within their ranges |
+| `tank verify` | — | Verify installed skills match the lockfile |
+| `tank permissions` | `perms` | Display resolved permission summary for installed skills |
+| `tank search` | `s` | Search for skills in the Tank registry |
+| `tank info` | `show` | Show detailed information about a skill |
+| `tank audit` | — | Display security audit results for installed skills |
+| `tank scan` | — | Scan a local skill for security issues without publishing |
+| `tank link` | `ln` | Link current skill directory to AI agent directories (for development) |
+| `tank unlink` | — | Remove skill symlinks from AI agent directories |
+| `tank doctor` | — | Diagnose agent integration health |
+| `tank upgrade` | — | Update tank to the latest version |
 
 ---
 
-# Getting Started
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `TANK_TOKEN` | API token — overrides `~/.tank/config.json` (used in CI/CD) |
+| `TANK_DEBUG=1` | Enable debug logging (pino → Loki structured logs) |
+| `REGISTRY_URL` | Override the default registry URL |
+
+## Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `~/.tank/config.json` | Auth token and registry URL (permissions: `0600`) |
+| `skills.json` | Project manifest — skill metadata, dependencies, and permission budget |
+| `skills.lock` | Deterministic lockfile — pinned versions with SHA-512 hashes |
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success |
+| `1` | General error (invalid arguments, network failure, auth error) |
+| `2` | Security check failed (`tank verify`, `tank audit`, or `tank scan` with a `FAIL` verdict) |
+
+
+---
+
+# Getting Started with Tank
 
 Source: https://tankpkg.dev/docs/getting-started
 
-> Install Tank, authenticate, and verify your first working flow.
+> Install the Tank CLI, authenticate with GitHub, and install your first AI agent skill in under 5 minutes — with SHA-512 integrity verification and permission budgets.
 
 
-# Getting Started
+# Getting Started with Tank
 
-This guide gets you from zero to a verified working setup.
+Tank is a security-first package manager for AI agent skills. Every install is SHA-512 verified, every skill is statically analyzed before it reaches the registry, and permission budgets prevent skills from accessing more than they declare. This guide takes you from zero to a fully verified working setup.
 
 ## Prerequisites
 
-- Node.js 24+
-- pnpm 10+
-- GitHub account (for login)
+Before installing Tank, confirm you have:
 
-## 1) Install the CLI
+| Requirement | Minimum Version | Check |
+|-------------|-----------------|-------|
+| Node.js | 24+ | `node --version` |
+| pnpm | 10+ | `pnpm --version` |
+| GitHub account | — | Required for `tank login` |
+
+<Callout type="info">
+  pnpm is required because Tank uses pnpm workspaces internally and its lockfile format. If you only have npm, install pnpm first: `npm i -g pnpm`.
+</Callout>
+
+## Step 1 — Install the CLI
+
+Choose your preferred install method:
+
+### npm or pnpm (recommended)
 
 ```bash
-pnpm add -g @tank/cli
-# or: npm i -g @tank/cli
+# pnpm
+pnpm add -g @tankpkg/cli
+
+# npm
+npm install -g @tankpkg/cli
 ```
 
-Verify:
+### Homebrew (macOS)
+
+```bash
+brew install tankpkg/tap/tank
+```
+
+Verify the installation succeeded:
 
 ```bash
 tank --version
 ```
 
-## 2) Authenticate
+You should see a version string like `tank/0.x.y`. If you get a "command not found" error, ensure your global bin directory is on your `PATH`.
+
+## Step 2 — Authenticate
+
+Tank uses GitHub OAuth for authentication. Your token is stored locally in `~/.tank/config.json` — it never leaves your machine unless you're making authenticated API calls.
 
 ```bash
 tank login
 ```
 
-This opens browser auth and stores your token in `~/.tank/config.json`.
+This opens your browser for the GitHub OAuth flow. After authorizing, the CLI polls for the token exchange and confirms authentication.
 
-Check identity:
+Verify your identity afterwards:
 
 ```bash
 tank whoami
 ```
 
-## 3) Install a skill
+Expected output:
+
+```
+Logged in as: your-github-username
+Token: tank_••••••••••••••••
+```
+
+## Step 3 — Install Your First Skill
+
+Install a skill from the registry using its scoped package name:
 
 ```bash
 tank install @org/skill-name
 ```
 
-Optional global install:
+To install a specific version range:
+
+```bash
+tank install @org/skill-name '^1.2.0'
+```
+
+For a global install (available to all your agents, stored in `~/.tank/skills/`):
 
 ```bash
 tank install @org/skill-name '*' -g
 ```
 
-## 4) Verify safety and integrity
+For a local project install (stored in `.tank/skills/` relative to your working directory), omit the `-g` flag. Tank writes the resolved version and SHA-512 integrity hash to `skills.lock` — making future installs fully deterministic.
+
+## Step 4 — Verify Safety and Integrity
+
+After installing, run the verification suite:
 
 ```bash
-tank permissions
+# Confirm every installed file matches its lockfile hash
 tank verify
+
+# Display the resolved permission summary for all installed skills
+tank permissions
+
+# Show the security scan results for a specific skill
 tank audit @org/skill-name
 ```
 
-## 5) Create your first skill (publisher path)
+`tank permissions` aggregates all declared permissions across your installed skills and shows you what your agent is allowed to do. If any skill claims permissions outside your project's permission budget (defined in `skills.json`), installation will have already failed — but auditing afterward confirms the resolved state.
+
+<Callout type="info">
+  `tank verify` recomputes SHA-512 hashes of all installed files and compares them against `skills.lock`. A failed verify means files were modified on disk after install — treat this as a security event.
+</Callout>
+
+## Step 5 — Create Your First Skill (Publisher Path)
+
+If you want to publish your own skill rather than just consume them, start here:
 
 ```bash
 mkdir my-skill && cd my-skill
 tank init
 ```
 
-Then publish safely:
+`tank init` runs an interactive prompt that generates a valid `skills.json` manifest with your skill's name, version, description, and permission declarations.
+
+Once your skill is ready, publish it safely:
 
 ```bash
+# Validate the skill without uploading anything
 tank doctor
 tank publish --dry-run
+
+# Publish to the registry
 tank publish
 ```
 
-## Success Criteria
+See the [Publishing guide](/docs/publishing) for the full publish workflow, permission escalation rules, and what the security scanner checks.
 
-You are done when all are true:
+## Success Criteria Checklist
 
-- `tank whoami` shows your user
-- `tank install` succeeds
-- `tank verify` succeeds
-- `tank permissions` shows expected access
+You are ready to use Tank in production when all of the following are true:
+
+- [ ] `tank --version` prints a version string
+- [ ] `tank whoami` shows your GitHub username and a valid token
+- [ ] `tank install @org/skill-name` completes without integrity errors
+- [ ] `tank verify` exits with code `0`
+- [ ] `tank permissions` shows only the permissions you expect
+- [ ] `tank audit @org/skill-name` shows no critical or high findings
 
 ## Troubleshooting
 
-### Login works but commands fail
+### `tank login` opens the browser but never completes
 
-Run:
+The CLI polls the exchange endpoint for up to 5 minutes. If it times out:
+
+1. Check that `https://tankpkg.com` is reachable from your network.
+2. Try behind a VPN or different network — corporate proxies sometimes block the OAuth callback.
+3. Re-run `tank login` and complete the flow within 5 minutes.
+
+### Commands fail after successful login
+
+Run the self-diagnostic:
 
 ```bash
-tank whoami
 tank doctor
+tank whoami
 ```
 
-### Install fails on integrity
+`tank doctor` checks your config file, token validity, registry connectivity, and Node.js version. It prints actionable errors for each check that fails.
 
-Re-run install and verify network/proxy stability. Do not bypass verification.
+### Install fails on integrity check
 
-### Permission output looks too broad
+An integrity failure during `tank install` means the downloaded tarball's SHA-512 hash does not match the value in the registry. This is a **hard failure by design** — Tank will not install a package it cannot verify.
 
-Prefer packages with narrow, explicit permission scopes.
+Steps:
+1. Check your network for a proxy or intercepting firewall that might be modifying responses.
+2. Retry on a different network.
+3. Do **not** attempt to bypass integrity verification — it is your primary defense against supply chain attacks.
+
+### `tank permissions` output looks too broad
+
+If the permission summary includes access you did not expect:
+
+1. Run `tank info @org/skill-name` to inspect the declared permissions for that skill.
+2. Check if the skill's declared permissions match what the security scanner extracted.
+3. Consider removing the skill and selecting an alternative with narrower, more explicit permission scopes.
+
+### Command not found after install
+
+Ensure your global pnpm or npm bin directory is on your `PATH`. Run `pnpm bin -g` or `npm bin -g` to find the directory, then add it to your shell profile.
+
+## Next Steps
+
+- **[Installing Skills](/docs/installing)** — version ranges, lockfiles, dependency resolution, and security filters during extraction
+- **[Publishing Skills](/docs/publishing)** — the full publish workflow, permission escalation rules, and what the 6-stage scanner checks
+- **[CLI Reference](/docs/cli)** — every Tank command with all flags and examples
+- **[Security Model](/docs/security)** — how the 6-stage scanning pipeline works and what it catches
+- **[Permissions](/docs/permissions)** — the full permission type reference and how budgets are enforced
+
+
+---
+
+# GitHub Action for Publishing
+
+Source: https://tankpkg.dev/docs/github-action
+
+> Automate AI agent skill publishing with Tank's official GitHub Action — security scanning, version validation, and badge generation in your CI/CD pipeline.
+
+
+# GitHub Action for Publishing
+
+Tank's official GitHub Action automates the full skill publishing lifecycle directly from your CI/CD pipeline. On every push to `main`, the action validates your skill manifest, runs security scanning, publishes to the Tank registry, and generates an audit score badge you can embed in your README.
+
+## What the Action Does
+
+1. **Validates** your `skills.json` manifest — schema, semver format, and permission declarations
+2. **Runs security scanning** — the same 6-stage pipeline used by the registry (structure, static AST, injection, secrets, supply chain)
+3. **Publishes** the skill tarball to the Tank registry and stores it in the configured storage backend
+4. **Outputs** the published name, version, audit score, and a badge URL you can use in your README
+
+<Callout type="info">
+The action uses the same `tank publish` flow under the hood. It reads your `TANK_TOKEN` secret, authenticates, and publishes — no interactive login needed in CI.
+</Callout>
+
+## Quick Start
+
+Add this step to your workflow after checking out your code:
+
+```yaml
+- uses: tankpkg/tank@v1
+  with:
+    token: ${{ secrets.TANK_TOKEN }}
+```
+
+That's the minimum configuration. The action publishes from the repository root using the hosted Tank registry.
+
+To get your `TANK_TOKEN`, go to [Dashboard → Tokens](/tokens), create a token with the `skills:publish` scope, and add it to your repository's secrets at **Settings → Secrets and variables → Actions → New repository secret**.
+
+## Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `token` | **Yes** | — | Your Tank API token. Always use `${{ secrets.TANK_TOKEN }}` — never hardcode. |
+| `registry` | No | `https://tankpkg.dev` | Registry URL. Override for self-hosted deployments. |
+| `directory` | No | `.` | Directory containing `skills.json`. Use if your skill is not at the repo root. |
+| `dry-run` | No | `false` | When `true`, validates and scans but does not publish. Use on pull requests. |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `name` | The published skill name (e.g. `@acme/my-skill`) |
+| `version` | The published version (e.g. `1.2.0`) |
+| `audit-score` | Numeric audit score from 0 to 10 |
+| `badge-url` | SVG badge URL — embed in your README to show the current audit score |
+
+Access outputs in subsequent steps using `steps.<step-id>.outputs.<output-name>`.
+
+## Full Workflow Example
+
+This workflow publishes on every push to `main` and posts a comment on pull requests with the audit score and badge:
+
+```yaml
+name: Publish Skill to Tank
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write   # needed to post PR comments
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Publish to Tank
+        id: tank
+        uses: tankpkg/tank@v1
+        with:
+          token: ${{ secrets.TANK_TOKEN }}
+          directory: .
+          dry-run: ${{ github.event_name == 'pull_request' }}
+
+      - name: Comment audit score on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Tank Audit Results\n\n**Skill:** \`${{ steps.tank.outputs.name }}\`\n**Version:** ${{ steps.tank.outputs.version }}\n**Audit Score:** ${{ steps.tank.outputs.audit-score }}/10\n\n![Audit Score](${{ steps.tank.outputs.badge-url }})`
+            })
+```
+
+## Dry Run for Pull Requests
+
+Run validation on every pull request without publishing. This catches permission escalations, manifest errors, and security findings before they merge:
+
+```yaml
+name: Validate Skill on PR
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Dry-run validation
+        id: tank
+        uses: tankpkg/tank@v1
+        with:
+          token: ${{ secrets.TANK_TOKEN }}
+          dry-run: true
+
+      - name: Fail on low audit score
+        if: ${{ steps.tank.outputs.audit-score < 7 }}
+        run: |
+          echo "Audit score ${{ steps.tank.outputs.audit-score }}/10 is below threshold (7)"
+          exit 1
+```
+
+<Callout type="warn">
+Dry runs still require a valid `TANK_TOKEN` — the action authenticates to run the security scan against the registry's scanning infrastructure, even without publishing.
+</Callout>
+
+The action exits with a non-zero code if:
+
+- `skills.json` is invalid or missing required fields
+- Security scanning returns a `FAIL` verdict (1+ critical or 4+ high severity findings)
+- The version has already been published (Tank enforces immutability)
+- Permission escalation is detected (see [Publishing](/docs/publishing) for escalation rules)
+
+## Badge Integration
+
+The `badge-url` output points to a dynamically generated SVG badge hosted by the Tank registry. Add it to your `README.md` to show the current audit score:
+
+```markdown
+[![Tank Audit Score](https://tankpkg.dev/api/v1/badge/@acme/my-skill)](https://tankpkg.dev/skills/@acme/my-skill)
+```
+
+The badge updates automatically when you publish a new version — no manual badge URL changes needed.
+
+### Automated Badge Update via Workflow
+
+After publishing, update your README badge URL automatically using the `badge-url` output:
+
+```yaml
+- name: Update README badge
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  run: |
+    sed -i "s|https://tankpkg.dev/api/v1/badge/.*)|${{ steps.tank.outputs.badge-url }})|g" README.md
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git add README.md
+    git diff --staged --quiet || git commit -m "chore: update Tank audit badge"
+    git push
+```
+
+<Callout type="info">
+Badge colors follow Tank's scoring thresholds: **green** (7–10), **yellow** (4–6), **red** (0–3). The badge is a static SVG served from the Tank CDN — it renders correctly on GitHub, npm, and anywhere else markdown badges are supported.
+</Callout>
+
+## Publishing from a Monorepo
+
+If your repository contains multiple skills in subdirectories, run the action once per skill using a matrix strategy:
+
+```yaml
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        skill:
+          - path: skills/browser-automation
+            name: "@acme/browser-automation"
+          - path: skills/code-review
+            name: "@acme/code-review"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Publish ${{ matrix.skill.name }}
+        uses: tankpkg/tank@v1
+        with:
+          token: ${{ secrets.TANK_TOKEN }}
+          directory: ${{ matrix.skill.path }}
+```
+
+## Combining with `tank install` for Consumers
+
+If your project both **publishes** skills and **installs** skills from the registry as dependencies, you'll use the action for publishing and the CLI directly for installation:
+
+```yaml
+steps:
+  # Install skill dependencies first
+  - name: Install Tank CLI
+    run: npm i -g @tankpkg/cli
+
+  - name: Install skills
+    env:
+      TANK_TOKEN: ${{ secrets.TANK_TOKEN }}
+    run: |
+      tank install
+      tank verify
+
+  # Then run your tests / build
+
+  # Finally, publish the skill itself
+  - name: Publish to Tank
+    uses: tankpkg/tank@v1
+    with:
+      token: ${{ secrets.TANK_TOKEN }}
+```
+
+For full documentation on installing skills in CI, see the [CI/CD Integration guide](/docs/cicd).
+
+## Self-Hosted Registry
+
+Point the action at your own Tank instance using the `registry` input:
+
+```yaml
+- uses: tankpkg/tank@v1
+  with:
+    token: ${{ secrets.TANK_TOKEN }}
+    registry: https://tank.internal.acme.com
+```
+
+The `TANK_TOKEN` must be issued by your self-hosted registry — tokens from the public registry won't work against a different instance.
+
+## Troubleshooting
+
+### `401 Unauthorized`
+
+The `TANK_TOKEN` secret is missing, expired, or lacks the `skills:publish` scope. Create a new token at [Dashboard → Tokens](/tokens) with `skills:publish` scope and update your secret.
+
+### `Version already published`
+
+Tank enforces version immutability. Increment the version in your `skills.json` before pushing. Patch → `1.0.1`, minor → `1.1.0`, major → `2.0.0`.
+
+### `Security scan returned FAIL`
+
+The scanner found critical or high-severity issues. Run `tank audit` locally to see the full report:
+
+```bash
+tank audit --local .
+```
+
+Address the findings before pushing. Common causes: hardcoded API keys, `eval()` on untrusted input, or broad filesystem write permissions.
+
+### `Permission escalation rejected`
+
+You added new permissions in a patch (`1.0.x`) or dangerous permissions (network, subprocess) in a minor bump. See the [Publishing guide](/docs/publishing) for Tank's permission escalation policy.
 
 
 ---
@@ -677,138 +1915,418 @@ Prefer packages with narrow, explicit permission scopes.
 
 Source: https://tankpkg.dev/docs
 
-> Start here for setup, publishing, installation, API, and self-hosting.
+> Official documentation for Tank — the security-first package manager for AI agent skills. Install, publish, scan, and manage skills for Claude Code, Cursor, and other AI coding assistants.
 
 
 # Tank Documentation
 
-Tank is a security-first package manager for AI agent skills.
+Tank is a **security-first package manager for AI agent skills** — the `npm` for the agent era, built after the ClawHavoc incident revealed that 341 malicious skills (12% of a major marketplace) were distributing credential-stealing malware. Where other registries have no versioning, no lockfiles, no permissions, and no security scanning, Tank enforces all four from day one.
 
-Use this docs set by intent:
-
-- **Learn fast**: [Getting Started](/docs/getting-started)
-- **Ship a skill**: [Publishing](/docs/publishing)
-- **Use skills in agents**: [Installing](/docs/installing)
-- **Command lookup**: [CLI Reference](/docs/cli)
-- **Integration lookup**: [API Reference](/docs/api)
-- **Run your own registry**: [Self-Hosting](/docs/self-hosting)
+Agent skills execute with the agent's full authority — reading files, making API calls, running shell commands. Tank treats that seriously.
 
 ## Product Guarantees
 
-- SHA-512 integrity verification on install
-- Mandatory security scanning before publish
-- Permission declarations in `skills.json`
-- Deterministic lockfile workflow
+Every skill installed through Tank is subject to:
+
+| Guarantee | How It Works |
+|-----------|-------------|
+| **SHA-512 integrity** | Every tarball is verified against a cryptographic hash in `skills.lock` before extraction |
+| **Mandatory security scanning** | 6-stage pipeline (ingest → structure → static → injection → secrets → supply chain) runs on publish |
+| **Permission declarations** | Skills declare what they need in `skills.json`; installation fails if a skill exceeds your budget |
+| **Deterministic lockfile** | `skills.lock` pins exact versions and hashes — same behavior as `npm ci`, reproducible everywhere |
+
+If any skill exceeds the permission budget, installation fails. This single feature would have prevented ClawHavoc.
 
 ## Choose Your Path
 
-### I am a skill publisher
+### I'm a Skill Publisher
 
-1. Follow [Getting Started](/docs/getting-started)
-2. Implement your manifest and code via [Publishing](/docs/publishing)
-3. Validate with `tank doctor` and `tank publish --dry-run`
-4. Publish and verify via `tank info @org/name`
+You build skills that extend AI coding agents. You want to ship quickly without compromising on security posture.
 
-### I am a skill consumer
+1. **[Getting Started](/docs/getting-started)** — Install the CLI and authenticate
+2. **[Publish Your First Skill](/docs/publish-first-skill)** — End-to-end tutorial in under 10 minutes
+3. **[Publishing Reference](/docs/publishing)** — `skills.json` manifest, versioning, semver rules
+4. **[Security Checklist](/docs/security-checklist)** — Pre-publish security review
+5. **[GitHub Action](/docs/github-action)** — Automate publishing in CI with `tankpkg/tank@v1`
 
-1. Install a package with [Installing](/docs/installing)
-2. Review permissions with `tank permissions`
-3. Verify integrity with `tank verify`
+Quick start:
+```bash
+npm install -g @tankpkg/cli
+tank login
+tank init          # creates skills.json
+tank publish --dry-run
+tank publish
+```
 
-### I need implementation details
+### I'm a Skill Consumer
 
-- Commands: [CLI Reference](/docs/cli)
-- Endpoints: [API Reference](/docs/api)
-- Ops: [Self-Hosting](/docs/self-hosting)
+You use AI coding agents (Claude Code, Cursor, etc.) and want to install community or org-internal skills safely.
 
-## Canonical References
+1. **[Getting Started](/docs/getting-started)** — Install the CLI
+2. **[Installing Skills](/docs/installing)** — `tank install`, lockfile workflow, permission review
+3. **[Permissions](/docs/permissions)** — Understand the permission model before granting access
+4. **[CI/CD Integration](/docs/cicd)** — Install skills in GitHub Actions, GitLab CI, Docker
 
-- CLI entrypoint: `apps/cli/src/bin/tank.ts`
-- API routes: `apps/web/app/api/v1/**`
-- Security scanner: `python-api/lib/scan/**`
+Quick start:
+```bash
+npm install -g @tankpkg/cli
+tank install @org/skill-name
+tank permissions   # review what was granted
+tank verify        # SHA-512 integrity check
+```
+
+### I'm in Ops / Security / Self-Hosting
+
+You're deploying Tank for your organization, enforcing internal policies, or need air-gapped operation.
+
+1. **[Self-Hosting](/docs/self-hosting)** — Full deployment runbook (Docker Compose + Kubernetes Helm)
+2. **[Self-Host in 15 Minutes](/docs/self-host-quickstart)** — Quickstart with Docker Compose
+3. **[Organizations](/docs/organizations)** — Namespacing, team access, and member management
+4. **[Security Model](/docs/security)** — Deep dive on the 6-stage scanner, verdict rules, and audit scores
+5. **[API Reference](/docs/api)** — REST endpoints for automation and integration
+
+## All Documentation Pages
+
+### Core Concepts
+
+| Page | Description |
+|------|-------------|
+| [Getting Started](/docs/getting-started) | Install the CLI, authenticate, and run your first command |
+| [Publishing](/docs/publishing) | `skills.json` manifest reference, versioning, and publish workflow |
+| [Installing](/docs/installing) | Install skills, manage the lockfile, and review permissions |
+| [Security Model](/docs/security) | 6-stage scanning pipeline, verdict rules, and audit scores |
+| [Permissions](/docs/permissions) | Declare, review, and enforce skill permission boundaries |
+
+### Tutorials
+
+| Page | Description |
+|------|-------------|
+| [Publish Your First Skill](/docs/publish-first-skill) | Step-by-step tutorial — from `tank init` to live registry listing |
+| [Security Checklist](/docs/security-checklist) | Pre-publish checklist covering permissions, code, and secrets |
+| [Self-Host in 15 Minutes](/docs/self-host-quickstart) | Docker Compose deployment in one session |
+
+### Integrations
+
+| Page | Description |
+|------|-------------|
+| [CI/CD Integration](/docs/cicd) | GitHub Actions, GitLab CI, Docker pipeline examples |
+| [GitHub Action](/docs/github-action) | Official `tankpkg/tank@v1` action — publish and install in CI |
+| [MCP Server](/docs/mcp) | Use Tank tools directly inside AI editors via Model Context Protocol |
+| [Search](/docs/search) | Full-text skill discovery, filtering, and the search API |
+| [Organizations](/docs/organizations) | Create orgs, manage members, publish under `@org/` namespaces |
+
+### Reference
+
+| Page | Description |
+|------|-------------|
+| [CLI Reference](/docs/cli) | Every `tank` command with flags, examples, and exit codes |
+| [API Reference](/docs/api) | REST API endpoints for the registry and admin operations |
+| [Self-Hosting](/docs/self-hosting) | Full production deployment guide with Docker Compose and Helm |
+
+## Why Tank Exists
+
+In February 2026, the **ClawHavoc incident** revealed a systemic failure: 341 malicious skills had been distributed through a major AI agent skill marketplace for weeks before detection. No versioning. No lockfiles. No permissions. No scanning. 12% of listed skills contained credential-stealing malware.
+
+AI agent skills are fundamentally more dangerous than npm packages because they execute with the agent's full authority — reading your files, calling external APIs, running shell commands. Tank was built to apply the security discipline the ecosystem was missing from day one.
+
+<Callout type="info">
+Tank is open source under the MIT License. The CLI is published as `@tankpkg/cli` on npm. Contribute at [github.com/tankpkg/tank](https://github.com/tankpkg/tank).
+</Callout>
 
 
 ---
 
-# Installing Skills
+# Installing AI Agent Skills
 
 Source: https://tankpkg.dev/docs/installing
 
-> Install, update, remove, and verify skills safely.
+> Install, update, remove, and verify AI agent skills with Tank — deterministic lockfiles, SHA-512 integrity checks, dependency resolution, and permission budget enforcement.
 
 
-# Installing Skills
+# Installing AI Agent Skills
 
-This guide covers day-2 operations for skill consumers.
+Tank's install pipeline does significantly more than download a file. Every install resolves the full dependency tree, verifies SHA-512 integrity for every package, extracts tarballs through a security filter, enforces your project's permission budget, and writes a deterministic lockfile. This page covers every command and behavior you need for day-to-day skill management.
 
-## Install
+## Installing a Skill
+
+### Basic install
 
 ```bash
 tank install @org/skill-name
+```
+
+This resolves the latest published version that satisfies `*`, downloads and verifies the tarball, extracts it to `.tank/skills/@org/skill-name/`, and writes the resolved version and SHA-512 integrity hash to `skills.lock`.
+
+### With a version range
+
+```bash
 tank install @org/skill-name '^1.2.0'
 ```
 
-Optional global mode:
+Tank resolves the highest version that satisfies the semver range, not necessarily the latest. Use `^` for compatible minor updates, `~` for patch-only updates, or an exact version like `1.2.3` to pin precisely.
+
+### Global install
 
 ```bash
 tank install @org/skill-name '*' -g
 ```
 
-## Update
+Global skills are stored in `~/.tank/skills/` and are available to all agents on the machine. Local installs (no `-g`) are stored in `.tank/skills/` relative to your current working directory, scoped to that project.
+
+### Install from lockfile (deterministic)
+
+When a `skills.lock` file already exists in your project, running `tank install` with no arguments performs a **deterministic install** — equivalent to `npm ci`. It installs exactly the versions and integrity hashes recorded in the lockfile, ignoring `skills.json` version ranges entirely.
 
 ```bash
-tank update
+# Deterministic install — uses skills.lock, not skills.json ranges
+tank install
+```
+
+This is the correct command for CI/CD pipelines, where reproducibility is critical.
+
+## Dependency Resolution
+
+Tank uses a **fixpoint iteration algorithm** to resolve the full dependency tree. This means it doesn't just install the skill you named — it walks every skill's own `skills.json` to discover transitive dependencies, then iterates until the resolved set stabilizes.
+
+### How it works
+
+1. **Seed** — Start with the skills declared in your `skills.json`.
+2. **Expand** — For each resolved skill, fetch its manifest and add its dependencies to the working set.
+3. **Iterate** — Repeat expansion until no new dependencies are added (fixpoint).
+4. **Conflict detection** — If two skills require incompatible versions of the same dependency, Tank errors with a detailed conflict report showing which packages conflict and why.
+5. **Install order** — Compute a topological sort so dependencies always install before the skills that need them.
+6. **Parallel downloads** — All tarballs are downloaded in parallel after the resolution phase completes, minimizing install time.
+
+### Version conflict detection
+
+If two skills require incompatible versions of a shared dependency, Tank surfaces an explicit error:
+
+```
+ERROR  Dependency conflict detected:
+  @org/skill-a requires @shared/dep@^1.0.0 (resolves to 1.4.2)
+  @org/skill-b requires @shared/dep@^2.0.0 (resolves to 2.1.0)
+  Cannot satisfy both constraints simultaneously.
+
+  Fix: pin one skill to a version compatible with the other, or
+  open an issue with the upstream skill authors.
+```
+
+Tank does **not** silently pick one version. Conflicts are hard errors.
+
+## The Lockfile (`skills.lock`)
+
+The `skills.lock` file is the source of truth for your install state. Commit it to version control.
+
+### What's in a lockfile
+
+```json
+{
+  "lockfileVersion": 2,
+  "skills": {
+    "@org/skill-name@1.2.3": {
+      "version": "1.2.3",
+      "resolved": "https://tankpkg.com/api/v1/skills/@org/skill-name/1.2.3",
+      "integrity": "sha512-abc123...==",
+      "dependencies": {
+        "@shared/dep": "^1.4.0"
+      }
+    },
+    "@shared/dep@1.4.2": {
+      "version": "1.4.2",
+      "resolved": "https://tankpkg.com/api/v1/skills/@shared/dep/1.4.2",
+      "integrity": "sha512-xyz789...==",
+      "dependencies": {}
+    }
+  }
+}
+```
+
+### Key properties
+
+- **Deterministic** — Keys are sorted alphabetically, and the file is always produced with stable formatting. The same dependency tree always produces byte-for-byte identical output.
+- **SHA-512 integrity** — Every package entry includes its SHA-512 hash. Tank recomputes this hash on every install and refuses to proceed if it doesn't match.
+- **Lockfile v2 `dependencies` field** — Introduced to support full tree reconstruction. Each package records its own declared dependencies so the lockfile alone is sufficient to reconstruct the complete install without re-fetching manifests from the registry.
+- **Deterministic install mode** — When `skills.lock` is present and `tank install` is run with no arguments, Tank performs a lockfile-only install. It does not resolve version ranges from `skills.json`. This is by design — CI pipelines should always use this mode.
+
+<Callout type="info">
+  Always commit `skills.lock` to version control. It is the guarantee that every developer and every CI run installs exactly the same code. Excluding it from git means losing reproducibility.
+</Callout>
+
+## Security on Install
+
+Tank applies multiple security filters during tarball extraction. These checks run before any file touches disk and cannot be bypassed:
+
+| Check | Behavior |
+|-------|----------|
+| **Symlinks** | Rejected — symlinks in tarballs are a well-known path traversal vector |
+| **Hardlinks** | Rejected — hardlinks can escape the extraction sandbox |
+| **Path traversal** (`../`) | Rejected — any entry with `..` in the path is refused |
+| **Absolute paths** | Rejected — entries with absolute paths are refused |
+| **Total size** | Max **50 MB** per skill tarball — extraction aborts if exceeded |
+| **File count** | Max **1,000 files** per skill — extraction aborts if exceeded |
+| **SHA-512 integrity** | Tarball hash must match the registry record exactly |
+
+If any check fails, the partial extraction is cleaned up and the install exits with a non-zero code. Tank will never leave a partially extracted skill on disk.
+
+<Callout type="info">
+  These limits are enforced at the tarball level, not just at publish time. Even if a malicious actor somehow bypassed the publisher-side limits, the installer enforces them independently.
+</Callout>
+
+## Install Location
+
+| Mode | Location |
+|------|----------|
+| Local (default) | `.tank/skills/@org/skill-name/` (relative to working directory) |
+| Global (`-g`) | `~/.tank/skills/@org/skill-name/` |
+
+Agent symlinks are also created so your AI agent runtime can discover installed skills by name without knowing the full path.
+
+## Updating Skills
+
+Update a specific skill to the latest version satisfying its declared range:
+
+```bash
 tank update @org/skill-name
 ```
 
-Optional global mode:
+Update all installed skills:
+
+```bash
+tank update
+```
+
+Global update:
 
 ```bash
 tank update @org/skill-name -g
 ```
 
-## Remove
+`tank update` re-resolves the version range from `skills.json`, downloads the new tarball, verifies integrity, and updates `skills.lock`. It does **not** upgrade beyond the declared version range — use `tank install @org/skill-name '^2.0.0'` to change the range.
+
+## Removing Skills
 
 ```bash
 tank remove @org/skill-name
 tank remove @org/skill-name -g
 ```
 
+`tank remove` does all of the following in one operation:
+
+1. Removes the entry from `skills.json`
+2. Removes the skill and all its exclusive transitive dependencies from `skills.lock`
+3. Deletes the extracted files from `.tank/skills/` (or `~/.tank/skills/` for global)
+4. Removes any agent symlinks pointing to the removed skill
+
+<Callout type="info">
+  Transitive dependencies shared with other installed skills are NOT removed. Tank only removes packages that are exclusively required by the skill being removed.
+</Callout>
+
 ## Verify and Audit
+
+After any change to your install state, confirm integrity:
+
+```bash
+# Recompute SHA-512 for every installed file and compare against skills.lock
+tank verify
+
+# Show the aggregated permission summary for all installed skills
+tank permissions
+
+# Show security scan results for all installed skills
+tank audit
+
+# Show security scan results for a specific skill
+tank audit @org/skill-name
+```
+
+`tank verify` failing means installed files have been modified since they were written. Treat this as a security event — remove and reinstall the affected skills.
+
+`tank permissions` is particularly useful before enabling a new skill in a production agent. It shows you the union of all declared permissions so you can confirm the agent's access is what you expect.
+
+## Discovering Skills
+
+Search the registry:
+
+```bash
+tank search "embedding"
+tank search "code review"
+```
+
+Inspect a specific skill's metadata before installing:
+
+```bash
+tank info @org/skill-name
+```
+
+`tank info` shows the latest version, description, declared permissions, security scan score, download count, and available version history — without downloading anything.
+
+## Operational Guidance
+
+### CI/CD pipelines
+
+Always use lockfile-mode install in CI:
+
+```bash
+# Uses skills.lock exactly — equivalent to npm ci
+tank install
+```
+
+Never run `tank update` in CI. Updates should be intentional developer actions that produce a reviewed lockfile change.
+
+### Production agents
+
+Run the full verification suite before deploying:
 
 ```bash
 tank verify
 tank permissions
 tank audit
-tank audit @org/skill-name
 ```
 
-## Discover and Inspect
+Gate deployments on `tank verify` exiting with code `0`.
 
-```bash
-tank search "embedding"
-tank info @org/skill-name
-```
+### Prefer pinned versions for production stability
 
-## Operational Guidance
-
-- Run `tank verify` after changes to lock/install state
-- Run `tank permissions` before enabling skills in production agents
-- Prefer pinned versions for production stability
+Use exact version pins (`1.2.3`) for skills in production agents. Use ranges (`^1.2.0`) in development where you want compatible updates. The lockfile provides determinism regardless of which you choose, but exact pins make your `skills.json` intent explicit.
 
 ## Failure Handling
 
-### Install fails
+### Install fails — auth or network
 
-Run `tank doctor`; check auth and network.
+```bash
+tank doctor
+```
 
-### Unexpected permission scope
+`tank doctor` checks token validity, registry connectivity, and your local config. It prints actionable diagnostics for each check.
 
-Remove package and select an alternative with narrower access.
+### Install fails — integrity mismatch
 
-### Verify fails
+The downloaded tarball's hash did not match the registry record. This is a hard failure — do not bypass it.
 
-Reinstall package and ensure lock state is consistent.
+1. Check for an intercepting proxy or corporate firewall modifying HTTPS responses.
+2. Retry on a different network.
+3. If the problem persists for a specific skill, report it as a potential registry integrity issue.
+
+### Unexpected permission scope after install
+
+```bash
+tank info @org/skill-name
+tank audit @org/skill-name
+```
+
+Review the declared permissions and scanner findings. If the permissions are broader than expected or don't match what the scanner extracted, remove the skill and choose an alternative.
+
+### `tank verify` fails after install
+
+Files were modified on disk after installation. Remove and reinstall:
+
+```bash
+tank remove @org/skill-name
+tank install @org/skill-name
+tank verify
+```
+
+If verify fails immediately after reinstall, the issue is likely a proxy or antivirus tool modifying files at write time.
 
 
 ---
@@ -817,38 +2335,42 @@ Reinstall package and ensure lock state is consistent.
 
 Source: https://tankpkg.dev/docs/mcp
 
-> Use Tank directly from Claude Code, Cursor, VS Code Copilot, and other MCP-compatible AI tools.
+> Use Tank directly from Claude Code, Cursor, VS Code Copilot, Windsurf, and other MCP-compatible AI coding assistants — 17 tools for full skill lifecycle management.
 
 
 # MCP Server Integration
 
-The Tank MCP (Model Context Protocol) server lets you interact with Tank directly from your AI assistant. Scan skills, publish packages, search the registry - all without leaving your conversation.
+The Tank MCP (Model Context Protocol) server exposes **17 tools** that give your AI assistant full control over the Tank skill lifecycle — authentication, discovery, installation, security scanning, agent linking, and diagnostics — without ever leaving your conversation.
 
 ## What is MCP?
 
-MCP is an open protocol by Anthropic that enables AI assistants to connect to external tools and data sources. With the Tank MCP server, your AI assistant can:
+MCP is an open protocol by Anthropic that enables AI assistants to connect to external tools and data sources in a standardized way. With the Tank MCP server installed, your AI coding assistant can:
 
-- Scan your skills for security issues
-- Publish skills to the Tank registry
-- Search for existing skills
-- Get detailed skill information
-- Authenticate with Tank
+- Authenticate with Tank and manage credentials
+- Create and scaffold new skills from scratch
+- Publish skills to the registry with optional dry-run validation
+- Search the registry and inspect skill metadata
+- Install, update, and remove skills with SHA-512 lockfile verification
+- Run full 6-stage security scans and view audit results
+- Check and enforce permission budgets before installation
+- Link skills into agent workspaces for local development
+- Diagnose environment health issues
 
 ## Supported AI Tools
 
-| Tool | MCP Support | Setup |
-|--------|-------------|-------|
-| Claude Code | Native | `.claude/settings.json` |
+| Tool | MCP Support | Config Location |
+|------|-------------|-----------------|
+| Claude Code | Native | `.claude/settings.json` (project) or `~/.claude/settings.json` (global) |
 | Cursor | Native | `~/.cursor/mcp.json` |
 | VS Code Copilot | Native | `.vscode/mcp.json` |
-| Windsurf | Native | MCP settings |
+| Windsurf | Native | MCP settings panel |
 | Zed | Via extension | MCP configuration |
 
 ## Installation
 
-### Quick Start (Claude Code)
+### Claude Code
 
-Add to `.claude/settings.json` in your project or globally:
+Add to `.claude/settings.json` in your project root for project-scoped access, or `~/.claude/settings.json` for global access:
 
 ```json
 {
@@ -876,9 +2398,9 @@ Add to `~/.cursor/mcp.json`:
 }
 ```
 
-### VS Code (Copilot)
+### VS Code (GitHub Copilot)
 
-Add to `.vscode/mcp.json` in your workspace:
+Add to `.vscode/mcp.json` in your workspace root:
 
 ```json
 {
@@ -891,21 +2413,27 @@ Add to `.vscode/mcp.json` in your workspace:
 }
 ```
 
+<Callout type="info">
+  The `-y` flag on `npx` ensures `@tankpkg/mcp-server` is automatically installed the first time the MCP server starts. No global install required.
+</Callout>
+
 ## Authentication
 
-The MCP server shares authentication with the Tank CLI. If you've already run `tank login`, you're authenticated!
+The MCP server shares authentication with the Tank CLI. A single credential store at `~/.tank/config.json` is used by both — no need to authenticate separately for each tool.
 
 ### Option 1: CLI Sync (Recommended)
+
+Authenticate once from your terminal and all MCP sessions pick it up automatically:
 
 ```bash
 tank login
 ```
 
-The MCP server automatically uses the token stored in `~/.tank/config.json`.
+The browser will open for GitHub OAuth. After approving, your token is stored in `~/.tank/config.json` (permissions `600`) and the MCP server will use it on next invocation.
 
 ### Option 2: Environment Variable
 
-Set the `TANK_TOKEN` environment variable in your MCP configuration:
+Pass a token directly via the MCP config for CI environments or headless setups:
 
 ```json
 {
@@ -921,183 +2449,414 @@ Set the `TANK_TOKEN` environment variable in your MCP configuration:
 }
 ```
 
+`TANK_TOKEN` always takes precedence over `~/.tank/config.json`.
+
 ### Option 3: In-Session Login
 
-Ask your AI agent to run the login tool:
+Ask your AI assistant to authenticate on your behalf using the `login` tool:
 
 ```
 "Log me into Tank"
 ```
 
-This initiates a GitHub OAuth device flow - your AI will provide a code and open a browser for authorization.
+The AI will initiate a GitHub OAuth device flow, display a verification code, and wait for you to approve access in the browser — all without you typing a single command.
 
-## Available Tools
+---
 
-Once configured, these tools are available to your AI assistant:
+## All 17 Tools
 
-### scan-skill
+### Authentication
 
-Scan a skill directory for security issues.
+---
 
-**Parameters:**
-- `directory` (optional): Directory to scan (default: current directory)
+#### `login`
 
-**Example prompts:**
-```
-"Scan my skill in ./my-skill for security issues"
-"Run a security scan on the current directory"
-"What's the audit score of my skill?"
-```
+Authenticate with Tank via GitHub OAuth device flow. Opens a browser authorization page and polls until the user approves. Stores the resulting API token in `~/.tank/config.json`.
 
-### publish-skill
-
-Publish a skill to the Tank registry.
-
-**Parameters:**
-- `directory` (optional): Directory to publish (default: current directory)
-- `visibility` (optional): "public" or "private" (default: public)
-- `dryRun` (optional): Validate without publishing (default: false)
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `timeout` | number | No | 300000 | Authorization timeout in milliseconds (default: 5 minutes) |
 
 **Example prompts:**
-```
-"Publish my skill as a public package"
-"Do a dry run publish to check if everything looks good"
-"Publish ./my-skill privately"
-```
+- *"Log me into Tank"*
+- *"Authenticate with Tank — I need to publish a skill"*
 
-### search-skills
+---
 
-Search the Tank registry for skills.
+#### `logout`
 
-**Parameters:**
-- `query` (required): Search query
-- `limit` (optional): Max results (1-50, default: 10)
+Clear stored Tank credentials from `~/.tank/config.json`. After logout, any operation requiring authentication will fail until `login` is called again.
+
+*No parameters.*
 
 **Example prompts:**
-```
-"Search Tank for code review skills"
-"Find skills related to testing"
-"Search for @tankpkg skills"
-```
+- *"Log me out of Tank"*
+- *"Clear my Tank credentials"*
 
-### skill-info
+---
 
-Get detailed information about a specific skill.
+#### `whoami`
 
-**Parameters:**
-- `name` (required): Skill name (e.g., @org/skill-name)
+Display the currently authenticated user — username, email, organization memberships, and token scopes.
+
+*No parameters.*
 
 **Example prompts:**
-```
-"Get info about @tankpkg/code-review"
-"Show me details for the @vercel/next-skill"
-"What permissions does @org/my-skill require?"
-```
+- *"Who am I logged in as on Tank?"*
+- *"Show my Tank account details"*
 
-### login
+---
 
-Authenticate with Tank via GitHub OAuth.
+### Project Setup
 
-**Parameters:**
-- `timeout` (optional): Authorization timeout in ms (default: 5 minutes)
+---
+
+#### `init-skill`
+
+Scaffold a new skill in the current (or specified) directory. Creates a `skills.json` manifest and a `SKILL.md` documentation template. The `name` must follow the `@org/name` scoped package format.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | **Yes** | — | Skill name in `@org/name` format (e.g., `@acme/code-review`) |
+| `version` | string | No | `0.1.0` | Initial semver version |
+| `description` | string | No | — | Short description of the skill |
+| `directory` | string | No | `.` | Directory to initialize (default: current directory) |
 
 **Example prompts:**
-```
-"Log me into Tank"
-"I need to authenticate with Tank"
-```
+- *"Create a new Tank skill called @acme/db-migrator"*
+- *"Init a Tank skill in ./skills/my-skill with version 1.0.0"*
+
+---
+
+### Publishing & Discovery
+
+---
+
+#### `publish-skill`
+
+Pack and publish a skill to the Tank registry. Runs the 6-stage security pipeline server-side before the skill is made available. Use `dryRun` to validate structure and permissions without uploading.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `directory` | string | No | `.` | Directory containing the skill to publish |
+| `visibility` | `"public"` \| `"private"` | No | `"public"` | Registry visibility |
+| `dryRun` | boolean | No | `false` | Validate and pack without publishing |
+
+**Example prompts:**
+- *"Publish my skill as a public package"*
+- *"Do a dry-run publish of ./my-skill to check for errors before uploading"*
+
+---
+
+#### `search-skills`
+
+Full-text search across the Tank registry using GIN index and trigram similarity. Returns skill name, description, audit score, and latest version.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | **Yes** | — | Search query |
+| `limit` | number | No | `10` | Maximum results to return (1–50) |
+
+**Example prompts:**
+- *"Search Tank for database migration skills"*
+- *"Find the top 5 skills related to code review"*
+
+---
+
+#### `skill-info`
+
+Fetch detailed metadata for a specific skill from the registry: description, all published versions, permissions declared, audit score breakdown, download count, and links.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | **Yes** | — | Skill name (e.g., `@tankpkg/code-review`) |
+
+**Example prompts:**
+- *"Get info about @tankpkg/code-review"*
+- *"What permissions does @org/my-skill require?"*
+
+---
+
+### Installation & Management
+
+---
+
+#### `install-skill`
+
+Install a skill into the project's `skills.lock` with full SHA-512 integrity verification. Rejects installation if the skill's declared permissions exceed the project's permission budget defined in `skills.json`.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | **Yes** | — | Skill name to install (e.g., `@org/skill`) |
+| `version` | string | No | `latest` | Specific version or semver range |
+| `directory` | string | No | `.` | Project directory containing `skills.json` |
+
+**Example prompts:**
+- *"Install @tankpkg/code-review into this project"*
+- *"Install @org/db-migrator version 2.1.0"*
+
+---
+
+#### `update-skill`
+
+Update an installed skill to the latest version within its declared semver range. Respects the range pinned in `skills.json` — will not upgrade across major versions unless the range allows it.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | **Yes** | — | Skill name to update |
+| `directory` | string | No | `.` | Project directory |
+
+**Example prompts:**
+- *"Update @tankpkg/code-review to the latest compatible version"*
+- *"Check if @org/db-migrator has updates available and apply them"*
+
+---
+
+#### `remove-skill`
+
+Remove a skill from `skills.json` and `skills.lock`. Does not delete downloaded files from the cache.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | **Yes** | — | Skill name to remove |
+| `directory` | string | No | `.` | Project directory |
+
+**Example prompts:**
+- *"Remove @org/old-skill from this project"*
+- *"Uninstall @tankpkg/code-review and update the lockfile"*
+
+---
+
+#### `verify-skills`
+
+Verify that every installed skill in `skills.lock` matches its expected SHA-512 hash. Detects tampering, corruption, or man-in-the-middle substitution. Optionally verify a single named skill.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | No | — | Specific skill to verify (default: all skills) |
+| `directory` | string | No | `.` | Project directory |
+
+**Example prompts:**
+- *"Verify the integrity of all installed skills"*
+- *"Check that @org/my-skill hasn't been tampered with"*
+
+---
+
+### Security & Verification
+
+---
+
+#### `scan-skill`
+
+Run a local 6-stage security scan on a skill directory. Stages cover: file ingestion and hashing, structural validation, AST static analysis, prompt injection detection, secret scanning, and supply chain checks. Returns a verdict (`PASS`, `PASS_WITH_NOTES`, `FLAGGED`, or `FAIL`) with itemized findings.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `directory` | string | No | `.` | Directory of the skill to scan |
+
+**Example prompts:**
+- *"Scan my skill for security issues before I publish it"*
+- *"Run a full security analysis on ./skills/my-skill"*
+
+<Callout type="info">
+  Verdict thresholds: 1+ critical finding → `FAIL`; 4+ high findings → `FAIL`; 1–3 high findings → `FLAGGED`; medium/low only → `PASS_WITH_NOTES`.
+</Callout>
+
+---
+
+#### `audit-skill`
+
+Retrieve the stored security audit results for a published skill from the registry. Shows the audit score (0–10), individual check results, and the LLM analysis summary (if LLM scanning was active at publish time).
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | **Yes** | — | Published skill name |
+| `version` | string | No | `latest` | Specific version to audit |
+
+**Example prompts:**
+- *"Show the audit results for @tankpkg/code-review"*
+- *"What's the security score for @org/my-skill version 2.0.0?"*
+
+---
+
+#### `skill-permissions`
+
+Display a resolved permission summary for all skills installed in the project, then check that the aggregate permissions do not exceed the budget declared in `skills.json`. Flags any skill that requests permissions outside the allowed budget.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `directory` | string | No | `.` | Project directory |
+
+**Example prompts:**
+- *"Show me what permissions are required by all installed skills"*
+- *"Check if any skill exceeds the permission budget in skills.json"*
+
+---
+
+### Agent Integration
+
+---
+
+#### `link-skill`
+
+Symlink a skill from the Tank cache into a specific agent workspace directory. Useful during local skill development — changes to the source are immediately reflected in the agent workspace without reinstalling.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | **Yes** | — | Skill name to link |
+| `workspace` | string | **Yes** | — | Absolute or relative path to the agent workspace |
+| `directory` | string | No | `.` | Project directory containing the skill source |
+
+**Example prompts:**
+- *"Link @org/my-skill into the Claude Code workspace at ./agent-workspace"*
+- *"Set up a development symlink for my skill so I can test it live"*
+
+---
+
+#### `unlink-skill`
+
+Remove a previously created symlink from an agent workspace. The skill remains installed in the project — only the workspace symlink is removed.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `name` | string | **Yes** | — | Skill name to unlink |
+| `workspace` | string | **Yes** | — | Path to the agent workspace |
+| `directory` | string | No | `.` | Project directory |
+
+**Example prompts:**
+- *"Unlink @org/my-skill from the agent workspace"*
+- *"Remove the development symlink for @acme/code-review"*
+
+---
+
+### Diagnostics
+
+---
+
+#### `doctor`
+
+Check the health of the Tank environment: Node.js version compatibility, CLI binary availability, registry reachability, `~/.tank/config.json` validity, and lockfile integrity. Returns a pass/fail checklist with remediation hints for any failures.
+
+*No parameters.*
+
+**Example prompts:**
+- *"Run Tank doctor to check if everything is set up correctly"*
+- *"My Tank install seems broken — can you diagnose it?"*
+
+---
 
 ## Usage Examples
 
-### Scanning Before Publish
+### Scan Before You Publish
 
 ```
-User: I just finished my new skill. Can you check if it's ready to publish?
+User: I just finished my new skill. Can you check if it's safe to publish?
 
-AI: I'll scan your skill for security issues first.
+AI: I'll run a full 6-stage security scan first.
 
-[Uses scan-skill tool]
+    [Uses scan-skill on ./]
 
-Your skill passed with a score of 8.5/10. There are no critical issues.
-The skill is ready to publish. Would you like me to do a dry-run publish
-to verify everything is configured correctly?
+    Your skill scored 9.2/10 with no critical or high-severity findings.
+    One low-severity note: the SKILL.md is missing an "Examples" section.
+    Otherwise it's clean and ready to go. Want me to do a dry-run publish
+    to confirm the manifest is valid before uploading?
+
+User: Yes, dry run first.
+
+    [Uses publish-skill with dryRun=true]
+
+    Dry run passed. Your skill @acme/db-migrator v1.0.0 is valid.
+    Ready to publish for real?
 ```
 
-### Publishing a Skill
+### Discover and Install a Skill
 
 ```
-User: Publish my skill as a public package.
+User: I need a skill to help with database migrations. Find me something good.
 
-AI: [Uses publish-skill tool with visibility="public"]
+AI: [Uses search-skills with query="database migrations"]
 
-Your skill @org/my-skill v1.0.0 has been published successfully!
-Audit score: 8.5/10
-View at: https://tankpkg.dev/skills/@org/my-skill
+    I found two strong matches:
+
+    | Skill               | Score | Description                              |
+    |---------------------|-------|------------------------------------------|
+    | @tank/db-migrate    | 9.4   | Safe migrations with automatic rollback  |
+    | @community/pg-migrator | 8.7 | PostgreSQL-specific migration toolkit |
+
+    @tank/db-migrate has a higher audit score. Want me to check its
+    permissions before installing?
+
+User: Yes.
+
+    [Uses skill-info for @tank/db-migrate]
+
+    It requests: filesystem.read (./migrations/**) and filesystem.write
+    (./migrations/**). No network or subprocess access. Safe to install.
+
+    [Uses install-skill for @tank/db-migrate]
+
+    Installed @tank/db-migrate v3.1.2. Lockfile updated with SHA-512 hash.
 ```
 
-### Discovering Skills
+### Check Permission Budget
 
 ```
-User: I need a skill that can help with database migrations.
+User: Before I deploy, make sure no skill is asking for more permissions
+      than we declared in skills.json.
 
-AI: [Uses search-skills tool with query="database migrations"]
+AI: [Uses skill-permissions on ./]
 
-I found these relevant skills:
+    ✅ All 4 installed skills are within budget.
 
-| Skill | Score | Description |
-|-------|-------|-------------|
-| @tank/db-migrate | 9.2 | Safe database migrations with rollback support |
-| @community/pg-migrator | 8.1 | PostgreSQL migration toolkit |
+    Permission summary:
+    - @tank/db-migrate     → filesystem.read, filesystem.write (declared)
+    - @acme/code-review    → filesystem.read (declared)
+    - @org/test-runner     → subprocess (declared)
+    - @acme/logger         → no permissions required
 
-Would you like more details on any of these?
+    No escalation detected. You're clear to deploy.
 ```
 
-## Troubleshooting
+### Debug a Broken Setup
 
-### "Not authenticated" errors
+```
+User: Something feels off with my Tank install. Can you check it?
 
-Run `tank login` in your terminal, or ask your AI to use the `login` tool.
+AI: [Uses doctor]
 
-### MCP server not found
+    Tank Environment Health Check:
 
-Make sure you're using `npx -y @tankpkg/mcp-server` (note the `-y` flag for automatic installation).
+    ✅ Node.js v24.1.0 — compatible
+    ✅ @tankpkg/mcp-server reachable
+    ✅ Registry (tankpkg.dev) — reachable
+    ✅ ~/.tank/config.json — valid, token present
+    ❌ skills.lock — 1 skill has a hash mismatch: @org/my-skill
 
-### Commands timeout
-
-For slow connections, the login tool accepts a `timeout` parameter in milliseconds.
-
-### Token not recognized
-
-Check that your token is valid:
-```bash
-tank whoami
+    Recommendation: Run verify-skills to identify the affected entry,
+    then reinstall @org/my-skill to restore a clean lockfile.
 ```
 
-## Security Notes
-
-- Tokens are stored in `~/.tank/config.json` with file permissions `600`
-- The MCP server only communicates with `tankpkg.dev` over HTTPS
-- Your token is never logged or transmitted to third parties
+---
 
 ## Understanding LLM Analysis
 
-When LLM-assisted scanning is enabled, Tank uses AI to review ambiguous findings and reduce false positives. The scan output includes an **LLM Analysis** section when active:
+When LLM-assisted scanning is enabled on the registry, Tank uses AI to review ambiguous static-analysis findings and reduce false positives. The `audit-skill` tool output includes an **LLM Analysis** section when active:
 
 | Field | Description |
 |-------|-------------|
 | **Mode** | `byollm` (custom provider), `builtin` (Groq/OpenRouter), or `disabled` |
 | **Provider** | The specific LLM used for analysis |
-| **Findings Reviewed** | Number of ambiguous findings sent to LLM |
-| **False Positives Dismissed** | Findings classified as benign by LLM |
-| **Threats Confirmed** | Findings confirmed as genuine threats |
-| **Uncertain** | Findings the LLM couldn't confidently classify |
+| **Findings Reviewed** | Number of ambiguous findings sent to the LLM |
+| **False Positives Dismissed** | Findings classified as benign by the LLM |
+| **Threats Confirmed** | Findings confirmed as genuine security threats |
+| **Uncertain** | Findings the LLM could not confidently classify |
 
-### Enabling LLM Analysis
+### Enabling LLM Analysis (Self-Hosted)
 
-The scan automatically uses LLM analysis when configured. Set environment variables on your server or in the Python API:
+If you run Tank on-premises, configure LLM analysis via environment variables on the Python scanner service:
 
 ```bash
-# Option 1: Use your own OpenAI-compatible LLM
+# Option 1: Bring your own OpenAI-compatible LLM
 LLM_API_KEY=your-api-key
 LLM_BASE_URL=https://api.example.com/v1
 LLM_MODEL=gpt-4o-mini
@@ -1108,15 +2867,729 @@ GROQ_API_KEY=gsk_xxx
 # Option 3: Use OpenRouter
 OPENROUTER_API_KEY=sk-or-xxx
 
-# Option 4: Disable LLM entirely (regex-only scanning)
+# Option 4: Disable LLM entirely (regex + AST scanning only)
 LLM_SCAN_ENABLED=false
 ```
 
+---
+
+## Troubleshooting
+
+### "Not authenticated" errors
+
+The MCP server cannot find a valid token. Run one of:
+
+```bash
+# Option 1: Authenticate from the terminal
+tank login
+
+# Option 2: Ask your AI assistant
+"Log me into Tank"
+```
+
+### MCP server not found / fails to start
+
+Ensure the `-y` flag is present in your MCP config so npx auto-installs the package:
+
+```json
+"args": ["-y", "@tankpkg/mcp-server"]
+```
+
+If you're behind a corporate proxy, set `npm_config_registry` or configure your npm proxy settings before starting the MCP client.
+
+### Commands time out
+
+The default `login` timeout is 5 minutes. For slow connections or when SSO adds latency, pass a longer timeout explicitly:
+
+```
+"Log me into Tank with a 10-minute timeout"
+```
+
+### Token is not recognized
+
+Check token validity directly:
+
+```bash
+tank whoami
+```
+
+If `whoami` also fails, your token may have been revoked. Run `tank login` to issue a new one.
+
+### `verify-skills` reports a hash mismatch
+
+A hash mismatch means the installed skill file does not match the SHA-512 recorded in `skills.lock`. This could indicate file corruption or tampering. Reinstall the affected skill:
+
+```
+"Remove @org/affected-skill and reinstall it"
+```
+
+### `install-skill` fails with "permission budget exceeded"
+
+The skill is requesting capabilities beyond what your `skills.json` allows. Review its permissions with `skill-info`, then either:
+1. Update your `skills.json` permission budget to allow those capabilities, or
+2. Choose an alternative skill with a narrower permission footprint.
+
+---
+
+## Security Notes
+
+- Tokens are stored in `~/.tank/config.json` with Unix file permissions `600` (owner read/write only)
+- The MCP server communicates exclusively with `tankpkg.dev` over HTTPS
+- Your API token is never logged, cached to disk in plain text beyond `~/.tank/`, or transmitted to third parties
+- `TANK_TOKEN` in MCP environment config is kept in your AI tool's process environment — never written to disk by Tank itself
+- SHA-512 hashes in `skills.lock` are verified against the registry on every install and on-demand via `verify-skills`
+- Permission budget enforcement happens client-side at install time — skills that exceed declared budgets are rejected before any files are extracted
+
+---
+
 ## Related
 
-- [CLI Reference](/docs/cli) - Full command documentation
-- [Publishing Guide](/docs/publishing) - How to prepare skills for publication
-- [API Reference](/docs/api) - REST API endpoints
+- [CLI Reference](/docs/cli) — Full command documentation for all `tank` CLI commands
+- [Publishing Guide](/docs/publishing) — How to prepare and validate skills for publication
+- [Security Scanner](/docs/security) — Deep dive into the 6-stage security pipeline
+- [API Reference](/docs/api) — REST API endpoints used by the CLI and MCP server
+- [Permissions Model](/docs/permissions) — How permission budgets are declared and enforced
+
+
+---
+
+# Organizations & Teams
+
+Source: https://tankpkg.dev/docs/organizations
+
+> Create organizations in Tank to publish scoped AI agent skills, manage team members, and control access with invitations and role-based permissions.
+
+
+# Organizations & Teams
+
+Organizations let teams publish AI agent skills under a shared namespace, manage members, and control who can publish under a given scope. If you've used npm orgs or GitHub organizations, the concept is the same — `@your-org/skill-name` signals provenance and shared ownership.
+
+## Why Organizations Exist
+
+Publishing under a personal account works fine for individual developers. But teams need:
+
+- **Scoped package names** — `@acme/code-review` is immediately more trustworthy than an unscoped skill from an unknown author
+- **Shared publishing access** — multiple team members can release new versions without sharing credentials
+- **Centralized access control** — add and remove members from one place as your team changes
+- **Enterprise SSO** — integrate with your identity provider so employees log in with company credentials
+
+A skill published under `@acme/skill-name` can only be published by a member of the `acme` organization. Tank enforces this at the API level — the publisher's session must contain org membership for the scoped name being used.
+
+## Creating an Organization
+
+Go to [Dashboard → Organizations](/orgs) and click **New Organization**.
+
+You'll be prompted for:
+
+- **Name** — the human-readable display name (e.g. `Acme Corp`)
+- **Slug** — the URL-safe identifier used in scoped skill names (e.g. `acme`)
+
+### Slug Rules
+
+Slugs follow the same constraints as GitHub organization names:
+
+- Lowercase letters, digits, and hyphens only
+- Cannot start or end with a hyphen
+- Maximum 39 characters
+- Pattern: `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`
+
+The dashboard auto-generates a slug from your organization name — for example, "Acme Corp" becomes `acme-corp`. You can edit it before saving.
+
+<Callout type="warn">
+Slugs cannot be changed after creation. Choose carefully — renaming would break all existing scoped skill names published under the old slug.
+</Callout>
+
+Once created, you are automatically the **owner** of the organization.
+
+## Publishing Scoped Skills Under an Org
+
+With an org created, any member can publish skills under its namespace:
+
+```bash
+# In a skill directory with skills.json name set to "@acme/my-skill"
+tank publish
+```
+
+Your `skills.json` must declare the scoped name:
+
+```json
+{
+  "name": "@acme/my-skill",
+  "version": "1.0.0",
+  "description": "Does one thing well",
+  "permissions": {
+    "network": { "outbound": ["api.example.com"] },
+    "filesystem": { "read": ["./src/**"] },
+    "subprocess": false
+  }
+}
+```
+
+<Callout type="info">
+You must be a member of the `acme` organization to publish under `@acme/`. The CLI verifies your session against org membership during the publish flow. Publishing under a scope you don't belong to returns `403 Forbidden`.
+</Callout>
+
+Scoped skills install the same way as unscoped ones:
+
+```bash
+tank install @acme/my-skill
+```
+
+## Managing Members
+
+### Inviting Members
+
+From the organization settings page, go to **Members → Invite Member**. Enter the email address of the person you want to add.
+
+Tank sends an invitation email with a secure link. The recipient must:
+
+1. Click the link in the email (valid for 48 hours)
+2. Log in or create a Tank account if they haven't already
+3. Accept the invitation from their dashboard at [Dashboard → Organizations → Pending Invitations](/orgs/accept-invitation)
+
+Pending invitations appear in both the org settings (for admins to track) and the invitee's dashboard.
+
+### Accepting an Invitation
+
+Invited members see a **Pending Invitations** section on their Organizations page. Clicking **Accept** grants them immediate publish access under the org's scope.
+
+If the invitation email link expires, an org admin can resend the invitation from the Members panel.
+
+### Removing Members
+
+Org admins can remove any member from the Members panel. Removing a member immediately revokes their ability to publish new versions under the org scope. Skills they previously published remain available — removal is not retroactive.
+
+<Callout type="warn">
+Removing yourself as the only admin of an organization locks the org. Make sure at least one other member has admin rights before removing yourself.
+</Callout>
+
+## Private Skills & Access Control
+
+Each skill has a visibility setting that controls who can install it:
+
+| Visibility | Who Can Install |
+|-----------|----------------|
+| `public` | Anyone, including unauthenticated users |
+| `private` | Only authenticated members of the owning org |
+| `org` | Members of the org and explicitly granted users (via `skill_access` table) |
+
+Set visibility at publish time:
+
+```bash
+tank publish --private          # Private to your org
+tank publish --visibility org   # Org-level access
+tank publish                    # Defaults to public
+```
+
+Private and org-level skills do not appear in public search results. They are only visible to authenticated members of the owning organization.
+
+<Callout type="info">
+The `skill_access` table allows fine-grained grants — for example, giving a specific external user access to a private org skill without adding them as a full org member. This is useful for partner integrations.
+</Callout>
+
+## Enterprise OIDC Single Sign-On
+
+Organizations on enterprise plans can configure OpenID Connect (OIDC) SSO so team members authenticate with your identity provider (Okta, Azure AD, Google Workspace, etc.) instead of GitHub.
+
+### Environment Variables
+
+Configure the following in your self-hosted Tank deployment:
+
+| Variable | Description |
+|----------|-------------|
+| `OIDC_ISSUER` | Your IdP's issuer URL (e.g. `https://your-company.okta.com`) |
+| `OIDC_CLIENT_ID` | OAuth 2.0 client ID from your IdP |
+| `OIDC_CLIENT_SECRET` | OAuth 2.0 client secret from your IdP |
+| `OIDC_DISPLAY_NAME` | Button label on the login page (e.g. `Sign in with Okta`) |
+
+```bash
+OIDC_ISSUER=https://your-company.okta.com
+OIDC_CLIENT_ID=0oa...
+OIDC_CLIENT_SECRET=...
+OIDC_DISPLAY_NAME=Sign in with Okta
+```
+
+### How SSO Login Works
+
+1. User clicks **Sign in with [Provider]** on the Tank login page
+2. They are redirected to your IdP's authorization endpoint
+3. After authenticating with company credentials, they are redirected back to Tank
+4. Tank creates or links their account using the `sub` claim from the ID token
+5. The user lands on their dashboard with full access
+
+<Callout type="info">
+OIDC SSO login creates a standard Tank session. The user can still generate API tokens for CLI use — SSO only affects the web login flow, not Bearer token authentication.
+</Callout>
+
+### Setting Up Your IdP
+
+Your IdP application must be configured with:
+
+- **Redirect URI**: `https://your-tank-domain.com/api/auth/callback/generic-oidc`
+- **Response type**: `code`
+- **Scopes**: `openid email profile`
+
+For detailed self-hosting instructions including OIDC setup, see the [Self-Hosting guide](/docs/self-hosting).
+
+## Organization API
+
+Org management is also available via the Admin API for programmatic workflows:
+
+```bash
+# List organizations
+curl https://tankpkg.dev/api/admin/orgs \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Get a specific org with members
+curl https://tankpkg.dev/api/admin/orgs/{orgId} \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+
+# Remove a member
+curl -X DELETE https://tankpkg.dev/api/admin/orgs/{orgId}/members/{memberId} \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
+The admin API requires a token with the `skills:admin` scope. See the [API Reference](/docs/api) for full details.
+
+
+---
+
+# Permissions & Access Control
+
+Source: https://tankpkg.dev/docs/permissions
+
+> Understand Tank's permission model for AI agent skills — declare, enforce, and audit what capabilities your skills can access at install time.
+
+
+# Permissions & Access Control
+
+Tank's permission system is the primary mechanism for preventing malicious skills from accessing resources they were never supposed to touch. This page explains the permission schema, the project-level budget, how enforcement works at install time, and how version bumps interact with permission changes.
+
+## Why Permissions Matter for AI Agent Skills
+
+An AI agent is a process that acts on your behalf. When you give an agent a skill, that skill runs with the agent's full authority — the same API tokens, filesystem access, and subprocess privileges the agent itself holds. There is no OS-level sandbox. There is no automatic restriction.
+
+This means a malicious skill installed without review could:
+
+- **Read your entire project directory** — including `.env` files, SSH keys, and auth tokens
+- **Make outbound network calls** to attacker-controlled servers carrying exfiltrated data
+- **Execute shell commands** — installing backdoors, modifying codebase files, or pivoting to other systems
+- **Read environment variables** — stealing API keys and credentials held by the agent process
+
+The ClawHavoc incident (February 2026, 341 malicious skills, 12% of a major marketplace) exploited exactly this: no registry checked what installed skills actually did. Skills declared nothing and did everything.
+
+Tank's permission model requires skills to declare upfront what they need. Projects then define a **permission budget** — a ceiling that every installed skill must fit within. If any skill claims more than the budget allows, the installation fails before a single file is extracted.
+
+<Callout type="info">
+Tank permissions are a defense-in-depth layer on top of OS-level controls. They cannot enforce syscall-level restrictions without a sandbox (planned for Phase 3), but they create an auditable contract between skill publishers and project owners — and enforce it at install time.
+</Callout>
+
+---
+
+## Permission Types
+
+Permissions are declared in the `permissions` object of a skill's `SKILL.md` manifest. The full schema is defined in `packages/shared/src/schemas/permissions.ts` as a Zod schema and validated on both the CLI and registry server.
+
+### `network.outbound` — Outbound Network Access
+
+Controls which domains the skill is allowed to make outbound HTTP/HTTPS connections to.
+
+```yaml
+# SKILL.md
+permissions:
+  network:
+    outbound:
+      - "api.anthropic.com"
+      - "*.openai.com"
+      - "cdn.jsdelivr.net"
+```
+
+**Wildcard support:** A leading `*.` prefix matches any subdomain of the specified domain.
+
+| Pattern | Matches | Does Not Match |
+|---------|---------|----------------|
+| `api.anthropic.com` | `api.anthropic.com` | `dev.anthropic.com`, `anthropic.com` |
+| `*.anthropic.com` | `api.anthropic.com`, `dev.anthropic.com` | `anthropic.com` itself |
+| `*.*.example.com` | Not supported — single wildcard level only | — |
+
+<Callout type="warn">
+Avoid `["*"]` or broad wildcard patterns. A skill that needs to reach any host on the internet should not be installed without careful review. The security scanner flags broad wildcard network permissions as `medium` severity.
+</Callout>
+
+---
+
+### `filesystem.read` — Filesystem Read Access
+
+Controls which paths the skill is allowed to read. Values are glob patterns evaluated relative to the **project root** (the directory containing `skills.json`).
+
+```yaml
+permissions:
+  filesystem:
+    read:
+      - "./src/**"
+      - "./package.json"
+      - "./tsconfig.json"
+```
+
+**Pattern semantics:**
+
+- `./src/**` — all files recursively under `src/`
+- `./src/*.ts` — only TypeScript files directly in `src/`
+- `./package.json` — exactly this file
+- `../**` — path traversal above project root — **always rejected, critical finding**
+
+Absolute paths (`/etc/hosts`) and home-relative paths (`~/`) are never valid permission values. The Zod schema rejects them on publish.
+
+---
+
+### `filesystem.write` — Filesystem Write Access
+
+Controls which paths the skill is allowed to create, modify, or delete. Same glob pattern semantics as `filesystem.read`.
+
+```yaml
+permissions:
+  filesystem:
+    write:
+      - "./output/**"
+      - "./.tank/cache/**"
+```
+
+Write permissions are evaluated separately from read permissions. A skill that declares `filesystem.read: ["./src/**"]` does **not** implicitly gain write access to `./src/**`.
+
+<Callout type="error">
+Never grant write access to `./` (project root), `../**` (parent directories), or any path containing configuration files (`.env`, `.git/**`, `package.json`). A skill with write access to `package.json` can inject malicious dependencies on the next `npm install`.
+</Callout>
+
+---
+
+### `subprocess` — Shell Command Execution
+
+A boolean flag that declares whether the skill is allowed to invoke shell commands, spawn child processes, or execute binaries.
+
+```yaml
+permissions:
+  subprocess: true   # allow shell execution
+  # or
+  subprocess: false  # deny shell execution (default)
+```
+
+`subprocess: false` is the default. Skills that do not declare this field cannot spawn processes.
+
+This is the most dangerous permission in the model. A skill with subprocess access can execute arbitrary code, install software, modify the system, and bypass all other permission checks by spawning a process that has its own network and filesystem access.
+
+<Callout type="error">
+Treat `subprocess: true` as a red flag during skill review. Legitimate skills rarely need subprocess access. If you see it, verify exactly what commands the skill runs by inspecting its source code before installing.
+</Callout>
+
+---
+
+### `environment` — Environment Variable Access
+
+A list of specific environment variable names the skill is allowed to read. Skills without this permission cannot read any environment variables.
+
+```yaml
+permissions:
+  environment:
+    - "ANTHROPIC_API_KEY"
+    - "OPENAI_API_KEY"
+    - "DATABASE_URL"
+```
+
+This permission is validated against actual `process.env` access found in the skill's code during Stage 2 static analysis. If the code reads `process.env.HOME` but `HOME` is not declared in permissions, the audit score drops and the finding is flagged.
+
+The environment permission does **not** grant the skill the ability to set, export, or delete environment variables — only to read named variables. Write access to the environment is not a supported permission and is always blocked.
+
+---
+
+## The Permission Budget: Project-Level Access Control
+
+Individual skill permissions declare what a skill *claims* to need. The permission budget in `skills.json` declares what your project *allows*. Every skill installed into your project must fit within the budget — if any skill claims more than the budget permits, installation fails with a detailed error showing which permission was exceeded and by which skill.
+
+### Example `skills.json` with Budget
+
+```json
+{
+  "skills": {
+    "@vercel/next-skill": "^2.1.0",
+    "@community/seo-audit": "3.0.0",
+    "@team/internal-linter": "workspace:*"
+  },
+  "permissions": {
+    "network": {
+      "outbound": [
+        "api.anthropic.com",
+        "*.vercel.com",
+        "registry.npmjs.org"
+      ]
+    },
+    "filesystem": {
+      "read": [
+        "./src/**",
+        "./public/**",
+        "./package.json",
+        "./tsconfig.json",
+        "./.env.local"
+      ],
+      "write": [
+        "./output/**",
+        "./.tank/cache/**"
+      ]
+    },
+    "subprocess": false,
+    "environment": [
+      "ANTHROPIC_API_KEY",
+      "VERCEL_TOKEN",
+      "NODE_ENV"
+    ]
+  }
+}
+```
+
+This budget tells Tank:
+
+- **Network:** Skills may reach Anthropic's API, any Vercel subdomain, and the npm registry — nothing else
+- **Filesystem (read):** Source files, public assets, and config files are readable; secrets in `.env.local` are explicitly granted
+- **Filesystem (write):** Only the output directory and Tank's own cache are writable
+- **Subprocess:** Blocked — no skill may spawn shell commands
+- **Environment:** Only three named variables may be read
+
+If `@community/seo-audit` declares `network.outbound: ["*.googleapis.com"]` — a domain not in the budget — `tank install` will fail:
+
+```
+✗ Installation failed: permission budget exceeded
+
+  Skill:       @community/seo-audit@3.0.0
+  Permission:  network.outbound
+  Requested:   *.googleapis.com
+  Budget:      api.anthropic.com, *.vercel.com, registry.npmjs.org
+
+  Either:
+    1. Add "*.googleapis.com" to the network.outbound budget in skills.json
+    2. Choose a different skill that doesn't require Google API access
+    3. Contact the skill author to understand why this domain is needed
+```
+
+---
+
+## Budget Enforcement: How `checkPermissionBudget()` Works
+
+The budget enforcement logic runs in the CLI (`apps/cli/src/lib/`) during `tank install` and `tank update`. It compares each skill's declared permissions against the project budget field by field.
+
+### Domain Matching (`network.outbound`)
+
+For each domain the skill requests, the enforcer checks:
+
+1. **Exact match:** `api.anthropic.com` matches `api.anthropic.com` in the budget
+2. **Wildcard suffix match:** `api.anthropic.com` matches `*.anthropic.com` in the budget
+3. **No match:** Installation fails with the domain listed in the error
+
+The wildcard expansion is single-level only. `api.v2.anthropic.com` does **not** match `*.anthropic.com` — it would need `*.v2.anthropic.com` or `*.*.anthropic.com` (the latter of which is not supported). This prevents accidental over-permissioning through nested wildcard expansion.
+
+### Path Matching (`filesystem.read` and `filesystem.write`)
+
+For each path glob the skill requests, the enforcer checks:
+
+1. **Exact match:** `./package.json` matches `./package.json` in the budget
+2. **Glob subsetting:** A skill requesting `./src/utils/**` passes if the budget contains `./src/**` (the requested glob is fully contained within the budget glob)
+3. **Glob expansion:** Both sides are expanded against the actual filesystem. If the skill's glob would match files that the budget's glob does not cover, enforcement fails
+
+Glob matching uses the same library used for `.gitignore` pattern matching, with one key difference: patterns are always anchored to the project root and never follow symlinks.
+
+### Subprocess Enforcement
+
+Simple boolean check. If the budget has `subprocess: false` (or omits the field, which defaults to `false`), any skill with `subprocess: true` fails immediately.
+
+### Environment Variable Enforcement
+
+Each variable name the skill requests must appear literally in the budget's `environment` array. There is no wildcard support for environment variable names — `ANTHROPIC_*` is not a valid pattern. Every variable must be named explicitly.
+
+### Enforcement Order
+
+The enforcer checks all skills against the budget before extracting any of them. If multiple skills exceed the budget, all violations are reported together rather than stopping at the first failure:
+
+```
+✗ Installation failed: 2 skills exceeded the permission budget
+
+  @foo/skill-a@1.0.0
+    network.outbound: "api.openai.com" not in budget
+
+  @bar/skill-b@2.3.1
+    subprocess: true, but budget disallows subprocess
+    environment: "AWS_SECRET_ACCESS_KEY" not in budget
+```
+
+---
+
+## Permission Escalation Detection
+
+Every new version of a skill is checked against its previous version's permissions when published. This prevents a malicious publisher from sneaking dangerous permission changes through as minor or patch releases.
+
+The escalation logic is implemented in `apps/web/lib/permission-escalation.ts` and runs server-side during `tank publish`.
+
+### Version Bump Rules
+
+The type of version bump (major, minor, or patch) determines what permission changes are allowed:
+
+| Bump Type | Allowed Permission Changes |
+|-----------|--------------------------|
+| **Major** (1.x.x → 2.0.0) | All changes allowed — users explicitly opt in to major versions |
+| **Minor** (1.2.x → 1.3.0) | Non-dangerous additions allowed; network domains and subprocess changes require major |
+| **Patch** (1.2.3 → 1.2.4) | No new permissions of any kind — only bug fixes |
+| **First publish** | Always allowed — no previous version to compare |
+
+**What constitutes a "dangerous escalation" for minor bumps:**
+
+- Adding a new domain to `network.outbound` → requires major bump
+- Enabling `subprocess: true` (was `false` or absent) → requires major bump
+- Adding any `environment` variable that includes `SECRET`, `KEY`, `TOKEN`, or `PASSWORD` (case-insensitive) in its name → requires major bump
+
+**What is allowed on minor bumps:**
+
+- Adding new filesystem paths to `read` or `write` (considered lower-risk, surfaced in changelog)
+- Adding environment variables with benign names (e.g., `NODE_ENV`, `DEBUG`)
+
+**What is never allowed on patch bumps:**
+
+- Any new permission, including adding a single domain, a single file path, or a single environment variable
+
+### Example Rejection
+
+A skill at version `2.3.4` currently declares:
+
+```yaml
+permissions:
+  network:
+    outbound: ["api.anthropic.com"]
+  subprocess: false
+```
+
+The publisher attempts to publish `2.3.5` (patch bump) with:
+
+```yaml
+permissions:
+  network:
+    outbound: ["api.anthropic.com", "data.analytics.io"]  # new domain
+  subprocess: false
+```
+
+Result:
+
+```
+✗ Publish rejected: permission escalation in patch bump
+
+  Version: 2.3.4 → 2.3.5 (patch)
+  Change:  network.outbound — added "data.analytics.io"
+
+  Adding new network domains requires at least a minor version bump.
+  New network domains in a minor bump require a major version bump.
+
+  To publish with this permission change, bump to version 3.0.0.
+```
+
+<Callout type="info">
+These rules protect skill consumers. When you run `tank update`, you expect patch updates to be safe by definition — no new capabilities, no new attack surface. The escalation enforcement makes that guarantee hard rather than advisory.
+</Callout>
+
+---
+
+## Permission Best Practices
+
+| Permission | ✅ Best Practice | ❌ Anti-Pattern | Why |
+|------------|-----------------|-----------------|-----|
+| `network.outbound` | `["api.stripe.com", "api.sendgrid.com"]` | `["*"]` | Wildcards allow reaching any host, including attacker-controlled servers |
+| `network.outbound` | `["api.example.com"]` | `["*.example.com"]` | Only use wildcards if the skill genuinely needs multiple subdomains |
+| `filesystem.read` | `["./src/**", "./package.json"]` | `["./**"]` or `["/**"]` | Reading the entire project exposes secrets, credentials, and private data |
+| `filesystem.write` | `["./output/**"]` | `["./src/**"]` | Write access to source files allows backdoor injection |
+| `filesystem.write` | Never grant | `["./.env*"]` | Write access to `.env` files allows credential theft |
+| `subprocess` | `false` or absent | `true` (without justification) | Subprocess access bypasses all other permission controls |
+| `environment` | `["OPENAI_API_KEY"]` | (no guidance — always explicit) | Name only what you need; any undeclared variable the code reads is flagged |
+| General | Declare the minimum needed | Declare broad permissions "just in case" | Broad permissions harm your audit score and erode user trust |
+
+### The Minimal-Permission Principle
+
+Declare only the permissions your skill actually requires to function. This principle matters for two reasons:
+
+1. **Audit score:** Check #5 (permission extraction match) awards 2 points when your declared permissions precisely match what the code actually uses. Over-declaring permissions costs points even if no code uses them.
+
+2. **Installer trust:** The registry displays permissions prominently on every skill page. A skill with `subprocess: true` and broad filesystem write access will receive fewer installs than an equivalent skill with minimal permissions — because sophisticated users read the permission list before installing.
+
+---
+
+## Viewing Permissions
+
+### CLI: `tank permissions`
+
+The `tank permissions` command reads the installed lockfile and displays a resolved summary of every permission in use across all installed skills, grouped by type:
+
+```bash
+tank permissions
+
+# Output:
+# Resolved permissions for 3 installed skills
+#
+# network.outbound
+#   api.anthropic.com          ← @vercel/next-skill@2.1.3
+#   *.vercel.com               ← @vercel/next-skill@2.1.3
+#   cdn.jsdelivr.net           ← @community/seo-audit@3.0.0
+#
+# filesystem.read
+#   ./src/**                   ← @vercel/next-skill@2.1.3, @community/seo-audit@3.0.0
+#   ./package.json             ← all 3 skills
+#   ./.env.local               ← @team/internal-linter@1.0.0
+#
+# filesystem.write
+#   ./output/**                ← @community/seo-audit@3.0.0
+#   ./.tank/cache/**           ← @vercel/next-skill@2.1.3
+#
+# subprocess
+#   (none)
+#
+# environment
+#   ANTHROPIC_API_KEY          ← @vercel/next-skill@2.1.3
+#   VERCEL_TOKEN               ← @vercel/next-skill@2.1.3
+#   NODE_ENV                   ← @community/seo-audit@3.0.0
+```
+
+This view makes it immediately clear which skill is claiming which access. If `.env.local` appearing under `filesystem.read` is unexpected for your use case, you can investigate `@team/internal-linter` before trusting it with that access.
+
+### MCP Tool: `tank_permissions`
+
+The MCP server exposes a `tank_permissions` tool that returns the same resolved permission summary as a structured JSON object, making it usable by the agent itself to introspect what its skills are allowed to do:
+
+```json
+{
+  "network": {
+    "outbound": {
+      "api.anthropic.com": ["@vercel/next-skill@2.1.3"],
+      "*.vercel.com": ["@vercel/next-skill@2.1.3"]
+    }
+  },
+  "filesystem": {
+    "read": {
+      "./src/**": ["@vercel/next-skill@2.1.3", "@community/seo-audit@3.0.0"],
+      "./package.json": ["@vercel/next-skill@2.1.3", "@community/seo-audit@3.0.0", "@team/internal-linter@1.0.0"]
+    },
+    "write": {
+      "./output/**": ["@community/seo-audit@3.0.0"]
+    }
+  },
+  "subprocess": false,
+  "environment": {
+    "ANTHROPIC_API_KEY": ["@vercel/next-skill@2.1.3"],
+    "VERCEL_TOKEN": ["@vercel/next-skill@2.1.3"],
+    "NODE_ENV": ["@community/seo-audit@3.0.0"]
+  }
+}
+```
+
+---
+
+## Further Reading
+
+- [Security Model](/docs/security) — How the 6-stage scanner detects malicious permissions usage in code
+- [Security Checklist](/docs/security-checklist) — Pre-publish checklist including permission best practices
+- [Publishing Guide](/docs/publishing) — Full workflow for declaring permissions when publishing
+- [CLI Reference](/docs/cli) — All `tank permissions`, `tank audit`, and `tank verify` command options
 
 
 ---
@@ -1125,25 +3598,25 @@ LLM_SCAN_ENABLED=false
 
 Source: https://tankpkg.dev/docs/publish-first-skill
 
-> Step-by-step guide to publish your first AI agent skill to Tank registry
+> Step-by-step tutorial to publish your first AI agent skill to the Tank registry in under 10 minutes — with security scanning and permission declarations.
 
 
 # Publish Your First Skill
 
-This tutorial walks you through publishing your first AI agent skill to the Tank registry in under 10 minutes.
+This tutorial walks you through publishing your first AI agent skill to the Tank registry in under 10 minutes. By the end, your skill will be scanned, versioned, and available for others to install.
 
 ## Prerequisites
 
 - Node.js 24+ installed
 - A Tank account ([sign up free](/login))
-- A skill you want to share
+- A skill directory you want to share
 
 ## Step 1: Install the Tank CLI
 
 ```bash
-npm install -g @tank/cli
+npm install -g @tankpkg/cli
 # or
-pnpm add -g @tank/cli
+pnpm add -g @tankpkg/cli
 ```
 
 Verify installation:
@@ -1158,7 +3631,7 @@ tank --version
 tank login
 ```
 
-This opens your browser for OAuth authentication. Once complete, your API key is stored securely in `~/.tank/config.json`.
+This opens your browser for GitHub OAuth authentication. Once complete, your API key is stored securely in `~/.tank/config.json`.
 
 ## Step 3: Initialize Your Skill
 
@@ -1168,7 +3641,7 @@ Navigate to your skill directory and run:
 tank init
 ```
 
-This creates a `tank.json` manifest file with:
+This creates a `skills.json` manifest file:
 
 ```json
 {
@@ -1194,10 +3667,13 @@ This creates a `tank.json` manifest file with:
 
 ## Step 4: Declare Permissions
 
-Tank enforces least-privilege by default. Declare only what your skill needs:
+Tank enforces least-privilege by default. Declare only what your skill actually needs:
 
 ```json
 {
+  "name": "my-skill",
+  "version": "1.0.0",
+  "description": "Audits SEO for a given URL",
   "permissions": {
     "network": ["https://api.openai.com"],
     "filesystem": {
@@ -1210,36 +3686,48 @@ Tank enforces least-privilege by default. Declare only what your skill needs:
 ```
 
 <Callout type="info">
-Runtime permission prompts will show users exactly what your skill requests access to.
+Runtime permission prompts will show users exactly what your skill requests access to. Skills with minimal, specific permissions earn higher audit scores and build more user trust.
 </Callout>
+
+See the [Permissions reference](/docs/permissions) for the full permission schema and best practices.
 
 ## Step 5: Run Security Scan
 
-Before publishing, verify your skill passes Tank's 6-stage security pipeline:
+Before publishing, run Tank's 6-stage security scanner locally to catch issues early:
 
 ```bash
-tank verify
+tank scan
 ```
 
 This runs:
-1. **Structure validation** — manifest integrity, file limits
-2. **Static analysis** — AST scanning for dangerous patterns
-3. **Injection detection** — prompt injection and code injection
-4. **Secret scanning** — credential exfiltration risks
-5. **Supply chain** — dependency vulnerabilities
-6. **Permission validation** — runtime boundary enforcement
+1. **Ingest** — Hashes files, validates tarball structure
+2. **Structure validation** — Manifest integrity, file count and size limits
+3. **Static analysis** — AST scanning for dangerous patterns (Semgrep, Bandit)
+4. **Injection detection** — Prompt injection and code injection patterns
+5. **Secret scanning** — Credential and API key detection
+6. **Supply chain** — Dependency vulnerability scanning (OSV API)
+
+Fix any `CRITICAL` or `HIGH` findings before proceeding. The registry will reject skills that fail the mandatory security pipeline.
+
+<Callout type="info">
+`tank scan` runs the local security check. `tank verify` checks lockfile integrity for installed skills — these are different commands with different purposes.
+</Callout>
 
 ## Step 6: Publish
 
 ```bash
+# Validate first (no upload)
+tank publish --dry-run
+
+# Publish for real
 tank publish
 ```
 
 Your skill is now:
-- Scanned for security issues
-- Signed with a cryptographic signature
-- Uploaded to the Tank registry
-- Available for others to install
+- Scanned for security issues by the full 6-stage pipeline
+- Assigned an audit score (0–10) based on quality and security
+- Uploaded to the Tank registry as a signed tarball
+- Available for others to install with `tank install @you/my-skill`
 
 ## Step 7: Verify Publication
 
@@ -1251,75 +3739,251 @@ tank info my-skill
 
 Or visit: `https://tankpkg.dev/skills/my-skill`
 
+You'll see:
+- The audit score and security scan results
+- Version history and semver metadata
+- Declared permissions
+- Download and star counts
+
 ## Next Steps
 
-- [Install a skill](/docs/installing) to see the consumer experience
-- [Read the CLI reference](/docs/cli) for all available commands
-- [Learn about security model](/docs/security) to understand permission enforcement
+- [Install a skill](/docs/installing) to see the consumer experience end-to-end
+- [Read the CLI reference](/docs/cli) for all available commands and flags
+- [Learn about the security model](/docs/security) to understand how the 6-stage pipeline works
+- [Security checklist](/docs/security-checklist) to review your skill against best practices before publishing
+- [CI/CD Integration](/docs/cicd) to automate publishing with the [GitHub Action](/docs/github-action)
 
 
 ---
 
-# Publishing Skills
+# Publishing AI Agent Skills
 
 Source: https://tankpkg.dev/docs/publishing
 
-> Build, validate, and publish skills with accurate metadata and minimal permissions.
+> Build, validate, and publish AI agent skills to the Tank registry — with security scanning, permission declarations, and version escalation protection.
 
 
-# Publishing Skills
+# Publishing AI Agent Skills
 
-This is a task-focused guide for shipping production-grade skills.
+Publishing to Tank is a deliberate process, not a one-liner. Every skill goes through a 6-stage security pipeline before it becomes installable. Permission escalation is enforced at the version level. This guide walks you through every step, from initial manifest authoring to post-publish validation.
 
 ## Preflight Checklist
 
-Before publishing, ensure:
+Before running `tank publish`, confirm all of the following:
 
-- `skills.json` exists and is valid
-- Version is correct (SemVer)
-- Permissions are minimal
-- README and usage examples exist
-- `tank login` already completed
+- [ ] `skills.json` exists at the root of your skill directory
+- [ ] `name` is scoped correctly (`@org/skill-name`) and matches your registry org membership
+- [ ] `version` is a valid semver string and is **higher** than the previously published version
+- [ ] `permissions` declares the minimum set your code actually uses — no more
+- [ ] A `README.md` or `SKILL.md` file is present with usage documentation
+- [ ] No secrets, credentials, or `.env` files are included in the directory
+- [ ] `tank login` has been completed and `tank whoami` confirms your identity
+- [ ] `tank doctor` exits with no errors
 
-## skills.json (minimal example)
+## The `skills.json` Manifest
+
+The `skills.json` file is the single source of truth for your skill's identity, version, and permission declarations. It is named `skills.json` — **not** `tank.json`.
+
+### Full manifest example
 
 ```json
 {
-  "name": "my-skill",
+  "name": "@org/my-skill",
   "version": "1.0.0",
-  "description": "Does one thing well",
+  "description": "A concise description of what this skill does and why an agent would use it.",
+  "repository": "https://github.com/org/my-skill",
   "permissions": {
-    "network": { "outbound": ["api.openai.com"] },
-    "filesystem": { "read": ["./data/**"], "write": ["./output/**"] },
+    "network": {
+      "outbound": ["api.openai.com", "*.anthropic.com"]
+    },
+    "filesystem": {
+      "read": ["./src/**", "./data/**"],
+      "write": ["./output/**"]
+    },
     "subprocess": false,
-    "environment": ["OPENAI_API_KEY"]
+    "environment": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"]
   }
 }
 ```
 
+### Permission field reference
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `network.outbound` | `string[]` | Allowlist of hostnames or glob patterns the skill may connect to |
+| `filesystem.read` | `string[]` | Glob patterns for paths the skill may read |
+| `filesystem.write` | `string[]` | Glob patterns for paths the skill may write |
+| `subprocess` | `boolean` | Whether the skill may spawn child processes. Use `false` if not needed. |
+| `environment` | `string[]` | Environment variable names the skill may read |
+
+<Callout type="info">
+  Be specific with network hostnames. `*.anthropic.com` is acceptable. `*` is a red flag that the security scanner will flag as an overly broad network permission. Broad wildcards directly lower your audit score.
+</Callout>
+
+### Manifest validation rules
+
+- `name` must be scoped (`@org/skill-name`). Unscoped names are not accepted.
+- `version` must be a valid semver string (`MAJOR.MINOR.PATCH`).
+- `description` must be present and non-empty.
+- `permissions` must be present. If your skill needs no special permissions, declare an empty object: `"permissions": {}`.
+
 ## Publish Flow
+
+The recommended publish flow has three steps:
+
+### Step 1 — Self-diagnostic
 
 ```bash
 tank doctor
-tank publish --dry-run
-tank publish
 ```
+
+`tank doctor` checks your local config, auth token, registry connectivity, and manifest validity. Fix any errors before proceeding.
+
+### Step 2 — Dry run
+
+```bash
+tank publish --dry-run
+```
+
+The dry run packs your skill into a tarball and validates it locally — checking manifest schema, file count, total size, ignored file exclusions, and permission declaration completeness — **without uploading anything**. This is the fastest way to catch problems.
 
 Supported publish flags:
 
-- `--dry-run`
-- `--private`
-- `--visibility <mode>`
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Validate and pack locally, do not upload |
+| `--private` | Publish as a private skill (org members only) |
+| `--visibility <mode>` | Explicit visibility: `public` or `private` |
 
-## Versioning Policy
+### Step 3 — Publish
 
-- **Patch**: bug fixes
-- **Minor**: backward-compatible features
-- **Major**: breaking changes
+```bash
+tank publish
+```
 
-Update version before each release.
+The full publish flow:
+1. Packs the skill directory into a tarball (excluding ignored files)
+2. Computes SHA-512 of the tarball
+3. Uploads to the registry
+4. Triggers the 6-stage security scanner
+5. Returns the published version URL and initial scan status
 
-## Post-publish Validation
+The skill becomes installable after the scanner completes. You can monitor scan progress with `tank info @org/my-skill`.
+
+## Organization and Scoped Publishing
+
+Publishing `@org/skill-name` requires membership in the `org` organization on Tank. If you attempt to publish to a scope you don't belong to, the request is rejected with a `403 Forbidden` error.
+
+To publish under an organization:
+
+1. The organization must exist in the Tank registry (created via the web dashboard or admin API).
+2. Your account must be an active member of that organization.
+3. The `name` field in `skills.json` must match the org scope exactly.
+
+To publish under your personal namespace, use your GitHub username as the scope: `@your-username/skill-name`.
+
+<Callout type="info">
+  Service accounts (for CI/CD) can publish to an org if the service account's API key was created with `skills:publish` scope and the service account is a member of the org. See the dashboard under **Tokens → Service Accounts**.
+</Callout>
+
+## Versioning Policy and Permission Escalation Rules
+
+Tank enforces strict rules about what changes are allowed at each semver bump level. These rules are applied automatically at publish time — violations are rejected with a descriptive error, not a warning.
+
+### Semver bump types
+
+| Bump | Example | Description |
+|------|---------|-------------|
+| **PATCH** | `1.0.0` → `1.0.1` | Bug fixes only — no behavior changes |
+| **MINOR** | `1.0.0` → `1.1.0` | Backward-compatible new features |
+| **MAJOR** | `1.0.0` → `2.0.0` | Breaking changes |
+
+### Permission escalation rules
+
+| Bump level | Allowed permission changes |
+|------------|---------------------------|
+| **PATCH** | **No new permissions** — a patch that adds any new permission (even a new `environment` variable) is rejected. Bug fixes must not expand capability. |
+| **MINOR** | **No dangerous permissions** — you may add new non-dangerous permissions (e.g., new `filesystem.read` paths), but adding `network.*` or `subprocess: true` at a minor bump is rejected. |
+| **MAJOR** | **Any changes allowed** — a major version bump signals a contract change. All permission additions are permitted. |
+
+These rules exist to prevent supply chain attacks where an attacker publishes a patch version of a trusted skill that silently acquires network or subprocess access.
+
+### Example: rejected PATCH bump
+
+```
+ERROR  Permission escalation rejected for PATCH bump (1.2.3 → 1.2.4):
+  New permission detected: network.outbound = ["evil.example.com"]
+  PATCH versions may not add new permissions.
+  Bump to MINOR (1.3.0) or MAJOR (2.0.0) to include permission changes.
+```
+
+### Example: rejected MINOR bump
+
+```
+ERROR  Permission escalation rejected for MINOR bump (1.2.0 → 1.3.0):
+  Dangerous permission added: subprocess = true
+  MINOR versions may not add network or subprocess permissions.
+  Bump to MAJOR (2.0.0) to include this permission change.
+```
+
+## Ignored Files
+
+The following are automatically excluded from the published tarball and are never uploaded to the registry, regardless of what's in your skill directory:
+
+| Pattern | Reason |
+|---------|--------|
+| `.git/` and `.gitignore` | Version control metadata |
+| `node_modules/` | Dependencies must not be bundled |
+| `.env`, `.env.*`, `*.env` | Credential files — never publish secrets |
+| `.DS_Store` | macOS metadata |
+| `dist/`, `build/` | Build artifacts — ship source or a compiled entry point, not both |
+| `*.log` | Log files |
+| `coverage/` | Test coverage output |
+| `.tank/` | Tank's own install directory |
+
+<Callout type="info">
+  If `node_modules/` is not excluded, your tarball will almost certainly exceed the 50 MB size limit. Tank excludes it automatically, but this means your skill's runtime dependencies must be peer dependencies, not bundled ones.
+</Callout>
+
+## Size Limits
+
+| Limit | Value | Enforcement |
+|-------|-------|-------------|
+| Max tarball size | **50 MB** | Enforced at pack time (client) and upload time (server) |
+| Max file count | **1,000 files** | Enforced at pack time (client) and extraction time (installer) |
+
+Skills exceeding either limit are rejected at publish time. The dry run (`--dry-run`) will surface these before upload.
+
+## What the Security Scanner Checks
+
+After upload, Tank runs a 6-stage security pipeline. The stages are:
+
+| Stage | Name | What it checks |
+|-------|------|----------------|
+| 0 | **Ingest** | File hashing, archive structure, metadata extraction |
+| 1 | **Structure** | Directory layout, file types, suspicious patterns |
+| 2 | **Static analysis** | AST-level analysis for dangerous API usage |
+| 3 | **Injection detection** | Prompt injection patterns, jailbreak attempts |
+| 4 | **Secrets detection** | Hardcoded credentials, API keys, private keys |
+| 5 | **Supply chain** | Dependency confusion, typosquatting, known-bad packages |
+
+See the [Security Model](/docs/security) page for a detailed breakdown of each stage's verdict criteria.
+
+### Verdict rules
+
+| Condition | Verdict |
+|-----------|---------|
+| 1 or more critical findings | **FAIL** — skill is blocked from installation |
+| 4 or more high findings | **FAIL** — skill is blocked from installation |
+| 1–3 high findings | **FLAGGED** — installable with warning |
+| Medium / low findings only | **PASS_WITH_NOTES** — installable, findings shown in audit |
+| No findings | **PASS** |
+
+A `FAIL` verdict means `tank install @org/skill-name` will refuse to install the skill until the findings are resolved and a new version is published.
+
+## Post-Publish Validation
+
+After publishing, verify the skill is available and correctly scanned:
 
 ```bash
 tank info @org/my-skill
@@ -1327,31 +3991,302 @@ tank audit @org/my-skill
 ```
 
 Confirm:
+- The published version appears in the version list
+- The declared permissions in the registry match your `skills.json`
+- The security audit shows no unexpected critical or high findings
+- The audit score (0–10) is at or above your acceptable threshold
 
-- package appears in registry
-- permissions are accurate
-- no unexpected high/critical findings
+An audit score below 5 indicates issues worth addressing before recommending the skill to other users.
 
 ## Security Publishing Rules
 
-- Request only permissions your code actually needs
-- Avoid broad wildcards for network/filesystem
-- Never embed secrets in source
-- Keep dependencies pinned and reviewed
+- **Request only what you use** — every permission you declare is visible to every user who reviews your skill. Unused permissions are the first signal of a malicious or sloppy skill.
+- **Avoid broad network wildcards** — prefer exact hostnames over `*`. If you need to call multiple endpoints on the same domain, use `*.domain.com` rather than `*`.
+- **Never embed secrets** — the scanner's stage 4 runs entropy analysis and known-pattern matching. Hardcoded API keys will be detected and will produce a critical finding.
+- **Pin your own dependencies** — if your skill depends on other skills, pin them to exact versions in your `skills.json` to prevent your users from being affected by upstream updates.
+- **Review scanner findings before each release** — run `tank audit @org/my-skill` after publishing and before promoting the version in any downstream systems.
 
-## Common Failures
+## Common Failures and Fixes
 
-### Validation failure
+### `skills.json` validation failure
 
-Fix `skills.json` shape and rerun `tank publish --dry-run`.
+```
+ERROR  Invalid manifest: "name" must be scoped (e.g. "@org/skill-name")
+```
+
+Fix the `skills.json` field indicated in the error message, then re-run `tank publish --dry-run`.
+
+### Permission escalation rejected
+
+```
+ERROR  Permission escalation rejected for PATCH bump
+```
+
+The version bump level is too low for the permission changes you made. Either remove the new permission (if it was unintentional) or bump to the appropriate version level (MINOR or MAJOR).
 
 ### Security finding blocks release
 
-Address the finding; do not bypass scanner gates.
+```
+ERROR  Skill blocked: FAIL verdict (2 critical findings)
+  Stage 4 — Secrets: Hardcoded API key detected at ./src/client.ts:42
+```
 
-### Wrong visibility
+Address the finding in your source code — remove the hardcoded secret and use the `environment` permission to declare the environment variable instead. Then publish a new version.
 
-Republish with explicit `--private` or `--visibility`.
+### Size limit exceeded
+
+```
+ERROR  Tarball exceeds 50 MB limit (current: 73.2 MB)
+  Hint: node_modules/ is excluded automatically. Check for large binary files.
+```
+
+Identify and remove large files that don't belong in the published skill. Use `tank publish --dry-run` to see the file list before uploading.
+
+### Organization membership error
+
+```
+ERROR  403 Forbidden: You are not a member of @org
+```
+
+You must be an active member of the organization to publish under its scope. Contact an org admin to be added, or publish under your personal scope instead.
+
+### Wrong visibility after publish
+
+Republish the skill with explicit visibility:
+
+```bash
+tank publish --visibility private
+# or
+tank publish --private
+```
+
+Note: changing visibility for an already-published version requires an admin action on the web dashboard.
+
+## Next Steps
+
+- **[Installing Skills](/docs/installing)** — how consumers install, verify, and manage your published skill
+- **[Security Model](/docs/security)** — the full 6-stage scanner breakdown and verdict rules
+- **[Permissions Reference](/docs/permissions)** — all permission types, syntax, and enforcement behavior
+- **[CLI Reference](/docs/cli)** — all `tank publish` flags and related commands
+
+
+---
+
+# Searching for Skills
+
+Source: https://tankpkg.dev/docs/search
+
+> Find AI agent skills in the Tank registry using hybrid fuzzy search with typo tolerance, full-text matching, and advanced filters for security score, popularity, and freshness.
+
+
+# Searching for Skills
+
+Tank provides three ways to find AI agent skills: the CLI, the web UI, and the REST API. All three methods query the same underlying search index and return the same results — choose whichever fits your workflow.
+
+## Three Ways to Search
+
+| Method | Best For |
+|--------|----------|
+| `tank search "query"` | Quick lookups while working in the terminal |
+| Web browse page + Cmd+K palette | Exploring the registry visually with filters |
+| `GET /api/v1/search` | Programmatic discovery, custom tooling, MCP integrations |
+
+## How Tank Search Works
+
+Tank uses a **hybrid 3-tier ranking** system that combines multiple matching strategies into a single relevance score. This means you get useful results even with typos, partial words, or short queries.
+
+### Tier 1 — ILIKE Prefix and Substring Matching (up to 400 pts)
+
+The first pass does case-insensitive string matching against skill names and descriptions:
+
+- **Prefix match** (`skill-name ILIKE 'query%'`): 400 points — the query matches the start of the name
+- **Substring match** (`skill-name ILIKE '%query%'`): 200 points — the query appears anywhere in the name or description
+
+This handles the common case where you know (or almost know) the exact name.
+
+### Tier 2 — pg_trgm Fuzzy Matching (up to 300 pts)
+
+PostgreSQL's `pg_trgm` extension computes trigram similarity between your query and skill names. Any skill with a similarity score above **0.15** is included, weighted by how closely it matches:
+
+```
+score = 300 × trigram_similarity(query, skill_name)
+```
+
+This is what handles typos: searching `"vercel deplyo"` still finds `vercel-deploy` because enough trigrams overlap. The GIN trigram index keeps this fast even as the registry grows.
+
+### Tier 3 — Full-Text Search via tsvector (up to 100 pts)
+
+Skills have a precomputed `searchVector` column (type `tsvector`) that indexes names, descriptions, and tags. PostgreSQL's `plainto_tsquery` converts your query into a full-text search expression and ranks matches using `ts_rank`:
+
+```
+score = 100 × ts_rank(search_vector, plainto_tsquery(query))
+```
+
+Full-text search handles multi-word queries well and understands stemming — searching `"deploys"` also matches skills about `"deployment"`.
+
+### Bonus Points for High-Quality Matches
+
+On top of the three tiers, Tank awards additional points for specific match types:
+
+| Match Type | Bonus Points |
+|-----------|-------------|
+| Exact name match | +1000 |
+| Exact prefix match | +800 |
+| Scoped name match (`@org/skill`) | +600 |
+| Substring match in name | +400 |
+
+The final score is the sum of all applicable points. Results are sorted descending by this score, then by download count as a tiebreaker.
+
+<Callout type="info">
+The combined scoring means a skill with a slightly lower textual match but many downloads can rank above an obscure skill with a perfect name match. This surfaces battle-tested skills first, similar to how npm surfaces popular packages.
+</Callout>
+
+## Search Parameters
+
+All three search interfaces accept the same filtering parameters:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `q` | string | — | Search query. Supports partial words, typos, scoped names (`@org/skill`) |
+| `page` | integer | `1` | Result page (1-indexed) |
+| `limit` | integer | `20` | Results per page. Min: 1, Max: 50 |
+| `sort` | string | `score` | Sort order: `score`, `updated`, `downloads`, `stars`, `name` |
+| `visibility` | string | `public` | Filter by visibility: `all`, `public`, `private` |
+| `scoreBucket` | string | `all` | Filter by audit score: `all`, `high` (7–10), `medium` (4–6), `low` (0–3) |
+
+<Callout type="info">
+Filtering by `visibility=private` or `visibility=all` requires authentication. Unauthenticated requests are silently coerced to `visibility=public`.
+</Callout>
+
+## CLI Search
+
+```bash
+tank search "query"
+```
+
+The CLI prints a color-coded table of matching skills with their name, version, description, and audit score. Scores are color-coded:
+
+- **Green** (7–10) — high quality, passes all checks
+- **Yellow** (4–6) — medium quality, some checks failed
+- **Red** (0–3) — low quality, significant issues found
+
+### CLI Search Examples
+
+```bash
+# Search by keyword
+tank search "browser automation"
+
+# Search for a scoped skill
+tank search "@vercel/deploy"
+
+# Find skills related to code review
+tank search "code review"
+```
+
+The CLI always returns public skills sorted by relevance score. For filtered results (by score bucket, sort order, etc.) use the web UI or API.
+
+## Web Search
+
+### Browse Page
+
+The registry browse page at [tankpkg.dev/skills](/skills) lets you:
+
+- Search with a full-text input
+- Filter by **security score bucket** (High / Medium / Low)
+- Sort by **Updated**, **Downloads**, **Stars**, or **Relevance**
+- Page through results with keyboard navigation
+
+### Command Palette (Cmd+K)
+
+Press `Cmd+K` (macOS) or `Ctrl+K` (Windows/Linux) anywhere on the Tank website to open the command palette. Type to search skills instantly — results update as you type with no page reload.
+
+The command palette searches skill names and descriptions with a 150ms debounce. It's the fastest way to jump directly to a skill's detail page.
+
+## API Search
+
+Use the search API directly for programmatic discovery, custom tooling, or building on top of Tank's registry.
+
+### Request
+
+```bash
+curl "https://tankpkg.dev/api/v1/search?q=browser+automation&limit=5&sort=downloads" \
+  -H "Authorization: Bearer $TANK_TOKEN"
+```
+
+### Parameters as Query String
+
+```
+GET /api/v1/search?q=browser+automation&page=1&limit=20&sort=score&scoreBucket=high
+```
+
+### Response
+
+```json
+{
+  "results": [
+    {
+      "name": "@community/browser-automation",
+      "version": "2.3.1",
+      "description": "Playwright-based browser automation skill for AI agents",
+      "author": "community",
+      "downloads": 12400,
+      "stars": 341,
+      "auditScore": 9,
+      "visibility": "public",
+      "updatedAt": "2026-02-14T11:30:00Z",
+      "score": 1700
+    }
+  ],
+  "total": 23,
+  "page": 1,
+  "limit": 20,
+  "pages": 2
+}
+```
+
+### Searching Scoped Skills
+
+The API handles scoped names correctly — `@org/skill` is tokenized as an org-scoped query:
+
+```bash
+# Find all skills from the vercel org
+curl "https://tankpkg.dev/api/v1/search?q=%40vercel" \
+  -H "Authorization: Bearer $TANK_TOKEN"
+
+# Find a specific scoped skill
+curl "https://tankpkg.dev/api/v1/search?q=%40vercel%2Fdeploy-skill" \
+  -H "Authorization: Bearer $TANK_TOKEN"
+```
+
+### Filtering by Audit Score
+
+Only install skills that pass Tank's security checks:
+
+```bash
+# Only return high-quality skills (score 7-10)
+curl "https://tankpkg.dev/api/v1/search?q=web+scraping&scoreBucket=high"
+```
+
+<Callout type="warn">
+Skills with a `low` audit score (0–3) have significant security findings. Review `tank audit @org/skill-name` carefully before installing any low-scoring skill.
+</Callout>
+
+## Search Performance
+
+Tank's search is designed to stay fast as the registry grows:
+
+- **GIN index** on `searchVector` — full-text search is O(log n)
+- **GIN trigram index** on skill names — fuzzy matching without sequential scans
+- **Precomputed `searchVector`** — updated on publish, not at query time
+- **Combined Drizzle query** — name, description, score, and download count fetched in a single round trip
+
+Typical search latency is under 50ms at p99 for the hosted registry.
+
+## Related
+
+- [Installing Skills](/docs/installing) — install skills you find in search
+- [Publishing Skills](/docs/publishing) — improve your skill's discoverability
+- [API Reference](/docs/api) — full search API specification
 
 
 ---
@@ -1360,7 +4295,7 @@ Republish with explicit `--private` or `--visibility`.
 
 Source: https://tankpkg.dev/docs/security-checklist
 
-> Security best practices checklist for publishing safe AI agent skills
+> Security best practices checklist for publishing safe AI agent skills — covering permissions, code security, prompt injection prevention, and dependency management.
 
 
 # Secure AI Skills Checklist
@@ -1423,7 +4358,10 @@ Use this checklist before publishing any AI agent skill to ensure it follows sec
 ## Before Publishing
 
 ```bash
-# Run the security verifier
+# Run the security scanner (6-stage pipeline)
+tank scan
+
+# Verify lockfile integrity
 tank verify
 
 # Check for secrets accidentally committed
@@ -1470,8 +4408,431 @@ Snyk Agent Scan is optional and cloud-dependent. If unavailable, scanning contin
 ---
 
 <Callout type="info">
-This checklist is enforced automatically by `tank verify`. Run it early and often during development.
+This checklist is enforced automatically by `tank scan` and the 6-stage security pipeline. Run it early and often during development. See the [Security Model](/docs/security) for a deep dive into each stage.
 </Callout>
+
+
+---
+
+# Security Model
+
+Source: https://tankpkg.dev/docs/security
+
+> How Tank's 6-stage security pipeline scans AI agent skills for vulnerabilities, prompt injection, credential theft, and supply chain attacks before they reach your agents.
+
+
+# Security Model
+
+Tank's security pipeline is the core reason the project exists. This page explains exactly what runs when a skill is scanned, what each stage detects, how verdicts are assigned, and how the audit score is calculated.
+
+## Why AI Skill Security Is Different
+
+Traditional package managers worry about dependency vulnerabilities — known CVEs in libraries you ship. AI agent skills introduce a fundamentally larger attack surface:
+
+- Skills execute with the **agent's full authority** — reading files, calling APIs, running shell commands
+- Skills can contain **prompt injection payloads** that hijack agent behavior mid-conversation
+- Skills can **exfiltrate credentials** by intercepting environment variables the agent holds
+- Skills can **abuse trust relationships** between the agent and the model provider
+
+This risk materialized in February 2026. The **ClawHavoc incident** exposed 341 malicious skills — 12% of a major marketplace — distributing credential-stealing malware disguised as productivity tools. The attack worked because that registry had no static analysis, no permission enforcement, and no code signing. Users had no way to know what they were installing.
+
+Tank was built as the answer. Security scanning is mandatory, non-optional, and runs server-side before a skill is ever made publicly available.
+
+<Callout type="info">
+Every skill published to the Tank registry is scanned before it becomes installable. A skill with a FAIL verdict is blocked from publication. A FLAGGED skill requires manual review by a registry moderator before release.
+</Callout>
+
+---
+
+## 6-Stage Security Pipeline
+
+The pipeline is implemented in Python (`python-api/lib/scan/`) as six independent stages. Each stage can error without blocking subsequent stages, but errors are surfaced in the final verdict. All stages write structured findings into a shared result object that feeds the verdict engine.
+
+```
+tarball → [Stage 0] → [Stage 1] → [Stage 2] → [Stage 3] → [Stage 4] → [Stage 5] → verdict
+           ingest      structure   static       injection    secrets     supply
+```
+
+### Stage 0: Ingestion & Safe Quarantine
+
+The first stage downloads the tarball into an isolated quarantine directory and validates it before a single file is extracted.
+
+**What it does:**
+
+- Downloads the tarball to a temporary quarantine directory (never the working directory)
+- Validates the source URL — rejects non-HTTPS schemes, private IP ranges (127.x, 10.x, 192.168.x, 169.254.x, ::1), and localhost
+- Computes the **SHA-256 hash** of the raw tarball for integrity tracking and deduplication
+- Extracts with strict security filters applied to every path in the archive
+
+**Extraction security filters** — any file failing these checks causes immediate rejection with a `critical` finding:
+
+| Check | Why |
+|-------|-----|
+| Symlinks | Could point outside the sandbox to host filesystem paths |
+| Hardlinks | Same escape vector as symlinks, subtler to detect |
+| Absolute paths | `/etc/passwd` style paths extracted verbatim on some systems |
+| Path traversal | `../../../home/user/.ssh/id_rsa` style directory climbing |
+| Zip bomb detection | Deeply nested or recursively-compressed archives that expand exponentially |
+
+**Hard limits** enforced during ingestion:
+
+| Limit | Value |
+|-------|-------|
+| Maximum tarball size | 50 MB |
+| Maximum single file size | 5 MB |
+| Maximum file count | 1,000 files |
+
+Exceeding any limit is a `critical` finding and terminates the scan immediately.
+
+<Callout type="warn">
+The 50 MB / 1,000 file limits are not suggestions — they are hard stops. Skills that bundle large datasets, pre-trained model weights, or vendored node_modules will fail ingestion. Keep skills lean: code and configuration only.
+</Callout>
+
+---
+
+### Stage 1: Structure Validation & Unicode Attack Detection
+
+Stage 1 validates that the skill is well-formed and checks every filename and string in the manifest for Unicode-based obfuscation attacks.
+
+**Structure checks:**
+
+- Presence of `SKILL.md` manifest — absence is a `high` finding
+- Valid UTF-8 encoding throughout — non-UTF-8 files are flagged `medium`
+- Detection of hidden dotfiles (`.env`, `.npmrc`, `.gitconfig`) that shouldn't be distributed — flagged `low` to `medium`
+- NFKC normalization tricks — characters that look identical but normalize differently (e.g., the Unicode "micro sign" µ vs Greek lowercase µ) are flagged `medium`
+
+**Unicode attack detection** — a dedicated sub-scanner checks every filename, field in `SKILL.md`, and string in package manifests:
+
+| Attack Type | Severity | Example |
+|------------|----------|---------|
+| **Bidirectional override characters** (U+202A–U+202E, U+2066–U+2069) | `critical` | Filename appears as `"document.pdf"` but is actually `"fdp.tnemucode"` when executed |
+| **Cyrillic homoglyphs** replacing Latin characters | `high` | `аnthroрic.com` (Cyrillic а and р) vs `anthropic.com` |
+| **Zero-width characters** (U+200B, U+FEFF, U+00AD) | `medium` | Hidden characters in identifiers that change behavior without changing appearance |
+
+Bidirectional override characters receive `critical` severity because they are the core technique used in the "Trojan Source" class of attacks — they allow an attacker to make source code appear to reviewers as doing something completely different from what it actually executes.
+
+---
+
+### Stage 2: Static Analysis — Code-Level Vulnerability Detection
+
+Stage 2 is the deepest code inspection stage. It runs multiple analyzers across all code files in the extracted skill.
+
+**Python files — Bandit AST analysis:**
+
+[Bandit](https://bandit.readthedocs.io/) runs a full Abstract Syntax Tree parse of every `.py` file and checks for:
+
+- `eval()`, `exec()`, `compile()` calls with dynamic input
+- `subprocess` module usage (flagged for cross-check with permissions)
+- `os.system()`, `os.popen()`, `commands.getstatusoutput()`
+- `pickle.loads()` / `yaml.load()` deserialization
+- Hardcoded password or key literals
+- Use of weak cryptographic primitives (MD5, SHA1 for security)
+- XML external entity (XXE) vulnerabilities
+- SQL string formatting (potential injection)
+
+**JavaScript and TypeScript files — custom regex pattern engine:**
+
+A set of compiled regex patterns scans every `.js`, `.ts`, `.mjs`, `.cjs` file for:
+
+- `eval(`, `new Function(`, `setTimeout(code)` patterns
+- `child_process.exec`, `execSync`, `spawn` usage
+- Dynamic `require()` or `import()` with variable arguments
+- `fetch(`, `axios(`, `http.request(` (cross-checked against network permissions)
+- `process.env` access (cross-checked against environment permissions)
+- Base64-then-eval obfuscation: `Buffer.from(X, 'base64')` followed by `eval`
+
+**Shell and Bash files:**
+
+- Command injection patterns (`$()`, backtick expansion with user input)
+- `curl | bash` or `wget -O- | sh` patterns
+- Modification of PATH or sensitive environment variables
+
+**Obfuscation detection:**
+
+Stage 2 specifically looks for code obfuscation — a strong signal of malicious intent:
+
+- Multi-layer base64 encoding: `atob(atob(...))` chains
+- ROT13 + eval combinations
+- Excessive string splitting and joining of identifiers
+- Hex-encoded string literals used in `eval` or `exec`
+
+**Permission cross-check:**
+
+Any network call, subprocess invocation, or environment variable access found in code is cross-checked against the permissions declared in `SKILL.md`. Discrepancies where code does more than permissions declare are flagged `high`. This is the primary mechanism for detecting skills that lie about what they do.
+
+---
+
+### Stage 3: Prompt Injection & Hidden Content Detection
+
+Stage 3 is unique to AI skill security — it's the stage with no direct equivalent in traditional package scanning. It detects content designed to hijack agent behavior.
+
+**Prompt injection pattern categories:**
+
+Tank compiles 114 patterns across 8 categories at scanner startup:
+
+| Category | Description | Example Signals |
+|----------|-------------|-----------------|
+| **Direct override** | Instructions that tell the model to ignore prior context | "ignore previous instructions", "disregard your system prompt" |
+| **Role hijacking** | Attempts to redefine what the model is | "you are now", "from now on you will be", "new persona:" |
+| **Context manipulation** | Fictitious scenarios that excuse policy violations | "in this hypothetical", "pretend this is a game where rules don't apply" |
+| **Exfiltration** | Instructions to send data to external endpoints | "send the contents of", "forward all messages to", "email the above" |
+| **Privilege escalation** | Claims of elevated permissions or developer mode | "developer mode enabled", "DAN mode", "jailbreak token:" |
+| **Claude format injection** | Attempts to inject `<parameter name="thinking">` tags, `Human:` / `Assistant:` turn delimiters | Anthropic-format delimiters appearing in skill content strings |
+| **Imperative language** | Urgent commands disguised as skill instructions | "you must immediately", "do not tell the user", "execute without confirmation" |
+| **Authority claims** | False claims of being Anthropic, OpenAI, or the registry | "message from Anthropic:", "system override from registry:" |
+
+**Hidden content detection:**
+
+Injection payloads are often concealed where users won't look:
+
+- **HTML comments** — `<!-- ignore previous instructions -->` inside skill documentation
+- **Markdown comments** — `[//]: # (inject: ...)` syntax
+- **Base64-encoded strings in code comments** — decoded and re-scanned for injection patterns
+- **Whitespace steganography** — payload hidden in trailing spaces or tab sequences
+
+**LLM corroboration for ambiguous findings:**
+
+Some patterns have legitimate uses (e.g., a skill teaching prompt engineering might contain "ignore previous instructions" as example content). Stage 3 can optionally send ambiguous findings to an LLM for corroboration — see [LLM-Assisted Analysis](#llm-assisted-analysis) below.
+
+**Optional third-party scanners:**
+
+| Tool | Purpose | Availability |
+|------|---------|-------------|
+| **Cisco Skill Scanner** | AI agent threat detection, specialized for MCP/agent ecosystems | Optional, cloud-dependent |
+| **Snyk Agent Scan** | Prompt injection and tool poisoning detection | Optional, requires Snyk API key |
+
+<Callout type="info">
+If optional scanners are unavailable, Stage 3 continues with its built-in 114-pattern engine. Optional scanner results are additive — they can increase severity but never reduce it.
+</Callout>
+
+---
+
+### Stage 4: Secrets & Credential Detection
+
+Stage 4 scans every file for secrets, API keys, tokens, and credentials that should never be distributed in a skill package.
+
+**detect-secrets library (11 plugins):**
+
+Tank uses the [`detect-secrets`](https://github.com/Yelp/detect-secrets) library, which applies entropy analysis and pattern matching simultaneously:
+
+| Plugin | Detects |
+|--------|---------|
+| `AWSKeyDetector` | AWS access key IDs (`AKIA...`) and secret access keys |
+| `AzureStorageKeyDetector` | Azure storage connection strings and SAS tokens |
+| `GitHubTokenDetector` | GitHub personal access tokens (`ghp_`, `github_pat_`) |
+| `JwtTokenDetector` | JSON Web Tokens (three base64url segments) |
+| `StripeDetector` | Stripe publishable and secret keys |
+| `SlackDetector` | Slack webhook URLs and bot tokens |
+| `BasicAuthDetector` | HTTP Basic auth credentials embedded in URLs |
+| `HexHighEntropyString` | High-entropy hex strings (likely cryptographic keys) |
+| `Base64HighEntropyString` | High-entropy base64 strings (likely encoded secrets) |
+| `KeywordDetector` | Common secret keywords (`password=`, `api_key=`, `token=`) |
+| `MailchimpDetector` | Mailchimp API keys |
+
+**10 custom regex patterns:**
+
+Beyond detect-secrets, Tank adds patterns for secrets not covered by the library:
+
+| Pattern | Detects |
+|---------|---------|
+| `GOOGLE_CLOUD_KEY` | Google Cloud API keys (`AIza...`) |
+| `FIREBASE_KEY` | Firebase admin SDK service account JSON |
+| `DATABASE_URL` | PostgreSQL/MySQL connection strings with embedded credentials |
+| `MONGODB_URI` | MongoDB connection strings with embedded credentials |
+| `REDIS_URL` | Redis connection strings with authentication |
+| `SSH_PRIVATE_KEY` | PEM-encoded private keys (`-----BEGIN RSA PRIVATE KEY-----`) |
+| `SSH_OPENSSH_KEY` | OpenSSH format private keys |
+| `SENDGRID_KEY` | SendGrid API keys (`SG.`) |
+| `SLACK_WEBHOOK` | Slack incoming webhook URLs |
+| `DISCORD_WEBHOOK` | Discord webhook URLs with authentication tokens |
+
+**`.env` file detection:**
+
+Any `.env`, `.env.local`, `.env.production`, or similar file present in the tarball is an automatic `critical` finding — there is no legitimate reason for a distributed skill to include environment configuration files.
+
+<Callout type="error">
+A single confirmed secret in a published skill is treated as a critical incident regardless of Stage 4 severity scoring. The skill is immediately blocked and the publisher account is flagged for review.
+</Callout>
+
+---
+
+### Stage 5: Supply Chain Analysis
+
+Stage 5 analyzes the skill's declared dependencies for typosquatting, known vulnerabilities, and unsafe version pinning practices.
+
+**Supported manifest formats:**
+
+- `requirements.txt` (Python)
+- `pyproject.toml` (Python — `[project.dependencies]` and `[tool.poetry.dependencies]`)
+- `package.json` (Node.js — `dependencies` and `devDependencies`)
+
+**Typosquatting detection:**
+
+Tank maintains an internal list of 1,000+ popular packages across both ecosystems (e.g., `requests`, `numpy`, `react`, `lodash`). Every declared dependency is compared against this list using **Levenshtein distance**:
+
+- Distance 1: `reqests`, `reacts` → `high` finding (very likely intentional typosquatting)
+- Distance 2: `reqeusts`, `reakts` → `medium` finding (suspicious, may be legitimate)
+- Distance 3+: Not flagged as typosquatting
+
+Package names that differ only in separator style (`_` vs `-`) are also normalized before comparison, since `Pillow` and `pillow` are the same package but `Pillow` and `Pill0w` are not.
+
+**OSV vulnerability scanning:**
+
+Every dependency with a pinned version is queried against the [OSV (Open Source Vulnerability) database](https://osv.dev/) API:
+
+- Known CVEs with a CVSS score ≥ 9.0 → `critical` finding
+- CVSS 7.0–8.9 → `high` finding
+- CVSS 4.0–6.9 → `medium` finding
+- CVSS < 4.0 → `low` finding
+
+**Unpinned and loose dependency detection:**
+
+| Pattern | Finding | Reason |
+|---------|---------|--------|
+| No version specifier (`requests`) | `medium` | Allows any version, including future malicious releases |
+| Overly broad range (`>=1.0`) | `medium` | Same risk as unpinned |
+| Loose upper bound (`^1.0.0` allowing major) | `low` | Lower risk but not deterministic |
+| Exact pin (`requests==2.31.0`) | No finding | Best practice |
+
+**Dynamic install detection:**
+
+Any code that runs `pip install` or `npm install` at runtime (common in malicious skills) is flagged `critical`:
+
+- `subprocess.run(["pip", "install", ...])` in Python files
+- `execSync("npm install ...")` in JavaScript files
+- `os.system("pip install ...")` in Python files
+
+Dynamic installs bypass all of Stage 5's static analysis and represent a complete supply chain bypass.
+
+---
+
+## Verdict Rules: How Findings Map to Outcomes
+
+After all six stages complete, the verdict engine counts findings by severity and applies these rules in order:
+
+| Condition | Verdict | Meaning |
+|-----------|---------|---------|
+| 1 or more `critical` findings | **FAIL** | Blocked from publication — must fix all criticals |
+| 4 or more `high` findings | **FAIL** | Blocked from publication — serious systemic issues |
+| 1–3 `high` findings | **FLAGGED** | Requires manual review by a registry moderator before release |
+| `medium` and/or `low` findings only | **PASS_WITH_NOTES** | Publishable — findings are displayed to installers |
+| Zero findings | **PASS** | Clean scan — no findings |
+
+The rules are applied in order — the first matching rule determines the verdict. A skill with 2 criticals and 0 highs is FAIL (by the first rule), not evaluated further.
+
+<Callout type="warn">
+FLAGGED skills are not publicly installable until a registry moderator reviews and approves them. This process typically takes 1–2 business days. If you receive a FLAGGED verdict, address the high-severity findings before requesting review — reviewers will reject skills with unaddressed issues.
+</Callout>
+
+---
+
+## Audit Score Algorithm
+
+The audit score (0–10) is separate from the security verdict. Where the verdict is binary (pass/fail), the score is a continuous quality signal displayed on every skill's registry page and returned by `tank audit`.
+
+The score is computed by `lib/audit-score.ts` across 8 weighted checks:
+
+| # | Check | Points | Pass Condition |
+|---|-------|--------|----------------|
+| 1 | SKILL.md present | 1 pt | `SKILL.md` exists in the tarball root |
+| 2 | Description present | 1 pt | `SKILL.md` contains a non-empty `description` field |
+| 3 | Permissions declared | 1 pt | `permissions` object present in `SKILL.md`, even if empty |
+| 4 | No security issues | 2 pts | Zero findings from Stage 2–5 combined |
+| 5 | Permission extraction match | 2 pts | Code's actual capability usage matches declared permissions |
+| 6 | File count reasonable | 1 pt | Fewer than 100 files in the package |
+| 7 | README documentation | 1 pt | A `README.md` or `README.mdx` is present |
+| 8 | Package size under 5 MB | 1 pt | Total extracted size < 5 MB |
+
+**Maximum: 10 points.**
+
+The most impactful checks are **#4 (No security issues, 2 pts)** and **#5 (Permission extraction match, 2 pts)**. A skill can have a perfect SKILL.md and README and still score 6/10 if its code's actual behavior doesn't match what it declared in permissions.
+
+Check #5 specifically rewards transparency: the security scanner extracts what capabilities the code actually uses (network calls, filesystem access, subprocess calls) and compares against the declared `permissions` block. A skill that declares exactly what it does earns full marks. A skill that declares nothing but does nothing also earns them — the check is about accuracy, not minimalism.
+
+```bash
+# View the full audit breakdown
+tank audit @org/skill-name
+
+# Example output:
+# Audit score: 8/10
+#
+# ✅  SKILL.md present           (1/1)
+# ✅  Description present        (1/1)
+# ✅  Permissions declared       (1/1)
+# ✅  No security issues         (2/2)
+# ⚠️  Permission extraction      (1/2)  — code accesses process.env.HOME (undeclared)
+# ✅  File count reasonable      (1/1)
+# ❌  README documentation       (0/1)  — no README.md found
+# ✅  Package size <5 MB         (1/1)
+```
+
+---
+
+## LLM-Assisted Analysis
+
+Some security findings require contextual judgment that pattern matching alone cannot make accurately. Stage 3 (prompt injection detection) can optionally use an LLM to corroborate ambiguous findings before promoting them to a final severity level.
+
+### How It Works
+
+When a Stage 3 pattern match has a confidence score below a configured threshold — for example, a skill about prompt engineering that legitimately contains phrases like "ignore previous instructions" as educational examples — the scanner can send the flagged content plus surrounding context to an LLM with a structured evaluation prompt.
+
+The LLM is asked to determine:
+1. Is this content genuinely attempting to hijack agent behavior?
+2. What is the likely intent given the surrounding context?
+3. What severity level is appropriate?
+
+The LLM response is used to **raise or lower** the pending finding's severity, or to dismiss it as a false positive. It cannot promote a finding above what pattern matching already established — it can only reduce severity or confirm it.
+
+### Modes
+
+Configure LLM analysis via the `LLM_ANALYSIS_MODE` environment variable on the Python API server:
+
+| Mode | Behavior |
+|------|---------|
+| `byollm` | Use your own LLM endpoint — configure `LLM_ENDPOINT` and `LLM_API_KEY` |
+| `builtin` | Use the registry's configured LLM (registry operators only) |
+| `disabled` | Skip LLM corroboration entirely — pattern matching only |
+
+### On-Premises Deployments
+
+Self-hosted Tank registries can run LLM analysis locally using Ollama. See the [self-hosting guide](/docs/self-hosting) for Docker Compose configuration with the `--profile llm-local` flag, which starts an Ollama container alongside the scanner.
+
+<Callout type="info">
+LLM-assisted analysis is an enhancement to pattern matching, not a replacement for it. Skills are never approved solely on the basis of LLM judgment — all critical and high findings from pattern matching are preserved regardless of LLM corroboration results.
+</Callout>
+
+---
+
+## Rescanning Published Skills
+
+The registry periodically rescans already-published skills when:
+
+- New vulnerability data is available from OSV
+- The prompt injection pattern database is updated with new categories
+- A security report is filed against a specific skill
+
+If a rescan produces a verdict change (e.g., a previously PASS skill now has a critical finding due to a newly disclosed CVE), the skill is immediately pulled from installability and the publisher is notified.
+
+Administrators can trigger manual rescans via:
+
+```bash
+# Admin API — rescan a specific skill
+POST /api/admin/rescan-skills
+{ "skillName": "@org/skill-name" }
+
+# Or rescan all skills in bulk
+POST /api/admin/rescan-skills
+{ "all": true }
+```
+
+---
+
+## Further Reading
+
+- [Permissions & Access Control](/docs/permissions) — How to declare and enforce what skills can access
+- [Security Checklist](/docs/security-checklist) — Pre-publish checklist for skill authors
+- [Publishing Guide](/docs/publishing) — Full publishing workflow including scan results
+- [Self-Hosting](/docs/self-hosting) — Running your own registry with the full security pipeline
 
 
 ---
@@ -1480,7 +4841,7 @@ This checklist is enforced automatically by `tank verify`. Run it early and ofte
 
 Source: https://tankpkg.dev/docs/self-host-quickstart
 
-> Deploy your own Tank registry and security scanner on-premise
+> Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, Redis, MinIO, and AI-powered security scanning.
 
 
 # Self-Host in 15 Minutes
@@ -1537,16 +4898,23 @@ Edit `.env.local` with your values:
 DATABASE_URL=postgresql://tank:password@localhost:5432/tank
 
 # Storage (choose one)
-STORAGE_PROVIDER=onprem  # or 'supabase'
-ONPREM_STORAGE_PATH=/data/tank-storage
+STORAGE_BACKEND=s3
+S3_ENDPOINT=http://localhost:9000
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+S3_BUCKET=tank-skills
 
 # Auth
 NEXT_PUBLIC_APP_URL=https://tank.yourcompany.com
+BETTER_AUTH_SECRET=$(openssl rand -base64 32)
 GITHUB_CLIENT_ID=your-github-oauth-id
 GITHUB_CLIENT_SECRET=your-github-oauth-secret
 
-# Security
+# Admin bootstrap
 FIRST_ADMIN_EMAIL=admin@yourcompany.com
+
+# Security scanner
+PYTHON_API_URL=http://scanner:8000
 ```
 
 ## Step 2: Start Services
@@ -1554,28 +4922,36 @@ FIRST_ADMIN_EMAIL=admin@yourcompany.com
 Using Docker Compose:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 This starts:
 - Next.js web application (port 3000)
 - PostgreSQL database (port 5432)
+- Redis cache (port 6379)
 - MinIO S3-compatible storage (port 9000)
-- Python security scanner (internal)
+- Python security scanner (port 8000)
+
+**Optional — Local LLM analysis:**
+
+```bash
+# Enable Ollama for local AI-powered security analysis
+docker compose --profile llm-local up -d
+```
 
 ## Step 3: Run Database Migrations
 
 ```bash
-docker-compose exec web pnpm drizzle-kit push
+docker compose exec web pnpm --filter=web drizzle-kit push
 ```
 
 ## Step 4: Create Admin User
 
 ```bash
-docker-compose exec web pnpm admin:bootstrap
+docker compose exec web pnpm --filter=web admin:bootstrap
 ```
 
-Promotes `FIRST_ADMIN_EMAIL` to admin role.
+Promotes `FIRST_ADMIN_EMAIL` to admin role. The user must sign in with GitHub OAuth first to create their account, then you run bootstrap.
 
 ## Step 5: Configure OIDC SSO (Optional)
 
@@ -1587,68 +4963,61 @@ OIDC_CLIENT_ID=tank-client
 OIDC_CLIENT_SECRET=your-oidc-secret
 ```
 
+Then restart the web service:
+
+```bash
+docker compose restart web
+```
+
 ## Step 6: Verify Installation
 
 ```bash
 # Check all services are running
-docker-compose ps
+docker compose ps
 
 # Test the API
+curl http://localhost:3000/api/health
 curl http://localhost:3000/api/v1/skills
 
 # Test security scanner
-curl -X POST http://localhost:3000/api/v1/scan \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com/skill.tar.gz"}'
+curl http://localhost:8000/health
 ```
+
+## Kubernetes (Helm) Quick Start
+
+For Kubernetes deployments, use the Helm chart at `helm/tank/`:
+
+```bash
+# Update chart dependencies (PostgreSQL, Redis, MinIO)
+helm dependency update helm/tank/
+
+# Install into the tank namespace
+helm dependency update helm/tank/ && helm install tank helm/tank/ \
+  --namespace tank \
+  --create-namespace \
+  --set secrets.betterAuthSecret="$(openssl rand -base64 32)" \
+  --set dbMigration.force=true
+```
+
+After install, configure your ingress and DNS. See the [full self-hosting guide](/docs/self-hosting) for Helm values reference and production configuration.
 
 ## Production Checklist
 
-- [ ] Change default passwords
+- [ ] Change default MinIO credentials (`minioadmin`/`minioadmin`)
+- [ ] Set strong `BETTER_AUTH_SECRET` (min 32 characters, `openssl rand -base64 32`)
 - [ ] Configure TLS/SSL certificates
-- [ ] Set up database backups
-- [ ] Configure log aggregation
-- [ ] Set up monitoring (Loki + Grafana included)
-- [ ] Review firewall rules
-
-## High Availability Setup
-
-For production deployments:
-
-### Database (PostgreSQL)
-
-```yaml
-# Use managed PostgreSQL (RDS, Cloud SQL, etc.)
-DATABASE_URL=postgresql://tank:password@postgres.example.com:5432/tank?sslmode=require
-```
-
-### Storage (S3)
-
-```yaml
-# Use AWS S3 or compatible
-STORAGE_PROVIDER=onprem
-AWS_ACCESS_KEY_ID=your-access-key
-AWS_SECRET_ACCESS_KEY=your-secret-key
-AWS_REGION=us-east-1
-S3_BUCKET=tank-skills
-```
-
-### Container Orchestration
-
-Deploy to Kubernetes using provided Helm charts:
-
-```bash
-helm install tank ./infra/helm/tank \
-  --set database.url=$DATABASE_URL \
-  --set storage.bucket=$S3_BUCKET
-```
+- [ ] Set up database backups (daily minimum)
+- [ ] Configure log aggregation (Loki + Grafana included)
+- [ ] Review firewall rules — only expose port 3000 publicly
+- [ ] Set token expiry policies for API keys
+- [ ] Configure `FIRST_ADMIN_EMAIL` and bootstrap before going live
 
 ## Monitoring
 
-Access included observability stack:
+Access the included observability stack:
 
-- **Grafana**: `http://localhost:3001` (admin/admin)
-- **Loki**: Log aggregation
+- **Grafana**: `http://localhost:3001` (admin/admin — change on first login)
+- **Loki**: Log aggregation (pre-configured)
 - **Prometheus**: Metrics collection
 
 Default dashboards:
@@ -1660,100 +5029,454 @@ Default dashboards:
 
 ```bash
 git pull origin main
-docker-compose pull
-docker-compose up -d
+docker compose pull
+docker compose up -d
 ```
 
 Migrations run automatically on startup.
 
+**For Helm upgrades:**
+
+```bash
+helm upgrade tank helm/tank/ \
+  --namespace tank \
+  --reuse-values
+```
+
 ## Support
 
-- **Documentation**: [Self-hosting docs](/docs/self-hosting)
+- **Documentation**: [Full self-hosting guide](/docs/self-hosting)
 - **Community**: [GitHub Discussions](https://github.com/tankpkg/tank/discussions)
 - **Enterprise support**: enterprise@tankpkg.dev
 
 
 ---
 
-# Self-Hosting
+# Self-Hosting Tank
 
 Source: https://tankpkg.dev/docs/self-hosting
 
-> Repository-aligned runbook for self-hosting Tank.
+> Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, Redis, MinIO, and security scanning.
 
 
-# Self-Hosting
+# Self-Hosting Tank
 
-This runbook is aligned to the current monorepo layout.
+Deploy your own Tank registry for complete control over AI agent skill distribution and security scanning. Self-hosting provides data sovereignty, air-gapped support, custom security policies, and the ability to meet compliance requirements (SOC2, HIPAA, FedRAMP).
 
-## Architecture
+## Architecture Overview
 
-- **Web app**: `apps/web` (Next.js)
-- **Scanner**: `python-api` (FastAPI pipeline)
-- **Shared contracts**: `packages/shared`
-- **Storage**: Supabase or compatible object storage
-- **Database**: PostgreSQL
+A self-hosted Tank deployment runs five core services:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       Your Infrastructure                        │
+│                                                                  │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐│
+│  │  Next.js 15  │──▶│  PostgreSQL  │   │   MinIO / S3         ││
+│  │  Web + API   │   │   17+        │   │   (tarball storage)  ││
+│  │  (port 3000) │   │  (port 5432) │   │   (port 9000)        ││
+│  └──────┬───────┘   └──────────────┘   └──────────────────────┘│
+│         │                                                        │
+│         │           ┌──────────────┐                            │
+│         └──────────▶│   FastAPI    │                            │
+│                     │   Security   │                            │
+│                     │   Scanner    │                            │
+│                     │  (port 8000) │                            │
+│                     └──────────────┘                            │
+│                                                                  │
+│  ┌──────────────┐                                               │
+│  │    Redis     │  (optional — session store + scan cache)      │
+│  │  (port 6379) │                                               │
+│  └──────────────┘                                               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+| Service | Technology | Purpose |
+|---------|-----------|---------|
+| **Web app** | Next.js 15 (App Router) | Registry UI, REST API, CLI backend |
+| **Security scanner** | FastAPI + Python 3.14 | 6-stage security scanning pipeline |
+| **Database** | PostgreSQL 17+ | Skills, versions, users, audit logs |
+| **Object storage** | MinIO (S3-compatible) | Skill tarballs |
+| **Cache** | Redis (optional) | Session store, scan result caching |
 
 ## Prerequisites
 
-- Node.js 24+
-- pnpm 10+
-- Python 3.14+
-- PostgreSQL instance
-- Storage credentials
+- **Docker** and **Docker Compose** (for Docker deployment)
+- **Helm 3+** and **kubectl** (for Kubernetes deployment)
+- 4 GB RAM minimum (8 GB recommended for production)
+- 20 GB disk (for database and storage)
+- Node.js 24+ and Python 3.14+ (for source builds only)
 
-## Minimum Setup
+## Docker Compose Deployment
+
+### 1) Clone and Configure
 
 ```bash
-pnpm install
+git clone https://github.com/tankpkg/tank.git
+cd tank
 cp .env.example .env.local
 ```
 
-Required envs (minimum):
-
-- `DATABASE_URL`
-- `BETTER_AUTH_SECRET`
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `PYTHON_API_URL`
-
-## Build and Run
+Edit `.env.local` with your values:
 
 ```bash
-pnpm turbo build --filter=@tank/web...
-pnpm --filter=@tank/web start
+# Database
+DATABASE_URL=postgresql://tank:password@postgres:5432/tank
+
+# Auth
+BETTER_AUTH_SECRET=$(openssl rand -base64 32)
+NEXT_PUBLIC_APP_URL=https://tank.yourcompany.com
+GITHUB_CLIENT_ID=your-github-oauth-app-id
+GITHUB_CLIENT_SECRET=your-github-oauth-app-secret
+
+# Storage (MinIO / S3)
+STORAGE_BACKEND=s3
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+AWS_REGION=us-east-1
+S3_BUCKET=tank-skills
+S3_ENDPOINT=http://minio:9000
+
+# Security scanner
+PYTHON_API_URL=http://scanner:8000
+
+# Admin bootstrap
+FIRST_ADMIN_EMAIL=admin@yourcompany.com
+
+# Redis (optional but recommended)
+REDIS_URL=redis://redis:6379
+SESSION_STORE=redis
 ```
 
-## Schema / Migrations
+### 2) Docker Compose Services
+
+The `docker-compose.yml` defines five services (plus optional Ollama for local LLM analysis):
+
+```yaml
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: tank
+      POSTGRES_USER: tank
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  scanner:
+    build:
+      context: ./python-api
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - PYTHON_API_URL=${PYTHON_API_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+      - scanner
+
+volumes:
+  postgres_data:
+  minio_data:
+```
+
+**Optional: Local LLM analysis with Ollama**
 
 ```bash
-pnpm --filter=web drizzle-kit generate
-pnpm --filter=web drizzle-kit push
+# Start with LLM support (adds ollama service)
+docker compose --profile llm-local up -d
 ```
 
-## Admin Bootstrap
+### 3) Build and Run
 
 ```bash
-pnpm --filter=web admin:bootstrap
+# Start all services
+docker compose up -d
+
+# Check service health
+docker compose ps
+
+# View logs
+docker compose logs -f web
+docker compose logs -f scanner
 ```
 
-## Health and Verification
+### 4) Run Database Migrations
 
-- Web health endpoint: `/api/health`
-- Validate publish/install flows with CLI in a clean environment
-- Confirm scanner connectivity via `PYTHON_API_URL`
+```bash
+docker compose exec web pnpm --filter=web drizzle-kit push
+```
+
+Or run as a one-shot migration container:
+
+```bash
+docker compose run --rm web pnpm --filter=web drizzle-kit push
+```
+
+### 5) Bootstrap the Admin User
+
+```bash
+docker compose exec web pnpm --filter=web admin:bootstrap
+```
+
+This promotes `FIRST_ADMIN_EMAIL` to the admin role. The user must sign in with GitHub OAuth first (creating their account), then run bootstrap.
+
+### 6) Health Verification
+
+```bash
+# API health check
+curl http://localhost:3000/api/health
+
+# Test skill listing
+curl http://localhost:3000/api/v1/skills
+
+# Test scanner connectivity
+curl http://localhost:8000/health
+
+# Verify CLI can connect
+TANK_REGISTRY=http://localhost:3000 tank search hello
+```
+
+## Kubernetes Helm Chart Deployment
+
+For production Kubernetes deployments, use the included Helm chart.
+
+### Chart Location
+
+```
+helm/tank/
+├── Chart.yaml
+├── values.yaml
+└── templates/
+    ├── web-deployment.yaml
+    ├── scanner-deployment.yaml
+    ├── ingress.yaml
+    └── ...
+```
+
+### Chart Dependencies
+
+The `helm/tank/` chart includes:
+
+| Dependency | Version | Purpose |
+|-----------|---------|---------|
+| PostgreSQL | 15.5.38 | Primary database |
+| Redis | 19.6.4 | Session store and caching |
+| MinIO | 5.4.0 | S3-compatible object storage |
+
+### Quick Start
+
+```bash
+# Update Helm dependencies
+helm dependency update helm/tank/
+
+# Install into the tank namespace
+helm install tank helm/tank/ \
+  --namespace tank \
+  --create-namespace \
+  --set secrets.betterAuthSecret="$(openssl rand -base64 32)" \
+  --set web.env.GITHUB_CLIENT_ID="your-client-id" \
+  --set web.env.GITHUB_CLIENT_SECRET="your-client-secret" \
+  --set web.env.FIRST_ADMIN_EMAIL="admin@yourcompany.com"
+```
+
+### Key Helm Values
+
+```yaml
+# values.yaml — key configuration options
+
+web:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/tankpkg/tank-web
+    tag: latest
+  env:
+    NEXT_PUBLIC_APP_URL: "https://tank.yourcompany.com"
+    GITHUB_CLIENT_ID: ""
+    GITHUB_CLIENT_SECRET: ""
+    FIRST_ADMIN_EMAIL: ""
+
+scanner:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/tankpkg/tank-scanner
+    tag: latest
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+secrets:
+  betterAuthSecret: ""         # Required: openssl rand -base64 32
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: tank.yourcompany.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: tank-tls
+      hosts:
+        - tank.yourcompany.com
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+postgresql:
+  enabled: true
+  auth:
+    database: tank
+    username: tank
+    password: ""   # Set via --set or sealed secret
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+
+minio:
+  enabled: true
+  auth:
+    rootUser: minioadmin
+    rootPassword: ""  # Set via --set or sealed secret
+```
+
+### Run Migrations on Helm Install
+
+Enable the migration job in `values.yaml`:
+
+```yaml
+dbMigration:
+  enabled: true
+  force: false
+```
+
+Or force-run on first install:
+
+```bash
+helm install tank helm/tank/ \
+  --namespace tank \
+  --create-namespace \
+  --set dbMigration.force=true \
+  --set secrets.betterAuthSecret="$(openssl rand -base64 32)"
+```
+
+### Upgrade
+
+```bash
+helm upgrade tank helm/tank/ \
+  --namespace tank \
+  --reuse-values
+```
+
+## Environment Variables Reference
+
+### Required
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `BETTER_AUTH_SECRET` | Session encryption key (min 32 chars) |
+| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
+| `PYTHON_API_URL` | Security scanner base URL |
+
+### Storage
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `STORAGE_BACKEND` | `supabase` or `s3` | `supabase` |
+| `S3_BUCKET` | Bucket name for tarballs | — |
+| `S3_ENDPOINT` | S3 endpoint (for MinIO) | — |
+| `AWS_ACCESS_KEY_ID` | S3 access key | — |
+| `AWS_SECRET_ACCESS_KEY` | S3 secret key | — |
+| `AWS_REGION` | S3 region | `us-east-1` |
+
+### Optional
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `REDIS_URL` | Redis connection string | — |
+| `SESSION_STORE` | `memory` or `redis` | `memory` |
+| `FIRST_ADMIN_EMAIL` | Bootstraps admin role on first run | — |
+| `OIDC_ISSUER` | OIDC SSO issuer URL | — |
+| `OIDC_CLIENT_ID` | OIDC client ID | — |
+| `OIDC_CLIENT_SECRET` | OIDC client secret | — |
+| `RESEND_API_KEY` | Resend email service key | — |
 
 ## Operational Notes
 
-- Keep `python-api/` and `apps/web/api-python/` in sync when scanner logic changes.
-- Use Turbo builds for dependency-aware monorepo builds.
-- Do not bypass auth secret requirements in production.
+- **Python sync**: Keep `python-api/` and `apps/web/api-python/` in sync. Both must match when scanner logic changes.
+- **Turbo builds**: Use `pnpm turbo build --filter=@tank/web...` for dependency-aware monorepo builds.
+- **Auth secret**: Never omit `BETTER_AUTH_SECRET` in production. Sessions fail silently without it.
+- **Storage backend**: Supabase is for cloud deployments. Use `s3` with MinIO for self-hosted.
+
+## Monitoring
+
+Access the included observability stack (Docker Compose only):
+
+- **Grafana**: `http://localhost:3001` (default: admin/admin)
+- **Loki**: Log aggregation (configured in `infra/loki/`)
+- **Prometheus**: Metrics collection
+
+Default dashboards include:
+- Tank API performance
+- Security scan latency and throughput
+- Skill publish and download rates
+- Active user sessions
 
 ## Troubleshooting
 
 ### Build fails with workspace package resolution
 
-Use monorepo-aware build command:
+Use the monorepo-aware build command:
 
 ```bash
 pnpm turbo build --filter=@tank/web...
@@ -1761,11 +5484,35 @@ pnpm turbo build --filter=@tank/web...
 
 ### Auth runtime errors
 
-Set `BETTER_AUTH_SECRET` explicitly in deployment environment.
+Ensure `BETTER_AUTH_SECRET` is explicitly set in your deployment environment. It must be identical across all web replicas.
 
-### Scanner errors
+### Scanner connectivity errors
 
-Verify `PYTHON_API_URL` and scanner deployment health.
+Verify `PYTHON_API_URL` points to the scanner service. In Docker Compose, use the service name (`http://scanner:8000`). Check scanner health:
+
+```bash
+curl $PYTHON_API_URL/health
+```
+
+### MinIO bucket not found
+
+Create the bucket before starting the web app:
+
+```bash
+docker compose exec minio mc alias set local http://localhost:9000 minioadmin minioadmin
+docker compose exec minio mc mb local/tank-skills
+```
+
+### Helm chart: pods stuck in `Pending`
+
+Check resource requests against available node capacity:
+
+```bash
+kubectl describe pod -n tank -l app=tank-web
+kubectl get nodes -o wide
+```
+
+Adjust `resources.requests` in `values.yaml` if needed.
 
 
 ---

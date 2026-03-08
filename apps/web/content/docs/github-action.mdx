@@ -1,0 +1,273 @@
+---
+title: GitHub Action for Publishing
+description: Automate AI agent skill publishing with Tank's official GitHub Action — security scanning, version validation, and badge generation in your CI/CD pipeline.
+---
+
+# GitHub Action for Publishing
+
+Tank's official GitHub Action automates the full skill publishing lifecycle directly from your CI/CD pipeline. On every push to `main`, the action validates your skill manifest, runs security scanning, publishes to the Tank registry, and generates an audit score badge you can embed in your README.
+
+## What the Action Does
+
+1. **Validates** your `skills.json` manifest — schema, semver format, and permission declarations
+2. **Runs security scanning** — the same 6-stage pipeline used by the registry (structure, static AST, injection, secrets, supply chain)
+3. **Publishes** the skill tarball to the Tank registry and stores it in the configured storage backend
+4. **Outputs** the published name, version, audit score, and a badge URL you can use in your README
+
+<Callout type="info">
+The action uses the same `tank publish` flow under the hood. It reads your `TANK_TOKEN` secret, authenticates, and publishes — no interactive login needed in CI.
+</Callout>
+
+## Quick Start
+
+Add this step to your workflow after checking out your code:
+
+```yaml
+- uses: tankpkg/tank@v1
+  with:
+    token: ${{ secrets.TANK_TOKEN }}
+```
+
+That's the minimum configuration. The action publishes from the repository root using the hosted Tank registry.
+
+To get your `TANK_TOKEN`, go to [Dashboard → Tokens](/tokens), create a token with the `skills:publish` scope, and add it to your repository's secrets at **Settings → Secrets and variables → Actions → New repository secret**.
+
+## Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `token` | **Yes** | — | Your Tank API token. Always use `${{ secrets.TANK_TOKEN }}` — never hardcode. |
+| `registry` | No | `https://tankpkg.dev` | Registry URL. Override for self-hosted deployments. |
+| `directory` | No | `.` | Directory containing `skills.json`. Use if your skill is not at the repo root. |
+| `dry-run` | No | `false` | When `true`, validates and scans but does not publish. Use on pull requests. |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `name` | The published skill name (e.g. `@acme/my-skill`) |
+| `version` | The published version (e.g. `1.2.0`) |
+| `audit-score` | Numeric audit score from 0 to 10 |
+| `badge-url` | SVG badge URL — embed in your README to show the current audit score |
+
+Access outputs in subsequent steps using `steps.<step-id>.outputs.<output-name>`.
+
+## Full Workflow Example
+
+This workflow publishes on every push to `main` and posts a comment on pull requests with the audit score and badge:
+
+```yaml
+name: Publish Skill to Tank
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write   # needed to post PR comments
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Publish to Tank
+        id: tank
+        uses: tankpkg/tank@v1
+        with:
+          token: ${{ secrets.TANK_TOKEN }}
+          directory: .
+          dry-run: ${{ github.event_name == 'pull_request' }}
+
+      - name: Comment audit score on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Tank Audit Results\n\n**Skill:** \`${{ steps.tank.outputs.name }}\`\n**Version:** ${{ steps.tank.outputs.version }}\n**Audit Score:** ${{ steps.tank.outputs.audit-score }}/10\n\n![Audit Score](${{ steps.tank.outputs.badge-url }})`
+            })
+```
+
+## Dry Run for Pull Requests
+
+Run validation on every pull request without publishing. This catches permission escalations, manifest errors, and security findings before they merge:
+
+```yaml
+name: Validate Skill on PR
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Dry-run validation
+        id: tank
+        uses: tankpkg/tank@v1
+        with:
+          token: ${{ secrets.TANK_TOKEN }}
+          dry-run: true
+
+      - name: Fail on low audit score
+        if: ${{ steps.tank.outputs.audit-score < 7 }}
+        run: |
+          echo "Audit score ${{ steps.tank.outputs.audit-score }}/10 is below threshold (7)"
+          exit 1
+```
+
+<Callout type="warn">
+Dry runs still require a valid `TANK_TOKEN` — the action authenticates to run the security scan against the registry's scanning infrastructure, even without publishing.
+</Callout>
+
+The action exits with a non-zero code if:
+
+- `skills.json` is invalid or missing required fields
+- Security scanning returns a `FAIL` verdict (1+ critical or 4+ high severity findings)
+- The version has already been published (Tank enforces immutability)
+- Permission escalation is detected (see [Publishing](/docs/publishing) for escalation rules)
+
+## Badge Integration
+
+The `badge-url` output points to a dynamically generated SVG badge hosted by the Tank registry. Add it to your `README.md` to show the current audit score:
+
+```markdown
+[![Tank Audit Score](https://tankpkg.dev/api/v1/badge/@acme/my-skill)](https://tankpkg.dev/skills/@acme/my-skill)
+```
+
+The badge updates automatically when you publish a new version — no manual badge URL changes needed.
+
+### Automated Badge Update via Workflow
+
+After publishing, update your README badge URL automatically using the `badge-url` output:
+
+```yaml
+- name: Update README badge
+  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  run: |
+    sed -i "s|https://tankpkg.dev/api/v1/badge/.*)|${{ steps.tank.outputs.badge-url }})|g" README.md
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git add README.md
+    git diff --staged --quiet || git commit -m "chore: update Tank audit badge"
+    git push
+```
+
+<Callout type="info">
+Badge colors follow Tank's scoring thresholds: **green** (7–10), **yellow** (4–6), **red** (0–3). The badge is a static SVG served from the Tank CDN — it renders correctly on GitHub, npm, and anywhere else markdown badges are supported.
+</Callout>
+
+## Publishing from a Monorepo
+
+If your repository contains multiple skills in subdirectories, run the action once per skill using a matrix strategy:
+
+```yaml
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        skill:
+          - path: skills/browser-automation
+            name: "@acme/browser-automation"
+          - path: skills/code-review
+            name: "@acme/code-review"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Publish ${{ matrix.skill.name }}
+        uses: tankpkg/tank@v1
+        with:
+          token: ${{ secrets.TANK_TOKEN }}
+          directory: ${{ matrix.skill.path }}
+```
+
+## Combining with `tank install` for Consumers
+
+If your project both **publishes** skills and **installs** skills from the registry as dependencies, you'll use the action for publishing and the CLI directly for installation:
+
+```yaml
+steps:
+  # Install skill dependencies first
+  - name: Install Tank CLI
+    run: npm i -g @tankpkg/cli
+
+  - name: Install skills
+    env:
+      TANK_TOKEN: ${{ secrets.TANK_TOKEN }}
+    run: |
+      tank install
+      tank verify
+
+  # Then run your tests / build
+
+  # Finally, publish the skill itself
+  - name: Publish to Tank
+    uses: tankpkg/tank@v1
+    with:
+      token: ${{ secrets.TANK_TOKEN }}
+```
+
+For full documentation on installing skills in CI, see the [CI/CD Integration guide](/docs/cicd).
+
+## Self-Hosted Registry
+
+Point the action at your own Tank instance using the `registry` input:
+
+```yaml
+- uses: tankpkg/tank@v1
+  with:
+    token: ${{ secrets.TANK_TOKEN }}
+    registry: https://tank.internal.acme.com
+```
+
+The `TANK_TOKEN` must be issued by your self-hosted registry — tokens from the public registry won't work against a different instance.
+
+## Troubleshooting
+
+### `401 Unauthorized`
+
+The `TANK_TOKEN` secret is missing, expired, or lacks the `skills:publish` scope. Create a new token at [Dashboard → Tokens](/tokens) with `skills:publish` scope and update your secret.
+
+### `Version already published`
+
+Tank enforces version immutability. Increment the version in your `skills.json` before pushing. Patch → `1.0.1`, minor → `1.1.0`, major → `2.0.0`.
+
+### `Security scan returned FAIL`
+
+The scanner found critical or high-severity issues. Run `tank audit` locally to see the full report:
+
+```bash
+tank audit --local .
+```
+
+Address the findings before pushing. Common causes: hardcoded API keys, `eval()` on untrusted input, or broad filesystem write permissions.
+
+### `Permission escalation rejected`
+
+You added new permissions in a patch (`1.0.x`) or dangerous permissions (network, subprocess) in a minor bump. See the [Publishing guide](/docs/publishing) for Tank's permission escalation policy.

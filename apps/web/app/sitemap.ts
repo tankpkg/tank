@@ -48,10 +48,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${BASE_URL}/docs/user-flow`,
+      url: `${BASE_URL}/docs`,
       lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.7,
+      changeFrequency: 'weekly',
+      priority: 0.8,
     },
   ];
 

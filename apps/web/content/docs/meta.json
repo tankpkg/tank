@@ -6,15 +6,21 @@
     "---Guides---",
     "publishing",
     "installing",
+    "organizations",
+    "search",
     "cicd",
+    "github-action",
     "self-hosting",
+    "---Security---",
+    "security",
+    "permissions",
+    "security-checklist",
     "---Reference---",
     "cli",
     "mcp",
     "api",
     "---Quick Starts---",
     "publish-first-skill",
-    "security-checklist",
     "self-host-quickstart"
   ]
 }
