@@ -289,18 +289,33 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
   const scanResultJson = latestRowData?.scanResult as Record<string, unknown> | null;
   const scanFindingsJson = latestRowData?.scanFindings as ScanFinding[] | null;
 
+  // Safely parse scannedAt date
+  let scannedAt: Date | null = null;
+  if (scanResultJson?.scannedAt) {
+    try {
+      const parsed = new Date(scanResultJson.scannedAt as string);
+      if (!isNaN(parsed.getTime())) {
+        scannedAt = parsed;
+      }
+    } catch {
+      // Invalid date, keep as null
+    }
+  }
+
   const scanDetails: ScanDetails = scanResultJson
     ? {
         verdict: scanResultJson.verdict as string | null,
-        stagesRun: (scanResultJson.stagesRun as string[]) || [],
-        durationMs: scanResultJson.durationMs as number | null,
-        scannedAt: scanResultJson.scannedAt ? new Date(scanResultJson.scannedAt as string) : null,
-        findings: scanFindingsJson || [],
+        stagesRun: Array.isArray(scanResultJson.stagesRun) ? scanResultJson.stagesRun as string[] : [],
+        durationMs: typeof scanResultJson.durationMs === 'number' ? scanResultJson.durationMs : null,
+        scannedAt,
+        findings: Array.isArray(scanFindingsJson) ? scanFindingsJson : [],
         criticalCount: Number(scanResultJson.criticalCount) || 0,
         highCount: Number(scanResultJson.highCount) || 0,
         mediumCount: Number(scanResultJson.mediumCount) || 0,
         lowCount: Number(scanResultJson.lowCount) || 0,
-        llm_analysis: scanResultJson.llm_analysis as LLMAnalysisInfo | null
+        llm_analysis: scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === 'object'
+          ? (scanResultJson.llm_analysis as LLMAnalysisInfo)
+          : null,
       }
     : {
         verdict: null,
