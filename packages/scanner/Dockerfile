@@ -1,5 +1,6 @@
 # Tank Security Scanner
 # FastAPI application for skill security analysis
+# Build context: repo root (for uv.lock access)
 
 FROM python:3.14-alpine AS builder
 
@@ -15,15 +16,16 @@ RUN apk add --no-cache \
     postgresql-dev
 
 # Copy project files for dependency resolution
-COPY pyproject.toml ./
+COPY packages/scanner/pyproject.toml ./
+COPY uv.lock ./
 
 # Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
 # Copy application code
-COPY api ./api
-COPY lib ./lib
+COPY packages/scanner/api ./api
+COPY packages/scanner/lib ./lib
 
 # Production image
 FROM python:3.14-alpine AS runner

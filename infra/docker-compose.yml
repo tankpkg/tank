@@ -74,8 +74,8 @@ services:
   # ===================
   scanner:
     build:
-      context: ../packages/scanner
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: packages/scanner/Dockerfile
     container_name: tank-scanner
     restart: unless-stopped
     environment:
