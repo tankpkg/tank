@@ -38,6 +38,7 @@ Publish-time escalation checks live in `packages/web/lib/permission-escalation.t
 ## Scanner Pipeline
 
 Stage map:
+
 - `0 → safe ingest, extraction, SHA-256 file hashing`
 - `1 → structure validation`
 - `2 → static analysis and permission cross-check`
@@ -52,6 +53,7 @@ Stage 0 is mandatory. Other stages may error independently and still produce a f
 Verdict computation is implemented in the scanner.
 
 Verdict map:
+
 - `1+ critical findings → fail`
 - `4+ high findings → fail`
 - `1-3 high findings → flagged`

@@ -5,6 +5,7 @@ Current package boundaries, data flow, and non-obvious decisions for the monorep
 ## Package Topology
 
 Package map:
+
 - `packages/cli` → `tank` command: init, install, publish, scan, verify, link → depends on `@internal/shared`
 - `packages/mcp-server` → MCP server with CLI-parity tools over stdio → depends on `@internal/shared`
 - `packages/web` → registry UI, REST API, auth, admin, docs → depends on `@internal/shared`
@@ -111,6 +112,7 @@ Scanner service lives in `packages/scanner`.
 Stages are implemented in `packages/scanner/lib/scan/`.
 
 Stage map:
+
 - `0, stage0_ingest.py, fetch tarball + safe extract + SHA-256 file hashes`
 - `1, stage1_structure.py, structure and file-shape checks`
 - `2, stage2_static.py, AST/regex static analysis + permission cross-check`

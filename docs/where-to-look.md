@@ -3,6 +3,7 @@
 Task-to-location map for the current repo layout.
 
 Lookup:
+
 - `add CLI command → packages/cli/src/commands/ → register in packages/cli/src/bin/tank.ts`
 - `add MCP tool → packages/mcp-server/src/tools/ → register in packages/mcp-server/src/index.ts`
 - `modify CLI install/publish internals → packages/cli/src/lib/ → packer, lockfile, resolver, config`

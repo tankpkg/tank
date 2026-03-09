@@ -36,6 +36,7 @@ Good IDD output for this repo includes:
 BDD lives in the root `.bdd/` tree.
 
 BDD layout:
+
 - `features → .bdd/features/`
 - `step definitions → .bdd/steps/`
 - `support → .bdd/support/`
@@ -62,6 +63,7 @@ There is a second BDD stack for browser flows in `e2e/bdd/`, driven by Playwrigh
 Unit tests are colocated.
 
 Unit-test layout:
+
 - `CLI → packages/cli/src/__tests__/`
 - `Web → packages/web/**/__tests__/ + packages/web/lib/__tests__/`
 - `Shared → packages/shared/src/__tests__/`

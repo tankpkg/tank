@@ -16,6 +16,7 @@ It is a standalone service reached over HTTP from the web app.
 ## Endpoints
 
 Endpoint map:
+
 - `GET / → service info`
 - `GET /health → basic health`
 - `GET /health/llm → LLM provider health`
@@ -27,6 +28,7 @@ Endpoint map:
 ## Stages
 
 Stage map:
+
 - `0, stage0_ingest.py, required safe fetch/extract`
 - `1, stage1_structure.py, structure validation`
 - `2, stage2_static.py, Bandit + AST + regex + permission cross-check`

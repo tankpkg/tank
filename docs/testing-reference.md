@@ -5,6 +5,7 @@ Current testing layers, helper entrypoints, and repo-specific constraints.
 ## Layers
 
 Layer map:
+
 - `unit → narrow logic and schema checks → package-local __tests__ + Python test_*.py`
 - `BDD → executable behavior specs → .bdd/ + e2e/bdd/`
 - `E2E → full-stack regression checks → e2e/`
