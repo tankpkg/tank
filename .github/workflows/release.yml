@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
@@ -34,6 +34,14 @@ jobs:
             platform: darwin-x64
             target: bun-darwin-x64
             output: tank-darwin-x64
+          - runner: windows-latest
+            platform: windows-x64
+            target: bun-windows-x64
+            output: tank-windows-x64.exe
+
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout code
@@ -49,39 +57,69 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Enable pnpm
-        run: corepack enable
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Inject version from git tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          node -e "const p=require('./apps/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./apps/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
+          node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
 
       - name: Build bundle and binary
-        working-directory: apps/cli
+        working-directory: packages/cli
         env:
           TARGET: ${{ matrix.target }}
           OUTPUT_NAME: ${{ matrix.output }}
         run: |
-          pnpm --filter @tank/shared build
-          pnpm run build
-          pnpm run build:bundle
-          pnpm run build:sea
+          bun --filter @internal/shared run build
+          bun run build
+          bun run build:bundle
+          bun run build:sea
 
-      - name: Package tarball
-        working-directory: apps/cli/build
+      - name: Package tarball (unix)
+        if: runner.os != 'Windows'
+        working-directory: packages/cli/build
         run: tar -czf ${{ matrix.output }}.tar.gz ${{ matrix.output }}
 
+      - name: Package zip (windows)
+        if: runner.os == 'Windows'
+        working-directory: packages/cli/build
+        shell: pwsh
+        run: Compress-Archive -Path ${{ matrix.output }} -DestinationPath tank-windows-x64.zip
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Generate icon from favicon
+          powershell -ExecutionPolicy Bypass -File installer/windows/create-icon.ps1
+
+          # Install Inno Setup
+          choco install innosetup -y --no-progress
+
+          # Build installer with version from tag
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DVERSION=$version installer\windows\tank-installer.iss
+
       - name: Upload binary artifact
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.output }}
           path: |
-            apps/cli/build/${{ matrix.output }}
-            apps/cli/build/${{ matrix.output }}.tar.gz
+            packages/cli/build/${{ matrix.output }}
+            packages/cli/build/${{ matrix.output }}.tar.gz
+          if-no-files-found: error
+
+      - name: Upload Windows artifacts
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: |
+            packages/cli/build/${{ matrix.output }}
+            packages/cli/build/tank-windows-x64.zip
+            packages/cli/build/tank-windows-x64-setup.exe
           if-no-files-found: error
 
   release:
@@ -136,7 +174,7 @@ jobs:
 
       - name: Generate checksums
         working-directory: release
-        run: sha256sum tank-* *.deb > SHA256SUMS
+        run: sha256sum tank-* *.deb *.exe 2>/dev/null | sort > SHA256SUMS
 
       - name: Update in-repo Homebrew formula
         continue-on-error: true
@@ -202,10 +240,13 @@ jobs:
             release/tank-linux-arm64
             release/tank-darwin-x64
             release/tank-darwin-arm64
+            release/tank-windows-x64.exe
             release/tank-linux-x64.tar.gz
             release/tank-linux-arm64.tar.gz
             release/tank-darwin-x64.tar.gz
             release/tank-darwin-arm64.tar.gz
+            release/tank-windows-x64.zip
+            release/tank-windows-x64-setup.exe
             release/tank_*.deb
             release/SHA256SUMS
 
@@ -227,36 +268,38 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Enable pnpm
-        run: corepack enable
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Inject version from git tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          node -e "const p=require('./apps/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./apps/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
+          node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
           node -e "const p=require('./packages/mcp-server/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/mcp-server/package.json', JSON.stringify(p, null, 2)+'\n')"
 
       - name: Build packages
         run: |
-          pnpm --filter @tank/shared build
-          pnpm --filter ./apps/cli build
-          pnpm --filter @tankpkg/mcp-server build
+          bun --filter @internal/shared run build
+          bun --filter @tankpkg/cli run build
+          bun --filter @tankpkg/mcp-server run build
 
       - name: Publish CLI to npm
         continue-on-error: true
         if: ${{ env.NPM_TOKEN != '' }}
-        working-directory: apps/cli
+        working-directory: packages/cli
+        run: npm publish --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
-        run: pnpm publish --no-git-checks --access public
 
       - name: Publish MCP server to npm
         continue-on-error: true
         if: ${{ env.NPM_TOKEN != '' }}
         working-directory: packages/mcp-server
+        run: npm publish --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
-        run: pnpm publish --no-git-checks --access public

@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUILD_DIR="$ROOT_DIR/build"
+INPUT_FILE="$BUILD_DIR/tank-bundle.mjs"
+TARGET="${TARGET:-}"
+OUTPUT_NAME="${OUTPUT_NAME:-}"
+
+if [ ! -f "$INPUT_FILE" ]; then
+  echo "Missing bundle at $INPUT_FILE"
+  echo "Run: bun run build:bundle"
+  exit 1
+fi
+
+OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
+ARCH_RAW="$(uname -m)"
+
+case "$ARCH_RAW" in
+  x86_64)
+    ARCH="x64"
+    ;;
+  arm64|aarch64)
+    ARCH="arm64"
+    ;;
+  *)
+    echo "Unsupported architecture: $ARCH_RAW"
+    exit 1
+    ;;
+esac
+
+IS_WINDOWS=false
+case "$OS" in
+  darwin|linux)
+    ;;
+  mingw*|msys*|cygwin*)
+    OS="windows"
+    IS_WINDOWS=true
+    ;;
+  *)
+    echo "Unsupported OS: $OS"
+    exit 1
+    ;;
+esac
+
+OUTPUT="$BUILD_DIR/tank-${OS}-${ARCH}"
+if [ "$IS_WINDOWS" = true ]; then
+  OUTPUT="$BUILD_DIR/tank-${OS}-${ARCH}.exe"
+fi
+if [ -n "$OUTPUT_NAME" ]; then
+  OUTPUT="$BUILD_DIR/$OUTPUT_NAME"
+fi
+
+echo "Compiling standalone binary: $OUTPUT"
+if [ -n "$TARGET" ]; then
+  bun build --compile "$INPUT_FILE" --target "$TARGET" --outfile "$OUTPUT"
+else
+  bun build --compile "$INPUT_FILE" --outfile "$OUTPUT"
+fi
+if [ "$IS_WINDOWS" = false ]; then
+  chmod +x "$OUTPUT"
+fi
+
+echo "Binary size:"
+ls -lh "$OUTPUT"
+
+HOST_TARGET="bun-${OS}-${ARCH}"
+
+if [ -n "$TARGET" ] && [ "$TARGET" != "$HOST_TARGET" ]; then
+  echo "Skipping smoke test for cross-compiled target: $TARGET (host: $HOST_TARGET)"
+else
+  echo "Smoke test:"
+  "$OUTPUT" --version
+fi

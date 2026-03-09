@@ -24,21 +24,19 @@ export function registerSearchSkillsTool(server: McpServer): void {
     'Search the Tank registry for AI agent skills',
     {
       query: z.string().min(1).describe('Search query (skill name or keywords)'),
-      limit: z.number().min(1).max(50).optional().default(10).describe('Maximum results to return'),
+      limit: z.number().min(1).max(50).optional().default(10).describe('Maximum results to return')
     },
     async ({ query, limit }) => {
-      const result = await client.fetch<SearchResponse>(
-        `/api/v1/search?q=${encodeURIComponent(query)}&limit=${limit}`,
-      );
+      const result = await client.fetch<SearchResponse>(`/api/v1/search?q=${encodeURIComponent(query)}&limit=${limit}`);
 
       if (!result.ok) {
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Search failed: ${result.error}`,
-            },
-          ],
+              text: `Search failed: ${result.error}`
+            }
+          ]
         };
       }
 
@@ -49,9 +47,9 @@ export function registerSearchSkillsTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: `No skills found matching "${query}". Try different keywords or browse the registry at https://tankpkg.dev`,
-            },
-          ],
+              text: `No skills found matching "${query}". Try different keywords or browse the registry at https://tankpkg.dev`
+            }
+          ]
         };
       }
 
@@ -59,9 +57,8 @@ export function registerSearchSkillsTool(server: McpServer): void {
       const header = '| Skill | Score | Downloads | Description |\n|-------|-------|-----------|-------------|';
       const rows = results.map((skill) => {
         const score = skill.auditScore !== null ? skill.auditScore.toFixed(1) : '-';
-        const downloads = skill.downloads > 1000
-          ? `${(skill.downloads / 1000).toFixed(1)}k`
-          : skill.downloads.toString();
+        const downloads =
+          skill.downloads > 1000 ? `${(skill.downloads / 1000).toFixed(1)}k` : skill.downloads.toString();
         const desc = skill.description?.slice(0, 50) ?? 'No description';
         return `| ${skill.name} | ${score} | ${downloads} | ${desc} |`;
       });
@@ -72,12 +69,12 @@ export function registerSearchSkillsTool(server: McpServer): void {
         header,
         ...rows,
         '',
-        'View full results: https://tankpkg.dev/search?q=' + encodeURIComponent(query),
+        `View full results: https://tankpkg.dev/search?q=${encodeURIComponent(query)}`
       ].join('\n');
 
       return {
-        content: [{ type: 'text' as const, text }],
+        content: [{ type: 'text' as const, text }]
       };
-    },
+    }
   );
 }

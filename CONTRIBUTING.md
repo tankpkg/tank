@@ -16,63 +16,75 @@ Tank is **MVP code-complete** with 461 tests passing. Right now, the most valuab
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) 24 or later
-- [pnpm](https://pnpm.io/) 10 or later (installed via corepack: `corepack enable`)
-- [Python](https://python.org/) 3.14 or later (for security analysis functions)
+- [Bun](https://bun.sh/) 1.x or later
+- [Python](https://python.org/) 3.14 or later (for security scanner)
+- [UV](https://docs.astral.sh/uv/) for Python dependency management — `brew install uv` (macOS) or `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- [just](https://just.systems/) command runner — `brew install just` (macOS) or `cargo install just`
 - A [Supabase](https://supabase.com/) project (for database)
 - A [GitHub OAuth App](https://github.com/settings/developers) (for authentication)
 
 ### Development Setup
 
 1. **Clone the repo**
+
    ```bash
    git clone https://github.com/tankpkg/tank.git
    cd tank
    ```
 
 2. **Install dependencies**
+
    ```bash
-   corepack enable
-   pnpm install
+   bun install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env.local
    ```
+
    Fill in the values — see `.env.example` for what's needed.
 
 4. **Push database schema** (requires DATABASE_URL in .env.local)
+
    ```bash
-   cd apps/web
-   npx drizzle-kit push
+   bun --filter @internal/web exec drizzle-kit push
    ```
 
 5. **Start the dev server**
+
    ```bash
-   pnpm dev --filter=web
+   just dev-web
    ```
 
 6. **Run tests**
+
    ```bash
-   pnpm test              # All tests (445 TypeScript + 16 Python)
-   pnpm test --filter=cli # CLI tests only
-   pnpm test --filter=web # Web tests only
+   just test              # All unit tests
+   just test-python       # Python tests
    ```
+
+7. **Discover all commands** — run `just --list` for the full command surface
 
 ### Project Structure
 
-This is a monorepo managed by [Turborepo](https://turbo.build/repo) with pnpm workspaces:
+This is a monorepo managed by [Turborepo](https://turbo.build/repo) with Bun workspaces:
 
-- `apps/web` — Next.js 15 web app + API routes (deployed to Vercel)
-- `apps/cli` — `tank` CLI tool (TypeScript, commander.js)
+- `packages/web` — Next.js 15 web app + API routes (deployed to Vercel)
+- `packages/cli` — `tank` CLI tool (TypeScript, commander.js)
+- `packages/scanner` — Python security scanner (FastAPI, 6-stage pipeline)
 - `packages/shared` — Shared Zod schemas, TypeScript types, constants
-- `docs/` — Product brief, architecture, roadmap
+- `packages/mcp-server` — MCP server for editor integration
+- `infra/` — Docker Compose, Helm charts, Grafana/Loki configs
+- `docs/` — Product brief, architecture
 
 ## How to Contribute
 
 ### Report a Bug
 
 Use the [Bug Report template](https://github.com/tankpkg/tank/issues/new?template=bug_report.yml) on GitHub. Include:
+
 - What you expected to happen
 - What actually happened
 - Steps to reproduce

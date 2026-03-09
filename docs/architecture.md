@@ -2,8 +2,6 @@
 
 > Technical design for a security-first package manager and registry for AI agent skills.
 
-> **Status**: Draft. This document will evolve as implementation begins.
-
 ## System Overview
 
 ```
@@ -48,6 +46,7 @@
 The command-line tool developers interact with.
 
 **Responsibilities:**
+
 - Parse and validate `skills.json`
 - Generate and verify `skills.lock`
 - Resolve dependency trees
@@ -55,17 +54,14 @@ The command-line tool developers interact with.
 - Verify signatures and integrity hashes locally
 - Display audit information and permission summaries
 
-**Technology decision (pending):**
-- **Node.js**: Faster to build, larger contributor pool, same ecosystem as target users
-- **Rust**: Better performance, single binary distribution, no runtime dependency
-
-The decision depends on whether install speed is a critical differentiator. For MVP, Node.js is likely sufficient.
+**Technology:** Node.js with Commander.js — same ecosystem as target users, 18 commands implemented.
 
 ### Registry API
 
 The server that hosts, indexes, and serves skill packages.
 
 **Responsibilities:**
+
 - Accept and validate skill publishes
 - Run the publish pipeline (sign, analyze, score)
 - Serve skill metadata and packages
@@ -73,6 +69,7 @@ The server that hosts, indexes, and serves skill packages.
 - Handle search queries
 
 **Technology:**
+
 - **API framework**: Hono or NestJS (Node.js)
 - **Database**: PostgreSQL for metadata, versions, publishers, audit records
 - **Package storage**: OCI-compatible registry (skills are stored as OCI artifacts)
@@ -101,6 +98,7 @@ Each step can reject the publish with a clear error message explaining why and h
 The permission model is the core security innovation.
 
 **Three layers:**
+
 1. **Skill declaration**: each skill declares what it needs (`permissions` in skill manifest)
 2. **Project budget**: each project declares what it allows (`permissions` in `skills.json`)
 3. **Install-time enforcement**: CLI blocks skills that exceed the project budget
@@ -111,6 +109,7 @@ The permission model is the core security innovation.
 To prevent security features from degrading developer experience, Tank implements a non-cached performance regression suite that gates all CI merges. See [Performance Testing](performance-testing.md) for methodology.
 
 **Permission types:**
+
 ```
 network:outbound     — make HTTP/HTTPS requests
 network:inbound      — listen on ports
@@ -179,6 +178,7 @@ audit_events
 ### Why OCI for Package Storage?
 
 OCI (Open Container Initiative) registries are a proven, scalable standard for distributing artifacts. Benefits:
+
 - Existing infrastructure (Harbor, GHCR, ECR all support OCI artifacts)
 - Content-addressable storage (integrity built in)
 - Replication and mirroring support
@@ -187,6 +187,7 @@ OCI (Open Container Initiative) registries are a proven, scalable standard for d
 ### Why Sigstore for Signing? (Planned — Phase 2)
 
 Sigstore is the emerging standard for software signing (npm is migrating to it). Benefits:
+
 - Keyless signing via GitHub OIDC — publishers don't manage keys
 - Transparency log (Rekor) provides public audit trail
 - Same tooling developers already use for container signing
@@ -194,6 +195,7 @@ Sigstore is the emerging standard for software signing (npm is migrating to it).
 ### Static Analysis Pipeline (Implemented)
 
 Tank uses a custom 6-stage Python pipeline instead of Semgrep, designed specifically for AI agent skill analysis:
+
 - **Stage 0 (Ingest)**: Hash computation, file inventory
 - **Stage 1 (Structure)**: Package structure validation
 - **Stage 2 (Static)**: AST analysis, regex patterns, permission cross-checking
@@ -204,6 +206,7 @@ Tank uses a custom 6-stage Python pipeline instead of Semgrep, designed specific
 ### Lockfile Format
 
 The lockfile is JSON (not YAML) for:
+
 - Deterministic serialization (JSON.stringify with sorted keys)
 - Easy machine parsing
 - Diffability in version control
@@ -214,7 +217,7 @@ The lockfile is JSON (not YAML) for:
 ## Resolved Technical Decisions
 
 1. **CLI language**: Node.js (Commander.js) — same ecosystem as target users, 16 commands implemented
-2. **Monorepo structure**: Yes — pnpm workspaces with Turbo orchestration (apps/cli, apps/web, packages/shared)
+2. **Monorepo structure**: Yes — bun workspaces with Turbo orchestration (packages/cli, packages/web, packages/shared)
 3. **Search**: PostgreSQL full-text search with GIN index — sufficient for MVP
 4. **Package storage**: Supabase Storage (with on-prem abstraction layer)
 
@@ -229,4 +232,3 @@ The lockfile is JSON (not YAML) for:
 ## Further Reading
 
 - [Product Brief](product-brief.md) — full feature description and positioning
-- [Roadmap](roadmap.md) — phased timeline

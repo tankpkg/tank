@@ -15,6 +15,7 @@ When the registry was unreachable, the `whoami` tool returned `"Session expired 
 ## Resolution
 
 Changed `verifyAuth()` to return a discriminated union with a `reason` field:
+
 - `{ valid: true, user: {...} }` — success
 - `{ valid: false, reason: 'no-token' }` — no credentials
 - `{ valid: false, reason: 'unauthorized' }` — rejected by server

@@ -1,7 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { getConfig, setConfig } from '../lib/config.js';
 import { TankApiClient } from '../lib/api-client.js';
+import { getConfig, setConfig } from '../lib/config.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -11,7 +11,7 @@ export function registerLoginTool(server: McpServer): void {
     'login',
     'Authenticate with Tank using GitHub OAuth device flow. Opens browser for authorization.',
     {
-      timeout: z.number().optional().describe('Timeout in milliseconds (default: 300000 = 5 minutes)'),
+      timeout: z.number().optional().describe('Timeout in milliseconds (default: 300000 = 5 minutes)')
     },
     async ({ timeout = DEFAULT_TIMEOUT_MS }) => {
       const client = new TankApiClient();
@@ -26,9 +26,9 @@ export function registerLoginTool(server: McpServer): void {
             content: [
               {
                 type: 'text' as const,
-                text: `Already logged in as ${displayName}.\n\nTo log out, delete ~/.tank/config.json or use the CLI: tank logout`,
-              },
-            ],
+                text: `Already logged in as ${displayName}.\n\nTo log out, delete ~/.tank/config.json or use the CLI: tank logout`
+              }
+            ]
           };
         }
       }
@@ -38,7 +38,7 @@ export function registerLoginTool(server: McpServer): void {
       const startRes = await fetch(`${config.registry}/api/v1/cli-auth/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state }),
+        body: JSON.stringify({ state })
       });
 
       if (!startRes.ok) {
@@ -47,9 +47,9 @@ export function registerLoginTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: `Failed to start login flow: ${(body as { error?: string }).error ?? startRes.statusText}`,
-            },
-          ],
+              text: `Failed to start login flow: ${(body as { error?: string }).error ?? startRes.statusText}`
+            }
+          ]
         };
       }
 
@@ -60,7 +60,7 @@ export function registerLoginTool(server: McpServer): void {
 
       // Return auth URL and poll for completion
       const deadline = Date.now() + timeout;
-      let authorized = false;
+      const _authorized = false;
       let lastStatus = '';
 
       while (Date.now() < deadline) {
@@ -68,7 +68,7 @@ export function registerLoginTool(server: McpServer): void {
           const exchangeRes = await fetch(`${config.registry}/api/v1/cli-auth/exchange`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionCode, state }),
+            body: JSON.stringify({ sessionCode, state })
           });
 
           if (exchangeRes.ok) {
@@ -85,9 +85,9 @@ export function registerLoginTool(server: McpServer): void {
               content: [
                 {
                   type: 'text' as const,
-                  text: `Successfully logged in as ${displayName}!\n\nYou can now use all Tank MCP tools: scan-skill, publish-skill, etc.`,
-                },
-              ],
+                  text: `Successfully logged in as ${displayName}!\n\nYou can now use all Tank MCP tools: scan-skill, publish-skill, etc.`
+                }
+              ]
             };
           }
 
@@ -98,9 +98,9 @@ export function registerLoginTool(server: McpServer): void {
               content: [
                 {
                   type: 'text' as const,
-                  text: `Login failed: ${(body as { error?: string }).error ?? exchangeRes.statusText}`,
-                },
-              ],
+                  text: `Login failed: ${(body as { error?: string }).error ?? exchangeRes.statusText}`
+                }
+              ]
             };
           }
 
@@ -120,10 +120,10 @@ export function registerLoginTool(server: McpServer): void {
         content: [
           {
             type: 'text' as const,
-            text: `Login timed out. The authorization link may have expired.\n\nTry again: tank login`,
-          },
-        ],
+            text: `Login timed out. The authorization link may have expired.\n\nTry again: tank login`
+          }
+        ]
       };
-    },
+    }
   );
 }

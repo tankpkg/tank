@@ -5,14 +5,15 @@
  * Prerequisites:
  * - Next.js dev server running on localhost:3000
  * - DATABASE_URL set in .env.local
- * - CLI built: pnpm build --filter=tank
+ * - CLI built: bun run build --filter=@tankpkg/cli
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
 import fs from 'node:fs';
 import path from 'node:path';
-import { runTank, expectSuccess, expectFailure } from './helpers/cli';
-import { setupE2E, cleanupE2E, skillExists, versionExists, countVersions, type E2EContext } from './helpers/setup';
-import { createSkillFixture, bumpSkillVersion, cleanupFixture, type SkillFixture } from './helpers/fixtures';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { expectFailure, expectSuccess, runTank } from './helpers/cli';
+import { bumpSkillVersion, cleanupFixture, createSkillFixture, type SkillFixture } from './helpers/fixtures';
+import { cleanupE2E, countVersions, type E2EContext, setupE2E, skillExists, versionExists } from './helpers/setup';
 
 describe('Producer E2E — publish skills to the Tank registry', () => {
   let ctx: E2EContext;
@@ -49,13 +50,13 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
       orgSlug: ctx.orgSlug,
       skillName: 'hello-world',
       version: '1.0.0',
-      description: 'E2E dry run test skill',
+      description: 'E2E dry run test skill'
     });
     tempDirs.push(skill.dir);
 
     const result = await runTank(['publish', '--dry-run'], {
       cwd: skill.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -78,7 +79,7 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
     const result = await runTank(['publish'], {
       cwd: skill.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
 
     expectSuccess(result);
@@ -100,7 +101,7 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
   it('publish same version fails with 409 conflict', async () => {
     const result = await runTank(['publish'], {
       cwd: skill.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectFailure(result);
@@ -117,7 +118,7 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
     const result = await runTank(['publish'], {
       cwd: skill.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
 
     expectSuccess(result);
@@ -136,23 +137,20 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
     const unauthSkill = createSkillFixture({
       orgSlug: ctx.orgSlug,
       skillName: 'no-auth-skill',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     tempDirs.push(unauthSkill.dir);
 
     // Create a temp home with NO token
-    const noAuthHome = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tank-noauth-'));
+    const noAuthHome = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'tank-noauth-'));
     const tankDir = path.join(noAuthHome, '.tank');
     fs.mkdirSync(tankDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(tankDir, 'config.json'),
-      JSON.stringify({ registry: ctx.registry }, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tankDir, 'config.json'), `${JSON.stringify({ registry: ctx.registry }, null, 2)}\n`);
     tempDirs.push(noAuthHome);
 
     const result = await runTank(['publish'], {
       cwd: unauthSkill.dir,
-      home: noAuthHome,
+      home: noAuthHome
     });
 
     expectFailure(result);
@@ -164,22 +162,19 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
   // 7. publish invalid manifest fails
   // -----------------------------------------------------------------------
   it('publish with invalid manifest fails', async () => {
-    const invalidDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tank-invalid-'));
+    const invalidDir = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'tank-invalid-'));
     tempDirs.push(invalidDir);
 
     // Write a skills.json missing required fields (no name, no version)
     fs.writeFileSync(
       path.join(invalidDir, 'skills.json'),
-      JSON.stringify({ description: 'missing required fields' }, null, 2) + '\n',
+      `${JSON.stringify({ description: 'missing required fields' }, null, 2)}\n`
     );
-    fs.writeFileSync(
-      path.join(invalidDir, 'SKILL.md'),
-      '# Invalid skill\n',
-    );
+    fs.writeFileSync(path.join(invalidDir, 'SKILL.md'), '# Invalid skill\n');
 
     const result = await runTank(['publish'], {
       cwd: invalidDir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectFailure(result);
@@ -192,7 +187,7 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
     // Use the description text — PostgreSQL full-text search handles plain words
     // better than hyphenated scoped names like @org/hello-world
     const result = await runTank(['search', 'E2E dry run test skill'], {
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -205,7 +200,7 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
   // -----------------------------------------------------------------------
   it('info shows published skill metadata', async () => {
     const result = await runTank(['info', skill.name], {
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -220,20 +215,20 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
   // -----------------------------------------------------------------------
   it('logout clears credentials', async () => {
     // Create a separate home so we don't break other tests
-    const logoutHome = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tank-logout-'));
+    const logoutHome = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'tank-logout-'));
     const tankDir = path.join(logoutHome, '.tank');
     fs.mkdirSync(tankDir, { recursive: true });
     fs.writeFileSync(
       path.join(tankDir, 'config.json'),
-      JSON.stringify(
+      `${JSON.stringify(
         {
           registry: ctx.registry,
           token: ctx.token,
-          user: { name: 'E2E Test User', email: ctx.user.email },
+          user: { name: 'E2E Test User', email: ctx.user.email }
         },
         null,
-        2,
-      ) + '\n',
+        2
+      )}\n`
     );
     tempDirs.push(logoutHome);
 
@@ -249,9 +244,7 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
     expect(logoutOutput).toMatch(/logged.out/i);
 
     // Verify config no longer has token
-    const configAfter = JSON.parse(
-      fs.readFileSync(path.join(tankDir, 'config.json'), 'utf-8'),
-    );
+    const configAfter = JSON.parse(fs.readFileSync(path.join(tankDir, 'config.json'), 'utf-8'));
     expect(configAfter.token).toBeUndefined();
 
     // Whoami should now warn about not being logged in

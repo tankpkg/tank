@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { skillsJsonSchema } from '../schemas/skills-json.js';
 
 describe('skillsJsonSchema', () => {
@@ -8,14 +8,14 @@ describe('skillsJsonSchema', () => {
     description: 'A test skill',
     skills: {
       '@vercel/next-skill': '^2.1.0',
-      '@community/seo-audit': '3.0.0',
+      '@community/seo-audit': '3.0.0'
     },
     permissions: {
       network: { outbound: ['*.anthropic.com'] },
       filesystem: { read: ['./src/**'], write: ['./output/**'] },
-      subprocess: false,
+      subprocess: false
     },
-    audit: { min_score: 7 },
+    audit: { min_score: 7 }
   };
 
   it('accepts valid manifest with all fields', () => {
@@ -26,7 +26,7 @@ describe('skillsJsonSchema', () => {
   it('accepts valid manifest with only required fields (name, version)', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     expect(result.success).toBe(true);
   });
@@ -34,7 +34,7 @@ describe('skillsJsonSchema', () => {
   it('accepts scoped name @org/skill', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     expect(result.success).toBe(true);
   });
@@ -42,7 +42,7 @@ describe('skillsJsonSchema', () => {
   it('rejects unscoped name (org prefix required)', () => {
     const result = skillsJsonSchema.safeParse({
       name: 'my-skill',
-      version: '0.1.0',
+      version: '0.1.0'
     });
     expect(result.success).toBe(false);
   });
@@ -50,7 +50,7 @@ describe('skillsJsonSchema', () => {
   it('accepts semver with prerelease', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
-      version: '1.0.0-beta.1',
+      version: '1.0.0-beta.1'
     });
     expect(result.success).toBe(true);
   });
@@ -58,7 +58,7 @@ describe('skillsJsonSchema', () => {
   it('accepts semver with build metadata', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
-      version: '1.0.0+build.123',
+      version: '1.0.0+build.123'
     });
     expect(result.success).toBe(true);
   });
@@ -66,7 +66,7 @@ describe('skillsJsonSchema', () => {
   it('rejects uppercase name @ORG/test', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@ORG/test',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     expect(result.success).toBe(false);
   });
@@ -74,23 +74,23 @@ describe('skillsJsonSchema', () => {
   it('rejects name with uppercase letters', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@org/MySkill',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     expect(result.success).toBe(false);
   });
 
   it('rejects name too long (215 chars)', () => {
     const result = skillsJsonSchema.safeParse({
-      name: '@org/' + 'a'.repeat(210),
-      version: '1.0.0',
+      name: `@org/${'a'.repeat(210)}`,
+      version: '1.0.0'
     });
     expect(result.success).toBe(false);
   });
 
   it('accepts name at max length (214 chars)', () => {
     const result = skillsJsonSchema.safeParse({
-      name: '@org/' + 'a'.repeat(209),
-      version: '1.0.0',
+      name: `@org/${'a'.repeat(209)}`,
+      version: '1.0.0'
     });
     expect(result.success).toBe(true);
   });
@@ -98,7 +98,7 @@ describe('skillsJsonSchema', () => {
   it('rejects empty name', () => {
     const result = skillsJsonSchema.safeParse({
       name: '',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     expect(result.success).toBe(false);
   });
@@ -106,7 +106,7 @@ describe('skillsJsonSchema', () => {
   it('rejects invalid semver version', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
-      version: 'not-semver',
+      version: 'not-semver'
     });
     expect(result.success).toBe(false);
   });
@@ -114,7 +114,7 @@ describe('skillsJsonSchema', () => {
   it('rejects version with v prefix', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
-      version: 'v1.0.0',
+      version: 'v1.0.0'
     });
     expect(result.success).toBe(false);
   });
@@ -122,7 +122,7 @@ describe('skillsJsonSchema', () => {
   it('rejects version with only major.minor', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
-      version: '1.0',
+      version: '1.0'
     });
     expect(result.success).toBe(false);
   });
@@ -132,8 +132,8 @@ describe('skillsJsonSchema', () => {
       name: '@my-org/my-skill',
       version: '1.0.0',
       permissions: {
-        secrets: ['API_KEY'],
-      },
+        secrets: ['API_KEY']
+      }
     });
     expect(result.success).toBe(false);
   });
@@ -142,7 +142,7 @@ describe('skillsJsonSchema', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
       version: '1.0.0',
-      audit: { min_score: 11 },
+      audit: { min_score: 11 }
     });
     expect(result.success).toBe(false);
   });
@@ -151,30 +151,34 @@ describe('skillsJsonSchema', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
       version: '1.0.0',
-      audit: { min_score: -1 },
+      audit: { min_score: -1 }
     });
     expect(result.success).toBe(false);
   });
 
   it('accepts audit min_score at boundaries (0 and 10)', () => {
-    expect(skillsJsonSchema.safeParse({
-      name: '@my-org/my-skill',
-      version: '1.0.0',
-      audit: { min_score: 0 },
-    }).success).toBe(true);
+    expect(
+      skillsJsonSchema.safeParse({
+        name: '@my-org/my-skill',
+        version: '1.0.0',
+        audit: { min_score: 0 }
+      }).success
+    ).toBe(true);
 
-    expect(skillsJsonSchema.safeParse({
-      name: '@my-org/my-skill',
-      version: '1.0.0',
-      audit: { min_score: 10 },
-    }).success).toBe(true);
+    expect(
+      skillsJsonSchema.safeParse({
+        name: '@my-org/my-skill',
+        version: '1.0.0',
+        audit: { min_score: 10 }
+      }).success
+    ).toBe(true);
   });
 
   it('rejects description over 500 chars', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
       version: '1.0.0',
-      description: 'a'.repeat(501),
+      description: 'a'.repeat(501)
     });
     expect(result.success).toBe(false);
   });
@@ -183,7 +187,7 @@ describe('skillsJsonSchema', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
       version: '1.0.0',
-      description: 'a'.repeat(500),
+      description: 'a'.repeat(500)
     });
     expect(result.success).toBe(true);
   });
@@ -192,7 +196,7 @@ describe('skillsJsonSchema', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
       version: '1.0.0',
-      repository: 'https://github.com/user/repo',
+      repository: 'https://github.com/user/repo'
     });
     expect(result.success).toBe(true);
     if (result.success) {
@@ -203,7 +207,7 @@ describe('skillsJsonSchema', () => {
   it('accepts manifest without repository (optional)', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     expect(result.success).toBe(true);
     if (result.success) {
@@ -215,7 +219,7 @@ describe('skillsJsonSchema', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
       version: '1.0.0',
-      repository: 'not-a-url',
+      repository: 'not-a-url'
     });
     expect(result.success).toBe(false);
   });
@@ -224,7 +228,7 @@ describe('skillsJsonSchema', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@my-org/my-skill',
       version: '1.0.0',
-      unknown_field: true,
+      unknown_field: true
     });
     expect(result.success).toBe(false);
   });
@@ -232,21 +236,21 @@ describe('skillsJsonSchema', () => {
   it('rejects name with spaces', () => {
     const result = skillsJsonSchema.safeParse({
       name: '@org/my skill',
-      version: '1.0.0',
+      version: '1.0.0'
     });
     expect(result.success).toBe(false);
   });
 
   it('rejects missing version', () => {
     const result = skillsJsonSchema.safeParse({
-      name: '@my-org/my-skill',
+      name: '@my-org/my-skill'
     });
     expect(result.success).toBe(false);
   });
 
   it('rejects missing name', () => {
     const result = skillsJsonSchema.safeParse({
-      version: '1.0.0',
+      version: '1.0.0'
     });
     expect(result.success).toBe(false);
   });

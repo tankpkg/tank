@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type SkillsLock } from '@tank/shared';
+import type { SkillsLock } from '@internal/shared';
 import { z } from 'zod';
 
 export function registerVerifySkillsTool(server: McpServer): void {
@@ -10,7 +10,7 @@ export function registerVerifySkillsTool(server: McpServer): void {
     'Verify that installed skills match their lockfile entries. Checks that skill directories exist and are not empty.',
     {
       name: z.string().optional().describe('Specific skill name to verify (verifies all if omitted)'),
-      directory: z.string().optional().describe('Project directory (defaults to current working directory)'),
+      directory: z.string().optional().describe('Project directory (defaults to current working directory)')
     },
     async ({ name, directory }) => {
       const dir = directory ? path.resolve(directory) : process.cwd();
@@ -18,11 +18,13 @@ export function registerVerifySkillsTool(server: McpServer): void {
       const lockPath = path.join(dir, 'skills.lock');
       if (!fs.existsSync(lockPath)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'No skills.lock found. Run "install-skill" to install skills and generate a lockfile.',
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: 'No skills.lock found. Run "install-skill" to install skills and generate a lockfile.'
+            }
+          ],
+          isError: true
         };
       }
 
@@ -32,11 +34,13 @@ export function registerVerifySkillsTool(server: McpServer): void {
         lock = JSON.parse(raw) as SkillsLock;
       } catch {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'Failed to parse skills.lock. The file may be corrupted.',
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Failed to parse skills.lock. The file may be corrupted.'
+            }
+          ],
+          isError: true
         };
       }
 
@@ -44,10 +48,12 @@ export function registerVerifySkillsTool(server: McpServer): void {
 
       if (entries.length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'No skills to verify. The lockfile is empty.',
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: 'No skills to verify. The lockfile is empty.'
+            }
+          ]
         };
       }
 
@@ -60,11 +66,13 @@ export function registerVerifySkillsTool(server: McpServer): void {
 
         if (entries.length === 0) {
           return {
-            content: [{
-              type: 'text' as const,
-              text: `Skill "${name}" not found in lockfile.`,
-            }],
-            isError: true,
+            content: [
+              {
+                type: 'text' as const,
+                text: `Skill "${name}" not found in lockfile.`
+              }
+            ],
+            isError: true
           };
         }
       }
@@ -79,7 +87,7 @@ export function registerVerifySkillsTool(server: McpServer): void {
           results.push({
             key,
             status: 'MISSING',
-            detail: `Directory missing at ${skillDir}. Reinstall with "install-skill".`,
+            detail: `Directory missing at ${skillDir}. Reinstall with "install-skill".`
           });
           continue;
         }
@@ -89,7 +97,7 @@ export function registerVerifySkillsTool(server: McpServer): void {
           results.push({
             key,
             status: 'FAIL',
-            detail: `Directory exists but is empty. Expected integrity: ${entry.integrity}. SHA-512 mismatch detected.`,
+            detail: `Directory exists but is empty. Expected integrity: ${entry.integrity}. SHA-512 mismatch detected.`
           });
           continue;
         }
@@ -97,7 +105,7 @@ export function registerVerifySkillsTool(server: McpServer): void {
         results.push({
           key,
           status: 'PASS',
-          detail: `Verified (integrity: ${entry.integrity})`,
+          detail: `Verified (integrity: ${entry.integrity})`
         });
       }
 
@@ -114,16 +122,16 @@ export function registerVerifySkillsTool(server: McpServer): void {
         lines.push(`Verification failed: ${failing.length} issue(s) found, ${passing.length} passed.`);
         return {
           content: [{ type: 'text' as const, text: lines.join('\n') }],
-          isError: true,
+          isError: true
         };
       }
 
       lines.push('');
       lines.push(`All ${passing.length} skill(s) passed verification.`);
       return {
-        content: [{ type: 'text' as const, text: lines.join('\n') }],
+        content: [{ type: 'text' as const, text: lines.join('\n') }]
       };
-    },
+    }
   );
 }
 

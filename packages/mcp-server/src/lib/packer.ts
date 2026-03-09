@@ -1,24 +1,17 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
-import { Readable } from 'node:stream';
-import { create } from 'tar';
+import type { Readable } from 'node:stream';
+import { skillsJsonSchema } from '@internal/shared';
 import ignore from 'ignore';
-import { skillsJsonSchema } from '@tank/shared';
+import { create } from 'tar';
 
 // Limits
 const MAX_PACKAGE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_FILE_COUNT = 1000;
 
 // Default ignore patterns
-const DEFAULT_IGNORES = [
-  'node_modules',
-  '.git',
-  '.env*',
-  '*.log',
-  '.tank',
-  '.DS_Store',
-];
+const DEFAULT_IGNORES = ['node_modules', '.git', '.env*', '*.log', '.tank', '.DS_Store'];
 
 // Always ignored regardless of ignore file contents
 const ALWAYS_IGNORED = ['node_modules', '.git'];
@@ -74,9 +67,7 @@ export async function pack(directory: string): Promise<PackResult> {
 
   const validation = skillsJsonSchema.safeParse(parsed);
   if (!validation.success) {
-    const issues = validation.error.issues
-      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
-      .join('\n');
+    const issues = validation.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
     throw new Error(`Invalid skills.json:\n${issues}`);
   }
 
@@ -101,9 +92,7 @@ export async function pack(directory: string): Promise<PackResult> {
 
   // 6. Enforce file count limit
   if (files.length > MAX_FILE_COUNT) {
-    throw new Error(
-      `Too many files: ${files.length} exceeds maximum of ${MAX_FILE_COUNT}`,
-    );
+    throw new Error(`Too many files: ${files.length} exceeds maximum of ${MAX_FILE_COUNT}`);
   }
 
   // 7. Calculate total size of source files
@@ -119,9 +108,7 @@ export async function pack(directory: string): Promise<PackResult> {
 
   // 9. Enforce tarball size limit
   if (tarball.length > MAX_PACKAGE_SIZE) {
-    throw new Error(
-      `Tarball too large: ${tarball.length} bytes exceeds maximum of ${MAX_PACKAGE_SIZE} bytes (50MB)`,
-    );
+    throw new Error(`Tarball too large: ${tarball.length} bytes exceeds maximum of ${MAX_PACKAGE_SIZE} bytes (50MB)`);
   }
 
   // 10. Compute integrity hash
@@ -135,7 +122,7 @@ export async function pack(directory: string): Promise<PackResult> {
     totalSize,
     readme: readmeContent,
     files,
-    manifest: validation.data as Record<string, unknown>,
+    manifest: validation.data as Record<string, unknown>
   };
 }
 
@@ -190,9 +177,7 @@ export async function packForScan(directory: string): Promise<PackResult> {
 
   // 5. Enforce file count limit
   if (files.length > MAX_FILE_COUNT) {
-    throw new Error(
-      `Too many files: ${files.length} exceeds maximum of ${MAX_FILE_COUNT}`,
-    );
+    throw new Error(`Too many files: ${files.length} exceeds maximum of ${MAX_FILE_COUNT}`);
   }
 
   // 6. Check for empty directory (no files to scan)
@@ -213,9 +198,7 @@ export async function packForScan(directory: string): Promise<PackResult> {
 
   // 9. Enforce tarball size limit
   if (tarball.length > MAX_PACKAGE_SIZE) {
-    throw new Error(
-      `Tarball too large: ${tarball.length} bytes exceeds maximum of ${MAX_PACKAGE_SIZE} bytes (50MB)`,
-    );
+    throw new Error(`Tarball too large: ${tarball.length} bytes exceeds maximum of ${MAX_PACKAGE_SIZE} bytes (50MB)`);
   }
 
   // 10. Compute integrity hash
@@ -227,7 +210,7 @@ export async function packForScan(directory: string): Promise<PackResult> {
   const manifest: Record<string, unknown> = {
     name: dirName,
     version: '0.0.0',
-    description: 'Local scan',
+    description: 'Local scan'
   };
 
   return {
@@ -237,7 +220,7 @@ export async function packForScan(directory: string): Promise<PackResult> {
     totalSize,
     readme: readmeContent,
     files,
-    manifest,
+    manifest
   };
 }
 
@@ -270,11 +253,7 @@ function buildIgnoreFilter(dir: string): ReturnType<typeof ignore> {
 /**
  * Recursively collect files from a directory.
  */
-function collectFiles(
-  baseDir: string,
-  currentDir: string,
-  ig: ReturnType<typeof ignore>,
-): string[] {
+function collectFiles(baseDir: string, currentDir: string, ig: ReturnType<typeof ignore>): string[] {
   const files: string[] = [];
   const entries = fs.readdirSync(currentDir, { withFileTypes: true });
 
@@ -284,9 +263,7 @@ function collectFiles(
 
     // Security: check for path traversal
     if (relativePath.split(path.sep).includes('..')) {
-      throw new Error(
-        `Path traversal detected: "${relativePath}" contains ".." component`,
-      );
+      throw new Error(`Path traversal detected: "${relativePath}" contains ".." component`);
     }
 
     // Security: check for absolute paths
@@ -297,14 +274,10 @@ function collectFiles(
     // Security: check for symlinks
     const lstatResult = fs.lstatSync(fullPath);
     if (lstatResult.isSymbolicLink()) {
-      throw new Error(
-        `Symlink detected: "${relativePath}" — symlinks are not allowed`,
-      );
+      throw new Error(`Symlink detected: "${relativePath}" — symlinks are not allowed`);
     }
 
-    const pathForIgnore = lstatResult.isDirectory()
-      ? relativePath + '/'
-      : relativePath;
+    const pathForIgnore = lstatResult.isDirectory() ? `${relativePath}/` : relativePath;
 
     if (ig.ignores(pathForIgnore)) {
       continue;
@@ -332,9 +305,9 @@ async function createTarball(cwd: string, files: string[]): Promise<Buffer> {
       {
         gzip: true,
         cwd,
-        portable: true,
+        portable: true
       },
-      files,
+      files
     ) as unknown as Readable;
 
     stream.on('data', (chunk: Buffer) => {

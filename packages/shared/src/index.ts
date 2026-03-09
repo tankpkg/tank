@@ -1,18 +1,53 @@
 // Schemas
-export { skillsJsonSchema, type SkillsJson } from './schemas/skills-json.js';
-export { skillsLockSchema, skillsLockV1Schema, type SkillsLock, type LockedSkill, type LockedSkillV1 } from './schemas/skills-lock.js';
-export { permissionsSchema, networkPermissionsSchema, filesystemPermissionsSchema, type Permissions, type NetworkPermissions, type FilesystemPermissions } from './schemas/permissions.js';
 
-// Admin types
-export { userRoleSchema, userStatusSchema, skillStatusSchema, adminActionSchema, isAdmin, type UserRole, type UserStatus, type SkillStatus, type AdminAction } from './schemas/permissions.js';
-
-// Types
-export type { Publisher, Skill, SkillVersion } from './types/skill.js';
-export type { PublishStartRequest, PublishStartResponse, PublishConfirmRequest, SkillInfoResponse, SearchResult, SearchResponse } from './types/api.js';
-
+export { DEFAULT_PERMISSIONS, PERMISSION_CATEGORIES, type PermissionCategory } from './constants/permissions.js';
 // Constants
-export { REGISTRY_URL, REGISTRY_API_VERSION, MAX_PACKAGE_SIZE, MAX_FILE_COUNT, MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, LOCKFILE_VERSION } from './constants/registry.js';
-export { PERMISSION_CATEGORIES, DEFAULT_PERMISSIONS, type PermissionCategory } from './constants/permissions.js';
-
+export {
+  LOCKFILE_VERSION,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_FILE_COUNT,
+  MAX_NAME_LENGTH,
+  MAX_PACKAGE_SIZE,
+  REGISTRY_API_VERSION,
+  REGISTRY_URL
+} from './constants/registry.js';
 // Resolver
 export { resolve, sortVersions } from './lib/resolver.js';
+// URL helpers
+export { encodeSkillName } from './lib/url.js';
+// Admin types
+export {
+  type AdminAction,
+  adminActionSchema,
+  type FilesystemPermissions,
+  filesystemPermissionsSchema,
+  isAdmin,
+  type NetworkPermissions,
+  networkPermissionsSchema,
+  type Permissions,
+  permissionsSchema,
+  type SkillStatus,
+  skillStatusSchema,
+  type UserRole,
+  type UserStatus,
+  userRoleSchema,
+  userStatusSchema
+} from './schemas/permissions.js';
+export { type SkillsJson, skillsJsonSchema } from './schemas/skills-json.js';
+export {
+  type LockedSkill,
+  type LockedSkillV1,
+  type SkillsLock,
+  skillsLockSchema,
+  skillsLockV1Schema
+} from './schemas/skills-lock.js';
+export type {
+  PublishConfirmRequest,
+  PublishStartRequest,
+  PublishStartResponse,
+  SearchResponse,
+  SearchResult,
+  SkillInfoResponse
+} from './types/api.js';
+// Types
+export type { Publisher, Skill, SkillVersion } from './types/skill.js';

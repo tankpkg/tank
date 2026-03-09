@@ -1,8 +1,8 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { resolve, type Permissions, type SkillsLock, LOCKFILE_VERSION } from '@tank/shared';
+import { LOCKFILE_VERSION, type Permissions, resolve, type SkillsLock } from '@internal/shared';
 import { extract } from 'tar';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
@@ -32,7 +32,7 @@ interface VersionMetadata {
 function textResult(text: string, isError?: boolean) {
   return {
     content: [{ type: 'text' as const, text }],
-    ...(isError ? { isError: true } : {}),
+    ...(isError ? { isError: true } : {})
   };
 }
 
@@ -51,14 +51,14 @@ export function registerInstallSkillTool(server: McpServer): void {
     {
       name: z.string().describe('Skill name in @org/name format'),
       version: z.string().optional().describe('Specific version or semver range (default: latest)'),
-      directory: z.string().optional().describe('Project directory (defaults to current working directory)'),
+      directory: z.string().optional().describe('Project directory (defaults to current working directory)')
     },
     async ({ name, version: versionRange, directory }) => {
       // 1. Validate scoped name
       if (!SCOPED_NAME_PATTERN.test(name)) {
         return textResult(
           `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`,
-          true,
+          true
         );
       }
 
@@ -66,10 +66,7 @@ export function registerInstallSkillTool(server: McpServer): void {
 
       // 2. Check authentication
       if (!client.isAuthenticated) {
-        return textResult(
-          'Not authenticated. Use the "login" tool first to authenticate with Tank.',
-          true,
-        );
+        return textResult('Not authenticated. Use the "login" tool first to authenticate with Tank.', true);
       }
 
       const dir = directory ? path.resolve(directory) : process.cwd();
@@ -88,7 +85,7 @@ export function registerInstallSkillTool(server: McpServer): void {
       } else {
         skillsJson = { skills: {} };
         fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+        fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
       }
 
       // 4. Read existing lockfile
@@ -106,32 +103,23 @@ export function registerInstallSkillTool(server: McpServer): void {
       // 5. Fetch available versions
       const encodedName = encodeURIComponent(name);
       const versionsResult = await client.fetch<{ name: string; versions: VersionInfo[] }>(
-        `/api/v1/skills/${encodedName}/versions`,
+        `/api/v1/skills/${encodedName}/versions`
       );
 
       if (!versionsResult.ok) {
         if (versionsResult.status === 401 || versionsResult.status === 403) {
-          return textResult(
-            'Authentication failed. Use the "login" tool to authenticate with Tank.',
-            true,
-          );
+          return textResult('Authentication failed. Use the "login" tool to authenticate with Tank.', true);
         }
         if (versionsResult.status === 404) {
-          return textResult(
-            `Skill not found: "${name}" does not exist in the Tank registry.`,
-            true,
-          );
+          return textResult(`Skill not found: "${name}" does not exist in the Tank registry.`, true);
         }
         if (versionsResult.status === 0) {
           return textResult(
             `Cannot reach the Tank registry. Check your network connection and try again.\nError: ${versionsResult.error}`,
-            true,
+            true
           );
         }
-        return textResult(
-          `Failed to fetch versions for ${name}: ${versionsResult.error}`,
-          true,
-        );
+        return textResult(`Failed to fetch versions for ${name}: ${versionsResult.error}`, true);
       }
 
       const availableVersions = versionsResult.data.versions.map((v) => v.version);
@@ -141,34 +129,24 @@ export function registerInstallSkillTool(server: McpServer): void {
       if (!resolved) {
         return textResult(
           `No version of ${name} satisfies range "${range}". Available versions: ${availableVersions.join(', ')}`,
-          true,
+          true
         );
       }
 
       // 7. Check if already installed
       const lockKey = `${name}@${resolved}`;
       if (lock.skills[lockKey]) {
-        return textResult(
-          `${name}@${resolved} is already installed. No changes needed.`,
-        );
+        return textResult(`${name}@${resolved} is already installed. No changes needed.`);
       }
 
       // 8. Fetch version metadata
-      const metaResult = await client.fetch<VersionMetadata>(
-        `/api/v1/skills/${encodedName}/${resolved}`,
-      );
+      const metaResult = await client.fetch<VersionMetadata>(`/api/v1/skills/${encodedName}/${resolved}`);
 
       if (!metaResult.ok) {
         if (metaResult.status === 404) {
-          return textResult(
-            `Version ${resolved} of ${name} not found in the registry.`,
-            true,
-          );
+          return textResult(`Version ${resolved} of ${name} not found in the registry.`, true);
         }
-        return textResult(
-          `Failed to fetch metadata for ${name}@${resolved}: ${metaResult.error}`,
-          true,
-        );
+        return textResult(`Failed to fetch metadata for ${name}@${resolved}: ${metaResult.error}`, true);
       }
 
       const metadata = metaResult.data;
@@ -180,14 +158,14 @@ export function registerInstallSkillTool(server: McpServer): void {
         if (!downloadRes.ok) {
           return textResult(
             `Failed to download tarball for ${name}@${resolved}: ${downloadRes.status} ${downloadRes.statusText}`,
-            true,
+            true
           );
         }
         tarballBuffer = Buffer.from(await downloadRes.arrayBuffer());
       } catch (err) {
         return textResult(
           `Network error downloading tarball for ${name}@${resolved}: ${err instanceof Error ? err.message : String(err)}`,
-          true,
+          true
         );
       }
 
@@ -198,10 +176,10 @@ export function registerInstallSkillTool(server: McpServer): void {
       if (computedIntegrity !== metadata.integrity) {
         return textResult(
           `Integrity verification failed for ${name}@${resolved}.\n` +
-          `Expected: ${metadata.integrity}\n` +
-          `Got: ${computedIntegrity}\n\n` +
-          'The tarball may have been tampered with. No files were extracted.',
-          true,
+            `Expected: ${metadata.integrity}\n` +
+            `Got: ${computedIntegrity}\n\n` +
+            'The tarball may have been tampered with. No files were extracted.',
+          true
         );
       }
 
@@ -216,7 +194,7 @@ export function registerInstallSkillTool(server: McpServer): void {
         fs.rmSync(extractDir, { recursive: true, force: true });
         return textResult(
           `Failed to extract tarball for ${name}@${resolved}: ${err instanceof Error ? err.message : String(err)}`,
-          true,
+          true
         );
       }
 
@@ -224,14 +202,14 @@ export function registerInstallSkillTool(server: McpServer): void {
       const skills = (skillsJson.skills ?? {}) as Record<string, string>;
       skills[name] = range === '*' ? `^${resolved}` : range;
       skillsJson.skills = skills;
-      fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+      fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
 
       // 13. Update skills.lock
       lock.skills[lockKey] = {
         resolved: metadata.downloadUrl,
         integrity: computedIntegrity,
         permissions: metadata.permissions ?? {},
-        audit_score: metadata.auditScore ?? null,
+        audit_score: metadata.auditScore ?? null
       };
 
       // Sort keys alphabetically for determinism
@@ -242,12 +220,13 @@ export function registerInstallSkillTool(server: McpServer): void {
       lock.skills = sortedSkills as SkillsLock['skills'];
 
       fs.mkdirSync(path.dirname(lockPath), { recursive: true });
-      fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+      fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
 
       // Build response
-      const score = metadata.auditScore !== null && metadata.auditScore !== undefined
-        ? `${metadata.auditScore.toFixed(1)}/10`
-        : 'pending';
+      const score =
+        metadata.auditScore !== null && metadata.auditScore !== undefined
+          ? `${metadata.auditScore.toFixed(1)}/10`
+          : 'pending';
 
       const lines: string[] = [
         `## Installed ${name}@${resolved}`,
@@ -258,11 +237,11 @@ export function registerInstallSkillTool(server: McpServer): void {
         '',
         '### Updated files',
         `- skills.json: added "${name}": "${skills[name]}"`,
-        `- skills.lock: added ${lockKey}`,
+        `- skills.lock: added ${lockKey}`
       ];
 
       return textResult(lines.join('\n'));
-    },
+    }
   );
 }
 
@@ -291,7 +270,7 @@ async function extractSafely(tarball: Buffer, destDir: string): Promise<void> {
         if (entry.type === 'SymbolicLink' || entry.type === 'Link') {
           throw new Error(`Symlink/hardlink in tarball: ${entry.path}`);
         }
-      },
+      }
     });
   } finally {
     if (fs.existsSync(tmpTarball)) {

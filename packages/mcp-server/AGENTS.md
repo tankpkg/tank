@@ -41,35 +41,35 @@ mcp-server/
 
 ## ALL 17 TOOLS
 
-| Tool | File | Purpose |
-|------|------|---------|
-| `login` | `login.ts` | GitHub OAuth device flow → save token |
-| `logout` | `logout.ts` | Clear stored credentials |
-| `whoami` | `whoami.ts` | Display authenticated user info |
-| `init-skill` | `init-skill.ts` | Create `skills.json` + `SKILL.md` scaffold |
-| `publish-skill` | `publish-skill.ts` | Pack → upload → confirm (supports dry-run) |
-| `search-skills` | `search-skills.ts` | Query registry, markdown table output |
-| `skill-info` | `skill-info.ts` | Fetch skill metadata + all versions |
-| `install-skill` | `install-skill.ts` | Resolve version → fetch → SHA-512 verify → extract |
-| `update-skill` | `update-skill.ts` | Update installed skill within semver range |
-| `remove-skill` | `remove-skill.ts` | Remove from skills.json + skills.lock + filesystem |
-| `scan-skill` | `scan-skill.ts` | Pack directory → upload for security scan → format results |
-| `verify-skills` | `verify-skills.ts` | Verify lockfile entries match installed dirs |
-| `audit-skill` | `audit-skill.ts` | Fetch security audit results + verdict |
-| `skill-permissions` | `skill-permissions.ts` | Per-skill permission summary + budget check |
-| `link-skill` | `link-skill.ts` | Symlink skill into agent workspace |
-| `unlink-skill` | `unlink-skill.ts` | Remove agent workspace symlink |
-| `doctor` | `doctor.ts` | Diagnose: config, auth, registry, Node.js ≥ v24 |
+| Tool                | File                   | Purpose                                                    |
+| ------------------- | ---------------------- | ---------------------------------------------------------- |
+| `login`             | `login.ts`             | GitHub OAuth device flow → save token                      |
+| `logout`            | `logout.ts`            | Clear stored credentials                                   |
+| `whoami`            | `whoami.ts`            | Display authenticated user info                            |
+| `init-skill`        | `init-skill.ts`        | Create `skills.json` + `SKILL.md` scaffold                 |
+| `publish-skill`     | `publish-skill.ts`     | Pack → upload → confirm (supports dry-run)                 |
+| `search-skills`     | `search-skills.ts`     | Query registry, markdown table output                      |
+| `skill-info`        | `skill-info.ts`        | Fetch skill metadata + all versions                        |
+| `install-skill`     | `install-skill.ts`     | Resolve version → fetch → SHA-512 verify → extract         |
+| `update-skill`      | `update-skill.ts`      | Update installed skill within semver range                 |
+| `remove-skill`      | `remove-skill.ts`      | Remove from skills.json + skills.lock + filesystem         |
+| `scan-skill`        | `scan-skill.ts`        | Pack directory → upload for security scan → format results |
+| `verify-skills`     | `verify-skills.ts`     | Verify lockfile entries match installed dirs               |
+| `audit-skill`       | `audit-skill.ts`       | Fetch security audit results + verdict                     |
+| `skill-permissions` | `skill-permissions.ts` | Per-skill permission summary + budget check                |
+| `link-skill`        | `link-skill.ts`        | Symlink skill into agent workspace                         |
+| `unlink-skill`      | `unlink-skill.ts`      | Remove agent workspace symlink                             |
+| `doctor`            | `doctor.ts`            | Diagnose: config, auth, registry, Node.js ≥ v24            |
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add new tool | `src/tools/new-tool.ts` | Export `registerNewTool(server)`, register in `index.ts` |
-| Modify API calls | `src/lib/api-client.ts` | TankApiClient with Bearer auth |
-| Modify config | `src/lib/config.ts` | `TANK_TOKEN` env var takes priority |
-| Modify packing | `src/lib/packer.ts` | Security: rejects symlinks, path traversal, >50MB |
-| Add test | `__tests__/new.test.ts` | Vitest, temp dirs for isolation |
+| Task             | Location                | Notes                                                    |
+| ---------------- | ----------------------- | -------------------------------------------------------- |
+| Add new tool     | `src/tools/new-tool.ts` | Export `registerNewTool(server)`, register in `index.ts` |
+| Modify API calls | `src/lib/api-client.ts` | TankApiClient with Bearer auth                           |
+| Modify config    | `src/lib/config.ts`     | `TANK_TOKEN` env var takes priority                      |
+| Modify packing   | `src/lib/packer.ts`     | Security: rejects symlinks, path traversal, >50MB        |
+| Add test         | `__tests__/new.test.ts` | Vitest, temp dirs for isolation                          |
 
 ## TOOL REGISTRATION PATTERN
 
@@ -77,28 +77,30 @@ mcp-server/
 // src/tools/example.ts
 export function registerExampleTool(server: McpServer): void {
   server.tool(
-    'example',                              // Tool name
-    'Description of what it does',          // Description
-    { param: z.string().describe('...') },  // Zod input schema
+    "example", // Tool name
+    "Description of what it does", // Description
+    { param: z.string().describe("...") }, // Zod input schema
     async ({ param }) => {
       // ... implementation
-      return { content: [{ type: 'text', text: result }] };
-    }
+      return { content: [{ type: "text", text: result }] };
+    },
   );
 }
 
 // On error:
-return { content: [{ type: 'text', text: `Error: ${msg}` }], isError: true };
+return { content: [{ type: "text", text: `Error: ${msg}` }], isError: true };
 ```
 
 ## KEY PATTERNS
 
 ### Configuration Precedence
+
 1. `TANK_TOKEN` env var (highest priority)
 2. `~/.tank/config.json` file
 3. Defaults (registry: `https://tankpkg.dev`)
 
 ### Security (same as CLI)
+
 - **SHA-512 verification** on all downloads
 - **Symlink rejection** via `lstat()` check
 - **Path traversal prevention** — reject `..` in paths
@@ -107,9 +109,11 @@ return { content: [{ type: 'text', text: `Error: ${msg}` }], isError: true };
 - **Max limits** — 1000 files, 50MB tarball
 
 ### Markdown Output
+
 Tools format results as markdown for editor readability: tables (search), headers (info), code blocks (permissions), lists (findings grouped by severity).
 
 ### packForScan vs pack
+
 - **pack()** — requires `skills.json` + `SKILL.md` (for publishing)
 - **packForScan()** — no requirements, synthesizes manifest (for scanning any directory)
 
@@ -130,8 +134,8 @@ Tools format results as markdown for editor readability: tables (search), header
 ## TESTING
 
 ```bash
-pnpm test --filter=mcp-server            # All MCP server tests
-pnpm test --filter=mcp-server -- config   # Config tests only
+bun test --filter=mcp-server            # All MCP server tests
+bun test --filter=mcp-server -- config   # Config tests only
 ```
 
 - Tests use temp directories for isolation

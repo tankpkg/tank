@@ -5,13 +5,14 @@
  * Uses --yes flag for non-interactive mode (no TTY required).
  *
  * Prerequisites:
- * - CLI built: pnpm build --filter=@tankpkg/cli
+ * - CLI built: bun run build --filter=@tankpkg/cli
  */
-import { describe, it, expect, afterAll } from 'vitest';
+
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
-import { runTank, expectSuccess } from './helpers/cli';
+import path from 'node:path';
+import { afterAll, describe, expect, it } from 'vitest';
+import { expectSuccess, runTank } from './helpers/cli';
 import { cleanupFixture } from './helpers/fixtures';
 
 describe('Init E2E — tank init creates skills.json', () => {
@@ -30,10 +31,7 @@ describe('Init E2E — tank init creates skills.json', () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), `${prefix}home-`));
     const tankDir = path.join(home, '.tank');
     fs.mkdirSync(tankDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(tankDir, 'config.json'),
-      JSON.stringify({}, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tankDir, 'config.json'), `${JSON.stringify({}, null, 2)}\n`);
     tempDirs.push(home);
 
     return { dir, home };
@@ -47,7 +45,7 @@ describe('Init E2E — tank init creates skills.json', () => {
 
     const result = await runTank(
       ['init', '--yes', '--name', '@test/my-skill', '--skill-version', '1.0.0', '--description', 'A test skill'],
-      { cwd: dir, home, timeoutMs: 15_000 },
+      { cwd: dir, home, timeoutMs: 15_000 }
     );
 
     expectSuccess(result);
@@ -70,16 +68,15 @@ describe('Init E2E — tank init creates skills.json', () => {
   it('init --yes with only name uses default version', async () => {
     const { dir, home } = createTempDir('tank-init-defaults-');
 
-    const result = await runTank(
-      ['init', '--yes', '--name', '@test/default-skill'],
-      { cwd: dir, home, timeoutMs: 15_000 },
-    );
+    const result = await runTank(['init', '--yes', '--name', '@test/default-skill'], {
+      cwd: dir,
+      home,
+      timeoutMs: 15_000
+    });
 
     expectSuccess(result);
 
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(dir, 'skills.json'), 'utf-8'),
-    );
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'skills.json'), 'utf-8'));
     expect(manifest.name).toBe('@test/default-skill');
     expect(manifest.version).toBe('0.1.0');
     expect(manifest.visibility).toBe('public');
@@ -94,12 +91,9 @@ describe('Init E2E — tank init creates skills.json', () => {
 
     const originalManifest = { name: '@test/original', version: '0.0.1' };
     const skillsPath = path.join(dir, 'skills.json');
-    fs.writeFileSync(skillsPath, JSON.stringify(originalManifest, null, 2) + '\n');
+    fs.writeFileSync(skillsPath, `${JSON.stringify(originalManifest, null, 2)}\n`);
 
-    const result = await runTank(
-      ['init', '--yes', '--name', '@test/new-name'],
-      { cwd: dir, home, timeoutMs: 15_000 },
-    );
+    const result = await runTank(['init', '--yes', '--name', '@test/new-name'], { cwd: dir, home, timeoutMs: 15_000 });
 
     const afterManifest = JSON.parse(fs.readFileSync(skillsPath, 'utf-8'));
     expect(afterManifest.name).toBe('@test/original');
@@ -117,11 +111,21 @@ describe('Init E2E — tank init creates skills.json', () => {
 
     const originalManifest = { name: '@test/old-name', version: '0.0.1' };
     const skillsPath = path.join(dir, 'skills.json');
-    fs.writeFileSync(skillsPath, JSON.stringify(originalManifest, null, 2) + '\n');
+    fs.writeFileSync(skillsPath, `${JSON.stringify(originalManifest, null, 2)}\n`);
 
     const result = await runTank(
-      ['init', '--yes', '--force', '--name', '@test/new-name', '--skill-version', '2.0.0', '--description', 'New description'],
-      { cwd: dir, home, timeoutMs: 15_000 },
+      [
+        'init',
+        '--yes',
+        '--force',
+        '--name',
+        '@test/new-name',
+        '--skill-version',
+        '2.0.0',
+        '--description',
+        'New description'
+      ],
+      { cwd: dir, home, timeoutMs: 15_000 }
     );
 
     expectSuccess(result);
@@ -139,16 +143,15 @@ describe('Init E2E — tank init creates skills.json', () => {
   it('init --yes --private sets visibility to private', async () => {
     const { dir, home } = createTempDir('tank-init-private-');
 
-    const result = await runTank(
-      ['init', '--yes', '--name', '@test/private-skill', '--private'],
-      { cwd: dir, home, timeoutMs: 15_000 },
-    );
+    const result = await runTank(['init', '--yes', '--name', '@test/private-skill', '--private'], {
+      cwd: dir,
+      home,
+      timeoutMs: 15_000
+    });
 
     expectSuccess(result);
 
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(dir, 'skills.json'), 'utf-8'),
-    );
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'skills.json'), 'utf-8'));
     expect(manifest.visibility).toBe('private');
   });
 
@@ -158,10 +161,7 @@ describe('Init E2E — tank init creates skills.json', () => {
   it('init --yes rejects invalid name', async () => {
     const { dir, home } = createTempDir('tank-init-badname-');
 
-    const result = await runTank(
-      ['init', '--yes', '--name', 'UPPERCASE-NAME'],
-      { cwd: dir, home, timeoutMs: 15_000 },
-    );
+    const result = await runTank(['init', '--yes', '--name', 'UPPERCASE-NAME'], { cwd: dir, home, timeoutMs: 15_000 });
 
     expect(fs.existsSync(path.join(dir, 'skills.json'))).toBe(false);
 

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type SkillsLock, LOCKFILE_VERSION } from '@tank/shared';
+import type { SkillsLock } from '@internal/shared';
 import { z } from 'zod';
 
 const SCOPED_NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
@@ -12,16 +12,18 @@ export function registerRemoveSkillTool(server: McpServer): void {
     'Remove an installed skill from the project. Removes from skills.json, skills.lock, and deletes skill files.',
     {
       name: z.string().describe('Skill name in @org/name format'),
-      directory: z.string().optional().describe('Project directory (defaults to current working directory)'),
+      directory: z.string().optional().describe('Project directory (defaults to current working directory)')
     },
     async ({ name, directory }) => {
       if (!SCOPED_NAME_PATTERN.test(name)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -40,7 +42,7 @@ export function registerRemoveSkillTool(server: McpServer): void {
             skillFoundAnywhere = true;
             delete skills[name];
             skillsJson.skills = skills;
-            fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+            fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
             results.push(`Removed "${name}" from skills.json`);
           }
         } catch {
@@ -72,7 +74,7 @@ export function registerRemoveSkillTool(server: McpServer): void {
               sortedSkills[key] = lock.skills[key];
             }
             lock.skills = sortedSkills as SkillsLock['skills'];
-            fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+            fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
             results.push(`Removed "${name}" from skills.lock`);
           }
         } catch {
@@ -98,21 +100,25 @@ export function registerRemoveSkillTool(server: McpServer): void {
 
       if (!skillFoundAnywhere) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Skill "${name}" is not installed. It was not found in skills.json, skills.lock, or .tank/skills/.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Skill "${name}" is not installed. It was not found in skills.json, skills.lock, or .tank/skills/.`
+            }
+          ],
+          isError: true
         };
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `Successfully removed ${name}.\n${results.join('\n')}`,
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Successfully removed ${name}.\n${results.join('\n')}`
+          }
+        ]
       };
-    },
+    }
   );
 }
 

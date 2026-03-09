@@ -3,8 +3,8 @@
  * All temp files are created under os.tmpdir() and cleaned up after tests.
  */
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
+import path from 'node:path';
 
 // ---------------------------------------------------------------------------
 // Skill fixture (for producers)
@@ -43,24 +43,21 @@ export function createSkillFixture(opts: {
     permissions: opts.permissions ?? {
       network: { outbound: ['*.example.com'] },
       filesystem: { read: ['./src/**'] },
-      subprocess: false,
-    },
+      subprocess: false
+    }
   };
-  fs.writeFileSync(
-    path.join(dir, 'skills.json'),
-    JSON.stringify(manifest, null, 2) + '\n',
-  );
+  fs.writeFileSync(path.join(dir, 'skills.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
   // SKILL.md (required by packer)
   fs.writeFileSync(
     path.join(dir, 'SKILL.md'),
-    `# ${name}\n\nE2E test skill for Tank registry.\n\n## Usage\n\nThis is a test fixture.\n`,
+    `# ${name}\n\nE2E test skill for Tank registry.\n\n## Usage\n\nThis is a test fixture.\n`
   );
 
   // index.js (default content)
   fs.writeFileSync(
     path.join(dir, 'index.js'),
-    `export const name = '${name}';\nexport const version = '${version}';\nexport function execute() { return 'hello from ${name}'; }\n`,
+    `export const name = '${name}';\nexport const version = '${version}';\nexport function execute() { return 'hello from ${name}'; }\n`
   );
 
   // Extra files (if any)
@@ -82,7 +79,7 @@ export function bumpSkillVersion(fixture: SkillFixture, newVersion: string): voi
   const manifestPath = path.join(fixture.dir, 'skills.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   manifest.version = newVersion;
-  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   fixture.version = newVersion;
 }
 
@@ -115,20 +112,14 @@ export function createConsumerFixture(opts?: {
     permissions: opts?.permissions ?? {
       network: { outbound: ['*.example.com'] },
       filesystem: { read: ['./src/**'], write: [] },
-      subprocess: false,
-    },
+      subprocess: false
+    }
   };
 
-  fs.writeFileSync(
-    path.join(dir, 'skills.json'),
-    JSON.stringify(manifest, null, 2) + '\n',
-  );
+  fs.writeFileSync(path.join(dir, 'skills.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
   // Create SKILL.md so the directory validates as a skill project
-  fs.writeFileSync(
-    path.join(dir, 'SKILL.md'),
-    `# E2E Consumer Project\n\nTest consumer for Tank E2E tests.\n`,
-  );
+  fs.writeFileSync(path.join(dir, 'SKILL.md'), `# E2E Consumer Project\n\nTest consumer for Tank E2E tests.\n`);
 
   return { dir };
 }

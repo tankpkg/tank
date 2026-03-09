@@ -1,7 +1,8 @@
 # Intent: .idd/modules/search/INTENT.md
 # Layer: Examples (E1–E10), Constraints (C1–C6)
 
-@search @real-db
+@search
+@real-db
 Feature: Skill discovery via hybrid search
   As a user, CLI agent, or MCP tool
   I need to find skills by name, organization, description, or approximate query
@@ -9,15 +10,14 @@ Feature: Skill discovery via hybrid search
 
   Background:
     Given a set of published skills in the registry:
-      | name                | description                              |
-      | @{org}/react        | React patterns for production apps       |
-      | @{org}/react-hooks  | Custom React hooks collection            |
-      | @{org}/clean-code   | Code quality and refactoring patterns    |
-      | @{org}/seo-audit    | SEO audit and optimization tools         |
-      | @{org}/auth-patterns| Authentication and authorization helpers |
+      | name                 | description                              |
+      | @{org}/react         | React patterns for production apps       |
+      | @{org}/react-hooks   | Custom React hooks collection            |
+      | @{org}/clean-code    | Code quality and refactoring patterns    |
+      | @{org}/seo-audit     | SEO audit and optimization tools         |
+      | @{org}/auth-patterns | Authentication and authorization helpers |
 
   # ── Exact & partial name matching (C1, C3) ──────────────────────────
-
   @high
   Scenario: Exact full name returns the skill as the top result (E1)
     When I search for the full scoped name "@{org}/react"
@@ -35,28 +35,24 @@ Feature: Skill discovery via hybrid search
     Then the first result name contains "clean-code"
 
   # ── Organization-scoped browsing (C1) ───────────────────────────────
-
   @high
   Scenario: Searching by org prefix returns all skills in that org (E3)
     When I search for "@{org}"
     Then the results contain all 5 seeded skills
 
   # ── Typo tolerance via trigram similarity (C1, C2) ──────────────────
-
   @high
   Scenario: Misspelled query finds the intended skill via trigram (E4)
     When I search for "recat"
     Then at least one result name contains "react"
 
   # ── Full-text search on description (C1) ────────────────────────────
-
   @medium
   Scenario: Description keyword matches via full-text search (E5)
     When I search for "refactoring"
     Then at least one result name contains "clean-code"
 
   # ── Ranking order (C3) ─────────────────────────────────────────────
-
   @high
   Scenario: Exact name ranks above partial matches (E7)
     When I search for the full scoped name "@{org}/react"
@@ -68,7 +64,6 @@ Feature: Skill discovery via hybrid search
     Then the first result name contains "auth"
 
   # ── Bare org-name matching (C10) ──────────────────────────────────
-
   @high
   Scenario: Bare org name without @ finds all org skills (E11)
     When I search for the bare org name without @
@@ -85,7 +80,6 @@ Feature: Skill discovery via hybrid search
     Then the results contain all 5 seeded skills
 
   # ── Safety & edge cases (C4) ───────────────────────────────────────
-
   @high
   Scenario: Completely unrelated query returns no seeded results (E9)
     When I search for "zzzyyyxxx-nonexistent-42"

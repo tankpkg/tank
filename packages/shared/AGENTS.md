@@ -1,4 +1,4 @@
-# SHARED — @tank/shared
+# SHARED — @internal/shared
 
 ## OVERVIEW
 
@@ -32,64 +32,64 @@ shared/src/
 
 ### Schemas (from `schemas/`)
 
-| Export | Source | Purpose |
-|--------|--------|---------|
-| `skillsJsonSchema` | `skills-json.ts` | Validates `skills.json` manifest |
-| `skillsLockSchema` | `skills-lock.ts` | Validates `skills.lock` file |
+| Export              | Source           | Purpose                           |
+| ------------------- | ---------------- | --------------------------------- |
+| `skillsJsonSchema`  | `skills-json.ts` | Validates `skills.json` manifest  |
+| `skillsLockSchema`  | `skills-lock.ts` | Validates `skills.lock` file      |
 | `permissionsSchema` | `permissions.ts` | Validates permission declarations |
 
 ### Types (from `types/`)
 
-| Export | Source | Purpose |
-|--------|--------|---------|
-| `PublishRequest` | `api.ts` | POST /v1/skills request body |
-| `PublishResponse` | `api.ts` | POST /v1/skills response |
-| `SkillInfo` | `api.ts` | Skill metadata response |
-| `SearchResult` | `api.ts` | Search API response |
-| `Publisher` | `skill.ts` | Publisher entity |
-| `Skill` | `skill.ts` | Skill entity |
-| `SkillVersion` | `skill.ts` | Version entity |
+| Export            | Source     | Purpose                      |
+| ----------------- | ---------- | ---------------------------- |
+| `PublishRequest`  | `api.ts`   | POST /v1/skills request body |
+| `PublishResponse` | `api.ts`   | POST /v1/skills response     |
+| `SkillInfo`       | `api.ts`   | Skill metadata response      |
+| `SearchResult`    | `api.ts`   | Search API response          |
+| `Publisher`       | `skill.ts` | Publisher entity             |
+| `Skill`           | `skill.ts` | Skill entity                 |
+| `SkillVersion`    | `skill.ts` | Version entity               |
 
 ### Constants (from `constants/`)
 
-| Export | Source | Value |
-|--------|--------|-------|
-| `REGISTRY_URL` | `registry.ts` | `https://tankpkg.dev` (or override) |
-| `MAX_PACKAGE_SIZE` | `registry.ts` | `50 * 1024 * 1024` (50MB) |
-| `MAX_FILE_COUNT` | `registry.ts` | `1000` |
-| `LOCKFILE_VERSION` | `registry.ts` | `1` |
-| `PERMISSION_CATEGORIES` | `permissions.ts` | Map of permission → description |
+| Export                  | Source           | Value                               |
+| ----------------------- | ---------------- | ----------------------------------- |
+| `REGISTRY_URL`          | `registry.ts`    | `https://tankpkg.dev` (or override) |
+| `MAX_PACKAGE_SIZE`      | `registry.ts`    | `50 * 1024 * 1024` (50MB)           |
+| `MAX_FILE_COUNT`        | `registry.ts`    | `1000`                              |
+| `LOCKFILE_VERSION`      | `registry.ts`    | `1`                                 |
+| `PERMISSION_CATEGORIES` | `permissions.ts` | Map of permission → description     |
 
 ### Functions (from `lib/`)
 
-| Export | Source | Signature |
-|--------|--------|-----------|
-| `resolve` | `resolver.ts` | `(range: string, versions: string[]) => string \| null` |
-| `sortVersions` | `resolver.ts` | `(versions: string[]) => string[]` |
+| Export         | Source        | Signature                                               |
+| -------------- | ------------- | ------------------------------------------------------- |
+| `resolve`      | `resolver.ts` | `(range: string, versions: string[]) => string \| null` |
+| `sortVersions` | `resolver.ts` | `(versions: string[]) => string[]`                      |
 
 ## CONSUMERS
 
 ```
-@tank/shared
+@internal/shared
      ↑                    ↑                    ↑
      │                    │                    │
-  apps/cli         packages/mcp-server     apps/web
+  apps/cli-pkg         apps/mcp-server-pkg     apps/web
  (9 imports)        (schemas, types)     (1 import, hoisted)
 ```
 
 - **CLI**: lockfile, packer, validator use schemas + resolver + constants
 - **MCP server**: packer, tools use schemas + types + constants
-- **Web**: skill route uses `skillsJsonSchema.safeParse()` — imported undeclared via pnpm hoisting
+- **Web**: skill route uses `skillsJsonSchema.safeParse()` — imported undeclared via bun hoisting
 
 ## WHERE TO LOOK
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add new schema | `schemas/*.ts` | Export from `index.ts` |
-| Add new type | `types/*.ts` | Export from `index.ts` |
-| Add constant | `constants/*.ts` | Export from `index.ts` |
-| Add helper function | `lib/*.ts` | Must be pure, no side effects |
-| Add test | `__tests__/*.test.ts` | Colocated with source |
+| Task                | Location              | Notes                         |
+| ------------------- | --------------------- | ----------------------------- |
+| Add new schema      | `schemas/*.ts`        | Export from `index.ts`        |
+| Add new type        | `types/*.ts`          | Export from `index.ts`        |
+| Add constant        | `constants/*.ts`      | Export from `index.ts`        |
+| Add helper function | `lib/*.ts`            | Must be pure, no side effects |
+| Add test            | `__tests__/*.test.ts` | Colocated with source         |
 
 ## CONVENTIONS
 
@@ -104,12 +104,12 @@ shared/src/
 
 > Universal anti-patterns (type suppression, cross-app imports, frozen constants) in root AGENTS.md.
 
-- **Never use deep import paths** — always import from `@tank/shared`
+- **Never use deep import paths** — always import from `@internal/shared`
 - **Never add runtime dependencies** — only `zod` and `semver` allowed
 
 ## TESTING
 
 ```bash
-pnpm test --filter=shared
-pnpm test --filter=shared -- resolver.test.ts
+bun test --filter=shared
+bun test --filter=shared -- resolver.test.ts
 ```

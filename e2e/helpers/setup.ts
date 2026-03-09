@@ -11,8 +11,8 @@
  */
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
+import path from 'node:path';
 import postgres from 'postgres';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ function hashApiKey(plainKey: string): string {
  * This is cryptographically secure (not Math.random()).
  */
 export async function setupE2E(
-  registry = process.env.E2E_REGISTRY_URL || 'http://localhost:3000',
+  registry = process.env.E2E_REGISTRY_URL || 'http://localhost:3000'
 ): Promise<E2EContext> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -116,16 +116,16 @@ export async function setupE2E(
   fs.mkdirSync(tankDir, { recursive: true, mode: 0o700 });
   fs.writeFileSync(
     path.join(tankDir, 'config.json'),
-    JSON.stringify(
+    `${JSON.stringify(
       {
         registry,
         token: plainKey,
-        user: { name: 'E2E Test User', email: `e2e-${runId}@tank.test` },
+        user: { name: 'E2E Test User', email: `e2e-${runId}@tank.test` }
       },
       null,
-      2,
-    ) + '\n',
-    { mode: 0o600 },
+      2
+    )}\n`,
+    { mode: 0o600 }
   );
 
   return {
@@ -135,7 +135,7 @@ export async function setupE2E(
     orgSlug,
     home,
     registry,
-    sql,
+    sql
   };
 }
 
@@ -153,7 +153,9 @@ export async function cleanupE2E(ctx: E2EContext): Promise<void> {
   const orgId = `e2e-org-${runId}`;
 
   const safeDelete = async (query: ReturnType<typeof sql>) => {
-    try { await query; } catch (e: unknown) {
+    try {
+      await query;
+    } catch (e: unknown) {
       const code = (e as { code?: string }).code;
       if (code !== '42P01') throw e;
     }
@@ -163,7 +165,9 @@ export async function cleanupE2E(ctx: E2EContext): Promise<void> {
     const skillIds = sql`SELECT id FROM skills WHERE publisher_id = ${userId}`;
     const versionIds = sql`SELECT sv.id FROM skill_versions sv JOIN skills s ON sv.skill_id = s.id WHERE s.publisher_id = ${userId}`;
 
-    await safeDelete(sql`DELETE FROM scan_findings WHERE scan_id IN (SELECT id FROM scan_results WHERE version_id IN (${versionIds}))`);
+    await safeDelete(
+      sql`DELETE FROM scan_findings WHERE scan_id IN (SELECT id FROM scan_results WHERE version_id IN (${versionIds}))`
+    );
     await safeDelete(sql`DELETE FROM scan_results WHERE version_id IN (${versionIds})`);
     await safeDelete(sql`DELETE FROM skill_stars WHERE skill_id IN (${skillIds})`);
     await safeDelete(sql`DELETE FROM skill_access WHERE skill_id IN (${skillIds})`);
@@ -172,9 +176,9 @@ export async function cleanupE2E(ctx: E2EContext): Promise<void> {
     await sql`DELETE FROM skills WHERE publisher_id = ${userId}`;
 
     await sql`DELETE FROM audit_events WHERE actor_id = ${userId}`;
-    await sql`DELETE FROM "member" WHERE id LIKE ${'e2e-member-' + runId + '%'}`;
+    await sql`DELETE FROM "member" WHERE id LIKE ${`e2e-member-${runId}%`}`;
     await sql`DELETE FROM "organization" WHERE id = ${orgId}`;
-    await sql`DELETE FROM "apikey" WHERE id LIKE ${'e2e-apikey-' + runId + '%'}`;
+    await sql`DELETE FROM "apikey" WHERE id LIKE ${`e2e-apikey-${runId}%`}`;
     await sql`DELETE FROM "session" WHERE user_id = ${userId}`;
     await sql`DELETE FROM "user" WHERE id = ${userId}`;
   } catch (err) {
@@ -207,11 +211,7 @@ export async function skillExists(sql: postgres.Sql, name: string): Promise<bool
 /**
  * Query the database to check if a skill version exists.
  */
-export async function versionExists(
-  sql: postgres.Sql,
-  name: string,
-  version: string,
-): Promise<boolean> {
+export async function versionExists(sql: postgres.Sql, name: string, version: string): Promise<boolean> {
   const rows = await sql`
     SELECT 1 FROM skill_versions sv
     JOIN skills s ON sv.skill_id = s.id

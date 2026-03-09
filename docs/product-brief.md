@@ -118,13 +118,13 @@ Auto-generated file that pins exact versions of every skill and transitive depen
 
 Unlike npm/PyPI where semver is a social contract, Tank **enforces it** by analyzing what actually changed:
 
-| Change Type | Required Bump | Detection |
-|-------------|--------------|-----------|
-| Bug fix, no schema/permission change | PATCH | Schema diff + permission diff |
-| New feature, backward-compatible | MINOR | Schema diff |
-| New non-dangerous permission | MINOR | Permission diff |
-| Breaking schema change | MAJOR | Schema diff |
-| New dangerous permission (network, subprocess) | MAJOR | Permission diff |
+| Change Type                                    | Required Bump | Detection                     |
+| ---------------------------------------------- | ------------- | ----------------------------- |
+| Bug fix, no schema/permission change           | PATCH         | Schema diff + permission diff |
+| New feature, backward-compatible               | MINOR         | Schema diff                   |
+| New non-dangerous permission                   | MINOR         | Permission diff               |
+| Breaking schema change                         | MAJOR         | Schema diff                   |
+| New dangerous permission (network, subprocess) | MAJOR         | Permission diff               |
 
 If a publisher tries to release a PATCH that adds network access, the publish is **rejected**.
 
@@ -133,20 +133,24 @@ If a publisher tries to release a PATCH that adds network access, the publish is
 Security at multiple stages:
 
 **Publish-time (implemented):**
+
 - 6-stage security scanning pipeline (ingest, structure, AST analysis, injection detection, secrets, supply chain)
 - Permission extraction and cross-checking against declared capabilities
 - Capability declaration validation
 - No arbitrary install scripts
 
 **Review & audit (implemented):**
+
 - Automated audit score (0-10) based on 8 weighted checks
 - Permission escalation detection between versions
 
 **Install-time (implemented):**
+
 - Lockfile integrity verification (SHA-512)
 - Permission budget enforcement — skills exceeding the project budget are rejected
 
 **Planned (Phase 2-3):**
+
 - Code signing via Sigstore/cosign
 - SBOM generation
 - Verified publisher program
@@ -173,16 +177,16 @@ The 6-stage scanner independently extracts permissions from code (network calls,
 
 Transparent 0-10 score for every skill, computed from 8 weighted checks:
 
-| Check | Points |
-|-------|--------|
-| SKILL.md present (properly packaged) | +1 |
-| Description present in manifest | +1 |
-| Permissions declared (not empty) | +1 |
-| No security issues found in scan | +2 |
-| Extracted permissions match declared | +2 |
-| File count reasonable (< 100 files) | +1 |
-| README documentation present | +1 |
-| Package size reasonable (< 5 MB) | +1 |
+| Check                                | Points |
+| ------------------------------------ | ------ |
+| SKILL.md present (properly packaged) | +1     |
+| Description present in manifest      | +1     |
+| Permissions declared (not empty)     | +1     |
+| No security issues found in scan     | +2     |
+| Extracted permissions match declared | +2     |
+| File count reasonable (< 100 files)  | +1     |
+| README documentation present         | +1     |
+| Package size reasonable (< 5 MB)     | +1     |
 
 ### 7. CLI
 
@@ -219,6 +223,7 @@ GET    /v1/search?q=...                    # full-text search
 ```
 
 **Planned endpoints:**
+
 ```
 GET    /v1/skills/:name/audit              # audit history
 GET    /v1/skills/:name/diff/:v1/:v2       # permission + schema diff
@@ -235,18 +240,18 @@ GET    /v1/skills/:name/diff/:v1/:v2       # permission + schema diff
 
 ## Competitive Landscape
 
-| | skills.sh | ClawHub | SkillsMP | **Tank** |
-|-|-----------|---------|----------|----------|
-| Discovery | Yes | Yes | Yes | Yes |
-| Versioning | Git tags | None | None | Semver with escalation detection |
-| Lockfile | No | No | No | Yes (SHA-512) |
-| Permissions | No | No | No | Declared + enforced at install |
-| Static analysis | No | Basic | No | 6-stage security pipeline |
-| Audit score | No | No | No | Transparent 0-10 |
-| Install scripts | Allowed | Allowed | N/A | Forbidden |
-| Code signing | No | No | No | Planned (Sigstore) |
-| SBOM | No | No | No | Planned |
-| Sandbox | No | No | No | Planned (WASM) |
+|                 | skills.sh | ClawHub | SkillsMP | **Tank**                         |
+| --------------- | --------- | ------- | -------- | -------------------------------- |
+| Discovery       | Yes       | Yes     | Yes      | Yes                              |
+| Versioning      | Git tags  | None    | None     | Semver with escalation detection |
+| Lockfile        | No        | No      | No       | Yes (SHA-512)                    |
+| Permissions     | No        | No      | No       | Declared + enforced at install   |
+| Static analysis | No        | Basic   | No       | 6-stage security pipeline        |
+| Audit score     | No        | No      | No       | Transparent 0-10                 |
+| Install scripts | Allowed   | Allowed | N/A      | Forbidden                        |
+| Code signing    | No        | No      | No       | Planned (Sigstore)               |
+| SBOM            | No        | No      | No       | Planned                          |
+| Sandbox         | No        | No      | No       | Planned (WASM)                   |
 
 ## Target Users
 

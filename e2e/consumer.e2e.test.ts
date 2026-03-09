@@ -8,14 +8,22 @@
  * Prerequisites:
  * - Next.js dev server running on localhost:3000
  * - DATABASE_URL set in .env.local
- * - CLI built: pnpm build --filter=tank
+ * - CLI built: bun run build --filter=@tankpkg/cli
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
 import fs from 'node:fs';
 import path from 'node:path';
-import { runTank, expectSuccess, expectFailure } from './helpers/cli';
-import { setupE2E, cleanupE2E, type E2EContext } from './helpers/setup';
-import { createSkillFixture, createConsumerFixture, bumpSkillVersion, cleanupFixture, type SkillFixture, type ConsumerFixture } from './helpers/fixtures';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { expectFailure, expectSuccess, runTank } from './helpers/cli';
+import {
+  bumpSkillVersion,
+  type ConsumerFixture,
+  cleanupFixture,
+  createConsumerFixture,
+  createSkillFixture,
+  type SkillFixture
+} from './helpers/fixtures';
+import { cleanupE2E, type E2EContext, setupE2E } from './helpers/setup';
 
 describe('Consumer E2E — install and manage skills', () => {
   let ctx: E2EContext;
@@ -35,8 +43,8 @@ describe('Consumer E2E — install and manage skills', () => {
       permissions: {
         network: { outbound: ['*.example.com'] },
         filesystem: { read: ['./src/**'] },
-        subprocess: false,
-      },
+        subprocess: false
+      }
     });
     tempDirs.push(skill.dir);
 
@@ -44,7 +52,7 @@ describe('Consumer E2E — install and manage skills', () => {
     const pub1 = await runTank(['publish'], {
       cwd: skill.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
     if (pub1.exitCode !== 0) {
       throw new Error(`Setup: publish v1.0.0 failed: ${pub1.stderr}`);
@@ -55,7 +63,7 @@ describe('Consumer E2E — install and manage skills', () => {
     const pub2 = await runTank(['publish'], {
       cwd: skill.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
     if (pub2.exitCode !== 0) {
       throw new Error(`Setup: publish v1.1.0 failed: ${pub2.stderr}`);
@@ -88,7 +96,7 @@ describe('Consumer E2E — install and manage skills', () => {
     const result = await runTank(['install', skill.name, '^1.0.0'], {
       cwd: consumer.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
 
     expectSuccess(result);
@@ -110,7 +118,7 @@ describe('Consumer E2E — install and manage skills', () => {
     const lockfile = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
     // Lock key format: name@version
     const lockKeys = Object.keys(lockfile.skills);
-    const matchingKey = lockKeys.find(k => k.startsWith(skill.name + '@'));
+    const matchingKey = lockKeys.find((k) => k.startsWith(`${skill.name}@`));
     expect(matchingKey).toBeDefined();
     // Verify integrity hash exists
     expect(lockfile.skills[matchingKey!].integrity).toMatch(/^sha512-/);
@@ -123,7 +131,7 @@ describe('Consumer E2E — install and manage skills', () => {
     // consumer was set up in test 1 with install
     const result = await runTank(['verify'], {
       cwd: consumer.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -142,7 +150,7 @@ describe('Consumer E2E — install and manage skills', () => {
 
     const result = await runTank(['verify'], {
       cwd: consumer.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectFailure(result);
@@ -158,7 +166,7 @@ describe('Consumer E2E — install and manage skills', () => {
     const result = await runTank(['install'], {
       cwd: consumer.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
 
     expectSuccess(result);
@@ -177,7 +185,7 @@ describe('Consumer E2E — install and manage skills', () => {
   it('permissions shows resolved permissions', async () => {
     const result = await runTank(['permissions'], {
       cwd: consumer.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -194,7 +202,7 @@ describe('Consumer E2E — install and manage skills', () => {
     const result = await runTank(['audit'], {
       cwd: consumer.dir,
       home: ctx.home,
-      timeoutMs: 30_000,
+      timeoutMs: 30_000
     });
 
     expectSuccess(result);
@@ -218,7 +226,7 @@ describe('Consumer E2E — install and manage skills', () => {
     const install = await runTank(['install', skill.name, '1.0.0'], {
       cwd: updateConsumer.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
     expectSuccess(install);
 
@@ -226,12 +234,12 @@ describe('Consumer E2E — install and manage skills', () => {
     const sjPath = path.join(updateConsumer.dir, 'skills.json');
     const sj = JSON.parse(fs.readFileSync(sjPath, 'utf-8'));
     sj.skills[skill.name] = '^1.0.0';
-    fs.writeFileSync(sjPath, JSON.stringify(sj, null, 2) + '\n');
+    fs.writeFileSync(sjPath, `${JSON.stringify(sj, null, 2)}\n`);
 
     const result = await runTank(['update', skill.name], {
       cwd: updateConsumer.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
 
     expectSuccess(result);
@@ -247,7 +255,7 @@ describe('Consumer E2E — install and manage skills', () => {
     // Use the main consumer from test 1-6
     const result = await runTank(['remove', skill.name], {
       cwd: consumer.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -267,7 +275,7 @@ describe('Consumer E2E — install and manage skills', () => {
     const lockPath = path.join(consumer.dir, 'skills.lock');
     const lockfile = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
     const lockKeys = Object.keys(lockfile.skills);
-    const matchingKey = lockKeys.find(k => k.startsWith(skill.name + '@'));
+    const matchingKey = lockKeys.find((k) => k.startsWith(`${skill.name}@`));
     expect(matchingKey).toBeUndefined();
   });
 
@@ -281,14 +289,14 @@ describe('Consumer E2E — install and manage skills', () => {
       permissions: {
         network: { outbound: [] }, // No network allowed!
         filesystem: { read: ['./src/**'], write: [] },
-        subprocess: false,
-      },
+        subprocess: false
+      }
     });
 
     const result = await runTank(['install', skill.name], {
       cwd: restrictedConsumer.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
 
     expectFailure(result);
@@ -304,7 +312,7 @@ describe('Consumer E2E — install and manage skills', () => {
 
     const result = await runTank(['install', '@nonexistent/does-not-exist-xyz'], {
       cwd: emptyConsumer.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectFailure(result);
@@ -316,19 +324,16 @@ describe('Consumer E2E — install and manage skills', () => {
   // 11. search works without auth (public)
   // -----------------------------------------------------------------------
   it('search works without auth (public endpoint)', async () => {
-    const noAuthHome = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tank-noauth-search-'));
+    const noAuthHome = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'tank-noauth-search-'));
     const tankDir = path.join(noAuthHome, '.tank');
     fs.mkdirSync(tankDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(tankDir, 'config.json'),
-      JSON.stringify({ registry: ctx.registry }, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tankDir, 'config.json'), `${JSON.stringify({ registry: ctx.registry }, null, 2)}\n`);
     tempDirs.push(noAuthHome);
 
     // Search by description — PostgreSQL full-text search handles plain words
     // better than hyphenated scoped names
     const result = await runTank(['search', 'E2E consumer test skill'], {
-      home: noAuthHome,
+      home: noAuthHome
     });
 
     expectSuccess(result);

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { resolve, type SkillsLock } from '@tank/shared';
+import { resolve, type SkillsLock } from '@internal/shared';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
 
@@ -32,16 +32,18 @@ export function registerUpdateSkillTool(server: McpServer): void {
     'Update an installed skill to the latest compatible version within its declared semver range.',
     {
       name: z.string().describe('Skill name in @org/name format'),
-      directory: z.string().optional().describe('Project directory (defaults to current working directory)'),
+      directory: z.string().optional().describe('Project directory (defaults to current working directory)')
     },
     async ({ name, directory }) => {
       if (!SCOPED_NAME_PATTERN.test(name)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -50,11 +52,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
       const skillsJsonPath = path.join(dir, 'skills.json');
       if (!fs.existsSync(skillsJsonPath)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No skills.json found in ${dir}. Run the "init-skill" tool first.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `No skills.json found in ${dir}. Run the "init-skill" tool first.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -64,11 +68,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
         skillsJson = JSON.parse(raw) as Record<string, unknown>;
       } catch {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'Failed to read or parse skills.json.',
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Failed to read or parse skills.json.'
+            }
+          ],
+          isError: true
         };
       }
 
@@ -77,11 +83,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
 
       if (!versionRange) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Skill "${name}" is not installed (not found in skills.json). Install it first with the install-skill tool.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Skill "${name}" is not installed (not found in skills.json). Install it first with the install-skill tool.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -107,56 +115,64 @@ export function registerUpdateSkillTool(server: McpServer): void {
 
       if (!currentVersion) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Skill "${name}" is not installed (not found in skills.lock). Install it first with the install-skill tool.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Skill "${name}" is not installed (not found in skills.lock). Install it first with the install-skill tool.`
+            }
+          ],
+          isError: true
         };
       }
 
       const client = new TankApiClient();
       if (!client.isAuthenticated) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'Authentication required. Please run the "login" tool first to authenticate with Tank.',
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Authentication required. Please run the "login" tool first to authenticate with Tank.'
+            }
+          ],
+          isError: true
         };
       }
 
       // Fetch available versions from registry
       const encodedName = encodeURIComponent(name);
-      const versionsResult = await client.fetch<VersionsResponse>(
-        `/api/v1/skills/${encodedName}/versions`,
-      );
+      const versionsResult = await client.fetch<VersionsResponse>(`/api/v1/skills/${encodedName}/versions`);
 
       if (!versionsResult.ok) {
         if (versionsResult.status === 0) {
           return {
-            content: [{
-              type: 'text' as const,
-              text: `Unable to connect to the Tank registry. Check your network connection and try again.`,
-            }],
-            isError: true,
+            content: [
+              {
+                type: 'text' as const,
+                text: `Unable to connect to the Tank registry. Check your network connection and try again.`
+              }
+            ],
+            isError: true
           };
         }
         if (versionsResult.status === 404) {
           return {
-            content: [{
-              type: 'text' as const,
-              text: `Skill "${name}" not found in the registry.`,
-            }],
-            isError: true,
+            content: [
+              {
+                type: 'text' as const,
+                text: `Skill "${name}" not found in the registry.`
+              }
+            ],
+            isError: true
           };
         }
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to fetch versions for ${name}: ${versionsResult.error}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to fetch versions for ${name}: ${versionsResult.error}`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -166,11 +182,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
       const resolved = resolve(versionRange, availableVersions);
       if (!resolved) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No version of ${name} satisfies range "${versionRange}". Available: ${availableVersions.join(', ')}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `No version of ${name} satisfies range "${versionRange}". Available: ${availableVersions.join(', ')}`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -178,34 +196,37 @@ export function registerUpdateSkillTool(server: McpServer): void {
       const allMajors = availableVersions
         .map((v) => {
           const major = v.split('.')[0];
-          return { version: v, major: parseInt(major, 10) };
+          return { version: v, major: Number.parseInt(major, 10) };
         })
-        .filter((v) => !isNaN(v.major));
+        .filter((v) => !Number.isNaN(v.major));
 
-      const currentMajor = parseInt(currentVersion.split('.')[0], 10);
-      const newerMajors = allMajors
-        .filter((v) => v.major > currentMajor)
-        .map((v) => v.version);
+      const currentMajor = Number.parseInt(currentVersion.split('.')[0], 10);
+      const newerMajors = allMajors.filter((v) => v.major > currentMajor).map((v) => v.version);
 
-      const highestOutOfRange = newerMajors.length > 0
-        ? newerMajors.sort((a, b) => {
-            const [aMaj, aMin, aPat] = a.split('.').map(Number);
-            const [bMaj, bMin, bPat] = b.split('.').map(Number);
-            return bMaj - aMaj || bMin - aMin || bPat - aPat;
-          })[0]
-        : null;
+      const highestOutOfRange =
+        newerMajors.length > 0
+          ? newerMajors.sort((a, b) => {
+              const [aMaj, aMin, aPat] = a.split('.').map(Number);
+              const [bMaj, bMin, bPat] = b.split('.').map(Number);
+              return bMaj - aMaj || bMin - aMin || bPat - aPat;
+            })[0]
+          : null;
 
       // 8. If resolved === current, already at latest
       if (resolved === currentVersion) {
         const lines = [`Already at latest compatible version: ${name}@${resolved}`];
         if (highestOutOfRange) {
-          lines.push(`\nNote: Version ${highestOutOfRange} is available but outside the declared range "${versionRange}". Update skills.json to use it.`);
+          lines.push(
+            `\nNote: Version ${highestOutOfRange} is available but outside the declared range "${versionRange}". Update skills.json to use it.`
+          );
         }
         return {
-          content: [{
-            type: 'text' as const,
-            text: lines.join(''),
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: lines.join('')
+            }
+          ]
         };
       }
 
@@ -220,11 +241,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
 
       if (!versionResult.ok) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to fetch version details for ${name}@${resolved}: ${versionResult.error}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to fetch version details for ${name}@${resolved}: ${versionResult.error}`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -234,25 +257,29 @@ export function registerUpdateSkillTool(server: McpServer): void {
       let tarballBuffer: ArrayBuffer;
       try {
         const tarballRes = await fetch(versionData.downloadUrl, {
-          headers: client.token ? { Authorization: `Bearer ${client.token}` } : {},
+          headers: client.token ? { Authorization: `Bearer ${client.token}` } : {}
         });
         if (!tarballRes.ok) {
           return {
-            content: [{
-              type: 'text' as const,
-              text: `Failed to download tarball for ${name}@${resolved}: ${tarballRes.statusText}`,
-            }],
-            isError: true,
+            content: [
+              {
+                type: 'text' as const,
+                text: `Failed to download tarball for ${name}@${resolved}: ${tarballRes.statusText}`
+              }
+            ],
+            isError: true
           };
         }
         tarballBuffer = await tarballRes.arrayBuffer();
       } catch (err) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Network error downloading ${name}@${resolved}: ${err instanceof Error ? err.message : String(err)}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Network error downloading ${name}@${resolved}: ${err instanceof Error ? err.message : String(err)}`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -263,11 +290,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
 
       if (computedIntegrity !== versionData.integrity) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Integrity check failed for ${name}@${resolved}. The tarball has been tampered with or is corrupted.\nExpected: ${versionData.integrity}\nGot: ${computedIntegrity}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Integrity check failed for ${name}@${resolved}. The tarball has been tampered with or is corrupted.\nExpected: ${versionData.integrity}\nGot: ${computedIntegrity}`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -286,19 +315,25 @@ export function registerUpdateSkillTool(server: McpServer): void {
 
       try {
         execSync(`tar xzf "${tarballPath}" -C "${skillDir}" --strip-components=1`, {
-          stdio: 'pipe',
+          stdio: 'pipe'
         });
       } catch (err) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to extract tarball for ${name}@${resolved}: ${err instanceof Error ? err.message : String(err)}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to extract tarball for ${name}@${resolved}: ${err instanceof Error ? err.message : String(err)}`
+            }
+          ],
+          isError: true
         };
       } finally {
         // Clean up temp tarball
-        try { fs.unlinkSync(tarballPath); } catch { /* ignore */ }
+        try {
+          fs.unlinkSync(tarballPath);
+        } catch {
+          /* ignore */
+        }
       }
 
       // 13. Update lockfile
@@ -328,7 +363,7 @@ export function registerUpdateSkillTool(server: McpServer): void {
         resolved: versionData.downloadUrl,
         integrity: versionData.integrity,
         permissions: versionData.permissions as SkillsLock['skills'][string]['permissions'],
-        audit_score: versionData.auditScore,
+        audit_score: versionData.auditScore
       };
 
       // Sort keys for deterministic output
@@ -338,26 +373,30 @@ export function registerUpdateSkillTool(server: McpServer): void {
       }
       lock.skills = sortedSkills as SkillsLock['skills'];
 
-      fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+      fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
 
       // 14. Build response
       const lines = [
         `Updated ${name} from ${currentVersion} to ${resolved}.`,
         `Integrity verified (SHA-512).`,
-        `Lockfile updated.`,
+        `Lockfile updated.`
       ];
 
       if (highestOutOfRange) {
-        lines.push(`\nNote: Version ${highestOutOfRange} is available but outside the declared range "${versionRange}". Update skills.json to use it.`);
+        lines.push(
+          `\nNote: Version ${highestOutOfRange} is available but outside the declared range "${versionRange}". Update skills.json to use it.`
+        );
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n'),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n')
+          }
+        ]
       };
-    },
+    }
   );
 }
 

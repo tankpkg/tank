@@ -1,6 +1,13 @@
 .turbo
 .git
 .next
-test-skill
 e2e
-.sisyphus
+infra
+.worktrees
+docs
+.idd
+.bdd
+.claude
+scripts
+Formula
+action
