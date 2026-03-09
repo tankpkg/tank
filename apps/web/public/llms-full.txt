@@ -754,14 +754,12 @@ curl -X POST https://tankpkg.dev/api/v1/skills/confirm \
 
 ---
 
-# cicd
+# CI/CD Integration
 
 Source: https://tankpkg.dev/docs/cicd
 
----
-title: CI/CD Integration
-description: Automate AI agent skill installation and publishing in CI/CD pipelines — GitHub Actions, GitLab CI, Docker, and the official Tank GitHub Action.
----
+> Automate AI agent skill installation and publishing in CI/CD pipelines — GitHub Actions, GitLab CI, Docker, and the official Tank GitHub Action.
+
 
 # CI/CD Integration
 
@@ -1437,14 +1435,12 @@ tank upgrade [version]
 
 ---
 
-# getting-started
+# Getting Started with Tank
 
 Source: https://tankpkg.dev/docs/getting-started
 
----
-title: Getting Started with Tank
-description: Install the Tank CLI, authenticate with GitHub, and install your first AI agent skill in under 5 minutes — with SHA-512 integrity verification and permission budgets.
----
+> Install the Tank CLI, authenticate with GitHub, and install your first AI agent skill in under 5 minutes — with SHA-512 integrity verification and permission budgets.
+
 
 # Getting Started with Tank
 
@@ -1646,14 +1642,12 @@ Ensure your global pnpm or npm bin directory is on your `PATH`. Run `pnpm bin -g
 
 ---
 
-# github-action
+# GitHub Action for Publishing
 
 Source: https://tankpkg.dev/docs/github-action
 
----
-title: GitHub Action for Publishing
-description: Automate AI agent skill publishing with Tank's official GitHub Action — security scanning, version validation, and badge generation in your CI/CD pipeline.
----
+> Automate AI agent skill publishing with Tank's official GitHub Action — security scanning, version validation, and badge generation in your CI/CD pipeline.
+
 
 # GitHub Action for Publishing
 
@@ -1927,14 +1921,12 @@ You added new permissions in a patch (`1.0.x`) or dangerous permissions (network
 
 ---
 
-# index
+# Tank Documentation
 
 Source: https://tankpkg.dev/docs
 
----
-title: Tank Documentation
-description: Official documentation for Tank — the security-first package manager for AI agent skills. Install, publish, scan, and manage skills for Claude Code, Cursor, and other AI coding assistants.
----
+> Official documentation for Tank — the security-first package manager for AI agent skills. Install, publish, scan, and manage skills for Claude Code, Cursor, and other AI coding assistants.
+
 
 # Tank Documentation
 
@@ -2054,14 +2046,12 @@ Tank is open source under the MIT License. The CLI is published as `@tankpkg/cli
 
 ---
 
-# installing
+# Installing AI Agent Skills
 
 Source: https://tankpkg.dev/docs/installing
 
----
-title: Installing AI Agent Skills
-description: Install, update, remove, and verify AI agent skills with Tank — deterministic lockfiles, SHA-512 integrity checks, dependency resolution, and permission budget enforcement.
----
+> Install, update, remove, and verify AI agent skills with Tank — deterministic lockfiles, SHA-512 integrity checks, dependency resolution, and permission budget enforcement.
+
 
 # Installing AI Agent Skills
 
@@ -2351,14 +2341,12 @@ If verify fails immediately after reinstall, the issue is likely a proxy or anti
 
 ---
 
-# mcp
+# MCP Server Integration
 
 Source: https://tankpkg.dev/docs/mcp
 
----
-title: MCP Server Integration
-description: Use Tank directly from Claude Code, Cursor, VS Code Copilot, Windsurf, and other MCP-compatible AI coding assistants — 17 tools for full skill lifecycle management.
----
+> Use Tank directly from Claude Code, Cursor, VS Code Copilot, Windsurf, and other MCP-compatible AI coding assistants — 17 tools for full skill lifecycle management.
+
 
 # MCP Server Integration
 
@@ -2975,14 +2963,12 @@ The skill is requesting capabilities beyond what your `tank.json` allows. Review
 
 ---
 
-# organizations
+# Organizations & Teams
 
 Source: https://tankpkg.dev/docs/organizations
 
----
-title: Organizations & Teams
-description: Create organizations in Tank to publish scoped AI agent skills, manage team members, and control access with invitations and role-based permissions.
----
+> Create organizations in Tank to publish scoped AI agent skills, manage team members, and control access with invitations and role-based permissions.
+
 
 # Organizations & Teams
 
@@ -3178,14 +3164,12 @@ The admin API requires a token with the `skills:admin` scope. See the [API Refer
 
 ---
 
-# permissions
+# Permissions & Access Control
 
 Source: https://tankpkg.dev/docs/permissions
 
----
-title: Permissions & Access Control
-description: Understand Tank's permission model for AI agent skills — declare, enforce, and audit what capabilities your skills can access at install time.
----
+> Understand Tank's permission model for AI agent skills — declare, enforce, and audit what capabilities your skills can access at install time.
+
 
 # Permissions & Access Control
 
@@ -3620,14 +3604,12 @@ The MCP server exposes a `tank_permissions` tool that returns the same resolved 
 
 ---
 
-# publish-first-skill
+# Publish Your First Skill
 
 Source: https://tankpkg.dev/docs/publish-first-skill
 
----
-title: Publish Your First Skill
-description: Step-by-step tutorial to publish your first AI agent skill to the Tank registry in under 10 minutes — with security scanning and permission declarations.
----
+> Step-by-step tutorial to publish your first AI agent skill to the Tank registry in under 10 minutes — with security scanning and permission declarations.
+
 
 # Publish Your First Skill
 
@@ -3784,14 +3766,12 @@ You'll see:
 
 ---
 
-# publishing
+# Publishing AI Agent Skills
 
 Source: https://tankpkg.dev/docs/publishing
 
----
-title: Publishing AI Agent Skills
-description: Build, validate, and publish AI agent skills to the Tank registry — with security scanning, permission declarations, and version escalation protection.
----
+> Build, validate, and publish AI agent skills to the Tank registry — with security scanning, permission declarations, and version escalation protection.
+
 
 # Publishing AI Agent Skills
 
@@ -4102,14 +4082,12 @@ Note: changing visibility for an already-published version requires an admin act
 
 ---
 
-# search
+# Searching for Skills
 
 Source: https://tankpkg.dev/docs/search
 
----
-title: Searching for Skills
-description: Find AI agent skills in the Tank registry using hybrid fuzzy search with typo tolerance, full-text matching, and advanced filters for security score, popularity, and freshness.
----
+> Find AI agent skills in the Tank registry using hybrid fuzzy search with typo tolerance, full-text matching, and advanced filters for security score, popularity, and freshness.
+
 
 # Searching for Skills
 
@@ -4323,14 +4301,12 @@ Typical search latency is under 50ms at p99 for the hosted registry.
 
 ---
 
-# security-checklist
+# Secure AI Skills Checklist
 
 Source: https://tankpkg.dev/docs/security-checklist
 
----
-title: Secure AI Skills Checklist
-description: Security best practices checklist for publishing safe AI agent skills — covering permissions, code security, prompt injection prevention, and dependency management.
----
+> Security best practices checklist for publishing safe AI agent skills — covering permissions, code security, prompt injection prevention, and dependency management.
+
 
 # Secure AI Skills Checklist
 
@@ -4448,14 +4424,12 @@ This checklist is enforced automatically by `tank scan` and the 6-stage security
 
 ---
 
-# security
+# Security Model
 
 Source: https://tankpkg.dev/docs/security
 
----
-title: Security Model
-description: How Tank's 6-stage security pipeline scans AI agent skills for vulnerabilities, prompt injection, credential theft, and supply chain attacks before they reach your agents.
----
+> How Tank's 6-stage security pipeline scans AI agent skills for vulnerabilities, prompt injection, credential theft, and supply chain attacks before they reach your agents.
+
 
 # Security Model
 
@@ -4897,14 +4871,12 @@ POST /api/admin/rescan-skills
 
 ---
 
-# self-host-quickstart
+# Self-Host in 15 Minutes
 
 Source: https://tankpkg.dev/docs/self-host-quickstart
 
----
-title: Self-Host in 15 Minutes
-description: Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, Redis, MinIO, and AI-powered security scanning.
----
+> Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, Redis, MinIO, and AI-powered security scanning.
+
 
 # Self-Host in 15 Minutes
 
@@ -5114,14 +5086,12 @@ helm upgrade tank helm/tank/ \
 
 ---
 
-# self-hosting
+# Self-Hosting Tank
 
 Source: https://tankpkg.dev/docs/self-hosting
 
----
-title: Self-Hosting Tank
-description: Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, Redis, MinIO, and security scanning.
----
+> Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, Redis, MinIO, and security scanning.
+
 
 # Self-Hosting Tank
 
