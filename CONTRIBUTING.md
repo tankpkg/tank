@@ -66,7 +66,7 @@ This is a monorepo managed by [Turborepo](https://turbo.build/repo) with pnpm wo
 - `apps/web` — Next.js 15 web app + API routes (deployed to Vercel)
 - `apps/cli` — `tank` CLI tool (TypeScript, commander.js)
 - `packages/shared` — Shared Zod schemas, TypeScript types, constants
-- `docs/` — Product brief, architecture, roadmap
+- `docs/` — Product brief, architecture
 
 ## How to Contribute
 
