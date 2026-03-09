@@ -53,8 +53,7 @@ export function registerLoginTool(server: McpServer): void {
         };
       }
 
-      const { authUrl, sessionCode } = (await startRes.json()) as {
-        authUrl: string;
+      const { sessionCode } = (await startRes.json()) as {
         sessionCode: string;
       };
 

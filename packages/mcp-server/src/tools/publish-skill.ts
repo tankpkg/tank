@@ -2,8 +2,7 @@ import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
-import { getConfig } from '../lib/config.js';
-import { pack } from '../lib/packer.js';
+import { type PackResult, pack } from '../lib/packer.js';
 
 interface PublishStartResponse {
   uploadUrl: string;
@@ -31,7 +30,6 @@ export function registerPublishSkillTool(server: McpServer): void {
     async ({ directory = '.', visibility = 'public', dryRun = false }) => {
       const absDir = path.resolve(directory);
       const client = new TankApiClient();
-      const _config = getConfig();
 
       // Check auth (skip for dry run)
       if (!dryRun && !client.isAuthenticated) {
@@ -60,7 +58,7 @@ export function registerPublishSkillTool(server: McpServer): void {
       }
 
       // Pack the skill
-      let packResult;
+      let packResult: PackResult;
       try {
         packResult = await pack(absDir);
       } catch (err) {

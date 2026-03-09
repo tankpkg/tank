@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { LOCKFILE_VERSION, type Permissions, resolve, type SkillsLock } from '@internal/shared';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { extract } from 'tar';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
