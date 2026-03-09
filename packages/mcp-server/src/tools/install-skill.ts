@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { resolve, type Permissions, type SkillsLock, LOCKFILE_VERSION } from '@tank/shared';
+import { resolve, type Permissions, type SkillsLock, LOCKFILE_VERSION, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from '@tank/shared';
 import { extract } from 'tar';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
@@ -47,7 +47,7 @@ function getSkillDir(projectDir: string, skillName: string): string {
 export function registerInstallSkillTool(server: McpServer): void {
   server.tool(
     'install-skill',
-    'Install a skill from the Tank registry. Resolves version, downloads tarball, verifies SHA-512 integrity, extracts files, and updates skills.json + skills.lock.',
+    `Install a skill from the Tank registry. Resolves version, downloads tarball, verifies SHA-512 integrity, extracts files, and updates ${MANIFEST_FILENAME} + ${LOCKFILE_FILENAME}.`,
     {
       name: z.string().describe('Skill name in @org/name format'),
       version: z.string().optional().describe('Specific version or semver range (default: latest)'),
@@ -75,24 +75,31 @@ export function registerInstallSkillTool(server: McpServer): void {
       const dir = directory ? path.resolve(directory) : process.cwd();
       const range = versionRange ?? '*';
 
-      // 3. Read or create skills.json
-      const skillsJsonPath = path.join(dir, 'skills.json');
+      // 3. Read or create manifest (tank.json, with skills.json fallback)
+      let skillsJsonPath = path.join(dir, MANIFEST_FILENAME);
+      if (!fs.existsSync(skillsJsonPath) && fs.existsSync(path.join(dir, LEGACY_MANIFEST_FILENAME))) {
+        skillsJsonPath = path.join(dir, LEGACY_MANIFEST_FILENAME);
+      }
       let skillsJson: Record<string, unknown> = { skills: {} };
       if (fs.existsSync(skillsJsonPath)) {
         try {
           const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
           skillsJson = JSON.parse(raw) as Record<string, unknown>;
         } catch {
-          return textResult('Failed to read or parse skills.json.', true);
+          return textResult(`Failed to read or parse ${path.basename(skillsJsonPath)}.`, true);
         }
       } else {
+        skillsJsonPath = path.join(dir, MANIFEST_FILENAME);
         skillsJson = { skills: {} };
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
       }
 
-      // 4. Read existing lockfile
-      const lockPath = path.join(dir, 'skills.lock');
+      // 4. Read existing lockfile (tank.lock, with skills.lock fallback)
+      let lockPath = path.join(dir, LOCKFILE_FILENAME);
+      if (!fs.existsSync(lockPath) && fs.existsSync(path.join(dir, LEGACY_LOCKFILE_FILENAME))) {
+        lockPath = path.join(dir, LEGACY_LOCKFILE_FILENAME);
+      }
       let lock: SkillsLock = { lockfileVersion: LOCKFILE_VERSION, skills: {} };
       if (fs.existsSync(lockPath)) {
         try {
@@ -257,8 +264,8 @@ export function registerInstallSkillTool(server: McpServer): void {
         `**Extracted to:** ${extractDir}`,
         '',
         '### Updated files',
-        `- skills.json: added "${name}": "${skills[name]}"`,
-        `- skills.lock: added ${lockKey}`,
+        `- ${path.basename(skillsJsonPath)}: added "${name}": "${skills[name]}"`,
+        `- ${path.basename(lockPath)}: added ${lockKey}`,
       ];
 
       return textResult(lines.join('\n'));
