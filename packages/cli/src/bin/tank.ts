@@ -1,18 +1,34 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { initCommand } from '../commands/init.js';
+import { loginCommand } from '../commands/login.js';
+import { whoamiCommand } from '../commands/whoami.js';
+import { logoutCommand } from '../commands/logout.js';
+import { publishCommand } from '../commands/publish.js';
+import { installCommand, installAll } from '../commands/install.js';
+import { removeCommand } from '../commands/remove.js';
+import { updateCommand } from '../commands/update.js';
+import { verifyCommand } from '../commands/verify.js';
+import { permissionsCommand } from '../commands/permissions.js';
+import { searchCommand } from '../commands/search.js';
+import { infoCommand } from '../commands/info.js';
 import { auditCommand } from '../commands/audit.js';
+import { scanCommand } from '../commands/scan.js';
+import { linkCommand } from '../commands/link.js';
+import { unlinkCommand } from '../commands/unlink.js';
 import { doctorCommand } from '../commands/doctor.js';
 import { migrateCommand } from '../commands/migrate.js';
 import { upgradeCommand } from '../commands/upgrade.js';
-import { verifyCommand } from '../commands/verify.js';
-import { whoamiCommand } from '../commands/whoami.js';
-import { flushLogs } from '../lib/debug-logger.js';
 import { checkForUpgrade } from '../lib/upgrade-check.js';
+import { flushLogs } from '../lib/debug-logger.js';
 import { VERSION } from '../version.js';
 
 const program = new Command();
 
-program.name('tank').description('Security-first package manager for AI agent skills').version(VERSION);
+program
+  .name('tank')
+  .description('Security-first package manager for AI agent skills')
+  .version(VERSION);
 
 program
   .command('init')
@@ -38,7 +54,7 @@ program
       console.error(`Init failed: ${msg}`);
       process.exit(1);
     }
-  );
+  });
 
 program
   .command('login')
@@ -93,7 +109,7 @@ program
       await publishCommand({
         dryRun: opts.dryRun,
         private: opts.private,
-        visibility: opts.visibility
+        visibility: opts.visibility,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

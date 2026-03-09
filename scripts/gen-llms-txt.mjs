@@ -23,7 +23,7 @@ function parseFrontmatter(content) {
   if (!match) return {};
 
   const frontmatter = {};
-  match[1].split(/\r?\n/).forEach(line => {
+  match[1].split(/\r?\n/).forEach((line) => {
     const [key, ...valueParts] = line.split(':');
     if (key && valueParts.length) {
       frontmatter[key.trim()] = valueParts
@@ -54,7 +54,7 @@ function readDocs() {
         const frontmatter = parseFrontmatter(content);
         const slug = entry.replace('.mdx', '');
         const bodyContent = content.replace(/^---[\s\S]*?---\r?\n/, '');
-        
+
         docs.push({
           slug: slug === 'index' ? '' : `${slugPrefix}${slug}`,
           title: frontmatter.title || slug,
