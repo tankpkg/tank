@@ -166,7 +166,7 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
               stagesRun: scanResult.stage_results?.map((s) => s.stage) || [],
               durationMs: scanResult.duration_ms || null,
               fileHashes: scanResult.file_hashes || null,
-              llmAnalysis: scanResult.llm_analysis || null
+              llmAnalysis: scanResult.llm_analysis as LLMAnalysisInfo | null
             })
             .returning();
 
