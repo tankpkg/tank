@@ -239,7 +239,7 @@ Initiates skill publication. The response includes a pre-signed \`uploadUrl\`; y
     "repository": "https://github.com/acme/my-skill"
   },
   "readme": "# My Skill\\nInstall with \`tank install @acme/my-skill\`.",
-  "files": ["skills.json", "README.md", "index.md"]
+  "files": ["tank.json", "README.md", "index.md"]
 }
 \`\`\`
 

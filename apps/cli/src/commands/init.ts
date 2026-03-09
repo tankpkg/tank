@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { input, confirm } from '@inquirer/prompts';
-import { skillsJsonSchema } from '@tank/shared';
+import { skillsJsonSchema, MANIFEST_FILENAME } from '@tank/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
+import { resolveManifestPath } from '../lib/manifest.js';
 
 const NAME_PATTERN = /^(@[a-z0-9-]+\/)?[a-z0-9][a-z0-9-]*$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
@@ -32,7 +33,8 @@ export interface InitOptions {
 
 export async function initCommand(options: InitOptions = {}): Promise<void> {
   const cwd = process.cwd();
-  const filePath = path.join(cwd, 'skills.json');
+  const resolved = resolveManifestPath(cwd);
+  const filePath = resolved.exists ? resolved.path : path.join(cwd, MANIFEST_FILENAME);
 
   if (options.yes) {
     const dirName = path.basename(cwd);
@@ -53,9 +55,9 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
       return;
     }
 
-    if (fs.existsSync(filePath)) {
+    if (resolved.exists) {
       if (!options.force) {
-        logger.error('skills.json already exists. Use --force to overwrite.');
+        logger.error(`${path.basename(resolved.path)} already exists. Use --force to overwrite.`);
         return;
       }
     }
@@ -76,7 +78,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
     // Validate against schema before writing
     const result = skillsJsonSchema.safeParse(manifest);
     if (!result.success) {
-      logger.error('Generated skills.json is invalid:');
+      logger.error(`Generated ${MANIFEST_FILENAME} is invalid:`);
       for (const issue of result.error.issues) {
         logger.error(`  ${issue.path.join('.')}: ${issue.message}`);
       }
@@ -85,15 +87,15 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
 
     // Write file
     fs.writeFileSync(filePath, JSON.stringify(manifest, null, 2) + '\n');
-    logger.success('Created skills.json');
+    logger.success(`Created ${MANIFEST_FILENAME}`);
     return;
   }
 
-  // Check if skills.json already exists
-  if (fs.existsSync(filePath)) {
-    logger.warn('skills.json already exists in this directory.');
+  // Check if manifest already exists
+  if (resolved.exists) {
+    logger.warn(`${path.basename(resolved.path)} already exists in this directory.`);
     const overwrite = await confirm({
-      message: 'Overwrite existing skills.json?',
+      message: `Overwrite existing ${path.basename(resolved.path)}?`,
       default: false,
     });
     if (!overwrite) {
@@ -154,7 +156,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   // Validate against schema before writing
   const result = skillsJsonSchema.safeParse(manifest);
   if (!result.success) {
-    logger.error('Generated skills.json is invalid:');
+    logger.error(`Generated ${MANIFEST_FILENAME} is invalid:`);
     for (const issue of result.error.issues) {
       logger.error(`  ${issue.path.join('.')}: ${issue.message}`);
     }
@@ -163,5 +165,5 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
 
   // Write file
   fs.writeFileSync(filePath, JSON.stringify(manifest, null, 2) + '\n');
-  logger.success('Created skills.json');
+  logger.success(`Created ${MANIFEST_FILENAME}`);
 }

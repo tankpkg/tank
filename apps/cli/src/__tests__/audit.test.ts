@@ -47,7 +47,7 @@ describe('auditCommand', () => {
 
   function writeLockfile(skills: Record<string, unknown>) {
     fs.writeFileSync(
-      path.join(projectDir, 'skills.lock'),
+      path.join(projectDir, 'tank.lock'),
       JSON.stringify({ lockfileVersion: 1, skills }, null, 2),
     );
   }

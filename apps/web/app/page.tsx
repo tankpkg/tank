@@ -313,7 +313,7 @@ export default async function Home() {
           </section>
         )}
 
-        {/* Code Example — skills.json */}
+        {/* Code Example — tank.json */}
         <section className="container mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-8">
@@ -323,7 +323,7 @@ export default async function Home() {
               </h2>
               <p className="text-muted-foreground max-w-xl mx-auto">
                 <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">
-                  skills.json
+                  tank.json
                 </code>{' '}
                 is like package.json — but with a{' '}
                 <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">
@@ -339,7 +339,7 @@ export default async function Home() {
                 <span className="size-3 rounded-full bg-red-500/80" />
                 <span className="size-3 rounded-full bg-amber-500/80" />
                 <span className="size-3 rounded-full bg-emerald-500/80" />
-                <span className="ml-3 text-xs text-emerald-400/60 font-mono">skills.json</span>
+                <span className="ml-3 text-xs text-emerald-400/60 font-mono">tank.json</span>
                 <div className="ml-auto flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-xs text-emerald-400/60">verified</span>

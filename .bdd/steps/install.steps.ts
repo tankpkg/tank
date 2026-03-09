@@ -32,13 +32,13 @@ function writeSkillsJson(skills: Record<string, string> = {}): void {
     skills,
     permissions: { network: { outbound: [] }, filesystem: { read: [], write: [] }, subprocess: false },
   };
-  fs.writeFileSync(path.join(projectDir(), 'skills.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.json'), JSON.stringify(manifest, null, 2) + '\n');
 }
 
 function writeLockfile(skills: Record<string, { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }>): void {
   ensureProjectDir();
   const lock = { lockfileVersion: 1, skills };
-  fs.writeFileSync(path.join(projectDir(), 'skills.lock'), JSON.stringify(lock, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
 }
 
 async function givenMcpServerIsRunning(): Promise<void> {
@@ -231,13 +231,13 @@ describe('Feature: Skill installation via MCP tool', () => {
       thenResponseContains(new RegExp(version.replace(/\./g, '\\.')));
       thenResponseContains(/SHA-512.*verified/i);
 
-      const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+      const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, { integrity: string }> };
       const lockKey = `${name}@${version}`;
       expect(lock.skills[lockKey]).toBeDefined();
       expect(lock.skills[lockKey].integrity).toMatch(/^sha512-/);
 
-      const sjRaw = fs.readFileSync(path.join(projectDir(), 'skills.json'), 'utf-8');
+      const sjRaw = fs.readFileSync(path.join(projectDir(), 'tank.json'), 'utf-8');
       const sj = JSON.parse(sjRaw) as { skills: Record<string, string> };
       expect(sj.skills[name]).toBeDefined();
     });
@@ -262,7 +262,7 @@ describe('Feature: Skill installation via MCP tool', () => {
       thenToolCompletesWithoutError();
       thenResponseContains(new RegExp(`${version.replace(/\./g, '\\.')}`));
 
-      const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+      const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, { integrity: string }> };
       const lockKey = `${name}@${version}`;
       expect(lock.skills[lockKey]).toBeDefined();
@@ -287,8 +287,8 @@ describe('Feature: Skill installation via MCP tool', () => {
       });
       thenToolCompletesWithoutError();
 
-      const lockBefore = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
-      const sjBefore = fs.readFileSync(path.join(projectDir(), 'skills.json'), 'utf-8');
+      const lockBefore = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
+      const sjBefore = fs.readFileSync(path.join(projectDir(), 'tank.json'), 'utf-8');
 
       await whenAgentCallsTool('install-skill', {
         name,
@@ -299,8 +299,8 @@ describe('Feature: Skill installation via MCP tool', () => {
       thenToolCompletesWithoutError();
       thenResponseContains(/already installed/i);
 
-      const lockAfter = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
-      const sjAfter = fs.readFileSync(path.join(projectDir(), 'skills.json'), 'utf-8');
+      const lockAfter = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
+      const sjAfter = fs.readFileSync(path.join(projectDir(), 'tank.json'), 'utf-8');
       expect(lockAfter).toBe(lockBefore);
       expect(sjAfter).toBe(sjBefore);
     });
@@ -346,7 +346,7 @@ describe('Feature: Skill installation via MCP tool', () => {
       thenToolCompletesWithoutError();
       thenResponseContains(new RegExp(version.replace(/\./g, '\\.')));
 
-      const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+      const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, unknown> };
       const lockKey = `${name}@${version}`;
       expect(lock.skills[lockKey]).toBeDefined();

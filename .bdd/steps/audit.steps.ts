@@ -24,7 +24,7 @@ function ensureProjectDir(): void {
 function writeLockfile(skills: Record<string, { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }>): void {
   ensureProjectDir();
   const lock = { lockfileVersion: 1, skills };
-  fs.writeFileSync(path.join(projectDir(), 'skills.lock'), JSON.stringify(lock, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
 }
 
 function makeLockEntry(version: string): { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null } {

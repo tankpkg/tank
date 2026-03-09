@@ -17,6 +17,7 @@ import { scanCommand } from '../commands/scan.js';
 import { linkCommand } from '../commands/link.js';
 import { unlinkCommand } from '../commands/unlink.js';
 import { doctorCommand } from '../commands/doctor.js';
+import { migrateCommand } from '../commands/migrate.js';
 import { upgradeCommand } from '../commands/upgrade.js';
 import { checkForUpgrade } from '../lib/upgrade-check.js';
 import { flushLogs } from '../lib/debug-logger.js';
@@ -31,13 +32,13 @@ program
 
 program
   .command('init')
-  .description('Create a new skills.json in the current directory')
+  .description('Create a new tank.json in the current directory')
   .option('-y, --yes', 'Skip prompts, use defaults')
   .option('--name <name>', 'Skill name')
   .option('--skill-version <version>', 'Skill version (default: 0.1.0)')
   .option('--description <desc>', 'Skill description')
   .option('--private', 'Make skill private')
-  .option('--force', 'Overwrite existing skills.json')
+  .option('--force', 'Overwrite existing tank.json')
   .action(async (opts: { yes?: boolean; name?: string; skillVersion?: string; description?: string; private?: boolean; force?: boolean }) => {
     try {
       await initCommand({
@@ -291,6 +292,19 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Doctor failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('migrate')
+  .description('Migrate skills.json → tank.json and skills.lock → tank.lock')
+  .action(async () => {
+    try {
+      await migrateCommand();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Migration failed: ${msg}`);
       process.exit(1);
     }
   });

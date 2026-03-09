@@ -9,7 +9,7 @@ import { readLinks } from '../lib/links.js';
 import { logger } from '../lib/logger.js';
 
 const writeSkillsJson = (dir: string, data: Record<string, unknown>): void => {
-  fs.writeFileSync(path.join(dir, 'skills.json'), JSON.stringify(data, null, 2) + '\n');
+  fs.writeFileSync(path.join(dir, 'tank.json'), JSON.stringify(data, null, 2) + '\n');
 };
 
 const snapshotDirectory = (dir: string): Record<string, string> => {
@@ -101,17 +101,17 @@ describe('unlinkCommand', () => {
     expect(fs.existsSync(wrapperDir)).toBe(false);
   });
 
-  it('throws when skills.json is missing', async () => {
+  it('throws when tank.json is missing', async () => {
     await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome }))
       .rejects
-      .toThrow('No skills.json found. Run this command from a skill directory.');
+      .toThrow('No tank.json found. Run this command from a skill directory.');
   });
 
-  it('throws when skills.json has no name', async () => {
+  it('throws when tank.json has no name', async () => {
     writeSkillsJson(skillDir, { description: 'Missing name' });
     await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome }))
       .rejects
-      .toThrow("Missing 'name' in skills.json");
+      .toThrow("Missing 'name' in tank.json");
   });
 
   it('logs info when the skill was never linked', async () => {
@@ -185,11 +185,11 @@ describe('unlinkCommand', () => {
     expect(manifest.links[skillName]).toBeUndefined();
   });
 
-  it('throws when skills.json is invalid JSON', async () => {
-    fs.writeFileSync(path.join(skillDir, 'skills.json'), '{invalid json}');
+  it('throws when tank.json is invalid JSON', async () => {
+    fs.writeFileSync(path.join(skillDir, 'tank.json'), '{invalid json}');
     await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome }))
       .rejects
-      .toThrow(/failed to read or parse skills\.json/i);
+      .toThrow(/failed to read or parse tank\.json/i);
   });
 
   it('throws when name is empty or whitespace', async () => {
