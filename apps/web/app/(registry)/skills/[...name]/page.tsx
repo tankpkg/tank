@@ -204,7 +204,28 @@ export default async function SkillDetailPage({
 
   const { name: nameParts } = await params;
   const skillName = decodeURIComponent(nameParts.join('/'));
-  const data = await getSkillDetail(skillName);
+
+  let data;
+  try {
+    data = await getSkillDetail(skillName);
+  } catch (error) {
+    console.error('[SkillDetailPage] Error fetching skill detail:', error);
+    return (
+      <div className="max-w-4xl mx-auto py-16 text-center">
+        <h1 className="text-2xl font-bold mb-2">Error loading skill</h1>
+        <p className="text-muted-foreground">
+          An error occurred while loading{' '}
+          <code className="rounded bg-muted px-2 py-1 text-sm font-mono">
+            {skillName}
+          </code>
+          .
+        </p>
+        <p className="text-sm text-muted-foreground mt-4">
+          {error instanceof Error ? error.message : 'Unknown error'}
+        </p>
+      </div>
+    );
+  }
 
   if (!data) {
     return <NotFound name={skillName} />;

@@ -170,7 +170,18 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
               stagesRun: scanResult.stage_results?.map(s => s.stage) || [],
               durationMs: scanResult.duration_ms || null,
               fileHashes: scanResult.file_hashes || null,
-              llmAnalysis: scanResult.llm_analysis || null,
+              llmAnalysis: scanResult.llm_analysis as {
+                enabled: boolean;
+                mode: string;
+                providers?: Array<{ name: string; model: string; status: string; latency_ms: number | null }>;
+                findings_reviewed?: number;
+                findings_dismissed?: number;
+                findings_confirmed?: number;
+                findings_uncertain?: number;
+                provider_used?: string;
+                latency_ms?: number;
+                error?: string;
+              } | null,
             })
             .returning();
 
