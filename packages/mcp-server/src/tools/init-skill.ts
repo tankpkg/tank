@@ -1,8 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { type SkillsJson, skillsJsonSchema } from '@internal/shared';
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, type SkillsJson, skillsJsonSchema } from '@internal/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { skillsJsonSchema, type SkillsJson, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@internal/shared';
 import { z } from 'zod';
 
 const SCOPED_NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
+import path from 'node:path';
 import { MANIFEST_FILENAME } from '@internal/shared';
 import { getGlobalAgentSkillsDir, getSymlinkName } from '../lib/agents.js';
 import { unlinkSkillFromAgents } from '../lib/linker.js';

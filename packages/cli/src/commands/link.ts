@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
+import path from 'node:path';
 import { MANIFEST_FILENAME } from '@internal/shared';
 import { detectInstalledAgents, getGlobalAgentSkillsDir } from '../lib/agents.js';
 import { hasFrontmatter, prepareAgentSkillDir } from '../lib/frontmatter.js';

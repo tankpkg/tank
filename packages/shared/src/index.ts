@@ -1,21 +1,19 @@
-// Schemas
+// Constants
 
 export { DEFAULT_PERMISSIONS, PERMISSION_CATEGORIES, type PermissionCategory } from './constants/permissions.js';
-// Constants
 export {
-  REGISTRY_URL,
-  REGISTRY_API_VERSION,
-  MAX_PACKAGE_SIZE,
-  MAX_FILE_COUNT,
-  MAX_NAME_LENGTH,
-  MAX_DESCRIPTION_LENGTH,
-  LOCKFILE_VERSION,
-  MANIFEST_FILENAME,
+  LEGACY_LOCKFILE_FILENAME,
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
-  LEGACY_LOCKFILE_FILENAME
+  LOCKFILE_VERSION,
+  MANIFEST_FILENAME,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_FILE_COUNT,
+  MAX_NAME_LENGTH,
+  MAX_PACKAGE_SIZE,
+  REGISTRY_API_VERSION,
+  REGISTRY_URL
 } from './constants/registry.js';
-export { PERMISSION_CATEGORIES, DEFAULT_PERMISSIONS, type PermissionCategory } from './constants/permissions.js';
 
 // Resolver
 export { resolve, sortVersions } from './lib/resolver.js';

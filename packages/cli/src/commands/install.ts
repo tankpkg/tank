@@ -2,23 +2,17 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { LOCKFILE_VERSION, type Permissions, resolve, type SkillsLock } from '@internal/shared';
-import ora from 'ora';
 import {
-  resolve,
-  type Permissions,
-  type SkillsLock,
+  LOCKFILE_FILENAME,
   LOCKFILE_VERSION,
   MANIFEST_FILENAME,
-  LOCKFILE_FILENAME
+  type Permissions,
+  resolve,
+  type SkillsLock
 } from '@internal/shared';
+import ora from 'ora';
+import { detectInstalledAgents, getGlobalAgentSkillsDir, getGlobalSkillsDir } from '../lib/agents.js';
 import { getConfig } from '../lib/config.js';
-import { logger } from '../lib/logger.js';
-import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
-import { prepareAgentSkillDir } from '../lib/frontmatter.js';
-import { linkSkillToAgents } from '../lib/linker.js';
-import { detectInstalledAgents, getGlobalSkillsDir, getGlobalAgentSkillsDir } from '../lib/agents.js';
-import { USER_AGENT } from '../version.js';
 import {
   buildSkillKey,
   type RegistryFetcher,
@@ -42,6 +36,7 @@ import {
 } from '../lib/install-pipeline.js';
 import { linkSkillToAgents } from '../lib/linker.js';
 import { logger } from '../lib/logger.js';
+import { resolveLockfilePath, resolveManifestPath } from '../lib/manifest.js';
 import { checkPermissionBudget } from '../lib/permission-checker.js';
 import { USER_AGENT } from '../version.js';
 
@@ -171,7 +166,7 @@ function readSkillsJson(skillsJsonPath: string): Record<string, unknown> {
 function readOrCreateSkillsJson(skillsJsonPath: string): Record<string, unknown> {
   if (!fs.existsSync(skillsJsonPath)) {
     const skillsJson: Record<string, unknown> = { skills: {} };
-    fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+    fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
     logger.info(`Created ${MANIFEST_FILENAME}`);
     return skillsJson;
   }

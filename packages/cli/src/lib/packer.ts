@@ -2,9 +2,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
-import { skillsJsonSchema } from '@internal/shared';
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, skillsJsonSchema } from '@internal/shared';
 import ignore from 'ignore';
-import { skillsJsonSchema, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@internal/shared';
+import { create } from 'tar';
 
 // Limits
 const MAX_PACKAGE_SIZE = 50 * 1024 * 1024; // 50MB

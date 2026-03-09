@@ -1,18 +1,17 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { LOCKFILE_VERSION, type Permissions, resolve, type SkillsLock } from '@internal/shared';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
-  resolve,
-  type Permissions,
-  type SkillsLock,
-  LOCKFILE_VERSION,
-  MANIFEST_FILENAME,
+  LEGACY_LOCKFILE_FILENAME,
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
-  LEGACY_LOCKFILE_FILENAME
+  LOCKFILE_VERSION,
+  MANIFEST_FILENAME,
+  type Permissions,
+  resolve,
+  type SkillsLock
 } from '@internal/shared';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { extract } from 'tar';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';

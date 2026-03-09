@@ -1,15 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { SkillsLock } from '@internal/shared';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
-  type SkillsLock,
-  LOCKFILE_VERSION,
-  MANIFEST_FILENAME,
+  LEGACY_LOCKFILE_FILENAME,
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
-  LEGACY_LOCKFILE_FILENAME
+  MANIFEST_FILENAME,
+  type SkillsLock
 } from '@internal/shared';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
 const SCOPED_NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
@@ -54,7 +52,7 @@ export function registerRemoveSkillTool(server: McpServer): void {
             skillFoundAnywhere = true;
             delete skills[name];
             skillsJson.skills = skills;
-            fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+            fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
             results.push(`Removed "${name}" from ${path.basename(skillsJsonPath)}`);
           }
         } catch {
@@ -90,7 +88,7 @@ export function registerRemoveSkillTool(server: McpServer): void {
               sortedSkills[key] = lock.skills[key];
             }
             lock.skills = sortedSkills as SkillsLock['skills'];
-            fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+            fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
             results.push(`Removed "${name}" from ${path.basename(lockPath)}`);
           }
         } catch {

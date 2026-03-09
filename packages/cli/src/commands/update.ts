@@ -1,11 +1,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolve, type SkillsLock, LOCKFILE_VERSION, MANIFEST_FILENAME, LOCKFILE_FILENAME } from '@internal/shared';
+import { LOCKFILE_FILENAME, MANIFEST_FILENAME, resolve, type SkillsLock } from '@internal/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
+import { resolveLockfilePath, resolveManifestPath } from '../lib/manifest.js';
 import { USER_AGENT } from '../version.js';
-import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
+import { installCommand } from './install.js';
 
 export interface UpdateOptions {
   name?: string; // undefined = update all

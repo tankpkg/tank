@@ -1,15 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { resolve, type SkillsLock } from '@internal/shared';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
-  resolve,
-  type SkillsLock,
-  MANIFEST_FILENAME,
+  LEGACY_LOCKFILE_FILENAME,
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
-  LEGACY_LOCKFILE_FILENAME
+  MANIFEST_FILENAME,
+  resolve,
+  type SkillsLock
 } from '@internal/shared';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
 

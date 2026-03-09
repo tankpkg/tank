@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@internal/shared';
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME } from '@internal/shared';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
 import { getConfig } from '../lib/config.js';
 import { pack, packForScan } from '../lib/packer.js';
