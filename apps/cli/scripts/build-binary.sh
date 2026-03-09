@@ -29,8 +29,13 @@ case "$ARCH_RAW" in
     ;;
 esac
 
+IS_WINDOWS=false
 case "$OS" in
   darwin|linux)
+    ;;
+  mingw*|msys*|cygwin*)
+    OS="windows"
+    IS_WINDOWS=true
     ;;
   *)
     echo "Unsupported OS: $OS"
@@ -39,6 +44,9 @@ case "$OS" in
 esac
 
 OUTPUT="$BUILD_DIR/tank-${OS}-${ARCH}"
+if [ "$IS_WINDOWS" = true ]; then
+  OUTPUT="$BUILD_DIR/tank-${OS}-${ARCH}.exe"
+fi
 if [ -n "$OUTPUT_NAME" ]; then
   OUTPUT="$BUILD_DIR/$OUTPUT_NAME"
 fi
@@ -49,7 +57,9 @@ if [ -n "$TARGET" ]; then
 else
   bun build --compile "$INPUT_FILE" --outfile "$OUTPUT"
 fi
-chmod +x "$OUTPUT"
+if [ "$IS_WINDOWS" = false ]; then
+  chmod +x "$OUTPUT"
+fi
 
 echo "Binary size:"
 ls -lh "$OUTPUT"

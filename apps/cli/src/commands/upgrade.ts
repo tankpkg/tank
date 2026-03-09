@@ -30,7 +30,7 @@ function resolveCurrentBinary(): string {
 
 export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
   const currentBinaryPath = resolveCurrentBinary();
-  if (currentBinaryPath.includes('/Cellar/') || currentBinaryPath.includes('/homebrew/')) {
+  if (process.platform !== 'win32' && (currentBinaryPath.includes('/Cellar/') || currentBinaryPath.includes('/homebrew/'))) {
     console.log(chalk.yellow('Tank was installed via Homebrew. Run `brew upgrade tank` instead.'));
     return;
   }
@@ -55,9 +55,9 @@ export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
     return;
   }
 
-  const platform = process.platform === 'darwin' ? 'darwin' : 'linux';
+  const platform = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'darwin' : 'linux';
   const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
-  const binaryName = `tank-${platform}-${arch}`;
+  const binaryName = `tank-${platform}-${arch}${process.platform === 'win32' ? '.exe' : ''}`;
 
   if (opts?.dryRun) {
     console.log(`Would upgrade tank ${VERSION} → ${targetVersion}`);
@@ -116,10 +116,14 @@ export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
       return;
     }
 
-    fs.chmodSync(tmpBin, 0o755);
+    if (process.platform !== 'win32') {
+      fs.chmodSync(tmpBin, 0o755);
+    }
 
     fs.copyFileSync(tmpBin, currentBinaryPath);
-    fs.chmodSync(currentBinaryPath, 0o755);
+    if (process.platform !== 'win32') {
+      fs.chmodSync(currentBinaryPath, 0o755);
+    }
 
     console.log(chalk.green(`✓ Upgraded tank ${VERSION} → ${targetVersion}`));
     console.log(chalk.gray(`Release notes: https://github.com/tankpkg/tank/releases/tag/v${targetVersion}`));

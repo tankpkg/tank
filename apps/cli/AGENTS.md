@@ -127,11 +127,13 @@ cli/
 | Agent | Config Dir | Skills Dir |
 |-------|-----------|------------|
 | Claude | `~/.claude` | `~/.claude/skills` |
-| Cursor | `~/.cursor` | `~/.cursor/skills` |
-| OpenCode | `~/.config/opencode` | `~/.config/opencode/skills` |
+| Cursor | `~/.cursor` (Win: also `%APPDATA%\Cursor`) | `{configDir}/skills` |
+| OpenCode | `~/.config/opencode` (Win: also `%APPDATA%\opencode`) | `{configDir}/skills` |
 | Codex | `~/.codex` | `~/.codex/skills` |
 | OpenClaw | `~/.openclaw` | `~/.openclaw/skills` |
 | Universal | `~/.agents` | `~/.agents/skills` |
+
+> On Windows, agent detection checks both the Unix-style dotfile path and the `%APPDATA%` path. The first existing directory is used.
 
 ## CONVENTIONS
 

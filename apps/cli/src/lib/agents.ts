@@ -11,69 +11,90 @@ export interface AgentInfo {
 interface AgentDefinition {
   id: string;
   name: string;
-  skillsDir: (homedir: string) => string;
-  configDir: (homedir: string) => string;
+  /** Returns possible config directories in priority order. First is the default. */
+  configDirs: (homedir: string) => string[];
 }
 
 const resolveHomedir = (homedir?: string): string => homedir ?? os.homedir();
+
+const isWindows = process.platform === 'win32';
 
 export const SUPPORTED_AGENTS: AgentDefinition[] = [
   {
     id: 'claude',
     name: 'Claude Code',
-    skillsDir: (homedir) => path.join(homedir, '.claude', 'skills'),
-    configDir: (homedir) => path.join(homedir, '.claude'),
+    configDirs: (homedir) => [path.join(homedir, '.claude')],
   },
   {
     id: 'opencode',
     name: 'OpenCode',
-    skillsDir: (homedir) => path.join(homedir, '.config', 'opencode', 'skills'),
-    configDir: (homedir) => path.join(homedir, '.config', 'opencode'),
+    configDirs: (homedir) => {
+      const dirs = [path.join(homedir, '.config', 'opencode')];
+      if (isWindows) {
+        const appData = process.env.APPDATA;
+        if (appData) dirs.push(path.join(appData, 'opencode'));
+      }
+      return dirs;
+    },
   },
   {
     id: 'cursor',
     name: 'Cursor',
-    skillsDir: (homedir) => path.join(homedir, '.cursor', 'skills'),
-    configDir: (homedir) => path.join(homedir, '.cursor'),
+    configDirs: (homedir) => {
+      const dirs = [path.join(homedir, '.cursor')];
+      if (isWindows) {
+        const appData = process.env.APPDATA;
+        if (appData) dirs.push(path.join(appData, 'Cursor'));
+      }
+      return dirs;
+    },
   },
   {
     id: 'codex',
     name: 'Codex',
-    skillsDir: (homedir) => path.join(homedir, '.codex', 'skills'),
-    configDir: (homedir) => path.join(homedir, '.codex'),
+    configDirs: (homedir) => [path.join(homedir, '.codex')],
   },
   {
     id: 'openclaw',
     name: 'OpenClaw',
-    skillsDir: (homedir) => path.join(homedir, '.openclaw', 'skills'),
-    configDir: (homedir) => path.join(homedir, '.openclaw'),
+    configDirs: (homedir) => [path.join(homedir, '.openclaw')],
   },
   {
     id: 'universal',
     name: 'Universal',
-    skillsDir: (homedir) => path.join(homedir, '.agents', 'skills'),
-    configDir: (homedir) => path.join(homedir, '.agents'),
+    configDirs: (homedir) => [path.join(homedir, '.agents')],
   },
 ];
+
+/**
+ * Returns the first existing config directory for an agent,
+ * or the first (default) directory if none exist.
+ */
+function resolveConfigDir(agent: AgentDefinition, homedir: string): string {
+  const dirs = agent.configDirs(homedir);
+  return dirs.find((d) => fs.existsSync(d)) ?? dirs[0];
+}
+
+function isAgentInstalled(agent: AgentDefinition, homedir: string): boolean {
+  return agent.configDirs(homedir).some((d) => fs.existsSync(d));
+}
 
 export function getSupportedAgents(homedir?: string): AgentInfo[] {
   const resolved = resolveHomedir(homedir);
   return SUPPORTED_AGENTS.map((agent) => ({
     id: agent.id,
     name: agent.name,
-    skillsDir: agent.skillsDir(resolved),
+    skillsDir: path.join(resolveConfigDir(agent, resolved), 'skills'),
   }));
 }
 
 export function detectInstalledAgents(homedir?: string): AgentInfo[] {
   const resolved = resolveHomedir(homedir);
-  return SUPPORTED_AGENTS.filter((agent) => fs.existsSync(agent.configDir(resolved))).map(
-    (agent) => ({
-      id: agent.id,
-      name: agent.name,
-      skillsDir: agent.skillsDir(resolved),
-    }),
-  );
+  return SUPPORTED_AGENTS.filter((agent) => isAgentInstalled(agent, resolved)).map((agent) => ({
+    id: agent.id,
+    name: agent.name,
+    skillsDir: path.join(resolveConfigDir(agent, resolved), 'skills'),
+  }));
 }
 
 export function getAgentSkillDir(agentId: string, homedir?: string): string | null {
@@ -82,7 +103,7 @@ export function getAgentSkillDir(agentId: string, homedir?: string): string | nu
   if (!agent) {
     return null;
   }
-  return agent.skillsDir(resolved);
+  return path.join(resolveConfigDir(agent, resolved), 'skills');
 }
 
 export function getSymlinkName(skillName: string): string {
