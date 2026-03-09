@@ -5,10 +5,12 @@
 FROM oven/bun:1 AS deps
 WORKDIR /app
 
-# Copy package files
+# Copy package files (all workspace package.json files needed for lockfile resolution)
 COPY package.json bun.lock ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/web/package.json ./packages/web/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/mcp-server/package.json ./packages/mcp-server/
 
 # Install dependencies
 RUN bun install --frozen-lockfile
