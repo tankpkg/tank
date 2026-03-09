@@ -16,6 +16,22 @@ interface ScanFinding {
   confidence: number | null;
   tool: string | null;
   evidence: string | null;
+  llm_verdict?: string | null;
+  llm_reviewed?: boolean;
+}
+
+interface LLMAnalysis {
+  enabled: boolean;
+  mode: string;
+  provider_used?: string;
+  findings_reviewed?: number;
+  findings_dismissed?: number;
+  findings_confirmed?: number;
+  findings_uncertain?: number;
+  latency_ms?: number | null;
+  cache_hit?: boolean;
+  error?: string | null;
+  reason?: string | null;
 }
 
 interface ScanResponse {
@@ -30,6 +46,7 @@ interface ScanResponse {
   }>;
   duration_ms: number;
   file_hashes: Record<string, string>;
+  llm_analysis?: LLMAnalysis | null;
 }
 
 // Call Python scan endpoint
@@ -216,10 +233,22 @@ export async function POST(request: Request) {
             stagesRun: scanResult.stage_results?.map(s => s.stage) || [],
             durationMs: scanResult.duration_ms || null,
             fileHashes: scanResult.file_hashes || null,
+            llmAnalysis: scanResult.llm_analysis as {
+              enabled: boolean;
+              mode: string;
+              providers?: Array<{ name: string; model: string; status: string; latency_ms: number | null }>;
+              findings_reviewed?: number;
+              findings_dismissed?: number;
+              findings_confirmed?: number;
+              findings_uncertain?: number;
+              provider_used?: string;
+              latency_ms?: number;
+              error?: string;
+            } | null,
           })
           .returning();
 
-        // Store individual findings
+        // Store individual findings (including LLM verdicts if available)
         if (scanResultRecord && scanResult.findings.length > 0) {
           await db.insert(scanFindings).values(
             scanResult.findings.map(f => ({
@@ -232,6 +261,8 @@ export async function POST(request: Request) {
               confidence: f.confidence || null,
               tool: f.tool || null,
               evidence: f.evidence || null,
+              llmVerdict: (f as { llm_verdict?: string }).llm_verdict || null,
+              llmReviewed: (f as { llm_reviewed?: boolean }).llm_reviewed || false,
             }))
           );
         }
