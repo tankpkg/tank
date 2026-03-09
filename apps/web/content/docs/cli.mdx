@@ -1,9 +1,9 @@
 ---
 title: CLI Reference
-description: Complete reference for all 18 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+description: Complete reference for all 19 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 ---
 
-The Tank CLI provides 18 commands for publishing, installing, and managing AI agent skills with security-first design.
+The Tank CLI provides 19 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
@@ -271,6 +271,15 @@ tank doctor
 ```
 
 
+## tank migrate
+
+Migrate skills.json → tank.json and skills.lock → tank.lock
+
+```bash
+tank migrate
+```
+
+
 ## tank upgrade
 
 Update tank to the latest version
@@ -314,6 +323,7 @@ tank upgrade [version]
 | `tank link` | `ln` | Link current skill directory to AI agent directories (for development) |
 | `tank unlink` | — | Remove skill symlinks from AI agent directories |
 | `tank doctor` | — | Diagnose agent integration health |
+| `tank migrate` | — | Migrate skills.json → tank.json and skills.lock → tank.lock |
 | `tank upgrade` | — | Update tank to the latest version |
 
 ---
