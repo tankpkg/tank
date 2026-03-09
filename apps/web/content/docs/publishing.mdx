@@ -11,7 +11,7 @@ Publishing to Tank is a deliberate process, not a one-liner. Every skill goes th
 
 Before running `tank publish`, confirm all of the following:
 
-- [ ] `skills.json` exists at the root of your skill directory
+- [ ] `tank.json` exists at the root of your skill directory
 - [ ] `name` is scoped correctly (`@org/skill-name`) and matches your registry org membership
 - [ ] `version` is a valid semver string and is **higher** than the previously published version
 - [ ] `permissions` declares the minimum set your code actually uses — no more
@@ -20,9 +20,9 @@ Before running `tank publish`, confirm all of the following:
 - [ ] `tank login` has been completed and `tank whoami` confirms your identity
 - [ ] `tank doctor` exits with no errors
 
-## The `skills.json` Manifest
+## The `tank.json` Manifest
 
-The `skills.json` file is the single source of truth for your skill's identity, version, and permission declarations. It is named `skills.json` — **not** `tank.json`.
+The `tank.json` file is the single source of truth for your skill's identity, version, and permission declarations.
 
 ### Full manifest example
 
@@ -118,7 +118,7 @@ To publish under an organization:
 
 1. The organization must exist in the Tank registry (created via the web dashboard or admin API).
 2. Your account must be an active member of that organization.
-3. The `name` field in `skills.json` must match the org scope exactly.
+3. The `name` field in `tank.json` must match the org scope exactly.
 
 To publish under your personal namespace, use your GitHub username as the scope: `@your-username/skill-name`.
 
@@ -232,7 +232,7 @@ tank audit @org/my-skill
 
 Confirm:
 - The published version appears in the version list
-- The declared permissions in the registry match your `skills.json`
+- The declared permissions in the registry match your `tank.json`
 - The security audit shows no unexpected critical or high findings
 - The audit score (0–10) is at or above your acceptable threshold
 
@@ -243,18 +243,18 @@ An audit score below 5 indicates issues worth addressing before recommending the
 - **Request only what you use** — every permission you declare is visible to every user who reviews your skill. Unused permissions are the first signal of a malicious or sloppy skill.
 - **Avoid broad network wildcards** — prefer exact hostnames over `*`. If you need to call multiple endpoints on the same domain, use `*.domain.com` rather than `*`.
 - **Never embed secrets** — the scanner's stage 4 runs entropy analysis and known-pattern matching. Hardcoded API keys will be detected and will produce a critical finding.
-- **Pin your own dependencies** — if your skill depends on other skills, pin them to exact versions in your `skills.json` to prevent your users from being affected by upstream updates.
+- **Pin your own dependencies** — if your skill depends on other skills, pin them to exact versions in your `tank.json` to prevent your users from being affected by upstream updates.
 - **Review scanner findings before each release** — run `tank audit @org/my-skill` after publishing and before promoting the version in any downstream systems.
 
 ## Common Failures and Fixes
 
-### `skills.json` validation failure
+### `tank.json` validation failure
 
 ```
 ERROR  Invalid manifest: "name" must be scoped (e.g. "@org/skill-name")
 ```
 
-Fix the `skills.json` field indicated in the error message, then re-run `tank publish --dry-run`.
+Fix the `tank.json` field indicated in the error message, then re-run `tank publish --dry-run`.
 
 ### Permission escalation rejected
 

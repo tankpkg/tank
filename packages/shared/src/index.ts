@@ -11,7 +11,7 @@ export type { Publisher, Skill, SkillVersion } from './types/skill.js';
 export type { PublishStartRequest, PublishStartResponse, PublishConfirmRequest, SkillInfoResponse, SearchResult, SearchResponse } from './types/api.js';
 
 // Constants
-export { REGISTRY_URL, REGISTRY_API_VERSION, MAX_PACKAGE_SIZE, MAX_FILE_COUNT, MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, LOCKFILE_VERSION } from './constants/registry.js';
+export { REGISTRY_URL, REGISTRY_API_VERSION, MAX_PACKAGE_SIZE, MAX_FILE_COUNT, MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, LOCKFILE_VERSION, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from './constants/registry.js';
 export { PERMISSION_CATEGORIES, DEFAULT_PERMISSIONS, type PermissionCategory } from './constants/permissions.js';
 
 // Resolver

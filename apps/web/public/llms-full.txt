@@ -182,7 +182,7 @@ Initiates skill publication. The response includes a pre-signed `uploadUrl`; you
     "repository": "https://github.com/acme/my-skill"
   },
   "readme": "# My Skill\nInstall with `tank install @acme/my-skill`.",
-  "files": ["skills.json", "README.md", "index.md"]
+  "files": ["tank.json", "README.md", "index.md"]
 }
 ```
 
@@ -769,7 +769,7 @@ This guide covers automated skill installation and publishing in CI/CD pipelines
 
 1. Create an **API token** from your dashboard
 2. Store it as `TANK_TOKEN` in your CI secrets
-3. Commit `skills.json` and `skills.lock` to your repo
+3. Commit `tank.json` and `tank.lock` to your repo
 4. Run `tank install` in CI — it reads `TANK_TOKEN` automatically
 
 The CLI checks `TANK_TOKEN` before reading `~/.tank/config.json`. No interactive login needed.
@@ -790,7 +790,7 @@ The fastest way to integrate Tank into GitHub Actions is the official `tankpkg/t
 |-------|----------|---------|-------------|
 | `token` | **Yes** | — | Tank API token (`TANK_TOKEN`) |
 | `registry` | No | `https://tankpkg.dev` | Registry URL (for self-hosted installs) |
-| `directory` | No | `.` | Working directory containing `skills.json` |
+| `directory` | No | `.` | Working directory containing `tank.json` |
 | `dry-run` | No | `false` | Validate without publishing (publish workflows only) |
 
 ### Action Outputs
@@ -875,19 +875,19 @@ Your repo should contain both files:
 
 ```
 my-project/
-├── skills.json       # Skill dependencies + permission budget
-└── skills.lock       # Resolved versions + SHA-512 hashes
+├── tank.json       # Skill dependencies + permission budget
+└── tank.lock       # Resolved versions + SHA-512 hashes
 ```
 
 Generate the lockfile locally:
 
 ```bash
 tank install
-git add skills.json skills.lock
+git add tank.json tank.lock
 git commit -m "chore: add skill dependencies"
 ```
 
-When `skills.lock` exists, `tank install` does a **deterministic lockfile install** — exact versions, SHA-512 verified, no resolution step. Same behavior as `npm ci`.
+When `tank.lock` exists, `tank install` does a **deterministic lockfile install** — exact versions, SHA-512 verified, no resolution step. Same behavior as `npm ci`.
 
 ## 4) Pipeline Examples
 
@@ -975,7 +975,7 @@ FROM node:24-slim
 RUN npm i -g @tankpkg/cli
 
 WORKDIR /app
-COPY skills.json skills.lock ./
+COPY tank.json tank.lock ./
 
 ARG TANK_TOKEN
 ENV TANK_TOKEN=$TANK_TOKEN
@@ -1015,7 +1015,7 @@ Skills are installed to `.tank/skills/` relative to the working directory (local
 ```
 .tank/skills/@org/skill-name/
 ├── SKILL.md
-├── skills.json
+├── tank.json
 └── ...
 ```
 
@@ -1051,7 +1051,7 @@ Use service accounts when:
 - **Scope minimization**: CI consumers need `skills:read` only
 - **Key rotation**: Set short expiry and rotate before it lapses
 - **Never log the token**: Mask `TANK_TOKEN` in CI output
-- **Pin lockfile**: Always commit `skills.lock` — never run `tank install @org/skill` directly in CI
+- **Pin lockfile**: Always commit `tank.lock` — never run `tank install @org/skill` directly in CI
 - **Audit scores**: Prefer skills with audit score ≥ 8/10
 - **Review permission changes**: If `tank permissions` output changes unexpectedly after `tank update`, investigate before merging
 
@@ -1063,11 +1063,11 @@ Token is invalid or expired. Create a new one from [Settings → Tokens](/tokens
 
 ### `tank install` resolves versions instead of using lockfile
 
-`skills.lock` is missing or out of sync. Run `tank install` locally, commit the lockfile, push.
+`tank.lock` is missing or out of sync. Run `tank install` locally, commit the lockfile, push.
 
 ### Permission budget exceeded
 
-A skill requests permissions beyond your `skills.json` budget. Either widen the budget (review carefully) or choose a different skill.
+A skill requests permissions beyond your `tank.json` budget. Either widen the budget (review carefully) or choose a different skill.
 
 ### GitHub Action not found
 
@@ -1080,10 +1080,10 @@ Ensure the action is referenced as `tankpkg/tank@v1` (not `tank/tank`). See the 
 
 Source: https://tankpkg.dev/docs/cli
 
-> Complete reference for all 18 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+> Complete reference for all 19 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 
 
-The Tank CLI provides 18 commands for publishing, installing, and managing AI agent skills with security-first design.
+The Tank CLI provides 19 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
@@ -1104,7 +1104,7 @@ All commands support these options:
 
 ## tank init
 
-Create a new skills.json in the current directory
+Create a new tank.json in the current directory
 
 ```bash
 tank init
@@ -1119,7 +1119,7 @@ tank init
 | `--skill-version <version>` | Skill version (default: 0.1.0) |
 | `--description <desc>` | Skill description |
 | `--private` | Make skill private |
-| `--force` | Overwrite existing skills.json |
+| `--force` | Overwrite existing tank.json |
 
 
 ## tank login
@@ -1351,6 +1351,15 @@ tank doctor
 ```
 
 
+## tank migrate
+
+Migrate skills.json → tank.json and skills.lock → tank.lock
+
+```bash
+tank migrate
+```
+
+
 ## tank upgrade
 
 Update tank to the latest version
@@ -1377,7 +1386,7 @@ tank upgrade [version]
 
 | Command | Alias(es) | Description |
 |---------|-----------|-------------|
-| `tank init` | — | Create a new skills.json in the current directory |
+| `tank init` | — | Create a new tank.json in the current directory |
 | `tank login` | — | Authenticate with the Tank registry via browser |
 | `tank whoami` | — | Show the currently logged-in user |
 | `tank logout` | — | Remove authentication token from config |
@@ -1394,6 +1403,7 @@ tank upgrade [version]
 | `tank link` | `ln` | Link current skill directory to AI agent directories (for development) |
 | `tank unlink` | — | Remove skill symlinks from AI agent directories |
 | `tank doctor` | — | Diagnose agent integration health |
+| `tank migrate` | — | Migrate skills.json → tank.json and skills.lock → tank.lock |
 | `tank upgrade` | — | Update tank to the latest version |
 
 ---
@@ -1411,8 +1421,8 @@ tank upgrade [version]
 | File | Purpose |
 |------|---------|
 | `~/.tank/config.json` | Auth token and registry URL (permissions: `0600`) |
-| `skills.json` | Project manifest — skill metadata, dependencies, and permission budget |
-| `skills.lock` | Deterministic lockfile — pinned versions with SHA-512 hashes |
+| `tank.json` | Project manifest — skill metadata, dependencies, and permission budget |
+| `tank.lock` | Deterministic lockfile — pinned versions with SHA-512 hashes |
 
 ## Exit Codes
 
@@ -1521,7 +1531,7 @@ For a global install (available to all your agents, stored in `~/.tank/skills/`)
 tank install @org/skill-name '*' -g
 ```
 
-For a local project install (stored in `.tank/skills/` relative to your working directory), omit the `-g` flag. Tank writes the resolved version and SHA-512 integrity hash to `skills.lock` — making future installs fully deterministic.
+For a local project install (stored in `.tank/skills/` relative to your working directory), omit the `-g` flag. Tank writes the resolved version and SHA-512 integrity hash to `tank.lock` — making future installs fully deterministic.
 
 ## Step 4 — Verify Safety and Integrity
 
@@ -1538,10 +1548,10 @@ tank permissions
 tank audit @org/skill-name
 ```
 
-`tank permissions` aggregates all declared permissions across your installed skills and shows you what your agent is allowed to do. If any skill claims permissions outside your project's permission budget (defined in `skills.json`), installation will have already failed — but auditing afterward confirms the resolved state.
+`tank permissions` aggregates all declared permissions across your installed skills and shows you what your agent is allowed to do. If any skill claims permissions outside your project's permission budget (defined in `tank.json`), installation will have already failed — but auditing afterward confirms the resolved state.
 
 <Callout type="info">
-  `tank verify` recomputes SHA-512 hashes of all installed files and compares them against `skills.lock`. A failed verify means files were modified on disk after install — treat this as a security event.
+  `tank verify` recomputes SHA-512 hashes of all installed files and compares them against `tank.lock`. A failed verify means files were modified on disk after install — treat this as a security event.
 </Callout>
 
 ## Step 5 — Create Your First Skill (Publisher Path)
@@ -1553,7 +1563,7 @@ mkdir my-skill && cd my-skill
 tank init
 ```
 
-`tank init` runs an interactive prompt that generates a valid `skills.json` manifest with your skill's name, version, description, and permission declarations.
+`tank init` runs an interactive prompt that generates a valid `tank.json` manifest with your skill's name, version, description, and permission declarations.
 
 Once your skill is ready, publish it safely:
 
@@ -1645,7 +1655,7 @@ Tank's official GitHub Action automates the full skill publishing lifecycle dire
 
 ## What the Action Does
 
-1. **Validates** your `skills.json` manifest — schema, semver format, and permission declarations
+1. **Validates** your `tank.json` manifest — schema, semver format, and permission declarations
 2. **Runs security scanning** — the same 6-stage pipeline used by the registry (structure, static AST, injection, secrets, supply chain)
 3. **Publishes** the skill tarball to the Tank registry and stores it in the configured storage backend
 4. **Outputs** the published name, version, audit score, and a badge URL you can use in your README
@@ -1674,7 +1684,7 @@ To get your `TANK_TOKEN`, go to [Dashboard → Tokens](/tokens), create a token 
 |-------|----------|---------|-------------|
 | `token` | **Yes** | — | Your Tank API token. Always use `${{ secrets.TANK_TOKEN }}` — never hardcode. |
 | `registry` | No | `https://tankpkg.dev` | Registry URL. Override for self-hosted deployments. |
-| `directory` | No | `.` | Directory containing `skills.json`. Use if your skill is not at the repo root. |
+| `directory` | No | `.` | Directory containing `tank.json`. Use if your skill is not at the repo root. |
 | `dry-run` | No | `false` | When `true`, validates and scans but does not publish. Use on pull requests. |
 
 ## Outputs
@@ -1778,7 +1788,7 @@ Dry runs still require a valid `TANK_TOKEN` — the action authenticates to run 
 
 The action exits with a non-zero code if:
 
-- `skills.json` is invalid or missing required fields
+- `tank.json` is invalid or missing required fields
 - Security scanning returns a `FAIL` verdict (1+ critical or 4+ high severity findings)
 - The version has already been published (Tank enforces immutability)
 - Permission escalation is detected (see [Publishing](/docs/publishing) for escalation rules)
@@ -1892,7 +1902,7 @@ The `TANK_TOKEN` secret is missing, expired, or lacks the `skills:publish` scope
 
 ### `Version already published`
 
-Tank enforces version immutability. Increment the version in your `skills.json` before pushing. Patch → `1.0.1`, minor → `1.1.0`, major → `2.0.0`.
+Tank enforces version immutability. Increment the version in your `tank.json` before pushing. Patch → `1.0.1`, minor → `1.1.0`, major → `2.0.0`.
 
 ### `Security scan returned FAIL`
 
@@ -1930,10 +1940,10 @@ Every skill installed through Tank is subject to:
 
 | Guarantee | How It Works |
 |-----------|-------------|
-| **SHA-512 integrity** | Every tarball is verified against a cryptographic hash in `skills.lock` before extraction |
+| **SHA-512 integrity** | Every tarball is verified against a cryptographic hash in `tank.lock` before extraction |
 | **Mandatory security scanning** | 6-stage pipeline (ingest → structure → static → injection → secrets → supply chain) runs on publish |
-| **Permission declarations** | Skills declare what they need in `skills.json`; installation fails if a skill exceeds your budget |
-| **Deterministic lockfile** | `skills.lock` pins exact versions and hashes — same behavior as `npm ci`, reproducible everywhere |
+| **Permission declarations** | Skills declare what they need in `tank.json`; installation fails if a skill exceeds your budget |
+| **Deterministic lockfile** | `tank.lock` pins exact versions and hashes — same behavior as `npm ci`, reproducible everywhere |
 
 If any skill exceeds the permission budget, installation fails. This single feature would have prevented ClawHavoc.
 
@@ -1945,7 +1955,7 @@ You build skills that extend AI coding agents. You want to ship quickly without 
 
 1. **[Getting Started](/docs/getting-started)** — Install the CLI and authenticate
 2. **[Publish Your First Skill](/docs/publish-first-skill)** — End-to-end tutorial in under 10 minutes
-3. **[Publishing Reference](/docs/publishing)** — `skills.json` manifest, versioning, semver rules
+3. **[Publishing Reference](/docs/publishing)** — `tank.json` manifest, versioning, semver rules
 4. **[Security Checklist](/docs/security-checklist)** — Pre-publish security review
 5. **[GitHub Action](/docs/github-action)** — Automate publishing in CI with `tankpkg/tank@v1`
 
@@ -1953,7 +1963,7 @@ Quick start:
 ```bash
 npm install -g @tankpkg/cli
 tank login
-tank init          # creates skills.json
+tank init          # creates tank.json
 tank publish --dry-run
 tank publish
 ```
@@ -1992,7 +2002,7 @@ You're deploying Tank for your organization, enforcing internal policies, or nee
 | Page | Description |
 |------|-------------|
 | [Getting Started](/docs/getting-started) | Install the CLI, authenticate, and run your first command |
-| [Publishing](/docs/publishing) | `skills.json` manifest reference, versioning, and publish workflow |
+| [Publishing](/docs/publishing) | `tank.json` manifest reference, versioning, and publish workflow |
 | [Installing](/docs/installing) | Install skills, manage the lockfile, and review permissions |
 | [Security Model](/docs/security) | 6-stage scanning pipeline, verdict rules, and audit scores |
 | [Permissions](/docs/permissions) | Declare, review, and enforce skill permission boundaries |
@@ -2055,7 +2065,7 @@ Tank's install pipeline does significantly more than download a file. Every inst
 tank install @org/skill-name
 ```
 
-This resolves the latest published version that satisfies `*`, downloads and verifies the tarball, extracts it to `.tank/skills/@org/skill-name/`, and writes the resolved version and SHA-512 integrity hash to `skills.lock`.
+This resolves the latest published version that satisfies `*`, downloads and verifies the tarball, extracts it to `.tank/skills/@org/skill-name/`, and writes the resolved version and SHA-512 integrity hash to `tank.lock`.
 
 ### With a version range
 
@@ -2075,10 +2085,10 @@ Global skills are stored in `~/.tank/skills/` and are available to all agents on
 
 ### Install from lockfile (deterministic)
 
-When a `skills.lock` file already exists in your project, running `tank install` with no arguments performs a **deterministic install** — equivalent to `npm ci`. It installs exactly the versions and integrity hashes recorded in the lockfile, ignoring `skills.json` version ranges entirely.
+When a `tank.lock` file already exists in your project, running `tank install` with no arguments performs a **deterministic install** — equivalent to `npm ci`. It installs exactly the versions and integrity hashes recorded in the lockfile, ignoring `tank.json` version ranges entirely.
 
 ```bash
-# Deterministic install — uses skills.lock, not skills.json ranges
+# Deterministic install — uses tank.lock, not tank.json ranges
 tank install
 ```
 
@@ -2086,11 +2096,11 @@ This is the correct command for CI/CD pipelines, where reproducibility is critic
 
 ## Dependency Resolution
 
-Tank uses a **fixpoint iteration algorithm** to resolve the full dependency tree. This means it doesn't just install the skill you named — it walks every skill's own `skills.json` to discover transitive dependencies, then iterates until the resolved set stabilizes.
+Tank uses a **fixpoint iteration algorithm** to resolve the full dependency tree. This means it doesn't just install the skill you named — it walks every skill's own `tank.json` to discover transitive dependencies, then iterates until the resolved set stabilizes.
 
 ### How it works
 
-1. **Seed** — Start with the skills declared in your `skills.json`.
+1. **Seed** — Start with the skills declared in your `tank.json`.
 2. **Expand** — For each resolved skill, fetch its manifest and add its dependencies to the working set.
 3. **Iterate** — Repeat expansion until no new dependencies are added (fixpoint).
 4. **Conflict detection** — If two skills require incompatible versions of the same dependency, Tank errors with a detailed conflict report showing which packages conflict and why.
@@ -2113,9 +2123,9 @@ ERROR  Dependency conflict detected:
 
 Tank does **not** silently pick one version. Conflicts are hard errors.
 
-## The Lockfile (`skills.lock`)
+## The Lockfile (`tank.lock`)
 
-The `skills.lock` file is the source of truth for your install state. Commit it to version control.
+The `tank.lock` file is the source of truth for your install state. Commit it to version control.
 
 ### What's in a lockfile
 
@@ -2146,10 +2156,10 @@ The `skills.lock` file is the source of truth for your install state. Commit it 
 - **Deterministic** — Keys are sorted alphabetically, and the file is always produced with stable formatting. The same dependency tree always produces byte-for-byte identical output.
 - **SHA-512 integrity** — Every package entry includes its SHA-512 hash. Tank recomputes this hash on every install and refuses to proceed if it doesn't match.
 - **Lockfile v2 `dependencies` field** — Introduced to support full tree reconstruction. Each package records its own declared dependencies so the lockfile alone is sufficient to reconstruct the complete install without re-fetching manifests from the registry.
-- **Deterministic install mode** — When `skills.lock` is present and `tank install` is run with no arguments, Tank performs a lockfile-only install. It does not resolve version ranges from `skills.json`. This is by design — CI pipelines should always use this mode.
+- **Deterministic install mode** — When `tank.lock` is present and `tank install` is run with no arguments, Tank performs a lockfile-only install. It does not resolve version ranges from `tank.json`. This is by design — CI pipelines should always use this mode.
 
 <Callout type="info">
-  Always commit `skills.lock` to version control. It is the guarantee that every developer and every CI run installs exactly the same code. Excluding it from git means losing reproducibility.
+  Always commit `tank.lock` to version control. It is the guarantee that every developer and every CI run installs exactly the same code. Excluding it from git means losing reproducibility.
 </Callout>
 
 ## Security on Install
@@ -2201,7 +2211,7 @@ Global update:
 tank update @org/skill-name -g
 ```
 
-`tank update` re-resolves the version range from `skills.json`, downloads the new tarball, verifies integrity, and updates `skills.lock`. It does **not** upgrade beyond the declared version range — use `tank install @org/skill-name '^2.0.0'` to change the range.
+`tank update` re-resolves the version range from `tank.json`, downloads the new tarball, verifies integrity, and updates `tank.lock`. It does **not** upgrade beyond the declared version range — use `tank install @org/skill-name '^2.0.0'` to change the range.
 
 ## Removing Skills
 
@@ -2212,8 +2222,8 @@ tank remove @org/skill-name -g
 
 `tank remove` does all of the following in one operation:
 
-1. Removes the entry from `skills.json`
-2. Removes the skill and all its exclusive transitive dependencies from `skills.lock`
+1. Removes the entry from `tank.json`
+2. Removes the skill and all its exclusive transitive dependencies from `tank.lock`
 3. Deletes the extracted files from `.tank/skills/` (or `~/.tank/skills/` for global)
 4. Removes any agent symlinks pointing to the removed skill
 
@@ -2226,7 +2236,7 @@ tank remove @org/skill-name -g
 After any change to your install state, confirm integrity:
 
 ```bash
-# Recompute SHA-512 for every installed file and compare against skills.lock
+# Recompute SHA-512 for every installed file and compare against tank.lock
 tank verify
 
 # Show the aggregated permission summary for all installed skills
@@ -2267,7 +2277,7 @@ tank info @org/skill-name
 Always use lockfile-mode install in CI:
 
 ```bash
-# Uses skills.lock exactly — equivalent to npm ci
+# Uses tank.lock exactly — equivalent to npm ci
 tank install
 ```
 
@@ -2287,7 +2297,7 @@ Gate deployments on `tank verify` exiting with code `0`.
 
 ### Prefer pinned versions for production stability
 
-Use exact version pins (`1.2.3`) for skills in production agents. Use ranges (`^1.2.0`) in development where you want compatible updates. The lockfile provides determinism regardless of which you choose, but exact pins make your `skills.json` intent explicit.
+Use exact version pins (`1.2.3`) for skills in production agents. Use ranges (`^1.2.0`) in development where you want compatible updates. The lockfile provides determinism regardless of which you choose, but exact pins make your `tank.json` intent explicit.
 
 ## Failure Handling
 
@@ -2513,7 +2523,7 @@ Display the currently authenticated user — username, email, organization membe
 
 #### `init-skill`
 
-Scaffold a new skill in the current (or specified) directory. Creates a `skills.json` manifest and a `SKILL.md` documentation template. The `name` must follow the `@org/name` scoped package format.
+Scaffold a new skill in the current (or specified) directory. Creates a `tank.json` manifest and a `SKILL.md` documentation template. The `name` must follow the `@org/name` scoped package format.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -2583,13 +2593,13 @@ Fetch detailed metadata for a specific skill from the registry: description, all
 
 #### `install-skill`
 
-Install a skill into the project's `skills.lock` with full SHA-512 integrity verification. Rejects installation if the skill's declared permissions exceed the project's permission budget defined in `skills.json`.
+Install a skill into the project's `tank.lock` with full SHA-512 integrity verification. Rejects installation if the skill's declared permissions exceed the project's permission budget defined in `tank.json`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `name` | string | **Yes** | — | Skill name to install (e.g., `@org/skill`) |
 | `version` | string | No | `latest` | Specific version or semver range |
-| `directory` | string | No | `.` | Project directory containing `skills.json` |
+| `directory` | string | No | `.` | Project directory containing `tank.json` |
 
 **Example prompts:**
 - *"Install @tankpkg/code-review into this project"*
@@ -2599,7 +2609,7 @@ Install a skill into the project's `skills.lock` with full SHA-512 integrity ver
 
 #### `update-skill`
 
-Update an installed skill to the latest version within its declared semver range. Respects the range pinned in `skills.json` — will not upgrade across major versions unless the range allows it.
+Update an installed skill to the latest version within its declared semver range. Respects the range pinned in `tank.json` — will not upgrade across major versions unless the range allows it.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -2614,7 +2624,7 @@ Update an installed skill to the latest version within its declared semver range
 
 #### `remove-skill`
 
-Remove a skill from `skills.json` and `skills.lock`. Does not delete downloaded files from the cache.
+Remove a skill from `tank.json` and `tank.lock`. Does not delete downloaded files from the cache.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -2629,7 +2639,7 @@ Remove a skill from `skills.json` and `skills.lock`. Does not delete downloaded 
 
 #### `verify-skills`
 
-Verify that every installed skill in `skills.lock` matches its expected SHA-512 hash. Detects tampering, corruption, or man-in-the-middle substitution. Optionally verify a single named skill.
+Verify that every installed skill in `tank.lock` matches its expected SHA-512 hash. Detects tampering, corruption, or man-in-the-middle substitution. Optionally verify a single named skill.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -2681,7 +2691,7 @@ Retrieve the stored security audit results for a published skill from the regist
 
 #### `skill-permissions`
 
-Display a resolved permission summary for all skills installed in the project, then check that the aggregate permissions do not exceed the budget declared in `skills.json`. Flags any skill that requests permissions outside the allowed budget.
+Display a resolved permission summary for all skills installed in the project, then check that the aggregate permissions do not exceed the budget declared in `tank.json`. Flags any skill that requests permissions outside the allowed budget.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -2689,7 +2699,7 @@ Display a resolved permission summary for all skills installed in the project, t
 
 **Example prompts:**
 - *"Show me what permissions are required by all installed skills"*
-- *"Check if any skill exceeds the permission budget in skills.json"*
+- *"Check if any skill exceeds the permission budget in tank.json"*
 
 ---
 
@@ -2802,7 +2812,7 @@ User: Yes.
 
 ```
 User: Before I deploy, make sure no skill is asking for more permissions
-      than we declared in skills.json.
+      than we declared in tank.json.
 
 AI: [Uses skill-permissions on ./]
 
@@ -2830,7 +2840,7 @@ AI: [Uses doctor]
     ✅ @tankpkg/mcp-server reachable
     ✅ Registry (tankpkg.dev) — reachable
     ✅ ~/.tank/config.json — valid, token present
-    ❌ skills.lock — 1 skill has a hash mismatch: @org/my-skill
+    ❌ tank.lock — 1 skill has a hash mismatch: @org/my-skill
 
     Recommendation: Run verify-skills to identify the affected entry,
     then reinstall @org/my-skill to restore a clean lockfile.
@@ -2917,7 +2927,7 @@ If `whoami` also fails, your token may have been revoked. Run `tank login` to is
 
 ### `verify-skills` reports a hash mismatch
 
-A hash mismatch means the installed skill file does not match the SHA-512 recorded in `skills.lock`. This could indicate file corruption or tampering. Reinstall the affected skill:
+A hash mismatch means the installed skill file does not match the SHA-512 recorded in `tank.lock`. This could indicate file corruption or tampering. Reinstall the affected skill:
 
 ```
 "Remove @org/affected-skill and reinstall it"
@@ -2925,8 +2935,8 @@ A hash mismatch means the installed skill file does not match the SHA-512 record
 
 ### `install-skill` fails with "permission budget exceeded"
 
-The skill is requesting capabilities beyond what your `skills.json` allows. Review its permissions with `skill-info`, then either:
-1. Update your `skills.json` permission budget to allow those capabilities, or
+The skill is requesting capabilities beyond what your `tank.json` allows. Review its permissions with `skill-info`, then either:
+1. Update your `tank.json` permission budget to allow those capabilities, or
 2. Choose an alternative skill with a narrower permission footprint.
 
 ---
@@ -2937,7 +2947,7 @@ The skill is requesting capabilities beyond what your `skills.json` allows. Revi
 - The MCP server communicates exclusively with `tankpkg.dev` over HTTPS
 - Your API token is never logged, cached to disk in plain text beyond `~/.tank/`, or transmitted to third parties
 - `TANK_TOKEN` in MCP environment config is kept in your AI tool's process environment — never written to disk by Tank itself
-- SHA-512 hashes in `skills.lock` are verified against the registry on every install and on-demand via `verify-skills`
+- SHA-512 hashes in `tank.lock` are verified against the registry on every install and on-demand via `verify-skills`
 - Permission budget enforcement happens client-side at install time — skills that exceed declared budgets are rejected before any files are extracted
 
 ---
@@ -3006,11 +3016,11 @@ Once created, you are automatically the **owner** of the organization.
 With an org created, any member can publish skills under its namespace:
 
 ```bash
-# In a skill directory with skills.json name set to "@acme/my-skill"
+# In a skill directory with tank.json name set to "@acme/my-skill"
 tank publish
 ```
 
-Your `skills.json` must declare the scoped name:
+Your `tank.json` must declare the scoped name:
 
 ```json
 {
@@ -3220,7 +3230,7 @@ Avoid `["*"]` or broad wildcard patterns. A skill that needs to reach any host o
 
 ### `filesystem.read` — Filesystem Read Access
 
-Controls which paths the skill is allowed to read. Values are glob patterns evaluated relative to the **project root** (the directory containing `skills.json`).
+Controls which paths the skill is allowed to read. Values are glob patterns evaluated relative to the **project root** (the directory containing `tank.json`).
 
 ```yaml
 permissions:
@@ -3303,9 +3313,9 @@ The environment permission does **not** grant the skill the ability to set, expo
 
 ## The Permission Budget: Project-Level Access Control
 
-Individual skill permissions declare what a skill *claims* to need. The permission budget in `skills.json` declares what your project *allows*. Every skill installed into your project must fit within the budget — if any skill claims more than the budget permits, installation fails with a detailed error showing which permission was exceeded and by which skill.
+Individual skill permissions declare what a skill *claims* to need. The permission budget in `tank.json` declares what your project *allows*. Every skill installed into your project must fit within the budget — if any skill claims more than the budget permits, installation fails with a detailed error showing which permission was exceeded and by which skill.
 
-### Example `skills.json` with Budget
+### Example `tank.json` with Budget
 
 ```json
 {
@@ -3364,7 +3374,7 @@ If `@community/seo-audit` declares `network.outbound: ["*.googleapis.com"]` — 
   Budget:      api.anthropic.com, *.vercel.com, registry.npmjs.org
 
   Either:
-    1. Add "*.googleapis.com" to the network.outbound budget in skills.json
+    1. Add "*.googleapis.com" to the network.outbound budget in tank.json
     2. Choose a different skill that doesn't require Google API access
     3. Contact the skill author to understand why this domain is needed
 ```
@@ -3641,7 +3651,7 @@ Navigate to your skill directory and run:
 tank init
 ```
 
-This creates a `skills.json` manifest file:
+This creates a `tank.json` manifest file:
 
 ```json
 {
@@ -3771,7 +3781,7 @@ Publishing to Tank is a deliberate process, not a one-liner. Every skill goes th
 
 Before running `tank publish`, confirm all of the following:
 
-- [ ] `skills.json` exists at the root of your skill directory
+- [ ] `tank.json` exists at the root of your skill directory
 - [ ] `name` is scoped correctly (`@org/skill-name`) and matches your registry org membership
 - [ ] `version` is a valid semver string and is **higher** than the previously published version
 - [ ] `permissions` declares the minimum set your code actually uses — no more
@@ -3780,9 +3790,9 @@ Before running `tank publish`, confirm all of the following:
 - [ ] `tank login` has been completed and `tank whoami` confirms your identity
 - [ ] `tank doctor` exits with no errors
 
-## The `skills.json` Manifest
+## The `tank.json` Manifest
 
-The `skills.json` file is the single source of truth for your skill's identity, version, and permission declarations. It is named `skills.json` — **not** `tank.json`.
+The `tank.json` file is the single source of truth for your skill's identity, version, and permission declarations.
 
 ### Full manifest example
 
@@ -3878,7 +3888,7 @@ To publish under an organization:
 
 1. The organization must exist in the Tank registry (created via the web dashboard or admin API).
 2. Your account must be an active member of that organization.
-3. The `name` field in `skills.json` must match the org scope exactly.
+3. The `name` field in `tank.json` must match the org scope exactly.
 
 To publish under your personal namespace, use your GitHub username as the scope: `@your-username/skill-name`.
 
@@ -3992,7 +4002,7 @@ tank audit @org/my-skill
 
 Confirm:
 - The published version appears in the version list
-- The declared permissions in the registry match your `skills.json`
+- The declared permissions in the registry match your `tank.json`
 - The security audit shows no unexpected critical or high findings
 - The audit score (0–10) is at or above your acceptable threshold
 
@@ -4003,18 +4013,18 @@ An audit score below 5 indicates issues worth addressing before recommending the
 - **Request only what you use** — every permission you declare is visible to every user who reviews your skill. Unused permissions are the first signal of a malicious or sloppy skill.
 - **Avoid broad network wildcards** — prefer exact hostnames over `*`. If you need to call multiple endpoints on the same domain, use `*.domain.com` rather than `*`.
 - **Never embed secrets** — the scanner's stage 4 runs entropy analysis and known-pattern matching. Hardcoded API keys will be detected and will produce a critical finding.
-- **Pin your own dependencies** — if your skill depends on other skills, pin them to exact versions in your `skills.json` to prevent your users from being affected by upstream updates.
+- **Pin your own dependencies** — if your skill depends on other skills, pin them to exact versions in your `tank.json` to prevent your users from being affected by upstream updates.
 - **Review scanner findings before each release** — run `tank audit @org/my-skill` after publishing and before promoting the version in any downstream systems.
 
 ## Common Failures and Fixes
 
-### `skills.json` validation failure
+### `tank.json` validation failure
 
 ```
 ERROR  Invalid manifest: "name" must be scoped (e.g. "@org/skill-name")
 ```
 
-Fix the `skills.json` field indicated in the error message, then re-run `tank publish --dry-run`.
+Fix the `tank.json` field indicated in the error message, then re-run `tank publish --dry-run`.
 
 ### Permission escalation rejected
 

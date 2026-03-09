@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type SkillsLock } from '@tank/shared';
+import { type SkillsLock, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from '@tank/shared';
 import { z } from 'zod';
 
 export function registerVerifySkillsTool(server: McpServer): void {
@@ -15,12 +15,15 @@ export function registerVerifySkillsTool(server: McpServer): void {
     async ({ name, directory }) => {
       const dir = directory ? path.resolve(directory) : process.cwd();
 
-      const lockPath = path.join(dir, 'skills.lock');
+      let lockPath = path.join(dir, LOCKFILE_FILENAME);
+      if (!fs.existsSync(lockPath)) {
+        lockPath = path.join(dir, LEGACY_LOCKFILE_FILENAME);
+      }
       if (!fs.existsSync(lockPath)) {
         return {
           content: [{
             type: 'text' as const,
-            text: 'No skills.lock found. Run "install-skill" to install skills and generate a lockfile.',
+            text: `No ${LOCKFILE_FILENAME} found. Run "install-skill" to install skills and generate a lockfile.`,
           }],
           isError: true,
         };
@@ -34,7 +37,7 @@ export function registerVerifySkillsTool(server: McpServer): void {
         return {
           content: [{
             type: 'text' as const,
-            text: 'Failed to parse skills.lock. The file may be corrupted.',
+            text: `Failed to parse ${path.basename(lockPath)}. The file may be corrupted.`,
           }],
           isError: true,
         };

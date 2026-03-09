@@ -53,10 +53,10 @@ describe('init command', () => {
   }
 
   function readOutput(): Record<string, unknown> {
-    return JSON.parse(fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8'));
+    return JSON.parse(fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8'));
   }
 
-  it('creates skills.json with prompted values', async () => {
+  it('creates tank.json with prompted values', async () => {
     const { initCommand } = await import('../commands/init.js');
     mockPrompts('@test-org/my-cool-skill', '1.0.0', 'A cool skill', 'Test Author', false);
 
@@ -102,7 +102,7 @@ describe('init command', () => {
 
     await initCommand();
 
-    const raw = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+    const raw = fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8');
     expect(raw.endsWith('\n')).toBe(true);
     expect(raw).toContain('  "name"');
   });
@@ -124,12 +124,12 @@ describe('init command', () => {
 
     const logCalls = (console.log as ReturnType<typeof vi.fn>).mock.calls;
     const allOutput = logCalls.map((c: unknown[]) => c.join(' ')).join('\n');
-    expect(allOutput).toContain('Created skills.json');
+    expect(allOutput).toContain('Created tank.json');
   });
 
-  it('asks to overwrite when skills.json exists and user confirms', async () => {
+  it('asks to overwrite when tank.json exists and user confirms', async () => {
     const { initCommand } = await import('../commands/init.js');
-    fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{"name":"old"}');
 
     // First confirm: overwrite (true), then mockPrompts sets up private confirm (false)
     mockConfirm.mockResolvedValueOnce(true); // overwrite
@@ -144,14 +144,14 @@ describe('init command', () => {
   it('aborts when user declines overwrite', async () => {
     const { initCommand } = await import('../commands/init.js');
     const original = '{"name":"old"}';
-    fs.writeFileSync(path.join(tmpDir, 'skills.json'), original);
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), original);
 
     // Set up confirm to decline overwrite
     mockConfirm.mockResolvedValue(false);
 
     await initCommand();
 
-    expect(fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8')).toBe(original);
+    expect(fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8')).toBe(original);
     expect(mockInput).not.toHaveBeenCalled();
   });
 
@@ -264,7 +264,7 @@ describe('init command', () => {
   });
 
   describe('non-interactive mode (--yes)', () => {
-    it('creates skills.json with explicit values', async () => {
+    it('creates tank.json with explicit values', async () => {
       const { initCommand } = await import('../commands/init.js');
 
       await initCommand({
@@ -289,7 +289,7 @@ describe('init command', () => {
       expect(mockConfirm).not.toHaveBeenCalled();
     });
 
-    it('creates skills.json with defaults when only --yes and name provided', async () => {
+    it('creates tank.json with defaults when only --yes and name provided', async () => {
       const { initCommand } = await import('../commands/init.js');
 
       await initCommand({ yes: true, name: '@test-org/default-skill' });
@@ -309,7 +309,7 @@ describe('init command', () => {
 
       await initCommand({ yes: true, name: 'UPPERCASE' });
 
-      expect(fs.existsSync(path.join(tmpDir, 'skills.json'))).toBe(false);
+      expect(fs.existsSync(path.join(tmpDir, 'tank.json'))).toBe(false);
       const errorCalls = (console.error as ReturnType<typeof vi.fn>).mock.calls;
       const allOutput = errorCalls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(allOutput).toContain('lowercase');
@@ -321,20 +321,20 @@ describe('init command', () => {
 
       await initCommand({ yes: true, name: '@test-org/valid-name', version: 'not-semver' });
 
-      expect(fs.existsSync(path.join(tmpDir, 'skills.json'))).toBe(false);
+      expect(fs.existsSync(path.join(tmpDir, 'tank.json'))).toBe(false);
       const errorCalls = (console.error as ReturnType<typeof vi.fn>).mock.calls;
       const allOutput = errorCalls.map((c: unknown[]) => c.join(' ')).join('\n');
       expect(allOutput).toContain('semver');
       expect(mockInput).not.toHaveBeenCalled();
     });
 
-    it('errors when skills.json exists without --force', async () => {
+    it('errors when tank.json exists without --force', async () => {
       const { initCommand } = await import('../commands/init.js');
-      fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
+      fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{"name":"old"}');
 
       await initCommand({ yes: true, name: '@test-org/valid-name' });
 
-      const content = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+      const content = fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8');
       expect(content).toBe('{"name":"old"}');
       const errorCalls = (console.error as ReturnType<typeof vi.fn>).mock.calls;
       const allOutput = errorCalls.map((c: unknown[]) => c.join(' ')).join('\n');
@@ -345,7 +345,7 @@ describe('init command', () => {
 
     it('overwrites when --force is set', async () => {
       const { initCommand } = await import('../commands/init.js');
-      fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{"name":"old"}');
+      fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{"name":"old"}');
 
       await initCommand({ yes: true, name: '@test-org/new-skill', version: '2.0.0', force: true });
 

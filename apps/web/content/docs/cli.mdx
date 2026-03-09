@@ -1,9 +1,9 @@
 ---
 title: CLI Reference
-description: Complete reference for all 18 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+description: Complete reference for all 19 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 ---
 
-The Tank CLI provides 18 commands for publishing, installing, and managing AI agent skills with security-first design.
+The Tank CLI provides 19 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
@@ -24,7 +24,7 @@ All commands support these options:
 
 ## tank init
 
-Create a new skills.json in the current directory
+Create a new tank.json in the current directory
 
 ```bash
 tank init
@@ -39,7 +39,7 @@ tank init
 | `--skill-version <version>` | Skill version (default: 0.1.0) |
 | `--description <desc>` | Skill description |
 | `--private` | Make skill private |
-| `--force` | Overwrite existing skills.json |
+| `--force` | Overwrite existing tank.json |
 
 
 ## tank login
@@ -271,6 +271,15 @@ tank doctor
 ```
 
 
+## tank migrate
+
+Migrate skills.json → tank.json and skills.lock → tank.lock
+
+```bash
+tank migrate
+```
+
+
 ## tank upgrade
 
 Update tank to the latest version
@@ -297,7 +306,7 @@ tank upgrade [version]
 
 | Command | Alias(es) | Description |
 |---------|-----------|-------------|
-| `tank init` | — | Create a new skills.json in the current directory |
+| `tank init` | — | Create a new tank.json in the current directory |
 | `tank login` | — | Authenticate with the Tank registry via browser |
 | `tank whoami` | — | Show the currently logged-in user |
 | `tank logout` | — | Remove authentication token from config |
@@ -314,6 +323,7 @@ tank upgrade [version]
 | `tank link` | `ln` | Link current skill directory to AI agent directories (for development) |
 | `tank unlink` | — | Remove skill symlinks from AI agent directories |
 | `tank doctor` | — | Diagnose agent integration health |
+| `tank migrate` | — | Migrate skills.json → tank.json and skills.lock → tank.lock |
 | `tank upgrade` | — | Update tank to the latest version |
 
 ---
@@ -331,8 +341,8 @@ tank upgrade [version]
 | File | Purpose |
 |------|---------|
 | `~/.tank/config.json` | Auth token and registry URL (permissions: `0600`) |
-| `skills.json` | Project manifest — skill metadata, dependencies, and permission budget |
-| `skills.lock` | Deterministic lockfile — pinned versions with SHA-512 hashes |
+| `tank.json` | Project manifest — skill metadata, dependencies, and permission budget |
+| `tank.lock` | Deterministic lockfile — pinned versions with SHA-512 hashes |
 
 ## Exit Codes
 

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { LOCKFILE_FILENAME } from '@tank/shared';
 import { readLockfile } from '../lib/lockfile.js';
 import { logger } from '../lib/logger.js';
 
@@ -31,7 +32,7 @@ export async function verifyCommand(options?: VerifyOptions): Promise<void> {
 
   const lock = readLockfile(directory);
   if (!lock) {
-    throw new Error(`No skills.lock found in ${directory}. Run: tank install`);
+    throw new Error(`No ${LOCKFILE_FILENAME} found in ${directory}. Run: tank install`);
   }
 
   const entries = Object.entries(lock.skills);

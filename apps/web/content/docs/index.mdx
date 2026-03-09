@@ -15,10 +15,10 @@ Every skill installed through Tank is subject to:
 
 | Guarantee | How It Works |
 |-----------|-------------|
-| **SHA-512 integrity** | Every tarball is verified against a cryptographic hash in `skills.lock` before extraction |
+| **SHA-512 integrity** | Every tarball is verified against a cryptographic hash in `tank.lock` before extraction |
 | **Mandatory security scanning** | 6-stage pipeline (ingest → structure → static → injection → secrets → supply chain) runs on publish |
-| **Permission declarations** | Skills declare what they need in `skills.json`; installation fails if a skill exceeds your budget |
-| **Deterministic lockfile** | `skills.lock` pins exact versions and hashes — same behavior as `npm ci`, reproducible everywhere |
+| **Permission declarations** | Skills declare what they need in `tank.json`; installation fails if a skill exceeds your budget |
+| **Deterministic lockfile** | `tank.lock` pins exact versions and hashes — same behavior as `npm ci`, reproducible everywhere |
 
 If any skill exceeds the permission budget, installation fails. This single feature would have prevented ClawHavoc.
 
@@ -30,7 +30,7 @@ You build skills that extend AI coding agents. You want to ship quickly without 
 
 1. **[Getting Started](/docs/getting-started)** — Install the CLI and authenticate
 2. **[Publish Your First Skill](/docs/publish-first-skill)** — End-to-end tutorial in under 10 minutes
-3. **[Publishing Reference](/docs/publishing)** — `skills.json` manifest, versioning, semver rules
+3. **[Publishing Reference](/docs/publishing)** — `tank.json` manifest, versioning, semver rules
 4. **[Security Checklist](/docs/security-checklist)** — Pre-publish security review
 5. **[GitHub Action](/docs/github-action)** — Automate publishing in CI with `tankpkg/tank@v1`
 
@@ -38,7 +38,7 @@ Quick start:
 ```bash
 npm install -g @tankpkg/cli
 tank login
-tank init          # creates skills.json
+tank init          # creates tank.json
 tank publish --dry-run
 tank publish
 ```
@@ -77,7 +77,7 @@ You're deploying Tank for your organization, enforcing internal policies, or nee
 | Page | Description |
 |------|-------------|
 | [Getting Started](/docs/getting-started) | Install the CLI, authenticate, and run your first command |
-| [Publishing](/docs/publishing) | `skills.json` manifest reference, versioning, and publish workflow |
+| [Publishing](/docs/publishing) | `tank.json` manifest reference, versioning, and publish workflow |
 | [Installing](/docs/installing) | Install skills, manage the lockfile, and review permissions |
 | [Security Model](/docs/security) | 6-stage scanning pipeline, verdict rules, and audit scores |
 | [Permissions](/docs/permissions) | Declare, review, and enforce skill permission boundaries |

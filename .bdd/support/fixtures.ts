@@ -36,7 +36,7 @@ export function createSkillFixture(options: {
   };
 
   fs.writeFileSync(
-    path.join(dir, 'skills.json'),
+    path.join(dir, 'tank.json'),
     JSON.stringify(manifest, null, 2) + '\n',
   );
 
@@ -118,7 +118,7 @@ export function createConsumerProject(): ConsumerProjectFixture {
     },
   };
 
-  fs.writeFileSync(path.join(dir, 'skills.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(dir, 'tank.json'), JSON.stringify(manifest, null, 2) + '\n');
 
   return {
     dir,

@@ -15,7 +15,7 @@ Tank's install pipeline does significantly more than download a file. Every inst
 tank install @org/skill-name
 ```
 
-This resolves the latest published version that satisfies `*`, downloads and verifies the tarball, extracts it to `.tank/skills/@org/skill-name/`, and writes the resolved version and SHA-512 integrity hash to `skills.lock`.
+This resolves the latest published version that satisfies `*`, downloads and verifies the tarball, extracts it to `.tank/skills/@org/skill-name/`, and writes the resolved version and SHA-512 integrity hash to `tank.lock`.
 
 ### With a version range
 
@@ -35,10 +35,10 @@ Global skills are stored in `~/.tank/skills/` and are available to all agents on
 
 ### Install from lockfile (deterministic)
 
-When a `skills.lock` file already exists in your project, running `tank install` with no arguments performs a **deterministic install** — equivalent to `npm ci`. It installs exactly the versions and integrity hashes recorded in the lockfile, ignoring `skills.json` version ranges entirely.
+When a `tank.lock` file already exists in your project, running `tank install` with no arguments performs a **deterministic install** — equivalent to `npm ci`. It installs exactly the versions and integrity hashes recorded in the lockfile, ignoring `tank.json` version ranges entirely.
 
 ```bash
-# Deterministic install — uses skills.lock, not skills.json ranges
+# Deterministic install — uses tank.lock, not tank.json ranges
 tank install
 ```
 
@@ -46,11 +46,11 @@ This is the correct command for CI/CD pipelines, where reproducibility is critic
 
 ## Dependency Resolution
 
-Tank uses a **fixpoint iteration algorithm** to resolve the full dependency tree. This means it doesn't just install the skill you named — it walks every skill's own `skills.json` to discover transitive dependencies, then iterates until the resolved set stabilizes.
+Tank uses a **fixpoint iteration algorithm** to resolve the full dependency tree. This means it doesn't just install the skill you named — it walks every skill's own `tank.json` to discover transitive dependencies, then iterates until the resolved set stabilizes.
 
 ### How it works
 
-1. **Seed** — Start with the skills declared in your `skills.json`.
+1. **Seed** — Start with the skills declared in your `tank.json`.
 2. **Expand** — For each resolved skill, fetch its manifest and add its dependencies to the working set.
 3. **Iterate** — Repeat expansion until no new dependencies are added (fixpoint).
 4. **Conflict detection** — If two skills require incompatible versions of the same dependency, Tank errors with a detailed conflict report showing which packages conflict and why.
@@ -73,9 +73,9 @@ ERROR  Dependency conflict detected:
 
 Tank does **not** silently pick one version. Conflicts are hard errors.
 
-## The Lockfile (`skills.lock`)
+## The Lockfile (`tank.lock`)
 
-The `skills.lock` file is the source of truth for your install state. Commit it to version control.
+The `tank.lock` file is the source of truth for your install state. Commit it to version control.
 
 ### What's in a lockfile
 
@@ -106,10 +106,10 @@ The `skills.lock` file is the source of truth for your install state. Commit it 
 - **Deterministic** — Keys are sorted alphabetically, and the file is always produced with stable formatting. The same dependency tree always produces byte-for-byte identical output.
 - **SHA-512 integrity** — Every package entry includes its SHA-512 hash. Tank recomputes this hash on every install and refuses to proceed if it doesn't match.
 - **Lockfile v2 `dependencies` field** — Introduced to support full tree reconstruction. Each package records its own declared dependencies so the lockfile alone is sufficient to reconstruct the complete install without re-fetching manifests from the registry.
-- **Deterministic install mode** — When `skills.lock` is present and `tank install` is run with no arguments, Tank performs a lockfile-only install. It does not resolve version ranges from `skills.json`. This is by design — CI pipelines should always use this mode.
+- **Deterministic install mode** — When `tank.lock` is present and `tank install` is run with no arguments, Tank performs a lockfile-only install. It does not resolve version ranges from `tank.json`. This is by design — CI pipelines should always use this mode.
 
 <Callout type="info">
-  Always commit `skills.lock` to version control. It is the guarantee that every developer and every CI run installs exactly the same code. Excluding it from git means losing reproducibility.
+  Always commit `tank.lock` to version control. It is the guarantee that every developer and every CI run installs exactly the same code. Excluding it from git means losing reproducibility.
 </Callout>
 
 ## Security on Install
@@ -161,7 +161,7 @@ Global update:
 tank update @org/skill-name -g
 ```
 
-`tank update` re-resolves the version range from `skills.json`, downloads the new tarball, verifies integrity, and updates `skills.lock`. It does **not** upgrade beyond the declared version range — use `tank install @org/skill-name '^2.0.0'` to change the range.
+`tank update` re-resolves the version range from `tank.json`, downloads the new tarball, verifies integrity, and updates `tank.lock`. It does **not** upgrade beyond the declared version range — use `tank install @org/skill-name '^2.0.0'` to change the range.
 
 ## Removing Skills
 
@@ -172,8 +172,8 @@ tank remove @org/skill-name -g
 
 `tank remove` does all of the following in one operation:
 
-1. Removes the entry from `skills.json`
-2. Removes the skill and all its exclusive transitive dependencies from `skills.lock`
+1. Removes the entry from `tank.json`
+2. Removes the skill and all its exclusive transitive dependencies from `tank.lock`
 3. Deletes the extracted files from `.tank/skills/` (or `~/.tank/skills/` for global)
 4. Removes any agent symlinks pointing to the removed skill
 
@@ -186,7 +186,7 @@ tank remove @org/skill-name -g
 After any change to your install state, confirm integrity:
 
 ```bash
-# Recompute SHA-512 for every installed file and compare against skills.lock
+# Recompute SHA-512 for every installed file and compare against tank.lock
 tank verify
 
 # Show the aggregated permission summary for all installed skills
@@ -227,7 +227,7 @@ tank info @org/skill-name
 Always use lockfile-mode install in CI:
 
 ```bash
-# Uses skills.lock exactly — equivalent to npm ci
+# Uses tank.lock exactly — equivalent to npm ci
 tank install
 ```
 
@@ -247,7 +247,7 @@ Gate deployments on `tank verify` exiting with code `0`.
 
 ### Prefer pinned versions for production stability
 
-Use exact version pins (`1.2.3`) for skills in production agents. Use ranges (`^1.2.0`) in development where you want compatible updates. The lockfile provides determinism regardless of which you choose, but exact pins make your `skills.json` intent explicit.
+Use exact version pins (`1.2.3`) for skills in production agents. Use ranges (`^1.2.0`) in development where you want compatible updates. The lockfile provides determinism regardless of which you choose, but exact pins make your `tank.json` intent explicit.
 
 ## Failure Handling
 

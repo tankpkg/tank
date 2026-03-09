@@ -36,14 +36,14 @@ describe('permissionsCommand', () => {
 
   function writeLockfile(skills: Record<string, unknown>): void {
     fs.writeFileSync(
-      path.join(tmpDir, 'skills.lock'),
+      path.join(tmpDir, 'tank.lock'),
       JSON.stringify({ lockfileVersion: 1, skills }, null, 2) + '\n',
     );
   }
 
   function writeSkillsJson(obj: Record<string, unknown>): void {
     fs.writeFileSync(
-      path.join(tmpDir, 'skills.json'),
+      path.join(tmpDir, 'tank.json'),
       JSON.stringify(obj, null, 2) + '\n',
     );
   }

@@ -11,7 +11,7 @@ This guide covers automated skill installation and publishing in CI/CD pipelines
 
 1. Create an **API token** from your dashboard
 2. Store it as `TANK_TOKEN` in your CI secrets
-3. Commit `skills.json` and `skills.lock` to your repo
+3. Commit `tank.json` and `tank.lock` to your repo
 4. Run `tank install` in CI — it reads `TANK_TOKEN` automatically
 
 The CLI checks `TANK_TOKEN` before reading `~/.tank/config.json`. No interactive login needed.
@@ -32,7 +32,7 @@ The fastest way to integrate Tank into GitHub Actions is the official `tankpkg/t
 |-------|----------|---------|-------------|
 | `token` | **Yes** | — | Tank API token (`TANK_TOKEN`) |
 | `registry` | No | `https://tankpkg.dev` | Registry URL (for self-hosted installs) |
-| `directory` | No | `.` | Working directory containing `skills.json` |
+| `directory` | No | `.` | Working directory containing `tank.json` |
 | `dry-run` | No | `false` | Validate without publishing (publish workflows only) |
 
 ### Action Outputs
@@ -117,19 +117,19 @@ Your repo should contain both files:
 
 ```
 my-project/
-├── skills.json       # Skill dependencies + permission budget
-└── skills.lock       # Resolved versions + SHA-512 hashes
+├── tank.json       # Skill dependencies + permission budget
+└── tank.lock       # Resolved versions + SHA-512 hashes
 ```
 
 Generate the lockfile locally:
 
 ```bash
 tank install
-git add skills.json skills.lock
+git add tank.json tank.lock
 git commit -m "chore: add skill dependencies"
 ```
 
-When `skills.lock` exists, `tank install` does a **deterministic lockfile install** — exact versions, SHA-512 verified, no resolution step. Same behavior as `npm ci`.
+When `tank.lock` exists, `tank install` does a **deterministic lockfile install** — exact versions, SHA-512 verified, no resolution step. Same behavior as `npm ci`.
 
 ## 4) Pipeline Examples
 
@@ -217,7 +217,7 @@ FROM node:24-slim
 RUN npm i -g @tankpkg/cli
 
 WORKDIR /app
-COPY skills.json skills.lock ./
+COPY tank.json tank.lock ./
 
 ARG TANK_TOKEN
 ENV TANK_TOKEN=$TANK_TOKEN
@@ -257,7 +257,7 @@ Skills are installed to `.tank/skills/` relative to the working directory (local
 ```
 .tank/skills/@org/skill-name/
 ├── SKILL.md
-├── skills.json
+├── tank.json
 └── ...
 ```
 
@@ -293,7 +293,7 @@ Use service accounts when:
 - **Scope minimization**: CI consumers need `skills:read` only
 - **Key rotation**: Set short expiry and rotate before it lapses
 - **Never log the token**: Mask `TANK_TOKEN` in CI output
-- **Pin lockfile**: Always commit `skills.lock` — never run `tank install @org/skill` directly in CI
+- **Pin lockfile**: Always commit `tank.lock` — never run `tank install @org/skill` directly in CI
 - **Audit scores**: Prefer skills with audit score ≥ 8/10
 - **Review permission changes**: If `tank permissions` output changes unexpectedly after `tank update`, investigate before merging
 
@@ -305,11 +305,11 @@ Token is invalid or expired. Create a new one from [Settings → Tokens](/tokens
 
 ### `tank install` resolves versions instead of using lockfile
 
-`skills.lock` is missing or out of sync. Run `tank install` locally, commit the lockfile, push.
+`tank.lock` is missing or out of sync. Run `tank install` locally, commit the lockfile, push.
 
 ### Permission budget exceeded
 
-A skill requests permissions beyond your `skills.json` budget. Either widen the budget (review carefully) or choose a different skill.
+A skill requests permissions beyond your `tank.json` budget. Either widen the budget (review carefully) or choose a different skill.
 
 ### GitHub Action not found
 

@@ -167,9 +167,9 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
     const invalidDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'tank-invalid-'));
     tempDirs.push(invalidDir);
 
-    // Write a skills.json missing required fields (no name, no version)
+    // Write a tank.json missing required fields (no name, no version)
     fs.writeFileSync(
-      path.join(invalidDir, 'skills.json'),
+      path.join(invalidDir, 'tank.json'),
       JSON.stringify({ description: 'missing required fields' }, null, 2) + '\n',
     );
     fs.writeFileSync(

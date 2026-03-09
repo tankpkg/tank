@@ -116,6 +116,6 @@ Then('the skill should be installed successfully', async ({ bddState }) => {
   const skillDir = path.join(bddState.consumerDir, '.tank', 'skills', `@${scope}`, name);
   expect(fs.existsSync(skillDir)).toBe(true);
 
-  const lockPath = path.join(bddState.consumerDir, 'skills.lock');
+  const lockPath = path.join(bddState.consumerDir, 'tank.lock');
   expect(fs.existsSync(lockPath)).toBe(true);
 });

@@ -157,7 +157,7 @@ export function FileExplorer({ files, skillName, version, readme, manifest }: Fi
 
   const getFileContent = useCallback(async (path: string): Promise<string | null> => {
     if (path === 'SKILL.md' && readme) return readme;
-    if (path === 'skills.json' && manifest) return JSON.stringify(manifest, null, 2);
+    if (path === 'tank.json' && manifest) return JSON.stringify(manifest, null, 2);
 
     const response = await fetch(`/api/v1/skills/${encodeURIComponent(skillName)}/${version}/files/${path}`);
     if (!response.ok) {

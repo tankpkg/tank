@@ -62,7 +62,7 @@ Avoid `["*"]` or broad wildcard patterns. A skill that needs to reach any host o
 
 ### `filesystem.read` — Filesystem Read Access
 
-Controls which paths the skill is allowed to read. Values are glob patterns evaluated relative to the **project root** (the directory containing `skills.json`).
+Controls which paths the skill is allowed to read. Values are glob patterns evaluated relative to the **project root** (the directory containing `tank.json`).
 
 ```yaml
 permissions:
@@ -145,9 +145,9 @@ The environment permission does **not** grant the skill the ability to set, expo
 
 ## The Permission Budget: Project-Level Access Control
 
-Individual skill permissions declare what a skill *claims* to need. The permission budget in `skills.json` declares what your project *allows*. Every skill installed into your project must fit within the budget — if any skill claims more than the budget permits, installation fails with a detailed error showing which permission was exceeded and by which skill.
+Individual skill permissions declare what a skill *claims* to need. The permission budget in `tank.json` declares what your project *allows*. Every skill installed into your project must fit within the budget — if any skill claims more than the budget permits, installation fails with a detailed error showing which permission was exceeded and by which skill.
 
-### Example `skills.json` with Budget
+### Example `tank.json` with Budget
 
 ```json
 {
@@ -206,7 +206,7 @@ If `@community/seo-audit` declares `network.outbound: ["*.googleapis.com"]` — 
   Budget:      api.anthropic.com, *.vercel.com, registry.npmjs.org
 
   Either:
-    1. Add "*.googleapis.com" to the network.outbound budget in skills.json
+    1. Add "*.googleapis.com" to the network.outbound budget in tank.json
     2. Choose a different skill that doesn't require Google API access
     3. Contact the skill author to understand why this domain is needed
 ```

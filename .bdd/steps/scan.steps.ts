@@ -93,7 +93,7 @@ function createSkillDirWithSkillsJson(options: {
   tempDirs.push(tmp);
 
   fs.writeFileSync(
-    path.join(tmp.path, 'skills.json'),
+    path.join(tmp.path, 'tank.json'),
     JSON.stringify({ name: '@test/scan-fixture', version: '1.0.0', description: 'BDD scan fixture' }, null, 2) + '\n',
   );
   fs.writeFileSync(path.join(tmp.path, 'SKILL.md'), '# Scan Fixture\n\nBDD test skill.\n');
@@ -160,9 +160,9 @@ function thenResponseDoesNotContain(pattern: RegExp): void {
 // ── Feature: Security scanning of skills via MCP tool ───────────────────────
 
 describe('Feature: Security scanning of skills via MCP tool', () => {
-  // ── scan-skill (with skills.json) ───────────────────────────────────────
+  // ── scan-skill (with tank.json) ───────────────────────────────────────
 
-  describe('Scenario: Agent scans a skill directory that has a skills.json and passes', () => {
+  describe('Scenario: Agent scans a skill directory that has a tank.json and passes', () => {
     it.skipIf(!process.env.DATABASE_URL)(
       'Given/When/Then for clean skill passing scan',
       async () => {
@@ -269,11 +269,11 @@ describe('Feature: Security scanning of skills via MCP tool', () => {
     );
   });
 
-  // ── scan-skill (without skills.json — fallback mode) ────────────────────
+  // ── scan-skill (without tank.json — fallback mode) ────────────────────
 
-  describe('Scenario: Agent scans an arbitrary directory without a skills.json', () => {
+  describe('Scenario: Agent scans an arbitrary directory without a tank.json', () => {
     it.skipIf(!process.env.DATABASE_URL)(
-      'Given/When/Then for directory without skills.json passing scan',
+      'Given/When/Then for directory without tank.json passing scan',
       async () => {
         await givenMcpServerIsRunning();
         await givenEmmaIsAuthenticatedWithTank();
@@ -294,9 +294,9 @@ describe('Feature: Security scanning of skills via MCP tool', () => {
     );
   });
 
-  describe('Scenario: Agent scans an arbitrary directory without skills.json that has critical issues', () => {
+  describe('Scenario: Agent scans an arbitrary directory without tank.json that has critical issues', () => {
     it.skipIf(!process.env.DATABASE_URL)(
-      'Given/When/Then for directory without skills.json with malicious code',
+      'Given/When/Then for directory without tank.json with malicious code',
       async () => {
         await givenMcpServerIsRunning();
         await givenEmmaIsAuthenticatedWithTank();

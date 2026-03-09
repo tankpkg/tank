@@ -32,7 +32,7 @@ async function createSkillFixture(dir: string, name: string): Promise<string> {
   const skillDir = join(dir, name)
   await mkdir(skillDir, { recursive: true })
 
-  await writeFile(join(skillDir, 'skills.json'), JSON.stringify({
+  await writeFile(join(skillDir, 'tank.json'), JSON.stringify({
     name,
     version: '1.0.0',
     description: 'Test skill for on-prem E2E',
@@ -138,7 +138,7 @@ describe('On-Prem E2E: Error Handling', () => {
     const skillDir = join(tmpDir, 'invalid-skill')
     await mkdir(skillDir, { recursive: true })
 
-    await writeFile(join(skillDir, 'skills.json'), JSON.stringify({ name: 'invalid' }))
+    await writeFile(join(skillDir, 'tank.json'), JSON.stringify({ name: 'invalid' }))
 
     const result = await runTank(['validate', skillDir])
     expect(result.exitCode).toBe(1)

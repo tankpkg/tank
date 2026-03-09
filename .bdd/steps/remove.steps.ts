@@ -28,13 +28,13 @@ function writeSkillsJson(skills: Record<string, string>): void {
     skills,
     permissions: { network: { outbound: [] }, filesystem: { read: [], write: [] }, subprocess: false },
   };
-  fs.writeFileSync(path.join(projectDir(), 'skills.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.json'), JSON.stringify(manifest, null, 2) + '\n');
 }
 
 function writeLockfile(skills: Record<string, { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }>): void {
   ensureProjectDir();
   const lock = { lockfileVersion: 1, skills };
-  fs.writeFileSync(path.join(projectDir(), 'skills.lock'), JSON.stringify(lock, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
 }
 
 function installSkillFiles(skillName: string, _version: string): void {
@@ -102,11 +102,11 @@ describe('Feature: Skill removal via MCP tool', () => {
 
       expect(fs.existsSync(getSkillDir('@acme/web-search'))).toBe(false);
 
-      const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+      const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, unknown> };
       expect(Object.keys(lock.skills).some((k) => k.startsWith('@acme/web-search@'))).toBe(false);
 
-      const sjRaw = fs.readFileSync(path.join(projectDir(), 'skills.json'), 'utf-8');
+      const sjRaw = fs.readFileSync(path.join(projectDir(), 'tank.json'), 'utf-8');
       const sj = JSON.parse(sjRaw) as { skills: Record<string, unknown> };
       expect(sj.skills['@acme/web-search']).toBeUndefined();
     });
@@ -128,7 +128,7 @@ describe('Feature: Skill removal via MCP tool', () => {
       expect(fs.existsSync(agentSkillDir)).toBe(false);
       expect(fs.existsSync(getSkillDir('@acme/web-search'))).toBe(false);
 
-      const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+      const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, unknown> };
       expect(Object.keys(lock.skills).some((k) => k.startsWith('@acme/web-search@'))).toBe(false);
     });
@@ -151,12 +151,12 @@ describe('Feature: Skill removal via MCP tool', () => {
       expect(fs.existsSync(getSkillDir('@acme/web-search'))).toBe(false);
       expect(fs.existsSync(getSkillDir('@acme/code-runner'))).toBe(true);
 
-      const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+      const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, unknown> };
       expect(Object.keys(lock.skills).some((k) => k.startsWith('@acme/web-search@'))).toBe(false);
       expect(lock.skills['@acme/code-runner@1.0.0']).toBeDefined();
 
-      const sjRaw = fs.readFileSync(path.join(projectDir(), 'skills.json'), 'utf-8');
+      const sjRaw = fs.readFileSync(path.join(projectDir(), 'tank.json'), 'utf-8');
       const sj = JSON.parse(sjRaw) as { skills: Record<string, unknown> };
       expect(sj.skills['@acme/web-search']).toBeUndefined();
       expect(sj.skills['@acme/code-runner']).toBeDefined();
@@ -186,7 +186,7 @@ describe('Feature: Skill removal via MCP tool', () => {
       thenResponseContains(/removed.*@acme\/web-search/i);
       thenResponseContains(/already absent/i);
 
-      const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+      const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, unknown> };
       expect(Object.keys(lock.skills).some((k) => k.startsWith('@acme/web-search@'))).toBe(false);
     });
@@ -202,8 +202,8 @@ describe('Feature: Skill removal via MCP tool', () => {
     });
   });
 
-  describe('Scenario: Agent removes a skill when no skills.json exists in the project', () => {
-    it('Given/When/Then for removing without skills.json', async () => {
+  describe('Scenario: Agent removes a skill when no tank.json exists in the project', () => {
+    it('Given/When/Then for removing without tank.json', async () => {
       ensureProjectDir();
       writeLockfile({ '@acme/web-search@2.1.0': makeLockEntry('2.1.0') });
       installSkillFiles('@acme/web-search', '2.1.0');
@@ -215,7 +215,7 @@ describe('Feature: Skill removal via MCP tool', () => {
 
       expect(fs.existsSync(getSkillDir('@acme/web-search'))).toBe(false);
 
-      const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+      const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, unknown> };
       expect(Object.keys(lock.skills).some((k) => k.startsWith('@acme/web-search@'))).toBe(false);
     });

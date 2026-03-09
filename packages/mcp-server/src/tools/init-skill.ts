@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { skillsJsonSchema, type SkillsJson } from '@tank/shared';
+import { skillsJsonSchema, type SkillsJson, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@tank/shared';
 import { z } from 'zod';
 
 const SCOPED_NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
@@ -10,7 +10,7 @@ const SEMVER_PATTERN = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
 export function registerInitSkillTool(server: McpServer): void {
   server.tool(
     'init-skill',
-    'Create a new skills.json and SKILL.md template for a Tank skill.',
+    `Create a new ${MANIFEST_FILENAME} and SKILL.md template for a Tank skill.`,
     {
       name: z.string().regex(SCOPED_NAME_PATTERN, 'Name must be in @org/name format'),
       version: z.string().regex(SEMVER_PATTERN, 'Version must be valid semver').optional().default('0.1.0'),
@@ -32,10 +32,14 @@ export function registerInitSkillTool(server: McpServer): void {
         };
       }
 
-      const skillsJsonPath = path.join(targetDir, 'skills.json');
-      if (fs.existsSync(skillsJsonPath)) {
+      // Check for existing manifest (tank.json or skills.json)
+      const newManifestPath = path.join(targetDir, MANIFEST_FILENAME);
+      const legacyManifestPath = path.join(targetDir, LEGACY_MANIFEST_FILENAME);
+      const skillsJsonPath = newManifestPath;
+      if (fs.existsSync(newManifestPath) || fs.existsSync(legacyManifestPath)) {
+        const existingFile = fs.existsSync(newManifestPath) ? MANIFEST_FILENAME : LEGACY_MANIFEST_FILENAME;
         return {
-          content: [{ type: 'text' as const, text: `skills.json already exists at ${skillsJsonPath}. Aborting to avoid overwrite.` }],
+          content: [{ type: 'text' as const, text: `${existingFile} already exists at ${targetDir}. Aborting to avoid overwrite.` }],
         };
       }
 
@@ -58,7 +62,7 @@ export function registerInitSkillTool(server: McpServer): void {
           .join('; ');
 
         return {
-          content: [{ type: 'text' as const, text: `Failed to create skills.json: ${details}` }],
+          content: [{ type: 'text' as const, text: `Failed to create ${MANIFEST_FILENAME}: ${details}` }],
         };
       }
 

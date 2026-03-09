@@ -178,7 +178,7 @@ Display the currently authenticated user — username, email, organization membe
 
 #### `init-skill`
 
-Scaffold a new skill in the current (or specified) directory. Creates a `skills.json` manifest and a `SKILL.md` documentation template. The `name` must follow the `@org/name` scoped package format.
+Scaffold a new skill in the current (or specified) directory. Creates a `tank.json` manifest and a `SKILL.md` documentation template. The `name` must follow the `@org/name` scoped package format.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -248,13 +248,13 @@ Fetch detailed metadata for a specific skill from the registry: description, all
 
 #### `install-skill`
 
-Install a skill into the project's `skills.lock` with full SHA-512 integrity verification. Rejects installation if the skill's declared permissions exceed the project's permission budget defined in `skills.json`.
+Install a skill into the project's `tank.lock` with full SHA-512 integrity verification. Rejects installation if the skill's declared permissions exceed the project's permission budget defined in `tank.json`.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `name` | string | **Yes** | — | Skill name to install (e.g., `@org/skill`) |
 | `version` | string | No | `latest` | Specific version or semver range |
-| `directory` | string | No | `.` | Project directory containing `skills.json` |
+| `directory` | string | No | `.` | Project directory containing `tank.json` |
 
 **Example prompts:**
 - *"Install @tankpkg/code-review into this project"*
@@ -264,7 +264,7 @@ Install a skill into the project's `skills.lock` with full SHA-512 integrity ver
 
 #### `update-skill`
 
-Update an installed skill to the latest version within its declared semver range. Respects the range pinned in `skills.json` — will not upgrade across major versions unless the range allows it.
+Update an installed skill to the latest version within its declared semver range. Respects the range pinned in `tank.json` — will not upgrade across major versions unless the range allows it.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -279,7 +279,7 @@ Update an installed skill to the latest version within its declared semver range
 
 #### `remove-skill`
 
-Remove a skill from `skills.json` and `skills.lock`. Does not delete downloaded files from the cache.
+Remove a skill from `tank.json` and `tank.lock`. Does not delete downloaded files from the cache.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -294,7 +294,7 @@ Remove a skill from `skills.json` and `skills.lock`. Does not delete downloaded 
 
 #### `verify-skills`
 
-Verify that every installed skill in `skills.lock` matches its expected SHA-512 hash. Detects tampering, corruption, or man-in-the-middle substitution. Optionally verify a single named skill.
+Verify that every installed skill in `tank.lock` matches its expected SHA-512 hash. Detects tampering, corruption, or man-in-the-middle substitution. Optionally verify a single named skill.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -346,7 +346,7 @@ Retrieve the stored security audit results for a published skill from the regist
 
 #### `skill-permissions`
 
-Display a resolved permission summary for all skills installed in the project, then check that the aggregate permissions do not exceed the budget declared in `skills.json`. Flags any skill that requests permissions outside the allowed budget.
+Display a resolved permission summary for all skills installed in the project, then check that the aggregate permissions do not exceed the budget declared in `tank.json`. Flags any skill that requests permissions outside the allowed budget.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -354,7 +354,7 @@ Display a resolved permission summary for all skills installed in the project, t
 
 **Example prompts:**
 - *"Show me what permissions are required by all installed skills"*
-- *"Check if any skill exceeds the permission budget in skills.json"*
+- *"Check if any skill exceeds the permission budget in tank.json"*
 
 ---
 
@@ -467,7 +467,7 @@ User: Yes.
 
 ```
 User: Before I deploy, make sure no skill is asking for more permissions
-      than we declared in skills.json.
+      than we declared in tank.json.
 
 AI: [Uses skill-permissions on ./]
 
@@ -495,7 +495,7 @@ AI: [Uses doctor]
     ✅ @tankpkg/mcp-server reachable
     ✅ Registry (tankpkg.dev) — reachable
     ✅ ~/.tank/config.json — valid, token present
-    ❌ skills.lock — 1 skill has a hash mismatch: @org/my-skill
+    ❌ tank.lock — 1 skill has a hash mismatch: @org/my-skill
 
     Recommendation: Run verify-skills to identify the affected entry,
     then reinstall @org/my-skill to restore a clean lockfile.
@@ -582,7 +582,7 @@ If `whoami` also fails, your token may have been revoked. Run `tank login` to is
 
 ### `verify-skills` reports a hash mismatch
 
-A hash mismatch means the installed skill file does not match the SHA-512 recorded in `skills.lock`. This could indicate file corruption or tampering. Reinstall the affected skill:
+A hash mismatch means the installed skill file does not match the SHA-512 recorded in `tank.lock`. This could indicate file corruption or tampering. Reinstall the affected skill:
 
 ```
 "Remove @org/affected-skill and reinstall it"
@@ -590,8 +590,8 @@ A hash mismatch means the installed skill file does not match the SHA-512 record
 
 ### `install-skill` fails with "permission budget exceeded"
 
-The skill is requesting capabilities beyond what your `skills.json` allows. Review its permissions with `skill-info`, then either:
-1. Update your `skills.json` permission budget to allow those capabilities, or
+The skill is requesting capabilities beyond what your `tank.json` allows. Review its permissions with `skill-info`, then either:
+1. Update your `tank.json` permission budget to allow those capabilities, or
 2. Choose an alternative skill with a narrower permission footprint.
 
 ---
@@ -602,7 +602,7 @@ The skill is requesting capabilities beyond what your `skills.json` allows. Revi
 - The MCP server communicates exclusively with `tankpkg.dev` over HTTPS
 - Your API token is never logged, cached to disk in plain text beyond `~/.tank/`, or transmitted to third parties
 - `TANK_TOKEN` in MCP environment config is kept in your AI tool's process environment — never written to disk by Tank itself
-- SHA-512 hashes in `skills.lock` are verified against the registry on every install and on-demand via `verify-skills`
+- SHA-512 hashes in `tank.lock` are verified against the registry on every install and on-demand via `verify-skills`
 - Permission budget enforcement happens client-side at install time — skills that exceed declared budgets are rejected before any files are extracted
 
 ---

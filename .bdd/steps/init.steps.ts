@@ -26,11 +26,11 @@ function givenDirectoryExists(): string {
 }
 
 function givenNoSkillsJsonExists(directory: string): void {
-  expect(fs.existsSync(path.join(directory, 'skills.json'))).toBe(false);
+  expect(fs.existsSync(path.join(directory, 'tank.json'))).toBe(false);
 }
 
 function givenSkillsJsonAlreadyExists(directory: string, content: string): string {
-  const skillsJsonPath = path.join(directory, 'skills.json');
+  const skillsJsonPath = path.join(directory, 'tank.json');
   fs.writeFileSync(skillsJsonPath, content, 'utf-8');
   return skillsJsonPath;
 }
@@ -77,7 +77,7 @@ function readSkillsJson(directory: string): {
   version: string;
   description?: string;
 } {
-  const raw = fs.readFileSync(path.join(directory, 'skills.json'), 'utf-8');
+  const raw = fs.readFileSync(path.join(directory, 'tank.json'), 'utf-8');
   return JSON.parse(raw) as { name: string; version: string; description?: string };
 }
 
@@ -107,7 +107,7 @@ describe('Feature: Skill project initialisation via MCP tool', () => {
         thenResponseContains(/Initialized skill in/i);
         thenResponseContains(/skills\.json/i);
 
-        const skillsJsonPath = path.join(directory, 'skills.json');
+        const skillsJsonPath = path.join(directory, 'tank.json');
         const skillMdPath = path.join(directory, 'SKILL.md');
         expect(fs.existsSync(skillsJsonPath)).toBe(true);
         expect(fs.existsSync(skillMdPath)).toBe(true);
@@ -122,8 +122,8 @@ describe('Feature: Skill project initialisation via MCP tool', () => {
     });
   });
 
-  describe('Scenario: Agent initialises a skill project when skills.json already exists', () => {
-    it('Given/When/Then for existing skills.json without overwrite', async () => {
+  describe('Scenario: Agent initialises a skill project when tank.json already exists', () => {
+    it('Given/When/Then for existing tank.json without overwrite', async () => {
       await givenMcpServerIsRunning();
       const directory = givenDirectoryExists();
 

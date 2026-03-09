@@ -40,7 +40,7 @@ describe('readLockfile', () => {
       },
     };
     fs.writeFileSync(
-      path.join(tmpDir, 'skills.lock'),
+      path.join(tmpDir, 'tank.lock'),
       JSON.stringify(lock, null, 2) + '\n',
     );
 
@@ -49,7 +49,7 @@ describe('readLockfile', () => {
   });
 
   it('returns null on corrupt JSON', () => {
-    fs.writeFileSync(path.join(tmpDir, 'skills.lock'), '{not valid json!!!');
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), '{not valid json!!!');
     const result = readLockfile(tmpDir);
     expect(result).toBeNull();
   });
@@ -86,11 +86,11 @@ describe('writeLockfile', () => {
     };
 
     writeLockfile(lock, tmpDir);
-    const first = fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8');
+    const first = fs.readFileSync(path.join(tmpDir, 'tank.lock'), 'utf-8');
 
     // Write again — should produce identical bytes
     writeLockfile(lock, tmpDir);
-    const second = fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8');
+    const second = fs.readFileSync(path.join(tmpDir, 'tank.lock'), 'utf-8');
 
     expect(first).toBe(second);
   });
@@ -121,7 +121,7 @@ describe('writeLockfile', () => {
     };
 
     writeLockfile(lock, tmpDir);
-    const raw = fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8');
+    const raw = fs.readFileSync(path.join(tmpDir, 'tank.lock'), 'utf-8');
     const parsed = JSON.parse(raw);
     const keys = Object.keys(parsed.skills);
     expect(keys).toEqual(['@alpha/skill@2.0.0', 'middle@1.0.0', 'z-skill@1.0.0']);
@@ -134,7 +134,7 @@ describe('writeLockfile', () => {
     };
 
     writeLockfile(lock, tmpDir);
-    const raw = fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8');
+    const raw = fs.readFileSync(path.join(tmpDir, 'tank.lock'), 'utf-8');
     expect(raw.endsWith('\n')).toBe(true);
   });
 });

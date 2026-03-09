@@ -51,16 +51,16 @@ describe('publishCommand', () => {
     fileCount: 5,
     totalSize: 2048,
     readme: '# Test Skill\n\nA test skill.',
-    files: ['skills.json', 'SKILL.md', 'src/index.ts'],
+    files: ['tank.json', 'SKILL.md', 'src/index.ts'],
   };
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-publish-test-'));
     configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-publish-config-'));
 
-    // Write a valid skills.json in the "project" directory
+    // Write a valid tank.json in the "project" directory
     fs.writeFileSync(
-      path.join(tmpDir, 'skills.json'),
+      path.join(tmpDir, 'tank.json'),
       JSON.stringify(validManifest, null, 2),
     );
 
@@ -282,15 +282,15 @@ describe('publishCommand', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it('errors when skills.json is missing', async () => {
+  it('errors when tank.json is missing', async () => {
     const { publishCommand } = await import('../commands/publish.js');
 
-    // Remove skills.json
-    fs.unlinkSync(path.join(tmpDir, 'skills.json'));
+    // Remove tank.json
+    fs.unlinkSync(path.join(tmpDir, 'tank.json'));
 
     await expect(
       publishCommand({ directory: tmpDir, configDir }),
-    ).rejects.toThrow(/skills\.json/);
+    ).rejects.toThrow(/tank\.json/);
 
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -471,18 +471,18 @@ describe('publishCommand', () => {
     expect(formatSize(2621440)).toBe('2.5 MB');
   });
 
-  it('errors when skills.json is invalid JSON', async () => {
+  it('errors when tank.json is invalid JSON', async () => {
     const { publishCommand } = await import('../commands/publish.js');
 
-    // Write invalid JSON to skills.json
+    // Write invalid JSON to tank.json
     fs.writeFileSync(
-      path.join(tmpDir, 'skills.json'),
+      path.join(tmpDir, 'tank.json'),
       '{ invalid json }',
     );
 
     await expect(
       publishCommand({ directory: tmpDir, configDir }),
-    ).rejects.toThrow(/skills\.json/);
+    ).rejects.toThrow(/tank\.json/);
 
     expect(mockFetch).not.toHaveBeenCalled();
   });
