@@ -157,7 +157,7 @@ describe('computeResolvedPermissions', () => {
     expect(result.network?.outbound).toContain('*.example.com');
     expect(result.network?.outbound).toContain('*.api.io');
     // No duplicates
-    const outbound = result.network?.outbound!;
+    const outbound = result.network?.outbound ?? [];
     expect(outbound.length).toBe(new Set(outbound).size);
   });
 

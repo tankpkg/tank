@@ -177,7 +177,6 @@ describe('updateCommand', () => {
 
   it('sends bearer token when config contains token', async () => {
     const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
 
     fs.writeFileSync(
       path.join(configDir, 'config.json'),

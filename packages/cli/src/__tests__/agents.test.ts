@@ -108,7 +108,9 @@ describe('agents', () => {
 
   describe('Windows path support', () => {
     it('cursor includes APPDATA path on Windows', () => {
-      const cursor = SUPPORTED_AGENTS.find((a) => a.id === 'cursor')!;
+      const cursor = SUPPORTED_AGENTS.find((a) => a.id === 'cursor');
+      expect(cursor).toBeDefined();
+      if (!cursor) throw new Error('cursor agent missing');
       const dirs = cursor.configDirs(tmpDir);
       if (process.platform === 'win32' && process.env.APPDATA) {
         expect(dirs).toContain(path.join(process.env.APPDATA, 'Cursor'));
@@ -118,7 +120,9 @@ describe('agents', () => {
     });
 
     it('opencode includes APPDATA path on Windows', () => {
-      const opencode = SUPPORTED_AGENTS.find((a) => a.id === 'opencode')!;
+      const opencode = SUPPORTED_AGENTS.find((a) => a.id === 'opencode');
+      expect(opencode).toBeDefined();
+      if (!opencode) throw new Error('opencode agent missing');
       const dirs = opencode.configDirs(tmpDir);
       if (process.platform === 'win32' && process.env.APPDATA) {
         expect(dirs).toContain(path.join(process.env.APPDATA, 'opencode'));
@@ -139,7 +143,8 @@ describe('agents', () => {
         const agents = detectInstalledAgents(tmpDir);
         const opencode = agents.find((a) => a.id === 'opencode');
         expect(opencode).toBeDefined();
-        expect(opencode!.skillsDir).toBe(path.join(appDataOpencode, 'skills'));
+        if (!opencode) throw new Error('opencode agent missing');
+        expect(opencode.skillsDir).toBe(path.join(appDataOpencode, 'skills'));
       } finally {
         if (!existed) fs.rmSync(appDataOpencode, { recursive: true, force: true });
       }

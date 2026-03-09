@@ -141,7 +141,7 @@ export async function doctorCommand(options?: DoctorOptions): Promise<void> {
     }
 
     const localLinksDir = path.join(directory, '.tank');
-    printSectionHeader(`Local Skills (${localSkills.length})` + `:                          [project: ${directory}]`);
+    printSectionHeader(`Local Skills (${localSkills.length}):                          [project: ${directory}]`);
     if (localSkills.length === 0) {
       console.log('  none');
     }
@@ -150,13 +150,13 @@ export async function doctorCommand(options?: DoctorOptions): Promise<void> {
       const extractExists = fs.existsSync(extractDir);
       const statuses = getSkillLinkStatus({ skillName, linksDir: localLinksDir, homedir });
       const summary = summarizeStatus(skillName, statuses, extractExists, 'local');
-      summary.issues.forEach((issue) => suggestions.add(issue));
+      for (const issue of summary.issues) suggestions.add(issue);
       console.log(`  ${skillName}  ${summary.statusText}`);
     }
 
     const globalLinksDir = path.join(homedir, '.tank');
     const globalSkillsDir = getGlobalSkillsDir(homedir);
-    printSectionHeader(`Global Skills (${uniqueGlobal.length})` + `:                         [${globalSkillsDir}]`);
+    printSectionHeader(`Global Skills (${uniqueGlobal.length}):                         [${globalSkillsDir}]`);
     if (uniqueGlobal.length === 0) {
       console.log('  none');
     }
@@ -165,7 +165,7 @@ export async function doctorCommand(options?: DoctorOptions): Promise<void> {
       const extractExists = fs.existsSync(extractDir);
       const statuses = getSkillLinkStatus({ skillName, linksDir: globalLinksDir, homedir });
       const summary = summarizeStatus(skillName, statuses, extractExists, 'global');
-      summary.issues.forEach((issue) => suggestions.add(issue));
+      for (const issue of summary.issues) suggestions.add(issue);
       console.log(`  ${skillName}  ${summary.statusText}`);
     }
 
@@ -176,7 +176,7 @@ export async function doctorCommand(options?: DoctorOptions): Promise<void> {
     for (const skillName of devLinks) {
       const statuses = getSkillLinkStatus({ skillName, linksDir: globalLinksDir, homedir });
       const summary = summarizeStatus(skillName, statuses, true, 'dev');
-      summary.issues.forEach((issue) => suggestions.add(issue));
+      for (const issue of summary.issues) suggestions.add(issue);
       console.log(`  ${skillName}  ${summary.statusText}`);
     }
 
