@@ -137,21 +137,18 @@ tank/
 │   └── cli/          # Tank CLI (TypeScript)
 ├── packages/
 │   └── shared/       # Shared schemas, types, constants
-└── docs/             # Product brief, architecture, roadmap
+└── docs/             # Product brief, architecture
 ```
 
 ## Project Status
 
 > **Tank MVP is code-complete.** We're building in the open from day one.
 
-See the [Roadmap](docs/roadmap.md) for what we're building and when.
-
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
 | [Product Brief](docs/product-brief.md) | Full vision, features, and technical direction |
-| [Roadmap](docs/roadmap.md) | Phased timeline with milestones |
 | [Architecture](docs/architecture.md) | Technical design and decisions |
 | [Performance Testing](docs/performance-testing.md) | Methodology and regression protocol |
 | [Contributing](CONTRIBUTING.md) | How to get involved |
