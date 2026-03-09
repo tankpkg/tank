@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { SkillsLock, Permissions } from '@internal/shared';
+import type { Permissions, SkillsLock } from '@internal/shared';
 import { resolveLockfilePath } from './manifest.js';
 
 /**

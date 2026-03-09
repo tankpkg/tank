@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { type SkillsLock, LOCKFILE_VERSION, MANIFEST_FILENAME } from '@internal/shared';
-import { logger } from '../lib/logger.js';
+import { LOCKFILE_VERSION, MANIFEST_FILENAME, type SkillsLock } from '@internal/shared';
+import { getGlobalAgentSkillsDir, getGlobalSkillsDir, getSymlinkName } from '../lib/agents.js';
 import { unlinkSkillFromAgents } from '../lib/linker.js';
-import { getSymlinkName, getGlobalSkillsDir, getGlobalAgentSkillsDir } from '../lib/agents.js';
-import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
+import { logger } from '../lib/logger.js';
+import { resolveLockfilePath, resolveManifestPath } from '../lib/manifest.js';
 
 export interface RemoveOptions {
   name: string;

@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import { detectInstalledAgents, getGlobalSkillsDir, getSupportedAgents } from '../lib/agents.js';
 import { type AgentLinkStatus, getSkillLinkStatus } from '../lib/linker.js';
 import { readGlobalLinks } from '../lib/links.js';
-import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
+import { resolveLockfilePath, resolveManifestPath } from '../lib/manifest.js';
 
 export interface DoctorOptions {
   directory?: string;

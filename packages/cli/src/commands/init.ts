@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { input, confirm } from '@inquirer/prompts';
-import { skillsJsonSchema, MANIFEST_FILENAME } from '@internal/shared';
+import { confirm, input } from '@inquirer/prompts';
+import { MANIFEST_FILENAME, skillsJsonSchema } from '@internal/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
 import { resolveManifestPath } from '../lib/manifest.js';
