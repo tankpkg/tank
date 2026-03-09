@@ -1,6 +1,6 @@
+import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
-import path from 'node:path';
 
 export interface AgentInfo {
   id: string;
@@ -23,7 +23,7 @@ export const SUPPORTED_AGENTS: AgentDefinition[] = [
   {
     id: 'claude',
     name: 'Claude Code',
-    configDirs: (homedir) => [path.join(homedir, '.claude')]
+    configDirs: (homedir) => [path.join(homedir, '.claude')],
   },
   {
     id: 'opencode',
@@ -35,7 +35,7 @@ export const SUPPORTED_AGENTS: AgentDefinition[] = [
         if (appData) dirs.push(path.join(appData, 'opencode'));
       }
       return dirs;
-    }
+    },
   },
   {
     id: 'cursor',
@@ -47,23 +47,23 @@ export const SUPPORTED_AGENTS: AgentDefinition[] = [
         if (appData) dirs.push(path.join(appData, 'Cursor'));
       }
       return dirs;
-    }
+    },
   },
   {
     id: 'codex',
     name: 'Codex',
-    configDirs: (homedir) => [path.join(homedir, '.codex')]
+    configDirs: (homedir) => [path.join(homedir, '.codex')],
   },
   {
     id: 'openclaw',
     name: 'OpenClaw',
-    configDirs: (homedir) => [path.join(homedir, '.openclaw')]
+    configDirs: (homedir) => [path.join(homedir, '.openclaw')],
   },
   {
     id: 'universal',
     name: 'Universal',
-    configDirs: (homedir) => [path.join(homedir, '.agents')]
-  }
+    configDirs: (homedir) => [path.join(homedir, '.agents')],
+  },
 ];
 
 /**
@@ -84,7 +84,7 @@ export function getSupportedAgents(homedir?: string): AgentInfo[] {
   return SUPPORTED_AGENTS.map((agent) => ({
     id: agent.id,
     name: agent.name,
-    skillsDir: path.join(resolveConfigDir(agent, resolved), 'skills')
+    skillsDir: path.join(resolveConfigDir(agent, resolved), 'skills'),
   }));
 }
 
@@ -93,7 +93,7 @@ export function detectInstalledAgents(homedir?: string): AgentInfo[] {
   return SUPPORTED_AGENTS.filter((agent) => isAgentInstalled(agent, resolved)).map((agent) => ({
     id: agent.id,
     name: agent.name,
-    skillsDir: path.join(resolveConfigDir(agent, resolved), 'skills')
+    skillsDir: path.join(resolveConfigDir(agent, resolved), 'skills'),
   }));
 }
 

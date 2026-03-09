@@ -89,15 +89,15 @@ jobs:
 
       - name: Build Windows installer
         if: runner.os == 'Windows'
+        continue-on-error: true
         shell: pwsh
         run: |
-          # Generate icon from favicon
+          if (!(Test-Path "installer/windows/create-icon.ps1")) {
+            Write-Host "Installer scripts not found, skipping .exe installer build"
+            exit 0
+          }
           powershell -ExecutionPolicy Bypass -File installer/windows/create-icon.ps1
-
-          # Install Inno Setup
           choco install innosetup -y --no-progress
-
-          # Build installer with version from tag
           $version = "${{ github.ref_name }}".TrimStart("v")
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DVERSION=$version installer\windows\tank-installer.iss
 
@@ -174,7 +174,7 @@ jobs:
 
       - name: Generate checksums
         working-directory: release
-        run: sha256sum tank-* *.deb *.exe 2>/dev/null | sort > SHA256SUMS
+        run: sha256sum tank-* *.deb *.exe 2>/dev/null | sort > SHA256SUMS || true
 
       - name: Update in-repo Homebrew formula
         continue-on-error: true
