@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { type SkillsLock, LOCKFILE_VERSION } from '@tank/shared';
+import { type SkillsLock, LOCKFILE_VERSION, MANIFEST_FILENAME } from '@tank/shared';
 import { logger } from '../lib/logger.js';
 import { unlinkSkillFromAgents } from '../lib/linker.js';
 import { getSymlinkName, getGlobalSkillsDir, getGlobalAgentSkillsDir } from '../lib/agents.js';
+import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
 
 export interface RemoveOptions {
   name: string;
@@ -47,8 +48,9 @@ export async function removeCommand(options: RemoveOptions): Promise<void> {
     }
 
     // 4. Update global lockfile
-    const lockPath = path.join(resolvedHome, '.tank', 'skills.lock');
-    if (fs.existsSync(lockPath)) {
+    const resolvedLock = resolveLockfilePath(path.join(resolvedHome, '.tank'));
+    const lockPath = resolvedLock.path;
+    if (resolvedLock.exists) {
       let lock: SkillsLock;
       try {
         const raw = fs.readFileSync(lockPath, 'utf-8');
@@ -82,41 +84,42 @@ export async function removeCommand(options: RemoveOptions): Promise<void> {
     return;
   }
 
-  // 1. Read skills.json
-  const skillsJsonPath = path.join(directory, 'skills.json');
-  if (!fs.existsSync(skillsJsonPath)) {
+  // 1. Read manifest (tank.json or skills.json)
+  const resolvedManifest = resolveManifestPath(directory);
+  if (!resolvedManifest.exists) {
     throw new Error(
-      `No skills.json found in ${directory}. Run: tank init`,
+      `No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`,
     );
   }
 
   let skillsJson: Record<string, unknown>;
   try {
-    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
+    const raw = fs.readFileSync(resolvedManifest.path, 'utf-8');
     skillsJson = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    throw new Error('Failed to read or parse skills.json');
+    throw new Error(`Failed to read or parse ${path.basename(resolvedManifest.path)}`);
   }
 
   // 2. Check if skill exists in skills map
   const skills = (skillsJson.skills ?? {}) as Record<string, string>;
   if (!(name in skills)) {
-    throw new Error(`Skill "${name}" is not installed (not found in skills.json)`);
+    throw new Error(`Skill "${name}" is not installed (not found in ${path.basename(resolvedManifest.path)})`);
   }
 
-  // 3. Remove skill from skills.json
+  // 3. Remove skill from manifest
   delete skills[name];
   skillsJson.skills = skills;
 
-  // 4. Write updated skills.json
+  // 4. Write updated manifest
   fs.writeFileSync(
-    skillsJsonPath,
+    resolvedManifest.path,
     JSON.stringify(skillsJson, null, 2) + '\n',
   );
 
-  // 5. Read skills.lock if present
-  const lockPath = path.join(directory, 'skills.lock');
-  if (fs.existsSync(lockPath)) {
+  // 5. Read lockfile if present
+  const resolvedLocalLock = resolveLockfilePath(directory);
+  const lockPath = resolvedLocalLock.path;
+  if (resolvedLocalLock.exists) {
     let lock: SkillsLock;
     try {
       const raw = fs.readFileSync(lockPath, 'utf-8');

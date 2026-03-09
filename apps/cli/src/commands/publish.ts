@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import ora from 'ora';
+import { MANIFEST_FILENAME } from '@tank/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
 import { pack } from '../lib/packer.js';
 import { USER_AGENT } from '../version.js';
+import { resolveManifestPath } from '../lib/manifest.js';
 
 export interface PublishOptions {
   directory?: string;
@@ -45,20 +47,20 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
     throw new Error('Not logged in. Run: tank login');
   }
 
-  // 2. Read skills.json
-  const skillsJsonPath = path.join(directory, 'skills.json');
-  if (!fs.existsSync(skillsJsonPath)) {
+  // 2. Read manifest (tank.json or skills.json)
+  const resolvedManifest = resolveManifestPath(directory);
+  if (!resolvedManifest.exists) {
     throw new Error(
-      `No skills.json found in ${directory}. Run: tank init`,
+      `No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`,
     );
   }
 
   let manifest: Record<string, unknown>;
   try {
-    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
+    const raw = fs.readFileSync(resolvedManifest.path, 'utf-8');
     manifest = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    throw new Error('Failed to read or parse skills.json');
+    throw new Error(`Failed to read or parse ${path.basename(resolvedManifest.path)}`);
   }
 
   if (visibility && visibility !== 'public' && visibility !== 'private') {
@@ -153,7 +155,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
     }
     if (step1Res.status === 409) {
       throw new Error(
-        'Version already exists. Bump the version in skills.json',
+        `Version already exists. Bump the version in ${MANIFEST_FILENAME}`,
       );
     }
     throw new Error(errorMsg);

@@ -18,7 +18,7 @@ vi.mock('chalk', () => ({
 
 const writeSkillsJson = (dir: string, skills: Record<string, string>): void => {
   fs.writeFileSync(
-    path.join(dir, 'skills.json'),
+    path.join(dir, 'tank.json'),
     JSON.stringify({ name: 'test-project', skills }, null, 2) + '\n',
   );
 };
@@ -33,7 +33,7 @@ const writeGlobalLockfile = (homedir: string, skills: Record<string, unknown>): 
   const lockDir = path.join(homedir, '.tank');
   fs.mkdirSync(lockDir, { recursive: true });
   fs.writeFileSync(
-    path.join(lockDir, 'skills.lock'),
+    path.join(lockDir, 'tank.lock'),
     JSON.stringify({ lockfileVersion: 1, skills }, null, 2) + '\n',
   );
 };
@@ -204,9 +204,9 @@ describe('doctorCommand', () => {
     expect(output).toContain('No agents detected');
   });
 
-  it('handles corrupt skills.json gracefully', async () => {
+  it('handles corrupt tank.json gracefully', async () => {
     fs.mkdirSync(path.join(fakeHome, '.claude'), { recursive: true });
-    fs.writeFileSync(path.join(projectDir, 'skills.json'), 'invalid json {');
+    fs.writeFileSync(path.join(projectDir, 'tank.json'), 'invalid json {');
 
     await doctorCommand({ directory: projectDir, homedir: fakeHome });
 

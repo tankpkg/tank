@@ -14,7 +14,7 @@ import os from 'node:os';
 import { runTank, expectSuccess } from './helpers/cli';
 import { cleanupFixture } from './helpers/fixtures';
 
-describe('Init E2E — tank init creates skills.json', () => {
+describe('Init E2E — tank init creates tank.json', () => {
   const tempDirs: string[] = [];
 
   afterAll(() => {
@@ -40,9 +40,9 @@ describe('Init E2E — tank init creates skills.json', () => {
   }
 
   // -----------------------------------------------------------------------
-  // 1. init --yes creates skills.json with explicit values
+  // 1. init --yes creates tank.json with explicit values
   // -----------------------------------------------------------------------
-  it('init --yes creates skills.json with explicit values', async () => {
+  it('init --yes creates tank.json with explicit values', async () => {
     const { dir, home } = createTempDir('tank-init-');
 
     const result = await runTank(
@@ -52,7 +52,7 @@ describe('Init E2E — tank init creates skills.json', () => {
 
     expectSuccess(result);
 
-    const skillsPath = path.join(dir, 'skills.json');
+    const skillsPath = path.join(dir, 'tank.json');
     expect(fs.existsSync(skillsPath)).toBe(true);
 
     const manifest = JSON.parse(fs.readFileSync(skillsPath, 'utf-8'));
@@ -78,7 +78,7 @@ describe('Init E2E — tank init creates skills.json', () => {
     expectSuccess(result);
 
     const manifest = JSON.parse(
-      fs.readFileSync(path.join(dir, 'skills.json'), 'utf-8'),
+      fs.readFileSync(path.join(dir, 'tank.json'), 'utf-8'),
     );
     expect(manifest.name).toBe('@test/default-skill');
     expect(manifest.version).toBe('0.1.0');
@@ -87,13 +87,13 @@ describe('Init E2E — tank init creates skills.json', () => {
   });
 
   // -----------------------------------------------------------------------
-  // 3. init --yes errors when skills.json exists without --force
+  // 3. init --yes errors when tank.json exists without --force
   // -----------------------------------------------------------------------
-  it('init --yes errors when skills.json exists without --force', async () => {
+  it('init --yes errors when tank.json exists without --force', async () => {
     const { dir, home } = createTempDir('tank-init-exists-');
 
     const originalManifest = { name: '@test/original', version: '0.0.1' };
-    const skillsPath = path.join(dir, 'skills.json');
+    const skillsPath = path.join(dir, 'tank.json');
     fs.writeFileSync(skillsPath, JSON.stringify(originalManifest, null, 2) + '\n');
 
     const result = await runTank(
@@ -110,13 +110,13 @@ describe('Init E2E — tank init creates skills.json', () => {
   });
 
   // -----------------------------------------------------------------------
-  // 4. init --yes --force overwrites existing skills.json
+  // 4. init --yes --force overwrites existing tank.json
   // -----------------------------------------------------------------------
-  it('init --yes --force overwrites existing skills.json', async () => {
+  it('init --yes --force overwrites existing tank.json', async () => {
     const { dir, home } = createTempDir('tank-init-overwrite-');
 
     const originalManifest = { name: '@test/old-name', version: '0.0.1' };
-    const skillsPath = path.join(dir, 'skills.json');
+    const skillsPath = path.join(dir, 'tank.json');
     fs.writeFileSync(skillsPath, JSON.stringify(originalManifest, null, 2) + '\n');
 
     const result = await runTank(
@@ -147,7 +147,7 @@ describe('Init E2E — tank init creates skills.json', () => {
     expectSuccess(result);
 
     const manifest = JSON.parse(
-      fs.readFileSync(path.join(dir, 'skills.json'), 'utf-8'),
+      fs.readFileSync(path.join(dir, 'tank.json'), 'utf-8'),
     );
     expect(manifest.visibility).toBe('private');
   });
@@ -163,7 +163,7 @@ describe('Init E2E — tank init creates skills.json', () => {
       { cwd: dir, home, timeoutMs: 15_000 },
     );
 
-    expect(fs.existsSync(path.join(dir, 'skills.json'))).toBe(false);
+    expect(fs.existsSync(path.join(dir, 'tank.json'))).toBe(false);
 
     const output = result.stdout + result.stderr;
     expect(output).toMatch(/lowercase|alphanumeric|invalid/i);

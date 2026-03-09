@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { getConfig } from '../lib/config.js';
 import { pack, packForScan } from '../lib/packer.js';
 import { USER_AGENT } from '../version.js';
+import { resolveManifestPath } from '../lib/manifest.js';
 
 export interface ScanOptions {
   directory?: string;
@@ -79,30 +80,28 @@ export async function scanCommand(options: ScanOptions = {}): Promise<void> {
 
   const spinner = ora('Packing skill...').start();
   
-  // Try to read skills.json first
-  const skillsJsonPath = path.join(absDir, 'skills.json');
+  // Try to read manifest (tank.json or skills.json) first
+  const resolvedManifest = resolveManifestPath(absDir);
   let manifest: Record<string, unknown>;
   let packResult: Awaited<ReturnType<typeof pack>>;
-  
-  const skillsJsonExists = fs.existsSync(skillsJsonPath);
-  
-  if (skillsJsonExists) {
-    // skills.json exists: use pack() and read the manifest
+
+  if (resolvedManifest.exists) {
+    // Manifest exists: use pack() and read it
     try {
       packResult = await pack(absDir);
     } catch (err) {
       spinner.fail('Packing failed');
       throw err;
     }
-    
+
     try {
-      manifest = JSON.parse(fs.readFileSync(skillsJsonPath, 'utf-8')) as Record<string, unknown>;
+      manifest = JSON.parse(fs.readFileSync(resolvedManifest.path, 'utf-8')) as Record<string, unknown>;
     } catch (err) {
-      spinner.fail('Failed to read skills.json');
+      spinner.fail(`Failed to read ${path.basename(resolvedManifest.path)}`);
       throw err;
     }
   } else {
-    // skills.json does NOT exist: use packForScan() and synthesize manifest
+    // No manifest: use packForScan() and synthesize manifest
     try {
       packResult = await packForScan(absDir);
     } catch (err) {

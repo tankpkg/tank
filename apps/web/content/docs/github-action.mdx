@@ -9,7 +9,7 @@ Tank's official GitHub Action automates the full skill publishing lifecycle dire
 
 ## What the Action Does
 
-1. **Validates** your `skills.json` manifest — schema, semver format, and permission declarations
+1. **Validates** your `tank.json` manifest — schema, semver format, and permission declarations
 2. **Runs security scanning** — the same 6-stage pipeline used by the registry (structure, static AST, injection, secrets, supply chain)
 3. **Publishes** the skill tarball to the Tank registry and stores it in the configured storage backend
 4. **Outputs** the published name, version, audit score, and a badge URL you can use in your README
@@ -38,7 +38,7 @@ To get your `TANK_TOKEN`, go to [Dashboard → Tokens](/tokens), create a token 
 |-------|----------|---------|-------------|
 | `token` | **Yes** | — | Your Tank API token. Always use `${{ secrets.TANK_TOKEN }}` — never hardcode. |
 | `registry` | No | `https://tankpkg.dev` | Registry URL. Override for self-hosted deployments. |
-| `directory` | No | `.` | Directory containing `skills.json`. Use if your skill is not at the repo root. |
+| `directory` | No | `.` | Directory containing `tank.json`. Use if your skill is not at the repo root. |
 | `dry-run` | No | `false` | When `true`, validates and scans but does not publish. Use on pull requests. |
 
 ## Outputs
@@ -142,7 +142,7 @@ Dry runs still require a valid `TANK_TOKEN` — the action authenticates to run 
 
 The action exits with a non-zero code if:
 
-- `skills.json` is invalid or missing required fields
+- `tank.json` is invalid or missing required fields
 - Security scanning returns a `FAIL` verdict (1+ critical or 4+ high severity findings)
 - The version has already been published (Tank enforces immutability)
 - Permission escalation is detected (see [Publishing](/docs/publishing) for escalation rules)
@@ -256,7 +256,7 @@ The `TANK_TOKEN` secret is missing, expired, or lacks the `skills:publish` scope
 
 ### `Version already published`
 
-Tank enforces version immutability. Increment the version in your `skills.json` before pushing. Patch → `1.0.1`, minor → `1.1.0`, major → `2.0.0`.
+Tank enforces version immutability. Increment the version in your `tank.json` before pushing. Patch → `1.0.1`, minor → `1.1.0`, major → `2.0.0`.
 
 ### `Security scan returned FAIL`
 

@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { Readable } from 'node:stream';
 import { create } from 'tar';
 import ignore from 'ignore';
-import { skillsJsonSchema } from '@tank/shared';
+import { skillsJsonSchema, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@tank/shared';
 
 // Limits
 const MAX_PACKAGE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -63,24 +63,29 @@ export async function pack(directory: string): Promise<PackResult> {
     throw new Error(`Not a directory: ${absDir}`);
   }
 
-  // 2. Verify skills.json exists and is valid
-  const skillsJsonPath = path.join(absDir, 'skills.json');
-  if (!fs.existsSync(skillsJsonPath)) {
-    throw new Error('Missing required file: skills.json');
+  // 2. Verify manifest (tank.json or skills.json) exists and is valid
+  let manifestPath = path.join(absDir, MANIFEST_FILENAME);
+  let manifestFilename = MANIFEST_FILENAME;
+  if (!fs.existsSync(manifestPath)) {
+    manifestPath = path.join(absDir, LEGACY_MANIFEST_FILENAME);
+    manifestFilename = LEGACY_MANIFEST_FILENAME;
+  }
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`Missing required file: ${MANIFEST_FILENAME}`);
   }
 
   let skillsJsonContent: string;
   try {
-    skillsJsonContent = fs.readFileSync(skillsJsonPath, 'utf-8');
+    skillsJsonContent = fs.readFileSync(manifestPath, 'utf-8');
   } catch {
-    throw new Error('Failed to read skills.json');
+    throw new Error(`Failed to read ${manifestFilename}`);
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(skillsJsonContent);
   } catch {
-    throw new Error('Invalid skills.json: not valid JSON');
+    throw new Error(`Invalid ${manifestFilename}: not valid JSON`);
   }
 
   const validation = skillsJsonSchema.safeParse(parsed);
@@ -88,7 +93,7 @@ export async function pack(directory: string): Promise<PackResult> {
     const issues = validation.error.issues
       .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
       .join('\n');
-    throw new Error(`Invalid skills.json:\n${issues}`);
+    throw new Error(`Invalid ${manifestFilename}:\n${issues}`);
   }
 
   // 3. Verify SKILL.md exists and read its content

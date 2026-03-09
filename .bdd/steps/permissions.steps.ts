@@ -34,7 +34,7 @@ function writeSkillsJson(
     manifest.permissions = permissions;
   }
   fs.writeFileSync(
-    path.join(projectDir(), 'skills.json'),
+    path.join(projectDir(), 'tank.json'),
     JSON.stringify(manifest, null, 2) + '\n',
   );
 }
@@ -50,7 +50,7 @@ function writeLockfile(
   ensureProjectDir();
   const lock = { lockfileVersion: 1, skills };
   fs.writeFileSync(
-    path.join(projectDir(), 'skills.lock'),
+    path.join(projectDir(), 'tank.lock'),
     JSON.stringify(lock, null, 2) + '\n',
   );
 }
@@ -164,9 +164,9 @@ describe('Feature: Skill permissions display via MCP tool', () => {
     });
   });
 
-  // Scenario 4: Agent views permissions when no skills.json exists
-  describe('Scenario: Agent views permissions when no skills.json exists', () => {
-    it('Given no skills.json in the directory', async () => {
+  // Scenario 4: Agent views permissions when no tank.json exists
+  describe('Scenario: Agent views permissions when no tank.json exists', () => {
+    it('Given no tank.json in the directory', async () => {
       ensureProjectDir();
 
       await callPermissionsTool(projectDir());
@@ -189,9 +189,9 @@ describe('Feature: Skill permissions display via MCP tool', () => {
     });
   });
 
-  // Scenario 6: Agent views permissions when skills.json has no dependencies
-  describe('Scenario: Agent views permissions when skills.json has no dependencies', () => {
-    it('Given skills.json with empty skills object', async () => {
+  // Scenario 6: Agent views permissions when tank.json has no dependencies
+  describe('Scenario: Agent views permissions when tank.json has no dependencies', () => {
+    it('Given tank.json with empty skills object', async () => {
       writeSkillsJson({});
 
       await callPermissionsTool(projectDir());

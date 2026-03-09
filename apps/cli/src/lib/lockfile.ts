@@ -1,21 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { SkillsLock, Permissions } from '@tank/shared';
+import { resolveLockfilePath } from './manifest.js';
 
 /**
  * Read and parse the lockfile from the given directory.
  * Returns null if the file doesn't exist or is corrupt.
  */
 export function readLockfile(directory?: string): SkillsLock | null {
-  const dir = directory ?? process.cwd();
-  const lockPath = path.join(dir, 'skills.lock');
+  const resolved = resolveLockfilePath(directory);
 
-  if (!fs.existsSync(lockPath)) {
+  if (!resolved.exists) {
     return null;
   }
 
   try {
-    const raw = fs.readFileSync(lockPath, 'utf-8');
+    const raw = fs.readFileSync(resolved.path, 'utf-8');
     return JSON.parse(raw) as SkillsLock;
   } catch {
     return null;
@@ -26,8 +26,8 @@ export function readLockfile(directory?: string): SkillsLock | null {
  * Write a lockfile deterministically: sorted keys, consistent formatting, trailing newline.
  */
 export function writeLockfile(lock: SkillsLock, directory?: string): void {
-  const dir = directory ?? process.cwd();
-  const lockPath = path.join(dir, 'skills.lock');
+  const resolved = resolveLockfilePath(directory);
+  const lockPath = resolved.path;
 
   // Sort skill keys alphabetically for determinism
   const sortedSkills: Record<string, SkillsLock['skills'][string]> = {};
