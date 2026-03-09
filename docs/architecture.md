@@ -39,6 +39,10 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Package Dependencies
+
+`@internal/shared` (schemas, types, constants, resolver) is consumed by CLI, MCP server, and Web. Scanner is independent (Python, no TS deps). No circular dependencies — CLI, Web, and MCP server never import from each other, only from shared.
+
 ## Component Architecture
 
 ### CLI (`tank`)
