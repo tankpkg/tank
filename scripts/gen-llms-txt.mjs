@@ -73,9 +73,9 @@ function readDocs() {
 function generateLlmsTxt(docs) {
   let output = `# Tank Documentation
 
-> Security-first package manager for AI agent skills. Tank provides cryptographic verification, runtime permission enforcement, and a 6-stage security scanning pipeline to prevent credential exfiltration, prompt injection, and supply chain attacks.
+> Security-first package manager for AI agent skills. Tank provides lockfiles, install-time integrity verification, permission budgets, and a 6-stage security scanning pipeline to reduce supply chain risk.
 
-Tank is a security-first package manager for AI agent skills. It enforces versioning, lockfiles, permissions, code signing, and static analysis to prevent supply chain attacks.
+Tank is a security-first package manager for AI agent skills. It provides versioned installs, lockfiles, permission budgets, and deep scanning before skills reach agents.
 
 ## Key Resources
 
@@ -100,8 +100,8 @@ Tank is a security-first package manager for AI agent skills. It enforces versio
 
 - All skills require explicit permission declarations
 - Security scan required before publish (6-stage pipeline)
-- Cryptographic signature verification on install
-- No wildcard permissions allowed
+- Install verifies SHA-512 integrity
+- Runtime sandboxing is not yet the enforcement model in this repo
 
 ## Full Export
 

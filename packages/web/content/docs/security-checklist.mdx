@@ -33,9 +33,9 @@ Use this checklist before publishing any AI agent skill to ensure it follows sec
 ## Secret Management
 
 - [ ] **No secrets in code** — Never hardcode API keys, tokens, or passwords
-- [ ] **Environment variables** — Use `env` permission for required secrets
+- [ ] **No secrets in packages** — Do not ship `.env` files, private keys, or credential-bearing config
 - [ ] **Secret rotation support** — Design for key rotation without code changes
-- [ ] **Audit logging** — Log when secrets are accessed (without logging values)
+- [ ] **Audit logging** — Log sensitive operations without logging secret values
 
 ## Dependency Security
 
@@ -51,8 +51,6 @@ Use this checklist before publishing any AI agent skill to ensure it follows sec
 | Network | `["https://api.example.com"]` | `["*"]` or `["https://*"]` |
 | Filesystem Read | `["./data/**"]` | `["/**"]` or `["~/**"]` |
 | Filesystem Write | `["./output/**"]` | `["/**"]` or home directory |
-| Environment | `["MY_API_KEY"]` | `["*"]` or broad patterns |
-
 ## Runtime Security
 
 - [ ] **Graceful degradation** — Handle permission denials without crashing
@@ -93,7 +91,7 @@ Tank uses multiple security scanners in a 6-stage pipeline:
 
 | Stage | Tool | Purpose |
 |-------|------|---------|
-| Stage 2 | Semgrep | Static analysis for code patterns |
+| Stage 2 | AST + regex analysis | Static analysis for code patterns |
 | Stage 2 | Bandit | Python security linter |
 | Stage 3 | Cisco Skill Scanner | AI agent threat detection |
 | Stage 3 | Snyk Agent Scan | Prompt injection & tool poisoning detection |
@@ -113,5 +111,5 @@ Snyk Agent Scan is optional and cloud-dependent. If unavailable, scanning contin
 ---
 
 <Callout type="info">
-This checklist is enforced automatically by `tank scan` and the 6-stage security pipeline. Run it early and often during development. See the [Security Model](/docs/security) for a deep dive into each stage.
+This checklist is partially enforced automatically by `tank scan` and install-time checks. Run it early and often during development. See the [Security Model](/docs/security) for the actual enforcement model.
 </Callout>

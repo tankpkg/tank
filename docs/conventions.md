@@ -1,53 +1,48 @@
 # Conventions
 
-Non-tooling conventions. Formatting, indent, quotes, semicolons, ESM, strict mode are handled by Biome, EditorConfig, and @tsconfig/bun. This doc covers what no linter catches.
+Non-tooling conventions that agents should follow in this repo.
 
 ## Universal
 
-- **Conventional Commits** — `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`
-- **Test files** — `__tests__/*.test.ts` colocated with source. Never `.spec.ts`.
-- **Vitest** for TypeScript, **pytest** for Python (`test_*.py`)
-- **Minimal comments** — only for complex logic that isn't self-evident
+- Conventional commits only: `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`
+- Tests use `*.test.ts` for TypeScript and `test_*.py` for Python
+- Use comments sparingly; only where the code is not already obvious
+- Prefer `safeParse()` at validation boundaries; avoid thrown validation control flow
 
-## Web App
+## Web
 
-- **Server Components by default** — `'use client'` only when needed
-- **Zod `safeParse()` at every boundary** — never `parse()`, throws = invisible control flow
-- **Drizzle ORM only** — never raw SQL, never Prisma
-- **Auth in layout components** — never in page components. Route groups handle access control:
-  - `(auth)` — login
-  - `(dashboard)` — requires session
-  - `(admin)` — requires admin role
-  - `(registry)` — public
-- **Import alias** — `@/*` via tsconfig paths
-- **DB singleton** — `globalThis` pattern in `lib/db.ts` for Next.js hot-reload. Never create connections elsewhere.
-- **Supabase = file storage only** — tarballs. All queries through Drizzle ORM.
-- **`auth-schema.ts` is auto-generated** by better-auth. Never edit manually.
-- **Audit logging mandatory** for admin actions
+- Server Components by default
+- auth checks belong in layouts/route groups, not page components
+- Drizzle is the query layer; no raw SQL unless there is a clear reason
+- `auth-schema.ts` is generated; do not edit it
+- `lib/db.ts` owns the database singleton
+- Supabase is storage, not the query layer
+- `@/` is the local import alias
 
 ## CLI
 
-- **1-file-per-command** — export async fn, register in `bin/tank.ts`
-- **`configDir` injection** — for test isolation, never touch real `~/.tank/`
-- **chalk** for user-facing output, **pino** for debug logs (`TANK_DEBUG=1`)
-- **Relative `.js` extensions** in import paths
-- **Never hardcode registry URL** — use `REGISTRY_URL` from `@internal/shared` or config
+- one file per command under `src/commands/`
+- register commands in `src/bin/tank.ts`
+- support `configDir`/homedir-style isolation for tests
+- keep user-facing output simple; debug detail goes through the logger path
+- use `@internal/shared` for shared schemas and constants
 
 ## MCP Server
 
-- **1-file-per-tool** — export `registerXxxTool(server)`, register in `index.ts`
-- **Markdown output** — tools format results as markdown for editor readability
-- **Shares auth with CLI** — reads `~/.tank/config.json`, `TANK_TOKEN` env var overrides
+- one file per tool under `src/tools/`
+- register tools from `src/index.ts`
+- return markdown-friendly text payloads
+- reuse Tank config auth; `TANK_TOKEN` overrides file config
 
-## Python Scanner
+## Scanner
 
-- **Pydantic 2** for all models — strict validation
-- **Each stage independent** — can error without blocking others
-- **Stage 0 (ingest) is mandatory** — all subsequent stages depend on its output
-- **Errored stages** report `errored` status, never silently return empty results
+- Pydantic 2 models are the API contract
+- Stage 0 is required input to later stages
+- later stages may `errored`; do not hide failures as empty success
+- findings should include stage, severity, description, and location when available
 
-## Shared Package
+## Shared
 
-- **Pure library** — zero side-effect dependencies, no runtime deps
-- **Barrel export** — all public API through `src/index.ts`
-- **Exported constants are frozen** — never mutate
+- keep the package pure
+- export public API through `src/index.ts`
+- avoid side effects and runtime-only assumptions

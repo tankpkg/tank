@@ -1,8 +1,8 @@
 # Tank Documentation
 
-> Security-first package manager for AI agent skills. Tank provides cryptographic verification, runtime permission enforcement, and a 6-stage security scanning pipeline to prevent credential exfiltration, prompt injection, and supply chain attacks.
+> Security-first package manager for AI agent skills. Tank provides lockfiles, install-time integrity verification, permission budgets, and a 6-stage security scanning pipeline to reduce supply chain risk.
 
-Tank is a security-first package manager for AI agent skills. It enforces versioning, lockfiles, permissions, code signing, and static analysis to prevent supply chain attacks.
+Tank is a security-first package manager for AI agent skills. It provides versioned installs, lockfiles, permission budgets, and deep scanning before skills reach agents.
 
 ## Key Resources
 
@@ -15,12 +15,12 @@ Tank is a security-first package manager for AI agent skills. It enforces versio
 - [Installing AI Agent Skills](https://tankpkg.dev/docs/installing): Install, update, remove, and verify AI agent skills with Tank — deterministic lockfiles, SHA-512 integrity checks, dependency resolution, and permission budget enforcement.
 - [MCP Server Integration](https://tankpkg.dev/docs/mcp): Use Tank directly from Claude Code, Cursor, VS Code Copilot, Windsurf, and other MCP-compatible AI coding assistants — 17 tools for full skill lifecycle management.
 - [Organizations & Teams](https://tankpkg.dev/docs/organizations): Create organizations in Tank to publish scoped AI agent skills, manage team members, and control access with invitations and role-based permissions.
-- [Permissions & Access Control](https://tankpkg.dev/docs/permissions): Understand Tank's permission model for AI agent skills — declare, enforce, and audit what capabilities your skills can access at install time.
+- [Permissions & Access Control](https://tankpkg.dev/docs/permissions): Tank's current permission model for agent skills: what exists, where it is declared, and how it is enforced.
 - [Publish Your First Skill](https://tankpkg.dev/docs/publish-first-skill): Step-by-step tutorial to publish your first AI agent skill to the Tank registry in under 10 minutes — with security scanning and permission declarations.
 - [Publishing AI Agent Skills](https://tankpkg.dev/docs/publishing): Build, validate, and publish AI agent skills to the Tank registry — with security scanning, permission declarations, and version escalation protection.
 - [Searching for Skills](https://tankpkg.dev/docs/search): Find AI agent skills in the Tank registry using hybrid fuzzy search with typo tolerance, full-text matching, and advanced filters for security score, popularity, and freshness.
 - [Secure AI Skills Checklist](https://tankpkg.dev/docs/security-checklist): Security best practices checklist for publishing safe AI agent skills — covering permissions, code security, prompt injection prevention, and dependency management.
-- [Security Model](https://tankpkg.dev/docs/security): How Tank's 6-stage security pipeline scans AI agent skills for vulnerabilities, prompt injection, credential theft, and supply chain attacks before they reach your agents.
+- [Security Model](https://tankpkg.dev/docs/security): How Tank scans, verifies, and gates AI agent skills before they reach users.
 - [Self-Host in 15 Minutes](https://tankpkg.dev/docs/self-host-quickstart): Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, Redis, MinIO, and AI-powered security scanning.
 - [Self-Hosting Tank](https://tankpkg.dev/docs/self-hosting): Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, Redis, MinIO, and security scanning.
 
@@ -33,8 +33,8 @@ Tank is a security-first package manager for AI agent skills. It enforces versio
 
 - All skills require explicit permission declarations
 - Security scan required before publish (6-stage pipeline)
-- Cryptographic signature verification on install
-- No wildcard permissions allowed
+- Install verifies SHA-512 integrity
+- Runtime sandboxing is not yet the enforcement model in this repo
 
 ## Full Export
 

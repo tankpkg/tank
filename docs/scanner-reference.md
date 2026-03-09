@@ -1,74 +1,58 @@
 # Scanner Reference
 
-6-stage security analysis pipeline for skill packages. Built with FastAPI and Pydantic 2. This is the core security engine that prevents malicious skills from entering the registry. Deployed standalone and mirrored in the web app's `api-python/` directory for Vercel serverless.
+Current Python scanner service, stage layout, and API surface used by the web app.
 
-## Pipeline
+## Service Shape
 
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   stage0    │───>│   stage1    │───>│   stage2    │───>│   stage3    │───>│   stage4    │───>│   stage5    │
-│   INGEST    │    │  STRUCTURE  │    │   STATIC    │    │  INJECTION  │    │   SECRETS   │    │   SUPPLY    │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-```
+Scanner lives in `packages/scanner`.
 
-| Stage | File                  | Purpose                                            |
-| ----- | --------------------- | -------------------------------------------------- |
-| 0     | `stage0_ingest.py`    | Download tarball, extract, compute SHA-256 hashes  |
-| 1     | `stage1_structure.py` | Validate file structure, detect anomalies          |
-| 2     | `stage2_static.py`    | AST analysis, dangerous functions, obfuscation     |
-| 3     | `stage3_injection.py` | Prompt injection detection, system prompt extraction |
-| 4     | `stage4_secrets.py`   | API keys, credentials, private keys                |
-| 5     | `stage5_supply.py`    | Dependencies, typosquatting, known vulnerabilities |
+- FastAPI entrypoint: `api/main.py`
+- stage implementations: `lib/scan/`
+- models: `lib/scan/models.py`
+- verdict logic: `lib/scan/verdict.py`
 
-Stage 0 (ingest) is mandatory -- all subsequent stages depend on its output. Each stage beyond stage 0 is independent and can error without blocking others. Errored stages report `errored` status rather than silently returning empty results.
+It is a standalone service reached over HTTP from the web app.
 
-## Verdict Rules
+## Endpoints
 
-Verdicts are computed in `lib/scan/verdict.py` based on the aggregate findings across all stages:
+Endpoint map:
+- `GET / → service info`
+- `GET /health → basic health`
+- `GET /health/llm → LLM provider health`
+- `POST /api/analyze/scan → full 6-stage scan`
+- `POST /api/analyze/security → security-focused scan path`
+- `POST /api/analyze/permissions → permission extraction path`
+- `POST /api/analyze/rescan → rescan an existing package`
 
-| Condition            | Verdict           | Meaning                 |
-| -------------------- | ----------------- | ----------------------- |
-| 1+ critical findings | `FAIL`            | Cannot publish          |
-| 4+ high findings     | `FAIL`            | Cannot publish          |
-| 1-3 high findings    | `FLAGGED`         | Requires manual review  |
-| Any medium/low only  | `PASS_WITH_NOTES` | Publishes with warnings |
-| No findings          | `PASS`            | Clean                   |
+## Stages
 
-## Finding Data Model
+Stage map:
+- `0, stage0_ingest.py, required safe fetch/extract`
+- `1, stage1_structure.py, structure validation`
+- `2, stage2_static.py, Bandit + AST + regex + permission cross-check`
+- `3, stage3_injection.py, regex heuristics + hidden content + optional external scanners/LLM`
+- `4, stage4_secrets.py, detect-secrets + custom secret regex`
+- `5, stage5_supply.py, dependency and vulnerability checks`
 
-All findings use this Pydantic 2 model from `lib/scan/models.py`:
+## Result Contract
 
-```python
-class Finding(BaseModel):
-    id: str                    # Unique identifier
-    stage: int                 # Stage number (0-5)
-    severity: FindingSeverity  # critical / high / medium / low
-    confidence: float          # 0.0 to 1.0
-    message: str               # Human-readable description
-    file: str | None           # File path if applicable
-    line: int | None           # Line number if applicable
-    code_snippet: str | None   # Relevant code snippet
-    cwe: str | None            # CWE identifier
-```
+Core Pydantic models:
 
-Every finding must carry a confidence score (0.0 to 1.0). Duplicate findings across stages are removed by `lib/scan/dedup.py`. SARIF output is supported via `lib/scan/sarif.py` for CI integration.
+- `Finding`
+- `StageResult`
+- `ScanRequest`
+- `ScanResponse`
+- `IngestResult`
+- `LLMAnalysis`
 
-## Scanner API Endpoints
+Important shape details:
 
-| Endpoint               | Method | Purpose                                  |
-| ---------------------- | ------ | ---------------------------------------- |
-| `/`                    | GET    | Health check                             |
-| `/analyze/scan`        | POST   | Full 6-stage pipeline                    |
-| `/analyze/rescan`      | POST   | Re-run on existing skill                 |
-| `/analyze/security`    | POST   | Security-only analysis (stages 2-4)      |
-| `/analyze/permissions` | POST   | Permission extraction from skill code    |
+- stage identifiers are strings like `stage0`
+- verdict values are lowercase: `pass`, `pass_with_notes`, `flagged`, `fail`
+- stage status is one of `passed`, `failed`, `errored`, `skipped`
 
-## Extensibility
+## Operational Notes
 
-- Detection patterns live in `lib/patterns/` -- add new pattern files without modifying stages
-- Analysis rules live in `lib/rules/` -- extensible rule library
-- Test fixtures in `tests/test_skills/` -- `benign/` for safe skills, `malicious/` for attack scenarios
-
-## Sync Requirement
-
-Any changes to the scanner must be mirrored to `apps/web/api-python/` for the Vercel serverless deployment. Both locations must stay in sync.
+- scan results are stored in PostgreSQL when `DATABASE_URL` is set
+- scanner can continue past later-stage failures
+- stage 0 failure stops the pipeline because later stages need extracted files

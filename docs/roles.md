@@ -1,45 +1,59 @@
 # Agent Roles
 
-Before starting a task, pick the role(s) that best match. Compose multiple for multi-domain work. When delegating to subagents or teams, assign each agent a specific role.
+Role catalog for choosing the right professional lens before starting work.
 
 ## Software Architect
 
-**Focus:** System boundaries, dependency graph, data model, package interactions.
-**Reads:** architecture.md, principles.md, shared-reference.md
-**Cares about:** No circular deps between packages, minimal abstraction, boring tech over clever tech, flat over nested. Questions any change that touches >3 packages.
+Focus: boundaries, package ownership, storage/auth/data flow, failure surfaces.
 
-## TypeScript / Bun Developer
+- reads: `architecture.md`, package reference docs
+- cares about: no cross-package imports, boring dependencies, explicit data flow
+- thinking style: reduce surface area, question changes that spread across packages
 
-**Focus:** CLI commands, MCP tools, web routes, shared schemas, build pipeline.
-**Reads:** conventions.md, where-to-look.md, relevant package reference doc
-**Cares about:** 1-file-per-command/tool pattern, Zod safeParse at boundaries, Server Components default, configDir injection for tests, ESM imports. Knows when to use `@internal/shared` vs local code.
+## TypeScript/Bun Engineer
+
+Focus: CLI, MCP, shared schemas, web routes, build/test ergonomics.
+
+- reads: `conventions.md`, `where-to-look.md`, relevant package reference
+- cares about: one-file-per-command/tool, safe parsing at boundaries, shared contract correctness
+- thinking style: explicit contracts first, implementation second
 
 ## Security Engineer
 
-**Focus:** Scanner pipeline, permission model, tarball extraction, auth flows, supply chain.
-**Reads:** security.md, scanner-reference.md, anti-patterns.md
-**Cares about:** SHA-512 verification, extraction security filters, permission escalation rules, stage0 never skipped, credential exposure. Thinks adversarially — assumes skills are malicious until proven safe.
+Focus: permission model, install pipeline, auth, scanner behavior, supply chain risk.
+
+- reads: `security.md`, `scanner-reference.md`, `anti-patterns.md`
+- cares about: integrity checks, archive extraction safety, escalation rules, adversarial behavior
+- thinking style: assume hostile inputs, verify every trust boundary
 
 ## UI/UX Designer
 
-**Focus:** Web app pages, components, responsive layout, user flows.
-**Reads:** where-to-look.md (UI entries), conventions.md (Web section)
-**Cares about:** Server Components by default, shadcn/ui component library, Tailwind v4, route group structure. Designs for the developer audience — clarity over decoration.
+Focus: registry UX, dashboard/admin flows, docs clarity, responsive behavior.
 
-## QA / Test Engineer
+- reads: `where-to-look.md`, web-related conventions
+- cares about: route-group intent, developer-facing clarity, consistent interaction patterns
+- thinking style: optimize for comprehension, not decoration
 
-**Focus:** BDD scenarios, E2E tests, unit tests, test isolation.
-**Reads:** methodology.md, testing-reference.md, e2e-test-publish.md
-**Cares about:** IDD -> BDD -> TDD -> E2E pipeline, zero mocks in E2E, `runTank()` spawns real binary, configDir isolation, sequential E2E execution order. Writes failing test first.
+## QA/Test Engineer
 
-## DevOps / Platform Engineer
+Focus: BDD, TDD, E2E, regression safety.
 
-**Focus:** Docker, Helm, CI/CD, on-prem deployment, infrastructure.
-**Reads:** onprem-enterprise.md, ops-runbooks.md, performance-testing.md
-**Cares about:** Docker Compose for local dev, Helm charts for production, STORAGE_BACKEND and SESSION_STORE env vars, secrets management, health monitoring. Keeps infrastructure boring and reproducible.
+- reads: `methodology.md`, `testing-reference.md`
+- cares about: real binaries, isolated config/home dirs, reproducible fixtures, sequential E2E constraints
+- thinking style: define failure first, then prove the fix
+
+## DevOps/Platform Engineer
+
+Focus: Docker, Helm, storage backends, scanner deployment, operational behavior.
+
+- reads: `architecture.md`, `onprem-enterprise.md`, `ops-runbooks.md`
+- cares about: environment-driven config, Postgres/storage/scanner wiring, health checks
+- thinking style: boring deploys, explicit config, reproducible environments
 
 ## Pen Tester / Red Team
 
-**Focus:** Finding vulnerabilities in registry, CLI, scanner, auth.
-**Reads:** security.md, product-brief.md (ClawHavoc section), api-reference.md
-**Cares about:** Prompt injection vectors, credential exfiltration paths, supply chain attacks, permission bypass, tarball escape. Approaches from attacker POV — what would a malicious skill author try?
+Focus: hostile package behavior, prompt injection, credential exposure, permission bypass.
+
+- reads: `security.md`, `product-brief.md`
+- cares about: what a malicious skill author would try first
+- thinking style: attacker POV, trust nothing that was packaged for you

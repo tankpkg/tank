@@ -14,20 +14,14 @@ Before installing Tank, confirm you have:
 | Requirement | Minimum Version | Check |
 |-------------|-----------------|-------|
 | Node.js | 24+ | `node --version` |
-| npm or pnpm | any | `npm --version` |
+| npm | any | `npm --version` |
 | GitHub account | — | Required for `tank login` |
 
 ## Step 1 — Install the CLI
 
-Choose your preferred install method:
-
-### npm or pnpm (recommended)
+Install with npm:
 
 ```bash
-# pnpm
-pnpm add -g @tankpkg/cli
-
-# npm
 npm install -g @tankpkg/cli
 ```
 
@@ -152,7 +146,7 @@ You are ready to use Tank in production when all of the following are true:
 
 The CLI polls the exchange endpoint for up to 5 minutes. If it times out:
 
-1. Check that `https://tankpkg.com` is reachable from your network.
+1. Check that `https://tankpkg.dev` is reachable from your network.
 2. Try behind a VPN or different network — corporate proxies sometimes block the OAuth callback.
 3. Re-run `tank login` and complete the flow within 5 minutes.
 

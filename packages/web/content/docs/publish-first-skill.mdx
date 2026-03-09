@@ -17,8 +17,6 @@ This tutorial walks you through publishing your first AI agent skill to the Tank
 
 ```bash
 npm install -g @tankpkg/cli
-# or
-pnpm add -g @tankpkg/cli
 ```
 
 Verify installation:
@@ -47,13 +45,13 @@ This creates a `skills.json` manifest file:
 
 ```json
 {
-  "name": "my-skill",
+  "name": "@acme/my-skill",
   "version": "1.0.0",
   "description": "A brief description",
   "permissions": {
-    "network": [],
+    "network": { "outbound": [] },
     "filesystem": { "read": [], "write": [] },
-    "env": []
+    "subprocess": false
   }
 }
 ```
@@ -62,7 +60,7 @@ This creates a `skills.json` manifest file:
 
 | Field | Description |
 |-------|-------------|
-| `name` | Unique skill identifier (lowercase, hyphens only) |
+| `name` | Scoped skill identifier (`@org/name`) |
 | `version` | Semantic version (semver) |
 | `description` | Short description for registry listing |
 | `permissions` | Explicit capability declarations |
@@ -73,22 +71,22 @@ Tank enforces least-privilege by default. Declare only what your skill actually 
 
 ```json
 {
-  "name": "my-skill",
+  "name": "@acme/my-skill",
   "version": "1.0.0",
   "description": "Audits SEO for a given URL",
   "permissions": {
-    "network": ["https://api.openai.com"],
+    "network": { "outbound": ["api.openai.com"] },
     "filesystem": {
       "read": ["./data/**"],
       "write": ["./output/**"]
     },
-    "env": ["OPENAI_API_KEY"]
+    "subprocess": false
   }
 }
 ```
 
 <Callout type="info">
-Runtime permission prompts will show users exactly what your skill requests access to. Skills with minimal, specific permissions earn higher audit scores and build more user trust.
+Skills with minimal, specific permissions are easier to review and less likely to fail project permission budgets during install.
 </Callout>
 
 See the [Permissions reference](/docs/permissions) for the full permission schema and best practices.
@@ -104,7 +102,7 @@ tank scan
 This runs:
 1. **Ingest** — Hashes files, validates tarball structure
 2. **Structure validation** — Manifest integrity, file count and size limits
-3. **Static analysis** — AST scanning for dangerous patterns (Semgrep, Bandit)
+3. **Static analysis** — AST and regex scanning for dangerous patterns, plus Bandit for Python
 4. **Injection detection** — Prompt injection and code injection patterns
 5. **Secret scanning** — Credential and API key detection
 6. **Supply chain** — Dependency vulnerability scanning (OSV API)
@@ -128,7 +126,7 @@ tank publish
 Your skill is now:
 - Scanned for security issues by the full 6-stage pipeline
 - Assigned an audit score (0–10) based on quality and security
-- Uploaded to the Tank registry as a signed tarball
+- Uploaded to the Tank registry tarball storage
 - Available for others to install with `tank install @you/my-skill`
 
 ## Step 7: Verify Publication

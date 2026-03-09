@@ -16,7 +16,7 @@ A self-hosted Tank deployment runs five core services:
 │                       Your Infrastructure                        │
 │                                                                  │
 │  ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐│
-│  │  Next.js 15  │──▶│  PostgreSQL  │   │   MinIO / S3         ││
+│  │  Web app     │──▶│  PostgreSQL  │   │   MinIO / S3         ││
 │  │  Web + API   │   │   17+        │   │   (tarball storage)  ││
 │  │  (port 3000) │   │  (port 5432) │   │   (port 9000)        ││
 │  └──────┬───────┘   └──────────────┘   └──────────────────────┘│
@@ -37,7 +37,7 @@ A self-hosted Tank deployment runs five core services:
 
 | Service | Technology | Purpose |
 |---------|-----------|---------|
-| **Web app** | Next.js 15 (App Router) | Registry UI, REST API, CLI backend |
+| **Web app** | Next.js App Router | Registry UI, REST API, CLI backend |
 | **Security scanner** | FastAPI + Python 3.14 | 6-stage security scanning pipeline |
 | **Database** | PostgreSQL 17+ | Skills, versions, users, audit logs |
 | **Object storage** | MinIO (S3-compatible) | Skill tarballs |
@@ -214,7 +214,7 @@ curl http://localhost:3000/api/v1/skills
 curl http://localhost:8000/health
 
 # Verify CLI can connect
-TANK_REGISTRY=http://localhost:3000 tank search hello
+tank search hello
 ```
 
 ## Kubernetes Helm Chart Deployment

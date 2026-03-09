@@ -93,8 +93,6 @@ The Tank CLI provides ${commands.length} commands for publishing, installing, an
 
 \`\`\`bash
 npm install -g @tankpkg/cli
-# or
-pnpm add -g @tankpkg/cli
 \`\`\`
 
 ## Global Options

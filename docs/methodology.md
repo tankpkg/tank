@@ -1,301 +1,144 @@
-# Development Methodology: IDD → BDD → TDD → E2E
+# Development Methodology
 
-Every feature flows through this pipeline sequentially. Each stage produces artifacts that feed the next.
+Tank uses IDD → BDD → TDD → E2E. This doc maps that workflow to the current repo structure.
 
-```
-Define Intent → Express as Scenarios → Implement with Tests → Validate End-to-End
-    IDD               BDD                   TDD                    E2E
-  .idd/             .bdd/              __tests__/                e2e/
-```
+## Pipeline
 
----
+1. IDD: define intent and constraints before implementation
+2. BDD: express behavior as scenarios
+3. TDD: write failing unit tests, make them pass, then clean up
+4. E2E: validate the full stack with real binaries and real services
 
-## 1. IDD — Intent-Driven Development
+Use the full pipeline for new capabilities. Skip or compress steps only for narrow bugfixes or low-risk internal refactors.
 
-> "Stop treating code as the primary artifact. Treat the _specification_ as primary." — copyleftdev
+## Grug Rule
 
-### Philosophy
+Prefer small, obvious steps over clever process theater. If the spec, tests, or rollout feel too complicated, reduce the design before adding more machinery.
 
-IDD inverts the traditional workflow. Instead of code-first ("vague requirements → code → debug → hope → ship"), IDD starts with **full specification of what the system does** before any implementation. The specification is the source of truth — not the code.
+## IDD
 
-Specification is not bureaucracy — it's strategic clarity that prevents costly rework. Understanding a system should never require "archaeology" through source files.
+Intent-first work means the spec is a first-class artifact, not an afterthought.
 
-### Why IDD Matters for AI-Assisted Development
+- capture the user-facing or system-facing behavior first
+- record constraints that must stay true
+- add concrete examples that can become tests
+- plans must be self-contained enough for a fresh-context agent
 
-The project becomes a knowledge base (RAG environment) for AI agents:
+Good IDD output for this repo includes:
 
-- Intent docs → "What should the system do?"
-- Constraints → "What rules must hold?"
-- Examples → "What are the concrete expected behaviors?"
-- Acceptance criteria → "How do I know this task is done?"
+- goal and success criteria
+- constraints around auth, permissions, storage, package boundaries
+- examples that map cleanly to CLI/API/MCP behavior
+- unresolved questions at the end
 
-This transforms unstructured "vibe coding" into deliberate, verifiable development. AI agents produce dramatically better code when they have structured context — the intent document is that context.
+## BDD
 
-### Tank Structure: `.idd/`
+BDD lives in the root `.bdd/` tree.
 
-```
-.idd/
-└── modules/
-    └── <module-name>/
-        └── INTENT.md
-```
+BDD layout:
+- `features → .bdd/features/`
+- `step definitions → .bdd/steps/`
+- `support → .bdd/support/`
+- `interactions → .bdd/interactions/`
+- `QA findings loop → .bdd/qa/`
 
-Each module gets an `INTENT.md` with three layers:
+Current feature groups:
 
-**Anchor** — Why the module exists, who consumes it, single source of truth file path.
+- `admin/`
+- `mcp/`
+- `search/`
 
-**Layer 1: Structure** — File tree showing what code exists and where.
+Current BDD conventions:
 
-**Layer 2: Constraints (C1–CX)** — Business rules with rationale and verification method. Each constraint has:
+- scenario language stays behavior-focused, not implementation-focused
+- step defs call real infrastructure helpers where possible
+- findings discovered by BDD are written to `.bdd/qa/findings/`
+- fixes are documented in `.bdd/qa/resolutions/`
 
-- `#` — Identifier (C1, C2, ...)
-- `Rule` — The invariant that must hold
-- `Rationale` — Why this constraint exists
-- `Verified by` — How it's checked (BDD scenario, unit test, code review, migration)
+There is a second BDD stack for browser flows in `e2e/bdd/`, driven by Playwright.
 
-**Layer 3: Examples (E1–EX)** — Concrete input/output pairs that map directly to test cases. Each example is a verifiable assertion:
+## TDD
 
-- `Input` — Function call or user action
-- `Expected Output` — What should happen
+Unit tests are colocated.
 
-Example from `search` module:
+Unit-test layout:
+- `CLI → packages/cli/src/__tests__/`
+- `Web → packages/web/**/__tests__/ + packages/web/lib/__tests__/`
+- `Shared → packages/shared/src/__tests__/`
+- `MCP → packages/mcp-server/__tests__/`
+- `Scanner → packages/scanner/tests/ + scanner-local test_*.py`
 
-```
-| C1 | Search uses three strategies in union: ILIKE, pg_trgm similarity, FTS | Each strategy covers a different user intent | BDD scenario |
-| E1 | searchSkills("@org/react", ...) | First result is exact skill @org/react |
-| E4 | searchSkills("recat", ...) | Trigram similarity matches "react" despite typo |
-```
+Current repo rules:
 
-Constraints become BDD scenarios. Examples become test assertions. The dependency chain:
+- TypeScript tests use `*.test.ts`, never `*.spec.ts`
+- Python tests use `test_*.py`
+- bugfixes should start with a failing test when practical
+- do not refactor while the fix is still in flight
 
-```
-.idd/modules/search/INTENT.md  →  .bdd/features/mcp/search.feature  →  .bdd/steps/search.steps.ts
-```
+## E2E
 
-### References
+E2E tests live in `e2e/`.
 
-- https://intent-driven.dev/ — Context engineering for AI agents
-- https://dev.to/copyleftdev/intent-driven-development-define-the-system-before-you-write-the-code-22pe — Full IDD workflow
-- https://medium.com/@binoy_93931/from-agile-to-adaptive-intent-driven-development-aidd-the-ai-first-paradigm-shift-e07e5c7df1ec — AIDD: The AI-first paradigm shift
+Current top-level files:
 
----
+- `producer.e2e.test.ts`
+- `consumer.e2e.test.ts`
+- `integration.e2e.test.ts`
+- `admin.e2e.test.ts`
+- `search.e2e.test.ts`
+- `scan.e2e.test.ts`
+- `init.e2e.test.ts`
+- `onprem.e2e.test.ts`
 
-## 2. BDD — Behavior-Driven Development
+Execution is sequential. Tests have ordering dependencies.
 
-> "BDD is not primarily a testing methodology — tests are a valuable byproduct. It's a holistic development approach emphasizing collaboration, behavior specification, and continuous validation." — Cucumber
+Typical order:
 
-### Philosophy
+1. producer
+2. consumer
+3. integration
+4. admin
 
-BDD bridges intent (from IDD) and executable code. It minimizes feedback loops by interweaving analysis, design, coding, and testing into a single short cycle. The fundamental principle: **express what the system should do in plain language that is both human-readable and machine-executable**.
+Other files cover focused end-to-end flows and still run under the same non-parallel config.
 
-Focus on _what_ the system does, never _how_. Scenarios should describe behavior ("authorized user logs in") not implementation ("click the login button"). This decoupling frees developers to change implementation without rewriting tests.
+## Real-Infra Helpers
 
-### The Discovery → Formulation → Automation Cycle
+The core CLI helper is `e2e/helpers/cli.ts`.
 
-1. **Discovery** — Structured conversations using real-world examples from IDD constraints/examples. Reveals requirements, identifies gaps, surfaces deferrable features.
-2. **Formulation** — Document examples using Gherkin (Given/When/Then). Human-readable, machine-executable. Creates living documentation that stays accurate through automation.
-3. **Automation** — Scenarios become automated tests. Initially fail, then guide implementation. Function as guardrails maintaining development focus.
-
-### Given-When-Then
-
-```gherkin
-Scenario: Agent installs a skill by name and latest version is resolved
-  Given the MCP server is running
-  And Emma is authenticated with Tank
-  And the skill "@acme/web-search" exists in the Tank registry
-  When the agent calls the "install-skill" tool with name "@acme/web-search"
-  Then the MCP server resolves the latest compatible version
-  And the skill tarball is fetched from the registry
-```
-
-- **Given** — Establish initial context or state
-- **When** — Describe the action or event
-- **Then** — Specify the observable outcome
-
-### When BDD Adds Most Value
-
-- Shared understanding of requirements is a primary risk
-- Complex business logic or workflows
-- Acceptance criteria need clear documentation
-- Multiple consumers of the same behavior (CLI, MCP, Web)
-
-### When to Skip BDD
-
-- Internal refactoring with no behavior change
-- Purely algorithmic work lacking user-visible behavior
-- Trivial bug fixes with obvious scope
-
-### Tank Structure: `.bdd/`
-
-```
-.bdd/
-├── features/                    # Gherkin .feature files
-│   ├── admin/                   # Admin API scenarios
-│   │   └── rescan-version.feature
-│   └── mcp/                     # MCP server scenarios (11 features)
-│       ├── install.feature
-│       ├── auth.feature
-│       ├── scan.feature
-│       └── ...
-├── steps/                       # Step definitions (12 files)
-│   ├── install.steps.ts         # Given/When/Then implementations
-│   ├── auth.steps.ts
-│   └── ...
-├── interactions/                # Test client abstractions
-│   ├── mcp-client.ts            # Spawns real MCP server via StdioClientTransport
-│   └── admin-api-client.ts      # HTTP calls to /api/admin/*
-├── qa/                          # QA feedback loop
-│   ├── findings/                # Bugs discovered by BDD tests (numbered)
-│   └── resolutions/             # Fixes applied (linked to findings)
-├── support/                     # Setup & fixtures
-│   ├── hooks.ts                 # beforeAll/afterEach
-│   ├── fixtures.ts              # createSkillFixture(), createConfigDir()
-│   └── setup.ts                 # setupE2E() — real PostgreSQL + API key + org
-└── vitest.config.ts             # Sequential, 60s timeout
+```ts
+runTank(args, { cwd?, home?, env?, timeoutMs?, stdin? })
 ```
 
-**Key conventions:**
+What it really does:
 
-- One Feature per command/capability
-- `@high`, `@medium` tags for priority (map to IDD examples)
-- `Background` blocks for shared setup (authenticated user, server running)
-- Named actors: "Emma", "Alice" for test users
-- `interactions/` abstracts real infrastructure — MCP client spawns actual server process
-- `qa/findings/` + `qa/resolutions/` = documented feedback loop from tests to fixes
-- Run: `bun test:bdd`
+- spawns `node packages/cli/dist/bin/tank.js`
+- can override `HOME` for test isolation
+- runs real HTTP against the configured registry
+- returns `stdout`, `stderr`, and `exitCode`
 
-**Also: `e2e/bdd/`** — Separate Playwright-based BDD for browser/UI tests:
+Other current helpers:
 
-```
-e2e/bdd/
-├── features/                    # UI-focused Gherkin (cookie consent, SEO, private packages)
-├── steps/                       # Playwright step definitions
-└── playwright.config.ts         # Uses defineBddConfig() from playwright-bdd
-```
+- `e2e/helpers/fixtures.ts` for temp skill/consumer fixtures
+- `e2e/helpers/setup.ts` for real test setup and auth/bootstrap flows
 
-### References
+## Practical Rules
 
-- https://cucumber.io/docs/bdd/ — Official BDD guide (Discovery/Formulation/Automation)
-- https://semaphore.io/community/tutorials/behavior-driven-development — Practical BDD, Three Amigos, pitfalls
+- prefer real binaries and real services in E2E and BDD
+- use `configDir` or `HOME` isolation; never touch the user’s real `~/.tank/` in tests
+- build before E2E when the helper needs compiled CLI output
+- for bugfixes: smallest failing test, smallest fix, separate refactor later
 
----
+## Decision Guide
 
-## 3. TDD — Test-Driven Development
+Use IDD + BDD + TDD + E2E for:
 
-### Philosophy
+- new commands or MCP tools
+- auth or permissions changes
+- publish/install flow changes
+- admin or moderation behavior
 
-TDD operates inside each unit identified by BDD scenarios. The cycle is strict: **RED → GREEN → REFACTOR**.
+Use TDD only, or TDD + focused integration tests, for:
 
-1. **RED** — Write a failing test that defines the expected behavior
-2. **GREEN** — Write the minimal code to make the test pass
-3. **REFACTOR** — Clean up the implementation while keeping tests green
-
-Never write production code without a failing test first. Never refactor while tests are red. Never refactor while bugfixing — fix minimally, then refactor separately.
-
-### Why TDD Works
-
-- **Better design** — Test-first thinking produces modular, loosely-coupled code
-- **Regression safety** — Every behavior has a test guarding it
-- **Documentation** — Tests describe what the code does, with executable examples
-- **Confidence** — Refactoring is safe because tests catch regressions immediately
-
-### Tank Structure: `__tests__/`
-
-Test files are colocated with source code across all packages:
-
-```
-packages/cli/src/__tests__/              # CLI command tests
-packages/web/lib/__tests__/              # Web utility tests
-packages/web/lib/db/__tests__/           # DB layer tests
-packages/web/app/api/v1/search/__tests__/ # API route tests
-packages/shared/src/__tests__/       # Shared schema tests
-packages/mcp-server/__tests__/       # MCP tool tests
-packages/scanner/tests/                  # Python scanner tests (test_*.py)
-```
-
-**Key conventions:**
-
-- Always `__tests__/*.test.ts` (never `.spec.ts`)
-- TypeScript: Vitest — `bun test` or `bun test --filter=<package>`
-- Python: pytest — `test_*.py` pattern
-
----
-
-## 4. E2E — End-to-End Testing
-
-### Philosophy
-
-> **ZERO MOCKS. REAL APP. STABLE SELECTORS. RELIABLE CI.**
-
-E2E validates the full system as a user would experience it. No mocks, no stubs, no shortcuts. Real CLI binary, real database, real registry, real infrastructure.
-
-Mocks create a parallel reality that diverges from production. They pass in CI while bugs ship to users. E2E tests catch integration issues that unit tests structurally cannot: network behavior, database constraints, auth flows, file system interactions.
-
-### Tank Structure: `e2e/`
-
-```
-e2e/
-├── producer.e2e.test.ts         # Publish flow (runs FIRST)
-├── consumer.e2e.test.ts         # Install flow (runs SECOND)
-├── integration.e2e.test.ts      # Cross-cutting scenarios
-├── admin.e2e.test.ts            # Admin operations (730 lines)
-├── search.e2e.test.ts           # Search flow
-├── scan.e2e.test.ts             # Security scanning
-├── init.e2e.test.ts             # Project initialization
-├── onprem.e2e.test.ts           # On-prem deployment
-├── helpers/
-│   ├── cli.ts                   # runTank() — spawns real CLI binary
-│   ├── fixtures.ts              # createSkillFixture(), createConsumerFixture()
-│   └── setup.ts                 # setupE2E() — real PostgreSQL + API key + org
-├── fixtures/                    # Static test data (test-skill/)
-├── bdd/                         # Playwright-based BDD (see BDD section)
-├── AGENTS.md                    # E2E conventions & patterns
-└── vitest.config.ts             # Sequential, 60s timeout
-```
-
-### Sequential Execution
-
-Tests have data dependencies and MUST run in order:
-
-```
-producer (publish) → consumer (install) → integration → admin
-```
-
-### Key conventions:
-
-- `runTank()` spawns `node packages/cli/dist/bin/tank.js` — real binary, real network
-- `setupE2E()` creates user + API key + org in real PostgreSQL
-- Test isolation via unique `runId`, separate `configDir`, temp fixtures
-- Needs `.env.local` with real credentials
-- Run: `bun test:e2e`
-
-### Detailed References
-
-- `e2e/AGENTS.md` — Full E2E conventions, anti-patterns, running instructions
-- `docs/references/README.md` — E2E philosophy, decision tree, selector patterns
-- `docs/references/playwright-web.md` — Playwright patterns for web E2E
-
----
-
-## The Pipeline in Practice
-
-When building a new feature for Tank:
-
-1. **IDD**: Create `.idd/modules/<feature>/INTENT.md` — Anchor (why), Layer 1 (structure), Layer 2 (constraints C1–CX with rationale), Layer 3 (examples E1–EX with expected output)
-2. **BDD**: Express constraints/examples as Gherkin scenarios in `.bdd/features/` — concrete, executable specifications. Map `@high` tags to IDD examples.
-3. **TDD**: Implement each unit — write failing test in `__tests__/`, make it pass, refactor
-4. **E2E**: Write integration test in `e2e/` — verify the feature works end-to-end with real infrastructure
-
-The dependency chain:
-
-```
-.idd/modules/<feature>/INTENT.md
-    ↓ constraints become scenarios
-.bdd/features/<feature>.feature
-    ↓ scenarios guide implementation
-__tests__/*.test.ts (unit) + .bdd/steps/*.steps.ts (integration)
-    ↓ validated end-to-end
-e2e/*.e2e.test.ts
-```
-
-Each stage produces artifacts that feed the next. Skip a stage and the pipeline breaks down.
+- pure schema updates
+- small shared-library logic changes
+- isolated parser or formatter fixes

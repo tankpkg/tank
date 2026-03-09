@@ -1,238 +1,150 @@
-# Tank — Architecture
+# Tank Architecture
 
-> Technical design for a security-first package manager and registry for AI agent skills.
+Current package boundaries, data flow, and non-obvious decisions for the monorepo.
 
-## System Overview
+## Package Topology
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Developer Machine                     │
-│                                                              │
-│  ┌──────────┐    ┌─────────────┐    ┌────────────────────┐  │
-│  │ tank CLI  │───▶│ skills.json │    │ skills.lock        │  │
-│  │           │───▶│ (manifest)  │    │ (deterministic)    │  │
-│  └─────┬─────┘    └─────────────┘    └────────────────────┘  │
-│        │                                                      │
-│        │  install / publish / audit / verify                  │
-│        ▼                                                      │
-├─────────────────────────────────────────────────────────────┤
-│                         Network                               │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                    Tank Registry                      │   │
-│  │                                                       │   │
-│  │  ┌─────────┐  ┌──────────┐  ┌────────────────────┐  │   │
-│  │  │ REST API │  │ Metadata │  │ Package Storage    │  │   │
-│  │  │ (Hono/   │  │ (Postgres│  │ (OCI-compatible)   │  │   │
-│  │  │  NestJS) │  │  )       │  │                    │  │   │
-│  │  └────┬─────┘  └────┬─────┘  └────────┬───────────┘  │   │
-│  │       │              │                  │              │   │
-│  │  ┌────▼──────────────▼──────────────────▼──────────┐  │   │
-│  │  │              Publish Pipeline                    │  │   │
-│  │  │                                                  │  │   │
-│  │  │  Sign ─▶ Analyze ─▶ Validate ─▶ Score ─▶ Store  │  │   │
-│  │  │  (cosign) (semgrep) (perms)    (audit)  (OCI)   │  │   │
-│  │  └──────────────────────────────────────────────────┘  │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+Package map:
+- `packages/cli` → `tank` command: init, install, publish, scan, verify, link → depends on `@internal/shared`
+- `packages/mcp-server` → MCP server with CLI-parity tools over stdio → depends on `@internal/shared`
+- `packages/web` → registry UI, REST API, auth, admin, docs → depends on `@internal/shared`
+- `packages/shared` → Zod schemas, types, constants, semver helpers → depends on no internal packages
+- `packages/scanner` → Python scan service and 6-stage pipeline → depends on no TS packages
+
+Hard rule: CLI, MCP, and Web never import each other. Shared is the only TS cross-package contract. Scanner communicates over HTTP, not imports.
+
+## Dependency Graph
+
+```text
+shared <- cli
+shared <- mcp-server
+shared <- web
+scanner <-http- web
 ```
 
-## Package Dependencies
+## Web App
 
-`@internal/shared` (schemas, types, constants, resolver) is consumed by CLI, MCP server, and Web. Scanner is independent (Python, no TS deps). No circular dependencies — CLI, Web, and MCP server never import from each other, only from shared.
+`packages/web` is the registry backend and frontend.
 
-## Component Architecture
+- App Router serves registry pages, dashboard pages, admin pages, and API routes.
+- Auth uses `better-auth` with:
+  - GitHub OAuth
+  - credentials/email flow
+  - optional OIDC via `genericOAuth`
+  - API keys via `apiKey()`
+  - org support via `organization()`
+- Route groups enforce access:
+  - `(auth)` login and account flows
+  - `(dashboard)` authenticated user area
+  - `(admin)` admin-only area
+  - `(registry)` public browse/docs area
 
-### CLI (`tank`)
+## Database And Storage
 
-The command-line tool developers interact with.
+PostgreSQL is the database. Drizzle is the query layer. Supabase is not the database.
 
-**Responsibilities:**
+- `packages/web/lib/db.ts` provides the cached `postgres` + Drizzle singleton.
+- `packages/web/lib/db/schema.ts` defines domain tables:
+  - `skills`
+  - `skill_versions`
+  - `skill_access`
+  - `service_accounts`
+  - `skill_download_daily`
+  - `skill_stars`
+  - `audit_events`
+  - `user_status`
+  - `scan_results`
+  - `scan_findings`
+- `packages/web/lib/db/auth-schema.ts` is generated by better-auth. Never edit it.
 
-- Parse and validate `skills.json`
-- Generate and verify `skills.lock`
-- Resolve dependency trees
-- Communicate with the registry API
-- Verify signatures and integrity hashes locally
-- Display audit information and permission summaries
+Storage is abstracted behind `packages/web/lib/storage/provider.ts`.
 
-**Technology:** Node.js with Commander.js — same ecosystem as target users, 18 commands implemented.
+- `supabase` backend: signed upload/download URLs through Supabase Storage
+- `s3` backend: signed URLs through AWS SDK / MinIO-compatible S3
+- Web code chooses backend from `STORAGE_BACKEND`
 
-### Registry API
+## Auth Flow
 
-The server that hosts, indexes, and serves skill packages.
+Two auth paths matter to agents:
 
-**Responsibilities:**
+### Browser/session auth
 
-- Accept and validate skill publishes
-- Run the publish pipeline (sign, analyze, score)
-- Serve skill metadata and packages
-- Maintain audit history
-- Handle search queries
+- Web pages use `auth.api.getSession()` via better-auth cookies.
+- Layouts redirect or deny access; pages are not the primary auth gate.
 
-**Technology:**
+### CLI/MCP auth
 
-- **API framework**: Hono or NestJS (Node.js)
-- **Database**: PostgreSQL for metadata, versions, publishers, audit records
-- **Package storage**: OCI-compatible registry (skills are stored as OCI artifacts)
-- **Search**: PostgreSQL full-text search for MVP, vector database for semantic search later
+- CLI starts device-style auth through `/api/v1/cli-auth/start`
+- Browser completes approval at `/api/v1/cli-auth/authorize`
+- CLI exchanges the poll token at `/api/v1/cli-auth/exchange`
+- Token is stored in `~/.tank/config.json`
+- MCP reuses the same config file; `TANK_TOKEN` overrides it
 
-### Publish Pipeline
+API key validation lives in `packages/web/lib/auth-helpers.ts`.
 
-The chain of checks every skill goes through before entering the registry.
+- Any valid key identifies the user
+- Required scopes are checked per route
+- Suspended/banned users and disabled service accounts are blocked
 
-```
-┌────────────┐     ┌────────────┐     ┌────────────┐     ┌────────────┐
-│  Analyze   │────▶│  Validate  │────▶│   Score    │────▶│   Store    │
-│            │     │            │     │            │     │            │
-│ 6-stage    │     │ perms      │     │ 0-10       │     │ supabase   │
-│ pipeline   │     │ semver     │     │ compute    │     │ postgres   │
-│            │     │ escalation │     │            │     │            │
-└────────────┘     └────────────┘     └────────────┘     └────────────┘
-```
+## Publish And Scan Flow
 
-Each step can reject the publish with a clear error message explaining why and how to fix it.
+Publish is coordinated by `POST /api/v1/skills`.
 
-> **Planned**: Code signing (Sigstore/cosign) will be added as a first step in the pipeline in Phase 2.
+1. Verify API key and required scope
+2. Validate `skills.json` manifest with `skillsJsonSchema.safeParse()`
+3. Check org membership for scoped names
+4. Create or update the `skills` row
+5. Reject duplicate version
+6. Run permission escalation check against the previous version
+7. Create a signed upload URL through the configured storage provider
+8. Persist version metadata after upload confirmation
+9. Send tarball to the scanner service for analysis
 
-### Permission System
+Scanner service lives in `packages/scanner`.
 
-The permission model is the core security innovation.
+- FastAPI entrypoint: `packages/scanner/api/main.py`
+- Full scan endpoint: `POST /api/analyze/scan`
+- Results are written back to PostgreSQL as `scan_results` and `scan_findings`
 
-**Three layers:**
+## Scanner Pipeline
 
-1. **Skill declaration**: each skill declares what it needs (`permissions` in skill manifest)
-2. **Project budget**: each project declares what it allows (`permissions` in `skills.json`)
-3. **Install-time enforcement**: CLI blocks skills that exceed the project budget
-4. **Scan-time cross-check**: 6-stage scanner independently extracts permissions from code and flags mismatches
-5. **Runtime enforcement** (planned, Phase 3): sandbox blocks anything not declared
+Stages are implemented in `packages/scanner/lib/scan/`.
 
-**Performance Guardrails:**
-To prevent security features from degrading developer experience, Tank implements a non-cached performance regression suite that gates all CI merges. See [Performance Testing](performance-testing.md) for methodology.
+Stage map:
+- `0, stage0_ingest.py, fetch tarball + safe extract + SHA-256 file hashes`
+- `1, stage1_structure.py, structure and file-shape checks`
+- `2, stage2_static.py, AST/regex static analysis + permission cross-check`
+- `3, stage3_injection.py, prompt injection and hidden-content detection`
+- `4, stage4_secrets.py, detect-secrets + custom secret patterns`
+- `5, stage5_supply.py, dependency, vulnerability, typosquat checks`
 
-**Permission types:**
+Stage 0 is mandatory. Later stages may `errored` without aborting the whole scan.
 
-```
-network:outbound     — make HTTP/HTTPS requests
-network:inbound      — listen on ports
-filesystem:read      — read files (with glob patterns)
-filesystem:write     — write files (with glob patterns)
-subprocess           — spawn child processes
-secrets              — access environment variables / secret store
-```
+## CLI And MCP Structure
 
----
+CLI and MCP intentionally mirror each other.
 
-## Data Model
+- CLI commands: one file per command in `packages/cli/src/commands/`
+- MCP tools: one file per tool in `packages/mcp-server/src/tools/`
+- Both use shared schemas for manifests, permissions, lockfiles, and semver resolution
+- Both read auth from the Tank config format
 
-### Skills
+CLI install behavior:
 
-```
-skills
-├── id (uuid)
-├── name (string, unique, scoped: @org/name)
-├── description (text)
-├── publisher_id (fk → publishers)
-├── created_at
-└── updated_at
+- local installs extract to `<project>/.tank/skills/...`
+- global installs extract to `~/.tank/skills/...`
+- local lockfile is `skills.lock`
+- global lockfile is `~/.tank/skills.lock`
 
-skill_versions
-├── id (uuid)
-├── skill_id (fk → skills)
-├── version (semver string)
-├── integrity_hash (sha512)
-├── signature (sigstore reference)
-├── permissions (jsonb)
-├── dependencies (jsonb)
-├── audit_score (integer, 0-10)
-├── sbom (jsonb)
-├── package_url (string, OCI reference)
-├── published_at
-└── analysis_results (jsonb)
+## Shared Package Contract
 
-publishers
-├── id (uuid)
-├── name (string)
-├── github_id (string)
-├── verified (boolean)
-├── signing_key_fingerprint (string)
-├── created_at
-└── verified_at
-```
+`packages/shared` is a pure library.
 
-### Audit Trail
+- exports schemas, types, constants, and semver helpers through `src/index.ts`
+- no I/O, no network, no side effects
+- lockfile schema supports v1 and v2; current writer uses `LOCKFILE_VERSION`
 
-```
-audit_events
-├── id (uuid)
-├── skill_id (fk → skills)
-├── version_id (fk → skill_versions)
-├── event_type (enum: publish, review, flag, takedown, score_change)
-├── actor_id (fk → publishers, nullable)
-├── details (jsonb)
-└── created_at
-```
+## Where To Look
 
----
-
-## Key Design Decisions
-
-### Why OCI for Package Storage?
-
-OCI (Open Container Initiative) registries are a proven, scalable standard for distributing artifacts. Benefits:
-
-- Existing infrastructure (Harbor, GHCR, ECR all support OCI artifacts)
-- Content-addressable storage (integrity built in)
-- Replication and mirroring support
-- Well-understood caching and CDN patterns
-
-### Why Sigstore for Signing? (Planned — Phase 2)
-
-Sigstore is the emerging standard for software signing (npm is migrating to it). Benefits:
-
-- Keyless signing via GitHub OIDC — publishers don't manage keys
-- Transparency log (Rekor) provides public audit trail
-- Same tooling developers already use for container signing
-
-### Static Analysis Pipeline (Implemented)
-
-Tank uses a custom 6-stage Python pipeline instead of Semgrep, designed specifically for AI agent skill analysis:
-
-- **Stage 0 (Ingest)**: Hash computation, file inventory
-- **Stage 1 (Structure)**: Package structure validation
-- **Stage 2 (Static)**: AST analysis, regex patterns, permission cross-checking
-- **Stage 3 (Injection)**: Prompt injection detection
-- **Stage 4 (Secrets)**: Credential and secret scanning
-- **Stage 5 (Supply Chain)**: Dependency vulnerability checking via OSV API
-
-### Lockfile Format
-
-The lockfile is JSON (not YAML) for:
-
-- Deterministic serialization (JSON.stringify with sorted keys)
-- Easy machine parsing
-- Diffability in version control
-- Familiarity (same as package-lock.json)
-
----
-
-## Resolved Technical Decisions
-
-1. **CLI language**: Node.js (Commander.js) — same ecosystem as target users, 16 commands implemented
-2. **Monorepo structure**: Yes — bun workspaces with Turbo orchestration (packages/cli, packages/web, packages/shared)
-3. **Search**: PostgreSQL full-text search with GIN index — sufficient for MVP
-4. **Package storage**: Supabase Storage (with on-prem abstraction layer)
-
-## Open Technical Questions
-
-1. **Self-hosting**: Should the registry be easy to self-host from day one (like Verdaccio)?
-2. **WASM sandbox specifics**: Wasmtime? WasmEdge? What's the runtime permission interface?
-3. **Semantic search**: When to invest in vector search for improved skill discovery?
-
----
-
-## Further Reading
-
-- [Product Brief](product-brief.md) — full feature description and positioning
+- task-to-file lookup table: `docs/where-to-look.md`
+- package details: `docs/{cli,mcp,api,scanner,shared}-reference.md`
