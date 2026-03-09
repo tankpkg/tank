@@ -254,7 +254,8 @@ export async function getSkillDetail(
       (SELECT json_agg(json_build_object(
         'stage', sf.stage, 'severity', sf.severity, 'type', sf.type,
         'description', sf.description, 'location', sf.location,
-        'confidence', sf.confidence, 'tool', sf.tool, 'evidence', sf.evidence
+        'confidence', sf.confidence, 'tool', sf.tool, 'evidence', sf.evidence,
+        'llm_verdict', sf.llm_verdict, 'llm_reviewed', sf.llm_reviewed
       ))
       FROM scan_findings sf
       WHERE sf.scan_id = (
