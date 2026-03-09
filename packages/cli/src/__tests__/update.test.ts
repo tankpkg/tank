@@ -104,26 +104,17 @@ describe('updateCommand', () => {
   });
 
   function writeSkillsJson(data: Record<string, unknown> = baseSkillsJson) {
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(data, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(data, null, 2) + '\n');
   }
 
   function writeLockfile(data: Record<string, unknown> = baseLockfile) {
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.lock'),
-      JSON.stringify(data, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(data, null, 2) + '\n');
   }
 
   function writeGlobalLockfile(data: Record<string, unknown> = baseGlobalLockfile) {
     const tankDir = path.join(homedir, '.tank');
     fs.mkdirSync(tankDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(tankDir, 'tank.lock'),
-      JSON.stringify(data, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tankDir, 'tank.lock'), JSON.stringify(data, null, 2) + '\n');
   }
 
   function mockVersionsResponse(versions: string[]) {
@@ -225,9 +216,9 @@ describe('updateCommand', () => {
   it('errors when tank.json is missing', async () => {
     const { updateCommand } = await import('../commands/update.js');
 
-    await expect(
-      updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
-    ).rejects.toThrow(/tank\.json/i);
+    await expect(updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir })).rejects.toThrow(
+      /tank\.json/i
+    );
   });
 
   it('errors when skill is not in tank.json', async () => {
@@ -505,9 +496,7 @@ describe('updateCommand', () => {
   it('errors when global lockfile is missing', async () => {
     const { updateCommand } = await import('../commands/update.js');
 
-    await expect(
-      updateCommand({ configDir, global: true, homedir }),
-    ).rejects.toThrow(/tank\.lock|global/i);
+    await expect(updateCommand({ configDir, global: true, homedir })).rejects.toThrow(/tank\.lock|global/i);
   });
 
   it('prints "Already at latest" for global updates', async () => {
@@ -582,14 +571,11 @@ describe('updateCommand', () => {
     const { updateCommand } = await import('../commands/update.js');
 
     // Write invalid JSON to tank.json
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      '{ invalid json content }',
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{ invalid json content }');
 
-    await expect(
-      updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir }),
-    ).rejects.toThrow(/tank\.json|parse/i);
+    await expect(updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir })).rejects.toThrow(
+      /tank\.json|parse/i
+    );
   });
 
   it('errors when registry returns 404 for single skill update', async () => {
@@ -607,7 +593,7 @@ describe('updateCommand', () => {
 
   it('errors when no version satisfies range for single skill update', async () => {
     const { updateCommand } = await import('../commands/update.js');
-    
+
     // Write tank.json with a version range that won't be satisfied
     writeSkillsJson({
       name: 'my-project',
@@ -630,7 +616,7 @@ describe('updateCommand', () => {
   it('logs message when updating all skills with empty skills map', async () => {
     const { updateCommand } = await import('../commands/update.js');
     const { logger } = await import('../lib/logger.js');
-    
+
     // Write tank.json with empty skills object
     writeSkillsJson({
       name: 'my-project',

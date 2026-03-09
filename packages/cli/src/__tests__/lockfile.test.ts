@@ -34,10 +34,7 @@ describe('readLockfile', () => {
         }
       }
     };
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.lock'),
-      JSON.stringify(lock, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
 
     const result = readLockfile(tmpDir);
     expect(result).toEqual(lock);

@@ -4,7 +4,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { LOCKFILE_VERSION, type Permissions, resolve, type SkillsLock } from '@internal/shared';
 import ora from 'ora';
-import { resolve, type Permissions, type SkillsLock, LOCKFILE_VERSION, MANIFEST_FILENAME, LOCKFILE_FILENAME } from '@internal/shared';
+import {
+  resolve,
+  type Permissions,
+  type SkillsLock,
+  LOCKFILE_VERSION,
+  MANIFEST_FILENAME,
+  LOCKFILE_FILENAME
+} from '@internal/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
 import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
@@ -221,7 +228,7 @@ function validateResolvedNodes(
         logger.warn(`Audit score not yet available for ${node.name}. Install proceeding without audit score check.`);
       } else if (node.meta.auditScore < auditMinScore) {
         throw new Error(
-          `Audit score ${node.meta.auditScore} for ${node.name} is below minimum threshold ${auditMinScore} defined in ${MANIFEST_FILENAME}`,
+          `Audit score ${node.meta.auditScore} for ${node.name} is below minimum threshold ${auditMinScore} defined in ${MANIFEST_FILENAME}`
         );
       }
     }
@@ -411,12 +418,12 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   const resolvedManifest = resolveManifestPath(directory);
   const skillsJsonPath = resolvedManifest.exists ? resolvedManifest.path : path.join(directory, MANIFEST_FILENAME);
   const skillsJson = global ? { skills: {} } : readOrCreateSkillsJson(skillsJsonPath);
-  const resolvedLock = global
-    ? resolveLockfilePath(path.join(resolvedHome, '.tank'))
-    : resolveLockfilePath(directory);
-  const lockPath = resolvedLock.exists ? resolvedLock.path : (global
-    ? path.join(resolvedHome, '.tank', LOCKFILE_FILENAME)
-    : path.join(directory, LOCKFILE_FILENAME));
+  const resolvedLock = global ? resolveLockfilePath(path.join(resolvedHome, '.tank')) : resolveLockfilePath(directory);
+  const lockPath = resolvedLock.exists
+    ? resolvedLock.path
+    : global
+      ? path.join(resolvedHome, '.tank', LOCKFILE_FILENAME)
+      : path.join(directory, LOCKFILE_FILENAME);
   const lock = readLockOrFresh(lockPath);
   const spinner = ora('Resolving dependency graph...').start();
 
@@ -508,9 +515,7 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  const resolvedLock = global
-    ? resolveLockfilePath(path.join(resolvedHome, '.tank'))
-    : resolveLockfilePath(directory);
+  const resolvedLock = global ? resolveLockfilePath(path.join(resolvedHome, '.tank')) : resolveLockfilePath(directory);
   const lockPath = resolvedLock.path;
   if (!resolvedLock.exists) {
     throw new Error(`No ${LOCKFILE_FILENAME} found in ${directory}`);
@@ -633,12 +638,12 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  const resolvedLock = global
-    ? resolveLockfilePath(path.join(resolvedHome, '.tank'))
-    : resolveLockfilePath(directory);
-  const lockPath = resolvedLock.exists ? resolvedLock.path : (global
-    ? path.join(resolvedHome, '.tank', LOCKFILE_FILENAME)
-    : path.join(directory, LOCKFILE_FILENAME));
+  const resolvedLock = global ? resolveLockfilePath(path.join(resolvedHome, '.tank')) : resolveLockfilePath(directory);
+  const lockPath = resolvedLock.exists
+    ? resolvedLock.path
+    : global
+      ? path.join(resolvedHome, '.tank', LOCKFILE_FILENAME)
+      : path.join(directory, LOCKFILE_FILENAME);
   const resolvedManifest = resolveManifestPath(directory);
   const skillsJsonPath = resolvedManifest.path;
 

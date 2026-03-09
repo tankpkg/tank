@@ -67,17 +67,11 @@ describe('removeCommand', () => {
   });
 
   function writeSkillsJson(data: Record<string, unknown> = baseSkillsJson) {
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(data, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(data, null, 2) + '\n');
   }
 
   function writeLockfile(data: Record<string, unknown> = baseLockfile) {
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.lock'),
-      JSON.stringify(data, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(data, null, 2) + '\n');
   }
 
   function readSkillsJson(): Record<string, unknown> {
@@ -218,9 +212,7 @@ describe('removeCommand', () => {
   it('errors when tank.json is missing', async () => {
     const { removeCommand } = await import('../commands/remove.js');
 
-    await expect(
-      removeCommand({ name: '@test-org/my-skill', directory: tmpDir }),
-    ).rejects.toThrow(/tank\.json/i);
+    await expect(removeCommand({ name: '@test-org/my-skill', directory: tmpDir })).rejects.toThrow(/tank\.json/i);
   });
 
   it('errors when skill is not in tank.json', async () => {
@@ -388,9 +380,7 @@ describe('removeCommand', () => {
     // Write invalid JSON to tank.json
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{invalid json}');
 
-    await expect(
-      removeCommand({ name: '@test-org/my-skill', directory: tmpDir }),
-    ).rejects.toThrow(/tank\.json|parse/i);
+    await expect(removeCommand({ name: '@test-org/my-skill', directory: tmpDir })).rejects.toThrow(/tank\.json|parse/i);
   });
 
   it('handles corrupt lockfile gracefully (initializes fresh)', async () => {

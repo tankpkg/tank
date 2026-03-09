@@ -2,7 +2,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Permissions, SkillsJson, SkillsLock } from '@internal/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type Permissions, type SkillsLock, type SkillsJson, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from '@internal/shared';
+import {
+  type Permissions,
+  type SkillsLock,
+  type SkillsJson,
+  MANIFEST_FILENAME,
+  LEGACY_MANIFEST_FILENAME,
+  LOCKFILE_FILENAME,
+  LEGACY_LOCKFILE_FILENAME
+} from '@internal/shared';
 import { z } from 'zod';
 
 function parseSkillName(key: string): string {
@@ -224,11 +232,13 @@ export function registerSkillPermissionsTool(server: McpServer): void {
       }
       if (!fs.existsSync(skillsJsonPath)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No ${MANIFEST_FILENAME} found. Run "init-skill" to create one.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `No ${MANIFEST_FILENAME} found. Run "init-skill" to create one.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -238,11 +248,13 @@ export function registerSkillPermissionsTool(server: McpServer): void {
         skillsJson = JSON.parse(raw) as SkillsJson;
       } catch {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to parse ${path.basename(skillsJsonPath)}. The file may be corrupted.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to parse ${path.basename(skillsJsonPath)}. The file may be corrupted.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -264,10 +276,12 @@ export function registerSkillPermissionsTool(server: McpServer): void {
       }
       if (!fs.existsSync(lockfilePath)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No ${LOCKFILE_FILENAME} found. Skills are declared but not installed. Run install to generate a lockfile.`,
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `No ${LOCKFILE_FILENAME} found. Skills are declared but not installed. Run install to generate a lockfile.`
+            }
+          ]
         };
       }
 
@@ -277,11 +291,13 @@ export function registerSkillPermissionsTool(server: McpServer): void {
         lockfile = JSON.parse(raw) as SkillsLock;
       } catch {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to parse ${path.basename(lockfilePath)}. The file may be corrupted.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to parse ${path.basename(lockfilePath)}. The file may be corrupted.`
+            }
+          ],
+          isError: true
         };
       }
 

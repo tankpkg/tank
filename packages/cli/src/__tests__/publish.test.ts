@@ -52,7 +52,7 @@ describe('publishCommand', () => {
     fileCount: 5,
     totalSize: 2048,
     readme: '# Test Skill\n\nA test skill.',
-    files: ['tank.json', 'SKILL.md', 'src/index.ts'],
+    files: ['tank.json', 'SKILL.md', 'src/index.ts']
   };
 
   beforeEach(() => {
@@ -60,10 +60,7 @@ describe('publishCommand', () => {
     configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-publish-config-'));
 
     // Write a valid tank.json in the "project" directory
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(validManifest, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(validManifest, null, 2));
 
     // Write a config with auth token
     fs.writeFileSync(
@@ -276,9 +273,7 @@ describe('publishCommand', () => {
     // Remove tank.json
     fs.unlinkSync(path.join(tmpDir, 'tank.json'));
 
-    await expect(
-      publishCommand({ directory: tmpDir, configDir }),
-    ).rejects.toThrow(/tank\.json/);
+    await expect(publishCommand({ directory: tmpDir, configDir })).rejects.toThrow(/tank\.json/);
 
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -423,14 +418,9 @@ describe('publishCommand', () => {
     const { publishCommand } = await import('../commands/publish.js');
 
     // Write invalid JSON to tank.json
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      '{ invalid json }',
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{ invalid json }');
 
-    await expect(
-      publishCommand({ directory: tmpDir, configDir }),
-    ).rejects.toThrow(/tank\.json/);
+    await expect(publishCommand({ directory: tmpDir, configDir })).rejects.toThrow(/tank\.json/);
 
     expect(mockFetch).not.toHaveBeenCalled();
   });

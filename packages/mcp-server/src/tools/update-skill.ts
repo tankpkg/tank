@@ -2,7 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { resolve, type SkillsLock } from '@internal/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { resolve, type SkillsLock, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from '@internal/shared';
+import {
+  resolve,
+  type SkillsLock,
+  MANIFEST_FILENAME,
+  LEGACY_MANIFEST_FILENAME,
+  LOCKFILE_FILENAME,
+  LEGACY_LOCKFILE_FILENAME
+} from '@internal/shared';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
 
@@ -56,11 +63,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
       }
       if (!fs.existsSync(skillsJsonPath)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No ${MANIFEST_FILENAME} found in ${dir}. Run the "init-skill" tool first.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `No ${MANIFEST_FILENAME} found in ${dir}. Run the "init-skill" tool first.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -70,11 +79,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
         skillsJson = JSON.parse(raw) as Record<string, unknown>;
       } catch {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to read or parse ${path.basename(skillsJsonPath)}.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to read or parse ${path.basename(skillsJsonPath)}.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -83,11 +94,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
 
       if (!versionRange) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Skill "${name}" is not installed (not found in ${path.basename(skillsJsonPath)}). Install it first with the install-skill tool.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Skill "${name}" is not installed (not found in ${path.basename(skillsJsonPath)}). Install it first with the install-skill tool.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -116,11 +129,13 @@ export function registerUpdateSkillTool(server: McpServer): void {
 
       if (!currentVersion) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Skill "${name}" is not installed (not found in ${LOCKFILE_FILENAME}). Install it first with the install-skill tool.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Skill "${name}" is not installed (not found in ${LOCKFILE_FILENAME}). Install it first with the install-skill tool.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -215,7 +230,9 @@ export function registerUpdateSkillTool(server: McpServer): void {
       if (resolved === currentVersion) {
         const lines = [`Already at latest compatible version: ${name}@${resolved}`];
         if (highestOutOfRange) {
-          lines.push(`\nNote: Version ${highestOutOfRange} is available but outside the declared range "${versionRange}". Update ${MANIFEST_FILENAME} to use it.`);
+          lines.push(
+            `\nNote: Version ${highestOutOfRange} is available but outside the declared range "${versionRange}". Update ${MANIFEST_FILENAME} to use it.`
+          );
         }
         return {
           content: [
@@ -380,7 +397,9 @@ export function registerUpdateSkillTool(server: McpServer): void {
       ];
 
       if (highestOutOfRange) {
-        lines.push(`\nNote: Version ${highestOutOfRange} is available but outside the declared range "${versionRange}". Update ${MANIFEST_FILENAME} to use it.`);
+        lines.push(
+          `\nNote: Version ${highestOutOfRange} is available but outside the declared range "${versionRange}". Update ${MANIFEST_FILENAME} to use it.`
+        );
       }
 
       return {

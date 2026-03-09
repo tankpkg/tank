@@ -40,9 +40,7 @@ export async function updateCommand(options: UpdateOptions): Promise<void> {
   // 1. Read manifest (tank.json or skills.json)
   const resolvedManifest = resolveManifestPath(directory);
   if (!resolvedManifest.exists) {
-    throw new Error(
-      `No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`,
-    );
+    throw new Error(`No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`);
   }
 
   let skillsJson: Record<string, unknown>;
@@ -207,9 +205,7 @@ async function updateSingle(
     );
   }
 
-  const lockPath = global
-    ? getGlobalLockPath(homedir)
-    : resolveLockfilePath(directory).path;
+  const lockPath = global ? getGlobalLockPath(homedir) : resolveLockfilePath(directory).path;
   let currentVersion: string | null = null;
 
   const lock = readLockfile(lockPath);
@@ -261,9 +257,7 @@ async function updateAll(
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  const lockPath = global
-    ? getGlobalLockPath(homedir)
-    : resolveLockfilePath(directory).path;
+  const lockPath = global ? getGlobalLockPath(homedir) : resolveLockfilePath(directory).path;
   const lock = readLockfile(lockPath);
 
   const currentVersionByName = new Map<string, string>();

@@ -50,9 +50,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
   // 2. Read manifest (tank.json or skills.json)
   const resolvedManifest = resolveManifestPath(directory);
   if (!resolvedManifest.exists) {
-    throw new Error(
-      `No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`,
-    );
+    throw new Error(`No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`);
   }
 
   let manifest: Record<string, unknown>;
@@ -150,9 +148,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
       throw new Error(`Publish failed: ${errorMsg}`);
     }
     if (step1Res.status === 409) {
-      throw new Error(
-        `Version already exists. Bump the version in ${MANIFEST_FILENAME}`,
-      );
+      throw new Error(`Version already exists. Bump the version in ${MANIFEST_FILENAME}`);
     }
     throw new Error(errorMsg);
   }

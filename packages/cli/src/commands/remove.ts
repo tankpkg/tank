@@ -84,9 +84,7 @@ export async function removeCommand(options: RemoveOptions): Promise<void> {
   // 1. Read manifest (tank.json or skills.json)
   const resolvedManifest = resolveManifestPath(directory);
   if (!resolvedManifest.exists) {
-    throw new Error(
-      `No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`,
-    );
+    throw new Error(`No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`);
   }
 
   let skillsJson: Record<string, unknown>;
@@ -108,10 +106,7 @@ export async function removeCommand(options: RemoveOptions): Promise<void> {
   skillsJson.skills = skills;
 
   // 4. Write updated manifest
-  fs.writeFileSync(
-    resolvedManifest.path,
-    JSON.stringify(skillsJson, null, 2) + '\n',
-  );
+  fs.writeFileSync(resolvedManifest.path, JSON.stringify(skillsJson, null, 2) + '\n');
 
   // 5. Read lockfile if present
   const resolvedLocalLock = resolveLockfilePath(directory);

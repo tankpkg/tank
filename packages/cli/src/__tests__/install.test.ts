@@ -95,10 +95,7 @@ describe('installCommand', () => {
     configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-install-config-'));
 
     // Write a valid tank.json in the "project" directory
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(validSkillsJson, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(validSkillsJson, null, 2));
 
     // Write a config with registry URL (no auth needed for install)
     fs.writeFileSync(
@@ -272,12 +269,14 @@ describe('installCommand', () => {
     // Write tank.json with restrictive permissions
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
-      JSON.stringify({
-        ...validSkillsJson,
-        permissions: {
-          network: { outbound: ['*.example.com'] },
-          filesystem: { read: ['./src/**'], write: ['./output/**'] },
-          subprocess: false,
+      JSON.stringify(
+        {
+          ...validSkillsJson,
+          permissions: {
+            network: { outbound: ['*.example.com'] },
+            filesystem: { read: ['./src/**'], write: ['./output/**'] },
+            subprocess: false
+          }
         },
         null,
         2
@@ -315,10 +314,7 @@ describe('installCommand', () => {
       version: '1.0.0',
       skills: {}
     };
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(noBudgetSkillsJson, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(noBudgetSkillsJson, null, 2));
 
     setupSuccessfulInstall();
 
@@ -344,9 +340,7 @@ describe('installCommand', () => {
     });
 
     // Read updated tank.json
-    const updated = JSON.parse(
-      fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8'),
-    );
+    const updated = JSON.parse(fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8'));
 
     expect(updated.skills['@test-org/my-skill']).toBe('^2.0.0');
   });
@@ -399,10 +393,7 @@ describe('installCommand', () => {
       ...validSkillsJson,
       skills: { '@test-org/my-skill': '^2.0.0' }
     };
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(existingSkillsJson, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(existingSkillsJson, null, 2));
 
     // Pre-populate tank.lock with the skill already locked
     const existingLock = {
@@ -416,10 +407,7 @@ describe('installCommand', () => {
         }
       }
     };
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.lock'),
-      JSON.stringify(existingLock, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(existingLock, null, 2));
 
     // Versions endpoint still called to resolve
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(versionsResponse), { status: 200 }));
@@ -492,10 +480,7 @@ describe('installCommand', () => {
         }
       }
     };
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.lock'),
-      JSON.stringify(existingLock, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(existingLock, null, 2));
 
     setupSuccessfulInstall();
 
@@ -541,9 +526,7 @@ describe('installCommand', () => {
     expect(metaUrl).toContain('1.1.0');
 
     // tank.json should use the provided range
-    const updated = JSON.parse(
-      fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8'),
-    );
+    const updated = JSON.parse(fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8'));
     expect(updated.skills['@test-org/my-skill']).toBe('^1.0.0');
   });
 
@@ -653,10 +636,14 @@ describe('installCommand', () => {
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
-      JSON.stringify({
-        ...validSkillsJson,
-        audit: { min_score: 8.0 },
-      }, null, 2),
+      JSON.stringify(
+        {
+          ...validSkillsJson,
+          audit: { min_score: 8.0 }
+        },
+        null,
+        2
+      )
     );
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(versionsResponse), { status: 200 }));
@@ -681,10 +668,14 @@ describe('installCommand', () => {
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
-      JSON.stringify({
-        ...validSkillsJson,
-        audit: { min_score: 7.0 },
-      }, null, 2),
+      JSON.stringify(
+        {
+          ...validSkillsJson,
+          audit: { min_score: 7.0 }
+        },
+        null,
+        2
+      )
     );
 
     setupSuccessfulInstall({
@@ -712,10 +703,14 @@ describe('installCommand', () => {
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
-      JSON.stringify({
-        ...validSkillsJson,
-        audit: { min_score: 7.0 },
-      }, null, 2),
+      JSON.stringify(
+        {
+          ...validSkillsJson,
+          audit: { min_score: 7.0 }
+        },
+        null,
+        2
+      )
     );
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(versionsResponse), { status: 200 }));
@@ -748,9 +743,13 @@ describe('installCommand', () => {
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
-      JSON.stringify({
-        ...validSkillsJson,
-      }, null, 2),
+      JSON.stringify(
+        {
+          ...validSkillsJson
+        },
+        null,
+        2
+      )
     );
 
     setupSuccessfulInstall({
@@ -821,10 +820,7 @@ describe('installCommand --global', () => {
     configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-install-global-config-'));
     fakeHome = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-install-global-home-'));
 
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(validSkillsJson, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(validSkillsJson, null, 2));
 
     fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ registry: 'https://tankpkg.dev' }));
 
@@ -992,11 +988,13 @@ describe('installFromLockfile', () => {
     return [...logSpy.mock.calls, ...errorSpy.mock.calls].map((c) => c.join(' ')).join('\n');
   }
 
-  function writeLockfile(skills: Record<string, { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }>) {
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.lock'),
-      JSON.stringify({ lockfileVersion: 1, skills }, null, 2),
-    );
+  function writeLockfile(
+    skills: Record<
+      string,
+      { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }
+    >
+  ) {
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify({ lockfileVersion: 1, skills }, null, 2));
   }
 
   it('installs all skills from lockfile with correct integrity', async () => {
@@ -1329,9 +1327,7 @@ describe('installFromLockfile', () => {
     const { installFromLockfile } = await import('../commands/install.js');
 
     // No lockfile exists
-    await expect(
-      installFromLockfile({ directory: tmpDir, configDir }),
-    ).rejects.toThrow(/tank\.lock/i);
+    await expect(installFromLockfile({ directory: tmpDir, configDir })).rejects.toThrow(/tank\.lock/i);
   });
 });
 
@@ -1409,23 +1405,22 @@ describe('installAll (no-args dispatch)', () => {
     const { installAll } = await import('../commands/install.js');
 
     // Write tank.json
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(validSkillsJson, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(validSkillsJson, null, 2));
 
     // Write tank.lock
     fs.writeFileSync(
       path.join(tmpDir, 'tank.lock'),
-      JSON.stringify({
-        lockfileVersion: 1,
-        skills: {
-          '@test-org/my-skill@2.0.0': {
-            resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
-            integrity: fakeTarballIntegrity,
-            permissions: {},
-            audit_score: 7.0,
-          },
+      JSON.stringify(
+        {
+          lockfileVersion: 1,
+          skills: {
+            '@test-org/my-skill@2.0.0': {
+              resolved: 'https://storage.example.com/my-skill-2.0.0.tgz',
+              integrity: fakeTarballIntegrity,
+              permissions: {},
+              audit_score: 7.0
+            }
+          }
         },
         null,
         2
@@ -1458,10 +1453,7 @@ describe('installAll (no-args dispatch)', () => {
     const { installAll } = await import('../commands/install.js');
 
     // Write tank.json with a skill dependency
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.json'),
-      JSON.stringify(validSkillsJson, null, 2),
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(validSkillsJson, null, 2));
 
     // No tank.lock — should resolve via registry
     // Mock the 3-step install flow for @test-org/my-skill
@@ -1535,7 +1527,7 @@ describe('installCommand — additional error paths', () => {
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
-      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2),
+      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2)
     );
 
     fakeTarball = Buffer.from('fake-tarball-content-for-extra-tests');
@@ -1616,9 +1608,7 @@ describe('installCommand — additional error paths', () => {
 
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{ invalid json here !!!');
 
-    await expect(
-      installAll({ directory: tmpDir, configDir }),
-    ).rejects.toThrow(/tank\.json|parse/i);
+    await expect(installAll({ directory: tmpDir, configDir })).rejects.toThrow(/tank\.json|parse/i);
   });
 
   it('prints nothing-to-install message when tank.json has empty skills map', async () => {
@@ -1626,7 +1616,7 @@ describe('installCommand — additional error paths', () => {
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
-      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2),
+      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2)
     );
 
     await installAll({ directory: tmpDir, configDir });
@@ -1688,7 +1678,7 @@ describe('installCommand — transitive dependency resolution', () => {
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
-      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2),
+      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2)
     );
 
     fakeTarball = Buffer.from('fake-tarball-transitive-test');
@@ -1811,33 +1801,34 @@ describe('installCommand — transitive dependency resolution', () => {
     // Pre-populate lockfile with the dependency already installed
     fs.writeFileSync(
       path.join(tmpDir, 'tank.lock'),
-      JSON.stringify({
-        lockfileVersion: 1,
-        skills: {
-          '@dep/helper@1.1.0': {
-            resolved: 'https://storage.example.com/dep-helper-1.1.0.tgz',
-            integrity: fakeTarballIntegrity,
-            permissions: {},
-            audit_score: 9.0,
-          },
+      JSON.stringify(
+        {
+          lockfileVersion: 1,
+          skills: {
+            '@dep/helper@1.1.0': {
+              resolved: 'https://storage.example.com/dep-helper-1.1.0.tgz',
+              integrity: fakeTarballIntegrity,
+              permissions: {},
+              audit_score: 9.0
+            }
+          }
         },
         null,
         2
       )
     );
 
-    vi.mocked(extract)
-      .mockImplementationOnce(async (opts: unknown) => {
-        const { cwd } = opts as { cwd: string };
-        fs.writeFileSync(
-          path.join(cwd, 'tank.json'),
-          JSON.stringify({
-            name: '@test-org/my-skill',
-            version: '1.0.0',
-            skills: { '@dep/helper': '^1.0.0' },
-          }),
-        );
-      });
+    vi.mocked(extract).mockImplementationOnce(async (opts: unknown) => {
+      const { cwd } = opts as { cwd: string };
+      fs.writeFileSync(
+        path.join(cwd, 'tank.json'),
+        JSON.stringify({
+          name: '@test-org/my-skill',
+          version: '1.0.0',
+          skills: { '@dep/helper': '^1.0.0' }
+        })
+      );
+    });
 
     // Primary: 3 fetches. Dep: only versions fetch (then skipped as already installed)
     mockFetch
@@ -1933,10 +1924,7 @@ describe('installCommand — transitive dependency resolution', () => {
     // Extract writes a tank.json with no skills field
     vi.mocked(extract).mockImplementationOnce(async (opts: unknown) => {
       const { cwd } = opts as { cwd: string };
-      fs.writeFileSync(
-        path.join(cwd, 'tank.json'),
-        JSON.stringify({ name: '@test-org/my-skill', version: '1.0.0' }),
-      );
+      fs.writeFileSync(path.join(cwd, 'tank.json'), JSON.stringify({ name: '@test-org/my-skill', version: '1.0.0' }));
     });
 
     mockFetch

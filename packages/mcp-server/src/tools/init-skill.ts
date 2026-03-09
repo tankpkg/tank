@@ -40,7 +40,12 @@ export function registerInitSkillTool(server: McpServer): void {
       if (fs.existsSync(newManifestPath) || fs.existsSync(legacyManifestPath)) {
         const existingFile = fs.existsSync(newManifestPath) ? MANIFEST_FILENAME : LEGACY_MANIFEST_FILENAME;
         return {
-          content: [{ type: 'text' as const, text: `${existingFile} already exists at ${targetDir}. Aborting to avoid overwrite.` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `${existingFile} already exists at ${targetDir}. Aborting to avoid overwrite.`
+            }
+          ]
         };
       }
 
@@ -63,7 +68,7 @@ export function registerInitSkillTool(server: McpServer): void {
           .join('; ');
 
         return {
-          content: [{ type: 'text' as const, text: `Failed to create ${MANIFEST_FILENAME}: ${details}` }],
+          content: [{ type: 'text' as const, text: `Failed to create ${MANIFEST_FILENAME}: ${details}` }]
         };
       }
 

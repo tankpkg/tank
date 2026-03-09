@@ -25,10 +25,7 @@ import { VERSION } from '../version.js';
 
 const program = new Command();
 
-program
-  .name('tank')
-  .description('Security-first package manager for AI agent skills')
-  .version(VERSION);
+program.name('tank').description('Security-first package manager for AI agent skills').version(VERSION);
 
 program
   .command('init')
@@ -39,22 +36,31 @@ program
   .option('--description <desc>', 'Skill description')
   .option('--private', 'Make skill private')
   .option('--force', 'Overwrite existing tank.json')
-  .action(async (opts: { yes?: boolean; name?: string; skillVersion?: string; description?: string; private?: boolean; force?: boolean }) => {
-    try {
-      await initCommand({
-        yes: opts.yes,
-        name: opts.name,
-        version: opts.skillVersion,
-        description: opts.description,
-        private: opts.private,
-        force: opts.force,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Init failed: ${msg}`);
-      process.exit(1);
+  .action(
+    async (opts: {
+      yes?: boolean;
+      name?: string;
+      skillVersion?: string;
+      description?: string;
+      private?: boolean;
+      force?: boolean;
+    }) => {
+      try {
+        await initCommand({
+          yes: opts.yes,
+          name: opts.name,
+          version: opts.skillVersion,
+          description: opts.description,
+          private: opts.private,
+          force: opts.force
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Init failed: ${msg}`);
+        process.exit(1);
+      }
     }
-  });
+  );
 
 program
   .command('login')
@@ -109,7 +115,7 @@ program
       await publishCommand({
         dryRun: opts.dryRun,
         private: opts.private,
-        visibility: opts.visibility,
+        visibility: opts.visibility
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

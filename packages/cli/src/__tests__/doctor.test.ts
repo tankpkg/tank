@@ -17,10 +17,7 @@ vi.mock('chalk', () => ({
 }));
 
 const writeSkillsJson = (dir: string, skills: Record<string, string>): void => {
-  fs.writeFileSync(
-    path.join(dir, 'tank.json'),
-    JSON.stringify({ name: 'test-project', skills }, null, 2) + '\n',
-  );
+  fs.writeFileSync(path.join(dir, 'tank.json'), JSON.stringify({ name: 'test-project', skills }, null, 2) + '\n');
 };
 
 const createLocalExtractDir = (projectDir: string, skillName: string): void => {
@@ -32,10 +29,7 @@ const createLocalExtractDir = (projectDir: string, skillName: string): void => {
 const writeGlobalLockfile = (homedir: string, skills: Record<string, unknown>): void => {
   const lockDir = path.join(homedir, '.tank');
   fs.mkdirSync(lockDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(lockDir, 'tank.lock'),
-    JSON.stringify({ lockfileVersion: 1, skills }, null, 2) + '\n',
-  );
+  fs.writeFileSync(path.join(lockDir, 'tank.lock'), JSON.stringify({ lockfileVersion: 1, skills }, null, 2) + '\n');
 };
 
 const writeGlobalLinks = (homedir: string, manifest: Record<string, unknown>): void => {

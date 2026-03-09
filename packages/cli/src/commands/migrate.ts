@@ -4,7 +4,7 @@ import {
   MANIFEST_FILENAME,
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
-  LEGACY_LOCKFILE_FILENAME,
+  LEGACY_LOCKFILE_FILENAME
 } from '@internal/shared';
 import { logger } from '../lib/logger.js';
 

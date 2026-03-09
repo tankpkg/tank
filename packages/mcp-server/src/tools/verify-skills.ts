@@ -22,11 +22,13 @@ export function registerVerifySkillsTool(server: McpServer): void {
       }
       if (!fs.existsSync(lockPath)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No ${LOCKFILE_FILENAME} found. Run "install-skill" to install skills and generate a lockfile.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `No ${LOCKFILE_FILENAME} found. Run "install-skill" to install skills and generate a lockfile.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -36,11 +38,13 @@ export function registerVerifySkillsTool(server: McpServer): void {
         lock = JSON.parse(raw) as SkillsLock;
       } catch {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to parse ${path.basename(lockPath)}. The file may be corrupted.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to parse ${path.basename(lockPath)}. The file may be corrupted.`
+            }
+          ],
+          isError: true
         };
       }
 

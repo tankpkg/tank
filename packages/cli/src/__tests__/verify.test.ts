@@ -34,10 +34,7 @@ describe('verifyCommand', () => {
 
   function writeLockfile(skills: SkillsLock['skills']) {
     const lock: SkillsLock = { lockfileVersion: 1, skills };
-    fs.writeFileSync(
-      path.join(tmpDir, 'tank.lock'),
-      JSON.stringify(lock, null, 2) + '\n',
-    );
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
   }
 
   function createSkillDir(skillName: string) {
@@ -89,9 +86,7 @@ describe('verifyCommand', () => {
 
   it('fails when lockfile is missing', async () => {
     // No lockfile written
-    await expect(verifyCommand({ directory: tmpDir })).rejects.toThrow(
-      /tank\.lock/i,
-    );
+    await expect(verifyCommand({ directory: tmpDir })).rejects.toThrow(/tank\.lock/i);
   });
 
   it('reports multiple issues', async () => {

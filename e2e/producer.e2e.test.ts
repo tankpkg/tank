@@ -168,12 +168,9 @@ describe('Producer E2E — publish skills to the Tank registry', () => {
     // Write a tank.json missing required fields (no name, no version)
     fs.writeFileSync(
       path.join(invalidDir, 'tank.json'),
-      JSON.stringify({ description: 'missing required fields' }, null, 2) + '\n',
+      JSON.stringify({ description: 'missing required fields' }, null, 2) + '\n'
     );
-    fs.writeFileSync(
-      path.join(invalidDir, 'SKILL.md'),
-      '# Invalid skill\n',
-    );
+    fs.writeFileSync(path.join(invalidDir, 'SKILL.md'), '# Invalid skill\n');
     fs.writeFileSync(path.join(invalidDir, 'SKILL.md'), '# Invalid skill\n');
 
     const result = await runTank(['publish'], {

@@ -72,9 +72,7 @@ export async function pack(directory: string): Promise<PackResult> {
 
   const validation = skillsJsonSchema.safeParse(parsed);
   if (!validation.success) {
-    const issues = validation.error.issues
-      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
-      .join('\n');
+    const issues = validation.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
     throw new Error(`Invalid ${manifestFilename}:\n${issues}`);
   }
 

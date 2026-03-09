@@ -46,10 +46,7 @@ export function createSkillFixture(opts: {
       subprocess: false
     }
   };
-  fs.writeFileSync(
-    path.join(dir, 'tank.json'),
-    JSON.stringify(manifest, null, 2) + '\n',
-  );
+  fs.writeFileSync(path.join(dir, 'tank.json'), JSON.stringify(manifest, null, 2) + '\n');
 
   // SKILL.md (required by packer)
   fs.writeFileSync(
@@ -119,10 +116,7 @@ export function createConsumerFixture(opts?: {
     }
   };
 
-  fs.writeFileSync(
-    path.join(dir, 'tank.json'),
-    JSON.stringify(manifest, null, 2) + '\n',
-  );
+  fs.writeFileSync(path.join(dir, 'tank.json'), JSON.stringify(manifest, null, 2) + '\n');
 
   // Create SKILL.md so the directory validates as a skill project
   fs.writeFileSync(path.join(dir, 'SKILL.md'), `# E2E Consumer Project\n\nTest consumer for Tank E2E tests.\n`);

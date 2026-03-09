@@ -331,13 +331,8 @@ export default async function Home() {
                 Declare what your agent is <span className="text-emerald-400">allowed to do</span>
               </h2>
               <p className="text-muted-foreground max-w-xl mx-auto">
-                <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">
-                  tank.json
-                </code>{' '}
-                is like package.json — but with a{' '}
-                <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">
-                  permissions
-                </code>{' '}
+                <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">tank.json</code> is like package.json
+                — but with a <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">permissions</code>{' '}
                 field. If any skill exceeds the budget, installation fails.
               </p>
             </div>

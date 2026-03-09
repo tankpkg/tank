@@ -102,16 +102,16 @@ describe('unlinkCommand', () => {
   });
 
   it('throws when tank.json is missing', async () => {
-    await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome }))
-      .rejects
-      .toThrow('No tank.json found. Run this command from a skill directory.');
+    await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
+      'No tank.json found. Run this command from a skill directory.'
+    );
   });
 
   it('throws when tank.json has no name', async () => {
     writeSkillsJson(skillDir, { description: 'Missing name' });
-    await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome }))
-      .rejects
-      .toThrow("Missing 'name' in tank.json");
+    await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
+      "Missing 'name' in tank.json"
+    );
   });
 
   it('logs info when the skill was never linked', async () => {
@@ -187,9 +187,9 @@ describe('unlinkCommand', () => {
 
   it('throws when tank.json is invalid JSON', async () => {
     fs.writeFileSync(path.join(skillDir, 'tank.json'), '{invalid json}');
-    await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome }))
-      .rejects
-      .toThrow(/failed to read or parse tank\.json/i);
+    await expect(unlinkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
+      /failed to read or parse tank\.json/i
+    );
   });
 
   it('throws when name is empty or whitespace', async () => {

@@ -87,16 +87,16 @@ describe('linkCommand', () => {
   });
 
   it('throws when tank.json is missing', async () => {
-    await expect(linkCommand({ directory: skillDir, homedir: fakeHome }))
-      .rejects
-      .toThrow('No tank.json found. Run this command from a skill directory.');
+    await expect(linkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
+      'No tank.json found. Run this command from a skill directory.'
+    );
   });
 
   it('throws when tank.json has no name', async () => {
     writeSkillsJson(skillDir, { description: 'Missing name' });
-    await expect(linkCommand({ directory: skillDir, homedir: fakeHome }))
-      .rejects
-      .toThrow("Missing 'name' in tank.json");
+    await expect(linkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
+      "Missing 'name' in tank.json"
+    );
   });
 
   it('logs info and returns when no agents are detected', async () => {
@@ -155,9 +155,9 @@ describe('linkCommand', () => {
 
   it('throws when tank.json is invalid JSON', async () => {
     fs.writeFileSync(path.join(skillDir, 'tank.json'), '{not valid json}');
-    await expect(linkCommand({ directory: skillDir, homedir: fakeHome }))
-      .rejects
-      .toThrow(/failed to read or parse tank\.json/i);
+    await expect(linkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
+      /failed to read or parse tank\.json/i
+    );
   });
 
   it('throws when name is empty string', async () => {

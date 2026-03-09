@@ -82,7 +82,9 @@ export function registerScanSkillTool(server: McpServer): void {
       let packResult: Awaited<ReturnType<typeof pack>>;
       let usedSynthesisedManifest = false;
 
-      const hasManifest = fs.existsSync(path.join(absDir, MANIFEST_FILENAME)) || fs.existsSync(path.join(absDir, LEGACY_MANIFEST_FILENAME));
+      const hasManifest =
+        fs.existsSync(path.join(absDir, MANIFEST_FILENAME)) ||
+        fs.existsSync(path.join(absDir, LEGACY_MANIFEST_FILENAME));
 
       if (hasManifest) {
         try {

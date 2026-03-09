@@ -96,7 +96,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
     logger.warn(`${path.basename(resolved.path)} already exists in this directory.`);
     const overwrite = await confirm({
       message: `Overwrite existing ${path.basename(resolved.path)}?`,
-      default: false,
+      default: false
     });
     if (!overwrite) {
       logger.info('Aborted.');

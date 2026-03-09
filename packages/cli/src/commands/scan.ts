@@ -89,7 +89,7 @@ export async function scanCommand(options: ScanOptions = {}): Promise<void> {
   }
 
   const spinner = ora('Packing skill...').start();
-  
+
   // Try to read manifest (tank.json or skills.json) first
   const resolvedManifest = resolveManifestPath(absDir);
   let manifest: Record<string, unknown>;

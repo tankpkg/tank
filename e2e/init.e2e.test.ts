@@ -76,9 +76,7 @@ describe('Init E2E — tank init creates tank.json', () => {
 
     expectSuccess(result);
 
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(dir, 'tank.json'), 'utf-8'),
-    );
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'tank.json'), 'utf-8'));
     expect(manifest.name).toBe('@test/default-skill');
     expect(manifest.version).toBe('0.1.0');
     expect(manifest.visibility).toBe('public');
@@ -153,9 +151,7 @@ describe('Init E2E — tank init creates tank.json', () => {
 
     expectSuccess(result);
 
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(dir, 'tank.json'), 'utf-8'),
-    );
+    const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'tank.json'), 'utf-8'));
     expect(manifest.visibility).toBe('private');
   });
 

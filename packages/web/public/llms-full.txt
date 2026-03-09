@@ -3156,48 +3156,53 @@ The admin API requires a token with the `skills:admin` scope. See the [API Refer
 
 Source: https://tankpkg.dev/docs/permissions
 
-> Tank's current permission model for agent skills: what exists, where it is declared, and how it is enforced.
+> Understand Tank's permission model for AI agent skills — declare, enforce, and audit what capabilities your skills can access at install time.
 
 
 # Permissions & Access Control
 
-Tank permissions are an explicit contract between skill publishers and skill consumers. They are not a runtime sandbox in the current repo.
+Tank's permission system is the primary mechanism for preventing malicious skills from accessing resources they were never supposed to touch. This page explains the permission schema, the project-level budget, how enforcement works at install time, and how version bumps interact with permission changes.
 
-## Current Permission Types
+## Why Permissions Matter for AI Agent Skills
 
-Permissions are declared in `skills.json`.
+An AI agent is a process that acts on your behalf. When you give an agent a skill, that skill runs with the agent's full authority — the same API tokens, filesystem access, and subprocess privileges the agent itself holds. There is no OS-level sandbox. There is no automatic restriction.
 
-| Permission | Meaning |
-|------------|---------|
-| `network.outbound` | allowed outbound domains |
-| `filesystem.read` | readable project-relative globs |
-| `filesystem.write` | writable project-relative globs |
-| `subprocess` | whether child process execution is allowed |
+This means a malicious skill installed without review could:
 
-There is no separate environment-variable permission in the current shared schema.
+- **Read your entire project directory** — including `.env` files, SSH keys, and auth tokens
+- **Make outbound network calls** to attacker-controlled servers carrying exfiltrated data
+- **Execute shell commands** — installing backdoors, modifying codebase files, or pivoting to other systems
+- **Read environment variables** — stealing API keys and credentials held by the agent process
 
-## Skill Declaration
+The ClawHavoc incident (February 2026, 341 malicious skills, 12% of a major marketplace) exploited exactly this: no registry checked what installed skills actually did. Skills declared nothing and did everything.
 
-Example:
+Tank's permission model requires skills to declare upfront what they need. Projects then define a **permission budget** — a ceiling that every installed skill must fit within. If any skill claims more than the budget allows, the installation fails before a single file is extracted.
 
-```json
-{
-  "name": "@acme/seo-audit",
-  "version": "1.0.0",
-  "permissions": {
-    "network": {
-      "outbound": ["api.example.com"]
-    },
-    "filesystem": {
-      "read": ["./src/**"],
-      "write": ["./output/**"]
-    },
-    "subprocess": false
-  }
-}
+<Callout type="info">
+Tank permissions are a defense-in-depth layer on top of OS-level controls. They cannot enforce syscall-level restrictions without a sandbox (planned for Phase 3), but they create an auditable contract between skill publishers and project owners — and enforce it at install time.
+</Callout>
+
+---
+
+## Permission Types
+
+Permissions are declared in the `permissions` object of a skill's `SKILL.md` manifest. The full schema is defined in `packages/shared/src/schemas/permissions.ts` as a Zod schema and validated on both the CLI and registry server.
+
+### `network.outbound` — Outbound Network Access
+
+Controls which domains the skill is allowed to make outbound HTTP/HTTPS connections to.
+
+```yaml
+# SKILL.md
+permissions:
+  network:
+    outbound:
+      - "api.anthropic.com"
+      - "*.openai.com"
+      - "cdn.jsdelivr.net"
 ```
 
-## Project Budget
+**Wildcard support:** A leading `*.` prefix matches any subdomain of the specified domain.
 
 | Pattern | Matches | Does Not Match |
 |---------|---------|----------------|
@@ -3303,33 +3308,58 @@ Individual skill permissions declare what a skill *claims* to need. The permissi
 ```json
 {
   "skills": {
-    "@acme/seo-audit": "^1.0.0"
+    "@vercel/next-skill": "^2.1.0",
+    "@community/seo-audit": "3.0.0",
+    "@team/internal-linter": "workspace:*"
   },
   "permissions": {
     "network": {
-      "outbound": ["api.example.com", "*.anthropic.com"]
+      "outbound": [
+        "api.anthropic.com",
+        "*.vercel.com",
+        "registry.npmjs.org"
+      ]
     },
     "filesystem": {
-      "read": ["./src/**", "./docs/**"],
-      "write": ["./output/**"]
+      "read": [
+        "./src/**",
+        "./public/**",
+        "./package.json",
+        "./tsconfig.json",
+        "./.env.local"
+      ],
+      "write": [
+        "./output/**",
+        "./.tank/cache/**"
+      ]
     },
-    "subprocess": false
+    "subprocess": false,
+    "environment": [
+      "ANTHROPIC_API_KEY",
+      "VERCEL_TOKEN",
+      "NODE_ENV"
+    ]
   }
 }
 ```
 
-## Enforcement
+This budget tells Tank:
 
-Current enforcement points:
+- **Network:** Skills may reach Anthropic's API, any Vercel subdomain, and the npm registry — nothing else
+- **Filesystem (read):** Source files, public assets, and config files are readable; secrets in `.env.local` are explicitly granted
+- **Filesystem (write):** Only the output directory and Tank's own cache are writable
+- **Subprocess:** Blocked — no skill may spawn shell commands
+- **Environment:** Only three named variables may be read
 
-1. publish validates the permission shape
-2. install and update enforce the project budget
-3. scanner compares declared permissions with observed behavior
-4. publish checks whether a new version escalates permissions beyond the allowed semver bump
+If `@community/seo-audit` declares `network.outbound: ["*.googleapis.com"]` — a domain not in the budget — `tank install` will fail:
 
-## Escalation Rules
+```
+✗ Installation failed: permission budget exceeded
 
-Current publish rules:
+  Skill:       @community/seo-audit@3.0.0
+  Permission:  network.outbound
+  Requested:   *.googleapis.com
+  Budget:      api.anthropic.com, *.vercel.com, registry.npmjs.org
 
   Either:
     1. Add "*.googleapis.com" to the network.outbound budget in tank.json
@@ -3337,14 +3367,227 @@ Current publish rules:
     3. Contact the skill author to understand why this domain is needed
 ```
 
-## Limits Of The Current Model
+---
 
-Tank does not currently provide OS-level runtime isolation. The protection model today is:
+## Budget Enforcement: How `checkPermissionBudget()` Works
 
-- explicit declaration
-- install-time enforcement
-- scanner verification
-- human review where needed
+The budget enforcement logic runs in the CLI (`apps/cli/src/lib/`) during `tank install` and `tank update`. It compares each skill's declared permissions against the project budget field by field.
+
+### Domain Matching (`network.outbound`)
+
+For each domain the skill requests, the enforcer checks:
+
+1. **Exact match:** `api.anthropic.com` matches `api.anthropic.com` in the budget
+2. **Wildcard suffix match:** `api.anthropic.com` matches `*.anthropic.com` in the budget
+3. **No match:** Installation fails with the domain listed in the error
+
+The wildcard expansion is single-level only. `api.v2.anthropic.com` does **not** match `*.anthropic.com` — it would need `*.v2.anthropic.com` or `*.*.anthropic.com` (the latter of which is not supported). This prevents accidental over-permissioning through nested wildcard expansion.
+
+### Path Matching (`filesystem.read` and `filesystem.write`)
+
+For each path glob the skill requests, the enforcer checks:
+
+1. **Exact match:** `./package.json` matches `./package.json` in the budget
+2. **Glob subsetting:** A skill requesting `./src/utils/**` passes if the budget contains `./src/**` (the requested glob is fully contained within the budget glob)
+3. **Glob expansion:** Both sides are expanded against the actual filesystem. If the skill's glob would match files that the budget's glob does not cover, enforcement fails
+
+Glob matching uses the same library used for `.gitignore` pattern matching, with one key difference: patterns are always anchored to the project root and never follow symlinks.
+
+### Subprocess Enforcement
+
+Simple boolean check. If the budget has `subprocess: false` (or omits the field, which defaults to `false`), any skill with `subprocess: true` fails immediately.
+
+### Environment Variable Enforcement
+
+Each variable name the skill requests must appear literally in the budget's `environment` array. There is no wildcard support for environment variable names — `ANTHROPIC_*` is not a valid pattern. Every variable must be named explicitly.
+
+### Enforcement Order
+
+The enforcer checks all skills against the budget before extracting any of them. If multiple skills exceed the budget, all violations are reported together rather than stopping at the first failure:
+
+```
+✗ Installation failed: 2 skills exceeded the permission budget
+
+  @foo/skill-a@1.0.0
+    network.outbound: "api.openai.com" not in budget
+
+  @bar/skill-b@2.3.1
+    subprocess: true, but budget disallows subprocess
+    environment: "AWS_SECRET_ACCESS_KEY" not in budget
+```
+
+---
+
+## Permission Escalation Detection
+
+Every new version of a skill is checked against its previous version's permissions when published. This prevents a malicious publisher from sneaking dangerous permission changes through as minor or patch releases.
+
+The escalation logic is implemented in `apps/web/lib/permission-escalation.ts` and runs server-side during `tank publish`.
+
+### Version Bump Rules
+
+The type of version bump (major, minor, or patch) determines what permission changes are allowed:
+
+| Bump Type | Allowed Permission Changes |
+|-----------|--------------------------|
+| **Major** (1.x.x → 2.0.0) | All changes allowed — users explicitly opt in to major versions |
+| **Minor** (1.2.x → 1.3.0) | Non-dangerous additions allowed; network domains and subprocess changes require major |
+| **Patch** (1.2.3 → 1.2.4) | No new permissions of any kind — only bug fixes |
+| **First publish** | Always allowed — no previous version to compare |
+
+**What constitutes a "dangerous escalation" for minor bumps:**
+
+- Adding a new domain to `network.outbound` → requires major bump
+- Enabling `subprocess: true` (was `false` or absent) → requires major bump
+- Adding any `environment` variable that includes `SECRET`, `KEY`, `TOKEN`, or `PASSWORD` (case-insensitive) in its name → requires major bump
+
+**What is allowed on minor bumps:**
+
+- Adding new filesystem paths to `read` or `write` (considered lower-risk, surfaced in changelog)
+- Adding environment variables with benign names (e.g., `NODE_ENV`, `DEBUG`)
+
+**What is never allowed on patch bumps:**
+
+- Any new permission, including adding a single domain, a single file path, or a single environment variable
+
+### Example Rejection
+
+A skill at version `2.3.4` currently declares:
+
+```yaml
+permissions:
+  network:
+    outbound: ["api.anthropic.com"]
+  subprocess: false
+```
+
+The publisher attempts to publish `2.3.5` (patch bump) with:
+
+```yaml
+permissions:
+  network:
+    outbound: ["api.anthropic.com", "data.analytics.io"]  # new domain
+  subprocess: false
+```
+
+Result:
+
+```
+✗ Publish rejected: permission escalation in patch bump
+
+  Version: 2.3.4 → 2.3.5 (patch)
+  Change:  network.outbound — added "data.analytics.io"
+
+  Adding new network domains requires at least a minor version bump.
+  New network domains in a minor bump require a major version bump.
+
+  To publish with this permission change, bump to version 3.0.0.
+```
+
+<Callout type="info">
+These rules protect skill consumers. When you run `tank update`, you expect patch updates to be safe by definition — no new capabilities, no new attack surface. The escalation enforcement makes that guarantee hard rather than advisory.
+</Callout>
+
+---
+
+## Permission Best Practices
+
+| Permission | ✅ Best Practice | ❌ Anti-Pattern | Why |
+|------------|-----------------|-----------------|-----|
+| `network.outbound` | `["api.stripe.com", "api.sendgrid.com"]` | `["*"]` | Wildcards allow reaching any host, including attacker-controlled servers |
+| `network.outbound` | `["api.example.com"]` | `["*.example.com"]` | Only use wildcards if the skill genuinely needs multiple subdomains |
+| `filesystem.read` | `["./src/**", "./package.json"]` | `["./**"]` or `["/**"]` | Reading the entire project exposes secrets, credentials, and private data |
+| `filesystem.write` | `["./output/**"]` | `["./src/**"]` | Write access to source files allows backdoor injection |
+| `filesystem.write` | Never grant | `["./.env*"]` | Write access to `.env` files allows credential theft |
+| `subprocess` | `false` or absent | `true` (without justification) | Subprocess access bypasses all other permission controls |
+| `environment` | `["OPENAI_API_KEY"]` | (no guidance — always explicit) | Name only what you need; any undeclared variable the code reads is flagged |
+| General | Declare the minimum needed | Declare broad permissions "just in case" | Broad permissions harm your audit score and erode user trust |
+
+### The Minimal-Permission Principle
+
+Declare only the permissions your skill actually requires to function. This principle matters for two reasons:
+
+1. **Audit score:** Check #5 (permission extraction match) awards 2 points when your declared permissions precisely match what the code actually uses. Over-declaring permissions costs points even if no code uses them.
+
+2. **Installer trust:** The registry displays permissions prominently on every skill page. A skill with `subprocess: true` and broad filesystem write access will receive fewer installs than an equivalent skill with minimal permissions — because sophisticated users read the permission list before installing.
+
+---
+
+## Viewing Permissions
+
+### CLI: `tank permissions`
+
+The `tank permissions` command reads the installed lockfile and displays a resolved summary of every permission in use across all installed skills, grouped by type:
+
+```bash
+tank permissions
+
+# Output:
+# Resolved permissions for 3 installed skills
+#
+# network.outbound
+#   api.anthropic.com          ← @vercel/next-skill@2.1.3
+#   *.vercel.com               ← @vercel/next-skill@2.1.3
+#   cdn.jsdelivr.net           ← @community/seo-audit@3.0.0
+#
+# filesystem.read
+#   ./src/**                   ← @vercel/next-skill@2.1.3, @community/seo-audit@3.0.0
+#   ./package.json             ← all 3 skills
+#   ./.env.local               ← @team/internal-linter@1.0.0
+#
+# filesystem.write
+#   ./output/**                ← @community/seo-audit@3.0.0
+#   ./.tank/cache/**           ← @vercel/next-skill@2.1.3
+#
+# subprocess
+#   (none)
+#
+# environment
+#   ANTHROPIC_API_KEY          ← @vercel/next-skill@2.1.3
+#   VERCEL_TOKEN               ← @vercel/next-skill@2.1.3
+#   NODE_ENV                   ← @community/seo-audit@3.0.0
+```
+
+This view makes it immediately clear which skill is claiming which access. If `.env.local` appearing under `filesystem.read` is unexpected for your use case, you can investigate `@team/internal-linter` before trusting it with that access.
+
+### MCP Tool: `tank_permissions`
+
+The MCP server exposes a `tank_permissions` tool that returns the same resolved permission summary as a structured JSON object, making it usable by the agent itself to introspect what its skills are allowed to do:
+
+```json
+{
+  "network": {
+    "outbound": {
+      "api.anthropic.com": ["@vercel/next-skill@2.1.3"],
+      "*.vercel.com": ["@vercel/next-skill@2.1.3"]
+    }
+  },
+  "filesystem": {
+    "read": {
+      "./src/**": ["@vercel/next-skill@2.1.3", "@community/seo-audit@3.0.0"],
+      "./package.json": ["@vercel/next-skill@2.1.3", "@community/seo-audit@3.0.0", "@team/internal-linter@1.0.0"]
+    },
+    "write": {
+      "./output/**": ["@community/seo-audit@3.0.0"]
+    }
+  },
+  "subprocess": false,
+  "environment": {
+    "ANTHROPIC_API_KEY": ["@vercel/next-skill@2.1.3"],
+    "VERCEL_TOKEN": ["@vercel/next-skill@2.1.3"],
+    "NODE_ENV": ["@community/seo-audit@3.0.0"]
+  }
+}
+```
+
+---
+
+## Further Reading
+
+- [Security Model](/docs/security) — How the 6-stage scanner detects malicious permissions usage in code
+- [Security Checklist](/docs/security-checklist) — Pre-publish checklist including permission best practices
+- [Publishing Guide](/docs/publishing) — Full workflow for declaring permissions when publishing
+- [CLI Reference](/docs/cli) — All `tank permissions`, `tank audit`, and `tank verify` command options
 
 
 ---
