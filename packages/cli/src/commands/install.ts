@@ -4,8 +4,14 @@ import os from 'node:os';
 import path from 'node:path';
 import { LOCKFILE_VERSION, type Permissions, resolve, type SkillsLock } from '@internal/shared';
 import ora from 'ora';
-import { detectInstalledAgents, getGlobalAgentSkillsDir, getGlobalSkillsDir } from '../lib/agents.js';
+import { resolve, type Permissions, type SkillsLock, LOCKFILE_VERSION, MANIFEST_FILENAME, LOCKFILE_FILENAME } from '@internal/shared';
 import { getConfig } from '../lib/config.js';
+import { logger } from '../lib/logger.js';
+import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
+import { prepareAgentSkillDir } from '../lib/frontmatter.js';
+import { linkSkillToAgents } from '../lib/linker.js';
+import { detectInstalledAgents, getGlobalSkillsDir, getGlobalAgentSkillsDir } from '../lib/agents.js';
+import { USER_AGENT } from '../version.js';
 import {
   buildSkillKey,
   type RegistryFetcher,
@@ -151,15 +157,15 @@ function readSkillsJson(skillsJsonPath: string): Record<string, unknown> {
     const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
     return JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    throw new Error('Failed to read or parse skills.json');
+    throw new Error(`Failed to read or parse ${path.basename(skillsJsonPath)}`);
   }
 }
 
 function readOrCreateSkillsJson(skillsJsonPath: string): Record<string, unknown> {
   if (!fs.existsSync(skillsJsonPath)) {
     const skillsJson: Record<string, unknown> = { skills: {} };
-    fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
-    logger.info('Created skills.json');
+    fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+    logger.info(`Created ${MANIFEST_FILENAME}`);
     return skillsJson;
   }
 
@@ -202,7 +208,7 @@ function validateResolvedNodes(
   auditMinScore: number | undefined
 ): void {
   if (!projectPermissions) {
-    logger.warn('No permission budget defined in skills.json. Install proceeding without permission checks.');
+    logger.warn(`No permission budget defined in ${MANIFEST_FILENAME}. Install proceeding without permission checks.`);
   }
 
   for (const node of resolvedNodes) {
@@ -215,7 +221,7 @@ function validateResolvedNodes(
         logger.warn(`Audit score not yet available for ${node.name}. Install proceeding without audit score check.`);
       } else if (node.meta.auditScore < auditMinScore) {
         throw new Error(
-          `Audit score ${node.meta.auditScore} for ${node.name} is below minimum threshold ${auditMinScore} defined in skills.json`
+          `Audit score ${node.meta.auditScore} for ${node.name} is below minimum threshold ${auditMinScore} defined in ${MANIFEST_FILENAME}`,
         );
       }
     }
@@ -402,9 +408,15 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  const skillsJsonPath = path.join(directory, 'skills.json');
+  const resolvedManifest = resolveManifestPath(directory);
+  const skillsJsonPath = resolvedManifest.exists ? resolvedManifest.path : path.join(directory, MANIFEST_FILENAME);
   const skillsJson = global ? { skills: {} } : readOrCreateSkillsJson(skillsJsonPath);
-  const lockPath = global ? path.join(resolvedHome, '.tank', 'skills.lock') : path.join(directory, 'skills.lock');
+  const resolvedLock = global
+    ? resolveLockfilePath(path.join(resolvedHome, '.tank'))
+    : resolveLockfilePath(directory);
+  const lockPath = resolvedLock.exists ? resolvedLock.path : (global
+    ? path.join(resolvedHome, '.tank', LOCKFILE_FILENAME)
+    : path.join(directory, LOCKFILE_FILENAME));
   const lock = readLockOrFresh(lockPath);
   const spinner = ora('Resolving dependency graph...').start();
 
@@ -496,9 +508,12 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  const lockPath = global ? path.join(resolvedHome, '.tank', 'skills.lock') : path.join(directory, 'skills.lock');
-  if (!fs.existsSync(lockPath)) {
-    throw new Error(`No skills.lock found in ${directory}`);
+  const resolvedLock = global
+    ? resolveLockfilePath(path.join(resolvedHome, '.tank'))
+    : resolveLockfilePath(directory);
+  const lockPath = resolvedLock.path;
+  if (!resolvedLock.exists) {
+    throw new Error(`No ${LOCKFILE_FILENAME} found in ${directory}`);
   }
 
   let lock: SkillsLock;
@@ -506,7 +521,7 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
     const raw = fs.readFileSync(lockPath, 'utf-8');
     lock = JSON.parse(raw) as SkillsLock;
   } catch {
-    throw new Error('Failed to read or parse skills.lock');
+    throw new Error(`Failed to read or parse ${path.basename(lockPath)}`);
   }
 
   const entries = Object.entries(lock.skills);
@@ -618,20 +633,26 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  const lockPath = global ? path.join(resolvedHome, '.tank', 'skills.lock') : path.join(directory, 'skills.lock');
-  const skillsJsonPath = path.join(directory, 'skills.json');
+  const resolvedLock = global
+    ? resolveLockfilePath(path.join(resolvedHome, '.tank'))
+    : resolveLockfilePath(directory);
+  const lockPath = resolvedLock.exists ? resolvedLock.path : (global
+    ? path.join(resolvedHome, '.tank', LOCKFILE_FILENAME)
+    : path.join(directory, LOCKFILE_FILENAME));
+  const resolvedManifest = resolveManifestPath(directory);
+  const skillsJsonPath = resolvedManifest.path;
 
-  if (fs.existsSync(lockPath)) {
+  if (resolvedLock.exists) {
     return installFromLockfile({ directory, configDir, global, homedir });
   }
 
   if (global) {
-    logger.info('No skills.lock found — nothing to install');
+    logger.info(`No ${LOCKFILE_FILENAME} found — nothing to install`);
     return;
   }
 
-  if (!fs.existsSync(skillsJsonPath)) {
-    logger.info('No skills.json found — nothing to install');
+  if (!resolvedManifest.exists) {
+    logger.info(`No ${MANIFEST_FILENAME} found — nothing to install`);
     return;
   }
 
@@ -640,7 +661,7 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
   const skillEntries = Object.entries(skills);
 
   if (skillEntries.length === 0) {
-    logger.info('No skills defined in skills.json');
+    logger.info(`No skills defined in ${MANIFEST_FILENAME}`);
     return;
   }
 

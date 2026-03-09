@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { detectInstalledAgents, getGlobalSkillsDir, getSupportedAgents } from '../lib/agents.js';
 import { type AgentLinkStatus, getSkillLinkStatus } from '../lib/linker.js';
 import { readGlobalLinks } from '../lib/links.js';
+import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
 
 export interface DoctorOptions {
   directory?: string;
@@ -105,15 +106,15 @@ export async function doctorCommand(options?: DoctorOptions): Promise<void> {
     const installedAgents = detectInstalledAgents(homedir);
     const installedIds = new Set(installedAgents.map((agent) => agent.id));
 
-    const skillsJsonPath = path.join(directory, 'skills.json');
-    const localSkills = fs.existsSync(skillsJsonPath)
-      ? Object.keys(JSON.parse(fs.readFileSync(skillsJsonPath, 'utf-8')).skills ?? {})
+    const resolvedManifest = resolveManifestPath(directory);
+    const localSkills = resolvedManifest.exists
+      ? Object.keys(JSON.parse(fs.readFileSync(resolvedManifest.path, 'utf-8')).skills ?? {})
       : [];
     localSkills.sort();
 
-    const globalLockPath = path.join(homedir, '.tank', 'skills.lock');
-    const globalSkills = fs.existsSync(globalLockPath)
-      ? Object.keys(JSON.parse(fs.readFileSync(globalLockPath, 'utf-8')).skills ?? {}).map(parseLockKey)
+    const resolvedGlobalLock = resolveLockfilePath(path.join(homedir, '.tank'));
+    const globalSkills = resolvedGlobalLock.exists
+      ? Object.keys(JSON.parse(fs.readFileSync(resolvedGlobalLock.path, 'utf-8')).skills ?? {}).map(parseLockKey)
       : [];
     const uniqueGlobal = Array.from(new Set(globalSkills)).sort();
 

@@ -20,7 +20,7 @@ export interface SkillFixture {
 }
 
 /**
- * Create a temporary skill directory with valid skills.json + SKILL.md.
+ * Create a temporary skill directory with valid tank.json + SKILL.md.
  * Ready for `tank publish`.
  */
 export function createSkillFixture(opts: {
@@ -35,7 +35,7 @@ export function createSkillFixture(opts: {
   const name = `@${opts.orgSlug}/${opts.skillName}`;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-skill-'));
 
-  // skills.json
+  // tank.json
   const manifest = {
     name,
     version,
@@ -46,7 +46,10 @@ export function createSkillFixture(opts: {
       subprocess: false
     }
   };
-  fs.writeFileSync(path.join(dir, 'skills.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  fs.writeFileSync(
+    path.join(dir, 'tank.json'),
+    JSON.stringify(manifest, null, 2) + '\n',
+  );
 
   // SKILL.md (required by packer)
   fs.writeFileSync(
@@ -73,10 +76,10 @@ export function createSkillFixture(opts: {
 }
 
 /**
- * Update the version in a skill fixture's skills.json.
+ * Update the version in a skill fixture's tank.json.
  */
 export function bumpSkillVersion(fixture: SkillFixture, newVersion: string): void {
-  const manifestPath = path.join(fixture.dir, 'skills.json');
+  const manifestPath = path.join(fixture.dir, 'tank.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   manifest.version = newVersion;
   fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -93,7 +96,7 @@ export interface ConsumerFixture {
 }
 
 /**
- * Create a temporary consumer project directory with skills.json.
+ * Create a temporary consumer project directory with tank.json.
  * Ready for `tank install <skill>`.
  */
 export function createConsumerFixture(opts?: {
@@ -116,7 +119,10 @@ export function createConsumerFixture(opts?: {
     }
   };
 
-  fs.writeFileSync(path.join(dir, 'skills.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+  fs.writeFileSync(
+    path.join(dir, 'tank.json'),
+    JSON.stringify(manifest, null, 2) + '\n',
+  );
 
   // Create SKILL.md so the directory validates as a skill project
   fs.writeFileSync(path.join(dir, 'SKILL.md'), `# E2E Consumer Project\n\nTest consumer for Tank E2E tests.\n`);

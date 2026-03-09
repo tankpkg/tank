@@ -67,22 +67,28 @@ describe('removeCommand', () => {
   });
 
   function writeSkillsJson(data: Record<string, unknown> = baseSkillsJson) {
-    fs.writeFileSync(path.join(tmpDir, 'skills.json'), `${JSON.stringify(data, null, 2)}\n`);
+    fs.writeFileSync(
+      path.join(tmpDir, 'tank.json'),
+      JSON.stringify(data, null, 2) + '\n',
+    );
   }
 
   function writeLockfile(data: Record<string, unknown> = baseLockfile) {
-    fs.writeFileSync(path.join(tmpDir, 'skills.lock'), `${JSON.stringify(data, null, 2)}\n`);
+    fs.writeFileSync(
+      path.join(tmpDir, 'tank.lock'),
+      JSON.stringify(data, null, 2) + '\n',
+    );
   }
 
   function readSkillsJson(): Record<string, unknown> {
-    return JSON.parse(fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8'));
+    return JSON.parse(fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8'));
   }
 
   function readLockfile(): Record<string, unknown> {
-    return JSON.parse(fs.readFileSync(path.join(tmpDir, 'skills.lock'), 'utf-8'));
+    return JSON.parse(fs.readFileSync(path.join(tmpDir, 'tank.lock'), 'utf-8'));
   }
 
-  it('removes skill from skills.json', async () => {
+  it('removes skill from tank.json', async () => {
     const { removeCommand } = await import('../commands/remove.js');
     writeSkillsJson();
     writeLockfile();
@@ -204,18 +210,20 @@ describe('removeCommand', () => {
 
     // Scoped directory should be removed
     expect(fs.existsSync(skillDir)).toBe(false);
-    // skills.json should not have the skill
+    // tank.json should not have the skill
     const updated = readSkillsJson();
     expect((updated.skills as Record<string, string>)['@test-org/my-skill']).toBeUndefined();
   });
 
-  it('errors when skills.json is missing', async () => {
+  it('errors when tank.json is missing', async () => {
     const { removeCommand } = await import('../commands/remove.js');
 
-    await expect(removeCommand({ name: '@test-org/my-skill', directory: tmpDir })).rejects.toThrow(/skills\.json/i);
+    await expect(
+      removeCommand({ name: '@test-org/my-skill', directory: tmpDir }),
+    ).rejects.toThrow(/tank\.json/i);
   });
 
-  it('errors when skill is not in skills.json', async () => {
+  it('errors when skill is not in tank.json', async () => {
     const { removeCommand } = await import('../commands/remove.js');
     writeSkillsJson();
 
@@ -224,7 +232,7 @@ describe('removeCommand', () => {
     );
   });
 
-  it('handles missing skills.lock gracefully (just skips lockfile update)', async () => {
+  it('handles missing tank.lock gracefully (just skips lockfile update)', async () => {
     const { removeCommand } = await import('../commands/remove.js');
     writeSkillsJson();
     // No lockfile written
@@ -232,11 +240,11 @@ describe('removeCommand', () => {
     // Should not throw
     await removeCommand({ name: '@test-org/my-skill', directory: tmpDir });
 
-    // skills.json should still be updated
+    // tank.json should still be updated
     const updated = readSkillsJson();
     expect((updated.skills as Record<string, string>)['@test-org/my-skill']).toBeUndefined();
     // No lockfile should be created
-    expect(fs.existsSync(path.join(tmpDir, 'skills.lock'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, 'tank.lock'))).toBe(false);
   });
 
   it('prints success message', async () => {
@@ -250,18 +258,18 @@ describe('removeCommand', () => {
     expect(vi.mocked(logger.success)).toHaveBeenCalledWith(expect.stringContaining('@test-org/my-skill'));
   });
 
-  it('writes skills.json with trailing newline', async () => {
+  it('writes tank.json with trailing newline', async () => {
     const { removeCommand } = await import('../commands/remove.js');
     writeSkillsJson();
     writeLockfile();
 
     await removeCommand({ name: '@test-org/my-skill', directory: tmpDir });
 
-    const raw = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+    const raw = fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8');
     expect(raw.endsWith('\n')).toBe(true);
   });
 
-  it('writes skills.lock with sorted keys', async () => {
+  it('writes tank.lock with sorted keys', async () => {
     const { removeCommand } = await import('../commands/remove.js');
 
     // Add skills in non-alphabetical order
@@ -323,28 +331,28 @@ describe('removeCommand', () => {
     fs.rmSync(homeDir, { recursive: true, force: true });
   });
 
-  it('does NOT touch project skills.json for global remove', async () => {
+  it('does NOT touch project tank.json for global remove', async () => {
     const { removeCommand } = await import('../commands/remove.js');
     const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
     writeSkillsJson();
     writeLockfile();
 
-    const original = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+    const original = fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8');
 
     await removeCommand({ name: '@test-org/my-skill', directory: tmpDir, global: true, homedir: homeDir });
 
-    const updated = fs.readFileSync(path.join(tmpDir, 'skills.json'), 'utf-8');
+    const updated = fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8');
     expect(updated).toBe(original);
     fs.rmSync(homeDir, { recursive: true, force: true });
   });
 
-  it('updates ~/.tank/skills.lock for global remove', async () => {
+  it('updates ~/.tank/tank.lock for global remove', async () => {
     const { removeCommand } = await import('../commands/remove.js');
     const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
     writeSkillsJson();
     writeLockfile();
 
-    const lockPath = path.join(homeDir, '.tank', 'skills.lock');
+    const lockPath = path.join(homeDir, '.tank', 'tank.lock');
     fs.mkdirSync(path.dirname(lockPath), { recursive: true });
     fs.writeFileSync(lockPath, `${JSON.stringify(baseLockfile, null, 2)}\n`);
 
@@ -375,26 +383,26 @@ describe('removeCommand', () => {
     fs.rmSync(homeDir, { recursive: true, force: true });
   });
 
-  it('errors when skills.json is corrupt (invalid JSON)', async () => {
+  it('errors when tank.json is corrupt (invalid JSON)', async () => {
     const { removeCommand } = await import('../commands/remove.js');
-    // Write invalid JSON to skills.json
-    fs.writeFileSync(path.join(tmpDir, 'skills.json'), '{invalid json}');
+    // Write invalid JSON to tank.json
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{invalid json}');
 
-    await expect(removeCommand({ name: '@test-org/my-skill', directory: tmpDir })).rejects.toThrow(
-      /skills\.json|parse/i
-    );
+    await expect(
+      removeCommand({ name: '@test-org/my-skill', directory: tmpDir }),
+    ).rejects.toThrow(/tank\.json|parse/i);
   });
 
   it('handles corrupt lockfile gracefully (initializes fresh)', async () => {
     const { removeCommand } = await import('../commands/remove.js');
     writeSkillsJson();
     // Write invalid JSON to lockfile
-    fs.writeFileSync(path.join(tmpDir, 'skills.lock'), '{invalid json}');
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), '{invalid json}');
 
     // Should not throw — lockfile parse error is caught and fresh lockfile is created
     await expect(removeCommand({ name: '@test-org/my-skill', directory: tmpDir })).resolves.toBeUndefined();
 
-    // Verify skill was removed from skills.json
+    // Verify skill was removed from tank.json
     const updated = readSkillsJson();
     expect((updated.skills as Record<string, string>)['@test-org/my-skill']).toBeUndefined();
 
@@ -424,7 +432,7 @@ describe('removeCommand', () => {
 
     // Unscoped directory should be removed
     expect(fs.existsSync(skillDir)).toBe(false);
-    // skills.json should not have the skill
+    // tank.json should not have the skill
     const updated = readSkillsJson();
     expect((updated.skills as Record<string, string>)['simple-skill']).toBeUndefined();
     // Lockfile should not have the skill

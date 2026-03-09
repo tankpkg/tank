@@ -8,7 +8,7 @@ Tank is a security-first package manager for AI agent skills. It provides versio
 
 - [API Reference](https://tankpkg.dev/docs/api): Complete REST API reference for the Tank skill registry — authentication, search, publishing, version management, and security scanning endpoints.
 - [CI/CD Integration](https://tankpkg.dev/docs/cicd): Automate AI agent skill installation and publishing in CI/CD pipelines — GitHub Actions, GitLab CI, Docker, and the official Tank GitHub Action.
-- [CLI Reference](https://tankpkg.dev/docs/cli): Complete reference for all 18 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+- [CLI Reference](https://tankpkg.dev/docs/cli): Complete reference for all 19 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 - [Getting Started with Tank](https://tankpkg.dev/docs/getting-started): Install the Tank CLI, authenticate with GitHub, and install your first AI agent skill in under 5 minutes — with SHA-512 integrity verification and permission budgets.
 - [GitHub Action for Publishing](https://tankpkg.dev/docs/github-action): Automate AI agent skill publishing with Tank's official GitHub Action — security scanning, version validation, and badge generation in your CI/CD pipeline.
 - [Tank Documentation](https://tankpkg.dev/docs): Official documentation for Tank — the security-first package manager for AI agent skills. Install, publish, scan, and manage skills for Claude Code, Cursor, and other AI coding assistants.

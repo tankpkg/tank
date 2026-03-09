@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Permissions, SkillsJson, SkillsLock } from '@internal/shared';
 import chalk from 'chalk';
+import type { Permissions, SkillsLock, SkillsJson } from '@internal/shared';
+import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
 
 export interface PermissionsOptions {
   directory?: string;
@@ -184,15 +186,15 @@ function printPermissionSection(title: string, entries: PermissionEntry[]): void
 
 export async function permissionsCommand(options?: PermissionsOptions): Promise<void> {
   const dir = options?.directory ?? process.cwd();
-  const lockfilePath = path.join(dir, 'skills.lock');
+  const resolvedLock = resolveLockfilePath(dir);
 
   // 1. Read lockfile
-  if (!fs.existsSync(lockfilePath)) {
+  if (!resolvedLock.exists) {
     console.log('No skills installed.');
     return;
   }
 
-  const lockfileContent = fs.readFileSync(lockfilePath, 'utf-8');
+  const lockfileContent = fs.readFileSync(resolvedLock.path, 'utf-8');
   const lockfile: SkillsLock = JSON.parse(lockfileContent);
 
   if (!lockfile.skills || Object.keys(lockfile.skills).length === 0) {
@@ -219,11 +221,11 @@ export async function permissionsCommand(options?: PermissionsOptions): Promise<
   }
 
   // 4. Budget check
-  const skillsJsonPath = path.join(dir, 'skills.json');
+  const resolvedManifest = resolveManifestPath(dir);
   let budget: Permissions | undefined;
 
-  if (fs.existsSync(skillsJsonPath)) {
-    const skillsJsonContent = fs.readFileSync(skillsJsonPath, 'utf-8');
+  if (resolvedManifest.exists) {
+    const skillsJsonContent = fs.readFileSync(resolvedManifest.path, 'utf-8');
     const skillsJson: SkillsJson = JSON.parse(skillsJsonContent);
     budget = skillsJson.permissions;
   }

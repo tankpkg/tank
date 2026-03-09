@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
+import { MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@internal/shared';
 import { TankApiClient } from '../lib/api-client.js';
 import { getConfig } from '../lib/config.js';
 import { pack, packForScan } from '../lib/packer.js';
@@ -83,10 +82,9 @@ export function registerScanSkillTool(server: McpServer): void {
       let packResult: Awaited<ReturnType<typeof pack>>;
       let usedSynthesisedManifest = false;
 
-      const skillsJsonPath = path.join(absDir, 'skills.json');
-      const hasSkillsJson = fs.existsSync(skillsJsonPath);
+      const hasManifest = fs.existsSync(path.join(absDir, MANIFEST_FILENAME)) || fs.existsSync(path.join(absDir, LEGACY_MANIFEST_FILENAME));
 
-      if (hasSkillsJson) {
+      if (hasManifest) {
         try {
           packResult = await pack(absDir);
         } catch (err) {
@@ -166,7 +164,7 @@ export function registerScanSkillTool(server: McpServer): void {
       const lines: string[] = [`## Scan Results for ${skillName}@${skillVersion}`, ''];
 
       if (usedSynthesisedManifest) {
-        lines.push('> **Note:** No `skills.json` found. A synthesised manifest was used for scanning.');
+        lines.push(`> **Note:** No \`${MANIFEST_FILENAME}\` found. A synthesised manifest was used for scanning.`);
         lines.push('');
       }
 

@@ -178,8 +178,8 @@ ${commands
 | File | Purpose |
 |------|---------|
 | \`~/.tank/config.json\` | Auth token and registry URL (permissions: \`0600\`) |
-| \`skills.json\` | Project manifest — skill metadata, dependencies, and permission budget |
-| \`skills.lock\` | Deterministic lockfile — pinned versions with SHA-512 hashes |
+| \`tank.json\` | Project manifest — skill metadata, dependencies, and permission budget |
+| \`tank.lock\` | Deterministic lockfile — pinned versions with SHA-512 hashes |
 
 ## Exit Codes
 

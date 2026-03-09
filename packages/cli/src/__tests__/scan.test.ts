@@ -49,7 +49,7 @@ describe('scanCommand', () => {
     fileCount: 5,
     totalSize: 2048,
     readme: '# Test Skill\n\nA test skill.',
-    files: ['skills.json', 'SKILL.md', 'src/index.ts']
+    files: ['tank.json', 'SKILL.md', 'src/index.ts'],
   };
 
   function makeScanResponse(overrides: Record<string, unknown> = {}) {
@@ -72,7 +72,10 @@ describe('scanCommand', () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-scan-test-'));
     configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-scan-config-'));
 
-    fs.writeFileSync(path.join(tmpDir, 'skills.json'), JSON.stringify(validManifest, null, 2));
+    fs.writeFileSync(
+      path.join(tmpDir, 'tank.json'),
+      JSON.stringify(validManifest, null, 2),
+    );
 
     fs.writeFileSync(
       path.join(configDir, 'config.json'),

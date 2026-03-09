@@ -293,7 +293,7 @@ describe('Integration E2E — agent linking workflows', () => {
     const agentSkillsDir = path.resolve(path.join(ctx.home, '.tank', 'agent-skills', symlinkName));
     const agentSkillMd = path.join(agentSkillsDir, 'SKILL.md');
     const linksPath = path.join(ctx.home, '.tank', 'links.json');
-    const lockPath = path.join(ctx.home, '.tank', 'skills.lock');
+    const lockPath = path.join(ctx.home, '.tank', 'tank.lock');
 
     // Verify extraction
     expect(fs.existsSync(extractDir)).toBe(true);
@@ -306,7 +306,7 @@ describe('Integration E2E — agent linking workflows', () => {
     const agentSymlinks = getAgentSymlinkPaths(ctx.home, symlinkName);
     expectLinksEntry(linksPath, skill.name, 'global', agentSkillsDir, agentSymlinks);
 
-    // Verify skills.lock entry
+    // Verify tank.lock entry
     expect(fs.existsSync(lockPath)).toBe(true);
     const lockfile = readJson<{ skills: Record<string, unknown> }>(lockPath);
     const lockKeys = Object.keys(lockfile.skills);
@@ -353,7 +353,7 @@ describe('Integration E2E — agent linking workflows', () => {
     const extractDir = getExtractDir(path.join(ctx.home, '.tank', 'skills'), skill.name);
     const agentSkillsDir = path.join(ctx.home, '.tank', 'agent-skills', symlinkName);
     const linksPath = path.join(ctx.home, '.tank', 'links.json');
-    const lockPath = path.join(ctx.home, '.tank', 'skills.lock');
+    const lockPath = path.join(ctx.home, '.tank', 'tank.lock');
     const agentSymlinks = getAgentSymlinkPaths(ctx.home, symlinkName);
 
     // Verify extraction removed

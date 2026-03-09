@@ -35,11 +35,17 @@ describe('permissionsCommand', () => {
   });
 
   function writeLockfile(skills: Record<string, unknown>): void {
-    fs.writeFileSync(path.join(tmpDir, 'skills.lock'), `${JSON.stringify({ lockfileVersion: 1, skills }, null, 2)}\n`);
+    fs.writeFileSync(
+      path.join(tmpDir, 'tank.lock'),
+      JSON.stringify({ lockfileVersion: 1, skills }, null, 2) + '\n',
+    );
   }
 
   function writeSkillsJson(obj: Record<string, unknown>): void {
-    fs.writeFileSync(path.join(tmpDir, 'skills.json'), `${JSON.stringify(obj, null, 2)}\n`);
+    fs.writeFileSync(
+      path.join(tmpDir, 'tank.json'),
+      JSON.stringify(obj, null, 2) + '\n',
+    );
   }
 
   it('shows "No skills installed" when no lockfile exists', async () => {

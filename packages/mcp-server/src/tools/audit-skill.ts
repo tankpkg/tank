@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { SkillsLock } from '@internal/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { type SkillsLock, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from '@internal/shared';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
 
@@ -133,7 +134,10 @@ export function registerAuditSkillTool(server: McpServer): void {
       // If no version specified, try to find installed version from lockfile
       let targetVersion = version;
       if (!targetVersion) {
-        const lockPath = path.join(process.cwd(), 'skills.lock');
+        let lockPath = path.join(process.cwd(), LOCKFILE_FILENAME);
+        if (!fs.existsSync(lockPath)) {
+          lockPath = path.join(process.cwd(), LEGACY_LOCKFILE_FILENAME);
+        }
         if (fs.existsSync(lockPath)) {
           try {
             const raw = fs.readFileSync(lockPath, 'utf-8');

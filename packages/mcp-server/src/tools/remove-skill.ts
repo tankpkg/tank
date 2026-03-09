@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { SkillsLock } from '@internal/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { type SkillsLock, LOCKFILE_VERSION, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from '@internal/shared';
 import { z } from 'zod';
 
 const SCOPED_NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
@@ -9,7 +10,7 @@ const SCOPED_NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
 export function registerRemoveSkillTool(server: McpServer): void {
   server.tool(
     'remove-skill',
-    'Remove an installed skill from the project. Removes from skills.json, skills.lock, and deletes skill files.',
+    `Remove an installed skill from the project. Removes from ${MANIFEST_FILENAME}, ${LOCKFILE_FILENAME}, and deletes skill files.`,
     {
       name: z.string().describe('Skill name in @org/name format'),
       directory: z.string().optional().describe('Project directory (defaults to current working directory)')
@@ -31,7 +32,11 @@ export function registerRemoveSkillTool(server: McpServer): void {
       const results: string[] = [];
       let skillFoundAnywhere = false;
 
-      const skillsJsonPath = path.join(dir, 'skills.json');
+      // Find manifest (tank.json or skills.json)
+      let skillsJsonPath = path.join(dir, MANIFEST_FILENAME);
+      if (!fs.existsSync(skillsJsonPath)) {
+        skillsJsonPath = path.join(dir, LEGACY_MANIFEST_FILENAME);
+      }
       if (fs.existsSync(skillsJsonPath)) {
         try {
           const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
@@ -42,15 +47,19 @@ export function registerRemoveSkillTool(server: McpServer): void {
             skillFoundAnywhere = true;
             delete skills[name];
             skillsJson.skills = skills;
-            fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
-            results.push(`Removed "${name}" from skills.json`);
+            fs.writeFileSync(skillsJsonPath, JSON.stringify(skillsJson, null, 2) + '\n');
+            results.push(`Removed "${name}" from ${path.basename(skillsJsonPath)}`);
           }
         } catch {
-          results.push('Warning: Failed to read or parse skills.json');
+          results.push(`Warning: Failed to read or parse ${path.basename(skillsJsonPath)}`);
         }
       }
 
-      const lockPath = path.join(dir, 'skills.lock');
+      // Find lockfile (tank.lock or skills.lock)
+      let lockPath = path.join(dir, LOCKFILE_FILENAME);
+      if (!fs.existsSync(lockPath)) {
+        lockPath = path.join(dir, LEGACY_LOCKFILE_FILENAME);
+      }
       if (fs.existsSync(lockPath)) {
         try {
           const raw = fs.readFileSync(lockPath, 'utf-8');
@@ -74,11 +83,11 @@ export function registerRemoveSkillTool(server: McpServer): void {
               sortedSkills[key] = lock.skills[key];
             }
             lock.skills = sortedSkills as SkillsLock['skills'];
-            fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
-            results.push(`Removed "${name}" from skills.lock`);
+            fs.writeFileSync(lockPath, JSON.stringify(lock, null, 2) + '\n');
+            results.push(`Removed "${name}" from ${path.basename(lockPath)}`);
           }
         } catch {
-          results.push('Warning: Failed to read or parse skills.lock');
+          results.push(`Warning: Failed to read or parse ${path.basename(lockPath)}`);
         }
       }
 
@@ -100,13 +109,11 @@ export function registerRemoveSkillTool(server: McpServer): void {
 
       if (!skillFoundAnywhere) {
         return {
-          content: [
-            {
-              type: 'text' as const,
-              text: `Skill "${name}" is not installed. It was not found in skills.json, skills.lock, or .tank/skills/.`
-            }
-          ],
-          isError: true
+          content: [{
+            type: 'text' as const,
+            text: `Skill "${name}" is not installed. It was not found in ${MANIFEST_FILENAME}, ${LOCKFILE_FILENAME}, or .tank/skills/.`,
+          }],
+          isError: true,
         };
       }
 

@@ -29,13 +29,13 @@ function writeSkillsJson(skills: Record<string, string>): void {
     skills,
     permissions: { network: { outbound: [] }, filesystem: { read: [], write: [] }, subprocess: false },
   };
-  fs.writeFileSync(path.join(projectDir(), 'skills.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.json'), JSON.stringify(manifest, null, 2) + '\n');
 }
 
 function writeLockfile(skills: Record<string, { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }>): void {
   ensureProjectDir();
   const lock = { lockfileVersion: 1, skills };
-  fs.writeFileSync(path.join(projectDir(), 'skills.lock'), JSON.stringify(lock, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
 }
 
 function makeLockEntry(version: string): { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null } {
@@ -210,7 +210,7 @@ describe('Feature: Skill update via MCP tool', () => {
         thenToolReturnsError();
         thenResponseContains(/connect|network|unreachable/i);
 
-        const lockRaw = fs.readFileSync(path.join(projectDir(), 'skills.lock'), 'utf-8');
+        const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
         const lock = JSON.parse(lockRaw) as { skills: Record<string, unknown> };
         expect(lock.skills['@acme/web-search@2.0.0']).toBeDefined();
       },

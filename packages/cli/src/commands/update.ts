@@ -1,12 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolve, type SkillsLock } from '@internal/shared';
-import { getGlobalSkillsDir } from '../lib/agents.js';
+import { resolve, type SkillsLock, LOCKFILE_VERSION, MANIFEST_FILENAME, LOCKFILE_FILENAME } from '@internal/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
 import { USER_AGENT } from '../version.js';
-import { installCommand } from './install.js';
+import { resolveManifestPath, resolveLockfilePath } from '../lib/manifest.js';
 
 export interface UpdateOptions {
   name?: string; // undefined = update all
@@ -38,18 +37,20 @@ export async function updateCommand(options: UpdateOptions): Promise<void> {
     return;
   }
 
-  // 1. Read skills.json
-  const skillsJsonPath = path.join(directory, 'skills.json');
-  if (!fs.existsSync(skillsJsonPath)) {
-    throw new Error(`No skills.json found in ${directory}. Run: tank init`);
+  // 1. Read manifest (tank.json or skills.json)
+  const resolvedManifest = resolveManifestPath(directory);
+  if (!resolvedManifest.exists) {
+    throw new Error(
+      `No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`,
+    );
   }
 
   let skillsJson: Record<string, unknown>;
   try {
-    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
+    const raw = fs.readFileSync(resolvedManifest.path, 'utf-8');
     skillsJson = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    throw new Error('Failed to read or parse skills.json');
+    throw new Error(`Failed to read or parse ${path.basename(resolvedManifest.path)}`);
   }
 
   const skills = (skillsJson.skills ?? {}) as Record<string, string>;
@@ -83,19 +84,20 @@ function readLockfile(lockPath: string): SkillsLock | null {
 
 function readLockfileStrict(lockPath: string): SkillsLock {
   if (!fs.existsSync(lockPath)) {
-    throw new Error(`Global skills.lock not found at ${lockPath}`);
+    throw new Error(`Global ${LOCKFILE_FILENAME} not found at ${lockPath}`);
   }
   try {
     const raw = fs.readFileSync(lockPath, 'utf-8');
     return JSON.parse(raw) as SkillsLock;
   } catch {
-    throw new Error('Failed to read or parse global skills.lock');
+    throw new Error(`Failed to read or parse global ${LOCKFILE_FILENAME}`);
   }
 }
 
 function getGlobalLockPath(homedir?: string): string {
-  const globalSkillsDir = getGlobalSkillsDir(homedir ?? os.homedir());
-  return path.join(path.dirname(globalSkillsDir), 'skills.lock');
+  const resolvedHome = homedir ?? os.homedir();
+  const resolved = resolveLockfilePath(path.join(resolvedHome, '.tank'));
+  return resolved.path;
 }
 
 async function fetchAvailableVersions(
@@ -187,7 +189,7 @@ async function updateSingle(
 ): Promise<void> {
   const versionRange = skills[name];
   if (!versionRange) {
-    throw new Error(`Skill "${name}" is not installed (not found in skills.json)`);
+    throw new Error(`Skill "${name}" is not installed (not found in ${MANIFEST_FILENAME})`);
   }
 
   const config = getConfig(configDir);
@@ -205,7 +207,9 @@ async function updateSingle(
     );
   }
 
-  const lockPath = global ? getGlobalLockPath(homedir) : path.join(directory, 'skills.lock');
+  const lockPath = global
+    ? getGlobalLockPath(homedir)
+    : resolveLockfilePath(directory).path;
   let currentVersion: string | null = null;
 
   const lock = readLockfile(lockPath);
@@ -247,7 +251,7 @@ async function updateAll(
   const skillEntries = Object.entries(skills);
 
   if (skillEntries.length === 0) {
-    logger.info('No skills defined in skills.json');
+    logger.info(`No skills defined in ${MANIFEST_FILENAME}`);
     return;
   }
 
@@ -257,7 +261,9 @@ async function updateAll(
     requestHeaders.Authorization = `Bearer ${config.token}`;
   }
 
-  const lockPath = global ? getGlobalLockPath(homedir) : path.join(directory, 'skills.lock');
+  const lockPath = global
+    ? getGlobalLockPath(homedir)
+    : resolveLockfilePath(directory).path;
   const lock = readLockfile(lockPath);
 
   const currentVersionByName = new Map<string, string>();
@@ -327,7 +333,7 @@ async function updateSingleGlobal(name: string, configDir?: string, homedir?: st
   }
 
   if (!currentVersion) {
-    throw new Error(`Skill "${name}" is not installed globally (not found in skills.lock)`);
+    throw new Error(`Skill "${name}" is not installed globally (not found in ${LOCKFILE_FILENAME})`);
   }
 
   const config = getConfig(configDir);
@@ -368,7 +374,7 @@ async function updateAllGlobal(configDir?: string, homedir?: string): Promise<vo
   const entries = Object.keys(lock.skills);
 
   if (entries.length === 0) {
-    logger.info('No skills defined in global skills.lock');
+    logger.info(`No skills defined in global ${LOCKFILE_FILENAME}`);
     return;
   }
 

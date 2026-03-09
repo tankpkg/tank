@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { pack, packForScan } from '../lib/packer.js';
 
-// Minimal valid skills.json content
+// Minimal valid tank.json content
 const VALID_SKILLS_JSON = JSON.stringify({
   name: '@test-org/test-skill',
   version: '1.0.0',
@@ -37,7 +37,7 @@ describe('pack()', () => {
 
   describe('valid directory', () => {
     it('produces a valid tarball with correct structure', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       writeFile(tmpDir, 'src/index.ts', 'export const hello = "world";');
 
@@ -45,13 +45,13 @@ describe('pack()', () => {
 
       expect(result.tarball).toBeInstanceOf(Buffer);
       expect(result.tarball.length).toBeGreaterThan(0);
-      expect(result.fileCount).toBe(3); // skills.json, SKILL.md, src/index.ts
+      expect(result.fileCount).toBe(3); // tank.json, SKILL.md, src/index.ts
       expect(result.totalSize).toBeGreaterThan(0);
       expect(result.integrity).toMatch(/^sha512-[A-Za-z0-9+/]+=*$/);
     });
 
     it('computes correct sha512 integrity hash', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
 
       const result = await pack(tmpDir);
@@ -62,7 +62,7 @@ describe('pack()', () => {
     });
 
     it('tarball is valid gzip', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
 
       const result = await pack(tmpDir);
@@ -74,36 +74,36 @@ describe('pack()', () => {
   });
 
   describe('missing required files', () => {
-    it('throws when skills.json is missing', async () => {
+    it('throws when tank.json is missing', async () => {
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
 
-      await expect(pack(tmpDir)).rejects.toThrow(/skills\.json/i);
+      await expect(pack(tmpDir)).rejects.toThrow(/tank\.json/i);
     });
 
     it('throws when SKILL.md is missing', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
 
       await expect(pack(tmpDir)).rejects.toThrow(/SKILL\.md/i);
     });
 
-    it('throws when skills.json is invalid', async () => {
-      writeFile(tmpDir, 'skills.json', JSON.stringify({ invalid: true }));
+    it('throws when tank.json is invalid', async () => {
+      writeFile(tmpDir, 'tank.json', JSON.stringify({ invalid: true }));
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
 
-      await expect(pack(tmpDir)).rejects.toThrow(/skills\.json/i);
+      await expect(pack(tmpDir)).rejects.toThrow(/tank\.json/i);
     });
 
-    it('throws when skills.json is not valid JSON', async () => {
-      writeFile(tmpDir, 'skills.json', 'not json {{{');
+    it('throws when tank.json is not valid JSON', async () => {
+      writeFile(tmpDir, 'tank.json', 'not json {{{');
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
 
-      await expect(pack(tmpDir)).rejects.toThrow(/skills\.json/i);
+      await expect(pack(tmpDir)).rejects.toThrow(/tank\.json/i);
     });
   });
 
   describe('security: symlinks', () => {
     it('throws when directory contains a symlink', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       // Create a symlink
       fs.symlinkSync('/etc/passwd', path.join(tmpDir, 'evil-link'));
@@ -114,7 +114,7 @@ describe('pack()', () => {
 
   describe('security: path traversal', () => {
     it('throws when a file path contains ..', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       // Create a directory structure that could be used for traversal
       // We can't actually create ../foo on the filesystem easily,
@@ -132,10 +132,10 @@ describe('pack()', () => {
 
   describe('file count limit', () => {
     it('throws when file count exceeds 1000', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
 
-      // Create 999 additional files (+ skills.json + SKILL.md = 1001)
+      // Create 999 additional files (+ tank.json + SKILL.md = 1001)
       for (let i = 0; i < 999; i++) {
         writeFile(tmpDir, `files/file-${i}.txt`, `content-${i}`);
       }
@@ -146,7 +146,7 @@ describe('pack()', () => {
 
   describe('ignore patterns', () => {
     it('respects .tankignore file', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       writeFile(tmpDir, '.tankignore', 'secret.txt\nbuild/\n');
       writeFile(tmpDir, 'secret.txt', 'super secret');
@@ -155,13 +155,13 @@ describe('pack()', () => {
 
       const result = await pack(tmpDir);
 
-      // Should include: skills.json, SKILL.md, src/index.ts
+      // Should include: tank.json, SKILL.md, src/index.ts
       // Should NOT include: secret.txt, build/output.js, .tankignore itself
       expect(result.fileCount).toBe(3);
     });
 
     it('falls back to .gitignore when no .tankignore', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       writeFile(tmpDir, '.gitignore', 'dist/\n*.log\n');
       writeFile(tmpDir, 'dist/bundle.js', 'bundled code');
@@ -170,13 +170,13 @@ describe('pack()', () => {
 
       const result = await pack(tmpDir);
 
-      // Should include: skills.json, SKILL.md, src/index.ts
+      // Should include: tank.json, SKILL.md, src/index.ts
       // Should NOT include: dist/bundle.js, error.log, .gitignore itself
       expect(result.fileCount).toBe(3);
     });
 
     it('applies default ignores when no ignore file exists', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       writeFile(tmpDir, 'src/index.ts', 'export const x = 1;');
 
@@ -188,13 +188,13 @@ describe('pack()', () => {
 
       const result = await pack(tmpDir);
 
-      // Should include: skills.json, SKILL.md, src/index.ts
+      // Should include: tank.json, SKILL.md, src/index.ts
       // Should NOT include: node_modules/*, .env, .env.local, debug.log
       expect(result.fileCount).toBe(3);
     });
 
     it('always ignores node_modules and .git even with custom ignore', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       // .tankignore that does NOT list node_modules or .git
       writeFile(tmpDir, '.tankignore', 'temp/\n');
@@ -204,29 +204,29 @@ describe('pack()', () => {
       const result = await pack(tmpDir);
 
       // node_modules should still be ignored even though .tankignore doesn't list it
-      // Should include: skills.json, SKILL.md, src/index.ts
+      // Should include: tank.json, SKILL.md, src/index.ts
       expect(result.fileCount).toBe(3);
     });
 
     it('ignores .DS_Store by default', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       writeFile(tmpDir, '.DS_Store', 'binary junk');
       writeFile(tmpDir, 'src/.DS_Store', 'more binary junk');
 
       const result = await pack(tmpDir);
 
-      expect(result.fileCount).toBe(2); // skills.json, SKILL.md
+      expect(result.fileCount).toBe(2); // tank.json, SKILL.md
     });
 
     it('ignores .tank directory by default', async () => {
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       writeFile(tmpDir, '.tank/cache/data.json', '{}');
 
       const result = await pack(tmpDir);
 
-      expect(result.fileCount).toBe(2); // skills.json, SKILL.md
+      expect(result.fileCount).toBe(2); // tank.json, SKILL.md
     });
   });
 
@@ -240,7 +240,7 @@ describe('pack()', () => {
     it('totalSize matches sum of file sizes', async () => {
       const content1 = 'a'.repeat(100);
       const content2 = 'b'.repeat(200);
-      writeFile(tmpDir, 'skills.json', VALID_SKILLS_JSON);
+      writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       writeFile(tmpDir, 'data.txt', content1);
       writeFile(tmpDir, 'more.txt', content2);
@@ -267,7 +267,7 @@ describe('packForScan()', () => {
   });
 
   describe('optional files', () => {
-    it('should pack directory without skills.json', async () => {
+    it('should pack directory without tank.json', async () => {
       writeFile(tmpDir, 'README.md', '# My Skill\n');
       writeFile(tmpDir, 'src/index.py', 'print("hello")');
 

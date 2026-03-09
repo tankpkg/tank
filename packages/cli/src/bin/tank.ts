@@ -2,19 +2,7 @@
 import { Command } from 'commander';
 import { auditCommand } from '../commands/audit.js';
 import { doctorCommand } from '../commands/doctor.js';
-import { infoCommand } from '../commands/info.js';
-import { initCommand } from '../commands/init.js';
-import { installAll, installCommand } from '../commands/install.js';
-import { linkCommand } from '../commands/link.js';
-import { loginCommand } from '../commands/login.js';
-import { logoutCommand } from '../commands/logout.js';
-import { permissionsCommand } from '../commands/permissions.js';
-import { publishCommand } from '../commands/publish.js';
-import { removeCommand } from '../commands/remove.js';
-import { scanCommand } from '../commands/scan.js';
-import { searchCommand } from '../commands/search.js';
-import { unlinkCommand } from '../commands/unlink.js';
-import { updateCommand } from '../commands/update.js';
+import { migrateCommand } from '../commands/migrate.js';
 import { upgradeCommand } from '../commands/upgrade.js';
 import { verifyCommand } from '../commands/verify.js';
 import { whoamiCommand } from '../commands/whoami.js';
@@ -28,36 +16,27 @@ program.name('tank').description('Security-first package manager for AI agent sk
 
 program
   .command('init')
-  .description('Create a new skills.json in the current directory')
+  .description('Create a new tank.json in the current directory')
   .option('-y, --yes', 'Skip prompts, use defaults')
   .option('--name <name>', 'Skill name')
   .option('--skill-version <version>', 'Skill version (default: 0.1.0)')
   .option('--description <desc>', 'Skill description')
   .option('--private', 'Make skill private')
-  .option('--force', 'Overwrite existing skills.json')
-  .action(
-    async (opts: {
-      yes?: boolean;
-      name?: string;
-      skillVersion?: string;
-      description?: string;
-      private?: boolean;
-      force?: boolean;
-    }) => {
-      try {
-        await initCommand({
-          yes: opts.yes,
-          name: opts.name,
-          version: opts.skillVersion,
-          description: opts.description,
-          private: opts.private,
-          force: opts.force
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`Init failed: ${msg}`);
-        process.exit(1);
-      }
+  .option('--force', 'Overwrite existing tank.json')
+  .action(async (opts: { yes?: boolean; name?: string; skillVersion?: string; description?: string; private?: boolean; force?: boolean }) => {
+    try {
+      await initCommand({
+        yes: opts.yes,
+        name: opts.name,
+        version: opts.skillVersion,
+        description: opts.description,
+        private: opts.private,
+        force: opts.force,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Init failed: ${msg}`);
+      process.exit(1);
     }
   );
 
@@ -297,6 +276,19 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Doctor failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('migrate')
+  .description('Migrate skills.json → tank.json and skills.lock → tank.lock')
+  .action(async () => {
+    try {
+      await migrateCommand();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Migration failed: ${msg}`);
       process.exit(1);
     }
   });

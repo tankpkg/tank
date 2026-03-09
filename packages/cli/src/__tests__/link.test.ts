@@ -7,8 +7,22 @@ import { getGlobalAgentSkillsDir, getSymlinkName } from '../lib/agents.js';
 import { readGlobalLinks } from '../lib/links.js';
 import { logger } from '../lib/logger.js';
 
+const canCreateSymlinks = (() => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'symlink-check-'));
+  try {
+    const target = path.join(dir, 'target');
+    fs.writeFileSync(target, '');
+    fs.symlinkSync(target, path.join(dir, 'link'));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+})();
+
 const writeSkillsJson = (dir: string, data: Record<string, unknown>): void => {
-  fs.writeFileSync(path.join(dir, 'skills.json'), `${JSON.stringify(data, null, 2)}\n`);
+  fs.writeFileSync(path.join(dir, 'tank.json'), JSON.stringify(data, null, 2) + '\n');
 };
 
 const resolveSymlinkTarget = (symlinkPath: string): string => {
@@ -36,7 +50,7 @@ describe('linkCommand', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('links the current skill directory when SKILL.md has frontmatter', async () => {
+  it.skipIf(!canCreateSymlinks)('links the current skill directory when SKILL.md has frontmatter', async () => {
     const skillName = '@tank/my-skill';
     writeSkillsJson(skillDir, { name: skillName, description: 'Test skill' });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: @tank/my-skill\n---\n\n# Title\n');
@@ -53,7 +67,7 @@ describe('linkCommand', () => {
     expect(resolveSymlinkTarget(opencodeLink)).toBe(path.resolve(skillDir));
   });
 
-  it('links a generated wrapper when SKILL.md lacks frontmatter', async () => {
+  it.skipIf(!canCreateSymlinks)('links a generated wrapper when SKILL.md lacks frontmatter', async () => {
     const skillName = '@tank/no-frontmatter';
     writeSkillsJson(skillDir, { name: skillName, description: 'Test skill' });
     const skillContent = '# Heading\n\nSome content.';
@@ -72,17 +86,17 @@ describe('linkCommand', () => {
     expect(fs.readFileSync(path.join(skillDir, 'SKILL.md'), 'utf-8')).toBe(skillContent);
   });
 
-  it('throws when skills.json is missing', async () => {
-    await expect(linkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
-      'No skills.json found. Run this command from a skill directory.'
-    );
+  it('throws when tank.json is missing', async () => {
+    await expect(linkCommand({ directory: skillDir, homedir: fakeHome }))
+      .rejects
+      .toThrow('No tank.json found. Run this command from a skill directory.');
   });
 
-  it('throws when skills.json has no name', async () => {
+  it('throws when tank.json has no name', async () => {
     writeSkillsJson(skillDir, { description: 'Missing name' });
-    await expect(linkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
-      "Missing 'name' in skills.json"
-    );
+    await expect(linkCommand({ directory: skillDir, homedir: fakeHome }))
+      .rejects
+      .toThrow("Missing 'name' in tank.json");
   });
 
   it('logs info and returns when no agents are detected', async () => {
@@ -99,7 +113,7 @@ describe('linkCommand', () => {
     );
   });
 
-  it('is idempotent when run twice', async () => {
+  it.skipIf(!canCreateSymlinks)('is idempotent when run twice', async () => {
     const skillName = '@tank/idempotent';
     writeSkillsJson(skillDir, { name: skillName, description: 'Test skill' });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: idempotent\n---\n');
@@ -127,7 +141,7 @@ describe('linkCommand', () => {
     expect(entry.source).toBe('dev');
   });
 
-  it('prints a summary with the linked count', async () => {
+  it.skipIf(!canCreateSymlinks)('prints a summary with the linked count', async () => {
     const skillName = '@tank/summary';
     writeSkillsJson(skillDir, { name: skillName, description: 'Test skill' });
     fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '---\nname: summary\n---\n');
@@ -139,11 +153,11 @@ describe('linkCommand', () => {
     expect(lastCall).toBe(`Linked ${skillName} to 2 agent(s)`);
   });
 
-  it('throws when skills.json is invalid JSON', async () => {
-    fs.writeFileSync(path.join(skillDir, 'skills.json'), '{not valid json}');
-    await expect(linkCommand({ directory: skillDir, homedir: fakeHome })).rejects.toThrow(
-      /failed to read or parse skills\.json/i
-    );
+  it('throws when tank.json is invalid JSON', async () => {
+    fs.writeFileSync(path.join(skillDir, 'tank.json'), '{not valid json}');
+    await expect(linkCommand({ directory: skillDir, homedir: fakeHome }))
+      .rejects
+      .toThrow(/failed to read or parse tank\.json/i);
   });
 
   it('throws when name is empty string', async () => {

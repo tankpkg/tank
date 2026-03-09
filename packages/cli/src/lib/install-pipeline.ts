@@ -4,6 +4,9 @@ import path from 'node:path';
 import type { Permissions, SkillsLock } from '@internal/shared';
 import type ora from 'ora';
 import { extract } from 'tar';
+import type { Permissions, SkillsLock } from '@internal/shared';
+import { MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@internal/shared';
+import { logger } from './logger.js';
 import { buildSkillKey, type ResolvedNode } from './dependency-resolver.js';
 import { logger } from './logger.js';
 
@@ -52,7 +55,10 @@ export async function downloadAllParallel(
 }
 
 export function verifyExtractedDependencies(extractDir: string, node: ResolvedNode): void {
-  const extractedManifestPath = path.join(extractDir, 'skills.json');
+  let extractedManifestPath = path.join(extractDir, MANIFEST_FILENAME);
+  if (!fs.existsSync(extractedManifestPath)) {
+    extractedManifestPath = path.join(extractDir, LEGACY_MANIFEST_FILENAME);
+  }
   if (!fs.existsSync(extractedManifestPath)) {
     return;
   }
@@ -73,7 +79,10 @@ export function verifyExtractedDependencies(extractDir: string, node: ResolvedNo
 }
 
 export function readExtractedDependencies(extractDir: string): Record<string, string> {
-  const extractedManifestPath = path.join(extractDir, 'skills.json');
+  let extractedManifestPath = path.join(extractDir, MANIFEST_FILENAME);
+  if (!fs.existsSync(extractedManifestPath)) {
+    extractedManifestPath = path.join(extractDir, LEGACY_MANIFEST_FILENAME);
+  }
   if (!fs.existsSync(extractedManifestPath)) {
     return {};
   }

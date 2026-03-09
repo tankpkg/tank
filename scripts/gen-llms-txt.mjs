@@ -19,11 +19,11 @@ const BASE_URL = 'https://tankpkg.dev';
 
 // Parse MDX frontmatter
 function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return {};
 
   const frontmatter = {};
-  match[1].split('\n').forEach((line) => {
+  match[1].split(/\r?\n/).forEach(line => {
     const [key, ...valueParts] = line.split(':');
     if (key && valueParts.length) {
       frontmatter[key.trim()] = valueParts
@@ -53,8 +53,8 @@ function readDocs() {
         const content = readFileSync(fullPath, 'utf-8');
         const frontmatter = parseFrontmatter(content);
         const slug = entry.replace('.mdx', '');
-        const bodyContent = content.replace(/^---[\s\S]*?---\n/, '');
-
+        const bodyContent = content.replace(/^---[\s\S]*?---\r?\n/, '');
+        
         docs.push({
           slug: slug === 'index' ? '' : `${slugPrefix}${slug}`,
           title: frontmatter.title || slug,

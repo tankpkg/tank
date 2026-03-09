@@ -323,7 +323,7 @@ export default function UserFlowPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      <CommandRow cmd="tank init" desc="Create skills.json" />
+                      <CommandRow cmd="tank init" desc="Create tank.json" />
                       <CommandRow cmd="tank publish" desc="Publish to registry" />
                       <CommandRow cmd="tank search" desc="Find skills" />
                       <CommandRow cmd="tank info" desc="Skill details" />
@@ -453,7 +453,7 @@ Status:      pass
 $ tank install @tank/feature-dev
 
 ✓ Verifying integrity (sha512)...
-✓ Updating skills.lock
+✓ Updating tank.lock
 ✓ Linking to Claude Code
 
 Installed @tank/feature-dev@3.0.0`}
@@ -486,7 +486,7 @@ Score: 9.5/10  Status: pass`}
 ? Description: Automated code review skill
 ? Author: Your Name
 
-✓ Created skills.json`}
+✓ Created tank.json`}
                   />
 
                   <FlowStep
@@ -513,7 +513,7 @@ Point me to a file to analyze it.`}
                     icon={<Upload className="h-4 w-4" />}
                     command={`$ tank publish
 
-✓ Validating skills.json...
+✓ Validating tank.json...
 ✓ Packing skill directory...
 • Files: 3  Size: 4.2KB
 ✓ Uploading to registry...

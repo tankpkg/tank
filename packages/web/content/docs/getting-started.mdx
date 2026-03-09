@@ -82,7 +82,7 @@ For a global install (available to all your agents, stored in `~/.tank/skills/`)
 tank install @org/skill-name '*' -g
 ```
 
-For a local project install (stored in `.tank/skills/` relative to your working directory), omit the `-g` flag. Tank writes the resolved version and SHA-512 integrity hash to `skills.lock` — making future installs fully deterministic.
+For a local project install (stored in `.tank/skills/` relative to your working directory), omit the `-g` flag. Tank writes the resolved version and SHA-512 integrity hash to `tank.lock` — making future installs fully deterministic.
 
 ## Step 4 — Verify Safety and Integrity
 
@@ -99,10 +99,10 @@ tank permissions
 tank audit @org/skill-name
 ```
 
-`tank permissions` aggregates all declared permissions across your installed skills and shows you what your agent is allowed to do. If any skill claims permissions outside your project's permission budget (defined in `skills.json`), installation will have already failed — but auditing afterward confirms the resolved state.
+`tank permissions` aggregates all declared permissions across your installed skills and shows you what your agent is allowed to do. If any skill claims permissions outside your project's permission budget (defined in `tank.json`), installation will have already failed — but auditing afterward confirms the resolved state.
 
 <Callout type="info">
-  `tank verify` recomputes SHA-512 hashes of all installed files and compares them against `skills.lock`. A failed verify means files were modified on disk after install — treat this as a security event.
+  `tank verify` recomputes SHA-512 hashes of all installed files and compares them against `tank.lock`. A failed verify means files were modified on disk after install — treat this as a security event.
 </Callout>
 
 ## Step 5 — Create Your First Skill (Publisher Path)
@@ -114,7 +114,7 @@ mkdir my-skill && cd my-skill
 tank init
 ```
 
-`tank init` runs an interactive prompt that generates a valid `skills.json` manifest with your skill's name, version, description, and permission declarations.
+`tank init` runs an interactive prompt that generates a valid `tank.json` manifest with your skill's name, version, description, and permission declarations.
 
 Once your skill is ready, publish it safely:
 

@@ -108,12 +108,12 @@ describe('Consumer E2E — install and manage skills', () => {
     const skillDir = path.join(consumer.dir, '.tank', 'skills', `@${scope}`, name);
     expect(fs.existsSync(skillDir)).toBe(true);
 
-    // Verify skills.json was updated with the dependency
-    const skillsJson = JSON.parse(fs.readFileSync(path.join(consumer.dir, 'skills.json'), 'utf-8'));
+    // Verify tank.json was updated with the dependency
+    const skillsJson = JSON.parse(fs.readFileSync(path.join(consumer.dir, 'tank.json'), 'utf-8'));
     expect(skillsJson.skills[skill.name]).toBeDefined();
 
-    // Verify skills.lock was created
-    const lockPath = path.join(consumer.dir, 'skills.lock');
+    // Verify tank.lock was created
+    const lockPath = path.join(consumer.dir, 'tank.lock');
     expect(fs.existsSync(lockPath)).toBe(true);
     const lockfile = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
     // Lock key format: name@version
@@ -230,8 +230,8 @@ describe('Consumer E2E — install and manage skills', () => {
     });
     expectSuccess(install);
 
-    // Now edit skills.json to use ^1.0.0 range (allowing updates to 1.1.0)
-    const sjPath = path.join(updateConsumer.dir, 'skills.json');
+    // Now edit tank.json to use ^1.0.0 range (allowing updates to 1.1.0)
+    const sjPath = path.join(updateConsumer.dir, 'tank.json');
     const sj = JSON.parse(fs.readFileSync(sjPath, 'utf-8'));
     sj.skills[skill.name] = '^1.0.0';
     fs.writeFileSync(sjPath, `${JSON.stringify(sj, null, 2)}\n`);
@@ -267,12 +267,12 @@ describe('Consumer E2E — install and manage skills', () => {
     const skillDir = path.join(consumer.dir, '.tank', 'skills', `@${scope}`, name);
     expect(fs.existsSync(skillDir)).toBe(false);
 
-    // Verify skills.json no longer lists it
-    const skillsJson = JSON.parse(fs.readFileSync(path.join(consumer.dir, 'skills.json'), 'utf-8'));
+    // Verify tank.json no longer lists it
+    const skillsJson = JSON.parse(fs.readFileSync(path.join(consumer.dir, 'tank.json'), 'utf-8'));
     expect(skillsJson.skills[skill.name]).toBeUndefined();
 
-    // Verify skills.lock no longer has the entry
-    const lockPath = path.join(consumer.dir, 'skills.lock');
+    // Verify tank.lock no longer has the entry
+    const lockPath = path.join(consumer.dir, 'tank.lock');
     const lockfile = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
     const lockKeys = Object.keys(lockfile.skills);
     const matchingKey = lockKeys.find((k) => k.startsWith(`${skill.name}@`));

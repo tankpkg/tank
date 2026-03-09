@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
-import path from 'node:path';
+import { MANIFEST_FILENAME } from '@internal/shared';
 import { getGlobalAgentSkillsDir, getSymlinkName } from '../lib/agents.js';
 import { unlinkSkillFromAgents } from '../lib/linker.js';
 import { logger } from '../lib/logger.js';
+import { resolveManifestPath } from '../lib/manifest.js';
 
 export interface UnlinkOptions {
   directory?: string;
@@ -12,23 +13,23 @@ export interface UnlinkOptions {
 
 export async function unlinkCommand(options: UnlinkOptions = {}): Promise<void> {
   const workDir = options.directory ?? process.cwd();
-  const skillsJsonPath = path.join(workDir, 'skills.json');
+  const resolvedManifest = resolveManifestPath(workDir);
 
-  if (!fs.existsSync(skillsJsonPath)) {
-    throw new Error('No skills.json found. Run this command from a skill directory.');
+  if (!resolvedManifest.exists) {
+    throw new Error(`No ${MANIFEST_FILENAME} found. Run this command from a skill directory.`);
   }
 
   let skillsJson: Record<string, unknown>;
   try {
-    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
+    const raw = fs.readFileSync(resolvedManifest.path, 'utf-8');
     skillsJson = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    throw new Error('Failed to read or parse skills.json');
+    throw new Error(`Failed to read or parse ${path.basename(resolvedManifest.path)}`);
   }
 
   const skillName = skillsJson.name;
   if (typeof skillName !== 'string' || skillName.trim().length === 0) {
-    throw new Error("Missing 'name' in skills.json");
+    throw new Error(`Missing 'name' in ${path.basename(resolvedManifest.path)}`);
   }
 
   const homedir = options.homedir ?? os.homedir();
