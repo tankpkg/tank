@@ -2,8 +2,6 @@
 
 > Technical design for a security-first package manager and registry for AI agent skills.
 
-> **Status**: Draft. This document will evolve as implementation begins.
-
 ## System Overview
 
 ```
@@ -55,11 +53,7 @@ The command-line tool developers interact with.
 - Verify signatures and integrity hashes locally
 - Display audit information and permission summaries
 
-**Technology decision (pending):**
-- **Node.js**: Faster to build, larger contributor pool, same ecosystem as target users
-- **Rust**: Better performance, single binary distribution, no runtime dependency
-
-The decision depends on whether install speed is a critical differentiator. For MVP, Node.js is likely sufficient.
+**Technology:** Node.js with Commander.js — same ecosystem as target users, 18 commands implemented.
 
 ### Registry API
 
@@ -229,4 +223,3 @@ The lockfile is JSON (not YAML) for:
 ## Further Reading
 
 - [Product Brief](product-brief.md) — full feature description and positioning
-- [Roadmap](roadmap.md) — phased timeline
