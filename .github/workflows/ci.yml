@@ -177,20 +177,20 @@ jobs:
           DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
 
       - name: Provision database schema
-        run: bun --filter @internal/web exec drizzle-kit push --force
+        run: cd packages/web && bun x drizzle-kit push --force
         env:
           DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
 
       - name: Seed deterministic perf data
-        run: bun --filter @internal/web run perf:seed
+        run: cd packages/web && bun run perf:seed
 
       - name: Run performance tests
         id: perf-test
-        run: bun --filter @internal/web run perf:test
+        run: cd packages/web && bun run perf:test
 
       - name: Generate performance report
         if: always() && steps.perf-test.outcome != 'skipped'
-        run: bun --filter @internal/web run perf:report || true
+        run: cd packages/web && bun run perf:report || true
 
       - name: Upload performance artifacts
         if: always()
