@@ -60,3 +60,6 @@ __pycache__/
 
 # Worktrees
 .worktrees/
+
+# Helm dependency charts (reproducible via `helm dependency build`)
+infra/helm/*/charts/*.tgz

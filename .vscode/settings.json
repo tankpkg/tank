@@ -25,5 +25,5 @@
   "files.eol": "\n",
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
-  "files.associations": { "justfile": "just" }
+  "files.associations": { "justfile": "just", ".helmignore": "ignore" }
 }
