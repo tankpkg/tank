@@ -7,6 +7,7 @@
       "devDependencies": {
         "@biomejs/biome": "^2.4.6",
         "@playwright/test": "^1.58.2",
+        "@tsconfig/bun": "^1.0.10",
         "@types/bun": "^1.3.10",
         "playwright-bdd": "^8.4.2",
         "prettier": "^3.8.1",
@@ -17,7 +18,7 @@
         "vitest": "^4",
       },
     },
-    "apps/cli-pkg": {
+    "packages/cli": {
       "name": "@tankpkg/cli",
       "version": "0.6.3",
       "bin": {
@@ -43,7 +44,7 @@
         "vitest": "^4",
       },
     },
-    "apps/mcp-server-pkg": {
+    "packages/mcp-server": {
       "name": "@tankpkg/mcp-server",
       "version": "0.6.0",
       "bin": {
@@ -63,7 +64,7 @@
         "vitest": "^4",
       },
     },
-    "apps/shared": {
+    "packages/shared": {
       "name": "@internal/shared",
       "version": "0.1.0",
       "dependencies": {
@@ -75,7 +76,7 @@
         "vitest": "^4",
       },
     },
-    "apps/web": {
+    "packages/web": {
       "name": "@internal/web",
       "version": "0.2.0",
       "dependencies": {
@@ -533,9 +534,9 @@
 
     "@inquirer/type": ["@inquirer/type@4.0.3", "", { "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-cKZN7qcXOpj1h+1eTTcGDVLaBIHNMT1Rz9JqJP5MnEJ0JhgVWllx7H/tahUp5YEK1qaByH2Itb8wLG/iScD5kw=="],
 
-    "@internal/shared": ["@internal/shared@workspace:apps/shared"],
+    "@internal/shared": ["@internal/shared@workspace:packages/shared"],
 
-    "@internal/web": ["@internal/web@workspace:apps/web"],
+    "@internal/web": ["@internal/web@workspace:packages/web"],
 
     "@ioredis/commands": ["@ioredis/commands@1.5.1", "", {}, "sha512-JH8ZL/ywcJyR9MmJ5BNqZllXNZQqQbnVZOqpPQqE1vHiFgAw4NHbvE0FOduNU8IX9babitBT46571OnPTT0Zcw=="],
 
@@ -1129,13 +1130,15 @@
 
     "@tailwindcss/typography": ["@tailwindcss/typography@0.5.19", "", { "dependencies": { "postcss-selector-parser": "6.0.10" }, "peerDependencies": { "tailwindcss": ">=3.0.0 || insiders || >=4.0.0-alpha.20 || >=4.0.0-beta.1" } }, "sha512-w31dd8HOx3k9vPtcQh5QHP9GwKcgbMp87j58qi6xgiBnFFtKEAgCWnDw4qUT8aHwkCp8bKvb/KGKWWHedP0AAg=="],
 
-    "@tankpkg/cli": ["@tankpkg/cli@workspace:apps/cli-pkg"],
+    "@tankpkg/cli": ["@tankpkg/cli@workspace:packages/cli"],
 
-    "@tankpkg/mcp-server": ["@tankpkg/mcp-server@workspace:apps/mcp-server-pkg"],
+    "@tankpkg/mcp-server": ["@tankpkg/mcp-server@workspace:packages/mcp-server"],
 
     "@teppeis/multimaps": ["@teppeis/multimaps@3.0.0", "", {}, "sha512-ID7fosbc50TbT0MK0EG12O+gAP3W3Aa/Pz4DaTtQtEvlc9Odaqi0de+xuZ7Li2GtK4HzEX7IuRWS/JmZLksR3Q=="],
 
     "@ts-morph/common": ["@ts-morph/common@0.27.0", "", { "dependencies": { "fast-glob": "^3.3.3", "minimatch": "^10.0.1", "path-browserify": "^1.0.1" } }, "sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ=="],
+
+    "@tsconfig/bun": ["@tsconfig/bun@1.0.10", "", {}, "sha512-5AV5YknQjNyoYzZ/8NG0dawqew/wH+x7ANiCfCIn29qo0cdbd1EryvFD1k5NSZWLBMOI/fGqMIaxi58GPIP9Cg=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 
