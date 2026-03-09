@@ -305,7 +305,7 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
   const scanDetails: ScanDetails = scanResultJson
     ? {
         verdict: scanResultJson.verdict as string | null,
-        stagesRun: Array.isArray(scanResultJson.stagesRun) ? scanResultJson.stagesRun as string[] : [],
+        stagesRun: Array.isArray(scanResultJson.stagesRun) ? (scanResultJson.stagesRun as string[]) : [],
         durationMs: typeof scanResultJson.durationMs === 'number' ? scanResultJson.durationMs : null,
         scannedAt,
         findings: Array.isArray(scanFindingsJson) ? scanFindingsJson : [],
@@ -313,9 +313,10 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
         highCount: Number(scanResultJson.highCount) || 0,
         mediumCount: Number(scanResultJson.mediumCount) || 0,
         lowCount: Number(scanResultJson.lowCount) || 0,
-        llm_analysis: scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === 'object'
-          ? (scanResultJson.llm_analysis as LLMAnalysisInfo)
-          : null,
+        llm_analysis:
+          scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === 'object'
+            ? (scanResultJson.llm_analysis as LLMAnalysisInfo)
+            : null
       }
     : {
         verdict: null,
