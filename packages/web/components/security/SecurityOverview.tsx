@@ -166,9 +166,13 @@ export function SecurityOverview({
             <Badge variant="outline" className="text-xs bg-purple-50 border-purple-200 text-purple-700">
               {llmAnalysis.mode === 'byollm' ? 'Custom LLM' : llmAnalysis.mode === 'builtin' ? 'Built-in' : 'Disabled'}
             </Badge>
-            {llmAnalysis.providers && llmAnalysis.providers.length > 0 && (
+            {llmAnalysis.providers && llmAnalysis.providers.length > 0 ? (
               <span className="text-xs text-muted-foreground">({llmAnalysis.providers[0].model})</span>
-            )}
+            ) : (llmAnalysis as { provider_used?: string }).provider_used ? (
+              <span className="text-xs text-muted-foreground">
+                ({(llmAnalysis as { provider_used?: string }).provider_used})
+              </span>
+            ) : null}
           </div>
         )}
       </div>
