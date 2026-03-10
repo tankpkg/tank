@@ -1,5 +1,8 @@
 // Constants
 
+// Brand configuration
+export type { BrandColors, BrandConfig, BrandEnvVars, BrandLogo, BrandSocial } from './brand.js';
+export { DEFAULT_BRAND, hexToOklch, isValidHexColor } from './brand.js';
 export { DEFAULT_PERMISSIONS, PERMISSION_CATEGORIES, type PermissionCategory } from './constants/permissions.js';
 export {
   LEGACY_LOCKFILE_FILENAME,
@@ -14,16 +17,10 @@ export {
   REGISTRY_API_VERSION,
   REGISTRY_URL
 } from './constants/registry.js';
-
 // Resolver
 export { resolve, sortVersions } from './lib/resolver.js';
-
 // URL helpers
 export { encodeSkillName } from './lib/url.js';
-
-// Brand configuration
-export type { BrandConfig, BrandColors, BrandLogo, BrandSocial, BrandEnvVars } from './brand.js';
-export { DEFAULT_BRAND, isValidHexColor, hexToOklch } from './brand.js';
 
 // Admin types
 export {
