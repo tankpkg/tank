@@ -1,4 +1,5 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index" }],
+  "installCommand": "pip install -r requirements.txt",
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }],
   "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"main\" ]; then exit 1; fi; exit 0"
 }
