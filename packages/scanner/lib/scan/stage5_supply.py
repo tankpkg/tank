@@ -424,7 +424,7 @@ def cvss_to_severity(vuln: dict[str, Any]) -> str:
                     if score >= 4.0:
                         return "medium"
                     return "low"
-        except ValueError, IndexError:
+        except (ValueError, IndexError):
             continue
 
     # Fallback to database severity if available

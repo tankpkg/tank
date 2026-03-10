@@ -79,7 +79,7 @@ def to_sarif(
                         }
                     }
                 ]
-            except ValueError, IndexError:
+            except (ValueError, IndexError):
                 result["locations"] = [
                     {
                         "physicalLocation": {
