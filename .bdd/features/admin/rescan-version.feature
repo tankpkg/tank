@@ -1,5 +1,4 @@
 Feature: Admin rescan a specific package version
-
   As a registry administrator
   I want to trigger a security rescan for a specific package version
   So that I can re-evaluate packages that previously failed scanning

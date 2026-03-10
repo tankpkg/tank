@@ -2,30 +2,29 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-
+import { registerAuditSkillTool } from './tools/audit-skill.js';
+import { registerDoctorTool } from './tools/doctor.js';
+import { registerInitSkillTool } from './tools/init-skill.js';
+import { registerInstallSkillTool } from './tools/install-skill.js';
+import { registerLinkSkillTool } from './tools/link-skill.js';
 // Import tools
 import { registerLoginTool } from './tools/login.js';
+import { registerLogoutTool } from './tools/logout.js';
+import { registerPublishSkillTool } from './tools/publish-skill.js';
+import { registerRemoveSkillTool } from './tools/remove-skill.js';
+import { registerScanSkillTool } from './tools/scan-skill.js';
 import { registerSearchSkillsTool } from './tools/search-skills.js';
 import { registerSkillInfoTool } from './tools/skill-info.js';
-import { registerScanSkillTool } from './tools/scan-skill.js';
-import { registerPublishSkillTool } from './tools/publish-skill.js';
-import { registerLogoutTool } from './tools/logout.js';
-import { registerWhoamiTool } from './tools/whoami.js';
-import { registerInitSkillTool } from './tools/init-skill.js';
-import { registerRemoveSkillTool } from './tools/remove-skill.js';
-import { registerVerifySkillsTool } from './tools/verify-skills.js';
-import { registerLinkSkillTool } from './tools/link-skill.js';
-import { registerUnlinkSkillTool } from './tools/unlink-skill.js';
-import { registerDoctorTool } from './tools/doctor.js';
 import { registerSkillPermissionsTool } from './tools/skill-permissions.js';
-import { registerInstallSkillTool } from './tools/install-skill.js';
+import { registerUnlinkSkillTool } from './tools/unlink-skill.js';
 import { registerUpdateSkillTool } from './tools/update-skill.js';
-import { registerAuditSkillTool } from './tools/audit-skill.js';
+import { registerVerifySkillsTool } from './tools/verify-skills.js';
+import { registerWhoamiTool } from './tools/whoami.js';
 
 // Create MCP server instance
 const server = new McpServer({
   name: 'tank',
-  version: '0.1.0',
+  version: '0.1.0'
 });
 
 // Register all tools

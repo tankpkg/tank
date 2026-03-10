@@ -1,4 +1,5 @@
-@mcp @update
+@mcp
+@update
 Feature: Skill update via MCP tool
   As an AI agent using the Tank MCP server
   I need to update installed skills to newer versions
@@ -10,7 +11,6 @@ Feature: Skill update via MCP tool
     And Emma is authenticated with Tank
 
   # ─── update-skill (happy paths) ───────────────────────────────────────────
-
   @high
   Scenario: Agent updates a skill to the latest version within its semver range
     Given the skill "@acme/web-search" is installed at version "2.0.0"
@@ -41,7 +41,6 @@ Feature: Skill update via MCP tool
     And the response notes that version "3.0.0" exists but is outside the declared range
 
   # ─── update-skill (error cases) ───────────────────────────────────────────
-
   @high
   Scenario: Agent updates a skill that is not installed
     Given the skill "@acme/nonexistent-skill" is not installed

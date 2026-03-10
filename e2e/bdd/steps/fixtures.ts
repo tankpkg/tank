@@ -1,11 +1,11 @@
+import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createHash, randomUUID } from 'node:crypto';
 import { test as base, createBdd } from 'playwright-bdd';
-import { runTank, expectSuccess, type CliResult } from '../../helpers/cli';
-import { setupE2E, cleanupE2E, type E2EContext } from '../../helpers/setup';
-import { createSkillFixture, cleanupFixture, type SkillFixture } from '../../helpers/fixtures';
+import { type CliResult, expectSuccess, runTank } from '../../helpers/cli';
+import { cleanupFixture, createSkillFixture, type SkillFixture } from '../../helpers/fixtures';
+import { cleanupE2E, type E2EContext, setupE2E } from '../../helpers/setup';
 
 export interface UserFixture {
   id: string;
@@ -44,7 +44,7 @@ function createHomeDir(registry: string, token?: string, user?: { name: string; 
   const tankDir = path.join(home, '.tank');
   fs.mkdirSync(tankDir, { recursive: true, mode: 0o700 });
   const config: { registry: string; token?: string; user?: { name: string; email: string } } = {
-    registry,
+    registry
   };
   if (token) {
     config.token = token;
@@ -52,7 +52,7 @@ function createHomeDir(registry: string, token?: string, user?: { name: string; 
   if (user) {
     config.user = user;
   }
-  fs.writeFileSync(path.join(tankDir, 'config.json'), JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });
+  fs.writeFileSync(path.join(tankDir, 'config.json'), `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
   return home;
 }
 
@@ -101,12 +101,14 @@ async function createUserFixture(ctx: E2EContext, opts: UserFixtureOptions): Pro
     name: opts.name,
     email,
     token: plainKey,
-    home,
+    home
   };
 }
 
 async function safeDelete(query: Promise<unknown>) {
-  try { await query; } catch (e: unknown) {
+  try {
+    await query;
+  } catch (e: unknown) {
     const code = (e as { code?: string }).code;
     if (code !== '42P01') throw e;
   }
@@ -140,18 +142,19 @@ export const test = base.extend<{
 }>({
   e2eContext: [
     // Playwright requires destructuring pattern for fixture args
-    async ({}, use) => { // biome-ignore lint: playwright fixture convention
+    async ({}, use) => {
+      // biome-ignore lint: playwright fixture convention
       const ctx = await setupE2E();
       await use(ctx);
       await cleanupE2E(ctx);
     },
-    { scope: 'worker' },
+    { scope: 'worker' }
   ],
   searchQuery: [
     async ({ e2eContext }, use) => {
       await use(`private-packages-${e2eContext.runId}`);
     },
-    { scope: 'worker' },
+    { scope: 'worker' }
   ],
   secondUser: [
     async ({ e2eContext }, use) => {
@@ -159,12 +162,12 @@ export const test = base.extend<{
         slug: 'bob',
         name: 'Bob',
         emailPrefix: 'bob',
-        addToOrg: true,
+        addToOrg: true
       });
       await use(user);
       await cleanupUserFixture(e2eContext, user);
     },
-    { scope: 'worker' },
+    { scope: 'worker' }
   ],
   thirdUser: [
     async ({ e2eContext }, use) => {
@@ -172,12 +175,12 @@ export const test = base.extend<{
         slug: 'charlie',
         name: 'Charlie',
         emailPrefix: 'charlie',
-        addToOrg: false,
+        addToOrg: false
       });
       await use(user);
       await cleanupUserFixture(e2eContext, user);
     },
-    { scope: 'worker' },
+    { scope: 'worker' }
   ],
   noAuthHome: [
     async ({ e2eContext }, use) => {
@@ -185,47 +188,47 @@ export const test = base.extend<{
       await use(home);
       cleanupHomeDir(home);
     },
-    { scope: 'test' },
+    { scope: 'test' }
   ],
   publishedPrivateSkill: [
     async ({ e2eContext, searchQuery }, use) => {
       const skill = createSkillFixture({
         orgSlug: e2eContext.orgSlug,
         skillName: 'private-access-skill',
-        description: `Private packages ${searchQuery}`,
+        description: `Private packages ${searchQuery}`
       });
 
       const result = await runTank(['publish', '--private'], {
         cwd: skill.dir,
         home: e2eContext.home,
-        timeoutMs: 60_000,
+        timeoutMs: 60_000
       });
       expectSuccess(result);
 
       await use(skill);
       cleanupFixture(skill.dir);
     },
-    { scope: 'worker' },
+    { scope: 'worker' }
   ],
   publishedPublicSkill: [
     async ({ e2eContext, searchQuery }, use) => {
       const skill = createSkillFixture({
         orgSlug: e2eContext.orgSlug,
         skillName: 'public-search-skill',
-        description: `Private packages ${searchQuery}`,
+        description: `Private packages ${searchQuery}`
       });
 
       const result = await runTank(['publish'], {
         cwd: skill.dir,
         home: e2eContext.home,
-        timeoutMs: 60_000,
+        timeoutMs: 60_000
       });
       expectSuccess(result);
 
       await use(skill);
       cleanupFixture(skill.dir);
     },
-    { scope: 'worker' },
+    { scope: 'worker' }
   ],
   bddState: [
     async ({ searchQuery }, use) => {
@@ -235,13 +238,12 @@ export const test = base.extend<{
         cleanupFixture(dir);
       }
     },
-    { scope: 'test' },
-  ],
+    { scope: 'test' }
+  ]
 });
 
 export const { Given, When, Then } = createBdd(test);
 export { runTank, expectSuccess };
 export { expectFailure } from '../../helpers/cli';
-export { createSkillFixture } from '../../helpers/fixtures';
-export { createConsumerFixture, type ConsumerFixture } from '../../helpers/fixtures';
+export { type ConsumerFixture, createConsumerFixture, createSkillFixture } from '../../helpers/fixtures';
 export type { SkillFixture };

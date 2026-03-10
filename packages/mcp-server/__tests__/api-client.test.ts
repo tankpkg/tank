@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TankApiClient } from '../src/lib/api-client.js';
-import { setConfig, getConfigPath } from '../src/lib/config.js';
+import { setConfig } from '../src/lib/config.js';
 
 // Mock global fetch
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+global.fetch = mockFetch as unknown as typeof fetch;
 
 describe('TankApiClient', () => {
   let tempDir: string;
@@ -52,7 +52,7 @@ describe('TankApiClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ data: 'test' }),
+        json: async () => ({ data: 'test' })
       });
 
       const result = await client.fetch<{ data: string }>('/api/test');
@@ -61,9 +61,9 @@ describe('TankApiClient', () => {
         'https://tankpkg.dev/api/test',
         expect.objectContaining({
           headers: expect.objectContaining({
-            Authorization: 'Bearer test-token',
-          }),
-        }),
+            Authorization: 'Bearer test-token'
+          })
+        })
       );
       expect(result.ok).toBe(true);
       if (result.ok) {
@@ -76,7 +76,7 @@ describe('TankApiClient', () => {
         ok: false,
         status: 404,
         statusText: 'Not Found',
-        json: async () => ({ error: 'Resource not found' }),
+        json: async () => ({ error: 'Resource not found' })
       });
 
       const result = await client.fetch('/api/test');
@@ -113,7 +113,7 @@ describe('TankApiClient', () => {
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ name: 'Test User', email: 'test@example.com', userId: 'u1' }),
+        json: async () => ({ name: 'Test User', email: 'test@example.com', userId: 'u1' })
       });
 
       const result = await client.verifyAuth();
@@ -130,7 +130,7 @@ describe('TankApiClient', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 401,
-        json: async () => ({ error: 'Invalid token' }),
+        json: async () => ({ error: 'Invalid token' })
       });
 
       const result = await client.verifyAuth();

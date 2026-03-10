@@ -1,0 +1,7 @@
+{"ts":"2026-02-26T09:28:30.059Z","tool":"search_blocks","status":"error","duration_ms":26,"input":{"query":"install download CLI curl"},"error":"fetch failed"}
+{"ts":"2026-02-26T09:28:30.288Z","tool":"explore_page_structure","status":"error","duration_ms":2,"input":{"slug":"home"},"error":"fetch failed"}
+{"ts":"2026-02-26T09:28:52.601Z","tool":"list_pages_summary","status":"error","duration_ms":1,"input":{},"error":"fetch failed"}
+{"ts":"2026-03-06T21:48:14.775Z","tool":"get_site_settings","status":"error","duration_ms":21,"input":{},"error":"fetch failed"}
+{"ts":"2026-03-06T22:11:44.636Z","tool":"list_pages_summary","status":"error","duration_ms":1,"input":{},"error":"fetch failed"}
+{"ts":"2026-03-06T22:11:45.268Z","tool":"search_blocks","status":"error","duration_ms":2,"input":{"query":"Tank security package manager","limit":10},"error":"fetch failed"}
+{"ts":"2026-03-07T10:14:13.895Z","tool":"search_blocks","status":"error","duration_ms":23,"input":{"query":"hero"},"error":"fetch failed"}

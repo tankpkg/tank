@@ -1,0 +1,6 @@
+{
+  "ignore": {
+    "files": ["api-python/**", "drizzle/**", "perf/**", "public/**"]
+  },
+  "verbose": false
+}

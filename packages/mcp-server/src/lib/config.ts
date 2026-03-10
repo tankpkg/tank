@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
+import path from 'node:path';
 
 export interface TankConfig {
   token?: string;
@@ -9,7 +9,7 @@ export interface TankConfig {
 }
 
 const DEFAULT_CONFIG: TankConfig = {
-  registry: 'https://tankpkg.dev',
+  registry: 'https://tankpkg.dev'
 };
 
 /**
@@ -46,7 +46,7 @@ export function getConfig(configDir?: string): TankConfig {
     const envToken = process.env.TANK_TOKEN?.trim();
     return {
       ...DEFAULT_CONFIG,
-      ...(envToken ? { token: envToken } : {}),
+      ...(envToken ? { token: envToken } : {})
     };
   }
 }
@@ -54,10 +54,7 @@ export function getConfig(configDir?: string): TankConfig {
 /**
  * Write config to disk. Merges with existing config.
  */
-export function setConfig(
-  partial: Partial<TankConfig>,
-  configDir?: string,
-): void {
+export function setConfig(partial: Partial<TankConfig>, configDir?: string): void {
   const dir = getConfigDir(configDir);
   const configPath = getConfigPath(configDir);
 
@@ -68,8 +65,8 @@ export function setConfig(
   const existing = getConfig(configDir);
   const merged = { ...existing, ...partial };
 
-  fs.writeFileSync(configPath, JSON.stringify(merged, null, 2) + '\n', {
+  fs.writeFileSync(configPath, `${JSON.stringify(merged, null, 2)}\n`, {
     encoding: 'utf-8',
-    mode: 0o600,
+    mode: 0o600
   });
 }

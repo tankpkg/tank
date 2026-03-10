@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+.next
+.turbo
+coverage
+bun.lock
+*.tsbuildinfo
+.worktrees
+.git
+infra/helm

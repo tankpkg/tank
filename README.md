@@ -35,15 +35,15 @@ Agent skills are more dangerous than npm packages because they execute with the 
 
 Tank is the **npm for agent skills**, with security built into the foundation:
 
-| Feature | npm (2012) | Current Registries | Tank |
-|---------|-----------|-------------------|------|
-| Versioning | Social contract | Git tags / none | **Semver with escalation detection** |
-| Lockfile | `package-lock.json` | None | **`skills.lock` with SHA-512** |
-| Permissions | None | None | **Declared + enforced at install** |
-| Static analysis | None built-in | Basic / none | **6-stage security pipeline** |
-| Audit score | `npm audit` (deps only) | None | **Transparent 0-10 score** |
-| Code signing | npm provenance (2023) | None | Planned (Sigstore) |
-| Sandbox | None | None | Planned (Phase 3) |
+| Feature         | npm (2012)              | Current Registries | Tank                                 |
+| --------------- | ----------------------- | ------------------ | ------------------------------------ |
+| Versioning      | Social contract         | Git tags / none    | **Semver with escalation detection** |
+| Lockfile        | `package-lock.json`     | None               | **`skills.lock` with SHA-512**       |
+| Permissions     | None                    | None               | **Declared + enforced at install**   |
+| Static analysis | None built-in           | Basic / none       | **6-stage security pipeline**        |
+| Audit score     | `npm audit` (deps only) | None               | **Transparent 0-10 score**           |
+| Code signing    | npm provenance (2023)   | None               | Planned (Sigstore)                   |
+| Sandbox         | None                    | None               | Planned (Phase 3)                    |
 
 ## Quick Look
 
@@ -101,8 +101,9 @@ If any skill exceeds the permission budget, installation fails. This single feat
 ## Development
 
 ### Prerequisites
+
 - Node.js 24+
-- pnpm 10+
+- Bun 1.x+
 - Python 3.14+ (for security analysis functions)
 
 ### Setup
@@ -110,33 +111,35 @@ If any skill exceeds the permission budget, installation fails. This single feat
 ```bash
 git clone https://github.com/tankpkg/tank.git
 cd tank
-pnpm install
+bun install
 cp .env.example .env.local  # fill in credentials
-pnpm --filter=web admin:bootstrap  # promotes FIRST_ADMIN_EMAIL to admin
+just db-admin                # promotes FIRST_ADMIN_EMAIL to admin
 ```
 
 ### Commands
 
 ```bash
-pnpm dev                    # Start web app in dev mode
-pnpm build                  # Build all packages
-pnpm test                   # Run all tests (445 TypeScript + 16 Python)
-pnpm --filter=web admin:bootstrap  # Promote bootstrap admin user
-pnpm test:perf              # Run performance tests (no-cache production build)
-pnpm test --filter=cli      # Run CLI tests only
-pnpm test --filter=web      # Run web tests only
-pnpm test --filter=shared   # Run shared package tests only
+just dev                    # Start all workspaces in dev mode
+just build                  # Build all packages
+just test                   # Run all unit tests
+just test-python            # Run Python scanner tests
+just test-perf              # Run performance tests
+just check                  # Biome lint + format validation
+just fmt                    # Auto-format code
+just --list                 # See all available commands
 ```
 
 ## Project Structure
 
 ```
 tank/
-├── apps/
-│   ├── web/          # Next.js 15 web app + API (Vercel)
-│   └── cli/          # Tank CLI (TypeScript)
 ├── packages/
+│   ├── web/          # Next.js 15 web app + API (Vercel)
+│   ├── cli/          # Tank CLI (TypeScript)
+│   ├── mcp-server/   # MCP server for editor integration
+│   ├── scanner/      # Python security scanner (FastAPI)
 │   └── shared/       # Shared schemas, types, constants
+├── infra/            # Docker Compose, Helm charts
 └── docs/             # Product brief, architecture
 ```
 
@@ -146,12 +149,12 @@ tank/
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [Product Brief](docs/product-brief.md) | Full vision, features, and technical direction |
-| [Architecture](docs/architecture.md) | Technical design and decisions |
-| [Performance Testing](docs/performance-testing.md) | Methodology and regression protocol |
-| [Contributing](CONTRIBUTING.md) | How to get involved |
+| Document                                           | Description                                    |
+| -------------------------------------------------- | ---------------------------------------------- |
+| [Product Brief](docs/product-brief.md)             | Full vision, features, and technical direction |
+| [Architecture](docs/architecture.md)               | Technical design and decisions                 |
+| [Performance Testing](docs/performance-testing.md) | Methodology and regression protocol            |
+| [Contributing](CONTRIBUTING.md)                    | How to get involved                            |
 
 ## Why "Tank"?
 

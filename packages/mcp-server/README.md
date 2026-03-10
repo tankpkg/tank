@@ -5,34 +5,41 @@ MCP (Model Context Protocol) server for Tank — manage AI agent skills directly
 ## Features
 
 ### Authentication
+
 - **login** — Authenticate with Tank via GitHub OAuth
 - **logout** — Clear stored credentials
 - **whoami** — Show current user info
 
 ### Project Setup
+
 - **init-skill** — Create `skills.json` and `SKILL.md` scaffold
 
 ### Publishing & Discovery
+
 - **publish-skill** — Publish a skill to the Tank registry (with dry-run support)
 - **search-skills** — Search the Tank registry for skills
 - **skill-info** — Get detailed information about a specific skill
 
 ### Installation & Management
+
 - **install-skill** — Install a skill with SHA-512 verification
 - **update-skill** — Update skills within semver range
 - **remove-skill** — Remove a skill and clean up lockfile
 
 ### Security & Verification
+
 - **scan-skill** — Scan any directory for security issues (skills.json not required)
 - **verify-skills** — Verify lockfile integrity
 - **audit-skill** — Show security scan results and verdict
 - **skill-permissions** — Display per-skill permission summary
 
 ### Agent Integration
+
 - **link-skill** — Symlink a skill into an agent workspace
 - **unlink-skill** — Remove a skill symlink
 
 ### Diagnostics
+
 - **doctor** — Check config, auth, registry connectivity, and Node.js version
 
 ## Installation
@@ -123,16 +130,16 @@ Once configured, talk to your AI agent naturally:
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Build
-pnpm build
+bun build
 
 # Run tests
-pnpm test
+bun test
 
 # Start the server (stdio mode)
-pnpm start
+bun start
 ```
 
 ## License

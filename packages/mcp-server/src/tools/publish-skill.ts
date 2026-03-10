@@ -1,9 +1,8 @@
+import path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import path from 'node:path';
 import { TankApiClient } from '../lib/api-client.js';
-import { pack } from '../lib/packer.js';
-import { getConfig } from '../lib/config.js';
+import { type PackResult, pack } from '../lib/packer.js';
 
 interface PublishStartResponse {
   uploadUrl: string;
@@ -26,12 +25,11 @@ export function registerPublishSkillTool(server: McpServer): void {
     {
       directory: z.string().optional().describe('Directory to publish (default: current directory)'),
       visibility: z.enum(['public', 'private']).optional().default('public').describe('Package visibility'),
-      dryRun: z.boolean().optional().default(false).describe('Validate without publishing'),
+      dryRun: z.boolean().optional().default(false).describe('Validate without publishing')
     },
     async ({ directory = '.', visibility = 'public', dryRun = false }) => {
       const absDir = path.resolve(directory);
       const client = new TankApiClient();
-      const config = getConfig();
 
       // Check auth (skip for dry run)
       if (!dryRun && !client.isAuthenticated) {
@@ -39,9 +37,9 @@ export function registerPublishSkillTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: 'You need to log in first. Use the login tool to authenticate with Tank.\n\nExample: "Log in to Tank"',
-            },
-          ],
+              text: 'You need to log in first. Use the login tool to authenticate with Tank.\n\nExample: "Log in to Tank"'
+            }
+          ]
         };
       }
 
@@ -52,15 +50,15 @@ export function registerPublishSkillTool(server: McpServer): void {
             content: [
               {
                 type: 'text' as const,
-                text: 'Your session has expired. Use the login tool to authenticate again.',
-              },
-            ],
+                text: 'Your session has expired. Use the login tool to authenticate again.'
+              }
+            ]
           };
         }
       }
 
       // Pack the skill
-      let packResult;
+      let packResult: PackResult;
       try {
         packResult = await pack(absDir);
       } catch (err) {
@@ -68,9 +66,9 @@ export function registerPublishSkillTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: `Failed to pack skill: ${err instanceof Error ? err.message : String(err)}`,
-            },
-          ],
+              text: `Failed to pack skill: ${err instanceof Error ? err.message : String(err)}`
+            }
+          ]
         };
       }
 
@@ -101,11 +99,11 @@ export function registerPublishSkillTool(server: McpServer): void {
           ...packResult.files.slice(0, 10).map((f) => `  - ${f}`),
           packResult.files.length > 10 ? `  ... and ${packResult.files.length - 10} more` : '',
           '',
-          'Ready to publish. Say "publish my skill" when you\'re ready.',
+          'Ready to publish. Say "publish my skill" when you\'re ready.'
         ];
 
         return {
-          content: [{ type: 'text' as const, text: lines.join('\n') }],
+          content: [{ type: 'text' as const, text: lines.join('\n') }]
         };
       }
 
@@ -115,8 +113,8 @@ export function registerPublishSkillTool(server: McpServer): void {
         body: JSON.stringify({
           manifest: { ...manifest, visibility },
           readme: packResult.readme,
-          files: packResult.files,
-        }),
+          files: packResult.files
+        })
       });
 
       if (!startResult.ok) {
@@ -124,9 +122,9 @@ export function registerPublishSkillTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: `Failed to start publish: ${startResult.error}`,
-            },
-          ],
+              text: `Failed to start publish: ${startResult.error}`
+            }
+          ]
         };
       }
 
@@ -136,9 +134,9 @@ export function registerPublishSkillTool(server: McpServer): void {
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/gzip',
+          'Content-Type': 'application/gzip'
         },
-        body: packResult.tarball,
+        body: new Uint8Array(packResult.tarball)
       });
 
       if (!uploadRes.ok) {
@@ -146,9 +144,9 @@ export function registerPublishSkillTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: `Failed to upload tarball: ${uploadRes.statusText}`,
-            },
-          ],
+              text: `Failed to upload tarball: ${uploadRes.statusText}`
+            }
+          ]
         };
       }
 
@@ -160,8 +158,8 @@ export function registerPublishSkillTool(server: McpServer): void {
           integrity: packResult.integrity,
           fileCount: packResult.fileCount,
           tarballSize: packResult.tarball.length,
-          readme: packResult.readme,
-        }),
+          readme: packResult.readme
+        })
       });
 
       if (!confirmResult.ok) {
@@ -169,9 +167,9 @@ export function registerPublishSkillTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: `Failed to confirm publish: ${confirmResult.error}`,
-            },
-          ],
+              text: `Failed to confirm publish: ${confirmResult.error}`
+            }
+          ]
         };
       }
 
@@ -190,12 +188,12 @@ export function registerPublishSkillTool(server: McpServer): void {
         `- **Files:** ${packResult.fileCount}`,
         `- **Size:** ${(packResult.totalSize / 1024).toFixed(1)}KB`,
         '',
-        `View your skill: https://tankpkg.dev/skills/${confirm.name}`,
+        `View your skill: https://tankpkg.dev/skills/${confirm.name}`
       ];
 
       return {
-        content: [{ type: 'text' as const, text: lines.join('\n') }],
+        content: [{ type: 'text' as const, text: lines.join('\n') }]
       };
-    },
+    }
   );
 }
