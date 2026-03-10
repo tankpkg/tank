@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+
 from lib.scan.llm_analyzer import (
     MAX_FINDINGS_PER_CALL,
     LLMAnalyzer,

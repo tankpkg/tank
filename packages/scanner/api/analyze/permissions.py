@@ -11,8 +11,9 @@ from typing import Any
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from lib.scan.permission_extractor import extract_permissions
 from pydantic import BaseModel
+
+from lib.scan.permission_extractor import extract_permissions
 
 # Base directory under which all skill directories must reside
 SKILL_BASE_DIR = os.environ.get("SKILL_BASE_DIR", "/workspace/skills")
