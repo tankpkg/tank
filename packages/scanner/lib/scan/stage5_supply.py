@@ -194,7 +194,7 @@ def check_typosquatting(package_name: str, popular_packages: set[str]) -> tuple[
         # Check for common substitutions
         # e.g., "reqeusts" vs "requests"
         if len(name_lower) == len(popular_lower):
-            diffs = sum(1 for a, b in zip(name_lower, popular_lower) if a != b)
+            diffs = sum(1 for a, b in zip(name_lower, popular_lower, strict=False) if a != b)
             if diffs == 1:
                 return (popular, 1)
 

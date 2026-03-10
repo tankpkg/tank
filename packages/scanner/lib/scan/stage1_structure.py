@@ -170,7 +170,7 @@ def check_nfkc_normalization(content: str, file_path: str) -> Finding | None:
     normalized = unicodedata.normalize("NFKC", content)
     if normalized != content:
         # Find first difference
-        for i, (orig, norm) in enumerate(zip(content, normalized)):
+        for i, (orig, norm) in enumerate(zip(content, normalized, strict=False)):
             if orig != norm:
                 return Finding(
                     stage="stage1",
@@ -224,20 +224,22 @@ def check_hidden_files(temp_dir: str, file_list: list[str]) -> list[Finding]:
 
     for file_path in file_list:
         name = Path(file_path).name
-        if name.startswith(".") and name not in ALLOWED_DOTFILES:
-            # Check if it's a common config file pattern
-            if not any(name.startswith(prefix) for prefix in [".env.", ".git"]):
-                findings.append(
-                    Finding(
-                        stage="stage1",
-                        severity="low",
-                        type="hidden_file",
-                        description=f"Hidden dotfile detected: {name}",
-                        location=file_path,
-                        confidence=0.5,
-                        tool="stage1_structure",
-                    )
+        if (
+            name.startswith(".")
+            and name not in ALLOWED_DOTFILES
+            and not any(name.startswith(prefix) for prefix in [".env.", ".git"])
+        ):
+            findings.append(
+                Finding(
+                    stage="stage1",
+                    severity="low",
+                    type="hidden_file",
+                    description=f"Hidden dotfile detected: {name}",
+                    location=file_path,
+                    confidence=0.5,
+                    tool="stage1_structure",
                 )
+            )
 
     return findings
 

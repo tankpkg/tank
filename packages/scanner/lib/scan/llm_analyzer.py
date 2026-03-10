@@ -561,9 +561,7 @@ Classify each finding and respond with ONLY a JSON array."""
                 original_severity = finding.severity
                 if finding.severity == "critical":
                     finding.severity = "medium"
-                elif finding.severity == "high":
-                    finding.severity = "low"
-                elif finding.severity == "medium":
+                elif finding.severity in ("high", "medium"):
                     finding.severity = "low"
                 elif finding.severity == "low":
                     # Remove low-severity dismissed findings by not adding them
@@ -581,15 +579,13 @@ Classify each finding and respond with ONLY a JSON array."""
                     f"Finding {i} downgraded: {original_severity} -> {finding.severity} "
                     f"({finding.type}, reason={verdict.reasoning[:50]}...)"
                 )
-
             elif verdict.classification == "confirmed_threat":
                 # Boost confidence slightly
                 if finding.confidence:
                     finding.confidence = min(1.0, finding.confidence + 0.1)
                 logger.info(f"Finding {i} confirmed as threat: {finding.type} (confidence={verdict.confidence:.2f})")
-
-            # "uncertain" - no change to severity or confidence
             else:
+                # "uncertain" - no change to severity or confidence
                 logger.debug(f"Finding {i} uncertain: {finding.type} (confidence={verdict.confidence:.2f})")
 
             updated_findings.append(finding)

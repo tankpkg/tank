@@ -6,6 +6,7 @@ in the test_skills/ directory while not producing false positives on benign skil
 Run with: pytest tests/test_skills/test_skill_corpus.py -v
 """
 
+import asyncio
 from pathlib import Path
 
 import pytest
@@ -32,9 +33,6 @@ class IngestResult:
             if f.is_file():
                 files.append(str(f.relative_to(self.temp_dir)))
         return files
-
-
-import asyncio
 
 
 def get_findings_for_skill(skill_dir: str) -> dict[str, list[Finding]]:
@@ -241,7 +239,7 @@ class TestDeduplication:
         deduped = deduplicate_findings(findings)
 
         assert len(deduped) == 1, "Should merge duplicates into one finding"
-        assert deduped[0]["corroborated"] == True, "Should mark as corroborated"
+        assert deduped[0]["corroborated"] is True, "Should mark as corroborated"
         assert deduped[0]["corroboration_count"] == 2, "Should show 2 tools"
         assert deduped[0]["confidence"] >= 0.9, "Confidence should be boosted"
 

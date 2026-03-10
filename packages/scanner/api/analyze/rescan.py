@@ -43,9 +43,8 @@ def verify_cron_auth(authorization: str | None) -> None:
             raise HTTPException(status_code=401, detail="Unauthorized")
     else:
         # In non-production, require auth if secret is set, allow if not
-        if CRON_SECRET:
-            if not authorization or authorization != f"Bearer {CRON_SECRET}":
-                raise HTTPException(status_code=401, detail="Unauthorized")
+        if CRON_SECRET and (not authorization or authorization != f"Bearer {CRON_SECRET}"):
+            raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 async def get_versions_to_rescan() -> list[dict[str, Any]]:
