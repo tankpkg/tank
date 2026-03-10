@@ -1,4 +1,5 @@
-@mcp @permissions
+@mcp
+@permissions
 Feature: Skill permissions display via MCP tool
   As an AI agent using the Tank MCP server
   I need to view the resolved permission summary for skills in a project
@@ -9,7 +10,6 @@ Feature: Skill permissions display via MCP tool
     Given the MCP server is running
 
   # ─── skill-permissions (happy paths) ──────────────────────────────────────
-
   @high
   Scenario: Agent views permissions for a project with multiple skills
     Given a skills.json exists in "/workspace/my-project"
@@ -40,7 +40,6 @@ Feature: Skill permissions display via MCP tool
     And the response indicates "@acme/text-formatter" requires no special permissions
 
   # ─── skill-permissions (error cases) ──────────────────────────────────────
-
   @high
   Scenario: Agent views permissions when no skills.json exists
     Given no skills.json exists in "/workspace/empty-project"
@@ -70,9 +69,9 @@ Feature: Skill permissions display via MCP tool
     Then the MCP server returns a summary that includes "<permission_type>" in the permissions list
 
     Examples:
-      | permission_type    |
-      | network            |
-      | filesystem:read    |
-      | filesystem:write   |
-      | env                |
-      | exec               |
+      | permission_type  |
+      | network          |
+      | filesystem:read  |
+      | filesystem:write |
+      | env              |
+      | exec             |

@@ -12,16 +12,21 @@ export function registerLinkSkillTool(server: McpServer): void {
     {
       name: z.string().describe('Skill name in @org/name format'),
       workspace: z.string().describe('Agent workspace directory path'),
-      directory: z.string().optional().describe('Project directory where skills are installed (defaults to current working directory)'),
+      directory: z
+        .string()
+        .optional()
+        .describe('Project directory where skills are installed (defaults to current working directory)')
     },
     async ({ name, workspace, directory }) => {
       if (!SCOPED_NAME_PATTERN.test(name)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -30,22 +35,26 @@ export function registerLinkSkillTool(server: McpServer): void {
 
       if (!fs.existsSync(workspaceDir)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Error: Workspace directory does not exist: ${workspaceDir}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error: Workspace directory does not exist: ${workspaceDir}`
+            }
+          ],
+          isError: true
         };
       }
 
       const skillDir = getSkillDir(projectDir, name);
       if (!fs.existsSync(skillDir)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Skill "${name}" is not installed. Install it first with "install-skill" before linking.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Skill "${name}" is not installed. Install it first with "install-skill" before linking.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -63,28 +72,31 @@ export function registerLinkSkillTool(server: McpServer): void {
 
           if (path.resolve(resolvedTarget) === path.resolve(skillDir)) {
             return {
-              content: [{
-                type: 'text' as const,
-                text: `Skill "${name}" is already linked in ${workspaceDir}.`,
-              }],
+              content: [
+                {
+                  type: 'text' as const,
+                  text: `Skill "${name}" is already linked in ${workspaceDir}.`
+                }
+              ]
             };
           }
 
           fs.unlinkSync(symlinkPath);
         }
-      } catch {
-      }
+      } catch {}
 
       fs.mkdirSync(skillsLinkDir, { recursive: true });
       fs.symlinkSync(skillDir, symlinkPath, 'dir');
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `Successfully linked "${name}" into ${workspaceDir}.\nSymlink: ${symlinkPath} → ${skillDir}`,
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Successfully linked "${name}" into ${workspaceDir}.\nSymlink: ${symlinkPath} → ${skillDir}`
+          }
+        ]
       };
-    },
+    }
   );
 }
 

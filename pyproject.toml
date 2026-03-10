@@ -1,0 +1,27 @@
+[tool.uv.workspace]
+members = ["packages/scanner"]
+
+[tool.uv]
+dev-dependencies = [
+    "ruff>=0.12.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "RUF", "I"]
+ignore = ["E501", "B008", "B905"]
+
+[tool.ruff.format]
+quote-style = "double"
+line-ending = "lf"
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"**/tests/**" = ["E402", "E712"]
+"**/stage1_structure.py" = ["RUF001"]
+"**/llm_analyzer.py" = ["RUF012"]

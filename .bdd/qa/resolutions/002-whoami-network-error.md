@@ -3,6 +3,7 @@
 **Finding:** [002](../findings/002-whoami-network-error-indistinguishable.md)
 **Date:** 2026-03-05
 **Files changed:**
+
 - `packages/mcp-server/src/lib/api-client.ts`
 - `packages/mcp-server/src/tools/whoami.ts`
 

@@ -12,16 +12,21 @@ export function registerUnlinkSkillTool(server: McpServer): void {
     {
       name: z.string().describe('Skill name in @org/name format'),
       workspace: z.string().describe('Agent workspace directory path'),
-      directory: z.string().optional().describe('Project directory where skills are installed (defaults to current working directory)'),
+      directory: z
+        .string()
+        .optional()
+        .describe('Project directory where skills are installed (defaults to current working directory)')
     },
     async ({ name, workspace, directory }) => {
       if (!SCOPED_NAME_PATTERN.test(name)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -30,22 +35,26 @@ export function registerUnlinkSkillTool(server: McpServer): void {
 
       if (!fs.existsSync(workspaceDir)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Error: Workspace directory does not exist: ${workspaceDir}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Error: Workspace directory does not exist: ${workspaceDir}`
+            }
+          ],
+          isError: true
         };
       }
 
       const skillDir = getSkillDir(projectDir, name);
       if (!fs.existsSync(skillDir)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Skill "${name}" is not installed. It was not found in ${skillDir}.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Skill "${name}" is not installed. It was not found in ${skillDir}.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -57,22 +66,25 @@ export function registerUnlinkSkillTool(server: McpServer): void {
         if (stats.isSymbolicLink()) {
           fs.unlinkSync(symlinkPath);
           return {
-            content: [{
-              type: 'text' as const,
-              text: `Successfully unlinked "${name}" from ${workspaceDir}.\nRemoved symlink: ${symlinkPath}`,
-            }],
+            content: [
+              {
+                type: 'text' as const,
+                text: `Successfully unlinked "${name}" from ${workspaceDir}.\nRemoved symlink: ${symlinkPath}`
+              }
+            ]
           };
         }
-      } catch {
-      }
+      } catch {}
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `No link exists for "${name}" in ${workspaceDir}.`,
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `No link exists for "${name}" in ${workspaceDir}.`
+          }
+        ]
       };
-    },
+    }
   );
 }
 

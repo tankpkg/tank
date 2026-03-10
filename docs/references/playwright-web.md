@@ -26,30 +26,30 @@ This reference contains official Playwright patterns and best practices relevant
 
 ```typescript
 // ✅ BEST: Role-based (accessibility-first)
-await page.getByRole('button', { name: 'Submit' });
-await page.getByRole('heading', { name: 'Sign up' });
-await page.getByRole('checkbox', { name: 'Subscribe' });
+await page.getByRole("button", { name: "Submit" });
+await page.getByRole("heading", { name: "Sign up" });
+await page.getByRole("checkbox", { name: "Subscribe" });
 
 // ✅ GOOD: Label-based (forms)
-await page.getByLabel('Password');
-await page.getByLabel('Email address');
+await page.getByLabel("Password");
+await page.getByLabel("Email address");
 
 // ✅ GOOD: Text content
-await page.getByText('Welcome, John');
+await page.getByText("Welcome, John");
 await page.getByText(/welcome, [A-Za-z]+$/i); // regex
 
 // ✅ GOOD: Placeholder
-await page.getByPlaceholder('name@example.com');
+await page.getByPlaceholder("name@example.com");
 
 // ✅ GOOD: Alt text (images)
-await page.getByAltText('playwright logo');
+await page.getByAltText("playwright logo");
 
 // ✅ FALLBACK: Test ID (when above don't work)
-await page.getByTestId('submit-button');
+await page.getByTestId("submit-button");
 
 // ❌ AVOID: CSS/XPath (brittle, breaks on refactor)
-await page.locator('.btn-primary'); // BAD
-await page.locator('#submit'); // BAD
+await page.locator(".btn-primary"); // BAD
+await page.locator("#submit"); // BAD
 ```
 
 ### Custom Test ID Attribute
@@ -59,8 +59,8 @@ Configure in `playwright.config.ts`:
 ```typescript
 export default defineConfig({
   use: {
-    testIdAttribute: 'data-testid' // or 'data-pw', 'data-test', etc.
-  }
+    testIdAttribute: "data-testid", // or 'data-pw', 'data-test', etc.
+  },
 });
 ```
 
@@ -68,37 +68,28 @@ export default defineConfig({
 
 ```typescript
 // Filter by text
-await page
-  .getByRole('listitem')
-  .filter({ hasText: 'Product 2' })
-  .getByRole('button', { name: 'Add to cart' })
-  .click();
+await page.getByRole("listitem").filter({ hasText: "Product 2" }).getByRole("button", { name: "Add to cart" }).click();
 
 // Filter by child element
 await page
-  .getByRole('listitem')
-  .filter({ has: page.getByRole('heading', { name: 'Product 2' }) })
-  .getByRole('button', { name: 'Add to cart' })
+  .getByRole("listitem")
+  .filter({ has: page.getByRole("heading", { name: "Product 2" }) })
+  .getByRole("button", { name: "Add to cart" })
   .click();
 
 // Filter by NOT having text
-await expect(
-  page.getByRole('listitem').filter({ hasNotText: 'Out of stock' })
-).toHaveCount(5);
+await expect(page.getByRole("listitem").filter({ hasNotText: "Out of stock" })).toHaveCount(5);
 ```
 
 ### Handling Multiple Matches
 
 ```typescript
 // ✅ Use .first(), .last(), .nth() when order is stable
-await page.getByRole('button').first().click();
-await page.getByRole('listitem').nth(2).click();
+await page.getByRole("button").first().click();
+await page.getByRole("listitem").nth(2).click();
 
 // ⚠️ Better: make locator more specific
-await page
-  .getByRole('dialog')
-  .getByRole('button', { name: 'Close' })
-  .click();
+await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
 ```
 
 ---
@@ -112,23 +103,23 @@ await page
 **Setup file** (`tests/auth.setup.ts`):
 
 ```typescript
-import { test as setup, expect } from '@playwright/test';
-import path from 'path';
+import { test as setup, expect } from "@playwright/test";
+import path from "path";
 
-const authFile = path.join(__dirname, '../playwright/.auth/user.json');
+const authFile = path.join(__dirname, "../playwright/.auth/user.json");
 
-setup('authenticate', async ({ page }) => {
-  await page.goto('https://github.com/login');
-  await page.getByLabel('Username or email address').fill('username');
-  await page.getByLabel('Password').fill('password');
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  
+setup("authenticate", async ({ page }) => {
+  await page.goto("https://github.com/login");
+  await page.getByLabel("Username or email address").fill("username");
+  await page.getByLabel("Password").fill("password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
   // Wait for final URL to ensure cookies are set
-  await page.waitForURL('https://github.com/');
-  
+  await page.waitForURL("https://github.com/");
+
   // Or wait for a specific element
-  await expect(page.getByRole('button', { name: 'View profile' })).toBeVisible();
-  
+  await expect(page.getByRole("button", { name: "View profile" })).toBeVisible();
+
   await page.context().storageState({ path: authFile });
 });
 ```
@@ -138,14 +129,14 @@ setup('authenticate', async ({ page }) => {
 ```typescript
 export default defineConfig({
   projects: [
-    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    { name: "setup", testMatch: /.*\.setup\.ts/ },
     {
-      name: 'chromium',
+      name: "chromium",
       use: {
-        ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json',
+        ...devices["Desktop Chrome"],
+        storageState: "playwright/.auth/user.json",
       },
-      dependencies: ['setup'],
+      dependencies: ["setup"],
     },
   ],
 });
@@ -164,51 +155,51 @@ playwright/.auth
 **Fixture file** (`playwright/fixtures.ts`):
 
 ```typescript
-import { test as baseTest, expect } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
+import { test as baseTest, expect } from "@playwright/test";
+import fs from "fs";
+import path from "path";
 
-export * from '@playwright/test';
+export * from "@playwright/test";
 
 export const test = baseTest.extend<{}, { workerStorageState: string }>({
   storageState: ({ workerStorageState }, use) => use(workerStorageState),
-  
-  workerStorageState: [async ({ browser }, use) => {
-    const id = test.info().parallelIndex;
-    const fileName = path.resolve(
-      test.info().project.outputDir, 
-      `.auth/${id}.json`
-    );
-    
-    if (fs.existsSync(fileName)) {
+
+  workerStorageState: [
+    async ({ browser }, use) => {
+      const id = test.info().parallelIndex;
+      const fileName = path.resolve(test.info().project.outputDir, `.auth/${id}.json`);
+
+      if (fs.existsSync(fileName)) {
+        await use(fileName);
+        return;
+      }
+
+      const page = await browser.newPage({ storageState: undefined });
+
+      // Acquire unique account (create or use pre-created)
+      const account = await acquireAccount(id);
+
+      await page.goto("https://github.com/login");
+      await page.getByLabel("Username or email address").fill(account.username);
+      await page.getByLabel("Password").fill(account.password);
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await page.waitForURL("https://github.com/");
+
+      await page.context().storageState({ path: fileName });
+      await page.close();
       await use(fileName);
-      return;
-    }
-    
-    const page = await browser.newPage({ storageState: undefined });
-    
-    // Acquire unique account (create or use pre-created)
-    const account = await acquireAccount(id);
-    
-    await page.goto('https://github.com/login');
-    await page.getByLabel('Username or email address').fill(account.username);
-    await page.getByLabel('Password').fill(account.password);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.waitForURL('https://github.com/');
-    
-    await page.context().storageState({ path: fileName });
-    await page.close();
-    await use(fileName);
-  }, { scope: 'worker' }],
+    },
+    { scope: "worker" },
+  ],
 });
 ```
 
 **Test file**:
 
 ```typescript
-import { test, expect } from '../playwright/fixtures';
+import { test, expect } from "../playwright/fixtures";
 
-test('test', async ({ page }) => {
+test("test", async ({ page }) => {
   // page is authenticated with worker-specific account
 });
 ```
@@ -216,12 +207,12 @@ test('test', async ({ page }) => {
 ### Pattern 3: API-Based Auth (Faster)
 
 ```typescript
-setup('authenticate', async ({ request }) => {
-  await request.post('https://github.com/login', {
+setup("authenticate", async ({ request }) => {
+  await request.post("https://github.com/login", {
     form: {
-      'user': 'user',
-      'password': 'password'
-    }
+      user: "user",
+      password: "password",
+    },
   });
   await request.storageState({ path: authFile });
 });
@@ -231,15 +222,15 @@ setup('authenticate', async ({ request }) => {
 
 ```typescript
 // auth.setup.ts
-const adminFile = 'playwright/.auth/admin.json';
-const userFile = 'playwright/.auth/user.json';
+const adminFile = "playwright/.auth/admin.json";
+const userFile = "playwright/.auth/user.json";
 
-setup('authenticate as admin', async ({ page }) => {
+setup("authenticate as admin", async ({ page }) => {
   // ... login as admin
   await page.context().storageState({ path: adminFile });
 });
 
-setup('authenticate as user', async ({ page }) => {
+setup("authenticate as user", async ({ page }) => {
   // ... login as user
   await page.context().storageState({ path: userFile });
 });
@@ -248,16 +239,16 @@ setup('authenticate as user', async ({ page }) => {
 **Use in tests**:
 
 ```typescript
-test.use({ storageState: 'playwright/.auth/admin.json' });
+test.use({ storageState: "playwright/.auth/admin.json" });
 
-test('admin test', async ({ page }) => {
+test("admin test", async ({ page }) => {
   // authenticated as admin
 });
 
 test.describe(() => {
-  test.use({ storageState: 'playwright/.auth/user.json' });
-  
-  test('user test', async ({ page }) => {
+  test.use({ storageState: "playwright/.auth/user.json" });
+
+  test("user test", async ({ page }) => {
     // authenticated as user
   });
 });
@@ -270,7 +261,7 @@ test.describe(() => {
 ### Built-in Fixtures
 
 ```typescript
-test('example', async ({ page, context, browser, request }) => {
+test("example", async ({ page, context, browser, request }) => {
   // page: isolated Page for this test
   // context: isolated BrowserContext
   // browser: shared Browser instance
@@ -281,8 +272,8 @@ test('example', async ({ page, context, browser, request }) => {
 ### Creating Custom Fixtures
 
 ```typescript
-import { test as base } from '@playwright/test';
-import { TodoPage } from './todo-page';
+import { test as base } from "@playwright/test";
+import { TodoPage } from "./todo-page";
 
 type MyFixtures = {
   todoPage: TodoPage;
@@ -292,7 +283,7 @@ export const test = base.extend<MyFixtures>({
   todoPage: async ({ page }, use) => {
     const todoPage = new TodoPage(page);
     await todoPage.goto();
-    await todoPage.addToDo('item1');
+    await todoPage.addToDo("item1");
     await use(todoPage);
     await todoPage.removeAll();
   },
@@ -305,21 +296,24 @@ export const test = base.extend<MyFixtures>({
 type Account = { username: string; password: string };
 
 export const test = base.extend<{}, { account: Account }>({
-  account: [async ({ browser }, use, workerInfo) => {
-    const username = 'user' + workerInfo.workerIndex;
-    const password = 'verysecure';
-    
-    // Setup account once per worker
-    const page = await browser.newPage();
-    await page.goto('/signup');
-    await page.getByLabel('User Name').fill(username);
-    await page.getByLabel('Password').fill(password);
-    await page.getByText('Sign up').click();
-    await expect(page.getByTestId('result')).toHaveText('Success');
-    await page.close();
-    
-    await use({ username, password });
-  }, { scope: 'worker' }],
+  account: [
+    async ({ browser }, use, workerInfo) => {
+      const username = "user" + workerInfo.workerIndex;
+      const password = "verysecure";
+
+      // Setup account once per worker
+      const page = await browser.newPage();
+      await page.goto("/signup");
+      await page.getByLabel("User Name").fill(username);
+      await page.getByLabel("Password").fill(password);
+      await page.getByText("Sign up").click();
+      await expect(page.getByTestId("result")).toHaveText("Success");
+      await page.close();
+
+      await use({ username, password });
+    },
+    { scope: "worker" },
+  ],
 });
 ```
 
@@ -327,22 +321,25 @@ export const test = base.extend<{}, { account: Account }>({
 
 ```typescript
 export const test = base.extend<{ saveLogs: void }>({
-  saveLogs: [async ({}, use, testInfo) => {
-    const logs = [];
-    debug.log = (...args) => logs.push(args.map(String).join(''));
-    
-    await use();
-    
-    if (testInfo.status !== testInfo.expectedStatus) {
-      const logFile = testInfo.outputPath('logs.txt');
-      await fs.promises.writeFile(logFile, logs.join('\n'), 'utf8');
-      testInfo.attachments.push({ 
-        name: 'logs', 
-        contentType: 'text/plain', 
-        path: logFile 
-      });
-    }
-  }, { auto: true }],
+  saveLogs: [
+    async ({}, use, testInfo) => {
+      const logs = [];
+      debug.log = (...args) => logs.push(args.map(String).join(""));
+
+      await use();
+
+      if (testInfo.status !== testInfo.expectedStatus) {
+        const logFile = testInfo.outputPath("logs.txt");
+        await fs.promises.writeFile(logFile, logs.join("\n"), "utf8");
+        testInfo.attachments.push({
+          name: "logs",
+          contentType: "text/plain",
+          path: logFile,
+        });
+      }
+    },
+    { auto: true },
+  ],
 });
 ```
 
@@ -356,30 +353,30 @@ export const test = base.extend<{ saveLogs: void }>({
 name: Playwright Tests
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-    - uses: actions/setup-node@v6
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v5
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run Playwright tests
+        run: npx playwright test
+      - uses: actions/upload-artifact@v5
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
 ```
 
 ### GitHub Actions (Sharded)
@@ -464,21 +461,19 @@ jobs:
 export default defineConfig({
   // Sequential on CI for stability
   workers: process.env.CI ? 1 : undefined,
-  
+
   // Retry failed tests on CI
   retries: process.env.CI ? 2 : 0,
-  
+
   // Reporter for CI
-  reporter: process.env.CI 
-    ? [['html'], ['github']] 
-    : [['html'], ['list']],
-  
+  reporter: process.env.CI ? [["html"], ["github"]] : [["html"], ["list"]],
+
   use: {
     // Trace on first retry
-    trace: 'on-first-retry',
-    
+    trace: "on-first-retry",
+
     // Screenshot on failure
-    screenshot: 'only-on-failure',
+    screenshot: "only-on-failure",
   },
 });
 ```
@@ -491,8 +486,8 @@ export default defineConfig({
 
 ```typescript
 // ✅ GOOD: Test what users see/do
-await page.getByRole('button', { name: 'Submit' }).click();
-await expect(page.getByText('Success!')).toBeVisible();
+await page.getByRole("button", { name: "Submit" }).click();
+await expect(page.getByText("Success!")).toBeVisible();
 
 // ❌ BAD: Test implementation details
 expect(component.state.isSubmitted).toBe(true);
@@ -503,15 +498,15 @@ expect(component.state.isSubmitted).toBe(true);
 ```typescript
 // ✅ Each test is independent
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto("/");
   await loginAsUser(page);
 });
 
-test('test 1', async ({ page }) => {
+test("test 1", async ({ page }) => {
   // Starts fresh
 });
 
-test('test 2', async ({ page }) => {
+test("test 2", async ({ page }) => {
   // Starts fresh
 });
 ```
@@ -520,33 +515,39 @@ test('test 2', async ({ page }) => {
 
 ```typescript
 // ✅ GOOD: Auto-waits and retries
-await expect(page.getByText('welcome')).toBeVisible();
+await expect(page.getByText("welcome")).toBeVisible();
 
 // ❌ BAD: Manual assertion, no waiting
-expect(await page.getByText('welcome').isVisible()).toBe(true);
+expect(await page.getByText("welcome").isVisible()).toBe(true);
 ```
 
 ### 4. Avoid Testing Third-Party Dependencies
 
 ```typescript
 // ✅ GOOD: Mock external API
-await page.route('**/api/external', route => route.fulfill({
-  status: 200,
-  body: JSON.stringify({ data: 'test' }),
-}));
+await page.route("**/api/external", (route) =>
+  route.fulfill({
+    status: 200,
+    body: JSON.stringify({ data: "test" }),
+  }),
+);
 
 // ❌ BAD: Test external site
-await page.goto('https://external-site.com');
+await page.goto("https://external-site.com");
 ```
 
 ### 5. Use Parallelism
 
 ```typescript
 // Run tests in same file in parallel
-test.describe.configure({ mode: 'parallel' });
+test.describe.configure({ mode: "parallel" });
 
-test('test 1', async ({ page }) => { /* ... */ });
-test('test 2', async ({ page }) => { /* ... */ });
+test("test 1", async ({ page }) => {
+  /* ... */
+});
+test("test 2", async ({ page }) => {
+  /* ... */
+});
 ```
 
 ### 6. Keep Playwright Updated
@@ -575,7 +576,7 @@ npx playwright install --with-deps
 
 ```typescript
 // pages/LoginPage.ts
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator } from "@playwright/test";
 
 export class LoginPage {
   readonly page: Page;
@@ -585,13 +586,13 @@ export class LoginPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.usernameInput = page.getByLabel('Username');
-    this.passwordInput = page.getByLabel('Password');
-    this.loginButton = page.getByRole('button', { name: 'Login' });
+    this.usernameInput = page.getByLabel("Username");
+    this.passwordInput = page.getByLabel("Password");
+    this.loginButton = page.getByRole("button", { name: "Login" });
   }
 
   async goto() {
-    await this.page.goto('/login');
+    await this.page.goto("/login");
   }
 
   async login(username: string, password: string) {
@@ -605,16 +606,16 @@ export class LoginPage {
 ### Usage in Tests
 
 ```typescript
-import { test, expect } from '@playwright/test';
-import { LoginPage } from './pages/LoginPage';
+import { test, expect } from "@playwright/test";
+import { LoginPage } from "./pages/LoginPage";
 
-test('login', async ({ page }) => {
+test("login", async ({ page }) => {
   const loginPage = new LoginPage(page);
   await loginPage.goto();
-  await loginPage.login('user', 'pass');
-  
+  await loginPage.login("user", "pass");
+
   // Assertions in test, not in page object
-  await expect(page).toHaveURL('/dashboard');
+  await expect(page).toHaveURL("/dashboard");
 });
 ```
 
@@ -622,8 +623,8 @@ test('login', async ({ page }) => {
 
 ```typescript
 // fixtures.ts
-import { test as base } from '@playwright/test';
-import { LoginPage } from './pages/LoginPage';
+import { test as base } from "@playwright/test";
+import { LoginPage } from "./pages/LoginPage";
 
 type MyFixtures = {
   loginPage: LoginPage;
@@ -636,12 +637,12 @@ export const test = base.extend<MyFixtures>({
 });
 
 // test.spec.ts
-import { test, expect } from './fixtures';
+import { test, expect } from "./fixtures";
 
-test('login', async ({ loginPage, page }) => {
+test("login", async ({ loginPage, page }) => {
   await loginPage.goto();
-  await loginPage.login('user', 'pass');
-  await expect(page).toHaveURL('/dashboard');
+  await loginPage.login("user", "pass");
+  await expect(page).toHaveURL("/dashboard");
 });
 ```
 
@@ -653,34 +654,34 @@ test('login', async ({ loginPage, page }) => {
 
 ```typescript
 // Navigate
-await page.goto('https://example.com');
+await page.goto("https://example.com");
 
 // Click
-await page.getByRole('button', { name: 'Submit' }).click();
+await page.getByRole("button", { name: "Submit" }).click();
 
 // Fill input
-await page.getByLabel('Email').fill('test@example.com');
+await page.getByLabel("Email").fill("test@example.com");
 
 // Check checkbox
-await page.getByRole('checkbox', { name: 'Agree' }).check();
+await page.getByRole("checkbox", { name: "Agree" }).check();
 
 // Select dropdown
-await page.getByLabel('Country').selectOption('USA');
+await page.getByLabel("Country").selectOption("USA");
 
 // Wait for element
-await page.getByText('Success').waitFor();
+await page.getByText("Success").waitFor();
 
 // Assert visible
-await expect(page.getByText('Welcome')).toBeVisible();
+await expect(page.getByText("Welcome")).toBeVisible();
 
 // Assert text
-await expect(page.getByRole('heading')).toHaveText('Dashboard');
+await expect(page.getByRole("heading")).toHaveText("Dashboard");
 
 // Assert URL
-await expect(page).toHaveURL('/dashboard');
+await expect(page).toHaveURL("/dashboard");
 
 // Assert count
-await expect(page.getByRole('listitem')).toHaveCount(3);
+await expect(page.getByRole("listitem")).toHaveCount(3);
 ```
 
 ### Debugging

@@ -40,22 +40,22 @@ export class TankApiClient {
    */
   async fetch<T>(
     path: string,
-    options: RequestInit = {},
+    options: RequestInit = {}
   ): Promise<{ data: T; ok: true } | { error: string; status: number; ok: false }> {
     const url = `${this.baseUrl}${path}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
+      ...(options.headers as Record<string, string>)
     };
 
     if (this.config.token) {
-      headers['Authorization'] = `Bearer ${this.config.token}`;
+      headers.Authorization = `Bearer ${this.config.token}`;
     }
 
     try {
       const response = await fetch(url, {
         ...options,
-        headers,
+        headers
       });
 
       if (!response.ok) {
@@ -63,17 +63,17 @@ export class TankApiClient {
         return {
           error: (body as { error?: string }).error ?? response.statusText,
           status: response.status,
-          ok: false,
+          ok: false
         };
       }
 
-      const data = await response.json() as T;
+      const data = (await response.json()) as T;
       return { data, ok: true };
     } catch (err) {
       return {
         error: err instanceof Error ? err.message : 'Network error',
         status: 0,
-        ok: false,
+        ok: false
       };
     }
   }
@@ -87,7 +87,7 @@ export class TankApiClient {
     }
 
     const result = await this.fetch<{ name: string | null; email: string | null; userId: string }>(
-      '/api/v1/auth/whoami',
+      '/api/v1/auth/whoami'
     );
 
     if (result.ok) {
