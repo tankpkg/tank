@@ -4,6 +4,7 @@ import {
   LEGACY_LOCKFILE_FILENAME,
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
+  LOCKFILE_VERSION,
   MANIFEST_FILENAME,
   type SkillsLock
 } from '@internal/shared';
