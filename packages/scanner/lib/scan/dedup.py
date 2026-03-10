@@ -78,7 +78,7 @@ def _is_duplicate(a: dict[str, Any], b: dict[str, Any]) -> bool:
         line_b = int(loc_b.rsplit(":", 1)[1])
         if abs(line_a - line_b) > 3:
             return False
-    except ValueError, IndexError:
+    except (ValueError, IndexError):
         pass  # If no line numbers, check type similarity
 
     # Check keyword overlap in type names
