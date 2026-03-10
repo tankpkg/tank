@@ -1,11 +1,11 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import fs from 'node:fs';
 import path from 'node:path';
-import { MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@tank/shared';
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME } from '@internal/shared';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
+import { getConfig } from '../lib/config.js';
 import { pack, packForScan } from '../lib/packer.js';
-import { getConfig, setConfig } from '../lib/config.js';
 
 interface ScanFinding {
   stage: string;
@@ -50,11 +50,11 @@ export function registerScanSkillTool(server: McpServer): void {
     'scan-skill',
     'Scan a skill directory for security issues. Requires authentication.',
     {
-      directory: z.string().optional().describe('Directory to scan (default: current directory)'),
+      directory: z.string().optional().describe('Directory to scan (default: current directory)')
     },
     async ({ directory = '.' }) => {
       const absDir = path.resolve(directory);
-      let client = new TankApiClient();
+      const client = new TankApiClient();
 
       // Check auth, guide user to login if not authenticated
       if (!client.isAuthenticated) {
@@ -62,9 +62,9 @@ export function registerScanSkillTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: 'You need to log in first. Use the login tool to authenticate with Tank.\n\nExample: "Log in to Tank"',
-            },
-          ],
+              text: 'You need to log in first. Use the login tool to authenticate with Tank.\n\nExample: "Log in to Tank"'
+            }
+          ]
         };
       }
 
@@ -75,16 +75,18 @@ export function registerScanSkillTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: 'Your session has expired. Use the login tool to authenticate again.\n\nExample: "Log in to Tank"',
-            },
-          ],
+              text: 'Your session has expired. Use the login tool to authenticate again.\n\nExample: "Log in to Tank"'
+            }
+          ]
         };
       }
 
       let packResult: Awaited<ReturnType<typeof pack>>;
       let usedSynthesisedManifest = false;
 
-      const hasManifest = fs.existsSync(path.join(absDir, MANIFEST_FILENAME)) || fs.existsSync(path.join(absDir, LEGACY_MANIFEST_FILENAME));
+      const hasManifest =
+        fs.existsSync(path.join(absDir, MANIFEST_FILENAME)) ||
+        fs.existsSync(path.join(absDir, LEGACY_MANIFEST_FILENAME));
 
       if (hasManifest) {
         try {
@@ -94,9 +96,9 @@ export function registerScanSkillTool(server: McpServer): void {
             content: [
               {
                 type: 'text' as const,
-                text: `Failed to pack skill: ${err instanceof Error ? err.message : String(err)}`,
-              },
-            ],
+                text: `Failed to pack skill: ${err instanceof Error ? err.message : String(err)}`
+              }
+            ]
           };
         }
       } else {
@@ -108,9 +110,9 @@ export function registerScanSkillTool(server: McpServer): void {
             content: [
               {
                 type: 'text' as const,
-                text: `Failed to pack directory for scan: ${err instanceof Error ? err.message : String(err)}`,
-              },
-            ],
+                text: `Failed to pack directory for scan: ${err instanceof Error ? err.message : String(err)}`
+              }
+            ]
           };
         }
       }
@@ -121,7 +123,7 @@ export function registerScanSkillTool(server: McpServer): void {
 
       // Upload tarball and trigger scan
       const formData = new FormData();
-      const blob = new Blob([packResult.tarball], { type: 'application/gzip' });
+      const blob = new Blob([new Uint8Array(packResult.tarball)], { type: 'application/gzip' });
       formData.append('tarball', blob, `${skillName}-${skillVersion}.tgz`);
       formData.append('manifest', JSON.stringify(manifest));
 
@@ -129,9 +131,9 @@ export function registerScanSkillTool(server: McpServer): void {
       const scanRes = await fetch(`${config.registry}/api/v1/scan`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${client.token}`,
+          Authorization: `Bearer ${client.token}`
         },
-        body: formData,
+        body: formData
       });
 
       if (!scanRes.ok) {
@@ -140,9 +142,9 @@ export function registerScanSkillTool(server: McpServer): void {
           content: [
             {
               type: 'text' as const,
-              text: `Scan failed: ${(body as { error?: string }).error ?? scanRes.statusText}`,
-            },
-          ],
+              text: `Scan failed: ${(body as { error?: string }).error ?? scanRes.statusText}`
+            }
+          ]
         };
       }
 
@@ -153,20 +155,17 @@ export function registerScanSkillTool(server: McpServer): void {
         pass: '✅',
         pass_with_notes: '⚠️',
         flagged: '🚩',
-        fail: '❌',
+        fail: '❌'
       };
 
       const severityEmoji: Record<string, string> = {
         critical: '🔴',
         high: '🟠',
         medium: '🟡',
-        low: '🟢',
+        low: '🟢'
       };
 
-      const lines: string[] = [
-        `## Scan Results for ${skillName}@${skillVersion}`,
-        '',
-      ];
+      const lines: string[] = [`## Scan Results for ${skillName}@${skillVersion}`, ''];
 
       if (usedSynthesisedManifest) {
         lines.push(`> **Note:** No \`${MANIFEST_FILENAME}\` found. A synthesised manifest was used for scanning.`);
@@ -181,7 +180,7 @@ export function registerScanSkillTool(server: McpServer): void {
         `**Score:** ${auditScore.toFixed(1)}/10`,
         `**Duration:** ${(durationMs / 1000).toFixed(1)}s`,
         `**Files:** ${packResult.fileCount} (${(packResult.totalSize / 1024).toFixed(1)}KB)`,
-        '',
+        ''
       );
 
       if (scanResult.findings.length > 0) {
@@ -193,7 +192,7 @@ export function registerScanSkillTool(server: McpServer): void {
           critical: [],
           high: [],
           medium: [],
-          low: [],
+          low: []
         };
         for (const f of scanResult.findings) {
           bySeverity[f.severity].push(f);
@@ -227,7 +226,7 @@ export function registerScanSkillTool(server: McpServer): void {
       }
 
       // LLM Analysis
-      if (scanResult.llm_analysis && scanResult.llm_analysis.enabled) {
+      if (scanResult.llm_analysis?.enabled) {
         const llm = scanResult.llm_analysis;
         lines.push('### LLM Analysis');
         lines.push('');
@@ -261,8 +260,8 @@ export function registerScanSkillTool(server: McpServer): void {
       }
 
       return {
-        content: [{ type: 'text' as const, text: lines.join('\n') }],
+        content: [{ type: 'text' as const, text: lines.join('\n') }]
       };
-    },
+    }
   );
 }

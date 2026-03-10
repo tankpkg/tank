@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const ORG = `e2e-srch-${Date.now()}`;
 
@@ -8,7 +8,7 @@ const SEED_SKILLS = [
   { suffix: 'react-hooks', desc: 'Custom React hooks collection' },
   { suffix: 'clean-code', desc: 'Code quality and refactoring patterns' },
   { suffix: 'seo-audit', desc: 'SEO audit and optimization tools' },
-  { suffix: 'auth-patterns', desc: 'Authentication and authorization helpers' },
+  { suffix: 'auth-patterns', desc: 'Authentication and authorization helpers' }
 ];
 
 function skillName(suffix: string) {
@@ -22,7 +22,7 @@ function escapeLike(input: string): string {
 async function hybridSearch(
   sql: postgres.Sql,
   q: string,
-  limit = 20,
+  limit = 20
 ): Promise<Array<{ name: string; description: string | null; score: number }>> {
   const escaped = escapeLike(q);
 
@@ -32,9 +32,9 @@ async function hybridSearch(
       s.description,
       (
         CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
-        + CASE WHEN s.name ILIKE ${q + '%'} THEN 800 ELSE 0 END
-        + CASE WHEN s.name ILIKE ${'%/' + escaped + '%'} THEN 600 ELSE 0 END
-        + CASE WHEN s.name ILIKE ${'%' + escaped + '%'} THEN 400 ELSE 0 END
+        + CASE WHEN s.name ILIKE ${`${q}%`} THEN 800 ELSE 0 END
+        + CASE WHEN s.name ILIKE ${`%/${escaped}%`} THEN 600 ELSE 0 END
+        + CASE WHEN s.name ILIKE ${`%${escaped}%`} THEN 400 ELSE 0 END
         + (greatest(similarity(s.name, ${q}), similarity(split_part(s.name, '/', 2), ${q})) * 300)::int
         + (ts_rank(
             to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
@@ -43,7 +43,7 @@ async function hybridSearch(
       ) AS score
     FROM skills s
     WHERE (
-      s.name ILIKE ${'%' + escaped + '%'}
+      s.name ILIKE ${`%${escaped}%`}
       OR similarity(s.name, ${q}) > 0.15
       OR similarity(split_part(s.name, '/', 2), ${q}) > 0.15
       OR to_tsvector('english', s.name || ' ' || coalesce(s.description, ''))
@@ -57,7 +57,7 @@ async function hybridSearch(
   return rows.map((r) => ({
     name: r.name as string,
     description: r.description as string | null,
-    score: Number(r.score),
+    score: Number(r.score)
   }));
 }
 

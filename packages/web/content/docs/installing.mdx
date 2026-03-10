@@ -1,0 +1,289 @@
+---
+title: Installing AI Agent Skills
+description: Install, update, remove, and verify AI agent skills with Tank — deterministic lockfiles, SHA-512 integrity checks, dependency resolution, and permission budget enforcement.
+---
+
+# Installing AI Agent Skills
+
+Tank's install pipeline does significantly more than download a file. Every install resolves the full dependency tree, verifies SHA-512 integrity for every package, extracts tarballs through a security filter, enforces your project's permission budget, and writes a deterministic lockfile. This page covers every command and behavior you need for day-to-day skill management.
+
+## Installing a Skill
+
+### Basic install
+
+```bash
+tank install @org/skill-name
+```
+
+This resolves the latest published version that satisfies `*`, downloads and verifies the tarball, extracts it to `.tank/skills/@org/skill-name/`, and writes the resolved version and SHA-512 integrity hash to `tank.lock`.
+
+### With a version range
+
+```bash
+tank install @org/skill-name '^1.2.0'
+```
+
+Tank resolves the highest version that satisfies the semver range, not necessarily the latest. Use `^` for compatible minor updates, `~` for patch-only updates, or an exact version like `1.2.3` to pin precisely.
+
+### Global install
+
+```bash
+tank install @org/skill-name '*' -g
+```
+
+Global skills are stored in `~/.tank/skills/` and are available to all agents on the machine. Local installs (no `-g`) are stored in `.tank/skills/` relative to your current working directory, scoped to that project.
+
+### Install from lockfile (deterministic)
+
+When a `tank.lock` file already exists in your project, running `tank install` with no arguments performs a **deterministic install** — equivalent to `npm ci`. It installs exactly the versions and integrity hashes recorded in the lockfile, ignoring `tank.json` version ranges entirely.
+
+```bash
+# Deterministic install — uses tank.lock, not tank.json ranges
+tank install
+```
+
+This is the correct command for CI/CD pipelines, where reproducibility is critical.
+
+## Dependency Resolution
+
+Tank uses a **fixpoint iteration algorithm** to resolve the full dependency tree. This means it doesn't just install the skill you named — it walks every skill's own `tank.json` to discover transitive dependencies, then iterates until the resolved set stabilizes.
+
+### How it works
+
+1. **Seed** — Start with the skills declared in your `tank.json`.
+2. **Expand** — For each resolved skill, fetch its manifest and add its dependencies to the working set.
+3. **Iterate** — Repeat expansion until no new dependencies are added (fixpoint).
+4. **Conflict detection** — If two skills require incompatible versions of the same dependency, Tank errors with a detailed conflict report showing which packages conflict and why.
+5. **Install order** — Compute a topological sort so dependencies always install before the skills that need them.
+6. **Parallel downloads** — All tarballs are downloaded in parallel after the resolution phase completes, minimizing install time.
+
+### Version conflict detection
+
+If two skills require incompatible versions of a shared dependency, Tank surfaces an explicit error:
+
+```
+ERROR  Dependency conflict detected:
+  @org/skill-a requires @shared/dep@^1.0.0 (resolves to 1.4.2)
+  @org/skill-b requires @shared/dep@^2.0.0 (resolves to 2.1.0)
+  Cannot satisfy both constraints simultaneously.
+
+  Fix: pin one skill to a version compatible with the other, or
+  open an issue with the upstream skill authors.
+```
+
+Tank does **not** silently pick one version. Conflicts are hard errors.
+
+## The Lockfile (`tank.lock`)
+
+The `tank.lock` file is the source of truth for your install state. Commit it to version control.
+
+### What's in a lockfile
+
+```json
+{
+  "lockfileVersion": 2,
+  "skills": {
+    "@org/skill-name@1.2.3": {
+      "version": "1.2.3",
+      "resolved": "https://tankpkg.dev/api/v1/skills/@org/skill-name/1.2.3",
+      "integrity": "sha512-abc123...==",
+      "dependencies": {
+        "@shared/dep": "^1.4.0"
+      }
+    },
+    "@shared/dep@1.4.2": {
+      "version": "1.4.2",
+      "resolved": "https://tankpkg.dev/api/v1/skills/@shared/dep/1.4.2",
+      "integrity": "sha512-xyz789...==",
+      "dependencies": {}
+    }
+  }
+}
+```
+
+### Key properties
+
+- **Deterministic** — Keys are sorted alphabetically, and the file is always produced with stable formatting. The same dependency tree always produces byte-for-byte identical output.
+- **SHA-512 integrity** — Every package entry includes its SHA-512 hash. Tank recomputes this hash on every install and refuses to proceed if it doesn't match.
+- **Lockfile v2 `dependencies` field** — Introduced to support full tree reconstruction. Each package records its own declared dependencies so the lockfile alone is sufficient to reconstruct the complete install without re-fetching manifests from the registry.
+- **Deterministic install mode** — When `tank.lock` is present and `tank install` is run with no arguments, Tank performs a lockfile-only install. It does not resolve version ranges from `tank.json`. This is by design — CI pipelines should always use this mode.
+
+<Callout type="info">
+  Always commit `tank.lock` to version control. It is the guarantee that every developer and every CI run installs exactly the same code. Excluding it from git means losing reproducibility.
+</Callout>
+
+## Security on Install
+
+Tank applies multiple security filters during tarball extraction. These checks run before any file touches disk and cannot be bypassed:
+
+| Check | Behavior |
+|-------|----------|
+| **Symlinks** | Rejected — symlinks in tarballs are a well-known path traversal vector |
+| **Hardlinks** | Rejected — hardlinks can escape the extraction sandbox |
+| **Path traversal** (`../`) | Rejected — any entry with `..` in the path is refused |
+| **Absolute paths** | Rejected — entries with absolute paths are refused |
+| **Total size** | Max **50 MB** per skill tarball — extraction aborts if exceeded |
+| **File count** | Max **1,000 files** per skill — extraction aborts if exceeded |
+| **SHA-512 integrity** | Tarball hash must match the registry record exactly |
+
+If any check fails, the partial extraction is cleaned up and the install exits with a non-zero code. Tank will never leave a partially extracted skill on disk.
+
+<Callout type="info">
+  These limits are enforced at the tarball level, not just at publish time. Even if a malicious actor somehow bypassed the publisher-side limits, the installer enforces them independently.
+</Callout>
+
+## Install Location
+
+| Mode | Location |
+|------|----------|
+| Local (default) | `.tank/skills/@org/skill-name/` (relative to working directory) |
+| Global (`-g`) | `~/.tank/skills/@org/skill-name/` |
+
+Agent symlinks are also created so your AI agent runtime can discover installed skills by name without knowing the full path.
+
+## Updating Skills
+
+Update a specific skill to the latest version satisfying its declared range:
+
+```bash
+tank update @org/skill-name
+```
+
+Update all installed skills:
+
+```bash
+tank update
+```
+
+Global update:
+
+```bash
+tank update @org/skill-name -g
+```
+
+`tank update` re-resolves the version range from `tank.json`, downloads the new tarball, verifies integrity, and updates `tank.lock`. It does **not** upgrade beyond the declared version range — use `tank install @org/skill-name '^2.0.0'` to change the range.
+
+## Removing Skills
+
+```bash
+tank remove @org/skill-name
+tank remove @org/skill-name -g
+```
+
+`tank remove` does all of the following in one operation:
+
+1. Removes the entry from `tank.json`
+2. Removes the skill and all its exclusive transitive dependencies from `tank.lock`
+3. Deletes the extracted files from `.tank/skills/` (or `~/.tank/skills/` for global)
+4. Removes any agent symlinks pointing to the removed skill
+
+<Callout type="info">
+  Transitive dependencies shared with other installed skills are NOT removed. Tank only removes packages that are exclusively required by the skill being removed.
+</Callout>
+
+## Verify and Audit
+
+After any change to your install state, confirm integrity:
+
+```bash
+# Recompute SHA-512 for every installed file and compare against tank.lock
+tank verify
+
+# Show the aggregated permission summary for all installed skills
+tank permissions
+
+# Show security scan results for all installed skills
+tank audit
+
+# Show security scan results for a specific skill
+tank audit @org/skill-name
+```
+
+`tank verify` failing means installed files have been modified since they were written. Treat this as a security event — remove and reinstall the affected skills.
+
+`tank permissions` is particularly useful before enabling a new skill in a production agent. It shows you the union of all declared permissions so you can confirm the agent's access is what you expect.
+
+## Discovering Skills
+
+Search the registry:
+
+```bash
+tank search "embedding"
+tank search "code review"
+```
+
+Inspect a specific skill's metadata before installing:
+
+```bash
+tank info @org/skill-name
+```
+
+`tank info` shows the latest version, description, declared permissions, security scan score, download count, and available version history — without downloading anything.
+
+## Operational Guidance
+
+### CI/CD pipelines
+
+Always use lockfile-mode install in CI:
+
+```bash
+# Uses tank.lock exactly — equivalent to npm ci
+tank install
+```
+
+Never run `tank update` in CI. Updates should be intentional developer actions that produce a reviewed lockfile change.
+
+### Production agents
+
+Run the full verification suite before deploying:
+
+```bash
+tank verify
+tank permissions
+tank audit
+```
+
+Gate deployments on `tank verify` exiting with code `0`.
+
+### Prefer pinned versions for production stability
+
+Use exact version pins (`1.2.3`) for skills in production agents. Use ranges (`^1.2.0`) in development where you want compatible updates. The lockfile provides determinism regardless of which you choose, but exact pins make your `tank.json` intent explicit.
+
+## Failure Handling
+
+### Install fails — auth or network
+
+```bash
+tank doctor
+```
+
+`tank doctor` checks token validity, registry connectivity, and your local config. It prints actionable diagnostics for each check.
+
+### Install fails — integrity mismatch
+
+The downloaded tarball's hash did not match the registry record. This is a hard failure — do not bypass it.
+
+1. Check for an intercepting proxy or corporate firewall modifying HTTPS responses.
+2. Retry on a different network.
+3. If the problem persists for a specific skill, report it as a potential registry integrity issue.
+
+### Unexpected permission scope after install
+
+```bash
+tank info @org/skill-name
+tank audit @org/skill-name
+```
+
+Review the declared permissions and scanner findings. If the permissions are broader than expected or don't match what the scanner extracted, remove the skill and choose an alternative.
+
+### `tank verify` fails after install
+
+Files were modified on disk after installation. Remove and reinstall:
+
+```bash
+tank remove @org/skill-name
+tank install @org/skill-name
+tank verify
+```
+
+If verify fails immediately after reinstall, the issue is likely a proxy or antivirus tool modifying files at write time.

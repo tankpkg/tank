@@ -1,136 +1,80 @@
-# TANK — PROJECT KNOWLEDGE BASE
+# Tank
 
-## OVERVIEW
+Security-first package manager for AI agent skills. Monorepo: CLI + MCP server + web registry + shared schemas + Python scanner. Bun workspaces. Born from ClawHavoc — 341 malicious skills, 12% of a major marketplace.
 
-Security-first package manager for AI agent skills. Monorepo: CLI (`tank`) + MCP server (`tank-mcp`) + Next.js 15 web registry + shared schemas. TypeScript-first, Python security pipeline (6-stage). Born from ClawHavoc (341 malicious skills, 12% of a marketplace) — enforces versioning, lockfiles, permissions, code signing, static analysis from day one.
+AGENTS.md and CLAUDE.md are symlinked. This file is your system prompt. Loads every context window. Every token has a cost. Keep it holy — concise, tight, agents-only.
 
-Prevents credential exfiltration, prompt injection, and supply chain attacks through mandatory security scanning and runtime permission enforcement.
+## Philosophy
 
-## AGENT INSTRUCTIONS
+- This file + docs/ = diary. Fresh context = amnesia. Recover here first, then docs/ for lost insights, decisions, workarounds.
+- docs/ has details. This file references — never duplicates.
+- Tooling-enforced rules (Biome, EditorConfig, tsconfig) belong nowhere in this file.
+- Capabilities > file paths. `git log`, `just --list` = living docs.
+- Be extremely concise. Sacrifice grammar for concision. Every interaction, plan, commit, doc.
 
-AGENTS.md = context cost. Only include what changes agent behavior.
+## Context Recovery
 
-- Extremely concise in any interaction — sacrifice grammar for concision
-- Plans execute in fresh context — include relevant decisions, constraints, file paths. End with unresolved questions if any.
-- `.worktrees/` for worktree isolation. Agent artifacts (reviews, specs) → `docs/`.
-- New files? Read `docs/where-to-look.md` for task→location mapping.
+1. Read this file — your diary, your memory
+2. `find docs -name "*.md" | sort` — scan docs, read any relevant to task
+3. `just --list` — available commands
+4. `docs/where-to-look.md` — task → file location
+5. Package reference: `docs/{cli,mcp,api,scanner,shared}-reference.md`
+6. `docs/methodology.md` — IDD → BDD → TDD → E2E
+7. `git log --oneline -20` — recent changes, decisions, context
+8. Scan relevant source dirs — ground in actual code
 
-## METHODOLOGY — IDD → BDD → TDD → E2E
+## Identity
 
-Every feature flows through this pipeline. Details: `docs/methodology.md`
+Pick role(s) before starting. Compose for multi-domain. → `docs/roles.md`
+Delegating: YOU assign each agent a role identity.
+Subagents = focused workers, report to you only. Use for quick isolated tasks.
+Teams = direct agent-to-agent communication. Cross-layer coordination, shared findings, challenge each other.
 
-1. **IDD** — Define intent before code. `.idd/modules/<name>/INTENT.md` — Anchor, Constraints (C1–CX), Examples (E1–EX).
-2. **BDD** — Express constraints as Gherkin scenarios. `.bdd/features/`, `.bdd/steps/`, `e2e/bdd/` (Playwright).
-3. **TDD** — RED → GREEN → REFACTOR. `__tests__/*.test.ts` (Vitest), `test_*.py` (pytest).
-4. **E2E** — Zero mocks. Real CLI, real DB, real registry. `e2e/*.e2e.test.ts` + `pnpm test:e2e`.
+## Workflow
 
-## CONVENTIONS
+- New problem → issue with full overview → branch → PR. Never push to main.
+- Branches can resolve multiple issues — not strictly 1:1.
+- Conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`
+- Git history IS documentation — insightful commits, not descriptive. Searchable record of decisions.
+- Methodology: IDD → BDD → TDD → E2E → `docs/methodology.md`
+- Plans: self-contained — include data, insights, decisions, constants. Fresh-context agent must execute without your memory.
+- End plans with unresolved questions.
 
-### TypeScript/JavaScript
+## Architecture
 
-- **Strict TypeScript** — `strict: true` everywhere, no `as any`, `@ts-ignore`, `@ts-expect-error`
-- **ESM only** — `"type": "module"` in all packages, no `require()`
-- **2-space indent, LF line endings** — enforced via `.editorconfig`
-- **pnpm 10.29.3** — enforced via `packageManager` field (run `corepack enable`)
-- **Turbo** orchestrates `build`, `test`, `lint`, `dev` across workspaces
-- **Conventional Commits** — `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`
-- **Import alias** — Web app uses `@/*` (tsconfig paths), CLI uses relative `.js` extensions
-- **Test files** — `__tests__/*.test.ts` colocated with source (never `.spec.ts`)
-- **Vitest** for TypeScript, **pytest** for Python
-- **No ESLint/Prettier** — relies on TypeScript strict mode + `.editorconfig`
-- **react-doctor** — React linting for the web app (60+ rules). Config in `apps/web/react-doctor.config.json`
+Packages:
 
-### Web App
+- `cli` — `tank` command: install, publish, scan, verify
+- `web` — registry web app: API, dashboard, admin, docs
+- `mcp-server` — editor integration, full CLI parity
+- `shared` — Zod schemas, types, constants. Pure, zero side effects
+- `scanner` — Python 6-stage security pipeline
 
-- **Server Components by default** — `'use client'` only when needed
-- **Tailwind CSS v4** via `@tailwindcss/postcss`
-- **Zod for all validation** — never trust raw input, always `safeParse()` (never `parse()`)
-- **Drizzle ORM** — never raw SQL or Prisma
-- **4 route groups** — `(auth)`, `(dashboard)`, `(admin)`, `(registry)`
-- **Auth at layout level** — never in page components
+Non-obvious:
 
-### CLI
+- Supabase = file storage only. DB = Drizzle ORM → PostgreSQL.
+- `auth-schema.ts` auto-generated by better-auth. Never edit.
+- MCP shares auth with CLI — reads `~/.tank/config.json`.
+- CLI/web/mcp-server never import each other. Only `@internal/shared`. Scanner independent.
 
-- **1-file-per-command** — export async fn, register in `bin/tank.ts`
-- **configDir injection** — for test isolation, never touch real `~/.tank/`
-- **chalk for UI, pino for debug** — enable debug: `TANK_DEBUG=1`
+→ `docs/architecture.md`
 
-### MCP Server
+## Gotchas
 
-- **1-file-per-tool** — export `registerXxxTool(server)`, register in `index.ts`
-- **Markdown output** — tools format results as markdown for editor readability
-- **Shares auth with CLI** — reads `~/.tank/config.json`, `TANK_TOKEN` env var overrides
+1. **safeParse(), never parse()** — parse() throws = invisible control flow
+2. **No cross-package imports** — CLI/web/mcp-server use only `@internal/shared`
+3. **Supabase != database** — storage only. Drizzle for queries.
+4. **Auth in layouts, not pages** — route groups handle access control
+5. **No refactoring during bugfixes** — minimal fix, separate PR
 
-### Python
+→ `docs/anti-patterns.md` for full list
 
-- **Pydantic 2** for all models — strict validation
-- **pytest** for testing — `test_*.py` pattern
-- **Each stage independent** — can error without blocking others
+## Docs Index
 
-## ANTI-PATTERNS
+**Core:** where-to-look | architecture | conventions | anti-patterns | security | roles
+**Process:** methodology | principles | testing-reference | performance-testing
+**Packages:** cli-reference | mcp-reference | api-reference | scanner-reference | shared-reference
+**Product:** product-brief | inspiration
+**Operations:** onprem-enterprise | ops-runbooks | e2e-test-publish
 
-### Universal
-
-- **Never import between apps** — CLI, Web, MCP server must not import from each other, use `@tank/shared`
-- **Never commit `.env.local`** — contains real credentials
-- **Never refactor while bugfixing** — fix minimally
-
-### Web App
-
-- **Never create DB connections outside `apps/web/lib/db.ts`** — globalThis hot-reload singleton
-- **Never use Supabase for DB queries** — Supabase is storage-only, use Drizzle ORM
-- **Never expose `supabaseAdmin` to browser** — service-role key is server-only
-- **Never modify `auth-schema.ts` manually** — auto-generated by better-auth
-- **Never skip audit logging** for admin actions
-
-### CLI & MCP Server
-
-- **Never hardcode registry URL** — use `REGISTRY_URL` from `@tank/shared` or config
-- **Never skip SHA-512 verification** during install
-- **Never extract without security filters** — reject symlinks, hardlinks, path traversal, absolute paths
-- **Never exceed** 1000 files or 50MB per tarball (enforced in packer)
-
-### Python API
-
-- **Never modify without syncing to `apps/web/api-python/`** — both locations must match
-- **Never skip stage0 (ingest)** — all other stages depend on its output
-- **Never swallow stage errors silently** — use `errored` status, not empty results
-
-### Shared Package
-
-- **Never add side-effect dependencies** — this package must stay pure
-- **Never mutate exported constants** — treat as frozen
-
-## COMMANDS
-
-```bash
-pnpm install                              # Install all deps
-pnpm dev | build | lint | test            # Turbo-orchestrated
-pnpm test:e2e | test:bdd | test:perf      # Integration (needs .env.local)
-pnpm test --filter=cli                    # Per-package: cli|web|shared|mcp-server
-pnpm --filter=web drizzle-kit generate    # DB migration
-pnpm --filter=web drizzle-kit push        # Push schema
-pnpm --filter=web admin:bootstrap         # Promote admin
-```
-
-## NOTES
-
-### Runtime Requirements
-
-- **Node.js 24+** and **Python 3.14+** required
-- **Supabase** is for file storage (tarballs) only — Drizzle + `postgres` connects directly to PostgreSQL
-
-### Architecture Decisions
-
-- **CLI auth flow**: browser OAuth → poll → API key stored in `~/.tank/config.json`
-- **Web auth**: better-auth with GitHub OAuth + `apiKey` plugin (prefix `tank_`) + `organization` plugin + OIDC SSO
-- **DB schema split**: `schema.ts` (domain tables) + `auth-schema.ts` (better-auth auto-generated)
-- **Web imports `@tank/shared` undeclared** in its `package.json` — works via pnpm workspace hoisting
-- **Storage backend**: configurable via `STORAGE_BACKEND` env var (Supabase or S3)
-- **Session store**: configurable via `SESSION_STORE` env var (memory or Redis)
-
-### Security Scanner
-
-- **Verdict rules**: 1+ critical → FAIL, 4+ high → FAIL, 1-3 high → FLAGGED, medium/low → PASS_WITH_NOTES
-- **6 stages**: ingest (hash) → structure → static (AST) → injection → secrets → supply chain
-
+All docs in `docs/`. Read on demand — don't front-load.

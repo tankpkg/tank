@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { defineConfig } from '@playwright/test';
-import { defineBddConfig, cucumberReporter } from 'playwright-bdd';
+import { cucumberReporter, defineBddConfig } from 'playwright-bdd';
 
 const envDir = path.resolve(__dirname, '../../..');
 const envPath = path.join(envDir, '.env.local');
@@ -31,7 +31,7 @@ if (fs.existsSync(envPath)) {
 const testDir = defineBddConfig({
   features: 'features/**/*.feature',
   steps: 'steps/*.ts',
-  outputDir: '.features-gen',
+  outputDir: '.features-gen'
 });
 
 export default defineConfig({
@@ -39,11 +39,8 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   timeout: 120_000,
-  reporter: [
-    ['list'],
-    cucumberReporter('html', { outputFile: 'e2e/bdd/reports/report.html' }),
-  ],
+  reporter: [['list'], cucumberReporter('html', { outputFile: 'e2e/bdd/reports/report.html' })],
   use: {
     // CLI-only tests
-  },
+  }
 });
