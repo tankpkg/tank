@@ -2,3 +2,12 @@
 .git
 .next
 e2e
+infra
+.worktrees
+docs
+.idd
+.bdd
+.claude
+scripts
+Formula
+action

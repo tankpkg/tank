@@ -1,0 +1,7 @@
+{
+  "printWidth": 120,
+  "tabWidth": 2,
+  "bracketSameLine": true,
+  "endOfLine": "lf",
+  "plugins": ["prettier-plugin-gherkin"]
+}

@@ -1,4 +1,5 @@
-@mcp @audit
+@mcp
+@audit
 Feature: Security audit results via MCP tool
   As an AI agent using the Tank MCP server
   I need to retrieve security scan results for skills
@@ -10,7 +11,6 @@ Feature: Security audit results via MCP tool
     And Emma is authenticated with Tank
 
   # ─── audit-skill (registry skills) ───────────────────────────────────────
-
   @high
   Scenario: Agent audits a registry skill that has a clean security record
     Given the skill "@acme/web-search" exists in the Tank registry
@@ -39,7 +39,6 @@ Feature: Security audit results via MCP tool
     And the results include the critical findings that caused the failure
 
   # ─── audit-skill (installed skills) ──────────────────────────────────────
-
   @high
   Scenario: Agent audits an installed skill
     Given the skill "@acme/web-search" is installed at version "2.1.0"
@@ -56,7 +55,6 @@ Feature: Security audit results via MCP tool
     And the results are not for version "2.1.0"
 
   # ─── audit-skill (error cases) ────────────────────────────────────────────
-
   @high
   Scenario: Agent audits a skill that does not exist in the registry
     Given no skill named "@acme/nonexistent-skill" exists in the Tank registry

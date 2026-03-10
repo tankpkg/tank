@@ -3,13 +3,13 @@
  * ZERO mocks: real binary, real HTTP to the live server.
  */
 import { execFile, spawn } from 'node:child_process';
-import { promisify } from 'node:util';
 import path from 'node:path';
+import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
 /** Path to the compiled CLI binary */
-const TANK_BIN = path.resolve(__dirname, '../../apps/cli/dist/bin/tank.js');
+const TANK_BIN = path.resolve(__dirname, '../../packages/cli/dist/bin/tank.js');
 
 export interface CliResult {
   stdout: string;
@@ -32,7 +32,7 @@ export async function runTank(
     timeoutMs?: number;
     /** Data to pipe to the child process's stdin. When provided, uses spawn instead of execFile. */
     stdin?: string;
-  } = {},
+  } = {}
 ): Promise<CliResult> {
   const env = {
     ...process.env,
@@ -41,7 +41,7 @@ export async function runTank(
     // Disable colors for easier assertion matching
     NO_COLOR: '1',
     FORCE_COLOR: '0',
-    ...opts.env,
+    ...opts.env
   };
 
   if (opts.stdin !== undefined) {
@@ -52,7 +52,7 @@ export async function runTank(
     const { stdout, stderr } = await execFileAsync('node', [TANK_BIN, ...args], {
       cwd: opts.cwd,
       env,
-      timeout: opts.timeoutMs ?? 30_000,
+      timeout: opts.timeoutMs ?? 30_000
     });
     return { stdout, stderr, exitCode: 0 };
   } catch (err: unknown) {
@@ -67,15 +67,15 @@ export async function runTank(
     if (e.killed) {
       return {
         stdout: e.stdout ?? '',
-        stderr: (e.stderr ?? '') + '\n[TIMEOUT]',
-        exitCode: 124,
+        stderr: `${e.stderr ?? ''}\n[TIMEOUT]`,
+        exitCode: 124
       };
     }
 
     return {
       stdout: e.stdout ?? '',
       stderr: e.stderr ?? '',
-      exitCode: typeof e.code === 'number' ? e.code : 1,
+      exitCode: typeof e.code === 'number' ? e.code : 1
     };
   }
 }
@@ -83,22 +83,26 @@ export async function runTank(
 function runTankWithStdin(
   args: string[],
   env: Record<string, string | undefined>,
-  opts: { cwd?: string; timeoutMs?: number; stdin?: string },
+  opts: { cwd?: string; timeoutMs?: number; stdin?: string }
 ): Promise<CliResult> {
   return new Promise((resolve) => {
     const timeout = opts.timeoutMs ?? 30_000;
     const child = spawn('node', [TANK_BIN, ...args], {
       cwd: opts.cwd,
       env: env as NodeJS.ProcessEnv,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
     let stderr = '';
     let killed = false;
 
-    child.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
-    child.stderr.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+    child.stdout.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
 
     const timer = setTimeout(() => {
       killed = true;
@@ -116,8 +120,8 @@ function runTankWithStdin(
       if (killed) {
         resolve({
           stdout,
-          stderr: stderr + '\n[TIMEOUT]',
-          exitCode: 124,
+          stderr: `${stderr}\n[TIMEOUT]`,
+          exitCode: 124
         });
         return;
       }
@@ -125,7 +129,7 @@ function runTankWithStdin(
       resolve({
         stdout,
         stderr,
-        exitCode: code ?? 1,
+        exitCode: code ?? 1
       });
     });
 
@@ -134,7 +138,7 @@ function runTankWithStdin(
       resolve({
         stdout,
         stderr,
-        exitCode: 1,
+        exitCode: 1
       });
     });
   });
@@ -146,18 +150,16 @@ function runTankWithStdin(
 export function expectSuccess(result: CliResult, pattern?: string | RegExp): void {
   if (result.exitCode !== 0) {
     throw new Error(
-      `Expected exit code 0, got ${result.exitCode}.\n` +
-      `stdout: ${result.stdout}\nstderr: ${result.stderr}`,
+      `Expected exit code 0, got ${result.exitCode}.\n` + `stdout: ${result.stdout}\nstderr: ${result.stderr}`
     );
   }
   if (pattern) {
     const text = result.stdout + result.stderr;
-    const matches = typeof pattern === 'string'
-      ? text.toLowerCase().includes(pattern.toLowerCase())
-      : pattern.test(text);
+    const matches =
+      typeof pattern === 'string' ? text.toLowerCase().includes(pattern.toLowerCase()) : pattern.test(text);
     if (!matches) {
       throw new Error(
-        `Expected output to match ${pattern}, but got:\nstdout: ${result.stdout}\nstderr: ${result.stderr}`,
+        `Expected output to match ${pattern}, but got:\nstdout: ${result.stdout}\nstderr: ${result.stderr}`
       );
     }
   }
@@ -168,18 +170,15 @@ export function expectSuccess(result: CliResult, pattern?: string | RegExp): voi
  */
 export function expectFailure(result: CliResult, pattern?: string | RegExp): void {
   if (result.exitCode === 0) {
-    throw new Error(
-      `Expected non-zero exit code, got 0.\nstdout: ${result.stdout}\nstderr: ${result.stderr}`,
-    );
+    throw new Error(`Expected non-zero exit code, got 0.\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
   }
   if (pattern) {
     const text = result.stdout + result.stderr;
-    const matches = typeof pattern === 'string'
-      ? text.toLowerCase().includes(pattern.toLowerCase())
-      : pattern.test(text);
+    const matches =
+      typeof pattern === 'string' ? text.toLowerCase().includes(pattern.toLowerCase()) : pattern.test(text);
     if (!matches) {
       throw new Error(
-        `Expected error output to match ${pattern}, but got:\nstdout: ${result.stdout}\nstderr: ${result.stderr}`,
+        `Expected error output to match ${pattern}, but got:\nstdout: ${result.stdout}\nstderr: ${result.stderr}`
       );
     }
   }

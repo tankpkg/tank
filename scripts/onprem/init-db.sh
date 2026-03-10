@@ -11,6 +11,6 @@ fi
 
 echo "Running Drizzle schema push..."
 cd "$ROOT_DIR"
-pnpm --filter=web exec drizzle-kit push --force
+bun --filter=@internal/web exec drizzle-kit push --force
 
 echo "Database initialization completed."

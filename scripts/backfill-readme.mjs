@@ -28,12 +28,12 @@ function loadEnv(filePath) {
 }
 loadEnv('.env.local');
 
+import { execSync } from 'node:child_process';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import postgres from 'postgres';
-import { execSync } from 'node:child_process';
-import { writeFileSync, mkdirSync, rmSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 
 const sql = postgres(process.env.DATABASE_URL);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -140,7 +140,7 @@ async function main() {
       }
 
       // Normalize file paths (remove leading package/ if present)
-      const normalizedFiles = files.map(f => {
+      const normalizedFiles = files.map((f) => {
         if (f.startsWith('package/')) return f.slice(8);
         return f;
       });
@@ -158,7 +158,7 @@ async function main() {
       `;
 
       console.log(
-        `  ✅ ${sv.skill_name}@${sv.version} — ${readme ? `readme: ${readme.length} chars` : 'no SKILL.md'}, ${normalizedFiles.length} files`,
+        `  ✅ ${sv.skill_name}@${sv.version} — ${readme ? `readme: ${readme.length} chars` : 'no SKILL.md'}, ${normalizedFiles.length} files`
       );
       updated++;
 

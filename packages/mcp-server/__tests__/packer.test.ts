@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { pack, packForScan } from '../src/lib/packer.js';
 
 const canCreateSymlinks = (() => {
@@ -51,10 +51,7 @@ describe('packer', () => {
     });
 
     it('fails when SKILL.md is missing', async () => {
-      fs.writeFileSync(
-        path.join(tempDir, 'tank.json'),
-        JSON.stringify({ name: '@test/skill', version: '1.0.0' }),
-      );
+      fs.writeFileSync(path.join(tempDir, 'tank.json'), JSON.stringify({ name: '@test/skill', version: '1.0.0' }));
 
       await expect(pack(tempDir)).rejects.toThrow('Missing required file: SKILL.md');
     });
@@ -66,8 +63,8 @@ describe('packer', () => {
         JSON.stringify({
           name: '@test/skill',
           version: '1.0.0',
-          description: 'A test skill',
-        }),
+          description: 'A test skill'
+        })
       );
       fs.writeFileSync(path.join(tempDir, 'SKILL.md'), '# Test Skill\n\nThis is a test skill.');
       fs.writeFileSync(path.join(tempDir, 'index.js'), 'console.log("hello");');
@@ -86,16 +83,10 @@ describe('packer', () => {
     });
 
     it('ignores node_modules directory', async () => {
-      fs.writeFileSync(
-        path.join(tempDir, 'tank.json'),
-        JSON.stringify({ name: '@test/skill', version: '1.0.0' }),
-      );
+      fs.writeFileSync(path.join(tempDir, 'tank.json'), JSON.stringify({ name: '@test/skill', version: '1.0.0' }));
       fs.writeFileSync(path.join(tempDir, 'SKILL.md'), '# Test');
       fs.mkdirSync(path.join(tempDir, 'node_modules', 'some-package'), { recursive: true });
-      fs.writeFileSync(
-        path.join(tempDir, 'node_modules', 'some-package', 'index.js'),
-        'module.exports = {};',
-      );
+      fs.writeFileSync(path.join(tempDir, 'node_modules', 'some-package', 'index.js'), 'module.exports = {};');
 
       const result = await pack(tempDir);
 
@@ -103,10 +94,7 @@ describe('packer', () => {
     });
 
     it('ignores .git directory', async () => {
-      fs.writeFileSync(
-        path.join(tempDir, 'tank.json'),
-        JSON.stringify({ name: '@test/skill', version: '1.0.0' }),
-      );
+      fs.writeFileSync(path.join(tempDir, 'tank.json'), JSON.stringify({ name: '@test/skill', version: '1.0.0' }));
       fs.writeFileSync(path.join(tempDir, 'SKILL.md'), '# Test');
       fs.mkdirSync(path.join(tempDir, '.git'), { recursive: true });
       fs.writeFileSync(path.join(tempDir, '.git', 'config'), '[core]');
@@ -117,10 +105,7 @@ describe('packer', () => {
     });
 
     it('ignores .env files', async () => {
-      fs.writeFileSync(
-        path.join(tempDir, 'tank.json'),
-        JSON.stringify({ name: '@test/skill', version: '1.0.0' }),
-      );
+      fs.writeFileSync(path.join(tempDir, 'tank.json'), JSON.stringify({ name: '@test/skill', version: '1.0.0' }));
       fs.writeFileSync(path.join(tempDir, 'SKILL.md'), '# Test');
       fs.writeFileSync(path.join(tempDir, '.env'), 'SECRET=token123');
       fs.writeFileSync(path.join(tempDir, '.env.local'), 'SECRET=token456');
@@ -132,10 +117,7 @@ describe('packer', () => {
     });
 
     it.skipIf(!canCreateSymlinks)('rejects symlinks', async () => {
-      fs.writeFileSync(
-        path.join(tempDir, 'tank.json'),
-        JSON.stringify({ name: '@test/skill', version: '1.0.0' }),
-      );
+      fs.writeFileSync(path.join(tempDir, 'tank.json'), JSON.stringify({ name: '@test/skill', version: '1.0.0' }));
       fs.writeFileSync(path.join(tempDir, 'SKILL.md'), '# Test');
       fs.writeFileSync(path.join(tempDir, 'real.txt'), 'content');
       fs.symlinkSync(path.join(tempDir, 'real.txt'), path.join(tempDir, 'link.txt'));
@@ -144,10 +126,7 @@ describe('packer', () => {
     });
 
     it('respects .tankignore file', async () => {
-      fs.writeFileSync(
-        path.join(tempDir, 'tank.json'),
-        JSON.stringify({ name: '@test/skill', version: '1.0.0' }),
-      );
+      fs.writeFileSync(path.join(tempDir, 'tank.json'), JSON.stringify({ name: '@test/skill', version: '1.0.0' }));
       fs.writeFileSync(path.join(tempDir, 'SKILL.md'), '# Test');
       fs.writeFileSync(path.join(tempDir, '.tankignore'), '*.log\ntest/');
       fs.writeFileSync(path.join(tempDir, 'debug.log'), 'log content');
@@ -201,8 +180,8 @@ describe('packer', () => {
         expect.objectContaining({
           name: path.basename(tempDir),
           version: '0.0.0',
-          description: 'Local scan',
-        }),
+          description: 'Local scan'
+        })
       );
     });
 

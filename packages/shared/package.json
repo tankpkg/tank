@@ -1,5 +1,5 @@
 {
-  "name": "@tank/shared",
+  "name": "@internal/shared",
   "version": "0.1.0",
   "type": "module",
   "exports": {
@@ -9,12 +9,15 @@
     }
   },
   "scripts": {
-    "build": "tsc",
-    "test": "vitest run"
+    "build": "tsdown",
+    "test": "vitest run",
+    "lint": "biome check src/",
+    "lint:fix": "biome check --fix src/",
+    "format": "biome format --write src/"
   },
   "devDependencies": {
     "@types/semver": "^7.7.1",
-    "vitest": "^3"
+    "vitest": "^4"
   },
   "dependencies": {
     "semver": "^7.7.4",

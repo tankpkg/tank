@@ -5,14 +5,14 @@
  * Run: node scripts/gen-api-docs.mjs
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const API_DIR = join(ROOT, 'apps/web/app/api/v1');
-const DOCS_OUTPUT = join(ROOT, 'apps/web/content/docs/api.mdx');
+const API_DIR = join(ROOT, 'packages/web/app/api/v1');
+const DOCS_OUTPUT = join(ROOT, 'packages/web/content/docs/api.mdx');
 
 // HTTP methods to document
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
@@ -21,48 +21,46 @@ const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 function parseRoute(filePath) {
   const source = readFileSync(filePath, 'utf-8');
   const endpoints = [];
-  
+
   // Extract route path from file path
   const relativePath = filePath.replace(API_DIR, '').replace('/route.ts', '');
-  const routePath = relativePath
-    .replace(/\[([^\]]+)\]/g, ':$1')
-    .replace(/\[\.\.\.([^\]]+)\]/g, ':$1*');
-  
+  const routePath = relativePath.replace(/\[([^\]]+)\]/g, ':$1').replace(/\[\.\.\.([^\]]+)\]/g, ':$1*');
+
   // Extract method handlers
-  METHODS.forEach(method => {
+  METHODS.forEach((method) => {
     const methodRegex = new RegExp(`export\\s+async\\s+function\\s+${method}\\s*\\(`, 'i');
     if (methodRegex.test(source)) {
       endpoints.push({
         method: method.toUpperCase(),
-        path: `/api/v1${routePath}`,
+        path: `/api/v1${routePath}`
       });
     }
   });
-  
+
   return endpoints;
 }
 
 // Recursively find all route files
 function findRoutes(dir) {
   const routes = [];
-  
+
   const entries = readdirSync(dir);
   for (const entry of entries) {
     const fullPath = join(dir, entry);
     const stat = statSync(fullPath);
-    
+
     if (stat.isDirectory()) {
       routes.push(...findRoutes(fullPath));
     } else if (entry === 'route.ts') {
       routes.push(fullPath);
     }
   }
-  
+
   return routes;
 }
 
 // Generate comprehensive MDX documentation
-function generateMdx(endpointCount) {
+function generateMdx(_endpointCount) {
   return `---
 title: API Reference
 description: Complete REST API reference for the Tank skill registry — authentication, search, publishing, version management, and security scanning endpoints.
@@ -812,7 +810,7 @@ curl -X POST https://tankpkg.dev/api/v1/skills/confirm \\
 
 // Main
 const routeFiles = findRoutes(API_DIR);
-const allEndpoints = routeFiles.flatMap(f => parseRoute(f));
+const allEndpoints = routeFiles.flatMap((f) => parseRoute(f));
 const mdx = generateMdx(allEndpoints.length);
 
 writeFileSync(DOCS_OUTPUT, mdx);

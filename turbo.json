@@ -2,11 +2,15 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**"]
+      "outputs": ["dist/**", ".next/**", "build/**"]
     },
-    "test": {},
+    "format": {},
     "lint": {},
+    "check": {},
+    "typecheck": {},
+    "test": {},
     "dev": {
       "persistent": true,
       "cache": false

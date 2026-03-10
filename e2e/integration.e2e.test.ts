@@ -10,29 +10,33 @@
  * Prerequisites:
  * - Next.js dev server running on localhost:3000
  * - DATABASE_URL set in .env.local
- * - CLI built: pnpm build --filter=tank
+ * - CLI built: bun run build --filter=@tankpkg/cli
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+
 import fs from 'node:fs';
 import path from 'node:path';
-import { runTank, expectSuccess } from './helpers/cli';
-import { setupE2E, cleanupE2E, type E2EContext } from './helpers/setup';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { expectSuccess, runTank } from './helpers/cli';
 import {
-  createSkillFixture,
-  createConsumerFixture,
-  cleanupFixture,
-  type SkillFixture,
   type ConsumerFixture,
+  cleanupFixture,
+  createConsumerFixture,
+  createSkillFixture,
+  type SkillFixture
 } from './helpers/fixtures';
+import { cleanupE2E, type E2EContext, setupE2E } from './helpers/setup';
 
 interface LinksManifest {
   version: 1;
-  links: Record<string, {
-    source: 'local' | 'global' | 'dev';
-    sourceDir: string;
-    installedAt: string;
-    agentLinks: Record<string, string>;
-  }>;
+  links: Record<
+    string,
+    {
+      source: 'local' | 'global' | 'dev';
+      sourceDir: string;
+      installedAt: string;
+      agentLinks: Record<string, string>;
+    }
+  >;
 }
 
 describe('Integration E2E — agent linking workflows', () => {
@@ -58,15 +62,15 @@ describe('Integration E2E — agent linking workflows', () => {
       permissions: {
         network: { outbound: ['*'] },
         filesystem: { read: ['**/*'], write: ['**/*'] },
-        subprocess: true,
-      },
+        subprocess: true
+      }
     });
     tempDirs.push(skill.dir);
 
     const pub = await runTank(['publish'], {
       cwd: skill.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
     if (pub.exitCode !== 0) {
       throw new Error(`Setup: publish failed: ${pub.stderr}`);
@@ -86,8 +90,8 @@ describe('Integration E2E — agent linking workflows', () => {
       permissions: {
         network: { outbound: ['*'] },
         filesystem: { read: ['**/*'], write: ['**/*'] },
-        subprocess: true,
-      },
+        subprocess: true
+      }
     });
     tempDirs.push(c.dir);
     return c;
@@ -116,7 +120,7 @@ describe('Integration E2E — agent linking workflows', () => {
   function getAgentSymlinkPaths(home: string, symlinkName: string): Record<string, string> {
     return {
       claude: path.join(home, '.claude', 'skills', symlinkName),
-      opencode: path.join(home, '.config', 'opencode', 'skills', symlinkName),
+      opencode: path.join(home, '.config', 'opencode', 'skills', symlinkName)
     };
   }
 
@@ -129,9 +133,7 @@ describe('Integration E2E — agent linking workflows', () => {
     const stats = fs.lstatSync(symlinkPath);
     expect(stats.isSymbolicLink()).toBe(true);
     const rawTarget = fs.readlinkSync(symlinkPath);
-    const resolved = path.isAbsolute(rawTarget)
-      ? rawTarget
-      : path.resolve(path.dirname(symlinkPath), rawTarget);
+    const resolved = path.isAbsolute(rawTarget) ? rawTarget : path.resolve(path.dirname(symlinkPath), rawTarget);
     expect(fs.realpathSync(resolved)).toBe(fs.realpathSync(expectedTarget));
   }
 
@@ -140,7 +142,7 @@ describe('Integration E2E — agent linking workflows', () => {
     skillName: string,
     source: 'local' | 'global' | 'dev',
     sourceDir: string,
-    agentSymlinks: Record<string, string>,
+    agentSymlinks: Record<string, string>
   ): void {
     expect(fs.existsSync(linksPath)).toBe(true);
     const manifest = readJson<LinksManifest>(linksPath);
@@ -172,7 +174,7 @@ describe('Integration E2E — agent linking workflows', () => {
     const result = await runTank(['install', skill.name, '^1.0.0'], {
       cwd: consumer.dir,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
 
     expectSuccess(result);
@@ -210,7 +212,7 @@ describe('Integration E2E — agent linking workflows', () => {
   it('doctor reports local skill as linked', async () => {
     const result = await runTank(['doctor'], {
       cwd: consumer.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -228,7 +230,7 @@ describe('Integration E2E — agent linking workflows', () => {
   it('local remove cleans up agent symlinks', async () => {
     const result = await runTank(['remove', skill.name], {
       cwd: consumer.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -262,7 +264,7 @@ describe('Integration E2E — agent linking workflows', () => {
   it('doctor reports empty state after local remove', async () => {
     const result = await runTank(['doctor'], {
       cwd: consumer.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -278,7 +280,7 @@ describe('Integration E2E — agent linking workflows', () => {
     const result = await runTank(['install', '-g', skill.name], {
       cwd: ctx.home,
       home: ctx.home,
-      timeoutMs: 60_000,
+      timeoutMs: 60_000
     });
 
     expectSuccess(result);
@@ -323,7 +325,7 @@ describe('Integration E2E — agent linking workflows', () => {
   it('doctor reports global skill', async () => {
     const result = await runTank(['doctor'], {
       cwd: ctx.home,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -339,7 +341,7 @@ describe('Integration E2E — agent linking workflows', () => {
   it('global remove cleans up', async () => {
     const result = await runTank(['remove', '-g', skill.name], {
       cwd: ctx.home,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -389,14 +391,14 @@ describe('Integration E2E — agent linking workflows', () => {
       permissions: {
         network: { outbound: ['*'] },
         filesystem: { read: ['**/*'], write: ['**/*'] },
-        subprocess: true,
-      },
+        subprocess: true
+      }
     });
     tempDirs.push(devSkill.dir);
 
     const result = await runTank(['link'], {
       cwd: devSkill.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -424,7 +426,7 @@ describe('Integration E2E — agent linking workflows', () => {
   it('doctor reports dev link', async () => {
     const result = await runTank(['doctor'], {
       cwd: devSkill.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -439,7 +441,7 @@ describe('Integration E2E — agent linking workflows', () => {
   it('dev unlink cleans up', async () => {
     const result = await runTank(['unlink'], {
       cwd: devSkill.dir,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);
@@ -473,7 +475,7 @@ describe('Integration E2E — agent linking workflows', () => {
   it('doctor reports empty dev links after unlink', async () => {
     const result = await runTank(['doctor'], {
       cwd: ctx.home,
-      home: ctx.home,
+      home: ctx.home
     });
 
     expectSuccess(result);

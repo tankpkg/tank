@@ -32,12 +32,10 @@ export function registerSkillInfoTool(server: McpServer): void {
     'skill-info',
     'Get detailed information about a specific skill from the Tank registry',
     {
-      name: z.string().describe('Skill name (e.g., @org/skill-name or skill-name)'),
+      name: z.string().describe('Skill name (e.g., @org/skill-name or skill-name)')
     },
     async ({ name }) => {
-      const result = await client.fetch<SkillInfoResponse>(
-        `/api/v1/skills/${encodeURIComponent(name)}`,
-      );
+      const result = await client.fetch<SkillInfoResponse>(`/api/v1/skills/${encodeURIComponent(name)}`);
 
       if (!result.ok) {
         if (result.status === 404) {
@@ -45,26 +43,24 @@ export function registerSkillInfoTool(server: McpServer): void {
             content: [
               {
                 type: 'text' as const,
-                text: `Skill "${name}" not found. Search for skills: https://tankpkg.dev/search`,
-              },
-            ],
+                text: `Skill "${name}" not found. Search for skills: https://tankpkg.dev/search`
+              }
+            ]
           };
         }
         return {
           content: [
             {
               type: 'text' as const,
-              text: `Failed to get skill info: ${result.error}`,
-            },
-          ],
+              text: `Failed to get skill info: ${result.error}`
+            }
+          ]
         };
       }
 
       const skill = result.data;
       const score = skill.auditScore !== null ? `${skill.auditScore.toFixed(1)}/10` : 'Not scored';
-      const size = skill.versions[0]
-        ? `${(skill.versions[0].tarballSize / 1024).toFixed(1)}KB`
-        : 'Unknown';
+      const size = skill.versions[0] ? `${(skill.versions[0].tarballSize / 1024).toFixed(1)}KB` : 'Unknown';
 
       // Format permissions as readable text
       let permsText = 'None declared';
@@ -115,12 +111,12 @@ export function registerSkillInfoTool(server: McpServer): void {
         `  - ${versionsList}`,
         skill.versions.length > 5 ? `\n  ... and ${skill.versions.length - 5} more` : '',
         '',
-        `View on Tank: https://tankpkg.dev/skills/${skill.name}`,
+        `View on Tank: https://tankpkg.dev/skills/${skill.name}`
       ].join('\n');
 
       return {
-        content: [{ type: 'text' as const, text }],
+        content: [{ type: 'text' as const, text }]
       };
-    },
+    }
   );
 }

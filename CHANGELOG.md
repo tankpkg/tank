@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **doctor** — 4-check diagnostics (config, auth, registry connectivity, Node.js version)
 
 MCP server internals:
+
 - `verifyAuth()` now returns a discriminated union: `{ valid, user }` | `{ valid: false, reason: 'no-token' | 'unauthorized' | 'network-error' }`
 - `packForScan()` added to MCP packer for scanning non-skill directories
 - `logout` clears `process.env.TANK_TOKEN` to prevent env-based re-reads
@@ -63,7 +64,7 @@ MCP server internals:
 - **`packForScan()`** — Packer fallback for directories without `skills.json`
 - **`--skill-version`** — Renamed from `--version` to avoid Commander.js clash
 
-#### Web API (`@tank/web` 0.1.0 → 0.2.0)
+#### Web API (`@internal/web` 0.1.0 → 0.2.0)
 
 - **Scan endpoint** — `manifest` field now optional in `/api/v1/scan`, enabling security scans on arbitrary code directories
 

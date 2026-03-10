@@ -1,4 +1,5 @@
-@mcp @install
+@mcp
+@install
 Feature: Skill installation via MCP tool
   As an AI agent using the Tank MCP server
   I need to install skills from the Tank registry
@@ -10,7 +11,6 @@ Feature: Skill installation via MCP tool
     And Emma is authenticated with Tank
 
   # ─── install-skill (happy paths) ──────────────────────────────────────────
-
   @high
   Scenario: Agent installs a skill by name and latest version is resolved
     Given the skill "@acme/web-search" exists in the Tank registry
@@ -39,7 +39,6 @@ Feature: Skill installation via MCP tool
     And no files are modified
 
   # ─── install-skill (integrity) ────────────────────────────────────────────
-
   @high
   Scenario: Agent installs a skill whose tarball fails SHA-512 verification
     Given the skill "@acme/tampered-skill" exists in the Tank registry
@@ -50,7 +49,6 @@ Feature: Skill installation via MCP tool
     And no files are extracted to the skills directory
 
   # ─── install-skill (error cases) ──────────────────────────────────────────
-
   @high
   Scenario: Agent installs a skill that does not exist in the registry
     Given no skill named "@acme/nonexistent-skill" exists in the Tank registry

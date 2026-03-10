@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { LEGACY_LOCKFILE_FILENAME, LOCKFILE_FILENAME, type SkillsLock } from '@internal/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type SkillsLock, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from '@tank/shared';
 import { z } from 'zod';
 import { TankApiClient } from '../lib/api-client.js';
 
@@ -71,7 +71,7 @@ function formatFindings(findings: ScanFinding[]): string {
     critical: [],
     high: [],
     medium: [],
-    low: [],
+    low: []
   };
 
   for (const f of findings) {
@@ -100,27 +100,31 @@ export function registerAuditSkillTool(server: McpServer): void {
     'Show security audit results for a skill from the Tank registry.',
     {
       name: z.string().describe('Skill name in @org/name format'),
-      version: z.string().optional().describe('Specific version to audit (defaults to installed or latest)'),
+      version: z.string().optional().describe('Specific version to audit (defaults to installed or latest)')
     },
     async ({ name, version }) => {
       if (!SCOPED_NAME_PATTERN.test(name)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Validation error: Skill name "${name}" must use the @org/name format (e.g. @acme/my-skill).`
+            }
+          ],
+          isError: true
         };
       }
 
       const client = new TankApiClient();
       if (!client.isAuthenticated) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'Authentication required. Please run the "login" tool first to authenticate with Tank.',
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Authentication required. Please run the "login" tool first to authenticate with Tank.'
+            }
+          ],
+          isError: true
         };
       }
 
@@ -152,35 +156,39 @@ export function registerAuditSkillTool(server: McpServer): void {
 
       // If still no version, fetch skill metadata to get latest
       if (!targetVersion) {
-        const metaResult = await client.fetch<SkillMetaResponse>(
-          `/api/v1/skills/${encodedName}`,
-        );
+        const metaResult = await client.fetch<SkillMetaResponse>(`/api/v1/skills/${encodedName}`);
 
         if (!metaResult.ok) {
           if (metaResult.status === 0) {
             return {
-              content: [{
-                type: 'text' as const,
-                text: 'Unable to connect to the Tank registry. Check your network connection and try again.',
-              }],
-              isError: true,
+              content: [
+                {
+                  type: 'text' as const,
+                  text: 'Unable to connect to the Tank registry. Check your network connection and try again.'
+                }
+              ],
+              isError: true
             };
           }
           if (metaResult.status === 404) {
             return {
-              content: [{
-                type: 'text' as const,
-                text: `Skill "${name}" not found in the Tank registry.`,
-              }],
-              isError: true,
+              content: [
+                {
+                  type: 'text' as const,
+                  text: `Skill "${name}" not found in the Tank registry.`
+                }
+              ],
+              isError: true
             };
           }
           return {
-            content: [{
-              type: 'text' as const,
-              text: `Failed to fetch skill metadata: ${metaResult.error}`,
-            }],
-            isError: true,
+            content: [
+              {
+                type: 'text' as const,
+                text: `Failed to fetch skill metadata: ${metaResult.error}`
+              }
+            ],
+            isError: true
           };
         }
 
@@ -188,35 +196,39 @@ export function registerAuditSkillTool(server: McpServer): void {
       }
 
       // Fetch version details with audit data
-      const versionResult = await client.fetch<VersionDetails>(
-        `/api/v1/skills/${encodedName}/${targetVersion}`,
-      );
+      const versionResult = await client.fetch<VersionDetails>(`/api/v1/skills/${encodedName}/${targetVersion}`);
 
       if (!versionResult.ok) {
         if (versionResult.status === 0) {
           return {
-            content: [{
-              type: 'text' as const,
-              text: 'Unable to connect to the Tank registry. Check your network connection and try again.',
-            }],
-            isError: true,
+            content: [
+              {
+                type: 'text' as const,
+                text: 'Unable to connect to the Tank registry. Check your network connection and try again.'
+              }
+            ],
+            isError: true
           };
         }
         if (versionResult.status === 404) {
           return {
-            content: [{
-              type: 'text' as const,
-              text: `Skill "${name}" version "${targetVersion}" not found in the Tank registry.`,
-            }],
-            isError: true,
+            content: [
+              {
+                type: 'text' as const,
+                text: `Skill "${name}" version "${targetVersion}" not found in the Tank registry.`
+              }
+            ],
+            isError: true
           };
         }
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to fetch audit data: ${versionResult.error}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to fetch audit data: ${versionResult.error}`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -225,25 +237,25 @@ export function registerAuditSkillTool(server: McpServer): void {
 
       if (details.auditStatus !== 'completed') {
         return {
-          content: [{
-            type: 'text' as const,
-            text: [
-              `## Audit: ${name}@${targetVersion}`,
-              '',
-              `**Status:** Pending security review`,
-              `**Scan Status:** ${details.auditStatus}`,
-              '',
-              'This skill has not yet been through security scanning. Results will be available once the scan completes.',
-            ].join('\n'),
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: [
+                `## Audit: ${name}@${targetVersion}`,
+                '',
+                `**Status:** Pending security review`,
+                `**Scan Status:** ${details.auditStatus}`,
+                '',
+                'This skill has not yet been through security scanning. Results will be available once the scan completes.'
+              ].join('\n')
+            }
+          ]
         };
       }
 
       // Try to fetch detailed scan results
       let findingsText = '';
-      const scanResult = await client.fetch<ScanResult>(
-        `/api/v1/skills/${encodedName}/${targetVersion}/scan`,
-      );
+      const scanResult = await client.fetch<ScanResult>(`/api/v1/skills/${encodedName}/${targetVersion}/scan`);
       if (scanResult.ok && scanResult.data.findings) {
         findingsText = formatFindings(scanResult.data.findings);
       }
@@ -256,7 +268,7 @@ export function registerAuditSkillTool(server: McpServer): void {
         `**Verdict:** ${verdict}`,
         `**Score:** ${score}/10`,
         `**Scanned:** ${details.publishedAt}`,
-        `**Version:** ${targetVersion}`,
+        `**Version:** ${targetVersion}`
       ];
 
       if (details.permissions) {
@@ -279,11 +291,13 @@ export function registerAuditSkillTool(server: McpServer): void {
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n'),
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n')
+          }
+        ]
       };
-    },
+    }
   );
 }

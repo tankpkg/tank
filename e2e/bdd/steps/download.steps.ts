@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { Given, When, Then } from './fixtures';
+import { Given, Then, When } from './fixtures';
 
 const SETTLE_MS = 500;
 
@@ -22,21 +22,24 @@ Given('the skill has no prior downloads today', async ({ publishedPublicSkill, e
   `;
 });
 
-Given('the skill has {int} recorded downloads for today', async ({ publishedPublicSkill, e2eContext }, count: number) => {
-  const skillRows = await e2eContext.sql`
+Given(
+  'the skill has {int} recorded downloads for today',
+  async ({ publishedPublicSkill, e2eContext }, count: number) => {
+    const skillRows = await e2eContext.sql`
     SELECT id FROM skills WHERE name = ${publishedPublicSkill.name}
   `;
-  const skillId = skillRows[0]!.id as string;
+    const skillId = skillRows[0]?.id as string;
 
-  await e2eContext.sql`
+    await e2eContext.sql`
     DELETE FROM skill_download_daily
     WHERE skill_id = ${skillId} AND date = CURRENT_DATE
   `;
-  await e2eContext.sql`
+    await e2eContext.sql`
     INSERT INTO skill_download_daily (skill_id, date, count)
     VALUES (${skillId}, CURRENT_DATE, ${count})
   `;
-});
+  }
+);
 
 When('the version metadata endpoint is fetched', async ({ publishedPublicSkill, e2eContext, bddState }) => {
   const encodedName = encodeURIComponent(publishedPublicSkill.name);
@@ -47,27 +50,33 @@ When('the version metadata endpoint is fetched', async ({ publishedPublicSkill, 
   await sleep(SETTLE_MS);
 });
 
-When('the version metadata endpoint is fetched {int} times', async ({ publishedPublicSkill, e2eContext, bddState }, times: number) => {
-  const encodedName = encodeURIComponent(publishedPublicSkill.name);
-  const url = `${e2eContext.registry}/api/v1/skills/${encodedName}/${publishedPublicSkill.version}`;
+When(
+  'the version metadata endpoint is fetched {int} times',
+  async ({ publishedPublicSkill, e2eContext, bddState }, times: number) => {
+    const encodedName = encodeURIComponent(publishedPublicSkill.name);
+    const url = `${e2eContext.registry}/api/v1/skills/${encodedName}/${publishedPublicSkill.version}`;
 
-  for (let i = 0; i < times; i++) {
-    const response = await fetch(url);
-    bddState.lastResponse = response;
-    bddState.lastResponseBody = await response.json();
+    for (let i = 0; i < times; i++) {
+      const response = await fetch(url);
+      bddState.lastResponse = response;
+      bddState.lastResponseBody = await response.json();
+    }
+    await sleep(SETTLE_MS);
   }
-  await sleep(SETTLE_MS);
-});
+);
 
-Then('the daily download count for today should be {int}', async ({ publishedPublicSkill, e2eContext }, expected: number) => {
-  const rows = await e2eContext.sql`
+Then(
+  'the daily download count for today should be {int}',
+  async ({ publishedPublicSkill, e2eContext }, expected: number) => {
+    const rows = await e2eContext.sql`
     SELECT count FROM skill_download_daily
     WHERE skill_id = (SELECT id FROM skills WHERE name = ${publishedPublicSkill.name})
       AND date = CURRENT_DATE
   `;
-  expect(rows.length).toBe(1);
-  expect(Number(rows[0]!.count)).toBe(expected);
-});
+    expect(rows.length).toBe(1);
+    expect(Number(rows[0]?.count)).toBe(expected);
+  }
+);
 
 Then('only one download row exists for today', async ({ publishedPublicSkill, e2eContext }) => {
   const rows = await e2eContext.sql`
@@ -75,7 +84,7 @@ Then('only one download row exists for today', async ({ publishedPublicSkill, e2
     WHERE skill_id = (SELECT id FROM skills WHERE name = ${publishedPublicSkill.name})
       AND date = CURRENT_DATE
   `;
-  expect(Number(rows[0]!.row_count)).toBe(1);
+  expect(Number(rows[0]?.row_count)).toBe(1);
 });
 
 Then('the response should include a downloads field of at least {int}', async ({ bddState }, minDownloads: number) => {

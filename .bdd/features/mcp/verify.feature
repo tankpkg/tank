@@ -1,4 +1,5 @@
-@mcp @verify
+@mcp
+@verify
 Feature: Skill integrity verification via MCP tool
   As an AI agent using the Tank MCP server
   I need to verify that all installed skills match their lockfile SHA-512 hashes
@@ -9,7 +10,6 @@ Feature: Skill integrity verification via MCP tool
     Given the MCP server is running
 
   # ─── verify-skills (happy paths) ──────────────────────────────────────────
-
   @high
   Scenario: Agent verifies all installed skills and all pass
     Given the skills "@acme/web-search" and "@acme/code-runner" are installed
@@ -37,7 +37,6 @@ Feature: Skill integrity verification via MCP tool
     And the response recommends reinstalling the missing skill
 
   # ─── verify-skills (edge cases) ───────────────────────────────────────────
-
   @medium
   Scenario: Agent verifies skills when no skills are installed
     Given no skills are installed and the lockfile is empty
@@ -69,7 +68,7 @@ Feature: Skill integrity verification via MCP tool
     Then the MCP server reports that "<skill>" passed verification
 
     Examples:
-      | skill                  |
-      | @acme/web-search       |
-      | @my-org/code-runner    |
-      | @tools/file-manager    |
+      | skill               |
+      | @acme/web-search    |
+      | @my-org/code-runner |
+      | @tools/file-manager |

@@ -23,7 +23,7 @@ export function registerMcpHooks(world: McpBddWorld): void {
     const entrypoint = getMcpServerEntrypoint();
     if (!fs.existsSync(entrypoint)) {
       throw new Error(
-        `MCP server build output not found at ${entrypoint}. Run: pnpm build --filter=@tankpkg/mcp-server`,
+        `MCP server build output not found at ${entrypoint}. Run: bun run build --filter=@tankpkg/mcp-server`,
       );
     }
   });

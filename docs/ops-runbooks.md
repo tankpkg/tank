@@ -37,6 +37,7 @@ secrets:
 ```
 
 Create secrets:
+
 ```bash
 echo "your-secret-here" | docker secret create better_auth_secret -
 ```
@@ -103,23 +104,23 @@ docker exec tank-postgres pg_dumpall -U tank > cluster_backup_$(date +%Y%m%d).sq
 
 ```yaml
 # Add to docker-compose.yml
-  backup:
-    image: postgres:17-alpine
-    container_name: tank-backup
-    environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - ./backups:/backups
-    entrypoint: |
-      sh -c 'while true; do
-        pg_dump -h postgres -U tank tank > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
-        find /backups -name "backup_*.sql" -mtime +7 -delete
-        sleep 86400
-      done'
-    depends_on:
-      - postgres
-    networks:
-      - tank-network
+backup:
+  image: postgres:17-alpine
+  container_name: tank-backup
+  environment:
+    PGPASSWORD: ${POSTGRES_PASSWORD}
+  volumes:
+    - ./backups:/backups
+  entrypoint: |
+    sh -c 'while true; do
+      pg_dump -h postgres -U tank tank > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+      find /backups -name "backup_*.sql" -mtime +7 -delete
+      sleep 86400
+    done'
+  depends_on:
+    - postgres
+  networks:
+    - tank-network
 ```
 
 ### PostgreSQL Restore
@@ -183,7 +184,7 @@ mc mirror tank-minio/packages "$BACKUP_DIR/minio-packages"
 
 # Configuration (without secrets)
 cp .env.example.onprem "$BACKUP_DIR/env.template"
-cp docker-compose.yml "$BACKUP_DIR/"
+cp infra/docker-compose.yml "$BACKUP_DIR/"
 
 echo "Backup complete: $BACKUP_DIR"
 ```
@@ -219,7 +220,7 @@ COPY Caddyfile /etc/caddy/Caddyfile
 # Caddyfile
 tank.yourcompany.com {
     reverse_proxy web:3000
-    
+
     # Security headers
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -338,53 +339,53 @@ For comprehensive mTLS, deploy Envoy as a sidecar proxy:
 # envoy.yaml
 static_resources:
   listeners:
-  - name: ingress
-    address:
-      socket_address:
-        address: 0.0.0.0
-        port_value: 8443
-    filter_chains:
-    - filters:
-      - name: envoy.filters.network.http_connection_manager
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          stat_prefix: ingress_http
-          route_config:
-            name: local_route
-            virtual_hosts:
-            - name: backend
-              domains: ["*"]
-              routes:
-              - match: { prefix: "/" }
-                route: { cluster: web_service }
-          http_filters:
-          - name: envoy.filters.http.router
-      transport_socket:
-        name: envoy.transport_sockets.tls
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-          common_tls_context:
-            tls_certificates:
-            - certificate_chain: { filename: "/certs/web.crt" }
-              private_key: { filename: "/certs/web.key" }
-            validation_context:
-              trusted_ca: { filename: "/certs/ca.crt" }
-          require_client_certificate: true
+    - name: ingress
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8443
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: backend
+                      domains: ["*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route: { cluster: web_service }
+                http_filters:
+                  - name: envoy.filters.http.router
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                tls_certificates:
+                  - certificate_chain: { filename: "/certs/web.crt" }
+                    private_key: { filename: "/certs/web.key" }
+                validation_context:
+                  trusted_ca: { filename: "/certs/ca.crt" }
+              require_client_certificate: true
 
   clusters:
-  - name: web_service
-    connect_timeout: 5s
-    type: STATIC
-    lb_policy: ROUND_ROBIN
-    load_assignment:
-      cluster_name: web_service
-      endpoints:
-      - lb_endpoints:
-        - endpoint:
-            address:
-              socket_address:
-                address: 127.0.0.1
-                port_value: 3000
+    - name: web_service
+      connect_timeout: 5s
+      type: STATIC
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: web_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: 127.0.0.1
+                      port_value: 3000
 ```
 
 ---
@@ -393,13 +394,13 @@ static_resources:
 
 ### Service Health Endpoints
 
-| Service | Endpoint | Expected Response |
-|---------|----------|-------------------|
-| Web | `/api/health` | `{"status":"ok"}` |
-| Scanner | `/health` | `{"status":"ok"}` |
-| PostgreSQL | `pg_isready` | exit code 0 |
-| Redis | `PING` | `PONG` |
-| MinIO | `/minio/health/live` | HTTP 200 |
+| Service    | Endpoint             | Expected Response |
+| ---------- | -------------------- | ----------------- |
+| Web        | `/api/health`        | `{"status":"ok"}` |
+| Scanner    | `/health`            | `{"status":"ok"}` |
+| PostgreSQL | `pg_isready`         | exit code 0       |
+| Redis      | `PING`               | `PONG`            |
+| MinIO      | `/minio/health/live` | HTTP 200          |
 
 ### Health Check Integration
 
@@ -408,10 +409,10 @@ static_resources:
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'tank-web'
+  - job_name: "tank-web"
     static_configs:
-      - targets: ['web:3000']
-    metrics_path: '/api/health'
+      - targets: ["web:3000"]
+    metrics_path: "/api/health"
 ```
 
 #### Alerting Rules
@@ -441,6 +442,7 @@ groups:
 **Symptoms**: Users cannot log in.
 
 **Checks**:
+
 1. Verify `BETTER_AUTH_SECRET` matches across restarts
 2. Check IdP configuration (OIDC_DISCOVERY_URL, etc.)
 3. Review browser console for CORS errors
@@ -451,6 +453,7 @@ groups:
 **Symptoms**: App fails to start with "connection refused".
 
 **Solution**:
+
 ```bash
 # Check if postgres is healthy
 docker compose ps postgres
@@ -467,6 +470,7 @@ echo $DATABASE_URL
 **Symptoms**: CLI upload fails with storage error.
 
 **Solution**:
+
 ```bash
 # Check MinIO health
 curl http://localhost:9000/minio/health/live
@@ -484,6 +488,7 @@ mc mb test/packages --ignore-existing
 **Symptoms**: CLI auth fails randomly.
 
 **Solution**:
+
 ```bash
 # Check Redis connectivity
 docker exec tank-redis redis-cli ping

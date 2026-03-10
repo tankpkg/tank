@@ -75,8 +75,8 @@ Required:
 
 This repo does not auto-run DB migrations on app startup.
 
-- Generate migration during development: `pnpm --filter=web drizzle-kit generate`
-- Apply schema for deployment/init: `pnpm --filter=web exec drizzle-kit push --force`
+- Generate migration during development: `bun --filter=@internal/web drizzle-kit generate`
+- Apply schema for deployment/init: `bun --filter=@internal/web exec drizzle-kit push --force`
 
 ## Enterprise Security Checklist
 

@@ -1,4 +1,5 @@
-@mcp @scan
+@mcp
+@scan
 Feature: Security scanning of skills via MCP tool
   As an AI agent using the Tank MCP server
   I need to run security scans on skill directories
@@ -10,7 +11,6 @@ Feature: Security scanning of skills via MCP tool
     And Emma is authenticated with Tank
 
   # ─── scan-skill (with skills.json) ────────────────────────────────────────
-
   @high
   Scenario: Agent scans a skill directory that has a skills.json and passes
     Given a skill directory exists at "/workspace/safe-skill"
@@ -50,7 +50,6 @@ Feature: Security scanning of skills via MCP tool
     And the response lists the medium and low severity findings
 
   # ─── scan-skill (without skills.json — fallback mode) ─────────────────────
-
   @high
   Scenario: Agent scans an arbitrary directory without a skills.json
     Given a directory exists at "/workspace/arbitrary-code"
@@ -84,7 +83,6 @@ Feature: Security scanning of skills via MCP tool
     Then the MCP server returns an error indicating the path does not exist
 
   # ─── authentication ────────────────────────────────────────────────────────
-
   @high
   Scenario: Agent attempts to scan without being authenticated
     Given no user is authenticated with Tank
@@ -93,7 +91,6 @@ Feature: Security scanning of skills via MCP tool
     And the error message suggests running the "login" tool first
 
   # ─── scan stages ──────────────────────────────────────────────────────────
-
   @medium
   Scenario: Agent receives detailed stage-by-stage results from a scan
     Given a skill directory exists at "/workspace/detailed-skill"

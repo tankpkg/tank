@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
-import { getConfig, setConfig, getConfigPath } from '../src/lib/config.js';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { getConfig, getConfigPath, setConfig } from '../src/lib/config.js';
 
 describe('config', () => {
   let tempDir: string;
@@ -23,10 +23,7 @@ describe('config', () => {
     });
 
     it('reads config from file', () => {
-      fs.writeFileSync(
-        getConfigPath(tempDir),
-        JSON.stringify({ token: 'test-token', registry: 'https://custom.com' }),
-      );
+      fs.writeFileSync(getConfigPath(tempDir), JSON.stringify({ token: 'test-token', registry: 'https://custom.com' }));
 
       const config = getConfig(tempDir);
       expect(config.token).toBe('test-token');
@@ -35,10 +32,7 @@ describe('config', () => {
 
     it('TANK_TOKEN env var overrides file token', () => {
       process.env.TANK_TOKEN = 'env-token';
-      fs.writeFileSync(
-        getConfigPath(tempDir),
-        JSON.stringify({ token: 'file-token' }),
-      );
+      fs.writeFileSync(getConfigPath(tempDir), JSON.stringify({ token: 'file-token' }));
 
       const config = getConfig(tempDir);
       expect(config.token).toBe('env-token');

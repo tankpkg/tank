@@ -1,7 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  LEGACY_LOCKFILE_FILENAME,
+  LEGACY_MANIFEST_FILENAME,
+  LOCKFILE_FILENAME,
+  MANIFEST_FILENAME,
+  type Permissions,
+  type SkillsJson,
+  type SkillsLock
+} from '@internal/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type Permissions, type SkillsLock, type SkillsJson, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME, LOCKFILE_FILENAME, LEGACY_LOCKFILE_FILENAME } from '@tank/shared';
 import { z } from 'zod';
 
 function parseSkillName(key: string): string {
@@ -93,12 +101,12 @@ function collectPermissions(lockfile: SkillsLock): ResolvedPermissions {
     filesystemWrite: toEntries(fsWriteMap),
     subprocess: subprocessSkills,
     env: toEntries(envMap),
-    exec: toEntries(execMap),
+    exec: toEntries(execMap)
   };
 }
 
 function formatAttribution(skills: string[]): string {
-  return '<- ' + skills.join(', ');
+  return `<- ${skills.join(', ')}`;
 }
 
 function formatSection(title: string, entries: PermissionEntry[]): string {
@@ -148,10 +156,7 @@ interface BudgetViolation {
   skills: string[];
 }
 
-function checkBudget(
-  resolved: ResolvedPermissions,
-  budget: Permissions,
-): BudgetViolation[] {
+function checkBudget(resolved: ResolvedPermissions, budget: Permissions): BudgetViolation[] {
   const violations: BudgetViolation[] = [];
 
   const budgetDomains = budget.network?.outbound ?? [];
@@ -160,7 +165,7 @@ function checkBudget(
       violations.push({
         category: 'network outbound',
         value: entry.value,
-        skills: entry.skills,
+        skills: entry.skills
       });
     }
   }
@@ -171,7 +176,7 @@ function checkBudget(
       violations.push({
         category: 'filesystem read',
         value: entry.value,
-        skills: entry.skills,
+        skills: entry.skills
       });
     }
   }
@@ -182,7 +187,7 @@ function checkBudget(
       violations.push({
         category: 'filesystem write',
         value: entry.value,
-        skills: entry.skills,
+        skills: entry.skills
       });
     }
   }
@@ -191,7 +196,7 @@ function checkBudget(
     violations.push({
       category: 'subprocess',
       value: 'subprocess access',
-      skills: resolved.subprocess,
+      skills: resolved.subprocess
     });
   }
 
@@ -203,18 +208,20 @@ export function registerSkillPermissionsTool(server: McpServer): void {
     'skill-permissions',
     'Display resolved permission summary for installed skills. Shows what capabilities each skill requires and checks against the project permission budget.',
     {
-      directory: z.string().optional().describe('Project directory path (defaults to current working directory)'),
+      directory: z.string().optional().describe('Project directory path (defaults to current working directory)')
     },
     async ({ directory }) => {
       const dir = directory ? path.resolve(directory) : process.cwd();
 
       if (!fs.existsSync(dir)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Directory does not exist: ${dir}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Directory does not exist: ${dir}`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -224,11 +231,13 @@ export function registerSkillPermissionsTool(server: McpServer): void {
       }
       if (!fs.existsSync(skillsJsonPath)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No ${MANIFEST_FILENAME} found. Run "init-skill" to create one.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `No ${MANIFEST_FILENAME} found. Run "init-skill" to create one.`
+            }
+          ],
+          isError: true
         };
       }
 
@@ -238,21 +247,25 @@ export function registerSkillPermissionsTool(server: McpServer): void {
         skillsJson = JSON.parse(raw) as SkillsJson;
       } catch {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to parse ${path.basename(skillsJsonPath)}. The file may be corrupted.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to parse ${path.basename(skillsJsonPath)}. The file may be corrupted.`
+            }
+          ],
+          isError: true
         };
       }
 
       const skillDeps = skillsJson.skills ?? {};
       if (Object.keys(skillDeps).length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'No skills with permissions to display. The project has no skill dependencies.',
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: 'No skills with permissions to display. The project has no skill dependencies.'
+            }
+          ]
         };
       }
 
@@ -262,10 +275,12 @@ export function registerSkillPermissionsTool(server: McpServer): void {
       }
       if (!fs.existsSync(lockfilePath)) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No ${LOCKFILE_FILENAME} found. Skills are declared but not installed. Run install to generate a lockfile.`,
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `No ${LOCKFILE_FILENAME} found. Skills are declared but not installed. Run install to generate a lockfile.`
+            }
+          ]
         };
       }
 
@@ -275,20 +290,24 @@ export function registerSkillPermissionsTool(server: McpServer): void {
         lockfile = JSON.parse(raw) as SkillsLock;
       } catch {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Failed to parse ${path.basename(lockfilePath)}. The file may be corrupted.`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text' as const,
+              text: `Failed to parse ${path.basename(lockfilePath)}. The file may be corrupted.`
+            }
+          ],
+          isError: true
         };
       }
 
       if (!lockfile.skills || Object.keys(lockfile.skills).length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'No skills installed. The lockfile is empty.',
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: 'No skills installed. The lockfile is empty.'
+            }
+          ]
         };
       }
 
@@ -371,8 +390,8 @@ export function registerSkillPermissionsTool(server: McpServer): void {
       }
 
       return {
-        content: [{ type: 'text' as const, text: lines.join('\n') }],
+        content: [{ type: 'text' as const, text: lines.join('\n') }]
       };
-    },
+    }
   );
 }

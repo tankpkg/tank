@@ -1,4 +1,5 @@
-@mcp @doctor
+@mcp
+@doctor
 Feature: Environment diagnostics via MCP tool
   As an AI agent using the Tank MCP server
   I need to diagnose the Tank setup and environment
@@ -9,7 +10,6 @@ Feature: Environment diagnostics via MCP tool
     Given the MCP server is running
 
   # ─── doctor (fully healthy environment) ───────────────────────────────────
-
   @high
   Scenario: Agent runs diagnostics on a fully healthy environment
     Given Emma is authenticated with Tank
@@ -24,7 +24,6 @@ Feature: Environment diagnostics via MCP tool
     And the response includes a check for configuration file showing PASS
 
   # ─── doctor (authentication checks) ──────────────────────────────────────
-
   @high
   Scenario: Agent runs diagnostics when not authenticated
     Given no user is authenticated with Tank
@@ -43,7 +42,6 @@ Feature: Environment diagnostics via MCP tool
     And the response suggests running the "login" tool to re-authenticate
 
   # ─── doctor (connectivity checks) ─────────────────────────────────────────
-
   @high
   Scenario: Agent runs diagnostics when the registry is unreachable
     Given Emma is authenticated with Tank
@@ -55,7 +53,6 @@ Feature: Environment diagnostics via MCP tool
     And the authentication and Node.js checks are still reported
 
   # ─── doctor (Node.js version checks) ──────────────────────────────────────
-
   @high
   Scenario: Agent runs diagnostics when Node.js version is below the minimum
     Given Emma is authenticated with Tank
@@ -74,7 +71,6 @@ Feature: Environment diagnostics via MCP tool
     Then the MCP server reports that the Node.js version check passed
 
   # ─── doctor (configuration checks) ───────────────────────────────────────
-
   @high
   Scenario: Agent runs diagnostics when the configuration file is missing
     Given no Tank configuration file exists
@@ -90,7 +86,6 @@ Feature: Environment diagnostics via MCP tool
     And the response describes the configuration error
 
   # ─── doctor (multiple failures) ───────────────────────────────────────────
-
   @medium
   Scenario: Agent runs diagnostics when multiple checks fail
     Given no user is authenticated with Tank
@@ -102,7 +97,6 @@ Feature: Environment diagnostics via MCP tool
     And the overall result indicates the environment is not healthy
 
   # ─── doctor (summary) ─────────────────────────────────────────────────────
-
   @medium
   Scenario: Agent receives a structured summary from the doctor tool
     Given Emma is authenticated with Tank

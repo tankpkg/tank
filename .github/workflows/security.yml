@@ -4,18 +4,18 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docker-compose*.yml'
-      - '.env.example*'
-      - 'Dockerfile*'
-      - 'scripts/onprem/**'
-      - 'docs/onprem*'
+      - "infra/docker-compose*.yml"
+      - ".env.example*"
+      - "Dockerfile*"
+      - "scripts/onprem/**"
+      - "docs/onprem*"
   pull_request:
     paths:
-      - 'docker-compose*.yml'
-      - '.env.example*'
-      - 'Dockerfile*'
-      - 'scripts/onprem/**'
-      - 'docs/onprem*'
+      - "infra/docker-compose*.yml"
+      - ".env.example*"
+      - "Dockerfile*"
+      - "scripts/onprem/**"
+      - "docs/onprem*"
 
 permissions:
   contents: read
@@ -31,26 +31,26 @@ jobs:
       - name: Check for hardcoded secrets
         run: |
           echo "Checking for potential secrets in on-prem config files..."
-          
+
           # Check for potential secrets in docker-compose files
           if grep -rE "(password|secret|key|token|api_key|apikey)\s*[:=]\s*['\"][^'\"]{8,}['\"]" \
-            docker-compose*.yml 2>/dev/null; then
+            infra/docker-compose*.yml 2>/dev/null; then
             echo "::error::Potential hardcoded secret found in docker-compose files"
             exit 1
           fi
-          
+
           # Check for .env files that shouldn't be committed
           if find . -name ".env" -not -path "./node_modules/*" -not -path "./.git/*" 2>/dev/null | grep -q .; then
             echo "::error::.env file found - should use .env.example instead"
             exit 1
           fi
-          
+
           echo "No hardcoded secrets found"
 
       - name: Validate no real credentials in examples
         run: |
           echo "Validating example files use placeholder values..."
-          
+
           # Check .env.example files use placeholders, not real values
           for file in $(find . -name ".env.example*" -not -path "./node_modules/*"); do
             if grep -E "^[A-Z_]+=[^<].{16,}$" "$file" 2>/dev/null | grep -v "placeholder\|example\|changeme\|your-\|xxx" ; then
@@ -58,7 +58,7 @@ jobs:
               exit 1
             fi
           done
-          
+
           echo "All example files use proper placeholders"
 
   docker-security:
@@ -70,28 +70,28 @@ jobs:
       - name: Check Dockerfile security
         run: |
           echo "Checking Dockerfile security best practices..."
-          
+
           # Check for USER directive (shouldn't run as root)
           for dockerfile in $(find . -name "Dockerfile*" -not -path "./node_modules/*"); do
             if ! grep -q "^USER " "$dockerfile"; then
               echo "::warning file=$dockerfile::No USER directive found - consider running as non-root"
             fi
           done
-          
+
           # Check for COPY . . (should use explicit paths)
           for dockerfile in $(find . -name "Dockerfile*" -not -path "./node_modules/*"); do
             if grep -qE "COPY\s+\.\s+\." "$dockerfile"; then
               echo "::warning file=$dockerfile::COPY . . found - use explicit paths to avoid copying sensitive files"
             fi
           done
-          
+
           echo "Dockerfile security check complete"
 
       - name: Validate docker-compose security
         run: |
           echo "Validating docker-compose security settings..."
-          
-          for compose in docker-compose*.yml; do
+
+          for compose in infra/docker-compose*.yml; do
             if [ -f "$compose" ]; then
               # Check for exposed ports (should use internal networks)
               if grep -E "ports:.*-[[:space:]]*[0-9]+:" "$compose" | grep -v "127.0.0.1"; then
@@ -110,7 +110,7 @@ jobs:
               fi
             fi
           done
-          
+
           echo "Docker compose security validation complete"
 
   config-validation:
@@ -122,33 +122,33 @@ jobs:
       - name: Validate required env vars documented
         run: |
           echo "Checking that all required env vars are documented..."
-          
+
           # Extract env vars from code
-          REQUIRED_VARS=$(grep -rh "process\.env\.[A-Z_]" apps/web/lib/*.ts apps/web/app --include="*.ts" 2>/dev/null | \
+          REQUIRED_VARS=$(grep -rh "process\.env\.[A-Z_]" packages/web/lib/*.ts packages/web/app --include="*.ts" 2>/dev/null | \
             grep -oE "process\.env\.[A-Z_]+" | \
             sort -u | \
             sed 's/process\.env\.//' | \
             grep -v "NODE_ENV\|NEXT_PUBLIC_\|VERCEL\|CI")
-          
+
           # Check they're in .env.example.onprem
           for var in $REQUIRED_VARS; do
             if ! grep -q "$var" .env.example.onprem 2>/dev/null; then
               echo "::warning::$var is used in code but not documented in .env.example.onprem"
             fi
           done
-          
+
           echo "Environment variable documentation check complete"
 
       - name: Validate OIDC config completeness
         run: |
           echo "Checking OIDC configuration documentation..."
-          
+
           OIDC_VARS="OIDC_CLIENT_ID OIDC_CLIENT_SECRET OIDC_DISCOVERY_URL OIDC_AUTHORIZATION_URL OIDC_TOKEN_URL OIDC_USER_INFO_URL OIDC_PROVIDER_ID OIDC_SCOPES"
-          
+
           for var in $OIDC_VARS; do
             if ! grep -q "$var" .env.example.onprem 2>/dev/null; then
               echo "::warning::$var not documented in .env.example.onprem"
             fi
           done
-          
+
           echo "OIDC configuration check complete"

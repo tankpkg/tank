@@ -1,0 +1,68 @@
+# values-local.yaml — Overrides for local development with Kind or Minikube.
+# Usage: helm install tank ./infra/helm/tank -f ./infra/helm/tank/values-local.yaml
+
+web:
+  replicaCount: 1
+  service:
+    type: NodePort
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+scanner:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ingress:
+  enabled: false
+
+autoscaling:
+  enabled: false
+
+ollama:
+  enabled: false
+
+postgresql:
+  primary:
+    persistence:
+      size: 1Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+redis:
+  master:
+    persistence:
+      size: 512Mi
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi
+
+minio:
+  persistence:
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

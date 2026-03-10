@@ -5,11 +5,12 @@
  * audit logs. Real HTTP + real DB — zero mocks.
  *
  * Run with:
- *   RUN_ADMIN_E2E=1 pnpm test:e2e
+ *   RUN_ADMIN_E2E=1 bun test:e2e
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import postgres from 'postgres';
-import { setupE2E, cleanupE2E, type E2EContext } from './helpers/setup';
+
+import type postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { cleanupE2E, type E2EContext, setupE2E } from './helpers/setup';
 
 const runAdminE2E = process.env.RUN_ADMIN_E2E === '1';
 
@@ -141,8 +142,8 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
       headers: {
         authorization: `Bearer ${ctx.token}`,
         'content-type': 'application/json',
-        ...(init?.headers ?? {}),
-      },
+        ...(init?.headers ?? {})
+      }
     });
   }
 
@@ -158,7 +159,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     const nonAdminCtx = await setupE2E();
     try {
       const response = await fetch(`${nonAdminCtx.registry}/api/admin/users`, {
-        headers: { authorization: `Bearer ${nonAdminCtx.token}` },
+        headers: { authorization: `Bearer ${nonAdminCtx.token}` }
       });
       expect([401, 403]).toContain(response.status);
     } finally {
@@ -235,7 +236,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   it('prevents admin from changing own role', async () => {
     const res = await adminFetch(`/api/admin/users/${ctx.user.id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ role: 'user' }),
+      body: JSON.stringify({ role: 'user' })
     });
     expect(res.status).toBe(400);
     const body = (await res.json()) as AdminApiResponse;
@@ -246,7 +247,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     // Promote
     const promoteRes = await adminFetch(`/api/admin/users/${targetUserId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ role: 'admin' }),
+      body: JSON.stringify({ role: 'admin' })
     });
     expect(promoteRes.status).toBe(200);
     const promoteBody = (await promoteRes.json()) as AdminApiResponse;
@@ -255,7 +256,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     // Demote back to user
     const demoteRes = await adminFetch(`/api/admin/users/${targetUserId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ role: 'user' }),
+      body: JSON.stringify({ role: 'user' })
     });
     expect(demoteRes.status).toBe(200);
     const demoteBody = (await demoteRes.json()) as AdminApiResponse;
@@ -269,7 +270,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   it('prevents admin from changing own status', async () => {
     const res = await adminFetch(`/api/admin/users/${ctx.user.id}/status`, {
       method: 'POST',
-      body: JSON.stringify({ status: 'banned', reason: 'self-ban attempt' }),
+      body: JSON.stringify({ status: 'banned', reason: 'self-ban attempt' })
     });
     expect(res.status).toBe(400);
   });
@@ -277,7 +278,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   it('requires reason when banning a user', async () => {
     const res = await adminFetch(`/api/admin/users/${targetUser2Id}/status`, {
       method: 'POST',
-      body: JSON.stringify({ status: 'banned' }), // no reason
+      body: JSON.stringify({ status: 'banned' }) // no reason
     });
     expect([400, 422]).toContain(res.status);
   });
@@ -285,7 +286,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   it('bans user and verifies via detail endpoint', async () => {
     const banRes = await adminFetch(`/api/admin/users/${targetUserId}/status`, {
       method: 'POST',
-      body: JSON.stringify({ status: 'banned', reason: 'E2E ban test' }),
+      body: JSON.stringify({ status: 'banned', reason: 'E2E ban test' })
     });
     expect(banRes.status).toBe(200);
 
@@ -298,7 +299,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     // Unban
     const unbanRes = await adminFetch(`/api/admin/users/${targetUserId}/status`, {
       method: 'POST',
-      body: JSON.stringify({ status: 'active' }),
+      body: JSON.stringify({ status: 'active' })
     });
     expect(unbanRes.status).toBe(200);
   });
@@ -307,14 +308,14 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     const expiresAt = new Date(Date.now() + 86_400_000).toISOString();
     const suspendRes = await adminFetch(`/api/admin/users/${targetUser2Id}/status`, {
       method: 'POST',
-      body: JSON.stringify({ status: 'suspended', reason: 'E2E suspension', expiresAt }),
+      body: JSON.stringify({ status: 'suspended', reason: 'E2E suspension', expiresAt })
     });
     expect(suspendRes.status).toBe(200);
 
     // Restore
     const restoreRes = await adminFetch(`/api/admin/users/${targetUser2Id}/status`, {
       method: 'POST',
-      body: JSON.stringify({ status: 'active' }),
+      body: JSON.stringify({ status: 'active' })
     });
     expect(restoreRes.status).toBe(200);
   });
@@ -387,13 +388,10 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
 
   it('quarantines and restores a package', async () => {
     // Quarantine
-    const qRes = await adminFetch(
-      `/api/admin/packages/${encodeName(targetSkillName)}/status`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'quarantined', reason: 'E2E quarantine test' }),
-      },
-    );
+    const qRes = await adminFetch(`/api/admin/packages/${encodeName(targetSkillName)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'quarantined', reason: 'E2E quarantine test' })
+    });
     expect(qRes.status).toBe(200);
     const qBody = (await qRes.json()) as AdminApiResponse;
     expect(qBody.status).toBe('quarantined');
@@ -405,13 +403,10 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     expect(quarantined.some((p) => p.name === targetSkillName)).toBe(true);
 
     // Restore
-    const rRes = await adminFetch(
-      `/api/admin/packages/${encodeName(targetSkillName)}/status`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'active', reason: 'E2E restore test' }),
-      },
-    );
+    const rRes = await adminFetch(`/api/admin/packages/${encodeName(targetSkillName)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'active', reason: 'E2E restore test' })
+    });
     expect(rRes.status).toBe(200);
     expect(((await rRes.json()) as AdminApiResponse).status).toBe('active');
   });
@@ -422,13 +417,10 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
 
   it('features and unfeatures a package', async () => {
     // Feature
-    const fRes = await adminFetch(
-      `/api/admin/packages/${encodeName(targetSkillName)}/feature`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ featured: true }),
-      },
-    );
+    const fRes = await adminFetch(`/api/admin/packages/${encodeName(targetSkillName)}/feature`, {
+      method: 'POST',
+      body: JSON.stringify({ featured: true })
+    });
     expect(fRes.status).toBe(200);
     expect(((await fRes.json()) as AdminApiResponse).featured).toBe(true);
 
@@ -439,13 +431,10 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     expect(featured.some((p) => p.name === targetSkillName)).toBe(true);
 
     // Unfeature
-    const ufRes = await adminFetch(
-      `/api/admin/packages/${encodeName(targetSkillName)}/feature`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ featured: false }),
-      },
-    );
+    const ufRes = await adminFetch(`/api/admin/packages/${encodeName(targetSkillName)}/feature`, {
+      method: 'POST',
+      body: JSON.stringify({ featured: false })
+    });
     expect(ufRes.status).toBe(200);
     expect(((await ufRes.json()) as AdminApiResponse).featured).toBe(false);
   });
@@ -455,29 +444,23 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   // =================================================================
 
   it('removes a package via DELETE', async () => {
-    const res = await adminFetch(
-      `/api/admin/packages/${encodeName(targetSkill2Name)}`,
-      { method: 'DELETE' },
-    );
+    const res = await adminFetch(`/api/admin/packages/${encodeName(targetSkill2Name)}`, { method: 'DELETE' });
     expect(res.status).toBe(200);
     const body = (await res.json()) as AdminApiResponse;
     expect(body.status).toBe('removed');
 
     // Restore for subsequent tests
-    const restoreRes = await adminFetch(
-      `/api/admin/packages/${encodeName(targetSkill2Name)}/status`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'active', reason: 'E2E restore after DELETE' }),
-      },
-    );
+    const restoreRes = await adminFetch(`/api/admin/packages/${encodeName(targetSkill2Name)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'active', reason: 'E2E restore after DELETE' })
+    });
     expect(restoreRes.status).toBe(200);
   });
 
   it('deletes a specific version from a package', async () => {
     const res = await adminFetch(
       `/api/admin/packages/${encodeName(targetSkillName)}/versions/${encodeURIComponent(targetSkillVersion2)}`,
-      { method: 'DELETE' },
+      { method: 'DELETE' }
     );
     expect(res.status).toBe(200);
     const body = (await res.json()) as AdminApiResponse;
@@ -486,24 +469,22 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     const detailRes = await adminFetch(`/api/admin/packages/${encodeName(targetSkillName)}`);
     expect(detailRes.status).toBe(200);
     const detailBody = (await detailRes.json()) as AdminApiResponse;
-    const versions = detailBody.package && typeof detailBody.package === 'object'
-      ? (detailBody.package as { versions?: Array<{ version: string }> }).versions ?? []
-      : [];
+    const versions =
+      detailBody.package && typeof detailBody.package === 'object'
+        ? ((detailBody.package as { versions?: Array<{ version: string }> }).versions ?? [])
+        : [];
     expect(versions.some((versionItem) => versionItem.version === targetSkillVersion2)).toBe(false);
   });
 
   it('force deletes a package with explicit confirmation payload', async () => {
-    const res = await adminFetch(
-      `/api/admin/packages/${encodeName(targetSkill2Name)}?force=true`,
-      {
-        method: 'DELETE',
-        body: JSON.stringify({
-          packageName: targetSkill2Name,
-          confirmText: 'DELETE',
-          reason: 'E2E force delete test',
-        }),
-      },
-    );
+    const res = await adminFetch(`/api/admin/packages/${encodeName(targetSkill2Name)}?force=true`, {
+      method: 'DELETE',
+      body: JSON.stringify({
+        packageName: targetSkill2Name,
+        confirmText: 'DELETE',
+        reason: 'E2E force delete test'
+      })
+    });
     expect(res.status).toBe(200);
     const body = (await res.json()) as AdminApiResponse;
     expect(body.mode).toBe('force');
@@ -520,17 +501,14 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   });
 
   it('bans package publisher and deletes all publisher packages', async () => {
-    const res = await adminFetch(
-      `/api/admin/packages/${encodeName(targetSkillName)}/publisher-ban-delete`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          packageName: targetSkillName,
-          confirmText: 'BAN_DELETE_ALL',
-          reason: 'E2E publisher ban + delete all',
-        }),
-      },
-    );
+    const res = await adminFetch(`/api/admin/packages/${encodeName(targetSkillName)}/publisher-ban-delete`, {
+      method: 'POST',
+      body: JSON.stringify({
+        packageName: targetSkillName,
+        confirmText: 'BAN_DELETE_ALL',
+        reason: 'E2E publisher ban + delete all'
+      })
+    });
     expect(res.status).toBe(200);
     const body = (await res.json()) as AdminApiResponse;
     expect(body.publisherId).toBe(targetPublisherId);
@@ -600,10 +578,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   // =================================================================
 
   it('removes a non-owner member from org', async () => {
-    const res = await adminFetch(
-      `/api/admin/orgs/${targetOrgId}/members/${targetMember2Id}`,
-      { method: 'DELETE' },
-    );
+    const res = await adminFetch(`/api/admin/orgs/${targetOrgId}/members/${targetMember2Id}`, { method: 'DELETE' });
     expect(res.status).toBe(200);
     const body = (await res.json()) as AdminApiResponse;
     expect(body.success).toBe(true);
@@ -617,20 +592,14 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
 
   it('prevents removing last owner from org', async () => {
     // targetMemberId is now the sole owner
-    const res = await adminFetch(
-      `/api/admin/orgs/${targetOrgId}/members/${targetMemberId}`,
-      { method: 'DELETE' },
-    );
+    const res = await adminFetch(`/api/admin/orgs/${targetOrgId}/members/${targetMemberId}`, { method: 'DELETE' });
     expect(res.status).toBe(400);
     const body = (await res.json()) as AdminApiResponse;
     expect(body.error).toBeDefined();
   });
 
   it('returns 404 when removing non-existent member', async () => {
-    const res = await adminFetch(
-      `/api/admin/orgs/${targetOrgId}/members/nonexistent-member-id`,
-      { method: 'DELETE' },
-    );
+    const res = await adminFetch(`/api/admin/orgs/${targetOrgId}/members/nonexistent-member-id`, { method: 'DELETE' });
     expect(res.status).toBe(404);
   });
 
@@ -669,9 +638,7 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
   it('filters audit logs by date range', async () => {
     const startDate = new Date(Date.now() - 3_600_000).toISOString();
     const endDate = new Date(Date.now() + 3_600_000).toISOString();
-    const res = await adminFetch(
-      `/api/admin/audit-logs?startDate=${startDate}&endDate=${endDate}`,
-    );
+    const res = await adminFetch(`/api/admin/audit-logs?startDate=${startDate}&endDate=${endDate}`);
     expect(res.status).toBe(200);
 
     const body = (await res.json()) as AdminApiResponse;
@@ -714,17 +681,9 @@ describe.skipIf(!runAdminE2E)('Admin E2E — comprehensive API coverage', () => 
     expect(actions).toContain('org.member.remove');
 
     // Verify target IDs are correct for key actions
-    expect(
-      events.some((e) => e.action === 'user.ban' && e.targetId === targetUserId),
-    ).toBe(true);
-    expect(
-      events.some((e) => e.action === 'skill.quarantine' && e.targetId === targetSkillId),
-    ).toBe(true);
-    expect(
-      events.some((e) => e.action === 'skill.remove' && e.targetId === targetSkill2Id),
-    ).toBe(true);
-    expect(
-      events.some((e) => e.action === 'user.ban' && e.targetId === targetPublisherId),
-    ).toBe(true);
+    expect(events.some((e) => e.action === 'user.ban' && e.targetId === targetUserId)).toBe(true);
+    expect(events.some((e) => e.action === 'skill.quarantine' && e.targetId === targetSkillId)).toBe(true);
+    expect(events.some((e) => e.action === 'skill.remove' && e.targetId === targetSkill2Id)).toBe(true);
+    expect(events.some((e) => e.action === 'user.ban' && e.targetId === targetPublisherId)).toBe(true);
   });
 });

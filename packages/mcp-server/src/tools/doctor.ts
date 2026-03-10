@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getConfigPath, getConfig } from '../lib/config.js';
 import { TankApiClient } from '../lib/api-client.js';
+import { getConfig, getConfigPath } from '../lib/config.js';
 
 const MIN_NODE_MAJOR = 24;
 
@@ -18,7 +18,7 @@ function checkConfigFile(): CheckResult {
     return {
       name: 'Configuration File',
       status: 'FAIL',
-      message: `Configuration file not found at ${configPath}. Run the login tool to create it.`,
+      message: `Configuration file not found at ${configPath}. Run the login tool to create it.`
     };
   }
 
@@ -28,14 +28,14 @@ function checkConfigFile(): CheckResult {
     return {
       name: 'Configuration File',
       status: 'PASS',
-      message: `Configuration file exists and is valid JSON (${configPath}).`,
+      message: `Configuration file exists and is valid JSON (${configPath}).`
     };
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     return {
       name: 'Configuration File',
       status: 'FAIL',
-      message: `Configuration file at ${configPath} is malformed: ${detail}`,
+      message: `Configuration file at ${configPath} is malformed: ${detail}`
     };
   }
 }
@@ -47,7 +47,7 @@ async function checkAuthentication(): Promise<CheckResult> {
     return {
       name: 'Authentication',
       status: 'FAIL',
-      message: 'Not authenticated. Use the login tool to authenticate with Tank.',
+      message: 'Not authenticated. Use the login tool to authenticate with Tank.'
     };
   }
 
@@ -58,7 +58,7 @@ async function checkAuthentication(): Promise<CheckResult> {
     return {
       name: 'Authentication',
       status: 'PASS',
-      message: `Authenticated as ${name}.`,
+      message: `Authenticated as ${name}.`
     };
   }
 
@@ -66,14 +66,14 @@ async function checkAuthentication(): Promise<CheckResult> {
     return {
       name: 'Authentication',
       status: 'FAIL',
-      message: `Could not verify credentials (network error). ${authCheck.error ?? ''}`.trim(),
+      message: `Could not verify credentials (network error). ${authCheck.error ?? ''}`.trim()
     };
   }
 
   return {
     name: 'Authentication',
     status: 'FAIL',
-    message: 'Credentials are expired or invalid. Use the login tool to re-authenticate.',
+    message: 'Credentials are expired or invalid. Use the login tool to re-authenticate.'
   };
 }
 
@@ -84,27 +84,27 @@ async function checkRegistryConnectivity(): Promise<CheckResult> {
   try {
     const healthUrl = `${registryUrl}/api/health`;
     const response = await fetch(healthUrl, {
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(10_000)
     });
 
     if (response.ok) {
       return {
         name: 'Registry Connectivity',
         status: 'PASS',
-        message: `Registry at ${registryUrl} is reachable.`,
+        message: `Registry at ${registryUrl} is reachable.`
       };
     }
 
     return {
       name: 'Registry Connectivity',
       status: 'FAIL',
-      message: `Registry at ${registryUrl} returned HTTP ${response.status}.`,
+      message: `Registry at ${registryUrl} returned HTTP ${response.status}.`
     };
   } catch {
     return {
       name: 'Registry Connectivity',
       status: 'FAIL',
-      message: `Cannot reach registry at ${registryUrl}. Check your network connection.`,
+      message: `Cannot reach registry at ${registryUrl}. Check your network connection.`
     };
   }
 }
@@ -112,20 +112,20 @@ async function checkRegistryConnectivity(): Promise<CheckResult> {
 function checkNodeVersion(): CheckResult {
   const raw = process.version;
   const match = raw.match(/^v(\d+)/);
-  const major = match ? parseInt(match[1], 10) : 0;
+  const major = match ? Number.parseInt(match[1], 10) : 0;
 
   if (major >= MIN_NODE_MAJOR) {
     return {
       name: 'Node.js Version',
       status: 'PASS',
-      message: `Node.js ${raw} meets the minimum requirement (v${MIN_NODE_MAJOR}.0.0).`,
+      message: `Node.js ${raw} meets the minimum requirement (v${MIN_NODE_MAJOR}.0.0).`
     };
   }
 
   return {
     name: 'Node.js Version',
     status: 'FAIL',
-    message: `Node.js ${raw} is below the minimum required version v${MIN_NODE_MAJOR}.0.0. Please upgrade Node.js.`,
+    message: `Node.js ${raw} is below the minimum required version v${MIN_NODE_MAJOR}.0.0. Please upgrade Node.js.`
   };
 }
 
@@ -170,21 +170,16 @@ function formatChecks(checks: CheckResult[]): string {
 }
 
 export function registerDoctorTool(server: McpServer): void {
-  server.tool(
-    'doctor',
-    'Diagnose Tank setup and environment.',
-    {},
-    async () => {
-      const checks: CheckResult[] = [];
+  server.tool('doctor', 'Diagnose Tank setup and environment.', {}, async () => {
+    const checks: CheckResult[] = [];
 
-      checks.push(checkConfigFile());
-      checks.push(await checkAuthentication());
-      checks.push(await checkRegistryConnectivity());
-      checks.push(checkNodeVersion());
+    checks.push(checkConfigFile());
+    checks.push(await checkAuthentication());
+    checks.push(await checkRegistryConnectivity());
+    checks.push(checkNodeVersion());
 
-      return {
-        content: [{ type: 'text' as const, text: formatChecks(checks) }],
-      };
-    },
-  );
+    return {
+      content: [{ type: 'text' as const, text: formatChecks(checks) }]
+    };
+  });
 }

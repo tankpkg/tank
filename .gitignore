@@ -23,7 +23,8 @@ out/
 
 # IDE
 .idea/
-.vscode/
+.vscode/launch.json
+.vscode/*.local.*
 *.swp
 *.swo
 *~
@@ -50,5 +51,15 @@ Thumbs.db
 # Claude Code
 .claude/settings.local.json
 
+# Python / UV
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+
 # Worktrees
 .worktrees/
+
+# Helm dependency charts (reproducible via `helm dependency build`)
+infra/helm/*/charts/*.tgz

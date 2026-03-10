@@ -1,4 +1,5 @@
-@mcp @link
+@mcp
+@link
 Feature: Skill linking and unlinking via MCP tools
   As an AI agent using the Tank MCP server
   I need to link installed skills into an agent workspace
@@ -9,7 +10,6 @@ Feature: Skill linking and unlinking via MCP tools
     Given the MCP server is running
 
   # ─── link-skill (happy paths) ─────────────────────────────────────────────
-
   @high
   Scenario: Agent links an installed skill into the workspace
     Given the skill "@acme/web-search" is installed at version "2.1.0"
@@ -37,7 +37,6 @@ Feature: Skill linking and unlinking via MCP tools
     And each symlink points to the correct installed version
 
   # ─── link-skill (error cases) ─────────────────────────────────────────────
-
   @high
   Scenario: Agent links a skill that is not installed
     Given the skill "@acme/nonexistent-skill" is not installed
@@ -59,7 +58,6 @@ Feature: Skill linking and unlinking via MCP tools
     And the error message explains that skill names must use the @org/name format
 
   # ─── unlink-skill (happy paths) ───────────────────────────────────────────
-
   @high
   Scenario: Agent unlinks a skill from the workspace
     Given the skill "@acme/web-search" is installed and linked into "/workspace/my-agent"
@@ -76,7 +74,6 @@ Feature: Skill linking and unlinking via MCP tools
     And the tool completes without error
 
   # ─── unlink-skill (error cases) ───────────────────────────────────────────
-
   @high
   Scenario: Agent unlinks a skill that is not installed
     Given the skill "@acme/nonexistent-skill" is not installed

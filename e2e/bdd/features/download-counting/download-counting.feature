@@ -7,7 +7,8 @@ Feature: Weekly download counting
   Background:
     Given a published skill exists in the registry
 
-  @smoke @critical
+  @smoke
+  @critical
   Scenario: Fetching version metadata records a download
     Given the skill has no prior downloads today
     When the version metadata endpoint is fetched

@@ -1,15 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { expect } from '@playwright/test';
-import {
-  Given,
-  When,
-  Then,
-  runTank,
-  expectSuccess,
-  expectFailure,
-  createConsumerFixture,
-} from './fixtures';
+import { createConsumerFixture, expectFailure, expectSuccess, Given, runTank, Then, When } from './fixtures';
 
 type ActorName = 'Alice' | 'Bob' | 'Charlie';
 
@@ -20,7 +12,10 @@ function resolveSkillName(skillName: string, orgSlug: string): string {
   return `@${orgSlug}/${skillName}`;
 }
 
-function resolveHome(actor: ActorName, fixtures: { e2eContext: { home: string }; secondUser: { home: string }; thirdUser: { home: string } }): string {
+function resolveHome(
+  actor: ActorName,
+  fixtures: { e2eContext: { home: string }; secondUser: { home: string }; thirdUser: { home: string } }
+): string {
   if (actor === 'Alice') {
     return fixtures.e2eContext.home;
   }
@@ -30,13 +25,16 @@ function resolveHome(actor: ActorName, fixtures: { e2eContext: { home: string };
   return fixtures.thirdUser.home;
 }
 
-Given('Alice has published a private skill {string}', async ({ e2eContext, publishedPrivateSkill, bddState }, skillName: string) => {
-  const resolved = resolveSkillName(skillName, e2eContext.orgSlug);
-  if (resolved !== publishedPrivateSkill.name) {
-    throw new Error(`Expected published private skill to be ${resolved}, got ${publishedPrivateSkill.name}`);
+Given(
+  'Alice has published a private skill {string}',
+  async ({ e2eContext, publishedPrivateSkill, bddState }, skillName: string) => {
+    const resolved = resolveSkillName(skillName, e2eContext.orgSlug);
+    if (resolved !== publishedPrivateSkill.name) {
+      throw new Error(`Expected published private skill to be ${resolved}, got ${publishedPrivateSkill.name}`);
+    }
+    bddState.skillName = resolved;
   }
-  bddState.skillName = resolved;
-});
+);
 
 Given("Bob is an authenticated member of Alice's organization", async ({ secondUser }) => {
   expect(secondUser.token.length).toBeGreaterThan(0);
@@ -46,36 +44,45 @@ Given("Charlie is authenticated but not in Alice's organization", async ({ third
   expect(thirdUser.token.length).toBeGreaterThan(0);
 });
 
-When('{word} requests info for {string}', async ({ e2eContext, secondUser, thirdUser, bddState }, actor: ActorName, skillName: string) => {
-  const name = resolveSkillName(skillName, e2eContext.orgSlug);
-  const home = resolveHome(actor, { e2eContext, secondUser, thirdUser });
-  bddState.skillName = name;
-  bddState.lastActor = actor;
-  bddState.lastResult = await runTank(['info', name], { home });
-});
+When(
+  '{word} requests info for {string}',
+  async ({ e2eContext, secondUser, thirdUser, bddState }, actor: ActorName, skillName: string) => {
+    const name = resolveSkillName(skillName, e2eContext.orgSlug);
+    const home = resolveHome(actor, { e2eContext, secondUser, thirdUser });
+    bddState.skillName = name;
+    bddState.lastActor = actor;
+    bddState.lastResult = await runTank(['info', name], { home });
+  }
+);
 
-When('an unauthenticated user requests info for {string}', async ({ e2eContext, noAuthHome, bddState }, skillName: string) => {
-  const name = resolveSkillName(skillName, e2eContext.orgSlug);
-  bddState.skillName = name;
-  bddState.lastActor = 'Unauthenticated';
-  bddState.lastResult = await runTank(['info', name], { home: noAuthHome });
-});
+When(
+  'an unauthenticated user requests info for {string}',
+  async ({ e2eContext, noAuthHome, bddState }, skillName: string) => {
+    const name = resolveSkillName(skillName, e2eContext.orgSlug);
+    bddState.skillName = name;
+    bddState.lastActor = 'Unauthenticated';
+    bddState.lastResult = await runTank(['info', name], { home: noAuthHome });
+  }
+);
 
-When('{word} tries to install {string}', async ({ e2eContext, secondUser, thirdUser, bddState }, actor: ActorName, skillName: string) => {
-  const name = resolveSkillName(skillName, e2eContext.orgSlug);
-  const home = resolveHome(actor, { e2eContext, secondUser, thirdUser });
-  const consumer = createConsumerFixture();
+When(
+  '{word} tries to install {string}',
+  async ({ e2eContext, secondUser, thirdUser, bddState }, actor: ActorName, skillName: string) => {
+    const name = resolveSkillName(skillName, e2eContext.orgSlug);
+    const home = resolveHome(actor, { e2eContext, secondUser, thirdUser });
+    const consumer = createConsumerFixture();
 
-  bddState.tempDirs.push(consumer.dir);
-  bddState.consumerDir = consumer.dir;
-  bddState.skillName = name;
-  bddState.lastActor = actor;
-  bddState.lastResult = await runTank(['install', name], {
-    cwd: consumer.dir,
-    home,
-    timeoutMs: 60_000,
-  });
-});
+    bddState.tempDirs.push(consumer.dir);
+    bddState.consumerDir = consumer.dir;
+    bddState.skillName = name;
+    bddState.lastActor = actor;
+    bddState.lastResult = await runTank(['install', name], {
+      cwd: consumer.dir,
+      home,
+      timeoutMs: 60_000
+    });
+  }
+);
 
 Then('{word} should see the skill metadata', async ({ bddState }, actor: ActorName) => {
   if (!bddState.lastResult || !bddState.skillName) {

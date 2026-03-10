@@ -1,4 +1,5 @@
-@mcp @auth
+@mcp
+@auth
 Feature: Authentication management via MCP tools
   As an AI agent using the Tank MCP server
   I need to manage authentication state
@@ -8,7 +9,6 @@ Feature: Authentication management via MCP tools
     Given the MCP server is running
 
   # ─── logout ───────────────────────────────────────────────────────────────
-
   @high
   Scenario: Agent clears credentials when user is authenticated
     Given Emma is authenticated with Tank
@@ -31,7 +31,6 @@ Feature: Authentication management via MCP tools
     And the "whoami" tool reports that no user is logged in
 
   # ─── whoami ───────────────────────────────────────────────────────────────
-
   @high
   Scenario: Agent retrieves identity when user is authenticated
     Given Emma is authenticated with Tank

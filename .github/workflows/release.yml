@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: write
@@ -57,36 +57,33 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Enable pnpm
-        run: corepack enable
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Inject version from git tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          node -e "const p=require('./apps/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./apps/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
+          node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
 
       - name: Build bundle and binary
-        working-directory: apps/cli
+        working-directory: packages/cli
         env:
           TARGET: ${{ matrix.target }}
           OUTPUT_NAME: ${{ matrix.output }}
         run: |
-          pnpm --filter @tank/shared build
-          pnpm run build
-          pnpm run build:bundle
-          pnpm run build:sea
+          bun --filter @internal/shared run build
+          bun run build
+          bun run build:bundle
+          bun run build:sea
 
       - name: Package tarball (unix)
         if: runner.os != 'Windows'
-        working-directory: apps/cli/build
+        working-directory: packages/cli/build
         run: tar -czf ${{ matrix.output }}.tar.gz ${{ matrix.output }}
 
       - name: Package zip (windows)
         if: runner.os == 'Windows'
-        working-directory: apps/cli/build
+        working-directory: packages/cli/build
         shell: pwsh
         run: Compress-Archive -Path ${{ matrix.output }} -DestinationPath tank-windows-x64.zip
 
@@ -110,8 +107,8 @@ jobs:
         with:
           name: ${{ matrix.output }}
           path: |
-            apps/cli/build/${{ matrix.output }}
-            apps/cli/build/${{ matrix.output }}.tar.gz
+            packages/cli/build/${{ matrix.output }}
+            packages/cli/build/${{ matrix.output }}.tar.gz
           if-no-files-found: error
 
       - name: Upload Windows artifacts
@@ -120,10 +117,10 @@ jobs:
         with:
           name: ${{ matrix.output }}
           path: |
-            apps/cli/build/${{ matrix.output }}
-            apps/cli/build/tank-windows-x64.zip
-            apps/cli/build/tank-windows-x64-setup.exe
-          if-no-files-found: warn
+            packages/cli/build/${{ matrix.output }}
+            packages/cli/build/tank-windows-x64.zip
+            packages/cli/build/tank-windows-x64-setup.exe
+          if-no-files-found: error
 
   release:
     name: create-release
@@ -271,36 +268,38 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
-      - name: Enable pnpm
-        run: corepack enable
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Inject version from git tag
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          node -e "const p=require('./apps/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./apps/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
+          node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
           node -e "const p=require('./packages/mcp-server/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/mcp-server/package.json', JSON.stringify(p, null, 2)+'\n')"
 
       - name: Build packages
         run: |
-          pnpm --filter @tank/shared build
-          pnpm --filter ./apps/cli build
-          pnpm --filter @tankpkg/mcp-server build
+          bun --filter @internal/shared run build
+          bun --filter @tankpkg/cli run build
+          bun --filter @tankpkg/mcp-server run build
 
       - name: Publish CLI to npm
         continue-on-error: true
         if: ${{ env.NPM_TOKEN != '' }}
-        working-directory: apps/cli
+        working-directory: packages/cli
+        run: npm publish --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
-        run: pnpm publish --no-git-checks --access public
 
       - name: Publish MCP server to npm
         continue-on-error: true
         if: ${{ env.NPM_TOKEN != '' }}
         working-directory: packages/mcp-server
+        run: npm publish --no-git-checks --access public
         env:
           NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
-        run: pnpm publish --no-git-checks --access public

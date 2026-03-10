@@ -36,8 +36,8 @@ echo "3. Saving configuration templates..."
 if [ -f ".env.example.onprem" ]; then
     cp .env.example.onprem "$BACKUP_DIR/env.template"
 fi
-if [ -f "docker-compose.yml" ]; then
-    cp docker-compose.yml "$BACKUP_DIR/"
+if [ -f "infra/docker-compose.yml" ]; then
+    cp infra/docker-compose.yml "$BACKUP_DIR/"
 fi
 
 echo ""

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, type SkillsJson, skillsJsonSchema } from '@internal/shared';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { skillsJsonSchema, type SkillsJson, MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME } from '@tank/shared';
 import { z } from 'zod';
 
 const SCOPED_NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
@@ -15,20 +15,20 @@ export function registerInitSkillTool(server: McpServer): void {
       name: z.string().regex(SCOPED_NAME_PATTERN, 'Name must be in @org/name format'),
       version: z.string().regex(SEMVER_PATTERN, 'Version must be valid semver').optional().default('0.1.0'),
       description: z.string().optional().default(''),
-      directory: z.string().optional().default('.'),
+      directory: z.string().optional().default('.')
     },
     async ({ name, version = '0.1.0', description = '', directory = '.' }) => {
       const targetDir = path.resolve(directory);
 
       if (!fs.existsSync(targetDir)) {
         return {
-          content: [{ type: 'text' as const, text: `Directory does not exist: ${targetDir}` }],
+          content: [{ type: 'text' as const, text: `Directory does not exist: ${targetDir}` }]
         };
       }
 
       if (!fs.statSync(targetDir).isDirectory()) {
         return {
-          content: [{ type: 'text' as const, text: `Path is not a directory: ${targetDir}` }],
+          content: [{ type: 'text' as const, text: `Path is not a directory: ${targetDir}` }]
         };
       }
 
@@ -39,7 +39,12 @@ export function registerInitSkillTool(server: McpServer): void {
       if (fs.existsSync(newManifestPath) || fs.existsSync(legacyManifestPath)) {
         const existingFile = fs.existsSync(newManifestPath) ? MANIFEST_FILENAME : LEGACY_MANIFEST_FILENAME;
         return {
-          content: [{ type: 'text' as const, text: `${existingFile} already exists at ${targetDir}. Aborting to avoid overwrite.` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `${existingFile} already exists at ${targetDir}. Aborting to avoid overwrite.`
+            }
+          ]
         };
       }
 
@@ -51,8 +56,8 @@ export function registerInitSkillTool(server: McpServer): void {
         permissions: {
           network: { outbound: [] },
           filesystem: { read: [], write: [] },
-          subprocess: false,
-        },
+          subprocess: false
+        }
       };
 
       const parseResult = skillsJsonSchema.safeParse(manifest);
@@ -62,11 +67,11 @@ export function registerInitSkillTool(server: McpServer): void {
           .join('; ');
 
         return {
-          content: [{ type: 'text' as const, text: `Failed to create ${MANIFEST_FILENAME}: ${details}` }],
+          content: [{ type: 'text' as const, text: `Failed to create ${MANIFEST_FILENAME}: ${details}` }]
         };
       }
 
-      fs.writeFileSync(skillsJsonPath, JSON.stringify(manifest, null, 2) + '\n', 'utf-8');
+      fs.writeFileSync(skillsJsonPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf-8');
 
       const skillMdPath = path.join(targetDir, 'SKILL.md');
       let createdSkillMd = false;
@@ -76,18 +81,16 @@ export function registerInitSkillTool(server: McpServer): void {
         createdSkillMd = true;
       }
 
-      const skillMdLine = createdSkillMd
-        ? `Created: ${skillMdPath}`
-        : `Skipped existing: ${skillMdPath}`;
+      const skillMdLine = createdSkillMd ? `Created: ${skillMdPath}` : `Skipped existing: ${skillMdPath}`;
 
       return {
         content: [
           {
             type: 'text' as const,
-            text: `Initialized skill in ${targetDir}\nCreated: ${skillsJsonPath}\n${skillMdLine}`,
-          },
-        ],
+            text: `Initialized skill in ${targetDir}\nCreated: ${skillsJsonPath}\n${skillMdLine}`
+          }
+        ]
       };
-    },
+    }
   );
 }

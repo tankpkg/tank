@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { skillsLockSchema } from '../schemas/skills-lock.js';
 
 describe('skillsLockSchema', () => {
@@ -11,17 +11,17 @@ describe('skillsLockSchema', () => {
         permissions: {
           network: { outbound: ['*.vercel.com'] },
           filesystem: { read: ['./src/**'] },
-          subprocess: false,
+          subprocess: false
         },
-        audit_score: 8.5,
+        audit_score: 8.5
       },
       '@community/seo-audit@3.0.0': {
         resolved: 'https://tankpkg.dev/v1/skills/@community/seo-audit/3.0.0',
         integrity: 'sha512-xyz789',
         permissions: {},
-        audit_score: null,
-      },
-    },
+        audit_score: null
+      }
+    }
   };
 
   it('accepts valid lockfile', () => {
@@ -32,7 +32,7 @@ describe('skillsLockSchema', () => {
   it('accepts lockfile with empty skills', () => {
     const result = skillsLockSchema.safeParse({
       lockfileVersion: 1,
-      skills: {},
+      skills: {}
     });
     expect(result.success).toBe(true);
   });
@@ -45,16 +45,16 @@ describe('skillsLockSchema', () => {
           resolved: 'https://tankpkg.dev/v1/skills/test-skill/1.0.0',
           integrity: 'sha512-abc',
           permissions: {},
-          audit_score: null,
-        },
-      },
+          audit_score: null
+        }
+      }
     });
     expect(result.success).toBe(true);
   });
 
   it('rejects missing lockfileVersion', () => {
     const result = skillsLockSchema.safeParse({
-      skills: {},
+      skills: {}
     });
     expect(result.success).toBe(false);
   });
@@ -62,7 +62,7 @@ describe('skillsLockSchema', () => {
   it('rejects wrong lockfileVersion', () => {
     const result = skillsLockSchema.safeParse({
       lockfileVersion: 99,
-      skills: {},
+      skills: {}
     });
     expect(result.success).toBe(false);
   });
@@ -70,7 +70,7 @@ describe('skillsLockSchema', () => {
   it('accepts lockfileVersion 2', () => {
     const result = skillsLockSchema.safeParse({
       lockfileVersion: 2,
-      skills: {},
+      skills: {}
     });
     expect(result.success).toBe(true);
   });
@@ -84,9 +84,9 @@ describe('skillsLockSchema', () => {
           integrity: 'sha512-abc',
           permissions: {},
           audit_score: 8.0,
-          dependencies: { '@dep/helper': '1.2.0' },
-        },
-      },
+          dependencies: { '@dep/helper': '1.2.0' }
+        }
+      }
     });
     expect(result.success).toBe(true);
   });
@@ -99,9 +99,9 @@ describe('skillsLockSchema', () => {
           resolved: 'https://tankpkg.dev/v1/skills/test-skill/1.0.0',
           integrity: 'sha512-abc',
           permissions: {},
-          audit_score: null,
-        },
-      },
+          audit_score: null
+        }
+      }
     });
     expect(result.success).toBe(true);
   });
@@ -114,9 +114,9 @@ describe('skillsLockSchema', () => {
           resolved: 'https://tankpkg.dev/v1/skills/test/1.0.0',
           integrity: 'sha256-abc123',
           permissions: {},
-          audit_score: null,
-        },
-      },
+          audit_score: null
+        }
+      }
     });
     expect(result.success).toBe(false);
   });
@@ -129,9 +129,9 @@ describe('skillsLockSchema', () => {
           resolved: 'https://tankpkg.dev/v1/skills/test/1.0.0',
           integrity: 'abc123',
           permissions: {},
-          audit_score: null,
-        },
-      },
+          audit_score: null
+        }
+      }
     });
     expect(result.success).toBe(false);
   });
@@ -144,16 +144,16 @@ describe('skillsLockSchema', () => {
           resolved: 'not-a-url',
           integrity: 'sha512-abc123',
           permissions: {},
-          audit_score: null,
-        },
-      },
+          audit_score: null
+        }
+      }
     });
     expect(result.success).toBe(false);
   });
 
   it('rejects missing skills field', () => {
     const result = skillsLockSchema.safeParse({
-      lockfileVersion: 1,
+      lockfileVersion: 1
     });
     expect(result.success).toBe(false);
   });
@@ -166,9 +166,9 @@ describe('skillsLockSchema', () => {
           resolved: 'https://tankpkg.dev/v1/skills/test/1.0.0',
           integrity: 'sha512-abc123',
           permissions: {},
-          audit_score: 11,
-        },
-      },
+          audit_score: 11
+        }
+      }
     });
     expect(result.success).toBe(false);
   });
@@ -181,9 +181,9 @@ describe('skillsLockSchema', () => {
           resolved: 'https://tankpkg.dev/v1/skills/test/1.0.0',
           integrity: 'sha512-abc123',
           permissions: {},
-          audit_score: -1,
-        },
-      },
+          audit_score: -1
+        }
+      }
     });
     expect(result.success).toBe(false);
   });
@@ -195,9 +195,9 @@ describe('skillsLockSchema', () => {
         'test@1.0.0': {
           resolved: 'https://tankpkg.dev/v1/skills/test/1.0.0',
           integrity: 'sha512-abc123',
-          audit_score: null,
-        },
-      },
+          audit_score: null
+        }
+      }
     });
     expect(result.success).toBe(false);
   });
