@@ -3,7 +3,7 @@ name = "tank-scanner"
 version = "2.0.0"
 description = "Tank Security Scanner - FastAPI-based security scanner for Claude Code skills"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
     "pydantic>=2.0.0",

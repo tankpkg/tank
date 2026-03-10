@@ -13,14 +13,14 @@ FastAPI-based security scanner for Claude Code skills.
 ## Local Development
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (using uv)
+uv sync
 
 # Run development server
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 
 # Run tests
-pytest
+uv run pytest
 
 # Run with Docker
 docker build -t tank-scanner .
@@ -60,6 +60,7 @@ ModuleNotFoundError: No module named 'fastapi'
 ### Deployment Configuration
 
 - **Runtime**: Python 3.14 (specified in `.python-version`)
+- **Package Manager**: uv (fast Python package installer)
 - **Dependencies**: `pyproject.toml` (modern Python packaging)
 - **Entrypoint**: `index.py` (imports FastAPI app from `api/main.py`)
 - **Framework**: Auto-detected by Vercel
