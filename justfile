@@ -6,6 +6,12 @@
 install:
     bun install
 
+# Install git pre-push hook
+[group('setup')]
+hooks:
+    ln -sf ../../scripts/pre-push .git/hooks/pre-push
+    @echo "✓ Pre-push hook installed"
+
 # Verify toolchain versions
 [group('setup')]
 doctor:

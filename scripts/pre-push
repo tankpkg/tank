@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Smart pre-push hook: only lint/check projects with staged changes.
+# Install: ln -sf ../../scripts/pre-push .git/hooks/pre-push
+# Manual:  ./scripts/pre-push
+set -euo pipefail
+
+# Determine changed files: diff against the remote tracking branch,
+# or against HEAD if no remote is set (first push).
+REMOTE_REF=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || echo "")
+if [ -n "$REMOTE_REF" ]; then
+  CHANGED=$(git diff --name-only "$REMOTE_REF"...HEAD 2>/dev/null || git diff --name-only HEAD~1)
+else
+  # First push — check all files in last commit
+  CHANGED=$(git diff --name-only HEAD~1 2>/dev/null || git diff --name-only --cached)
+fi
+
+if [ -z "$CHANGED" ]; then
+  echo "pre-push: no changed files detected, skipping."
+  exit 0
+fi
+
+FAILED=0
+
+# ── Python scanner ──────────────────────────────────────────────────
+if echo "$CHANGED" | grep -q "^packages/scanner/"; then
+  echo "▸ packages/scanner changed — running Python checks"
+
+  echo "  ├─ ruff check"
+  if ! uvx ruff check --config packages/scanner/pyproject.toml packages/scanner/; then
+    echo "  │  ✗ ruff check failed"
+    FAILED=1
+  else
+    echo "  │  ✓ ruff check passed"
+  fi
+
+  echo "  ├─ ruff format --check"
+  if ! uvx ruff format --check --config packages/scanner/pyproject.toml packages/scanner/ > /dev/null 2>&1; then
+    echo "  │  ✗ ruff format check failed (run: just fmt-python)"
+    FAILED=1
+  else
+    echo "  │  ✓ ruff format passed"
+  fi
+
+  echo "  └─ pytest"
+  if ! (cd packages/scanner && PYTHONPATH=. uv run pytest lib/scan/test_snyk_scanner.py lib/scan/test_llm_analyzer.py -q 2>/dev/null); then
+    echo "     ✗ pytest failed"
+    FAILED=1
+  else
+    echo "     ✓ pytest passed"
+  fi
+fi
+
+# ── TypeScript packages (cli, web, mcp-server, shared) ──────────────
+TS_PACKAGES=("packages/cli" "packages/web" "packages/mcp-server" "packages/shared")
+TS_CHANGED=0
+for pkg in "${TS_PACKAGES[@]}"; do
+  if echo "$CHANGED" | grep -q "^${pkg}/"; then
+    TS_CHANGED=1
+    break
+  fi
+done
+
+if [ "$TS_CHANGED" -eq 1 ]; then
+  echo "▸ TypeScript packages changed — running JS/TS checks"
+
+  echo "  ├─ biome check"
+  if ! bun biome ci --linter-enabled=false --assist-enabled=false . > /dev/null 2>&1; then
+    echo "  │  ✗ biome format check failed (run: just fmt)"
+    FAILED=1
+  else
+    echo "  │  ✓ biome format passed"
+  fi
+
+  echo "  ├─ lint"
+  if ! bun run lint > /dev/null 2>&1; then
+    echo "  │  ✗ lint failed (run: just lint-fix)"
+    FAILED=1
+  else
+    echo "  │  ✓ lint passed"
+  fi
+
+  echo "  └─ typecheck"
+  if ! bun tsc -b --noEmit > /dev/null 2>&1; then
+    echo "     ✗ typecheck failed"
+    FAILED=1
+  else
+    echo "     ✓ typecheck passed"
+  fi
+fi
+
+# ── Root config / CI changes ────────────────────────────────────────
+if echo "$CHANGED" | grep -qE "^(\.github/|biome\.json|tsconfig|package\.json|justfile)"; then
+  echo "▸ Root config changed — running full verification"
+
+  if ! bun biome ci --linter-enabled=false --assist-enabled=false . > /dev/null 2>&1; then
+    echo "  ✗ biome format check failed"
+    FAILED=1
+  fi
+fi
+
+# ── Result ──────────────────────────────────────────────────────────
+echo ""
+if [ "$FAILED" -ne 0 ]; then
+  echo "✗ Pre-push checks failed. Fix issues above before pushing."
+  echo "  Bypass with: git push --no-verify"
+  exit 1
+else
+  echo "✓ All pre-push checks passed."
+  exit 0
+fi

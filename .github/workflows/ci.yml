@@ -99,8 +99,11 @@ jobs:
       - name: Run Python tests
         run: cd packages/scanner && PYTHONPATH=. uv run pytest lib/scan/test_llm_analyzer.py -v
 
-      - name: Ruff check
+      - name: Ruff lint
         run: uv run ruff check packages/scanner
+
+      - name: Ruff format check
+        run: uv run ruff format --check packages/scanner
 
   performance:
     runs-on: ubuntu-latest
@@ -200,4 +203,3 @@ jobs:
           path: packages/web/perf/results/*.json
           if-no-files-found: warn
           retention-days: 30
-
