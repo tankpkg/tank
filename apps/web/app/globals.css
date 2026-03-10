@@ -50,6 +50,13 @@
 
 :root {
   --radius: 0.625rem;
+
+  /* Brand customization variables (override via BrandProvider) */
+  --brand-primary: #10b981;
+  --brand-secondary: #3b82f6;
+  --brand-accent: #f59e0b;
+  --brand-background: #0f172a;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);

@@ -1,10 +1,12 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { headers } from 'next/headers';
 import { Suspense } from 'react';
 import { auth } from '@/lib/auth';
 import { SearchTrigger } from '@/components/search-trigger';
 import { Navbar } from '@/components/navbar';
+import { Logo } from '@/components/logo';
+import { Footer } from '@/components/footer';
+import { getBrandConfig } from '@/lib/branding';
 
 async function AuthLink() {
   const session = await auth.api.getSession({
@@ -41,15 +43,14 @@ export default function RegistryLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const brand = getBrandConfig();
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b" style={{ position: 'sticky', top: 0, zIndex: 40, backgroundColor: 'hsl(var(--background) / 0.8)', backdropFilter: 'blur(12px)' }}>
         <div className="container mx-auto h-14 px-4" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
-            <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
-              <Image src="/logo.png" alt="Tank" width={24} height={24} className="rounded-sm" />
-              Tank
-            </Link>
+            <Logo tight />
             <Navbar />
           </div>
           <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '28rem', pointerEvents: 'auto' }}>
@@ -62,7 +63,8 @@ export default function RegistryLayout({
           </div>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-8">{children}</main>
+      <main className="container mx-auto px-4 py-8 flex-1">{children}</main>
+      <Footer />
     </div>
   );
 }
