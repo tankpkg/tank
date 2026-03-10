@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+
 from lib.scan.models import Finding, IngestResult, StageResult
 
 # Configuration

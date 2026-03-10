@@ -9,6 +9,8 @@ import time
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException
+from pydantic import BaseModel
+
 from lib.scan.models import ScanVerdict, StageResult
 from lib.scan.stage0_ingest import cleanup_ingest, stage0_ingest
 from lib.scan.stage1_structure import stage1_validate
@@ -17,7 +19,6 @@ from lib.scan.stage3_injection import stage3_detect_injection
 from lib.scan.stage4_secrets import stage4_scan_secrets
 from lib.scan.stage5_supply import stage5_audit_deps
 from lib.scan.verdict import compute_verdict
-from pydantic import BaseModel
 
 app = FastAPI(title="Tank Rescan", version="1.0.0")
 

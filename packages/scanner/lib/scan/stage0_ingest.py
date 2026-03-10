@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 
 import httpx
+
 from lib.scan.models import Finding, IngestResult, StageResult
 
 # Configuration

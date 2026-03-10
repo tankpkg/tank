@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+
 from lib.scan.models import Finding
 
 logger = logging.getLogger(__name__)

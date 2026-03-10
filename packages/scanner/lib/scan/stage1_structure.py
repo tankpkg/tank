@@ -9,6 +9,7 @@ import unicodedata
 from pathlib import Path
 
 from charset_normalizer import from_bytes
+
 from lib.scan.models import Finding, IngestResult, StageResult
 
 # Dangerous Unicode codepoints
