@@ -12,7 +12,6 @@ Endpoints:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from lib.scan.llm_analyzer import check_llm_health
 
 from api.analyze.index import app as analyze_index_app
 from api.analyze.permissions import app as permissions_app
@@ -21,6 +20,7 @@ from api.analyze.rescan import app as rescan_app
 # Import individual API apps
 from api.analyze.scan import app as scan_app
 from api.analyze.security import app as security_app
+from lib.scan.llm_analyzer import check_llm_health
 
 # Create main app
 app = FastAPI(
