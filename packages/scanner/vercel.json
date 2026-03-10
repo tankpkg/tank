@@ -1,5 +1,9 @@
 {
-  "installCommand": "pip install -r requirements.txt",
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "python3.12"
+    }
+  },
   "rewrites": [{ "source": "/(.*)", "destination": "/index" }],
   "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"main\" ]; then exit 1; fi; exit 0"
 }
