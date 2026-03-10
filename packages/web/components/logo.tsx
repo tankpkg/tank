@@ -14,14 +14,7 @@ export function Logo({ tight = false, className = '' }: LogoProps) {
 
   return (
     <Link href="/" className={`flex items-center gap-2.5 ${className}`}>
-      <Image
-        src={src}
-        alt={altText}
-        width={tight ? 32 : 120}
-        height={tight ? 32 : 40}
-        className={className}
-        priority
-      />
+      <Image src={src} alt={altText} width={tight ? 32 : 120} height={tight ? 32 : 40} className={className} priority />
       <span className="text-sm font-semibold">{brand.name}</span>
     </Link>
   );

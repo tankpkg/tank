@@ -61,7 +61,7 @@ export const DEFAULT_BRAND: BrandConfig = {
   url: 'https://tankpkg.dev',
   logo: {
     default: '/logo.png',
-    tight: '/logo-tight.png',
+    tight: '/logo-tight.png'
   },
   favicon: '/favicon.ico',
   ogImage: '/og-default.png',
@@ -69,18 +69,18 @@ export const DEFAULT_BRAND: BrandConfig = {
     primary: '10b981', // emerald-400
     secondary: '3b82f6', // blue-500
     accent: 'f59e0b', // amber-500
-    background: '0f172a', // slate-900
+    background: '0f172a' // slate-900
   },
   darkColors: {
     primary: '10b981',
     secondary: '3b82f6',
     accent: 'f59e0b',
-    background: '0f172a',
+    background: '0f172a'
   },
   social: {
     twitter: '@tankpkg',
-    github: 'tankpkg/tank',
-  },
+    github: 'tankpkg/tank'
+  }
 };
 
 /**

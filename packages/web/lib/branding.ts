@@ -3,8 +3,8 @@
  * Reads environment variables and provides typed brand config
  */
 
-import type { BrandConfig, BrandEnvVars } from '@tank/shared';
-import { DEFAULT_BRAND, isValidHexColor } from '@tank/shared';
+import type { BrandConfig, BrandEnvVars } from '@internal/shared';
+import { DEFAULT_BRAND, isValidHexColor } from '@internal/shared';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -44,7 +44,7 @@ export function getBrandConfig(): BrandConfig {
     url: env.BRAND_URL || DEFAULT_BRAND.url,
     logo: {
       default: env.BRAND_LOGO_URL || DEFAULT_BRAND.logo.default,
-      tight: env.BRAND_LOGO_TIGHT_URL || DEFAULT_BRAND.logo.tight,
+      tight: env.BRAND_LOGO_TIGHT_URL || DEFAULT_BRAND.logo.tight
     },
     favicon: env.BRAND_FAVICON_URL || DEFAULT_BRAND.favicon,
     ogImage: env.BRAND_OG_IMAGE_URL || DEFAULT_BRAND.ogImage,
@@ -52,19 +52,31 @@ export function getBrandConfig(): BrandConfig {
       primary: parseHexColor(env.BRAND_COLOR_PRIMARY) || DEFAULT_BRAND.colors.primary,
       secondary: parseHexColor(env.BRAND_COLOR_SECONDARY) || DEFAULT_BRAND.colors.secondary,
       accent: parseHexColor(env.BRAND_COLOR_ACCENT) || DEFAULT_BRAND.colors.accent,
-      background: parseHexColor(env.BRAND_COLOR_BACKGROUND) || DEFAULT_BRAND.colors.background,
+      background: parseHexColor(env.BRAND_COLOR_BACKGROUND) || DEFAULT_BRAND.colors.background
     },
     darkColors: {
-      primary: parseHexColor(env.BRAND_COLOR_DARK_PRIMARY) || parseHexColor(env.BRAND_COLOR_PRIMARY) || DEFAULT_BRAND.darkColors!.primary,
-      secondary: parseHexColor(env.BRAND_COLOR_DARK_SECONDARY) || parseHexColor(env.BRAND_COLOR_SECONDARY) || DEFAULT_BRAND.darkColors!.secondary,
-      accent: parseHexColor(env.BRAND_COLOR_DARK_ACCENT) || parseHexColor(env.BRAND_COLOR_ACCENT) || DEFAULT_BRAND.darkColors!.accent,
-      background: parseHexColor(env.BRAND_COLOR_DARK_BACKGROUND) || parseHexColor(env.BRAND_COLOR_BACKGROUND) || DEFAULT_BRAND.darkColors!.background,
+      primary:
+        parseHexColor(env.BRAND_COLOR_DARK_PRIMARY) ||
+        parseHexColor(env.BRAND_COLOR_PRIMARY) ||
+        DEFAULT_BRAND.darkColors!.primary,
+      secondary:
+        parseHexColor(env.BRAND_COLOR_DARK_SECONDARY) ||
+        parseHexColor(env.BRAND_COLOR_SECONDARY) ||
+        DEFAULT_BRAND.darkColors!.secondary,
+      accent:
+        parseHexColor(env.BRAND_COLOR_DARK_ACCENT) ||
+        parseHexColor(env.BRAND_COLOR_ACCENT) ||
+        DEFAULT_BRAND.darkColors!.accent,
+      background:
+        parseHexColor(env.BRAND_COLOR_DARK_BACKGROUND) ||
+        parseHexColor(env.BRAND_COLOR_BACKGROUND) ||
+        DEFAULT_BRAND.darkColors!.background
     },
     social: {
       twitter: env.BRAND_TWITTER || DEFAULT_BRAND.social.twitter,
       github: env.BRAND_GITHUB || DEFAULT_BRAND.social.github,
-      email: env.BRAND_SUPPORT_EMAIL || DEFAULT_BRAND.social.email,
-    },
+      email: env.BRAND_SUPPORT_EMAIL || DEFAULT_BRAND.social.email
+    }
   };
 
   // Only cache in production to allow dev-time changes
@@ -94,7 +106,7 @@ export function getBrandCssVars(darkMode = false): Record<string, string> {
     '--brand-primary': `#${colors.primary}`,
     '--brand-secondary': `#${colors.secondary}`,
     '--brand-accent': `#${colors.accent}`,
-    '--brand-background': `#${colors.background}`,
+    '--brand-background': `#${colors.background}`
   };
 }
 

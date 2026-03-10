@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { getBrandConfig, getBrandCssVars } from '@/lib/branding';
-import type { BrandConfig } from '@tank/shared';
+import type { BrandConfig } from '@internal/shared';
 
 interface BrandContextValue {
   brand: BrandConfig;
@@ -45,11 +45,7 @@ export function BrandProvider({ children, initialDarkMode = false }: BrandProvid
     });
   }, []);
 
-  return (
-    <BrandContext.Provider value={{ brand, isDarkMode: initialDarkMode }}>
-      {children}
-    </BrandContext.Provider>
-  );
+  return <BrandContext.Provider value={{ brand, isDarkMode: initialDarkMode }}>{children}</BrandContext.Provider>;
 }
 
 /**

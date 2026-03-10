@@ -19,7 +19,9 @@ export function Footer() {
             <Link href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
               Docs
             </Link>
-            <Link href="https://github.com/tankpkg/tank" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link
+              href="https://github.com/tankpkg/tank"
+              className="text-sm text-muted-foreground hover:text-foreground">
               GitHub
             </Link>
           </div>
@@ -32,8 +34,7 @@ export function Footer() {
             href="https://tankpkg.dev"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
-          >
+            className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors">
             Tank
           </Link>
         </div>
