@@ -1,9 +1,9 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { Navbar } from '@/components/navbar';
-import { Logo } from '@/components/logo';
 import { Footer } from '@/components/footer';
+import { Logo } from '@/components/logo';
+import { Navbar } from '@/components/navbar';
 import { SearchTrigger } from '@/components/search-trigger';
 import { auth } from '@/lib/auth';
 
@@ -51,6 +51,7 @@ export default function RegistryLayout({ children }: { children: React.ReactNode
             <Navbar />
           </div>
           <div
+            className="hidden min-[1200px]:block"
             style={{
               position: 'absolute',
               left: '50%',

@@ -171,6 +171,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [mobileSection, setMobileSection] = React.useState<string | null>(null);
   const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const desktopNavMediaQuery = '(min-width: 900px)';
 
   const handleMouseEnter = (text: string) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -182,7 +183,7 @@ export function Navbar() {
   };
 
   React.useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
+    const mq = window.matchMedia(desktopNavMediaQuery);
     const handler = () => {
       if (mq.matches) setMobileOpen(false);
     };
@@ -191,7 +192,7 @@ export function Navbar() {
       mq.removeEventListener('change', handler);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [desktopNavMediaQuery]);
 
   React.useEffect(() => {
     if (mobileOpen) {
@@ -210,7 +211,7 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="hidden lg:block">
+      <nav className="hidden min-[900px]:block">
         <ul style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           {NAV_ITEMS.map((item) => {
             if (item.href && !item.items) {
@@ -287,7 +288,7 @@ export function Navbar() {
 
       <button
         type="button"
-        className="flex items-center justify-center lg:hidden text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center justify-center min-[900px]:hidden text-muted-foreground hover:text-foreground transition-colors"
         style={{
           padding: '6px',
           background: 'none',
@@ -308,7 +309,7 @@ export function Navbar() {
         <>
           <button
             type="button"
-            className="lg:hidden"
+            className="min-[900px]:hidden"
             style={{
               position: 'fixed',
               inset: 0,
@@ -322,7 +323,7 @@ export function Navbar() {
             aria-label="Close menu"
           />
           <div
-            className="lg:hidden border-b border-border bg-background/95 backdrop-blur-xl"
+            className="min-[900px]:hidden border-b border-border bg-background/95 backdrop-blur-xl"
             style={{
               position: 'fixed',
               left: 0,

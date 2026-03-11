@@ -190,7 +190,7 @@ export default async function Home() {
               <Navbar />
             </div>
             <div
-              className="hidden lg:block"
+              className="hidden min-[1200px]:block"
               style={{
                 position: 'absolute',
                 left: '50%',
