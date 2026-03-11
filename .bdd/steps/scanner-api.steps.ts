@@ -88,7 +88,7 @@ describe("Feature: Python scanner API integration", () => {
     it.skipIf(!hasScanner)("runs Given/When/Then", async () => {
       await whenICallGetHealthOnScanner();
       thenStatusIs(200);
-      thenBodyHasKeyValue("status", "ok");
+      thenBodyHasKeyValue("status", "healthy");
     });
   });
 

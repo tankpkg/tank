@@ -5,7 +5,7 @@
  * Feature: .bdd/features/web-registry/registry-read.feature
  *
  * Runs against REAL PostgreSQL + REAL registry HTTP — zero mocks.
- * Requires DATABASE_URL and REGISTRY_URL in environment.
+ * Requires DATABASE_URL and E2E_REGISTRY_URL in environment.
  * Seeds test packages directly via SQL; no publish flow needed for read-only tests.
  */
 import { randomUUID } from "node:crypto";
@@ -13,7 +13,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import postgres from "postgres";
 
 const hasDatabase = !!process.env.DATABASE_URL;
-const hasRegistry = !!process.env.REGISTRY_URL;
+const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,7 @@ interface RegistryWorld {
 }
 
 const world: RegistryWorld = {
-  registry: process.env.REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
   sql: null,
   runId: "",
   testOrg: "",
@@ -178,8 +178,8 @@ function thenBodyFieldEquals(field: string, value: unknown): void {
 
 describe("Feature: Registry read API for skill metadata", () => {
   beforeAll(async () => {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) throw new Error("DATABASE_URL is required");
+    if (!hasDatabase || !hasRegistry) return;
+    const connectionString = process.env.DATABASE_URL!;
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, "").slice(0, 10);
     world.testOrg = `reg-bdd-${world.runId}`;

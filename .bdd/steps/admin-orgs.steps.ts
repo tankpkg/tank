@@ -12,7 +12,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import postgres from "postgres";
 
 const hasDatabase = !!process.env.DATABASE_URL;
-const hasRegistry = !!process.env.REGISTRY_URL;
+const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 import {
   createAdminApiClient,
   createAdminSession,
@@ -31,7 +31,7 @@ interface AdminOrgsWorld {
 }
 
 const world: AdminOrgsWorld = {
-  registry: process.env.REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
   sql: null,
   runId: "",
   client: null,
@@ -86,8 +86,8 @@ async function givenTestOrgWithMembersExists(): Promise<void> {
 
 describe("Feature: Admin organization management", () => {
   beforeAll(async () => {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) throw new Error("DATABASE_URL is required");
+    if (!hasDatabase || !hasRegistry) return;
+    const connectionString = process.env.DATABASE_URL!;
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, "").slice(0, 10);
     world.client = createAdminApiClient(world.registry, world.sql);

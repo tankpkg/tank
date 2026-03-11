@@ -5,7 +5,7 @@
  * Feature: .bdd/features/web-publish/publish-api.feature
  *
  * Runs against REAL PostgreSQL + REAL registry HTTP — zero mocks.
- * Requires DATABASE_URL and REGISTRY_URL in environment.
+ * Requires DATABASE_URL and E2E_REGISTRY_URL in environment.
  * Uses setupE2E/cleanupE2E from setup.ts to provision users and API keys.
  *
  * Focus: API response contract (shape, status codes, error payloads).
@@ -16,7 +16,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { setupE2E, cleanupE2E, type E2EContext } from "../support/setup.js";
 
 const hasDatabase = !!process.env.DATABASE_URL;
-const hasRegistry = !!process.env.REGISTRY_URL;
+const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ interface WebPublishWorld {
 }
 
 const world: WebPublishWorld = {
-  registry: process.env.REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
   ctx: null,
   lastStatus: 0,
   lastBody: {},
@@ -85,7 +85,8 @@ function uniqueSkillName(prefix: string): string {
 
 describe("Feature: Publish API — 3-step HTTP publish flow", () => {
   beforeAll(async () => {
-    world.ctx = await setupE2E(process.env.REGISTRY_URL ?? "http://localhost:3003");
+    if (!hasDatabase || !hasRegistry) return;
+    world.ctx = await setupE2E(process.env.E2E_REGISTRY_URL ?? "http://localhost:3003");
   }, 30_000);
 
   afterAll(async () => {

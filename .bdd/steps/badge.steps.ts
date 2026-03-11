@@ -5,7 +5,7 @@
  * Feature: .bdd/features/badge/badge.feature
  *
  * Runs against REAL PostgreSQL + REAL registry HTTP — zero mocks.
- * Requires DATABASE_URL and REGISTRY_URL in environment.
+ * Requires DATABASE_URL and E2E_REGISTRY_URL in environment.
  * Seeds a test skill with an audit score directly via SQL; reads via badge endpoint.
  */
 import { randomUUID } from "node:crypto";
@@ -13,7 +13,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import postgres from "postgres";
 
 const hasDatabase = !!process.env.DATABASE_URL;
-const hasRegistry = !!process.env.REGISTRY_URL;
+const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,7 @@ interface BadgeWorld {
 }
 
 const world: BadgeWorld = {
-  registry: process.env.REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
   sql: null,
   runId: "",
   testOrg: "",
@@ -120,10 +120,8 @@ async function cleanupBadgeData(sql: postgres.Sql): Promise<void> {
 
 describe("Feature: Audit score SVG badge", () => {
   beforeAll(async () => {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error("DATABASE_URL is required for BDD badge tests");
-    }
+    if (!hasDatabase || !hasRegistry) return;
+    const connectionString = process.env.DATABASE_URL!;
 
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, "").slice(0, 10);

@@ -5,14 +5,14 @@
  * Feature: .bdd/features/info/info.feature
  *
  * Runs against REAL PostgreSQL + REAL registry HTTP — zero mocks.
- * Requires DATABASE_URL and REGISTRY_URL in environment.
+ * Requires DATABASE_URL and E2E_REGISTRY_URL in environment.
  */
 import { randomUUID } from "node:crypto";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import postgres from "postgres";
 
 const hasDatabase = !!process.env.DATABASE_URL;
-const hasRegistry = !!process.env.REGISTRY_URL;
+const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ interface InfoWorld {
 
 const world: InfoWorld = {
   sql: null as unknown as postgres.Sql,
-  registry: process.env.REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
   org: "",
   runId: "",
   publisherId: "",
@@ -139,10 +139,12 @@ function thenBodyContainsKey(key: string): void {
 
 describe("Feature: Skill info lookup via registry API", () => {
   beforeAll(async () => {
+    if (!hasDatabase || !hasRegistry) return;
     await setupSkills();
   }, 30_000);
 
   afterAll(async () => {
+    if (!world.sql) return;
     await cleanup();
   }, 15_000);
 

@@ -5,7 +5,7 @@
  * Feature: .bdd/features/star/star.feature
  *
  * Runs against REAL PostgreSQL + REAL registry HTTP — zero mocks.
- * Requires DATABASE_URL and REGISTRY_URL in environment.
+ * Requires DATABASE_URL and E2E_REGISTRY_URL in environment.
  * Seeds skill via SQL; uses setupE2E for authenticated user session cookie.
  *
  * Auth note: star POST/DELETE require a session cookie (browser auth), not an API key.
@@ -17,7 +17,7 @@ import postgres from "postgres";
 import { createHash } from "node:crypto";
 
 const hasDatabase = !!process.env.DATABASE_URL;
-const hasRegistry = !!process.env.REGISTRY_URL;
+const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -37,7 +37,7 @@ interface StarWorld {
 }
 
 const world: StarWorld = {
-  registry: process.env.REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
   sql: null,
   runId: "",
   testOrg: "",
@@ -205,10 +205,8 @@ async function cleanupStarData(sql: postgres.Sql): Promise<void> {
 
 describe("Feature: Skill starring and unstarring", () => {
   beforeAll(async () => {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error("DATABASE_URL is required for BDD star tests");
-    }
+    if (!hasDatabase || !hasRegistry) return;
+    const connectionString = process.env.DATABASE_URL!;
 
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, "").slice(0, 10);

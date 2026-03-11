@@ -5,12 +5,12 @@
  * Feature: .bdd/features/login/login.feature
  *
  * Runs against REAL registry HTTP — zero mocks.
- * Requires REGISTRY_URL in environment (defaults to http://localhost:3003).
+ * Requires E2E_REGISTRY_URL in environment (defaults to http://localhost:3003).
  * Seeds sessions via HTTP (start endpoint), validates exchange behavior.
  */
 import { describe, it, expect } from "vitest";
 
-const hasRegistry = !!process.env.REGISTRY_URL;
+const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ interface LoginWorld {
 }
 
 const world: LoginWorld = {
-  registry: process.env.REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
   lastStatus: 0,
   lastBody: {},
   sessionCode: "",
