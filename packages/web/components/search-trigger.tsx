@@ -16,6 +16,7 @@ export function SearchTrigger() {
 
   return (
     <button
+      data-testid="search-trigger"
       type="button"
       onClick={openCommandMenu}
       className="group flex w-full items-center gap-2 rounded-lg border border-input bg-muted/30 px-3 py-1.5 text-sm text-muted-foreground/70 transition-all hover:border-muted-foreground/25 hover:bg-muted/50 hover:text-muted-foreground">

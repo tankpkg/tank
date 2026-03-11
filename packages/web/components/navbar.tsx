@@ -210,7 +210,7 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="hidden lg:block">
+      <nav data-testid="desktop-nav" className="max-lg:hidden">
         <ul style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           {NAV_ITEMS.map((item) => {
             if (item.href && !item.items) {
@@ -286,6 +286,7 @@ export function Navbar() {
       </nav>
 
       <button
+        data-testid="mobile-menu-toggle"
         type="button"
         className="flex items-center justify-center lg:hidden text-muted-foreground hover:text-foreground transition-colors"
         style={{
