@@ -1,7 +1,10 @@
 import { createMDX } from 'fumadocs-mdx/next';
 import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  // Enable standalone output for Docker builds (incompatible with Vercel serverless)
+  ...(process.env.STANDALONE === 'true' && { output: 'standalone' })
+};
 
 const withMDX = createMDX({
   configPath: 'source.config.ts',
