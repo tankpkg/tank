@@ -20,10 +20,9 @@ RUN bun install --frozen-lockfile
 FROM oven/bun:1 AS builder
 WORKDIR /app
 
-COPY package.json bun.lock ./
+COPY package.json bun.lock tsconfig.json turbo.json ./
 COPY packages/shared ./packages/shared
 COPY packages/web ./packages/web
-COPY turbo.json ./
 
 # Copy node_modules from deps
 COPY --from=deps /app/node_modules ./node_modules
