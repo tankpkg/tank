@@ -51,6 +51,7 @@ export default function RegistryLayout({ children }: { children: React.ReactNode
             <Navbar />
           </div>
           <div
+            className="max-lg:hidden"
             style={{
               position: 'absolute',
               left: '50%',
