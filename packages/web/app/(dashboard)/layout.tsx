@@ -1,10 +1,10 @@
 import { headers } from 'next/headers';
-import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Separator } from '@/components/ui/separator';
 import { auth } from '@/lib/auth';
 import { SignOutButton } from './sign-out-button';
+import { Logo } from '@/components/logo';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({
@@ -22,8 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <aside className="flex w-64 flex-col border-r bg-sidebar text-sidebar-foreground">
         <div className="flex h-14 items-center px-6 font-semibold text-lg">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Tank" width={24} height={24} className="rounded-sm" />
-            Tank
+            <Logo tight />
           </Link>
         </div>
         <Separator />
@@ -46,8 +45,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="flex flex-1 flex-col">
         <header className="flex h-14 items-center border-b px-4 gap-4">
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-            <Image src="/logo.png" alt="Tank" width={22} height={22} className="rounded-sm" />
-            Tank
+            <Logo tight />
           </Link>
           <nav className="flex gap-4 text-sm overflow-x-auto">
             <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
