@@ -1,233 +1,80 @@
-# TANK — PROJECT KNOWLEDGE BASE
+# Tank
 
-**Generated:** 2026-03-06
-**Commit:** 133e5ea
-**Branch:** fix/posthog-env-newline
+Security-first package manager for AI agent skills. Monorepo: CLI + MCP server + web registry + shared schemas + Python scanner. Bun workspaces. Born from ClawHavoc — 341 malicious skills, 12% of a major marketplace.
 
-## OVERVIEW
+AGENTS.md and CLAUDE.md are symlinked. This file is your system prompt. Loads every context window. Every token has a cost. Keep it holy — concise, tight, agents-only.
 
-Security-first package manager for AI agent skills. Monorepo: CLI (`tank` command) + MCP server (`tank-mcp`) + Next.js 15 web registry + shared schemas package. TypeScript-first with a Python security analysis pipeline (6-stage scanning). Inspired by the ClawHavoc incident (341 malicious skills, 12% of a major marketplace) — Tank enforces versioning, lockfiles, permissions, code signing, and static analysis from day one.
+## Philosophy
 
-**Core Value Proposition:** Prevent credential exfiltration, prompt injection, and supply chain attacks in AI agent skills through mandatory security scanning and runtime permission enforcement.
+- This file + docs/ = diary. Fresh context = amnesia. Recover here first, then docs/ for lost insights, decisions, workarounds.
+- docs/ has details. This file references — never duplicates.
+- Tooling-enforced rules (Biome, EditorConfig, tsconfig) belong nowhere in this file.
+- Capabilities > file paths. `git log`, `just --list` = living docs.
+- Be extremely concise. Sacrifice grammar for concision. Every interaction, plan, commit, doc.
 
-## STRUCTURE
+## Context Recovery
 
-```
-tank/
-├── apps/
-│   ├── cli/              # `tank` CLI — Commander.js, 18 commands
-│   │   ├── bin/tank.ts   # Entry point, registers all commands
-│   │   └── src/
-│   │       ├── commands/ # 1-file-per-command pattern
-│   │       └── lib/      # API client, config, lockfile, packer, linker, agents
-│   └── web/              # Next.js 15 registry + API + Python serverless stubs
-│       ├── app/          # App Router: (auth), (dashboard), (admin), (registry), api/
-│       ├── lib/          # DB, auth, storage, email, audit-score, data
-│       ├── api-python/   # Mirrors python-api/ for Vercel serverless
-│       └── content/docs/ # 13 MDX documentation pages (Fumadocs)
-├── packages/
-│   ├── shared/           # @tank/shared — Zod schemas, types, constants, resolver
-│   └── mcp-server/       # @tankpkg/mcp-server — MCP tools for editors (17 tools)
-│       └── src/tools/    # 1-file-per-tool, full CLI parity
-├── python-api/           # Standalone security scanner — FastAPI, 6-stage pipeline
-│   ├── api/analyze/      # REST endpoints: scan, rescan, security, permissions
-│   └── lib/scan/         # stage0–stage5, models, verdict, dedup, sarif
-├── e2e/                  # End-to-end tests (sequential, real CLI spawning)
-├── .bdd/                 # BDD tests (Playwright-based, 12 step files)
-│   ├── steps/            # Step definitions per command
-│   └── features/         # Gherkin feature files (admin, mcp)
-├── action/               # GitHub Action: `tank-publish` (composite action)
-├── build/                # Pre-compiled CLI binaries (tank, tank-bun, tank-sea)
-├── packaging/homebrew/   # Homebrew formula for macOS distribution
-├── docs/                 # Product brief, architecture, roadmap, performance testing
-├── infra/                # Loki + Grafana configs for observability
-├── scripts/              # One-off utilities (backfill-readme.mjs, onprem/)
-├── supabase/             # Supabase local dev config (storage only, not DB)
-├── references/           # Internal reference docs (Playwright, sources)
-└── test-skill/           # Fixture skill for E2E testing
-```
+1. Read this file — your diary, your memory
+2. `find docs -name "*.md" | sort` — scan docs, read any relevant to task
+3. `just --list` — available commands
+4. `docs/where-to-look.md` — task → file location
+5. Package reference: `docs/{cli,mcp,api,scanner,shared}-reference.md`
+6. `docs/methodology.md` — IDD → BDD → TDD → E2E
+7. `git log --oneline -20` — recent changes, decisions, context
+8. Scan relevant source dirs — ground in actual code
 
-## WHERE TO LOOK
+## Identity
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add CLI command | `apps/cli/src/commands/` | Export async fn, register in `bin/tank.ts` |
-| Add MCP tool | `packages/mcp-server/src/tools/` | Export `registerXxxTool(server)`, register in `index.ts` |
-| Add API endpoint | `apps/web/app/api/v1/` or `api/admin/` | Next.js Route Handler pattern |
-| Add UI page | `apps/web/app/` | Route groups: `(auth)`, `(dashboard)`, `(admin)`, `(registry)` |
-| Add server action | `apps/web/app/(dashboard)/*/actions.ts` | Existing: tokens, orgs |
-| Modify DB schema | `apps/web/lib/db/schema.ts` | Run `drizzle-kit generate` after |
-| Modify auth schema | `apps/web/lib/db/auth-schema.ts` | Auto-generated by better-auth |
-| Add shared type/schema | `packages/shared/src/` | Export from `index.ts` barrel |
-| Add UI component | `apps/web/components/ui/` | `npx shadcn add <component>` |
-| Modify permissions model | `packages/shared/src/schemas/permissions.ts` | Zod schema |
-| Auth configuration | `apps/web/lib/auth.ts` | better-auth with GitHub OAuth + OIDC SSO |
-| Modify security scanner | `python-api/lib/scan/` | 6 stages: stage0–stage5 |
-| Environment variables | `.env.local` (root) | Copy from `.env.example` |
-| Performance testing | `apps/web/scripts/perf-*` | Seed → analyze → report |
-| E2E tests | `e2e/` | Needs `.env.local` with real credentials |
-| BDD tests | `.bdd/steps/` | Step definitions, `pnpm test:bdd` |
-| Email service | `apps/web/lib/email/` | Rate-limited email via Resend/SMTP |
-| Storage abstraction | `apps/web/lib/storage/provider.ts` | Supabase or S3 backends |
-| OIDC SSO config | `apps/web/lib/auth.ts` | Enterprise SSO via OIDC |
-| Admin middleware | `apps/web/lib/admin-middleware.ts` | Role-based access control |
-| Audit logging | `apps/web/app/api/admin/audit-logs/` | Admin action logging |
-| GitHub Action | `action/action.yml` | Composite action for CI/CD publishing |
-| Documentation pages | `apps/web/content/docs/` | MDX files (Fumadocs) |
-| Data access layer | `apps/web/lib/data/skills.ts` | Optimized DB queries |
+Pick role(s) before starting. Compose for multi-domain. → `docs/roles.md`
+Delegating: YOU assign each agent a role identity.
+Subagents = focused workers, report to you only. Use for quick isolated tasks.
+Teams = direct agent-to-agent communication. Cross-layer coordination, shared findings, challenge each other.
 
-## DEPENDENCY GRAPH
+## Workflow
 
-```
-@tank/shared (schemas, types, constants, resolver)
-     ↑                    ↑                    ↑
-     │                    │                    │
-  apps/cli         packages/mcp-server     apps/web
- (9 files)          (tools + lib)        (1 file, pnpm hoisted)
+- New problem → issue with full overview → branch → PR. Never push to main.
+- Branches can resolve multiple issues — not strictly 1:1.
+- Conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`
+- Git history IS documentation — insightful commits, not descriptive. Searchable record of decisions.
+- Methodology: IDD → BDD → TDD → E2E → `docs/methodology.md`
+- Plans: self-contained — include data, insights, decisions, constants. Fresh-context agent must execute without your memory.
+- End plans with unresolved questions.
 
-python-api ← independent (no TS deps)
-apps/web/api-python/ ← mirrors python-api/ (Vercel serverless stubs)
-```
+## Architecture
 
-No circular dependencies. CLI, MCP server, and Web are independent consumers of shared.
+Packages:
 
-## CONVENTIONS
+- `cli` — `tank` command: install, publish, scan, verify
+- `web` — registry web app: API, dashboard, admin, docs
+- `mcp-server` — editor integration, full CLI parity
+- `shared` — Zod schemas, types, constants. Pure, zero side effects
+- `scanner` — Python 6-stage security pipeline
 
-### TypeScript/JavaScript
-- **Strict TypeScript** — `strict: true` everywhere, no `as any`, no `@ts-ignore`
-- **ESM only** — `"type": "module"` in all packages, no `require()`
-- **2-space indent, LF line endings** — enforced via `.editorconfig`
-- **pnpm 10.29.3** — enforced via `packageManager` field (run `corepack enable`)
-- **Turbo** orchestrates `build`, `test`, `lint`, `dev` across workspaces
-- **TDD** — RED → GREEN → REFACTOR (per CONTRIBUTING.md)
-- **Conventional Commits** — `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`
-- **Import alias** — Web app uses `@/*` (tsconfig paths), CLI uses relative `.js` extensions
-- **Test files** — `__tests__/*.test.ts` colocated with source (never `.spec.ts`)
-- **Vitest** for TypeScript, **pytest** for Python
-- **No ESLint/Prettier** — relies on TypeScript strict mode + `.editorconfig`
-- **react-doctor** — React linting for the web app (60+ rules). Config in `apps/web/react-doctor.config.json`
+Non-obvious:
 
-### Web App
-- **Server Components by default** — `'use client'` only when needed
-- **Tailwind CSS v4** via `@tailwindcss/postcss`
-- **Zod for all validation** — never trust raw input, always `safeParse()` (never `parse()`)
-- **Drizzle ORM** — never raw SQL or Prisma
-- **4 route groups** — `(auth)`, `(dashboard)`, `(admin)`, `(registry)`
-- **Auth at layout level** — never in page components
+- Supabase = file storage only. DB = Drizzle ORM → PostgreSQL.
+- `auth-schema.ts` auto-generated by better-auth. Never edit.
+- MCP shares auth with CLI — reads `~/.tank/config.json`.
+- CLI/web/mcp-server never import each other. Only `@internal/shared`. Scanner independent.
 
-### CLI
-- **1-file-per-command** — export async fn, register in `bin/tank.ts`
-- **configDir injection** — for test isolation, never touch real `~/.tank/`
-- **chalk for UI, pino for debug** — enable debug: `TANK_DEBUG=1`
+→ `docs/architecture.md`
 
-### MCP Server
-- **1-file-per-tool** — export `registerXxxTool(server)`, register in `index.ts`
-- **Markdown output** — tools format results as markdown for editor readability
-- **Shares auth with CLI** — reads `~/.tank/config.json`, `TANK_TOKEN` env var overrides
+## Gotchas
 
-### Python
-- **Pydantic 2** for all models — strict validation
-- **pytest** for testing — `test_*.py` pattern
-- **Each stage independent** — can error without blocking others
+1. **safeParse(), never parse()** — parse() throws = invisible control flow
+2. **No cross-package imports** — CLI/web/mcp-server use only `@internal/shared`
+3. **Supabase != database** — storage only. Drizzle for queries.
+4. **Auth in layouts, not pages** — route groups handle access control
+5. **No refactoring during bugfixes** — minimal fix, separate PR
 
-## ANTI-PATTERNS
+→ `docs/anti-patterns.md` for full list
 
-### Universal
-- **Never suppress types** — no `as any`, `@ts-ignore`, `@ts-expect-error`
-- **Never use `.spec.ts`** — always `.test.ts`
-- **Never import between apps** — CLI, Web, MCP server must not import from each other, use `@tank/shared`
-- **Never commit `.env.local`** — contains real credentials
-- **Never use `require()`** — ESM only
-- **Never refactor while bugfixing** — fix minimally
-- **Never use `parse()` from Zod** — always `safeParse()` to avoid throwing
+## Docs Index
 
-### Web App
-- **Never create DB connections outside `apps/web/lib/db.ts`** — globalThis hot-reload singleton
-- **Never use Supabase for DB queries** — Supabase is storage-only, use Drizzle ORM
-- **Never expose `supabaseAdmin` to browser** — service-role key is server-only
-- **Never put auth checks in page components** — use layout-level guards
-- **Never use raw SQL or Prisma** — Drizzle ORM only
-- **Never modify `auth-schema.ts` manually** — auto-generated by better-auth
-- **Never skip audit logging** for admin actions
+**Core:** where-to-look | architecture | conventions | anti-patterns | security | roles
+**Process:** methodology | principles | testing-reference | performance-testing
+**Packages:** cli-reference | mcp-reference | api-reference | scanner-reference | shared-reference
+**Product:** product-brief | inspiration
+**Operations:** onprem-enterprise | ops-runbooks | e2e-test-publish
 
-### CLI & MCP Server
-- **Never hardcode registry URL** — use `REGISTRY_URL` from `@tank/shared` or config
-- **Never skip SHA-512 verification** during install
-- **Never extract without security filters** — reject symlinks, hardlinks, path traversal, absolute paths
-- **Never exceed** 1000 files or 50MB per tarball (enforced in packer)
-
-### Python API
-- **Never modify without syncing to `apps/web/api-python/`** — both locations must match
-- **Never skip stage0 (ingest)** — all other stages depend on its output
-- **Never swallow stage errors silently** — use `errored` status, not empty results
-
-### Shared Package
-- **Never add side-effect dependencies** — this package must stay pure
-- **Never mutate exported constants** — treat as frozen
-
-## COMMANDS
-
-```bash
-# Setup
-pnpm install                      # Install all dependencies
-cp .env.example .env.local        # Configure credentials
-
-# Development
-pnpm dev                          # Start all dev servers (Turbo)
-pnpm build                        # Build all packages
-pnpm lint                         # Run all linters (Next.js lint + react-doctor)
-pnpm test                         # Run all unit tests (461 TS + 16 Python)
-pnpm test:e2e                     # Run E2E tests (needs .env.local)
-pnpm test:bdd                     # Run BDD tests (Playwright-based)
-pnpm test:perf                    # Run performance tests (needs real DB)
-
-# Per-package
-pnpm test --filter=cli            # CLI tests only
-pnpm test --filter=web            # Web tests only
-pnpm test --filter=shared         # Shared package tests only
-pnpm test --filter=mcp-server     # MCP server tests only
-
-# Database
-pnpm --filter=web drizzle-kit generate  # Generate migration
-pnpm --filter=web drizzle-kit push      # Push schema to DB
-
-# Admin
-pnpm --filter=web admin:bootstrap       # Promote FIRST_ADMIN_EMAIL to admin role
-```
-
-## NOTES
-
-### Runtime Requirements
-- **Node.js 24+** and **Python 3.14+** required
-- **Supabase** is for file storage (tarballs) only — Drizzle + `postgres` connects directly to PostgreSQL
-
-### Architecture Decisions
-- **python-api/** and **apps/web/api-python/** are mirrors — changes must be synced between both
-- **CLI auth flow**: browser OAuth → poll → API key stored in `~/.tank/config.json`
-- **Web auth**: better-auth with GitHub OAuth + `apiKey` plugin (prefix `tank_`) + `organization` plugin + OIDC SSO
-- **DB schema split**: `schema.ts` (domain tables) + `auth-schema.ts` (better-auth auto-generated)
-- **Two logging tiers**: user-facing (`chalk`) and debug (`pino` → Loki). Enable debug: `TANK_DEBUG=1`
-- **Web imports `@tank/shared` undeclared** in its `package.json` — works via pnpm workspace hoisting
-- **Storage backend**: configurable via `STORAGE_BACKEND` env var (Supabase or S3)
-- **Session store**: configurable via `SESSION_STORE` env var (memory or Redis)
-- **MCP server shares auth** with CLI — reads same `~/.tank/config.json`
-
-### Testing
-- **E2E tests run sequentially** — producer must finish before consumer
-- **BDD tests** in `.bdd/` — 12 step definitions, feature files for admin/mcp
-- **CI pipeline**: 2 jobs — test (fake creds) then performance (real Postgres 17 + Supabase local)
-
-### Security Scanner
-- **Verdict rules**: 1+ critical → FAIL, 4+ high → FAIL, 1-3 high → FLAGGED, medium/low → PASS_WITH_NOTES
-- **6 stages**: ingest (hash) → structure → static (AST) → injection → secrets → supply chain
-
-### Distribution
-- **npm**: `@tankpkg/cli` (CLI), `@tankpkg/mcp-server` (MCP)
-- **GitHub Action**: `action/action.yml` — composite action for CI/CD publishing
-- **Homebrew**: formula in `packaging/homebrew/`
-- **Pre-built binaries**: `build/` — tank, tank-bun, tank-sea (Single Executable Application)
-
-### On-Prem Deployment
-- **Docker Compose**: `docker-compose.yml` — PostgreSQL 17, Redis, MinIO (S3), Python scanner, Tank web
-- **Optional Ollama**: `--profile llm-local` for local LLM analysis
-- **Scripts**: `scripts/onprem/` — setup and configuration utilities
+All docs in `docs/`. Read on demand — don't front-load.
