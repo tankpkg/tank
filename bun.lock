@@ -18,6 +18,13 @@
         "vitest": "^4",
       },
     },
+    ".bdd": {
+      "name": "@internal/bdd",
+      "version": "0.0.0",
+      "dependencies": {
+        "postgres": "^3.4.8",
+      },
+    },
     "packages/cli": {
       "name": "@tankpkg/cli",
       "version": "0.6.3",
@@ -533,6 +540,8 @@
     "@inquirer/select": ["@inquirer/select@5.1.0", "", { "dependencies": { "@inquirer/ansi": "^2.0.3", "@inquirer/core": "^11.1.5", "@inquirer/figures": "^2.0.3", "@inquirer/type": "^4.0.3" }, "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-OyYbKnchS1u+zRe14LpYrN8S0wH1vD0p2yKISvSsJdH2TpI87fh4eZdWnpdbrGauCRWDph3NwxRmM4Pcm/hx1Q=="],
 
     "@inquirer/type": ["@inquirer/type@4.0.3", "", { "peerDependencies": { "@types/node": ">=18" }, "optionalPeers": ["@types/node"] }, "sha512-cKZN7qcXOpj1h+1eTTcGDVLaBIHNMT1Rz9JqJP5MnEJ0JhgVWllx7H/tahUp5YEK1qaByH2Itb8wLG/iScD5kw=="],
+
+    "@internal/bdd": ["@internal/bdd@workspace:.bdd"],
 
     "@internal/shared": ["@internal/shared@workspace:packages/shared"],
 
