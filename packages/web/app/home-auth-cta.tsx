@@ -22,7 +22,7 @@ export function HomeNavAuthCta() {
           {isLoggedIn ? 'Dashboard' : 'Sign In'}
         </Link>
       </Button>
-      <Button variant="ghost" size="sm" asChild className="hidden lg:inline-flex">
+      <Button variant="ghost" size="sm" asChild className="max-lg:hidden">
         <Link href="/docs" onClick={() => trackCtaClick('Docs', '/docs')}>
           Docs
         </Link>
