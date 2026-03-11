@@ -272,7 +272,7 @@ describe('Feature: Security scanning of skills via MCP tool', () => {
   // ── scan-skill (without tank.json — fallback mode) ────────────────────
 
   describe('Scenario: Agent scans an arbitrary directory without a tank.json', () => {
-    it.skipIf(!process.env.DATABASE_URL)(
+    it.skipIf(!process.env.DATABASE_URL || !process.env.E2E_REGISTRY_URL)(
       'Given/When/Then for directory without tank.json passing scan',
       async () => {
         await givenMcpServerIsRunning();
@@ -295,7 +295,7 @@ describe('Feature: Security scanning of skills via MCP tool', () => {
   });
 
   describe('Scenario: Agent scans an arbitrary directory without tank.json that has critical issues', () => {
-    it.skipIf(!process.env.DATABASE_URL)(
+    it.skipIf(!process.env.DATABASE_URL || !process.env.E2E_REGISTRY_URL)(
       'Given/When/Then for directory without tank.json with malicious code',
       async () => {
         await givenMcpServerIsRunning();
@@ -327,7 +327,7 @@ describe('Feature: Security scanning of skills via MCP tool', () => {
   // ── Error cases (no scanner needed) ─────────────────────────────────────
 
   describe('Scenario: Agent scans an empty directory', () => {
-    it.skipIf(!process.env.DATABASE_URL)(
+    it.skipIf(!process.env.DATABASE_URL || !process.env.E2E_REGISTRY_URL)(
       'Given/When/Then for empty directory error',
       async () => {
         await givenMcpServerIsRunning();
@@ -343,7 +343,7 @@ describe('Feature: Security scanning of skills via MCP tool', () => {
   });
 
   describe('Scenario: Agent scans a directory that does not exist', () => {
-    it.skipIf(!process.env.DATABASE_URL)(
+    it.skipIf(!process.env.DATABASE_URL || !process.env.E2E_REGISTRY_URL)(
       'Given/When/Then for nonexistent directory error',
       async () => {
         await givenMcpServerIsRunning();
