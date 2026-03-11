@@ -1,9 +1,7 @@
 import { createMDX } from 'fumadocs-mdx/next';
 import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {
-  output: 'standalone'
-};
+const nextConfig: NextConfig = {};
 
 const withMDX = createMDX({
   configPath: 'source.config.ts',
