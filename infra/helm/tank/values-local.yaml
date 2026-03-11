@@ -1,5 +1,5 @@
 # values-local.yaml — Overrides for local development with Kind or Minikube.
-# Usage: helm install tank ./helm/tank -f ./helm/tank/values-local.yaml
+# Usage: helm install tank ./infra/helm/tank -f ./infra/helm/tank/values-local.yaml
 
 web:
   replicaCount: 1

@@ -2,9 +2,9 @@
 # Docker Compose configuration for self-hosted enterprise deployment
 #
 # Usage:
-#   docker compose up -d
-#   docker compose logs -f
-#   docker compose down
+#   docker compose -f infra/docker-compose.yml up -d
+#   docker compose -f infra/docker-compose.yml logs -f
+#   docker compose -f infra/docker-compose.yml down
 
 services:
   # ===================
@@ -74,8 +74,8 @@ services:
   # ===================
   scanner:
     build:
-      context: ./python-api
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: packages/scanner/Dockerfile
     container_name: tank-scanner
     restart: unless-stopped
     environment:
@@ -114,8 +114,8 @@ services:
   # ===================
   web:
     build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+      context: ..
+      dockerfile: packages/web/Dockerfile
     container_name: tank-web
     restart: unless-stopped
     ports:
@@ -123,19 +123,19 @@ services:
     environment:
       # Database
       DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-tank}@postgres:5432/${POSTGRES_DB:-tank}
-      
+
       # Auth
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
-      
+
       # Auth Providers (enable what you need)
       AUTH_PROVIDERS: ${AUTH_PROVIDERS:-credentials}
       NEXT_PUBLIC_AUTH_PROVIDERS: ${NEXT_PUBLIC_AUTH_PROVIDERS:-credentials}
-      
+
       # GitHub OAuth (optional)
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      
+
       # OIDC SSO (optional)
       OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
       OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-enterprise-oidc}
@@ -146,7 +146,7 @@ services:
       OIDC_AUTHORIZATION_URL: ${OIDC_AUTHORIZATION_URL:-}
       OIDC_TOKEN_URL: ${OIDC_TOKEN_URL:-}
       OIDC_USER_INFO_URL: ${OIDC_USER_INFO_URL:-}
-      
+
       # Storage
       STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
       S3_ENDPOINT: http://minio:9000
@@ -154,14 +154,14 @@ services:
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-tank123456}
       S3_BUCKET: ${S3_BUCKET:-packages}
       S3_REGION: ${S3_REGION:-us-east-1}
-      
+
       # Redis Session Store
       REDIS_URL: redis://redis:6379
       SESSION_STORE: ${SESSION_STORE:-redis}
-      
+
       # Python Scanner
       PYTHON_API_URL: http://scanner:8000
-      
+
       # App
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       NODE_ENV: production
@@ -169,7 +169,7 @@ services:
       # Email verification delivery
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@tank.local}
-      
+
       # First Admin (for initial setup)
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
     depends_on:
@@ -198,7 +198,7 @@ services:
     networks:
       - tank-network
     profiles:
-      - llm-local  # Only starts with: docker compose --profile llm-local up
+      - llm-local # Only starts with: docker compose --profile llm-local up
     # Uncomment to expose Ollama API directly
     # ports:
     #   - "11434:11434"
