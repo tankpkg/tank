@@ -11,6 +11,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/web/package.json ./packages/web/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
+COPY .bdd/package.json ./.bdd/
 
 # Install dependencies
 RUN bun install --frozen-lockfile
