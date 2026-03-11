@@ -51,7 +51,6 @@ export default function RegistryLayout({ children }: { children: React.ReactNode
             <Navbar />
           </div>
           <div
-            className="hidden min-[1200px]:block"
             style={{
               position: 'absolute',
               left: '50%',
