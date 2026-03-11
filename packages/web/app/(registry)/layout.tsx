@@ -1,8 +1,9 @@
 import { headers } from 'next/headers';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Navbar } from '@/components/navbar';
+import { Logo } from '@/components/logo';
+import { Footer } from '@/components/footer';
 import { SearchTrigger } from '@/components/search-trigger';
 import { auth } from '@/lib/auth';
 
@@ -32,7 +33,7 @@ function SignInLink() {
 
 export default function RegistryLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header
         className="border-b"
         style={{
@@ -46,10 +47,7 @@ export default function RegistryLayout({ children }: { children: React.ReactNode
           className="container mx-auto h-14 px-4"
           style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
-            <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
-              <Image src="/logo.png" alt="Tank" width={24} height={24} className="rounded-sm" />
-              Tank
-            </Link>
+            <Logo tight />
             <Navbar />
           </div>
           <div
@@ -70,7 +68,8 @@ export default function RegistryLayout({ children }: { children: React.ReactNode
           </div>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-8">{children}</main>
+      <main className="container mx-auto px-4 py-8 flex-1">{children}</main>
+      <Footer />
     </div>
   );
 }
