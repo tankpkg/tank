@@ -1,13 +1,13 @@
-import { defineConfig } from "tsdown";
+import { defineConfig } from 'tsdown';
 
 export default defineConfig({
-  entry: "src/index.ts",
-  platform: "node",
-  format: "esm",
+  entry: 'src/index.ts',
+  platform: 'node',
+  format: 'esm',
   fixedExtension: false,
   dts: true,
   clean: true,
   deps: {
-    alwaysBundle: [/^@internal\//],
-  },
+    alwaysBundle: [/^@internal\//]
+  }
 });
