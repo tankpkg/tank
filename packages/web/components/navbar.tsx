@@ -287,15 +287,12 @@ export function Navbar() {
 
       <button
         type="button"
-        className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center justify-center lg:hidden text-muted-foreground hover:text-foreground transition-colors"
         style={{
           padding: '6px',
           background: 'none',
           border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          cursor: 'pointer'
         }}
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
