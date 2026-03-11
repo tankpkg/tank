@@ -133,6 +133,12 @@ jobs:
         run: |
           sed -i "s|tag: \"\"|tag: \"${{ steps.version.outputs.version }}\"|" infra/helm/tank/values.yaml
 
+      - name: Add Helm repositories
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add minio https://charts.min.io/
+          helm repo update
+
       - name: Build Helm dependencies
         run: helm dependency build infra/helm/tank/
 
