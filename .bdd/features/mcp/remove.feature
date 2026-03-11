@@ -1,4 +1,5 @@
-@mcp @remove
+@mcp
+@remove
 Feature: Skill removal via MCP tool
   As an AI agent using the Tank MCP server
   I need to remove installed skills
@@ -8,7 +9,6 @@ Feature: Skill removal via MCP tool
     Given the MCP server is running
 
   # ─── remove-skill (happy paths) ───────────────────────────────────────────
-
   @high
   Scenario: Agent removes an installed skill
     Given the skill "@acme/web-search" is installed at version "2.1.0"
@@ -36,7 +36,6 @@ Feature: Skill removal via MCP tool
     And "@acme/code-runner" remains installed and in the lockfile
 
   # ─── remove-skill (error cases) ───────────────────────────────────────────
-
   @high
   Scenario: Agent removes a skill that is not installed
     Given the skill "@acme/nonexistent-skill" is not installed

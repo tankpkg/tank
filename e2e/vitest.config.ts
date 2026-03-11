@@ -1,5 +1,5 @@
+import path from 'node:path';
 import { defineConfig } from 'vitest/config';
-import path from 'path';
 
 export default defineConfig({
   // Load .env.local from project root
@@ -14,8 +14,8 @@ export default defineConfig({
     fileParallelism: false,
     // Run tests within each file sequentially (ordered flows)
     sequence: {
-      concurrent: false,
+      concurrent: false
     },
-    include: ['e2e/**/*.e2e.test.ts'],
-  },
+    include: ['e2e/**/*.e2e.test.ts']
+  }
 });

@@ -1,5 +1,5 @@
 import { expect } from '@playwright/test';
-import { Given, When, Then, runTank, expectSuccess, createSkillFixture } from './fixtures';
+import { createSkillFixture, expectSuccess, Given, runTank, Then, When } from './fixtures';
 
 Given('Alice is authenticated with the registry', async ({ e2eContext }) => {
   expect(e2eContext.token.length).toBeGreaterThan(0);
@@ -9,7 +9,7 @@ Given('Alice has a skill {string} ready to publish', async ({ e2eContext, bddSta
   const skill = createSkillFixture({
     orgSlug: e2eContext.orgSlug,
     skillName,
-    description: `Private packages ${bddState.searchQuery}`,
+    description: `Private packages ${bddState.searchQuery}`
   });
   bddState.skill = skill;
   bddState.skillName = skill.name;
@@ -23,7 +23,7 @@ When('Alice publishes the skill with private visibility', async ({ e2eContext, b
   bddState.lastResult = await runTank(['publish', '--private'], {
     cwd: bddState.skill.dir,
     home: e2eContext.home,
-    timeoutMs: 60_000,
+    timeoutMs: 60_000
   });
 });
 
@@ -34,7 +34,7 @@ When('Alice publishes the skill without specifying visibility', async ({ e2eCont
   bddState.lastResult = await runTank(['publish'], {
     cwd: bddState.skill.dir,
     home: e2eContext.home,
-    timeoutMs: 60_000,
+    timeoutMs: 60_000
   });
 });
 
@@ -45,7 +45,7 @@ When('Alice publishes the skill with the private flag', async ({ e2eContext, bdd
   bddState.lastResult = await runTank(['publish', '--private'], {
     cwd: bddState.skill.dir,
     home: e2eContext.home,
-    timeoutMs: 60_000,
+    timeoutMs: 60_000
   });
 });
 
@@ -56,15 +56,18 @@ Then('the skill should be published successfully', async ({ bddState }) => {
   expectSuccess(bddState.lastResult);
 });
 
-Then('the skill should have {string} visibility in the registry', async ({ e2eContext, bddState }, visibility: string) => {
-  const skillName = bddState.skillName ?? bddState.skill?.name;
-  if (!skillName) {
-    throw new Error('No skill name available for visibility check.');
-  }
+Then(
+  'the skill should have {string} visibility in the registry',
+  async ({ e2eContext, bddState }, visibility: string) => {
+    const skillName = bddState.skillName ?? bddState.skill?.name;
+    if (!skillName) {
+      throw new Error('No skill name available for visibility check.');
+    }
 
-  const rows = await e2eContext.sql`
+    const rows = await e2eContext.sql`
     SELECT visibility FROM skills WHERE name = ${skillName}
   `;
-  expect(rows.length).toBe(1);
-  expect(rows[0]?.visibility).toBe(visibility);
-});
+    expect(rows.length).toBe(1);
+    expect(rows[0]?.visibility).toBe(visibility);
+  }
+);

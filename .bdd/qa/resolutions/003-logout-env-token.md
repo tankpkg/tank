@@ -3,6 +3,7 @@
 **Finding:** [003](../findings/003-logout-env-token-persistence.md)
 **Date:** 2026-03-05
 **Files changed:**
+
 - `packages/mcp-server/src/tools/logout.ts`
 
 ## Change

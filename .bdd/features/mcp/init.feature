@@ -1,4 +1,5 @@
-@mcp @init
+@mcp
+@init
 Feature: Skill project initialisation via MCP tool
   As an AI agent using the Tank MCP server
   I need to create a skills.json manifest in a directory
@@ -8,7 +9,6 @@ Feature: Skill project initialisation via MCP tool
     Given the MCP server is running
 
   # ─── init-skill ───────────────────────────────────────────────────────────
-
   @high
   Scenario: Agent initialises a new skill project with all required fields
     Given a directory exists at "/workspace/my-skill"
@@ -61,7 +61,7 @@ Feature: Skill project initialisation via MCP tool
     Then the MCP server creates a skills.json with name "<name>"
 
     Examples:
-      | directory              | name                    |
-      | /workspace/skill-a     | @acme/skill-a           |
-      | /workspace/skill-b     | @my-org/complex-skill   |
-      | /workspace/skill-c     | @123org/skill-with-nums |
+      | directory          | name                    |
+      | /workspace/skill-a | @acme/skill-a           |
+      | /workspace/skill-b | @my-org/complex-skill   |
+      | /workspace/skill-c | @123org/skill-with-nums |
