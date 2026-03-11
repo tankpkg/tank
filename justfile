@@ -6,11 +6,11 @@
 install:
     bun install
 
-# Install git pre-push hook
+# Install git hooks (pre-commit, pre-push)
 [group('setup')]
 hooks:
-    ln -sf ../../scripts/pre-push .git/hooks/pre-push
-    @echo "✓ Pre-push hook installed"
+    git config core.hooksPath .githooks
+    @echo "✓ Git hooks configured"
 
 # Verify toolchain versions
 [group('setup')]
@@ -78,6 +78,37 @@ verify:
     just typecheck
     just fmt
     just lint
+
+# Check that all package versions are synchronized
+[group('verify')]
+check-versions:
+    bash scripts/check-versions.sh
+
+# Bump version across all packages and Chart.yaml
+[group('setup')]
+bump VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    
+    # Validate semver format (basic check)
+    if ! [[ "{{VERSION}}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo "❌ Invalid version format: {{VERSION}} (expected X.Y.Z)"
+      exit 1
+    fi
+    
+    # Update package.json files
+    jq ".version = \"{{VERSION}}\"" packages/cli/package.json > packages/cli/package.json.tmp && mv packages/cli/package.json.tmp packages/cli/package.json
+    jq ".version = \"{{VERSION}}\"" packages/web/package.json > packages/web/package.json.tmp && mv packages/web/package.json.tmp packages/web/package.json
+    jq ".version = \"{{VERSION}}\"" packages/mcp-server/package.json > packages/mcp-server/package.json.tmp && mv packages/mcp-server/package.json.tmp packages/mcp-server/package.json
+    jq ".version = \"{{VERSION}}\"" packages/shared/package.json > packages/shared/package.json.tmp && mv packages/shared/package.json.tmp packages/shared/package.json
+    
+    # Update Chart.yaml
+    sed -i.bak "s/^appVersion: .*/appVersion: \"{{VERSION}}\"/" infra/helm/tank/Chart.yaml && rm -f infra/helm/tank/Chart.yaml.bak
+    
+    # Verify all versions match
+    bash scripts/check-versions.sh
+    
+    echo "✓ Bumped all versions to {{VERSION}}"
 
 # Run all unit tests
 [group('test')]

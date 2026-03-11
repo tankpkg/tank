@@ -1,0 +1,266 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GHCR_REGISTRY: ghcr.io
+  DOCKERHUB_REGISTRY: docker.io
+  IMAGE_OWNER: tankpkg
+
+jobs:
+  # ===========================================================================
+  # Build and push Docker images (multi-arch) to ghcr.io + DockerHub
+  # ===========================================================================
+  docker:
+    name: docker-${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: tank-web
+            dockerfile: packages/web/Dockerfile
+            context: .
+          - image: tank-scanner
+            dockerfile: packages/scanner/Dockerfile
+            context: .
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "major=$(echo $VERSION | cut -d. -f1)" >> "$GITHUB_OUTPUT"
+          echo "minor=$(echo $VERSION | cut -d. -f1-2)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU (multi-arch)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to DockerHub
+        if: ${{ vars.DOCKERHUB_ENABLED == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKERHUB_REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.GHCR_REGISTRY }}/${{ env.IMAGE_OWNER }}/${{ matrix.image }}
+            ${{ vars.DOCKERHUB_ENABLED == 'true' && format('{0}/{1}/{2}', env.DOCKERHUB_REGISTRY, env.IMAGE_OWNER, matrix.image) || '' }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+          labels: |
+            org.opencontainers.image.title=${{ matrix.image }}
+            org.opencontainers.image.description=Tank — Security-first package manager for AI agent skills
+            org.opencontainers.image.vendor=tankpkg
+            org.opencontainers.image.source=https://github.com/tankpkg/tank
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===========================================================================
+  # Package and publish Helm chart to ghcr.io OCI registry
+  # ===========================================================================
+  helm:
+    name: helm-publish
+    runs-on: ubuntu-latest
+    needs: docker
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.0
+
+      - name: Login to ghcr.io OCI registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.GHCR_REGISTRY }} \
+            --username ${{ github.actor }} \
+            --password-stdin
+
+      - name: Update Chart.yaml version
+        run: |
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" infra/helm/tank/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" infra/helm/tank/Chart.yaml
+
+      - name: Update default image tags in values.yaml
+        run: |
+          sed -i "s|tag: \"\"|tag: \"${{ steps.version.outputs.version }}\"|" infra/helm/tank/values.yaml
+
+      - name: Build Helm dependencies
+        run: helm dependency build infra/helm/tank/
+
+      - name: Package Helm chart
+        run: helm package infra/helm/tank/ --destination .helm-packages/
+
+      - name: Push Helm chart to ghcr.io
+        run: |
+          helm push .helm-packages/tank-${{ steps.version.outputs.version }}.tgz \
+            oci://${{ env.GHCR_REGISTRY }}/${{ env.IMAGE_OWNER }}/helm-charts
+
+  # ===========================================================================
+  # Smoke test: docker-compose from outside the project (no clone)
+  # ===========================================================================
+  smoke-test:
+    name: smoke-test-compose
+    runs-on: ubuntu-latest
+    needs: docker
+
+    steps:
+      # We intentionally do NOT checkout the full repo.
+      # This simulates an end-user who only downloads the compose file.
+      - name: Create working directory
+        run: mkdir -p /tmp/tank-smoke && cd /tmp/tank-smoke
+
+      - name: Download production docker-compose
+        working-directory: /tmp/tank-smoke
+        run: |
+          curl -fsSL \
+            "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/infra/docker-compose.production.yml" \
+            -o docker-compose.yml
+
+      - name: Download .env.example.onprem
+        working-directory: /tmp/tank-smoke
+        run: |
+          curl -fsSL \
+            "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/.env.example.onprem" \
+            -o .env.example
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Create .env from example
+        working-directory: /tmp/tank-smoke
+        run: |
+          cp .env.example .env
+          {
+            echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)"
+            echo "TANK_IMAGE_TAG=${{ steps.version.outputs.version }}"
+            echo "FIRST_ADMIN_EMAIL=smoke@test.local"
+          } >> .env
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull images and start stack
+        working-directory: /tmp/tank-smoke
+        run: |
+          docker compose pull
+          docker compose up -d
+
+      - name: Wait for services to be healthy
+        working-directory: /tmp/tank-smoke
+        timeout-minutes: 5
+        run: |
+          echo "Waiting for postgres..."
+          until docker compose exec -T postgres pg_isready -U tank -d tank 2>/dev/null; do
+            sleep 2
+          done
+          echo "Postgres is ready."
+
+          echo "Waiting for scanner health..."
+          for i in $(seq 1 30); do
+            if docker compose exec -T scanner wget -q --spider http://127.0.0.1:8000/health 2>/dev/null; then
+              echo "Scanner is healthy."
+              break
+            fi
+            echo "  attempt $i/30..."
+            sleep 5
+          done
+
+          echo "Waiting for web health..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+              echo "Web is healthy."
+              break
+            fi
+            echo "  attempt $i/30..."
+            sleep 5
+          done
+
+      - name: Verify health endpoints
+        working-directory: /tmp/tank-smoke
+        run: |
+          echo "=== Web health ==="
+          curl -sf http://localhost:3000/api/health | jq .
+
+          echo "=== Scanner health ==="
+          docker compose exec -T scanner wget -qO- http://127.0.0.1:8000/health | jq .
+
+          echo "=== Container status ==="
+          docker compose ps
+
+      - name: Dump logs on failure
+        if: failure()
+        working-directory: /tmp/tank-smoke
+        run: |
+          echo "=== docker compose ps ==="
+          docker compose ps -a
+          echo "=== web logs ==="
+          docker compose logs web --tail=100
+          echo "=== scanner logs ==="
+          docker compose logs scanner --tail=100
+          echo "=== postgres logs ==="
+          docker compose logs postgres --tail=50
+          echo "=== redis logs ==="
+          docker compose logs redis --tail=50
+          echo "=== minio logs ==="
+          docker compose logs minio --tail=50
+
+      - name: Teardown
+        if: always()
+        working-directory: /tmp/tank-smoke
+        run: docker compose down -v

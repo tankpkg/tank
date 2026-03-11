@@ -105,7 +105,7 @@ web:
 
   image:
     # -- Web app container image repository
-    repository: tank-web
+    repository: ghcr.io/tankpkg/tank-web
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag (defaults to Chart.appVersion)
@@ -262,7 +262,7 @@ scanner:
 
   image:
     # -- Scanner container image repository
-    repository: tank-scanner
+    repository: ghcr.io/tankpkg/tank-scanner
     # -- Image pull policy
     pullPolicy: IfNotPresent
     # -- Image tag (defaults to Chart.appVersion)

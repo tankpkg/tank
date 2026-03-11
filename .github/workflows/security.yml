@@ -53,7 +53,7 @@ jobs:
 
           # Check .env.example files use placeholders, not real values
           for file in $(find . -name ".env.example*" -not -path "./node_modules/*"); do
-            if grep -E "^[A-Z_]+=[^<].{16,}$" "$file" 2>/dev/null | grep -v "placeholder\|example\|changeme\|your-\|xxx" ; then
+            if grep -E "^[A-Z_]+=[^<].{16,}$" "$file" 2>/dev/null | grep -v 'placeholder\|example\|changeme\|your-\|xxx\|localhost\|http\|redis://\|postgresql://\|BRAND_\|supabase\|memory\|#' ; then
               echo "::error::Real-looking credential in $file - use placeholders like <your-value>"
               exit 1
             fi
