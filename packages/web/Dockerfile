@@ -35,6 +35,7 @@ RUN bun run --filter=@internal/shared build
 # Build web app
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV STANDALONE=true
 RUN bun run --filter=@internal/web build
 
 # Stage 3: Production image
