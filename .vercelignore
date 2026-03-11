@@ -4,7 +4,7 @@
 e2e
 infra
 .worktrees
-docs
+/docs
 .idd
 .bdd
 .claude
