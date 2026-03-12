@@ -266,7 +266,30 @@ program
 program
   .command('link')
   .alias('ln')
-  .description('Link current skill directory to AI agent directories (for development)')
+  .description('Link current skill to all detected AI agents for local development')
+  .addHelpText(
+    'after',
+    `
+Creates symlinks from each agent's skills directory to this skill source,
+so changes are reflected immediately without re-publishing.
+
+Must be run from a directory containing a valid tank.json.
+
+Supported agents:
+  Claude Code    ~/.claude/skills
+  OpenCode       ~/.config/opencode/skills
+  Cursor         ~/.cursor/skills
+  Codex          ~/.codex/skills
+  OpenClaw       ~/.openclaw/skills
+  Universal      ~/.agents/skills
+
+Examples:
+  $ cd my-skill && tank link     Link to all detected agents
+  $ tank doctor                  Verify link health
+  $ tank unlink                  Remove all symlinks
+
+See also: tank unlink, tank doctor`
+  )
   .action(async () => {
     try {
       await linkCommand();
@@ -279,7 +302,18 @@ program
 
 program
   .command('unlink')
-  .description('Remove skill symlinks from AI agent directories')
+  .description('Remove skill symlinks from all AI agent directories')
+  .addHelpText(
+    'after',
+    `
+Removes the symlinks created by \`tank link\` from every detected agent.
+Must be run from the same skill directory that was originally linked.
+
+Examples:
+  $ cd my-skill && tank unlink   Remove links for this skill
+
+See also: tank link, tank doctor`
+  )
   .action(async () => {
     try {
       await unlinkCommand();
