@@ -2,8 +2,7 @@
   "name": "tank",
   "private": true,
   "workspaces": [
-    "packages/*",
-    ".bdd"
+    "packages/*"
   ],
   "scripts": {
     "build": "turbo run build",
