@@ -6,7 +6,7 @@ description: >-
   PostgreSQL, Redis, and MinIO for on-premises installations.
 type: application
 version: 0.1.0
-appVersion: "0.8.1"
+appVersion: "0.9.0"
 home: https://github.com/tankpkg/tank
 sources:
   - https://github.com/tankpkg/tank
