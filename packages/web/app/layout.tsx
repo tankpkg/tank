@@ -8,18 +8,10 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 5,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#1a1a2e' }
-  ]
-};
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://tankpkg.dev'),
+  metadataBase: new URL(BASE_URL),
   title: {
     default: 'Tank — Security-first package manager for AI agent skills',
     template: '%s | Tank'
@@ -58,7 +50,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://tankpkg.dev',
+    url: BASE_URL,
     siteName: 'Tank',
     title: 'Tank — Security-first package manager for AI agent skills',
     description: 'Publish, install, and audit AI agent skills with integrity verification and security scanning.',
@@ -79,7 +71,7 @@ export const metadata: Metadata = {
     creator: '@tankpkg'
   },
   alternates: {
-    canonical: 'https://tankpkg.dev'
+    canonical: BASE_URL
   },
   icons: {
     icon: [
