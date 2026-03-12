@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, AlertTriangle, AlertOctagon, XCircle, Clock, type LucideIcon } from 'lucide-react';
+import { AlertOctagon, AlertTriangle, Clock, type LucideIcon, Shield, XCircle } from 'lucide-react';
 import type { TrustLevel } from '@/lib/trust-level';
 import { getTrustBadgeConfig } from '@/lib/trust-level';
 
@@ -9,7 +9,7 @@ const ICONS: Record<string, LucideIcon> = {
   'alert-triangle': AlertTriangle,
   'alert-octagon': AlertOctagon,
   'x-circle': XCircle,
-  'clock': Clock
+  clock: Clock
 };
 
 interface TrustBadgeProps {
@@ -21,13 +21,9 @@ interface TrustBadgeProps {
 export function TrustBadge({ trustLevel, findings, size = 'sm' }: TrustBadgeProps) {
   const config = getTrustBadgeConfig(trustLevel);
   const Icon = ICONS[config.icon];
-  const totalFindings = findings
-    ? findings.critical + findings.high + findings.medium + findings.low
-    : 0;
+  const totalFindings = findings ? findings.critical + findings.high + findings.medium + findings.low : 0;
 
-  const sizeClasses = size === 'sm'
-    ? 'text-xs px-1.5 py-0.5 gap-1'
-    : 'text-sm px-2 py-1 gap-1.5';
+  const sizeClasses = size === 'sm' ? 'text-xs px-1.5 py-0.5 gap-1' : 'text-sm px-2 py-1 gap-1.5';
 
   return (
     <span className={`inline-flex items-center rounded ${config.bgClass} ${config.textClass} ${sizeClasses}`}>

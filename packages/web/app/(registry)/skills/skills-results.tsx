@@ -4,10 +4,10 @@ import { Download, LayoutGrid, List, Lock, Star } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { TrustBadge } from '@/components/security/TrustBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrustBadge } from '@/components/security/TrustBadge';
 import type { SkillSearchResult, SortOption } from '@/lib/data/skills';
 import { computeTrustLevel } from '@/lib/trust-level';
 import { cn } from '@/lib/utils';
@@ -171,7 +171,12 @@ function SkillCard({ skill }: { skill: SkillSearchResult }) {
             )}
             <TrustBadge
               trustLevel={trustLevel}
-              findings={{ critical: skill.criticalCount, high: skill.highCount, medium: skill.mediumCount, low: skill.lowCount }}
+              findings={{
+                critical: skill.criticalCount,
+                high: skill.highCount,
+                medium: skill.mediumCount,
+                low: skill.lowCount
+              }}
               size="sm"
             />
             <span className="flex items-center gap-1 ml-auto">
@@ -218,7 +223,12 @@ function SkillListItem({ skill }: { skill: SkillSearchResult }) {
       <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
         <TrustBadge
           trustLevel={trustLevel}
-          findings={{ critical: skill.criticalCount, high: skill.highCount, medium: skill.mediumCount, low: skill.lowCount }}
+          findings={{
+            critical: skill.criticalCount,
+            high: skill.highCount,
+            medium: skill.mediumCount,
+            low: skill.lowCount
+          }}
           size="sm"
         />
         <span className="hidden sm:flex items-center gap-1">
