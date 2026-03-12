@@ -65,13 +65,15 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
 
+      - name: Build shared package
+        run: bun --filter @internal/shared run build
+
       - name: Build bundle and binary
         working-directory: packages/cli
         env:
           TARGET: ${{ matrix.target }}
           OUTPUT_NAME: ${{ matrix.output }}
         run: |
-          bun --filter @internal/shared run build
           bun run build
           bun run build:bundle
           bun run build:sea
