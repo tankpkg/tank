@@ -101,6 +101,11 @@ export interface SkillSearchResult {
   visibility: 'public' | 'private';
   latestVersion: string | null;
   auditScore: number | null;
+  verdict: string | null;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
   publisher: string;
   downloads: number;
   stars: number;
@@ -116,7 +121,7 @@ export interface SkillSearchResponse {
 
 // ── Search params ─────────────────────────────────────────────────────────────
 
-export type SortOption = 'updated' | 'downloads' | 'stars' | 'score' | 'name';
+export type SortOption = 'updated' | 'downloads' | 'stars' | 'security' | 'name';
 export type VisibilityFilter = 'all' | 'public' | 'private';
 export type ScoreBucket = 'all' | 'high' | 'medium' | 'low';
 export type FreshnessBucket = 'all' | 'week' | 'month' | 'year';
@@ -389,8 +394,15 @@ function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
       return sql`coalesce(dl.downloads_7d, 0) DESC`;
     case 'stars':
       return starsAvailable ? sql`coalesce(st.stars_count, 0) DESC` : sql`s.updated_at DESC`;
-    case 'score':
-      return sql`coalesce(sv.audit_score, 0) DESC`;
+    case 'security':
+      // Sort by trust level: verified(4) > review_recommended(3) > concerns(2) > unsafe(1) > pending(0)
+      return sql`(CASE sr.verdict
+        WHEN 'pass' THEN CASE WHEN sr.critical_count + sr.high_count + sr.medium_count + sr.low_count = 0 THEN 4 ELSE 3 END
+        WHEN 'pass_with_notes' THEN 3
+        WHEN 'flagged' THEN 2
+        WHEN 'fail' THEN 1
+        ELSE 0
+      END) DESC, coalesce(sv.audit_score, 0) DESC`;
     case 'name':
       return sql`s.name ASC`;
     case 'updated':
@@ -548,6 +560,11 @@ export async function searchSkills(
         s.updated_at AS "updatedAt",
         sv.version AS "latestVersion",
         sv.audit_score AS "auditScore",
+        sr.verdict,
+        sr.critical_count AS "criticalCount",
+        sr.high_count AS "highCount",
+        sr.medium_count AS "mediumCount",
+        sr.low_count AS "lowCount",
         coalesce(u.name, '') AS publisher,
         ${downloadsSql} AS downloads,
         ${starsSql} AS stars,
@@ -557,6 +574,10 @@ export async function searchSkills(
       LEFT JOIN skill_versions sv ON sv.skill_id = s.id
         AND sv.created_at = (
           SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
+        )
+      LEFT JOIN scan_results sr ON sr.version_id = sv.id
+        AND sr.created_at = (
+          SELECT MAX(sr2.created_at) FROM scan_results sr2 WHERE sr2.version_id = sv.id
         )
       ${downloadJoin}
       ${starsJoin}
@@ -584,6 +605,11 @@ export async function searchSkills(
       s.updated_at AS "updatedAt",
       sv.version AS "latestVersion",
       sv.audit_score AS "auditScore",
+      sr.verdict,
+      sr.critical_count AS "criticalCount",
+      sr.high_count AS "highCount",
+      sr.medium_count AS "mediumCount",
+      sr.low_count AS "lowCount",
       coalesce(u.name, '') AS publisher,
       ${downloadsSql} AS downloads,
       ${starsSql} AS stars,
@@ -593,6 +619,10 @@ export async function searchSkills(
     LEFT JOIN skill_versions sv ON sv.skill_id = s.id
       AND sv.created_at = (
         SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
+      )
+    LEFT JOIN scan_results sr ON sr.version_id = sv.id
+      AND sr.created_at = (
+        SELECT MAX(sr2.created_at) FROM scan_results sr2 WHERE sr2.version_id = sv.id
       )
     ${downloadJoin}
     ${starsJoin}
@@ -637,6 +667,11 @@ function mapSearchResults(rows: Record<string, unknown>[], page: number, limit: 
       visibility: (row.visibility as 'public' | 'private') ?? 'public',
       latestVersion: (row.latestVersion as string) ?? null,
       auditScore: row.auditScore != null ? Number(row.auditScore) : null,
+      verdict: (row.verdict as string) ?? null,
+      criticalCount: Number(row.criticalCount) || 0,
+      highCount: Number(row.highCount) || 0,
+      mediumCount: Number(row.mediumCount) || 0,
+      lowCount: Number(row.lowCount) || 0,
       publisher: (row.publisher as string) ?? '',
       downloads: Number(row.downloads) || 0,
       stars: Number(row.stars) || 0,

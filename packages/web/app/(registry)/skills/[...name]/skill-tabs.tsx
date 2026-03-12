@@ -45,7 +45,7 @@ function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
         <TableRow>
           <TableHead>Version</TableHead>
           <TableHead>Published</TableHead>
-          <TableHead>Audit Score</TableHead>
+          <TableHead>Security Status</TableHead>
           <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>

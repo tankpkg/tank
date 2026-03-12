@@ -7,13 +7,15 @@ import {
   ScanningToolsStrip,
   ScanPipeline,
   ScoreBreakdown,
-  SecurityOverview
+  SecurityOverview,
+  TrustBadge
 } from '@/components/security';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { SkillVersionSummary } from '@/lib/data/skills';
 import { getSkillDetail } from '@/lib/data/skills';
+import { computeTrustLevel } from '@/lib/trust-level';
 import { DownloadButton } from './download-button';
 import { InstallCommand } from './install-command';
 import { SkillTabs } from './skill-tabs';
@@ -486,6 +488,15 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
     ]
   };
 
+  // Compute trust level for hero section
+  const heroTrustLevel = computeTrustLevel(
+    scanDetails?.verdict ?? null,
+    scanDetails?.criticalCount ?? 0,
+    scanDetails?.highCount ?? 0,
+    scanDetails?.mediumCount ?? 0,
+    scanDetails?.lowCount ?? 0
+  );
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -499,6 +510,16 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
                 {data.latestVersion.version}
               </Badge>
             )}
+            <TrustBadge
+              trustLevel={heroTrustLevel}
+              findings={{
+                critical: scanDetails?.criticalCount ?? 0,
+                high: scanDetails?.highCount ?? 0,
+                medium: scanDetails?.mediumCount ?? 0,
+                low: scanDetails?.lowCount ?? 0
+              }}
+              size="md"
+            />
             {data.visibility === 'private' && (
               <Badge variant="outline" className="text-xs">
                 Private

@@ -27,7 +27,7 @@
     },
     "packages/cli": {
       "name": "@tankpkg/cli",
-      "version": "0.6.3",
+      "version": "0.8.1",
       "bin": {
         "tank": "dist/bin/tank.js",
       },
@@ -55,7 +55,7 @@
     },
     "packages/mcp-server": {
       "name": "@tankpkg/mcp-server",
-      "version": "0.6.0",
+      "version": "0.8.1",
       "bin": {
         "tank-mcp": "dist/index.js",
       },
@@ -76,7 +76,7 @@
     },
     "packages/shared": {
       "name": "@internal/shared",
-      "version": "0.1.0",
+      "version": "0.8.1",
       "dependencies": {
         "semver": "^7.7.4",
         "zod": "^4.3.6",
@@ -88,7 +88,7 @@
     },
     "packages/web": {
       "name": "@internal/web",
-      "version": "0.2.0",
+      "version": "0.8.1",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.907.0",
         "@aws-sdk/s3-request-presigner": "^3.907.0",

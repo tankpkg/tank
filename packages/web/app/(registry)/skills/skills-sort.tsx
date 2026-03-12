@@ -8,7 +8,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'updated', label: 'Recently Updated' },
   { value: 'downloads', label: 'Most Downloads' },
   { value: 'stars', label: 'Most Stars' },
-  { value: 'score', label: 'Highest Score' },
+  { value: 'security', label: 'Most Secure' },
   { value: 'name', label: 'Name A–Z' }
 ];
 

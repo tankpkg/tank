@@ -53,7 +53,7 @@ interface SkillsPageProps {
   }>;
 }
 
-const VALID_SORTS: SortOption[] = ['updated', 'downloads', 'stars', 'score', 'name'];
+const VALID_SORTS: SortOption[] = ['updated', 'downloads', 'stars', 'security', 'name'];
 const VALID_VISIBILITY: VisibilityFilter[] = ['all', 'public', 'private'];
 const VALID_SCORE: ScoreBucket[] = ['all', 'high', 'medium', 'low'];
 const VALID_FRESHNESS: FreshnessBucket[] = ['all', 'week', 'month', 'year'];
