@@ -32,9 +32,16 @@ The CLI currently exposes 18 commands from `packages/cli/src/bin/tank.ts`.
 1. resolve the requested range with `@internal/shared`
 2. fetch metadata and tarball URL from the registry
 3. verify SHA-512 integrity
-4. enforce permission budget and optional audit threshold
-5. extract safely into `.tank/skills/...` or `~/.tank/skills/...`
-6. update `skills.lock`
+4. collect permission budget violations across all resolved skills
+5. if violations exist, prompt user to expand `tank.json` budget (or auto-accept with `--yes`)
+6. merge accepted permissions into manifest, or abort if declined
+7. enforce optional audit threshold
+8. extract safely into `.tank/skills/...` or `~/.tank/skills/...`
+9. update `skills.lock`
+
+Flags:
+
+- `--yes`, `-y` — auto-accept permission budget expansions (CI/non-interactive mode)
 
 ### Publish
 

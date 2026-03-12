@@ -7,6 +7,8 @@ Lookup:
 - `add CLI command → packages/cli/src/commands/ → register in packages/cli/src/bin/tank.ts`
 - `add MCP tool → packages/mcp-server/src/tools/ → register in packages/mcp-server/src/index.ts`
 - `modify CLI install/publish internals → packages/cli/src/lib/ → packer, lockfile, resolver, config`
+- `change install permission prompt → packages/cli/src/lib/permission-prompt.ts → interactive budget expansion`
+- `change permission violation collection → packages/cli/src/lib/permission-checker.ts → collectPermissionViolations`
 - `add public API route → packages/web/app/api/v1/ → App Router route handlers`
 - `add admin API route → packages/web/app/api/admin/ → admin-only handlers`
 - `change auth behavior → packages/web/lib/auth.ts → session, API key, org, OIDC`
