@@ -6,5 +6,8 @@ export default defineConfig({
   format: 'esm',
   fixedExtension: false,
   dts: true,
-  clean: true
+  clean: true,
+  deps: {
+    alwaysBundle: [/^@internal\//]
+  }
 });

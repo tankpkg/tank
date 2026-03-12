@@ -7,5 +7,8 @@ export default defineConfig({
   fixedExtension: false,
   dts: true,
   clean: true,
-  copy: ['package.json']
+  copy: ['package.json'],
+  deps: {
+    alwaysBundle: [/^@internal\//]
+  }
 });
