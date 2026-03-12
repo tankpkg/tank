@@ -65,6 +65,7 @@ tank publish --dry-run              # Validate without uploading
 # Installation & management
 tank install @org/skill             # Install a specific skill
 tank install                        # Install all from lockfile (like npm ci)
+tank install --yes                  # Auto-accept permission budget expansions
 tank update @org/skill              # Update within semver range
 tank update                         # Update all skills
 tank remove @org/skill              # Remove a skill
@@ -96,7 +97,7 @@ tank info @org/skill                # Show skill metadata
 }
 ```
 
-If any skill exceeds the permission budget, installation fails. This single feature would have prevented ClawHavoc.
+If any skill exceeds the permission budget, Tank prompts you to review and approve the expansion — or auto-accept with `--yes` in CI. No silent escalation. This single feature would have prevented ClawHavoc.
 
 ## Development
 
