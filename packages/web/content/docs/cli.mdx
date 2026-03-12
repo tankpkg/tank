@@ -243,7 +243,7 @@ tank scan
 
 ## tank link
 
-Link current skill directory to AI agent directories (for development)
+Link current skill to all detected AI agents for local development
 
 **Aliases:** `ln`
 
@@ -254,7 +254,7 @@ tank link
 
 ## tank unlink
 
-Remove skill symlinks from AI agent directories
+Remove skill symlinks from all AI agent directories
 
 ```bash
 tank unlink
@@ -319,8 +319,8 @@ tank upgrade [version]
 | `tank info` | `show` | Show detailed information about a skill |
 | `tank audit` | — | Display security audit results for installed skills |
 | `tank scan` | — | Scan a local skill for security issues without publishing |
-| `tank link` | `ln` | Link current skill directory to AI agent directories (for development) |
-| `tank unlink` | — | Remove skill symlinks from AI agent directories |
+| `tank link` | `ln` | Link current skill to all detected AI agents for local development |
+| `tank unlink` | — | Remove skill symlinks from all AI agent directories |
 | `tank doctor` | — | Diagnose agent integration health |
 | `tank migrate` | — | Migrate skills.json → tank.json and skills.lock → tank.lock |
 | `tank upgrade` | — | Update tank to the latest version |
