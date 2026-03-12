@@ -24,6 +24,7 @@ import { CopyInstallButton } from './copy-install-button';
 import { HomeNavAuthCta, HomePrimaryAuthCta } from './home-auth-cta';
 
 const GITHUB_REPO = 'tankpkg/tank';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
 
 async function getGitHubStars(): Promise<number | null> {
   try {
@@ -119,8 +120,8 @@ function buildHomepageJsonLd(_skillCount: number) {
       {
         '@type': 'Organization',
         name: 'Tank',
-        url: 'https://tankpkg.dev',
-        logo: 'https://tankpkg.dev/logo.png',
+        url: BASE_URL,
+        logo: `${BASE_URL}/logo.png`,
         description:
           'Security-first package registry for AI agent skills. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
         sameAs: ['https://github.com/tankpkg', 'https://x.com/tankpkg']
@@ -128,10 +129,10 @@ function buildHomepageJsonLd(_skillCount: number) {
       {
         '@type': 'WebSite',
         name: 'Tank',
-        url: 'https://tankpkg.dev',
+        url: BASE_URL,
         potentialAction: {
           '@type': 'SearchAction',
-          target: 'https://tankpkg.dev/skills?q={search_term_string}',
+          target: `${BASE_URL}/skills?q={search_term_string}`,
           'query-input': 'required name=search_term_string'
         }
       },
