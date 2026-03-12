@@ -37,7 +37,8 @@ import {
 import { linkSkillToAgents } from '../lib/linker.js';
 import { logger } from '../lib/logger.js';
 import { resolveLockfilePath, resolveManifestPath } from '../lib/manifest.js';
-import { checkPermissionBudget } from '../lib/permission-checker.js';
+import { collectPermissionViolations } from '../lib/permission-checker.js';
+import { mergePermissionsIntoBudget, promptForPermissionExpansion } from '../lib/permission-prompt.js';
 import { USER_AGENT } from '../version.js';
 
 export interface InstallOptions {
@@ -48,6 +49,7 @@ export interface InstallOptions {
   global?: boolean;
   homedir?: string;
   isTransitive?: boolean;
+  yes?: boolean;
 }
 
 export interface LockfileInstallOptions {
@@ -62,6 +64,7 @@ export interface InstallAllOptions {
   configDir?: string;
   global?: boolean;
   homedir?: string;
+  yes?: boolean;
 }
 
 interface VersionMetadata {
@@ -90,6 +93,9 @@ interface ExecuteInstallPipelineOptions {
   projectPermissions?: Permissions;
   auditMinScore?: number;
   spinner: ReturnType<typeof ora>;
+  yes?: boolean;
+  skillsJsonPath?: string;
+  skillsJson?: Record<string, unknown>;
 }
 
 function createRegistryFetcher(registry: string, headers: Record<string, string>): RegistryFetcher {
@@ -204,20 +210,42 @@ function createExtractDirResolver(
     global ? getGlobalExtractDir(resolvedHome, skillName) : getExtractDir(directory, skillName);
 }
 
-function validateResolvedNodes(
+async function validateResolvedNodes(
   resolvedNodes: ResolvedNode[],
   projectPermissions: Permissions | undefined,
-  auditMinScore: number | undefined
-): void {
+  auditMinScore: number | undefined,
+  options?: { yes?: boolean; skillsJsonPath?: string; skillsJson?: Record<string, unknown> }
+): Promise<void> {
   if (!projectPermissions) {
     logger.warn(`No permission budget defined in ${MANIFEST_FILENAME}. Install proceeding without permission checks.`);
   }
 
-  for (const node of resolvedNodes) {
-    if (projectPermissions) {
-      checkPermissionBudget(projectPermissions, node.meta.permissions as Permissions, node.name);
-    }
+  if (projectPermissions) {
+    const allViolations = resolvedNodes.flatMap((node) =>
+      collectPermissionViolations(projectPermissions, node.meta.permissions as Permissions, node.name)
+    );
 
+    if (allViolations.length > 0) {
+      const isInteractive = !process.env.CI && process.stdout.isTTY === true;
+      const decision = await promptForPermissionExpansion(allViolations, {
+        yes: options?.yes,
+        isInteractive
+      });
+
+      if (decision === 'accept' && options?.skillsJsonPath && options?.skillsJson) {
+        const merged = mergePermissionsIntoBudget(projectPermissions, allViolations);
+        options.skillsJson.permissions = merged;
+        fs.writeFileSync(options.skillsJsonPath, `${JSON.stringify(options.skillsJson, null, 2)}\n`);
+      } else if (decision === 'decline') {
+        const first = allViolations[0];
+        throw new Error(
+          `Permission denied: ${first.skillName} requests ${first.type} access to "${first.requested}", which is not in the project's permission budget`
+        );
+      }
+    }
+  }
+
+  for (const node of resolvedNodes) {
     if (auditMinScore !== undefined) {
       if (node.meta.auditScore === null || node.meta.auditScore === undefined) {
         logger.warn(`Audit score not yet available for ${node.name}. Install proceeding without audit score check.`);
@@ -340,11 +368,18 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
     rootSkillNames,
     projectPermissions,
     auditMinScore,
-    spinner
+    spinner,
+    yes,
+    skillsJsonPath,
+    skillsJson
   } = options;
 
   if (!global) {
-    validateResolvedNodes(resolvedNodes, projectPermissions, auditMinScore);
+    await validateResolvedNodes(resolvedNodes, projectPermissions, auditMinScore, {
+      yes,
+      skillsJsonPath,
+      skillsJson
+    });
   }
 
   const extractDirForSkill = createExtractDirResolver(directory, global, resolvedHome);
@@ -400,7 +435,8 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     configDir,
     global = false,
     homedir,
-    isTransitive = false
+    isTransitive = false,
+    yes
   } = options;
 
   const config = getConfig(configDir);
@@ -483,7 +519,10 @@ export async function installCommand(options: InstallOptions): Promise<void> {
       rootSkillNames: [name],
       projectPermissions,
       auditMinScore,
-      spinner
+      spinner,
+      yes,
+      skillsJsonPath,
+      skillsJson
     });
 
     if (!global && !isTransitive) {
@@ -625,7 +664,7 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
 }
 
 export async function installAll(options: InstallAllOptions): Promise<void> {
-  const { directory = process.cwd(), configDir, global = false, homedir } = options;
+  const { directory = process.cwd(), configDir, global = false, homedir, yes } = options;
   const resolvedHome = homedir ?? os.homedir();
   const config = getConfig(configDir);
   const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
@@ -695,7 +734,10 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
       rootSkillNames: skillEntries.map(([skillName]) => skillName),
       projectPermissions,
       auditMinScore,
-      spinner
+      spinner,
+      yes,
+      skillsJsonPath,
+      skillsJson
     });
 
     spinner.succeed(`Installed ${skillEntries.length} root skill${skillEntries.length === 1 ? '' : 's'}`);

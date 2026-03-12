@@ -131,12 +131,13 @@ program
   .argument('[name]', 'Skill name (e.g., @org/skill-name). Omit to install from lockfile.')
   .argument('[version-range]', 'Semver range (default: *)', '*')
   .option('-g, --global', 'Install skill globally (available to all projects)')
-  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean }) => {
+  .option('-y, --yes', 'Auto-accept permission budget expansion')
+  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean; yes?: boolean }) => {
     try {
       if (name) {
-        await installCommand({ name, versionRange, global: opts.global });
+        await installCommand({ name, versionRange, global: opts.global, yes: opts.yes });
       } else {
-        await installAll({ global: opts.global });
+        await installAll({ global: opts.global, yes: opts.yes });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

@@ -5,7 +5,7 @@ description: Install, update, remove, and verify AI agent skills with Tank — d
 
 # Installing AI Agent Skills
 
-Tank's install pipeline does significantly more than download a file. Every install resolves the full dependency tree, verifies SHA-512 integrity for every package, extracts tarballs through a security filter, enforces your project's permission budget, and writes a deterministic lockfile. This page covers every command and behavior you need for day-to-day skill management.
+Tank's install pipeline does significantly more than download a file. Every install resolves the full dependency tree, verifies SHA-512 integrity for every package, extracts tarballs through a security filter, checks your project's permission budget (prompting interactively to expand if needed), and writes a deterministic lockfile. This page covers every command and behavior you need for day-to-day skill management.
 
 ## Installing a Skill
 
@@ -32,6 +32,15 @@ tank install @org/skill-name '*' -g
 ```
 
 Global skills are stored in `~/.tank/skills/` and are available to all agents on the machine. Local installs (no `-g`) are stored in `.tank/skills/` relative to your current working directory, scoped to that project.
+
+### Auto-accept permission expansions (CI mode)
+
+```bash
+tank install --yes
+tank install -y
+```
+
+When a skill requests permissions beyond your `tank.json` budget, Tank normally prompts you interactively. The `--yes` flag auto-accepts all budget expansions — useful for CI/CD pipelines and non-interactive environments where no TTY is available.
 
 ### Install from lockfile (deterministic)
 
@@ -109,35 +118,58 @@ The `tank.lock` file is the source of truth for your install state. Commit it to
 - **Deterministic install mode** — When `tank.lock` is present and `tank install` is run with no arguments, Tank performs a lockfile-only install. It does not resolve version ranges from `tank.json`. This is by design — CI pipelines should always use this mode.
 
 <Callout type="info">
-  Always commit `tank.lock` to version control. It is the guarantee that every developer and every CI run installs exactly the same code. Excluding it from git means losing reproducibility.
+  Always commit `tank.lock` to version control. It is the guarantee that every developer and every CI run installs
+  exactly the same code. Excluding it from git means losing reproducibility.
 </Callout>
 
 ## Security on Install
 
 Tank applies multiple security filters during tarball extraction. These checks run before any file touches disk and cannot be bypassed:
 
-| Check | Behavior |
-|-------|----------|
-| **Symlinks** | Rejected — symlinks in tarballs are a well-known path traversal vector |
-| **Hardlinks** | Rejected — hardlinks can escape the extraction sandbox |
-| **Path traversal** (`../`) | Rejected — any entry with `..` in the path is refused |
-| **Absolute paths** | Rejected — entries with absolute paths are refused |
-| **Total size** | Max **50 MB** per skill tarball — extraction aborts if exceeded |
-| **File count** | Max **1,000 files** per skill — extraction aborts if exceeded |
-| **SHA-512 integrity** | Tarball hash must match the registry record exactly |
+| Check                      | Behavior                                                               |
+| -------------------------- | ---------------------------------------------------------------------- |
+| **Symlinks**               | Rejected — symlinks in tarballs are a well-known path traversal vector |
+| **Hardlinks**              | Rejected — hardlinks can escape the extraction sandbox                 |
+| **Path traversal** (`../`) | Rejected — any entry with `..` in the path is refused                  |
+| **Absolute paths**         | Rejected — entries with absolute paths are refused                     |
+| **Total size**             | Max **50 MB** per skill tarball — extraction aborts if exceeded        |
+| **File count**             | Max **1,000 files** per skill — extraction aborts if exceeded          |
+| **SHA-512 integrity**      | Tarball hash must match the registry record exactly                    |
 
 If any check fails, the partial extraction is cleaned up and the install exits with a non-zero code. Tank will never leave a partially extracted skill on disk.
 
 <Callout type="info">
-  These limits are enforced at the tarball level, not just at publish time. Even if a malicious actor somehow bypassed the publisher-side limits, the installer enforces them independently.
+  These limits are enforced at the tarball level, not just at publish time. Even if a malicious actor somehow bypassed
+  the publisher-side limits, the installer enforces them independently.
 </Callout>
+
+## Permission Budget Expansion
+
+When one or more skills request permissions that exceed your `tank.json` budget, Tank does not hard-fail. Instead, it:
+
+1. **Collects** all violations across all resolved skills
+2. **Displays** a grouped summary showing each skill and its requested permissions
+3. **Prompts** you to confirm the budget expansion
+
+```
+⚠ Permission budget exceeded — 1 skill requires permissions beyond your tank.json budget:
+
+  @community/seo-audit@3.0.0
+    network.outbound: *.googleapis.com
+
+? Expand your permission budget in tank.json to allow these? (y/N)
+```
+
+If you accept, Tank merges the requested permissions into your `tank.json` and writes the updated file to disk before continuing the install. If you decline, the install aborts cleanly.
+
+Use `--yes` / `-y` to auto-accept in CI/CD pipelines. See [Permissions & Access Control](/docs/permissions) for full details on the permission model and budget enforcement.
 
 ## Install Location
 
-| Mode | Location |
-|------|----------|
+| Mode            | Location                                                        |
+| --------------- | --------------------------------------------------------------- |
 | Local (default) | `.tank/skills/@org/skill-name/` (relative to working directory) |
-| Global (`-g`) | `~/.tank/skills/@org/skill-name/` |
+| Global (`-g`)   | `~/.tank/skills/@org/skill-name/`                               |
 
 Agent symlinks are also created so your AI agent runtime can discover installed skills by name without knowing the full path.
 
@@ -178,7 +210,8 @@ tank remove @org/skill-name -g
 4. Removes any agent symlinks pointing to the removed skill
 
 <Callout type="info">
-  Transitive dependencies shared with other installed skills are NOT removed. Tank only removes packages that are exclusively required by the skill being removed.
+  Transitive dependencies shared with other installed skills are NOT removed. Tank only removes packages that are
+  exclusively required by the skill being removed.
 </Callout>
 
 ## Verify and Audit
@@ -228,7 +261,8 @@ Always use lockfile-mode install in CI:
 
 ```bash
 # Uses tank.lock exactly — equivalent to npm ci
-tank install
+# --yes auto-accepts any permission budget expansions
+tank install --yes
 ```
 
 Never run `tank update` in CI. Updates should be intentional developer actions that produce a reviewed lockfile change.

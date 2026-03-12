@@ -1188,6 +1188,7 @@ tank install [name] [version-range]
 | Flag | Description |
 |------|-------------|
 | `-g, --global` | Install skill globally (available to all projects) |
+| `-y, --yes` | Auto-accept permission budget expansion |
 
 
 ## tank remove
@@ -2043,7 +2044,7 @@ Source: https://tankpkg.dev/docs/installing
 
 # Installing AI Agent Skills
 
-Tank's install pipeline does significantly more than download a file. Every install resolves the full dependency tree, verifies SHA-512 integrity for every package, extracts tarballs through a security filter, enforces your project's permission budget, and writes a deterministic lockfile. This page covers every command and behavior you need for day-to-day skill management.
+Tank's install pipeline does significantly more than download a file. Every install resolves the full dependency tree, verifies SHA-512 integrity for every package, extracts tarballs through a security filter, checks your project's permission budget (prompting interactively to expand if needed), and writes a deterministic lockfile. This page covers every command and behavior you need for day-to-day skill management.
 
 ## Installing a Skill
 
@@ -2070,6 +2071,15 @@ tank install @org/skill-name '*' -g
 ```
 
 Global skills are stored in `~/.tank/skills/` and are available to all agents on the machine. Local installs (no `-g`) are stored in `.tank/skills/` relative to your current working directory, scoped to that project.
+
+### Auto-accept permission expansions (CI mode)
+
+```bash
+tank install --yes
+tank install -y
+```
+
+When a skill requests permissions beyond your `tank.json` budget, Tank normally prompts you interactively. The `--yes` flag auto-accepts all budget expansions — useful for CI/CD pipelines and non-interactive environments where no TTY is available.
 
 ### Install from lockfile (deterministic)
 
@@ -2147,35 +2157,58 @@ The `tank.lock` file is the source of truth for your install state. Commit it to
 - **Deterministic install mode** — When `tank.lock` is present and `tank install` is run with no arguments, Tank performs a lockfile-only install. It does not resolve version ranges from `tank.json`. This is by design — CI pipelines should always use this mode.
 
 <Callout type="info">
-  Always commit `tank.lock` to version control. It is the guarantee that every developer and every CI run installs exactly the same code. Excluding it from git means losing reproducibility.
+  Always commit `tank.lock` to version control. It is the guarantee that every developer and every CI run installs
+  exactly the same code. Excluding it from git means losing reproducibility.
 </Callout>
 
 ## Security on Install
 
 Tank applies multiple security filters during tarball extraction. These checks run before any file touches disk and cannot be bypassed:
 
-| Check | Behavior |
-|-------|----------|
-| **Symlinks** | Rejected — symlinks in tarballs are a well-known path traversal vector |
-| **Hardlinks** | Rejected — hardlinks can escape the extraction sandbox |
-| **Path traversal** (`../`) | Rejected — any entry with `..` in the path is refused |
-| **Absolute paths** | Rejected — entries with absolute paths are refused |
-| **Total size** | Max **50 MB** per skill tarball — extraction aborts if exceeded |
-| **File count** | Max **1,000 files** per skill — extraction aborts if exceeded |
-| **SHA-512 integrity** | Tarball hash must match the registry record exactly |
+| Check                      | Behavior                                                               |
+| -------------------------- | ---------------------------------------------------------------------- |
+| **Symlinks**               | Rejected — symlinks in tarballs are a well-known path traversal vector |
+| **Hardlinks**              | Rejected — hardlinks can escape the extraction sandbox                 |
+| **Path traversal** (`../`) | Rejected — any entry with `..` in the path is refused                  |
+| **Absolute paths**         | Rejected — entries with absolute paths are refused                     |
+| **Total size**             | Max **50 MB** per skill tarball — extraction aborts if exceeded        |
+| **File count**             | Max **1,000 files** per skill — extraction aborts if exceeded          |
+| **SHA-512 integrity**      | Tarball hash must match the registry record exactly                    |
 
 If any check fails, the partial extraction is cleaned up and the install exits with a non-zero code. Tank will never leave a partially extracted skill on disk.
 
 <Callout type="info">
-  These limits are enforced at the tarball level, not just at publish time. Even if a malicious actor somehow bypassed the publisher-side limits, the installer enforces them independently.
+  These limits are enforced at the tarball level, not just at publish time. Even if a malicious actor somehow bypassed
+  the publisher-side limits, the installer enforces them independently.
 </Callout>
+
+## Permission Budget Expansion
+
+When one or more skills request permissions that exceed your `tank.json` budget, Tank does not hard-fail. Instead, it:
+
+1. **Collects** all violations across all resolved skills
+2. **Displays** a grouped summary showing each skill and its requested permissions
+3. **Prompts** you to confirm the budget expansion
+
+```
+⚠ Permission budget exceeded — 1 skill requires permissions beyond your tank.json budget:
+
+  @community/seo-audit@3.0.0
+    network.outbound: *.googleapis.com
+
+? Expand your permission budget in tank.json to allow these? (y/N)
+```
+
+If you accept, Tank merges the requested permissions into your `tank.json` and writes the updated file to disk before continuing the install. If you decline, the install aborts cleanly.
+
+Use `--yes` / `-y` to auto-accept in CI/CD pipelines. See [Permissions & Access Control](/docs/permissions) for full details on the permission model and budget enforcement.
 
 ## Install Location
 
-| Mode | Location |
-|------|----------|
+| Mode            | Location                                                        |
+| --------------- | --------------------------------------------------------------- |
 | Local (default) | `.tank/skills/@org/skill-name/` (relative to working directory) |
-| Global (`-g`) | `~/.tank/skills/@org/skill-name/` |
+| Global (`-g`)   | `~/.tank/skills/@org/skill-name/`                               |
 
 Agent symlinks are also created so your AI agent runtime can discover installed skills by name without knowing the full path.
 
@@ -2216,7 +2249,8 @@ tank remove @org/skill-name -g
 4. Removes any agent symlinks pointing to the removed skill
 
 <Callout type="info">
-  Transitive dependencies shared with other installed skills are NOT removed. Tank only removes packages that are exclusively required by the skill being removed.
+  Transitive dependencies shared with other installed skills are NOT removed. Tank only removes packages that are
+  exclusively required by the skill being removed.
 </Callout>
 
 ## Verify and Audit
@@ -2266,7 +2300,8 @@ Always use lockfile-mode install in CI:
 
 ```bash
 # Uses tank.lock exactly — equivalent to npm ci
-tank install
+# --yes auto-accepts any permission budget expansions
+tank install --yes
 ```
 
 Never run `tank update` in CI. Updates should be intentional developer actions that produce a reviewed lockfile change.
@@ -3176,10 +3211,12 @@ This means a malicious skill installed without review could:
 
 The ClawHavoc incident (February 2026, 341 malicious skills, 12% of a major marketplace) exploited exactly this: no registry checked what installed skills actually did. Skills declared nothing and did everything.
 
-Tank's permission model requires skills to declare upfront what they need. Projects then define a **permission budget** — a ceiling that every installed skill must fit within. If any skill claims more than the budget allows, the installation fails before a single file is extracted.
+Tank's permission model requires skills to declare upfront what they need. Projects then define a **permission budget** — a ceiling that every installed skill must fit within. If any skill claims more than the budget allows, Tank collects all violations and prompts you to review and approve the budget expansion before proceeding. You can auto-accept with `--yes` for CI environments, or decline to abort the install.
 
 <Callout type="info">
-Tank permissions are a defense-in-depth layer on top of OS-level controls. They cannot enforce syscall-level restrictions without a sandbox (planned for Phase 3), but they create an auditable contract between skill publishers and project owners — and enforce it at install time.
+  Tank permissions are a defense-in-depth layer on top of OS-level controls. They cannot enforce syscall-level
+  restrictions without a sandbox (planned for Phase 3), but they create an auditable contract between skill publishers
+  and project owners — and enforce it at install time.
 </Callout>
 
 ---
@@ -3204,14 +3241,15 @@ permissions:
 
 **Wildcard support:** A leading `*.` prefix matches any subdomain of the specified domain.
 
-| Pattern | Matches | Does Not Match |
-|---------|---------|----------------|
-| `api.anthropic.com` | `api.anthropic.com` | `dev.anthropic.com`, `anthropic.com` |
-| `*.anthropic.com` | `api.anthropic.com`, `dev.anthropic.com` | `anthropic.com` itself |
-| `*.*.example.com` | Not supported — single wildcard level only | — |
+| Pattern             | Matches                                    | Does Not Match                       |
+| ------------------- | ------------------------------------------ | ------------------------------------ |
+| `api.anthropic.com` | `api.anthropic.com`                        | `dev.anthropic.com`, `anthropic.com` |
+| `*.anthropic.com`   | `api.anthropic.com`, `dev.anthropic.com`   | `anthropic.com` itself               |
+| `*.*.example.com`   | Not supported — single wildcard level only | —                                    |
 
 <Callout type="warn">
-Avoid `["*"]` or broad wildcard patterns. A skill that needs to reach any host on the internet should not be installed without careful review. The security scanner flags broad wildcard network permissions as `medium` severity.
+  Avoid `["*"]` or broad wildcard patterns. A skill that needs to reach any host on the internet should not be installed
+  without careful review. The security scanner flags broad wildcard network permissions as `medium` severity.
 </Callout>
 
 ---
@@ -3255,7 +3293,9 @@ permissions:
 Write permissions are evaluated separately from read permissions. A skill that declares `filesystem.read: ["./src/**"]` does **not** implicitly gain write access to `./src/**`.
 
 <Callout type="error">
-Never grant write access to `./` (project root), `../**` (parent directories), or any path containing configuration files (`.env`, `.git/**`, `package.json`). A skill with write access to `package.json` can inject malicious dependencies on the next `npm install`.
+  Never grant write access to `./` (project root), `../**` (parent directories), or any path containing configuration
+  files (`.env`, `.git/**`, `package.json`). A skill with write access to `package.json` can inject malicious
+  dependencies on the next `npm install`.
 </Callout>
 
 ---
@@ -3276,7 +3316,8 @@ permissions:
 This is the most dangerous permission in the model. A skill with subprocess access can execute arbitrary code, install software, modify the system, and bypass all other permission checks by spawning a process that has its own network and filesystem access.
 
 <Callout type="error">
-Treat `subprocess: true` as a red flag during skill review. Legitimate skills rarely need subprocess access. If you see it, verify exactly what commands the skill runs by inspecting its source code before installing.
+  Treat `subprocess: true` as a red flag during skill review. Legitimate skills rarely need subprocess access. If you
+  see it, verify exactly what commands the skill runs by inspecting its source code before installing.
 </Callout>
 
 ---
@@ -3301,7 +3342,9 @@ The environment permission does **not** grant the skill the ability to set, expo
 
 ## The Permission Budget: Project-Level Access Control
 
-Individual skill permissions declare what a skill *claims* to need. The permission budget in `tank.json` declares what your project *allows*. Every skill installed into your project must fit within the budget — if any skill claims more than the budget permits, installation fails with a detailed error showing which permission was exceeded and by which skill.
+Individual skill permissions declare what a skill _claims_ to need. The permission budget in `tank.json` declares what your project _allows_. Every skill installed into your project must fit within the budget. If any skill claims more than the budget permits, Tank collects all violations and prompts you interactively to expand the budget. If you accept, `tank.json` is updated automatically and the install continues. If you decline, the install aborts with a detailed error showing which permissions were exceeded and by which skill.
+
+Use `tank install --yes` (or `-y`) to auto-accept budget expansions in CI/CD pipelines and non-interactive environments.
 
 ### Example `tank.json` with Budget
 
@@ -3314,31 +3357,14 @@ Individual skill permissions declare what a skill *claims* to need. The permissi
   },
   "permissions": {
     "network": {
-      "outbound": [
-        "api.anthropic.com",
-        "*.vercel.com",
-        "registry.npmjs.org"
-      ]
+      "outbound": ["api.anthropic.com", "*.vercel.com", "registry.npmjs.org"]
     },
     "filesystem": {
-      "read": [
-        "./src/**",
-        "./public/**",
-        "./package.json",
-        "./tsconfig.json",
-        "./.env.local"
-      ],
-      "write": [
-        "./output/**",
-        "./.tank/cache/**"
-      ]
+      "read": ["./src/**", "./public/**", "./package.json", "./tsconfig.json", "./.env.local"],
+      "write": ["./output/**", "./.tank/cache/**"]
     },
     "subprocess": false,
-    "environment": [
-      "ANTHROPIC_API_KEY",
-      "VERCEL_TOKEN",
-      "NODE_ENV"
-    ]
+    "environment": ["ANTHROPIC_API_KEY", "VERCEL_TOKEN", "NODE_ENV"]
   }
 }
 ```
@@ -3351,21 +3377,20 @@ This budget tells Tank:
 - **Subprocess:** Blocked — no skill may spawn shell commands
 - **Environment:** Only three named variables may be read
 
-If `@community/seo-audit` declares `network.outbound: ["*.googleapis.com"]` — a domain not in the budget — `tank install` will fail:
+If `@community/seo-audit` declares `network.outbound: ["*.googleapis.com"]` — a domain not in the budget — `tank install` will prompt you:
 
 ```
-✗ Installation failed: permission budget exceeded
+⚠ Permission budget exceeded — 1 skill requires permissions beyond your tank.json budget:
 
-  Skill:       @community/seo-audit@3.0.0
-  Permission:  network.outbound
-  Requested:   *.googleapis.com
-  Budget:      api.anthropic.com, *.vercel.com, registry.npmjs.org
+  @community/seo-audit@3.0.0
+    network.outbound: *.googleapis.com
 
-  Either:
-    1. Add "*.googleapis.com" to the network.outbound budget in tank.json
-    2. Choose a different skill that doesn't require Google API access
-    3. Contact the skill author to understand why this domain is needed
+? Expand your permission budget in tank.json to allow these? (y/N)
 ```
+
+If you accept, Tank merges `*.googleapis.com` into your `tank.json` `network.outbound` array and continues the install. If you decline (or the prompt times out), installation aborts.
+
+In CI/non-interactive mode (`tank install --yes`), expansions are auto-accepted.
 
 ---
 
@@ -3379,7 +3404,7 @@ For each domain the skill requests, the enforcer checks:
 
 1. **Exact match:** `api.anthropic.com` matches `api.anthropic.com` in the budget
 2. **Wildcard suffix match:** `api.anthropic.com` matches `*.anthropic.com` in the budget
-3. **No match:** Installation fails with the domain listed in the error
+3. **No match:** Recorded as a violation for the interactive prompt
 
 The wildcard expansion is single-level only. `api.v2.anthropic.com` does **not** match `*.anthropic.com` — it would need `*.v2.anthropic.com` or `*.*.anthropic.com` (the latter of which is not supported). This prevents accidental over-permissioning through nested wildcard expansion.
 
@@ -3403,18 +3428,22 @@ Each variable name the skill requests must appear literally in the budget's `env
 
 ### Enforcement Order
 
-The enforcer checks all skills against the budget before extracting any of them. If multiple skills exceed the budget, all violations are reported together rather than stopping at the first failure:
+The enforcer checks all skills against the budget before extracting any of them. If multiple skills exceed the budget, all violations are collected and presented together in a single interactive prompt:
 
 ```
-✗ Installation failed: 2 skills exceeded the permission budget
+⚠ Permission budget exceeded — 2 skills require permissions beyond your tank.json budget:
 
   @foo/skill-a@1.0.0
-    network.outbound: "api.openai.com" not in budget
+    network.outbound: api.openai.com
 
   @bar/skill-b@2.3.1
-    subprocess: true, but budget disallows subprocess
-    environment: "AWS_SECRET_ACCESS_KEY" not in budget
+    subprocess: true (currently disallowed)
+    environment: AWS_SECRET_ACCESS_KEY
+
+? Expand your permission budget in tank.json to allow these? (y/N)
 ```
+
+If accepted, all requested permissions are merged into `tank.json` and the install proceeds. If declined, the install aborts. Use `--yes` to auto-accept in CI.
 
 ---
 
@@ -3428,12 +3457,12 @@ The escalation logic is implemented in `apps/web/lib/permission-escalation.ts` a
 
 The type of version bump (major, minor, or patch) determines what permission changes are allowed:
 
-| Bump Type | Allowed Permission Changes |
-|-----------|--------------------------|
-| **Major** (1.x.x → 2.0.0) | All changes allowed — users explicitly opt in to major versions |
+| Bump Type                 | Allowed Permission Changes                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| **Major** (1.x.x → 2.0.0) | All changes allowed — users explicitly opt in to major versions                       |
 | **Minor** (1.2.x → 1.3.0) | Non-dangerous additions allowed; network domains and subprocess changes require major |
-| **Patch** (1.2.3 → 1.2.4) | No new permissions of any kind — only bug fixes |
-| **First publish** | Always allowed — no previous version to compare |
+| **Patch** (1.2.3 → 1.2.4) | No new permissions of any kind — only bug fixes                                       |
+| **First publish**         | Always allowed — no previous version to compare                                       |
 
 **What constitutes a "dangerous escalation" for minor bumps:**
 
@@ -3466,7 +3495,7 @@ The publisher attempts to publish `2.3.5` (patch bump) with:
 ```yaml
 permissions:
   network:
-    outbound: ["api.anthropic.com", "data.analytics.io"]  # new domain
+    outbound: ["api.anthropic.com", "data.analytics.io"] # new domain
   subprocess: false
 ```
 
@@ -3485,23 +3514,24 @@ Result:
 ```
 
 <Callout type="info">
-These rules protect skill consumers. When you run `tank update`, you expect patch updates to be safe by definition — no new capabilities, no new attack surface. The escalation enforcement makes that guarantee hard rather than advisory.
+  These rules protect skill consumers. When you run `tank update`, you expect patch updates to be safe by definition —
+  no new capabilities, no new attack surface. The escalation enforcement makes that guarantee hard rather than advisory.
 </Callout>
 
 ---
 
 ## Permission Best Practices
 
-| Permission | ✅ Best Practice | ❌ Anti-Pattern | Why |
-|------------|-----------------|-----------------|-----|
-| `network.outbound` | `["api.stripe.com", "api.sendgrid.com"]` | `["*"]` | Wildcards allow reaching any host, including attacker-controlled servers |
-| `network.outbound` | `["api.example.com"]` | `["*.example.com"]` | Only use wildcards if the skill genuinely needs multiple subdomains |
-| `filesystem.read` | `["./src/**", "./package.json"]` | `["./**"]` or `["/**"]` | Reading the entire project exposes secrets, credentials, and private data |
-| `filesystem.write` | `["./output/**"]` | `["./src/**"]` | Write access to source files allows backdoor injection |
-| `filesystem.write` | Never grant | `["./.env*"]` | Write access to `.env` files allows credential theft |
-| `subprocess` | `false` or absent | `true` (without justification) | Subprocess access bypasses all other permission controls |
-| `environment` | `["OPENAI_API_KEY"]` | (no guidance — always explicit) | Name only what you need; any undeclared variable the code reads is flagged |
-| General | Declare the minimum needed | Declare broad permissions "just in case" | Broad permissions harm your audit score and erode user trust |
+| Permission         | ✅ Best Practice                         | ❌ Anti-Pattern                          | Why                                                                        |
+| ------------------ | ---------------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------- |
+| `network.outbound` | `["api.stripe.com", "api.sendgrid.com"]` | `["*"]`                                  | Wildcards allow reaching any host, including attacker-controlled servers   |
+| `network.outbound` | `["api.example.com"]`                    | `["*.example.com"]`                      | Only use wildcards if the skill genuinely needs multiple subdomains        |
+| `filesystem.read`  | `["./src/**", "./package.json"]`         | `["./**"]` or `["/**"]`                  | Reading the entire project exposes secrets, credentials, and private data  |
+| `filesystem.write` | `["./output/**"]`                        | `["./src/**"]`                           | Write access to source files allows backdoor injection                     |
+| `filesystem.write` | Never grant                              | `["./.env*"]`                            | Write access to `.env` files allows credential theft                       |
+| `subprocess`       | `false` or absent                        | `true` (without justification)           | Subprocess access bypasses all other permission controls                   |
+| `environment`      | `["OPENAI_API_KEY"]`                     | (no guidance — always explicit)          | Name only what you need; any undeclared variable the code reads is flagged |
+| General            | Declare the minimum needed               | Declare broad permissions "just in case" | Broad permissions harm your audit score and erode user trust               |
 
 ### The Minimal-Permission Principle
 
