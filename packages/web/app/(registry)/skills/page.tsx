@@ -24,15 +24,17 @@ import { SkillsSort } from './skills-sort';
 
 export const revalidate = 60;
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
+
 export const metadata: Metadata = {
   title: 'Browse AI Agent Skills',
   description:
     'Discover, compare, and install security-verified AI agent skills. Every skill is scanned for credential theft, prompt injection, and supply chain attacks.',
-  alternates: { canonical: 'https://tankpkg.dev/skills' },
+  alternates: { canonical: `${BASE_URL}/skills` },
   openGraph: {
     title: 'Browse AI Agent Skills — Tank',
     description: 'Discover, compare, and install security-verified AI agent skills.',
-    url: 'https://tankpkg.dev/skills',
+    url: `${BASE_URL}/skills`,
     type: 'website',
     siteName: 'Tank'
   }

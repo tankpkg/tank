@@ -23,6 +23,8 @@ import { StarButton } from './star-button';
 // ISR: cache page at CDN for 60s, survives serverless cold starts (PERF-005/006)
 export const revalidate = 60;
 
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
+
 function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString('en-US', {
@@ -152,8 +154,8 @@ export async function generateMetadata({ params }: SkillDetailPageProps): Promis
   const version = data.latestVersion?.version;
   const title = version ? `${skillName}@${version}` : skillName;
   const description = data.description ?? `AI agent skill published on Tank by ${data.publisher.name}.`;
-  const url = `https://tankpkg.dev/skills/${encodeSkillName(skillName)}`;
-  const ogImageUrl = `https://tankpkg.dev/api/og/${encodeSkillName(skillName)}`;
+  const url = `${BASE_URL}/skills/${encodeSkillName(skillName)}`;
+  const ogImageUrl = `${BASE_URL}/api/og/${encodeSkillName(skillName)}`;
 
   return {
     title,
@@ -445,7 +447,7 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
         '@type': 'SoftwareSourceCode',
         name: data.name,
         description: data.description ?? undefined,
-        url: `https://tankpkg.dev/skills/${encodeSkillName(data.name)}`,
+        url: `${BASE_URL}/skills/${encodeSkillName(data.name)}`,
         codeRepository: data.repositoryUrl ?? undefined,
         version: data.latestVersion?.version ?? undefined,
         datePublished: data.createdAt.toISOString(),
@@ -471,13 +473,13 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
       {
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Tank', item: 'https://tankpkg.dev' },
-          { '@type': 'ListItem', position: 2, name: 'Skills', item: 'https://tankpkg.dev/skills' },
+          { '@type': 'ListItem', position: 1, name: 'Tank', item: BASE_URL },
+          { '@type': 'ListItem', position: 2, name: 'Skills', item: `${BASE_URL}/skills` },
           {
             '@type': 'ListItem',
             position: 3,
             name: data.name,
-            item: `https://tankpkg.dev/skills/${encodeSkillName(data.name)}`
+            item: `${BASE_URL}/skills/${encodeSkillName(data.name)}`
           }
         ]
       }

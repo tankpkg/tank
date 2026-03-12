@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { skills } from '@/lib/db/schema';
 import { source } from '@/lib/source';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tankpkg.dev';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;

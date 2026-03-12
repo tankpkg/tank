@@ -7,7 +7,7 @@ import { CopyToLLMButton } from '@/components/copy-to-llm-button';
 import { source } from '@/lib/source';
 import { getMDXComponents } from '@/mdx-components';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tankpkg.dev';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
 
 async function getRawContent(slug: string[]): Promise<string> {
   try {
