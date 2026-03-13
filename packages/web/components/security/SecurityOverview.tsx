@@ -102,9 +102,7 @@ export function SecurityOverview({
 
         {/* Verdict Badge + Finding Counts */}
         <div className="flex items-center justify-between">
-          <Badge className={`${verdictStyles.bg} ${verdictStyles.text} text-sm px-3 py-1`}>
-            {verdictStyles.label}
-          </Badge>
+          <Badge className={`${verdictStyles.bg} ${verdictStyles.text} text-sm px-3 py-1`}>{verdictStyles.label}</Badge>
 
           {/* Finding Counts */}
           <div className="flex gap-4">
