@@ -1,69 +1,39 @@
 // Generated from: features/private-packages/search-visibility.feature
-import { test } from '../../../steps/fixtures.ts';
+import { test } from "../../../steps/fixtures.ts";
 
 test.describe('Search respects visibility', () => {
-  test.beforeEach(
-    'Background',
-    async ({ Given, And, bddState, e2eContext, publishedPrivateSkill, publishedPublicSkill }, testInfo) => {
-      if (testInfo.error) return;
-      await Given('Alice has published a private skill "private-access-skill"', null, {
-        bddState,
-        e2eContext,
-        publishedPrivateSkill
-      });
-      await And('Alice has published a public skill "public-search-skill"', null, {
-        bddState,
-        e2eContext,
-        publishedPublicSkill
-      });
-    }
-  );
 
-  test('Publisher sees both public and private skills in search', {
-    tag: ['@private-packages', '@smoke', '@critical']
-  }, async ({ When, Then, And, bddState, e2eContext, secondUser, thirdUser }) => {
-    await When('Alice searches for skills', null, { bddState, e2eContext, secondUser, thirdUser });
-    await Then('Alice should see "private-access-skill" in the results', null, { bddState, e2eContext });
-    await And('Alice should see "public-search-skill" in the results', null, { bddState, e2eContext });
+  test.beforeEach('Background', async ({ Given, And, bddState, e2eContext, publishedPrivateSkill, publishedPublicSkill }, testInfo) => { if (testInfo.error) return;
+    await Given('Alice has published a private skill "private-access-skill"', null, { bddState, e2eContext, publishedPrivateSkill }); 
+    await And('Alice has published a public skill "public-search-skill"', null, { bddState, e2eContext, publishedPublicSkill }); 
+  });
+  
+  test('Publisher sees both public and private skills in search', { tag: ['@private-packages', '@smoke', '@critical'] }, async ({ When, Then, And, bddState, e2eContext, secondUser, thirdUser }) => { 
+    await When('Alice searches for skills', null, { bddState, e2eContext, secondUser, thirdUser }); 
+    await Then('Alice should see "private-access-skill" in the results', null, { bddState, e2eContext }); 
+    await And('Alice should see "public-search-skill" in the results', null, { bddState, e2eContext }); 
   });
 
-  test('Org member sees both public and private skills in search', {
-    tag: ['@private-packages', '@smoke', '@critical']
-  }, async ({ Given, When, Then, And, bddState, e2eContext, secondUser, thirdUser }) => {
-    await Given("Bob is an authenticated member of Alice's organization", null, { secondUser });
-    await When('Bob searches for skills', null, { bddState, e2eContext, secondUser, thirdUser });
-    await Then('Bob should see "private-access-skill" in the results', null, { bddState, e2eContext });
-    await And('Bob should see "public-search-skill" in the results', null, { bddState, e2eContext });
+  test('Org member sees both public and private skills in search', { tag: ['@private-packages', '@smoke', '@critical'] }, async ({ Given, When, Then, And, bddState, e2eContext, secondUser, thirdUser }) => { 
+    await Given('Bob is an authenticated member of Alice\'s organization', null, { secondUser }); 
+    await When('Bob searches for skills', null, { bddState, e2eContext, secondUser, thirdUser }); 
+    await Then('Bob should see "private-access-skill" in the results', null, { bddState, e2eContext }); 
+    await And('Bob should see "public-search-skill" in the results', null, { bddState, e2eContext }); 
   });
 
-  test('Unauthenticated user only sees public skills', { tag: ['@private-packages', '@smoke', '@critical'] }, async ({
-    When,
-    Then,
-    And,
-    bddState,
-    e2eContext,
-    noAuthHome
-  }) => {
-    await When('an unauthenticated user searches for skills', null, { bddState, noAuthHome });
-    await Then('the user should see "public-search-skill" in the results', null, { bddState, e2eContext });
-    await And('the user should not see "private-access-skill" in the results', null, { bddState, e2eContext });
+  test('Unauthenticated user only sees public skills', { tag: ['@private-packages', '@smoke', '@critical'] }, async ({ When, Then, And, bddState, e2eContext, noAuthHome }) => { 
+    await When('an unauthenticated user searches for skills', null, { bddState, noAuthHome }); 
+    await Then('the user should see "public-search-skill" in the results', null, { bddState, e2eContext }); 
+    await And('the user should not see "private-access-skill" in the results', null, { bddState, e2eContext }); 
   });
 
-  test('Non-org member only sees public skills', { tag: ['@private-packages', '@smoke', '@critical'] }, async ({
-    Given,
-    When,
-    Then,
-    And,
-    bddState,
-    e2eContext,
-    secondUser,
-    thirdUser
-  }) => {
-    await Given("Charlie is authenticated but not in Alice's organization", null, { thirdUser });
-    await When('Charlie searches for skills', null, { bddState, e2eContext, secondUser, thirdUser });
-    await Then('Charlie should see "public-search-skill" in the results', null, { bddState, e2eContext });
-    await And('Charlie should not see "private-access-skill" in the results', null, { bddState, e2eContext });
+  test('Non-org member only sees public skills', { tag: ['@private-packages', '@smoke', '@critical'] }, async ({ Given, When, Then, And, bddState, e2eContext, secondUser, thirdUser }) => { 
+    await Given('Charlie is authenticated but not in Alice\'s organization', null, { thirdUser }); 
+    await When('Charlie searches for skills', null, { bddState, e2eContext, secondUser, thirdUser }); 
+    await Then('Charlie should see "public-search-skill" in the results', null, { bddState, e2eContext }); 
+    await And('Charlie should not see "private-access-skill" in the results', null, { bddState, e2eContext }); 
   });
+
 });
 
 // == technical section ==
@@ -71,397 +41,12 @@ test.describe('Search respects visibility', () => {
 test.use({
   $test: [({}, use) => use(test), { scope: 'test', box: true }],
   $uri: [({}, use) => use('features/private-packages/search-visibility.feature'), { scope: 'test', box: true }],
-  $bddFileData: [({}, use) => use(bddFileData), { scope: 'test', box: true }]
+  $bddFileData: [({}, use) => use(bddFileData), { scope: "test", box: true }],
 });
 
-const bddFileData = [
-  // bdd-data-start
-  {
-    pwTestLine: 11,
-    pickleLine: 8,
-    tags: ['@private-packages', '@smoke', '@critical'],
-    steps: [
-      {
-        pwStepLine: 7,
-        gherkinStepLine: 4,
-        keywordType: 'Context',
-        textWithKeyword: 'Given Alice has published a private skill "private-access-skill"',
-        isBg: true,
-        stepMatchArguments: [
-          {
-            group: {
-              start: 36,
-              value: '"private-access-skill"',
-              children: [
-                { start: 37, value: 'private-access-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 8,
-        gherkinStepLine: 5,
-        keywordType: 'Context',
-        textWithKeyword: 'And Alice has published a public skill "public-search-skill"',
-        isBg: true,
-        stepMatchArguments: [
-          {
-            group: {
-              start: 35,
-              value: '"public-search-skill"',
-              children: [
-                { start: 36, value: 'public-search-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 12,
-        gherkinStepLine: 9,
-        keywordType: 'Action',
-        textWithKeyword: 'When Alice searches for skills',
-        stepMatchArguments: [{ group: { start: 0, value: 'Alice', children: [] }, parameterTypeName: 'word' }]
-      },
-      {
-        pwStepLine: 13,
-        gherkinStepLine: 10,
-        keywordType: 'Outcome',
-        textWithKeyword: 'Then Alice should see "private-access-skill" in the results',
-        stepMatchArguments: [
-          { group: { start: 0, value: 'Alice', children: [] }, parameterTypeName: 'word' },
-          {
-            group: {
-              start: 17,
-              value: '"private-access-skill"',
-              children: [
-                { start: 18, value: 'private-access-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 14,
-        gherkinStepLine: 11,
-        keywordType: 'Outcome',
-        textWithKeyword: 'And Alice should see "public-search-skill" in the results',
-        stepMatchArguments: [
-          { group: { start: 0, value: 'Alice', children: [] }, parameterTypeName: 'word' },
-          {
-            group: {
-              start: 17,
-              value: '"public-search-skill"',
-              children: [
-                { start: 18, value: 'public-search-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    pwTestLine: 17,
-    pickleLine: 14,
-    tags: ['@private-packages', '@smoke', '@critical'],
-    steps: [
-      {
-        pwStepLine: 7,
-        gherkinStepLine: 4,
-        keywordType: 'Context',
-        textWithKeyword: 'Given Alice has published a private skill "private-access-skill"',
-        isBg: true,
-        stepMatchArguments: [
-          {
-            group: {
-              start: 36,
-              value: '"private-access-skill"',
-              children: [
-                { start: 37, value: 'private-access-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 8,
-        gherkinStepLine: 5,
-        keywordType: 'Context',
-        textWithKeyword: 'And Alice has published a public skill "public-search-skill"',
-        isBg: true,
-        stepMatchArguments: [
-          {
-            group: {
-              start: 35,
-              value: '"public-search-skill"',
-              children: [
-                { start: 36, value: 'public-search-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 18,
-        gherkinStepLine: 15,
-        keywordType: 'Context',
-        textWithKeyword: "Given Bob is an authenticated member of Alice's organization",
-        stepMatchArguments: []
-      },
-      {
-        pwStepLine: 19,
-        gherkinStepLine: 16,
-        keywordType: 'Action',
-        textWithKeyword: 'When Bob searches for skills',
-        stepMatchArguments: [{ group: { start: 0, value: 'Bob', children: [] }, parameterTypeName: 'word' }]
-      },
-      {
-        pwStepLine: 20,
-        gherkinStepLine: 17,
-        keywordType: 'Outcome',
-        textWithKeyword: 'Then Bob should see "private-access-skill" in the results',
-        stepMatchArguments: [
-          { group: { start: 0, value: 'Bob', children: [] }, parameterTypeName: 'word' },
-          {
-            group: {
-              start: 15,
-              value: '"private-access-skill"',
-              children: [
-                { start: 16, value: 'private-access-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 21,
-        gherkinStepLine: 18,
-        keywordType: 'Outcome',
-        textWithKeyword: 'And Bob should see "public-search-skill" in the results',
-        stepMatchArguments: [
-          { group: { start: 0, value: 'Bob', children: [] }, parameterTypeName: 'word' },
-          {
-            group: {
-              start: 15,
-              value: '"public-search-skill"',
-              children: [
-                { start: 16, value: 'public-search-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    pwTestLine: 24,
-    pickleLine: 21,
-    tags: ['@private-packages', '@smoke', '@critical'],
-    steps: [
-      {
-        pwStepLine: 7,
-        gherkinStepLine: 4,
-        keywordType: 'Context',
-        textWithKeyword: 'Given Alice has published a private skill "private-access-skill"',
-        isBg: true,
-        stepMatchArguments: [
-          {
-            group: {
-              start: 36,
-              value: '"private-access-skill"',
-              children: [
-                { start: 37, value: 'private-access-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 8,
-        gherkinStepLine: 5,
-        keywordType: 'Context',
-        textWithKeyword: 'And Alice has published a public skill "public-search-skill"',
-        isBg: true,
-        stepMatchArguments: [
-          {
-            group: {
-              start: 35,
-              value: '"public-search-skill"',
-              children: [
-                { start: 36, value: 'public-search-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 25,
-        gherkinStepLine: 22,
-        keywordType: 'Action',
-        textWithKeyword: 'When an unauthenticated user searches for skills',
-        stepMatchArguments: []
-      },
-      {
-        pwStepLine: 26,
-        gherkinStepLine: 23,
-        keywordType: 'Outcome',
-        textWithKeyword: 'Then the user should see "public-search-skill" in the results',
-        stepMatchArguments: [
-          {
-            group: {
-              start: 20,
-              value: '"public-search-skill"',
-              children: [
-                { start: 21, value: 'public-search-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 27,
-        gherkinStepLine: 24,
-        keywordType: 'Outcome',
-        textWithKeyword: 'And the user should not see "private-access-skill" in the results',
-        stepMatchArguments: [
-          {
-            group: {
-              start: 24,
-              value: '"private-access-skill"',
-              children: [
-                { start: 25, value: 'private-access-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    pwTestLine: 30,
-    pickleLine: 27,
-    tags: ['@private-packages', '@smoke', '@critical'],
-    steps: [
-      {
-        pwStepLine: 7,
-        gherkinStepLine: 4,
-        keywordType: 'Context',
-        textWithKeyword: 'Given Alice has published a private skill "private-access-skill"',
-        isBg: true,
-        stepMatchArguments: [
-          {
-            group: {
-              start: 36,
-              value: '"private-access-skill"',
-              children: [
-                { start: 37, value: 'private-access-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 8,
-        gherkinStepLine: 5,
-        keywordType: 'Context',
-        textWithKeyword: 'And Alice has published a public skill "public-search-skill"',
-        isBg: true,
-        stepMatchArguments: [
-          {
-            group: {
-              start: 35,
-              value: '"public-search-skill"',
-              children: [
-                { start: 36, value: 'public-search-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 31,
-        gherkinStepLine: 28,
-        keywordType: 'Context',
-        textWithKeyword: "Given Charlie is authenticated but not in Alice's organization",
-        stepMatchArguments: []
-      },
-      {
-        pwStepLine: 32,
-        gherkinStepLine: 29,
-        keywordType: 'Action',
-        textWithKeyword: 'When Charlie searches for skills',
-        stepMatchArguments: [{ group: { start: 0, value: 'Charlie', children: [] }, parameterTypeName: 'word' }]
-      },
-      {
-        pwStepLine: 33,
-        gherkinStepLine: 30,
-        keywordType: 'Outcome',
-        textWithKeyword: 'Then Charlie should see "public-search-skill" in the results',
-        stepMatchArguments: [
-          { group: { start: 0, value: 'Charlie', children: [] }, parameterTypeName: 'word' },
-          {
-            group: {
-              start: 19,
-              value: '"public-search-skill"',
-              children: [
-                { start: 20, value: 'public-search-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      },
-      {
-        pwStepLine: 34,
-        gherkinStepLine: 31,
-        keywordType: 'Outcome',
-        textWithKeyword: 'And Charlie should not see "private-access-skill" in the results',
-        stepMatchArguments: [
-          { group: { start: 0, value: 'Charlie', children: [] }, parameterTypeName: 'word' },
-          {
-            group: {
-              start: 23,
-              value: '"private-access-skill"',
-              children: [
-                { start: 24, value: 'private-access-skill', children: [{ children: [] }] },
-                { children: [{ children: [] }] }
-              ]
-            },
-            parameterTypeName: 'string'
-          }
-        ]
-      }
-    ]
-  }
+const bddFileData = [ // bdd-data-start
+  {"pwTestLine":11,"pickleLine":11,"tags":["@private-packages","@smoke","@critical"],"steps":[{"pwStepLine":7,"gherkinStepLine":5,"keywordType":"Context","textWithKeyword":"Given Alice has published a private skill \"private-access-skill\"","isBg":true,"stepMatchArguments":[{"group":{"start":36,"value":"\"private-access-skill\"","children":[{"start":37,"value":"private-access-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":8,"gherkinStepLine":6,"keywordType":"Context","textWithKeyword":"And Alice has published a public skill \"public-search-skill\"","isBg":true,"stepMatchArguments":[{"group":{"start":35,"value":"\"public-search-skill\"","children":[{"start":36,"value":"public-search-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":12,"gherkinStepLine":12,"keywordType":"Action","textWithKeyword":"When Alice searches for skills","stepMatchArguments":[{"group":{"start":0,"value":"Alice","children":[]},"parameterTypeName":"word"}]},{"pwStepLine":13,"gherkinStepLine":13,"keywordType":"Outcome","textWithKeyword":"Then Alice should see \"private-access-skill\" in the results","stepMatchArguments":[{"group":{"start":0,"value":"Alice","children":[]},"parameterTypeName":"word"},{"group":{"start":17,"value":"\"private-access-skill\"","children":[{"start":18,"value":"private-access-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":14,"gherkinStepLine":14,"keywordType":"Outcome","textWithKeyword":"And Alice should see \"public-search-skill\" in the results","stepMatchArguments":[{"group":{"start":0,"value":"Alice","children":[]},"parameterTypeName":"word"},{"group":{"start":17,"value":"\"public-search-skill\"","children":[{"start":18,"value":"public-search-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]}]},
+  {"pwTestLine":17,"pickleLine":19,"tags":["@private-packages","@smoke","@critical"],"steps":[{"pwStepLine":7,"gherkinStepLine":5,"keywordType":"Context","textWithKeyword":"Given Alice has published a private skill \"private-access-skill\"","isBg":true,"stepMatchArguments":[{"group":{"start":36,"value":"\"private-access-skill\"","children":[{"start":37,"value":"private-access-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":8,"gherkinStepLine":6,"keywordType":"Context","textWithKeyword":"And Alice has published a public skill \"public-search-skill\"","isBg":true,"stepMatchArguments":[{"group":{"start":35,"value":"\"public-search-skill\"","children":[{"start":36,"value":"public-search-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":18,"gherkinStepLine":20,"keywordType":"Context","textWithKeyword":"Given Bob is an authenticated member of Alice's organization","stepMatchArguments":[]},{"pwStepLine":19,"gherkinStepLine":21,"keywordType":"Action","textWithKeyword":"When Bob searches for skills","stepMatchArguments":[{"group":{"start":0,"value":"Bob","children":[]},"parameterTypeName":"word"}]},{"pwStepLine":20,"gherkinStepLine":22,"keywordType":"Outcome","textWithKeyword":"Then Bob should see \"private-access-skill\" in the results","stepMatchArguments":[{"group":{"start":0,"value":"Bob","children":[]},"parameterTypeName":"word"},{"group":{"start":15,"value":"\"private-access-skill\"","children":[{"start":16,"value":"private-access-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":21,"gherkinStepLine":23,"keywordType":"Outcome","textWithKeyword":"And Bob should see \"public-search-skill\" in the results","stepMatchArguments":[{"group":{"start":0,"value":"Bob","children":[]},"parameterTypeName":"word"},{"group":{"start":15,"value":"\"public-search-skill\"","children":[{"start":16,"value":"public-search-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]}]},
+  {"pwTestLine":24,"pickleLine":28,"tags":["@private-packages","@smoke","@critical"],"steps":[{"pwStepLine":7,"gherkinStepLine":5,"keywordType":"Context","textWithKeyword":"Given Alice has published a private skill \"private-access-skill\"","isBg":true,"stepMatchArguments":[{"group":{"start":36,"value":"\"private-access-skill\"","children":[{"start":37,"value":"private-access-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":8,"gherkinStepLine":6,"keywordType":"Context","textWithKeyword":"And Alice has published a public skill \"public-search-skill\"","isBg":true,"stepMatchArguments":[{"group":{"start":35,"value":"\"public-search-skill\"","children":[{"start":36,"value":"public-search-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":25,"gherkinStepLine":29,"keywordType":"Action","textWithKeyword":"When an unauthenticated user searches for skills","stepMatchArguments":[]},{"pwStepLine":26,"gherkinStepLine":30,"keywordType":"Outcome","textWithKeyword":"Then the user should see \"public-search-skill\" in the results","stepMatchArguments":[{"group":{"start":20,"value":"\"public-search-skill\"","children":[{"start":21,"value":"public-search-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":27,"gherkinStepLine":31,"keywordType":"Outcome","textWithKeyword":"And the user should not see \"private-access-skill\" in the results","stepMatchArguments":[{"group":{"start":24,"value":"\"private-access-skill\"","children":[{"start":25,"value":"private-access-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]}]},
+  {"pwTestLine":30,"pickleLine":36,"tags":["@private-packages","@smoke","@critical"],"steps":[{"pwStepLine":7,"gherkinStepLine":5,"keywordType":"Context","textWithKeyword":"Given Alice has published a private skill \"private-access-skill\"","isBg":true,"stepMatchArguments":[{"group":{"start":36,"value":"\"private-access-skill\"","children":[{"start":37,"value":"private-access-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":8,"gherkinStepLine":6,"keywordType":"Context","textWithKeyword":"And Alice has published a public skill \"public-search-skill\"","isBg":true,"stepMatchArguments":[{"group":{"start":35,"value":"\"public-search-skill\"","children":[{"start":36,"value":"public-search-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":31,"gherkinStepLine":37,"keywordType":"Context","textWithKeyword":"Given Charlie is authenticated but not in Alice's organization","stepMatchArguments":[]},{"pwStepLine":32,"gherkinStepLine":38,"keywordType":"Action","textWithKeyword":"When Charlie searches for skills","stepMatchArguments":[{"group":{"start":0,"value":"Charlie","children":[]},"parameterTypeName":"word"}]},{"pwStepLine":33,"gherkinStepLine":39,"keywordType":"Outcome","textWithKeyword":"Then Charlie should see \"public-search-skill\" in the results","stepMatchArguments":[{"group":{"start":0,"value":"Charlie","children":[]},"parameterTypeName":"word"},{"group":{"start":19,"value":"\"public-search-skill\"","children":[{"start":20,"value":"public-search-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]},{"pwStepLine":34,"gherkinStepLine":40,"keywordType":"Outcome","textWithKeyword":"And Charlie should not see \"private-access-skill\" in the results","stepMatchArguments":[{"group":{"start":0,"value":"Charlie","children":[]},"parameterTypeName":"word"},{"group":{"start":23,"value":"\"private-access-skill\"","children":[{"start":24,"value":"private-access-skill","children":[{"children":[]}]},{"children":[{"children":[]}]}]},"parameterTypeName":"string"}]}]},
 ]; // bdd-data-end
