@@ -8,7 +8,9 @@ import { Suspense } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { TrustBadge } from '@/components/security';
 import { auth } from '@/lib/auth';
+import { computeTrustLevel } from '@/lib/trust-level';
 import type {
   FreshnessBucket,
   PopularityBucket,
@@ -222,7 +224,22 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
                 v{skill.latestVersion}
               </Badge>
             )}
-            {skill.auditScore !== null && <ScoreBadge score={skill.auditScore} />}
+            <TrustBadge
+              trustLevel={computeTrustLevel(
+                skill.verdict,
+                skill.criticalCount,
+                skill.highCount,
+                skill.mediumCount,
+                skill.lowCount
+              )}
+              findings={{
+                critical: skill.criticalCount,
+                high: skill.highCount,
+                medium: skill.mediumCount,
+                low: skill.lowCount
+              }}
+              size="sm"
+            />
             <span className="flex items-center gap-1 ml-auto">
               <Download className="size-3" />
               {skill.downloads.toLocaleString()}
@@ -235,20 +252,6 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
         </CardContent>
       </Card>
     </Link>
-  );
-}
-
-function ScoreBadge({ score }: { score: number }) {
-  if (score >= 7) {
-    return <Badge className="text-[10px] px-1.5 py-0 tank-badge-success border">Score: {score}</Badge>;
-  }
-  if (score >= 4) {
-    return <Badge className="text-[10px] px-1.5 py-0 tank-badge-warning border">Score: {score}</Badge>;
-  }
-  return (
-    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-      Score: {score}
-    </Badge>
   );
 }
 

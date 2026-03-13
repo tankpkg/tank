@@ -2,7 +2,7 @@
 
 import { Check, X } from 'lucide-react';
 
-export type QualityCategoryName = 'Documentation' | 'Package Hygiene' | 'Permissions';
+export type QualityCategoryName = 'Documentation' | 'Package Hygiene' | 'Permissions' | 'Security Scan';
 
 export interface QualityCategory {
   name: QualityCategoryName;

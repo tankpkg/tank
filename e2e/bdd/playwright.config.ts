@@ -3,7 +3,7 @@ import path from 'node:path';
 import { defineConfig } from '@playwright/test';
 import { cucumberReporter, defineBddConfig } from 'playwright-bdd';
 
-const envDir = path.resolve(__dirname, '../../..');
+const envDir = path.resolve(__dirname, '../..');
 const envPath = path.join(envDir, '.env.local');
 
 if (fs.existsSync(envPath)) {
