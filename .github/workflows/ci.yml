@@ -10,10 +10,6 @@ permissions:
   contents: read
   security-events: write
 
-env:
-  # Fall back to npm registry when Bun's CDN (registry.bun.sh) is down
-  BUN_CONFIG_REGISTRY: https://registry.npmjs.org/
-
 jobs:
   deploy-scanner:
     runs-on: ubuntu-latest
