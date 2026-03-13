@@ -13,6 +13,9 @@ on:
       - "packages/web/app/api/**/*.ts"
       - "packages/web/content/docs/**"
 
+env:
+  BUN_CONFIG_REGISTRY: https://registry.npmjs.org/
+
 jobs:
   check-docs-sync:
     runs-on: ubuntu-latest
