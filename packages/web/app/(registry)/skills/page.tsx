@@ -5,12 +5,11 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { TrustBadge } from '@/components/security';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrustBadge } from '@/components/security';
 import { auth } from '@/lib/auth';
-import { computeTrustLevel } from '@/lib/trust-level';
 import type {
   FreshnessBucket,
   PopularityBucket,
@@ -20,6 +19,7 @@ import type {
   VisibilityFilter
 } from '@/lib/data/skills';
 import { searchSkills } from '@/lib/data/skills';
+import { computeTrustLevel } from '@/lib/trust-level';
 import { SearchBar } from './search-bar';
 import { SkillsFilters } from './skills-filters';
 import { SkillsSort } from './skills-sort';
@@ -38,7 +38,14 @@ export const metadata: Metadata = {
     description: 'Discover, compare, and install security-verified AI agent skills.',
     url: `${BASE_URL}/skills`,
     type: 'website',
-    siteName: 'Tank'
+    siteName: 'Tank',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'Tank — Browse AI Agent Skills' }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Browse AI Agent Skills — Tank',
+    description: 'Discover, compare, and install security-verified AI agent skills.',
+    images: ['/opengraph-image']
   }
 };
 

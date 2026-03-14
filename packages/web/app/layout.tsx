@@ -1,5 +1,5 @@
 import { RootProvider } from 'fumadocs-ui/provider/next';
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import { CommandMenu } from '@/components/command-menu';
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     description: 'Publish, install, and audit AI agent skills with integrity verification and security scanning.',
     images: [
       {
-        url: '/og-image.png',
+        url: '/opengraph-image',
         width: 1200,
         height: 630,
         alt: 'Tank - Security-first package manager for AI agent skills'
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Tank — Security-first package manager for AI agent skills',
     description: 'Publish, install, and audit AI agent skills with integrity verification and security scanning.',
-    images: ['/og-image.png'],
+    images: ['/opengraph-image'],
     creator: '@tankpkg'
   },
   alternates: {
