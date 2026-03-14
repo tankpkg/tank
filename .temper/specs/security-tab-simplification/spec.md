@@ -11,11 +11,13 @@ Remove all misleading numeric scores from user-facing views. Users should see **
 ## Reference: `tank/bulletproof`
 
 The `tank/bulletproof` skill is the gold standard for how badges should display:
+
 - **PASS** verdict → **Verified** badge (green)
 - 0 findings → Clean trust indicator
 - All quality checks pass → Full quality checklist
 
 After this feature, visiting `/skills/tank/bulletproof` should show:
+
 1. Skill list: **Verified** badge (not "Score: 10")
 2. Security tab: **Verified** badge prominently, no 0-10 number
 3. Quality checks: ✓ Documentation, ✓ Package Hygiene, ✓ Permissions, ✓ Security Scan
@@ -28,14 +30,17 @@ After this feature, visiting `/skills/tank/bulletproof` should show:
 ## Alternatives Considered
 
 ### A. Keep score in security tab only
+
 - Show badge in list, keep 0-10 in security tab
 - **Rejected:** "10/10 with notes" is still confusing. Score conflates unrelated concerns.
 
 ### B. Show score on hover/tooltip
+
 - Badge primary, score as secondary info
 - **Rejected:** Adds complexity, score is misleading regardless of prominence.
 
 ### C. Full badge replacement (Recommended)
+
 - Remove score from all views
 - Keep score in database for backward compatibility
 - Badge + quality checks give users actionable info
@@ -43,9 +48,12 @@ After this feature, visiting `/skills/tank/bulletproof` should show:
 ## Current State
 
 ### Skill List (skills/page.tsx)
+
 ```tsx
 // Line 225 - Shows numeric score
-{skill.auditScore !== null && <ScoreBadge score={skill.auditScore} />}
+{
+  skill.auditScore !== null && <ScoreBadge score={skill.auditScore} />;
+}
 
 // ScoreBadge component (lines 241-252)
 function ScoreBadge({ score }: { score: number }) {
@@ -56,6 +64,7 @@ function ScoreBadge({ score }: { score: number }) {
 ```
 
 ### Security Tab (skills/[...name]/page.tsx)
+
 - `SecurityOverview` - Large 0-10 score, progress bar, verdict badge
 - `ScoreBreakdown` - 8 criteria with points (e.g., "+1/1")
 - `ScanningToolsStrip`, `FindingsList`, `ScanPipeline` - Keep
@@ -68,25 +77,21 @@ The `skills-results.tsx` already uses `TrustBadge` correctly. Update `skills/pag
 
 ```tsx
 // Before
-{skill.auditScore !== null && <ScoreBadge score={skill.auditScore} />}
+{
+  skill.auditScore !== null && <ScoreBadge score={skill.auditScore} />;
+}
 
 // After
 <TrustBadge
-  trustLevel={computeTrustLevel(
-    skill.verdict,
-    skill.criticalCount,
-    skill.highCount,
-    skill.mediumCount,
-    skill.lowCount
-  )}
+  trustLevel={computeTrustLevel(skill.verdict, skill.criticalCount, skill.highCount, skill.mediumCount, skill.lowCount)}
   findings={{
     critical: skill.criticalCount,
     high: skill.highCount,
     medium: skill.mediumCount,
-    low: skill.lowCount
+    low: skill.lowCount,
   }}
   size="sm"
-/>
+/>;
 ```
 
 ### Part 2: Simplify Security Tab
@@ -94,6 +99,7 @@ The `skills-results.tsx` already uses `TrustBadge` correctly. Update `skills/pag
 Replace numeric scoring with pass/fail indicators.
 
 **New Security Tab Layout:**
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  🛡️ VERIFIED                                            │
@@ -115,22 +121,23 @@ Replace numeric scoring with pass/fail indicators.
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `packages/web/app/(registry)/skills/page.tsx` | Replace `ScoreBadge` with `TrustBadge` |
+| File                                                    | Change                                    |
+| ------------------------------------------------------- | ----------------------------------------- |
+| `packages/web/app/(registry)/skills/page.tsx`           | Replace `ScoreBadge` with `TrustBadge`    |
 | `packages/web/components/security/SecurityOverview.tsx` | Remove score, show TrustBadge prominently |
-| `packages/web/components/security/ScoreBreakdown.tsx` | → `QualityChecks.tsx`, remove points |
-| `packages/web/app/(registry)/skills/[...name]/page.tsx` | Use new QualityChecks component |
+| `packages/web/components/security/ScoreBreakdown.tsx`   | → `QualityChecks.tsx`, remove points      |
+| `packages/web/app/(registry)/skills/[...name]/page.tsx` | Use new QualityChecks component           |
 
 ## Files to Remove
 
-| File | Reason |
-|------|--------|
+| File                                       | Reason                 |
+| ------------------------------------------ | ---------------------- |
 | `ScoreBadge` function in `skills/page.tsx` | Replaced by TrustBadge |
 
 ## Data Requirements
 
 The `SkillSearchResult` type already includes:
+
 - `verdict: string | null`
 - `criticalCount: number`
 - `highCount: number`

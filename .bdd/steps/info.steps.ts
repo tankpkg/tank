@@ -113,7 +113,7 @@ async function cleanup(): Promise<void> {
 async function whenICallGetSkill(name: string, auth?: string): Promise<void> {
   const encodedName = encodeURIComponent(name).replace(/%2F/g, '/');
   const headers: Record<string, string> = {};
-  if (auth) headers['Authorization'] = `Bearer ${auth}`;
+  if (auth) headers.Authorization = `Bearer ${auth}`;
   const res = await fetch(`${world.registry}/api/v1/skills/${encodedName}`, { headers });
   world.lastStatus = res.status;
   world.lastBody = (await res.json().catch(() => ({}))) as Record<string, unknown>;

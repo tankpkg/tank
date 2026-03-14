@@ -1,8 +1,0 @@
-{
-  "pythonVersion": "3.12",
-  "typeCheckingMode": "basic",
-  "include": ["api", "lib"],
-  "exclude": ["tests", "**/__pycache__"],
-  "reportMissingImports": "warning",
-  "reportMissingTypeStubs": false
-}

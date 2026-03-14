@@ -46,7 +46,7 @@ const world: AdminPackagesWorld = {
 
 async function adminGet(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
   const headers: Record<string, string> = {};
-  if (cookieHeader) headers['Cookie'] = cookieHeader;
+  if (cookieHeader) headers.Cookie = cookieHeader;
   const res = await fetch(`${world.registry}${path}`, { headers });
   let body: unknown;
   try {
@@ -105,8 +105,7 @@ describe('Feature: Admin package catalog management', () => {
       await sql`DELETE FROM skill_versions WHERE skill_id IN (${skillIds})`;
       await sql`DELETE FROM skills WHERE publisher_id = ${publisherId}`;
       await sql`DELETE FROM "user" WHERE id = ${publisherId}`;
-    } catch (e) {
-      console.warn('admin-packages cleanup warning:', e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
@@ -125,16 +124,16 @@ describe('Feature: Admin package catalog management', () => {
 
   describe('Scenario: GET /admin/packages returns paginated package list with publisher info (E1)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status, body } = await adminGet('/api/admin/packages', world.client!.session!.cookieHeader);
+      const { status, body } = await adminGet('/api/admin/packages', world.client?.session?.cookieHeader);
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('packages');
       expect(b).toHaveProperty('total');
-      const packages = b['packages'] as Array<Record<string, unknown>>;
+      const packages = b.packages as Array<Record<string, unknown>>;
       expect(Array.isArray(packages)).toBe(true);
       for (const pkg of packages.slice(0, 3)) {
         expect(pkg).toHaveProperty('publisher');
-        const publisher = pkg['publisher'] as Record<string, unknown>;
+        const publisher = pkg.publisher as Record<string, unknown>;
         expect(publisher).toHaveProperty('name');
         expect(publisher).toHaveProperty('email');
       }
@@ -147,12 +146,12 @@ describe('Feature: Admin package catalog management', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       const { status, body } = await adminGet(
         `/api/admin/packages?search=admin-pkg-search-target`,
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(200);
-      const packages = (body as Record<string, unknown>)['packages'] as Array<Record<string, unknown>>;
+      const packages = (body as Record<string, unknown>).packages as Array<Record<string, unknown>>;
       expect(Array.isArray(packages)).toBe(true);
-      const found = packages.some((p) => (p['name'] as string).includes('admin-pkg-search-target'));
+      const found = packages.some((p) => (p.name as string).includes('admin-pkg-search-target'));
       expect(found).toBe(true);
     });
   });
@@ -163,7 +162,7 @@ describe('Feature: Admin package catalog management', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       const { status, body } = await adminGet(
         '/api/admin/packages?status=invalid-status',
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(400);
       const bodyStr = JSON.stringify(body).toLowerCase();
@@ -175,12 +174,12 @@ describe('Feature: Admin package catalog management', () => {
 
   describe('Scenario: Filter by featured=true returns only featured packages', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status, body } = await adminGet('/api/admin/packages?featured=true', world.client!.session!.cookieHeader);
+      const { status, body } = await adminGet('/api/admin/packages?featured=true', world.client?.session?.cookieHeader);
       expect(status).toBe(200);
-      const packages = (body as Record<string, unknown>)['packages'] as Array<Record<string, unknown>>;
+      const packages = (body as Record<string, unknown>).packages as Array<Record<string, unknown>>;
       expect(Array.isArray(packages)).toBe(true);
       for (const pkg of packages) {
-        expect(pkg['featured']).toBe(true);
+        expect(pkg.featured).toBe(true);
       }
     });
   });

@@ -11,13 +11,6 @@ async function main() {
   const email = (emailArg?.split('=')[1] || process.env.FIRST_ADMIN_EMAIL)?.trim().toLowerCase();
 
   if (!email) {
-    console.error('Error: Email is required.');
-    console.error('');
-    console.error('Usage:');
-    console.error('  bun admin:bootstrap --email=your-email@example.com');
-    console.error('');
-    console.error('Or set FIRST_ADMIN_EMAIL in your .env.local file and run:');
-    console.error('  bun admin:bootstrap');
     process.exit(1);
   }
 
@@ -28,14 +21,10 @@ async function main() {
     .limit(1);
 
   if (!existingUser) {
-    console.error(`Error: User with email '${email}' was not found.`);
-    console.error('');
-    console.error('Make sure you have logged in at least once with GitHub.');
     process.exit(1);
   }
 
   if (existingUser.role === 'admin') {
-    console.log(`✓ User ${email} is already an admin.`);
     return;
   }
 
@@ -53,13 +42,8 @@ async function main() {
       source: 'scripts/bootstrap-admin.ts'
     }
   });
-
-  console.log(`✓ Promoted ${email} to admin.`);
-  console.log('');
-  console.log('You can now access the admin panel at: /admin');
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
+main().catch((_error: unknown) => {
   process.exit(1);
 });

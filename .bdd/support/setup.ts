@@ -134,9 +134,7 @@ export async function cleanupE2E(ctx: E2EContext): Promise<void> {
     await sql`DELETE FROM "apikey" WHERE id LIKE ${`e2e-apikey-${runId}%`}`;
     await sql`DELETE FROM "session" WHERE user_id = ${userId}`;
     await sql`DELETE FROM "user" WHERE id = ${userId}`;
-  } catch (error) {
-    console.warn(`BDD cleanup warning (non-fatal): ${error}`);
-  }
+  } catch (_error) {}
 
   try {
     fs.rmSync(home, { recursive: true, force: true });

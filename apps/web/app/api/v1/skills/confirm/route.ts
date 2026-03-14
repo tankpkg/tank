@@ -63,8 +63,7 @@ async function triggerSecurityScan(
     try {
       const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600, 'internal');
       signedUrl = urlData.signedUrl;
-    } catch (error) {
-      console.error('Failed to generate signed URL for scan:', error);
+    } catch (_error) {
       return null;
     }
 
@@ -75,8 +74,6 @@ async function triggerSecurityScan(
       pythonApiUrl ||
       process.env.NEXT_PUBLIC_APP_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-
-    console.log('[Scan] Calling Python API:', scanApiUrl);
 
     const scanResponse = await fetch(`${scanApiUrl}/api/analyze/scan`, {
       method: 'POST',
@@ -90,13 +87,11 @@ async function triggerSecurityScan(
     });
 
     if (!scanResponse.ok) {
-      console.error('Scan endpoint returned error:', scanResponse.status);
       return null;
     }
 
     return (await scanResponse.json()) as ScanResponse;
-  } catch (error) {
-    console.error('Failed to trigger security scan:', error);
+  } catch (_error) {
     return null;
   }
 }
@@ -243,8 +238,7 @@ export async function POST(request: Request) {
             }))
           );
         }
-      } catch (dbError) {
-        console.error('Failed to store scan results:', dbError);
+      } catch (_dbError) {
         // Continue - don't fail the whole publish if storage fails
       }
 
@@ -284,10 +278,7 @@ export async function POST(request: Request) {
         })
         .where(eq(skillVersions.id, versionId));
     }
-  } catch (error) {
-    // Scan threw an error - graceful degradation
-    console.error('Security scan error:', error);
-
+  } catch (_error) {
     const result = computeAuditScore({
       manifest,
       permissions,

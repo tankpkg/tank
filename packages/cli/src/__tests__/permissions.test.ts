@@ -3,8 +3,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
 // Mock chalk to strip colors for assertion simplicity
 vi.mock('chalk', () => ({
   default: {

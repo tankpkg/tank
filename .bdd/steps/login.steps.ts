@@ -40,7 +40,7 @@ async function givenAPendingLoginSessionExists(): Promise<void> {
     body: JSON.stringify({ state: world.state })
   });
   const body = (await res.json()) as Record<string, unknown>;
-  world.sessionCode = body['sessionCode'] as string;
+  world.sessionCode = body.sessionCode as string;
 }
 
 // ── When ───────────────────────────────────────────────────────────────────

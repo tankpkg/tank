@@ -217,9 +217,7 @@ export async function cleanupE2E(ctx?: E2EContext | null): Promise<void> {
     await sql`DELETE FROM "apikey" WHERE id LIKE ${`e2e-apikey-${runId}%`}`;
     await sql`DELETE FROM "session" WHERE user_id = ${userId}`;
     await sql`DELETE FROM "user" WHERE id = ${userId}`;
-  } catch (err) {
-    console.warn(`E2E cleanup warning (non-fatal): ${err}`);
-  }
+  } catch (_err) {}
 
   // Clean up temp HOME directory
   try {

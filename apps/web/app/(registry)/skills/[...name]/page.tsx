@@ -188,7 +188,6 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
   try {
     data = await getSkillDetail(skillName);
   } catch (error) {
-    console.error('[SkillDetailPage] Error fetching skill detail:', error);
     return (
       <div className="max-w-4xl mx-auto py-16 text-center">
         <h1 className="text-2xl font-bold mb-2">Error loading skill</h1>

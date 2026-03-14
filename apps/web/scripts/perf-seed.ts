@@ -65,34 +65,19 @@ function deterministicDate(dayOffset: number): Date {
 async function main() {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    console.error('ERROR: DATABASE_URL is required. Set it in .env.local or environment.');
     process.exit(1);
   }
 
   const sql = postgres(connectionString);
 
   try {
-    console.log('[perf-seed] Starting deterministic seed...');
     const t0 = performance.now();
-
-    // ── Phase 1: Clean up existing perf data ──────────────────────────────
-    console.log('[perf-seed] Phase 1: Cleaning existing perf data...');
     await cleanupPerfData(sql);
-
-    // ── Phase 2: Insert auth entities ─────────────────────────────────────
-    console.log('[perf-seed] Phase 2: Inserting auth entities...');
     await insertAuthEntities(sql);
-
-    // ── Phase 3: Insert skills + versions + downloads + scans ─────────────
-    console.log('[perf-seed] Phase 3: Inserting skills and versions...');
     await insertSkillsAndVersions(sql);
 
-    const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-    console.log(
-      `[perf-seed] Done in ${elapsed}s. Seeded ${SKILL_COUNT + 1} skills, ${(SKILL_COUNT + 1) * VERSIONS_PER_SKILL} versions.`
-    );
-  } catch (err) {
-    console.error('[perf-seed] FATAL:', err);
+    const _elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+  } catch (_err) {
     process.exit(1);
   } finally {
     await sql.end();
@@ -150,8 +135,6 @@ async function cleanupPerfData(sql: postgres.Sql) {
   await sql`DELETE FROM "apikey" WHERE user_id = ${PERF_USER_ID}`;
   await sql`DELETE FROM "session" WHERE user_id = ${PERF_USER_ID}`;
   await sql`DELETE FROM "user" WHERE id = ${PERF_USER_ID}`;
-
-  console.log(`[perf-seed]   Cleaned ${skillIds.length} skills and related data.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -191,8 +174,6 @@ async function insertAuthEntities(sql: postgres.Sql) {
     INSERT INTO "member" (id, organization_id, user_id, role, created_at)
     VALUES (${TEST_MEMBER_ID}, ${TEST_ORG_ID}, ${PERF_USER_ID}, ${'owner'}, ${now})
   `;
-
-  console.log('[perf-seed]   Created user, 2 orgs, 2 memberships.');
 }
 
 // ---------------------------------------------------------------------------
@@ -229,9 +210,6 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
     orgId: TEST_ORG_ID,
     index: SKILL_COUNT
   });
-
-  // Batch insert skills
-  console.log(`[perf-seed]   Inserting ${skillDefs.length} skills...`);
   for (let batch = 0; batch < skillDefs.length; batch += 50) {
     const chunk = skillDefs.slice(batch, batch + 50);
     const values = chunk.map((s) => ({
@@ -248,9 +226,6 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
       INSERT INTO skills ${sql(values, 'id', 'name', 'description', 'publisher_id', 'org_id', 'created_at', 'updated_at')}
     `;
   }
-
-  // Insert versions, downloads, and scans for each skill
-  console.log(`[perf-seed]   Inserting versions, downloads, and scans...`);
 
   // Collect all versions, downloads, and scans for batch insert
   const allVersions: Array<{
@@ -443,7 +418,6 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
       )}
     `;
   }
-  console.log(`[perf-seed]   Inserted ${allVersions.length} versions.`);
 
   for (let batch = 0; batch < allDownloads.length; batch += 500) {
     const chunk = allDownloads.slice(batch, batch + 500);
@@ -451,7 +425,6 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
       INSERT INTO skill_download_daily ${sql(chunk, 'id', 'skill_id', 'date', 'count')}
     `;
   }
-  console.log(`[perf-seed]   Inserted ${allDownloads.length} daily download rows.`);
 
   // Scan tables may not exist if migration 0001 hasn't been applied
   const scanTableExists = await sql<{ exists: boolean }[]>`
@@ -481,7 +454,6 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
         )}
       `;
     }
-    console.log(`[perf-seed]   Inserted ${allScanResults.length} scan results.`);
 
     if (allScanFindings.length > 0) {
       for (let batch = 0; batch < allScanFindings.length; batch += 100) {
@@ -503,10 +475,8 @@ async function insertSkillsAndVersions(sql: postgres.Sql) {
           )}
         `;
       }
-      console.log(`[perf-seed]   Inserted ${allScanFindings.length} scan findings.`);
     }
   } else {
-    console.log('[perf-seed]   Skipped scan data (scan_results table not found).');
   }
 }
 

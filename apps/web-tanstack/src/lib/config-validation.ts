@@ -57,10 +57,6 @@ export function validateAuthConfig(): void {
   // Validate credentials config if enabled
   if (providers.has('credentials')) {
     if (!process.env.RESEND_API_KEY && process.env.NODE_ENV === 'production') {
-      console.warn(
-        'WARNING: credentials auth enabled but RESEND_API_KEY is not set. ' +
-          'Email verification links will only be logged to console.'
-      );
     }
   }
 }

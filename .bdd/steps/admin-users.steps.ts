@@ -42,7 +42,7 @@ const world: AdminUsersWorld = {
 
 async function adminGet(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
   const headers: Record<string, string> = {};
-  if (cookieHeader) headers['Cookie'] = cookieHeader;
+  if (cookieHeader) headers.Cookie = cookieHeader;
   const res = await fetch(`${world.registry}${path}`, { headers });
   let body: unknown;
   try {
@@ -120,8 +120,7 @@ describe('Feature: Admin user management', () => {
       const suspendedUserId = `reg-suspended-${world.runId}`;
       await sql`DELETE FROM user_status WHERE user_id = ${suspendedUserId}`;
       await sql`DELETE FROM "user" WHERE id IN (${filterUserId}, ${suspendedUserId})`;
-    } catch (e) {
-      console.warn('admin-users cleanup warning:', e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
@@ -140,7 +139,7 @@ describe('Feature: Admin user management', () => {
 
   describe('Scenario: GET /admin/users returns paginated user list (E1)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status, body } = await adminGet('/api/admin/users', world.client!.session!.cookieHeader);
+      const { status, body } = await adminGet('/api/admin/users', world.client?.session?.cookieHeader);
       expectStatus(status, 200);
       expectBodyContains(body, 'users', 'total', 'totalPages');
     });
@@ -154,12 +153,12 @@ describe('Feature: Admin user management', () => {
       await givenTestUserExists(email);
       const { status, body } = await adminGet(
         `/api/admin/users?search=bdd-user-filter-test-${world.runId}`,
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expectStatus(status, 200);
-      const users = (body as Record<string, unknown>)['users'] as Array<Record<string, unknown>>;
+      const users = (body as Record<string, unknown>).users as Array<Record<string, unknown>>;
       expect(Array.isArray(users)).toBe(true);
-      const found = users.some((u) => (u['email'] as string).includes(`bdd-user-filter-test-${world.runId}`));
+      const found = users.some((u) => (u.email as string).includes(`bdd-user-filter-test-${world.runId}`));
       expect(found).toBe(true);
     });
   });
@@ -168,12 +167,12 @@ describe('Feature: Admin user management', () => {
 
   describe('Scenario: Filter by role=admin returns only admin users (E4)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status, body } = await adminGet('/api/admin/users?role=admin', world.client!.session!.cookieHeader);
+      const { status, body } = await adminGet('/api/admin/users?role=admin', world.client?.session?.cookieHeader);
       expectStatus(status, 200);
-      const users = (body as Record<string, unknown>)['users'] as Array<Record<string, unknown>>;
+      const users = (body as Record<string, unknown>).users as Array<Record<string, unknown>>;
       expect(Array.isArray(users)).toBe(true);
       for (const u of users) {
-        expect(u['role']).toBe('admin');
+        expect(u.role).toBe('admin');
       }
     });
   });
@@ -183,14 +182,14 @@ describe('Feature: Admin user management', () => {
   describe('Scenario: Filter by status=suspended returns only suspended users (E5)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await givenSuspendedUserExists();
-      const { status, body } = await adminGet('/api/admin/users?status=suspended', world.client!.session!.cookieHeader);
+      const { status, body } = await adminGet('/api/admin/users?status=suspended', world.client?.session?.cookieHeader);
       expectStatus(status, 200);
-      const users = (body as Record<string, unknown>)['users'] as Array<Record<string, unknown>>;
+      const users = (body as Record<string, unknown>).users as Array<Record<string, unknown>>;
       expect(Array.isArray(users)).toBe(true);
       for (const u of users) {
-        const latestStatus = u['latestStatus'] as Record<string, unknown> | null;
+        const latestStatus = u.latestStatus as Record<string, unknown> | null;
         if (latestStatus !== null) {
-          expect(latestStatus['status']).toBe('suspended');
+          expect(latestStatus.status).toBe('suspended');
         }
       }
     });

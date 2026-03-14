@@ -55,7 +55,7 @@ const world: StarWorld = {
 
 async function getJson(path: string, cookie?: string): Promise<{ status: number; body: Record<string, unknown> }> {
   const hdrs: Record<string, string> = {};
-  if (cookie) hdrs['Cookie'] = cookie;
+  if (cookie) hdrs.Cookie = cookie;
   const res = await fetch(`${world.registry}${path}`, { headers: hdrs });
   let body: Record<string, unknown>;
   try {
@@ -68,7 +68,7 @@ async function getJson(path: string, cookie?: string): Promise<{ status: number;
 
 async function postJson(path: string, cookie?: string): Promise<{ status: number; body: Record<string, unknown> }> {
   const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (cookie) hdrs['Cookie'] = cookie;
+  if (cookie) hdrs.Cookie = cookie;
   const res = await fetch(`${world.registry}${path}`, {
     method: 'POST',
     headers: hdrs
@@ -84,7 +84,7 @@ async function postJson(path: string, cookie?: string): Promise<{ status: number
 
 async function deleteJson(path: string, cookie?: string): Promise<{ status: number; body: Record<string, unknown> }> {
   const hdrs: Record<string, string> = {};
-  if (cookie) hdrs['Cookie'] = cookie;
+  if (cookie) hdrs.Cookie = cookie;
   const res = await fetch(`${world.registry}${path}`, {
     method: 'DELETE',
     headers: hdrs

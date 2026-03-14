@@ -43,7 +43,7 @@ const world: BulkRescanWorld = {
 
 async function adminPost(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (cookieHeader) headers['Cookie'] = cookieHeader;
+  if (cookieHeader) headers.Cookie = cookieHeader;
   const res = await fetch(`${world.registry}${path}`, { method: 'POST', headers });
   let body: unknown;
   try {
@@ -71,8 +71,7 @@ describe('Feature: Admin bulk rescan of skill versions', () => {
     if (!sql) return;
     try {
       if (world.client) await cleanupAdminSession(world.client, world.runId);
-    } catch (e) {
-      console.warn('admin-bulk-rescan cleanup warning:', e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
@@ -91,11 +90,11 @@ describe('Feature: Admin bulk rescan of skill versions', () => {
 
   describe('Scenario: POST /admin/rescan-skills returns count of queued versions (E1)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status, body } = await adminPost('/api/admin/rescan-skills', world.client!.session!.cookieHeader);
+      const { status, body } = await adminPost('/api/admin/rescan-skills', world.client?.session?.cookieHeader);
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('total');
-      expect(typeof b['total']).toBe('number');
+      expect(typeof b.total).toBe('number');
     });
   });
 
@@ -103,16 +102,16 @@ describe('Feature: Admin bulk rescan of skill versions', () => {
 
   describe('Scenario: Response includes jobId when there are versions to rescan', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status, body } = await adminPost('/api/admin/rescan-skills', world.client!.session!.cookieHeader);
+      const { status, body } = await adminPost('/api/admin/rescan-skills', world.client?.session?.cookieHeader);
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
-      const total = b['total'] as number;
+      const total = b.total as number;
       if (total > 0) {
         expect(b).toHaveProperty('jobId');
-        expect(typeof b['jobId']).toBe('string');
+        expect(typeof b.jobId).toBe('string');
         expect(b).toHaveProperty('statusUrl');
       } else {
-        expect(b['jobId']).toBeNull();
+        expect(b.jobId).toBeNull();
       }
     });
   });

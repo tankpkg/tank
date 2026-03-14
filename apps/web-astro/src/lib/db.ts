@@ -6,7 +6,6 @@ import * as schema from './db/schema';
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString && process.env.NODE_ENV !== 'production') {
-  console.warn('Missing DATABASE_URL environment variable');
 }
 
 function createClient() {

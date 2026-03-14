@@ -113,19 +113,19 @@ function whenCheckingEscalationWithNoPreviousVersion(newPerms: VersionPermission
 
 function thenResultIsAllowed(): void {
   expect(world.result).not.toBeNull();
-  expect(world.result!.allowed).toBe(true);
-  expect(world.result!.violations).toHaveLength(0);
+  expect(world.result?.allowed).toBe(true);
+  expect(world.result?.violations).toHaveLength(0);
 }
 
 function thenResultIsNotAllowed(): void {
   expect(world.result).not.toBeNull();
-  expect(world.result!.allowed).toBe(false);
-  expect(world.result!.violations.length).toBeGreaterThan(0);
+  expect(world.result?.allowed).toBe(false);
+  expect(world.result?.violations.length).toBeGreaterThan(0);
 }
 
 function thenViolationsMention(keyword: string): void {
   expect(world.result).not.toBeNull();
-  const mentionsKeyword = world.result!.violations.some((v: string) => v.toUpperCase().includes(keyword.toUpperCase()));
+  const mentionsKeyword = world.result?.violations.some((v: string) => v.toUpperCase().includes(keyword.toUpperCase()));
   expect(mentionsKeyword).toBe(true);
 }
 

@@ -49,7 +49,7 @@ async function postSkills(
   token?: string
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) hdrs['Authorization'] = `Bearer ${token}`;
+  if (token) hdrs.Authorization = `Bearer ${token}`;
   const res = await fetch(`${world.registry}/api/v1/skills`, {
     method: 'POST',
     headers: hdrs,
@@ -80,7 +80,7 @@ function manifest(name: string, version: string, extra: Record<string, unknown> 
 }
 
 function uniqueSkillName(prefix: string): string {
-  return `@${world.ctx!.orgSlug}/${prefix}-${randomUUID().slice(0, 8)}`;
+  return `@${world.ctx?.orgSlug}/${prefix}-${randomUUID().slice(0, 8)}`;
 }
 
 // ── Feature ────────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
 
   describe('Scenario: POST /skills with invalid manifest returns 400 (E3)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('returns 400', async () => {
-      const { status, body } = await postSkills({ name: `@${world.ctx!.orgSlug}/bdd-no-version` }, world.ctx!.token);
+      const { status, body } = await postSkills({ name: `@${world.ctx?.orgSlug}/bdd-no-version` }, world.ctx?.token);
       world.lastStatus = status;
       world.lastBody = body;
       expect(status).toBe(400);
@@ -127,7 +127,7 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
 
   describe('Scenario: POST /skills with nonexistent org returns 404 (E4)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('returns 404 and error mentions Organization', async () => {
-      const { status, body } = await postSkills(manifest('@nonexistent-bdd-org/skill', '1.0.0'), world.ctx!.token);
+      const { status, body } = await postSkills(manifest('@nonexistent-bdd-org/skill', '1.0.0'), world.ctx?.token);
       world.lastStatus = status;
       world.lastBody = body;
       expect(status).toBe(404);
@@ -141,11 +141,11 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('first publish succeeds, second returns 409', async () => {
       world.conflictSkillName = uniqueSkillName('conflict');
 
-      const { status: s1 } = await postSkills(manifest(world.conflictSkillName, '1.0.0'), world.ctx!.token);
+      const { status: s1 } = await postSkills(manifest(world.conflictSkillName, '1.0.0'), world.ctx?.token);
       expect([200, 409]).toContain(s1);
       if (s1 !== 200) return;
 
-      const { status: s2, body: b2 } = await postSkills(manifest(world.conflictSkillName, '1.0.0'), world.ctx!.token);
+      const { status: s2, body: b2 } = await postSkills(manifest(world.conflictSkillName, '1.0.0'), world.ctx?.token);
       expect(s2).toBe(409);
       world.lastBody = b2;
     });
@@ -159,14 +159,14 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
       async () => {
         world.escalationSkillName = uniqueSkillName('escalation');
 
-        const { status: s1 } = await postSkills(manifest(world.escalationSkillName, '1.0.0'), world.ctx!.token);
+        const { status: s1 } = await postSkills(manifest(world.escalationSkillName, '1.0.0'), world.ctx?.token);
         if (s1 !== 200) return;
 
         const { status: s2, body: b2 } = await postSkills(
           manifest(world.escalationSkillName, '1.0.1', {
             permissions: { network: { outbound: ['api.example.com'] } }
           }),
-          world.ctx!.token
+          world.ctx?.token
         );
         world.lastStatus = s2;
         world.lastBody = b2;
@@ -180,7 +180,7 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
 
   describe('Scenario: Valid POST /skills returns uploadUrl, skillId, versionId (E1)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('returns 200 with uploadUrl, skillId, versionId', async () => {
-      const { status, body } = await postSkills(manifest(uniqueSkillName('new-skill'), '1.0.0'), world.ctx!.token);
+      const { status, body } = await postSkills(manifest(uniqueSkillName('new-skill'), '1.0.0'), world.ctx?.token);
       world.lastStatus = status;
       world.lastBody = body;
       world.pendingVersionId = (body.versionId as string) ?? '';
@@ -197,7 +197,7 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('returns 200 with success true', async () => {
       if (!world.pendingVersionId) return;
 
-      const { status, body } = await postConfirm(world.pendingVersionId, world.ctx!.token);
+      const { status, body } = await postConfirm(world.pendingVersionId, world.ctx?.token);
       world.lastStatus = status;
       world.lastBody = body;
       expect(status).toBe(200);
@@ -209,7 +209,7 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('second confirm returns 400', async () => {
       if (!world.pendingVersionId) return;
 
-      const { status } = await postConfirm(world.pendingVersionId, world.ctx!.token);
+      const { status } = await postConfirm(world.pendingVersionId, world.ctx?.token);
       expect(status).toBe(400);
     });
   });

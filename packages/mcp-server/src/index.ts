@@ -53,7 +53,6 @@ async function main() {
   await server.connect(transport);
 }
 
-main().catch((error) => {
-  console.error('MCP server error:', error);
+main().catch((_error) => {
   process.exit(1);
 });

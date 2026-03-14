@@ -95,8 +95,6 @@ export async function sendEmail(config: EmailConfig): Promise<{ success: boolean
       });
       return { success: true };
     }
-
-    console.log('[EMAIL]', JSON.stringify({ to: config.to, subject: config.subject }, null, 2));
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };

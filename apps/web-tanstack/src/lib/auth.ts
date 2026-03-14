@@ -71,7 +71,6 @@ export const auth = betterAuth({
       }
 
       if (getProvider() === 'console') {
-        console.log(`Email verification link for ${user.email}: ${url}`);
       }
     }
   },

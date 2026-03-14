@@ -200,8 +200,7 @@ describe('Feature: Registry read API for skill metadata', () => {
       await sql`DELETE FROM "member" WHERE id = ${`reg-mem-${world.runId}`}`;
       await sql`DELETE FROM "organization" WHERE slug = ${world.testOrg}`;
       await sql`DELETE FROM "user" WHERE id = ${publisherId}`;
-    } catch (e) {
-      console.warn('web-registry cleanup warning:', e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
