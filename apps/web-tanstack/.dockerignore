@@ -1,0 +1,8 @@
+node_modules
+.output
+.tanstack
+.turbo
+dist
+coverage
+*.tsbuildinfo
+.DS_Store
