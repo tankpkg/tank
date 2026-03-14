@@ -28,6 +28,7 @@ COPY --from=deps /app/apps/web-tanstack/node_modules ./apps/web-tanstack/node_mo
 
 RUN bun run --filter=@internals/schemas build
 RUN bun run --filter=@internals/helpers build
+ENV NITRO_PRESET=node-server
 RUN bun run --filter=@tankpkg/web-tanstack build
 
 FROM node:24-alpine AS runner
