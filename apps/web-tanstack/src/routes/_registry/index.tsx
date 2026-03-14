@@ -21,8 +21,28 @@ export const Route = createFileRoute('/_registry/')({
     ]),
   head: () => ({
     meta: [
-      { title: 'Tank | Security-first skills registry' },
-      { content: 'Security-first package manager for AI agent skills.', name: 'description' }
+      { title: 'Tank — Security-first package manager for AI agent skills' },
+      {
+        name: 'description',
+        content:
+          'Every skill is scanned for credential theft, prompt injection, and supply chain attacks before installation.'
+      },
+      { property: 'og:title', content: 'Tank — Security-first package manager for AI agent skills' },
+      {
+        property: 'og:description',
+        content:
+          'Every skill is scanned for credential theft, prompt injection, and supply chain attacks before installation.'
+      },
+      { property: 'og:url', content: 'https://www.tankpkg.dev' },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:site_name', content: 'Tank' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'Tank — Security-first package manager for AI agent skills' },
+      {
+        name: 'twitter:description',
+        content:
+          'Every skill is scanned for credential theft, prompt injection, and supply chain attacks before installation.'
+      }
     ]
   }),
   component: HomePage
