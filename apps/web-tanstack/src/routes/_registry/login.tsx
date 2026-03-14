@@ -1,25 +1,28 @@
 import { createFileRoute } from '@tanstack/react-router';
 
+import { LoginScreen } from '~/screens/auth/login-screen';
+import { getAuthProviders } from '~/server-fns/auth';
+
 export const Route = createFileRoute('/_registry/login')({
+  loader: async () => {
+    const { providers, oidcProviderId } = await getAuthProviders();
+    return { providers, oidcProviderId };
+  },
   head: () => ({
     meta: [
-      {
-        title: 'Login | Tank TanStack Migration'
-      }
+      { title: 'Sign In | Tank' },
+      { name: 'description', content: 'Sign in to Tank — security-first package manager for AI agent skills.' }
     ]
   }),
   component: LoginPage
 });
 
 function LoginPage() {
+  const { providers, oidcProviderId } = Route.useLoaderData();
+
   return (
-    <section className="tank-card rounded-[1.75rem] p-8">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-leaf">Authentication</p>
-      <h1 className="mt-4 text-3xl font-semibold text-forest">Better Auth is mounted; the full login UI lands next.</h1>
-      <p className="mt-3 max-w-2xl text-ink-soft">
-        Phase 1 wires the Better Auth TanStack route and shared config. The next slice ports the production login page,
-        auth guards, CLI device flow, and session-aware layouts from `apps/web`.
-      </p>
-    </section>
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <LoginScreen enabledProviders={new Set(providers)} oidcProviderId={oidcProviderId} />
+    </div>
   );
 }

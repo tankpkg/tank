@@ -18,3 +18,13 @@ export const getAdminSession = createServerFn({ method: 'GET' }).handler(async (
   if (!admin) return null;
   return session;
 });
+
+export const getAuthProviders = createServerFn({ method: 'GET' }).handler(async () => {
+  const raw = process.env.AUTH_PROVIDERS || 'github,credentials';
+  const providers = raw
+    .split(',')
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean);
+  const oidcProviderId = process.env.OIDC_PROVIDER_ID || 'enterprise-oidc';
+  return { providers, oidcProviderId };
+});
