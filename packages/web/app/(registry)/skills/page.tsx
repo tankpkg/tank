@@ -5,12 +5,11 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { TrustBadge, VerifiedPublisherBadge } from '@/components/security';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrustBadge } from '@/components/security';
 import { auth } from '@/lib/auth';
-import { computeTrustLevel } from '@/lib/trust-level';
 import type {
   FreshnessBucket,
   PopularityBucket,
@@ -20,6 +19,8 @@ import type {
   VisibilityFilter
 } from '@/lib/data/skills';
 import { searchSkills } from '@/lib/data/skills';
+import { computeTrustLevel } from '@/lib/trust-level';
+import { formatInstallCount, formatLastScanLabel } from '@/lib/trust-signals';
 import { SearchBar } from './search-bar';
 import { SkillsFilters } from './skills-filters';
 import { SkillsSort } from './skills-sort';
@@ -211,9 +212,10 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
-            {isLoggedIn && skill.visibility === 'private' && (
-              <Lock className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-            )}
+            <div className="mt-0.5 flex items-center gap-1.5 shrink-0">
+              {skill.publisherVerified && <VerifiedPublisherBadge compact />}
+              {isLoggedIn && skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground" />}
+            </div>
           </div>
           {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
         </CardHeader>
@@ -242,13 +244,14 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
             />
             <span className="flex items-center gap-1 ml-auto">
               <Download className="size-3" />
-              {skill.downloads.toLocaleString()}
+              {formatInstallCount(skill.downloads)}
             </span>
             <span className="flex items-center gap-1">
               <Star className="size-3" />
               {skill.stars.toLocaleString()}
             </span>
           </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">{formatLastScanLabel(skill.scannedAt)}</p>
         </CardContent>
       </Card>
     </Link>

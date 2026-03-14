@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
-import { withAdminAuth, type AdminAuthContext } from '@/lib/admin-middleware';
+import { type NextRequest, NextResponse } from 'next/server';
+import { type AdminAuthContext, withAdminAuth } from '@/lib/admin-middleware';
 import { db } from '@/lib/db';
 import { skills } from '@/lib/db/schema';
 
@@ -16,8 +16,8 @@ import { skills } from '@/lib/db/schema';
  */
 export const GET = withAdminAuth(async (req: NextRequest, _ctx: AdminAuthContext): Promise<NextResponse> => {
   const url = req.nextUrl;
-  const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') ?? '25', 10) || 25));
+  const page = Math.max(1, Number.parseInt(url.searchParams.get('page') ?? '1', 10) || 1);
+  const limit = Math.min(100, Math.max(1, Number.parseInt(url.searchParams.get('limit') ?? '25', 10) || 25));
   const search = url.searchParams.get('search')?.trim() || null;
   const status = url.searchParams.get('status') || null;
   const featured = url.searchParams.get('featured') || null;

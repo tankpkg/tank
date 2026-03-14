@@ -4,12 +4,13 @@ import { Download, LayoutGrid, List, Lock, Star } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { TrustBadge } from '@/components/security/TrustBadge';
+import { TrustBadge, VerifiedPublisherBadge } from '@/components/security';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SkillSearchResult, SortOption } from '@/lib/data/skills';
 import { computeTrustLevel } from '@/lib/trust-level';
+import { formatInstallCount, formatLastScanLabel } from '@/lib/trust-signals';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'list';
@@ -158,7 +159,10 @@ function SkillCard({ skill }: { skill: SkillSearchResult }) {
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
-            {skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground shrink-0 mt-0.5" />}
+            <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+              {skill.publisherVerified && <VerifiedPublisherBadge compact />}
+              {skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground" />}
+            </div>
           </div>
           {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
         </CardHeader>
@@ -181,13 +185,14 @@ function SkillCard({ skill }: { skill: SkillSearchResult }) {
             />
             <span className="flex items-center gap-1 ml-auto">
               <Download className="size-3" />
-              {skill.downloads.toLocaleString()}
+              {formatInstallCount(skill.downloads)}
             </span>
             <span className="flex items-center gap-1">
               <Star className="size-3" />
               {skill.stars.toLocaleString()}
             </span>
           </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">{formatLastScanLabel(skill.scannedAt)}</p>
         </CardContent>
       </Card>
     </Link>
@@ -211,6 +216,7 @@ function SkillListItem({ skill }: { skill: SkillSearchResult }) {
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium group-hover:text-primary transition-colors truncate">{skill.name}</span>
           {skill.visibility === 'private' && <Lock className="size-3 text-muted-foreground shrink-0" />}
+          {skill.publisherVerified && <VerifiedPublisherBadge compact />}
           {skill.latestVersion && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
               v{skill.latestVersion}
@@ -218,6 +224,7 @@ function SkillListItem({ skill }: { skill: SkillSearchResult }) {
           )}
         </div>
         {skill.description && <p className="text-xs text-muted-foreground truncate mt-0.5">{skill.description}</p>}
+        <p className="text-[11px] text-muted-foreground mt-0.5">{formatLastScanLabel(skill.scannedAt)}</p>
       </div>
 
       <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
@@ -233,7 +240,7 @@ function SkillListItem({ skill }: { skill: SkillSearchResult }) {
         />
         <span className="hidden sm:flex items-center gap-1">
           <Download className="size-3" />
-          {skill.downloads.toLocaleString()}
+          {formatInstallCount(skill.downloads)}
         </span>
         <span className="flex items-center gap-1">
           <Star className="size-3" />

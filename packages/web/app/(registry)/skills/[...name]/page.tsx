@@ -3,13 +3,14 @@ import { Star } from 'lucide-react';
 import type { Metadata } from 'next';
 import { unstable_noStore as noStore } from 'next/cache';
 import {
+  computeQualityChecks,
   FindingsList,
+  QualityChecks,
   ScanningToolsStrip,
   ScanPipeline,
-  QualityChecks,
-  computeQualityChecks,
   SecurityOverview,
-  TrustBadge
+  TrustBadge,
+  VerifiedPublisherBadge
 } from '@/components/security';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -17,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { SkillVersionSummary } from '@/lib/data/skills';
 import { getSkillDetail } from '@/lib/data/skills';
 import { computeTrustLevel } from '@/lib/trust-level';
+import { formatInstallCount, formatLastScanLabel, isPublisherVerified } from '@/lib/trust-signals';
 import { DownloadButton } from './download-button';
 import { InstallCommand } from './install-command';
 import { SkillTabs } from './skill-tabs';
@@ -187,7 +189,7 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
 
   const { name: nameParts } = await params;
   const skillName = decodeURIComponent(nameParts.join('/'));
-  let data;
+  let data: Awaited<ReturnType<typeof getSkillDetail>>;
   try {
     data = await getSkillDetail(skillName);
   } catch (error) {
@@ -465,10 +467,14 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
     scanDetails?.mediumCount ?? 0,
     scanDetails?.lowCount ?? 0
   );
+  const publisherVerified = isPublisherVerified({
+    emailVerified: data.publisher.emailVerified,
+    githubUsername: data.publisher.githubUsername
+  });
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       <SkillViewTracker name={data.name} score={data.latestVersion?.auditScore ?? null} />
       <div className="max-w-6xl mx-auto" data-testid="skill-detail-root">
         <div className="mb-6">
@@ -577,8 +583,12 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Weekly</dt>
-                  <dd>{data.downloadCount.toLocaleString()}</dd>
+                  <dt className="text-muted-foreground">Installs</dt>
+                  <dd>{formatInstallCount(data.downloadCount)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Last scan</dt>
+                  <dd>{formatLastScanLabel(scanDetails?.scannedAt ?? null)}</dd>
                 </div>
                 {data.latestVersion && (
                   <>
@@ -599,17 +609,20 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Publisher</dt>
                   <dd>
-                    {data.publisher.githubUsername ? (
-                      <a
-                        href={`https://github.com/${data.publisher.githubUsername}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline">
-                        {data.publisher.githubUsername}
-                      </a>
-                    ) : (
-                      data.publisher.name
-                    )}
+                    <div className="flex items-center gap-2">
+                      {data.publisher.githubUsername ? (
+                        <a
+                          href={`https://github.com/${data.publisher.githubUsername}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline">
+                          {data.publisher.githubUsername}
+                        </a>
+                      ) : (
+                        data.publisher.name
+                      )}
+                      {publisherVerified && <VerifiedPublisherBadge />}
+                    </div>
                   </dd>
                 </div>
                 <div className="flex justify-between">
