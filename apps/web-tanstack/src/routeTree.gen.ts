@@ -15,6 +15,7 @@ import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as RegistryIndexRouteImport } from './routes/_registry/index'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as RegistryLoginRouteImport } from './routes/_registry/login'
+import { Route as RegistryCliLoginRouteImport } from './routes/_registry/cli-login'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
 import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
 import { Route as RegistrySkillsIndexRouteImport } from './routes/_registry/skills.index'
@@ -47,6 +48,11 @@ const RegistryLoginRoute = RegistryLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => RegistryRoute,
 } as any)
+const RegistryCliLoginRoute = RegistryCliLoginRouteImport.update({
+  id: '/cli-login',
+  path: '/cli-login',
+  getParentRoute: () => RegistryRoute,
+} as any)
 const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/': typeof RegistryIndexRoute
   '/admin': typeof AdminAdminRoute
   '/dashboard': typeof DashboardDashboardRoute
+  '/cli-login': typeof RegistryCliLoginRoute
   '/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/docs/': typeof RegistryDocsIndexRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/': typeof RegistryIndexRoute
   '/admin': typeof AdminAdminRoute
   '/dashboard': typeof DashboardDashboardRoute
+  '/cli-login': typeof RegistryCliLoginRoute
   '/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/docs': typeof RegistryDocsIndexRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_registry': typeof RegistryRouteWithChildren
   '/_admin/admin': typeof AdminAdminRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
+  '/_registry/cli-login': typeof RegistryCliLoginRoute
   '/_registry/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/_registry/': typeof RegistryIndexRoute
@@ -105,12 +114,21 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/cli-login'
     | '/login'
     | '/api/$'
     | '/docs/'
     | '/skills/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/dashboard' | '/login' | '/api/$' | '/docs' | '/skills'
+  to:
+    | '/'
+    | '/admin'
+    | '/dashboard'
+    | '/cli-login'
+    | '/login'
+    | '/api/$'
+    | '/docs'
+    | '/skills'
   id:
     | '__root__'
     | '/_admin'
@@ -118,6 +136,7 @@ export interface FileRouteTypes {
     | '/_registry'
     | '/_admin/admin'
     | '/_dashboard/dashboard'
+    | '/_registry/cli-login'
     | '/_registry/login'
     | '/api/$'
     | '/_registry/'
@@ -176,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegistryLoginRouteImport
       parentRoute: typeof RegistryRoute
     }
+    '/_registry/cli-login': {
+      id: '/_registry/cli-login'
+      path: '/cli-login'
+      fullPath: '/cli-login'
+      preLoaderRoute: typeof RegistryCliLoginRouteImport
+      parentRoute: typeof RegistryRoute
+    }
     '/_dashboard/dashboard': {
       id: '/_dashboard/dashboard'
       path: '/dashboard'
@@ -230,6 +256,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 )
 
 interface RegistryRouteChildren {
+  RegistryCliLoginRoute: typeof RegistryCliLoginRoute
   RegistryLoginRoute: typeof RegistryLoginRoute
   RegistryIndexRoute: typeof RegistryIndexRoute
   RegistryDocsIndexRoute: typeof RegistryDocsIndexRoute
@@ -237,6 +264,7 @@ interface RegistryRouteChildren {
 }
 
 const RegistryRouteChildren: RegistryRouteChildren = {
+  RegistryCliLoginRoute: RegistryCliLoginRoute,
   RegistryLoginRoute: RegistryLoginRoute,
   RegistryIndexRoute: RegistryIndexRoute,
   RegistryDocsIndexRoute: RegistryDocsIndexRoute,
@@ -256,12 +284,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
