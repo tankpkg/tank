@@ -3,9 +3,7 @@ import { Hono } from 'hono';
 import { resolveRequestUserId } from '~/lib/auth-helpers';
 import { searchSkills } from '~/lib/data/skills';
 
-export const searchRoutes = new Hono();
-
-searchRoutes.get('/', async (c) => {
+export const searchRoutes = new Hono().get('/', async (c) => {
   const requesterUserId = await resolveRequestUserId(c.req.raw);
   const q = c.req.query('q') ?? '';
   const page = Math.max(1, Number.parseInt(c.req.query('page') ?? '1', 10) || 1);

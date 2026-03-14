@@ -9,9 +9,7 @@ import { skills, skillVersions } from '~/lib/db/schema';
 import { checkPermissionEscalation, type VersionPermissions } from '~/lib/permission-escalation';
 import { getStorageProvider } from '~/lib/storage/provider';
 
-export const skillsPublishRoutes = new Hono();
-
-skillsPublishRoutes.post('/', async (c) => {
+export const skillsPublishRoutes = new Hono().post('/', async (c) => {
   const verifiedAny = await verifyCliAuth(c.req.raw);
   if (!verifiedAny) {
     return c.json({ error: 'Unauthorized' }, 401);

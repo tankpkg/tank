@@ -60,8 +60,10 @@ export interface ScanDetails {
 export interface SkillVersionDetail {
   version: string;
   integrity: string;
-  permissions: unknown;
-  manifest: unknown;
+  // biome-ignore lint/suspicious/noExplicitAny: JSONB columns have dynamic shape
+  permissions: Record<string, any>;
+  // biome-ignore lint/suspicious/noExplicitAny: JSONB columns have dynamic shape
+  manifest: Record<string, any>;
   auditScore: number | null;
   auditStatus: string;
   publishedAt: Date;
@@ -328,8 +330,8 @@ export async function getSkillDetail(
     ? {
         version: latestRow.version,
         integrity: latestRow.integrity,
-        permissions: latestRowData?.permissions,
-        manifest: latestRowData?.manifest,
+        permissions: (latestRowData?.permissions ?? {}) as Record<string, unknown>,
+        manifest: (latestRowData?.manifest ?? {}) as Record<string, unknown>,
         auditScore: latestRow.auditScore,
         auditStatus: latestRow.auditStatus,
         publishedAt: latestRow.publishedAt,
