@@ -1,7 +1,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
 import {
   detectInstalledAgents,
   getAgentSkillDir,
@@ -10,7 +12,7 @@ import {
   getSupportedAgents,
   getSymlinkName,
   SUPPORTED_AGENTS
-} from '../lib/agents.js';
+} from '~/lib/agents.js';
 
 describe('agents', () => {
   let tmpDir: string;

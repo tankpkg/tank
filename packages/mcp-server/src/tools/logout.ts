@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getConfig, setConfig } from '../lib/config.js';
+
+import { getConfig, setConfig } from '~/lib/config.js';
 
 export function registerLogoutTool(server: McpServer): void {
   server.tool('logout', 'Log out of Tank by clearing local credentials.', {}, async () => {

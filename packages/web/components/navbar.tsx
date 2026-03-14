@@ -403,7 +403,7 @@ export function Navbar() {
                     </>
                   ) : (
                     <Link
-                      href={item.href!}
+                      href={item.href ?? '/'}
                       onClick={() => setMobileOpen(false)}
                       style={{
                         display: 'block',

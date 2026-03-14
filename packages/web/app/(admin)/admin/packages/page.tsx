@@ -1,7 +1,8 @@
-import { encodeSkillName } from '@internal/shared';
+import { encodeSkillName } from '@internals/helpers';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { Suspense } from 'react';
+
 import { RescanSkillsButton } from '@/components/admin/rescan-skills-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

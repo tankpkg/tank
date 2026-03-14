@@ -1,0 +1,25 @@
+{
+  "lockfileVersion": 1,
+  "skills": {
+    "@tank/google-sheets@1.0.0": {
+      "resolved": "https://lcsbcruorskqflcwlvgj.supabase.co/storage/v1/object/sign/packages/skills/d2d22b7c-243f-4026-b39b-99547afaea94/1.0.0.tgz?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV8wMjNiODBkNC05MzFhLTRmODctOTA1Ni03YmMwMjczNDFiMTUiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwYWNrYWdlcy9za2lsbHMvZDJkMjJiN2MtMjQzZi00MDI2LWIzOWItOTk1NDdhZmFlYTk0LzEuMC4wLnRneiIsImlhdCI6MTc3MTEwMDk5OSwiZXhwIjoxNzcxMTA0NTk5fQ.8vyZxutAFacHFy1v3x3x3VimA5fxGi4AY1lEuwCFprs",
+      "integrity": "sha512-7J9SXRWQPtukmNxnn+DgsBl0LFQFKYOUqiM8mkm8bh3jXKfDxnqWpeVSH7CJuoWih5Q4m29IsTjtoYTsPQYmTA==",
+      "permissions": {
+        "network": {
+          "outbound": [
+            "*.googleapis.com",
+            "accounts.google.com",
+            "oauth2.googleapis.com"
+          ]
+        },
+        "filesystem": {
+          "read": [
+            "./**"
+          ]
+        },
+        "subprocess": false
+      },
+      "audit_score": 10
+    }
+  }
+}

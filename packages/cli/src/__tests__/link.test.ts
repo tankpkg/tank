@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { linkCommand } from '../commands/link.js';
-import { getGlobalAgentSkillsDir, getSymlinkName } from '../lib/agents.js';
-import { readGlobalLinks } from '../lib/links.js';
-import { logger } from '../lib/logger.js';
+
+import { linkCommand } from '~/commands/link.js';
+import { getGlobalAgentSkillsDir, getSymlinkName } from '~/lib/agents.js';
+import { readGlobalLinks } from '~/lib/links.js';
+import { logger } from '~/lib/logger.js';
 
 const canCreateSymlinks = (() => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'symlink-check-'));
@@ -22,7 +24,7 @@ const canCreateSymlinks = (() => {
 })();
 
 const writeSkillsJson = (dir: string, data: Record<string, unknown>): void => {
-  fs.writeFileSync(path.join(dir, 'tank.json'), JSON.stringify(data, null, 2) + '\n');
+  fs.writeFileSync(path.join(dir, 'tank.json'), `${JSON.stringify(data, null, 2)}\n`);
 };
 
 const resolveSymlinkTarget = (symlinkPath: string): string => {

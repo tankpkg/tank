@@ -23,7 +23,7 @@ jobs:
           username: GitHub
           avatar_url: https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png
           color: 0x57F287
-          title: "Comment on #${{ github.event.issue.number }}"
+          title: 'Comment on #${{ github.event.issue.number }}'
           description: |
             **${{ github.event.comment.user.login }}** commented on [#${{ github.event.issue.number }} ${{ github.event.issue.title }}](${{ github.event.comment.html_url }})
 

@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
+
 import { db } from '@/lib/db';
 import { skills } from '@/lib/db/schema';
-import { computeTrustLevel, getTrustBadgeConfig } from '@/lib/trust-level';
 
 const LABEL = 'tank';
 const FONT_FAMILY = 'DejaVu Sans,Verdana,Geneva,sans-serif';
@@ -15,14 +15,24 @@ function textWidth(text: string): number {
   return Math.ceil(text.length * 6.5) + PADDING * 2;
 }
 
-function renderBadge(label: string, value: string, valueColor: string, title?: string): string {
+function scoreColor(score: number | null): string {
+  if (score === null) return '#9f9f9f';
+  if (score >= 8) return '#4c1';
+  if (score >= 5) return '#dfb317';
+  return '#e05d44';
+}
+
+function scoreText(score: number | null): string {
+  if (score === null) return 'unscored';
+  return `${score}/10`;
+}
+
+function renderBadge(label: string, value: string, valueColor: string): string {
   const labelWidth = textWidth(label);
   const valueWidth = textWidth(value);
   const totalWidth = labelWidth + valueWidth;
-  const titleTag = title ? `<title>${title}</title>` : '';
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${HEIGHT}">
-  ${titleTag}
   <linearGradient id="s" x2="0" y2="100%">
     <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
     <stop offset="1" stop-opacity=".1"/>
@@ -55,20 +65,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ nam
 
   const results = await db.execute(sql`
     SELECT
-      sv.audit_score AS "auditScore",
-      sr.verdict,
-      sr.critical_count AS "criticalCount",
-      sr.high_count AS "highCount",
-      sr.medium_count AS "mediumCount",
-      sr.low_count AS "lowCount"
+      sv.audit_score AS "auditScore"
     FROM ${skills} s
     LEFT JOIN skill_versions sv ON sv.skill_id = s.id
       AND sv.created_at = (
         SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
-      )
-    LEFT JOIN scan_results sr ON sr.version_id = sv.id
-      AND sr.created_at = (
-        SELECT MAX(sr2.created_at) FROM scan_results sr2 WHERE sr2.version_id = sv.id
       )
     WHERE s.name = ${name}
     LIMIT 1
@@ -81,30 +82,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ nam
 
   const row = results[0] as Record<string, unknown>;
   const auditScore = row.auditScore as number | null;
-  const verdict = row.verdict as string | null;
-  const criticalCount = Number(row.criticalCount) || 0;
-  const highCount = Number(row.highCount) || 0;
-  const mediumCount = Number(row.mediumCount) || 0;
-  const lowCount = Number(row.lowCount) || 0;
-  const totalFindings = criticalCount + highCount + mediumCount + lowCount;
 
-  // Compute trust level
-  const trustLevel = computeTrustLevel(verdict, criticalCount, highCount, mediumCount, lowCount);
-  const config = getTrustBadgeConfig(trustLevel);
-
-  // Determine badge value based on trust level
-  let value: string;
-  if (trustLevel === 'verified') {
-    value = 'verified';
-  } else if (trustLevel === 'review_recommended') {
-    value = totalFindings > 0 ? `${totalFindings} notes` : 'review';
-  } else {
-    value = config.label.toLowerCase();
-  }
-
-  // Include score in title for backward compatibility
-  const title = auditScore !== null ? `Security score: ${auditScore}/10` : undefined;
-
-  const svg = renderBadge(LABEL, value, config.color, title);
+  const svg = renderBadge(LABEL, scoreText(auditScore), scoreColor(auditScore));
   return new Response(svg, { status: 200, headers });
 }

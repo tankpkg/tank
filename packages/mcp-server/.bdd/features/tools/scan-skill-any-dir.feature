@@ -3,7 +3,8 @@ Feature: Scan Skill Without Manifest
   I want to scan any directory for security issues
   So I can check code safety without requiring Tank packaging
 
-  @auth @network
+  @auth
+  @network
   Scenario: Scan a directory without skills.json
     Given I am authenticated with Tank
     And I have a directory with Python and Markdown files but no skills.json
@@ -12,7 +13,8 @@ Feature: Scan Skill Without Manifest
     Then the response should show scan results
     And the verdict should be one of: PASS, PASS_WITH_NOTES, FLAGGED, FAIL
 
-  @auth @network
+  @auth
+  @network
   Scenario: Scan a directory with skills.json uses full packing
     Given I am authenticated with Tank
     And I have a valid Tank skill directory
@@ -21,7 +23,8 @@ Feature: Scan Skill Without Manifest
     Then the response should show scan results
     And the skill name should come from skills.json
 
-  @auth @network
+  @auth
+  @network
   Scenario: Scan detects security issues in arbitrary code
     Given I am authenticated with Tank
     And I have a directory with suspicious code patterns

@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
   contents: write
@@ -66,7 +66,7 @@ jobs:
           node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
 
       - name: Build shared package
-        run: bun run --filter '@internal/shared' build
+        run: bun run --filter '@tankpkg/shared' build
 
       - name: Build bundle and binary
         working-directory: packages/cli
@@ -286,9 +286,9 @@ jobs:
 
       - name: Build packages
         run: |
-          bun run --filter '@internal/shared' build
-          bun run --filter '@tankpkg/cli' build
-          bun run --filter '@tankpkg/mcp-server' build
+          bun --filter @tankpkg/shared run build
+          bun --filter @tankpkg/cli run build
+          bun --filter @tankpkg/mcp-server run build
 
       - name: Publish CLI to npm
         continue-on-error: true

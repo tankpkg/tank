@@ -1,9 +1,11 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, type Permissions, type SkillsLock } from '@internal/shared';
+
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, type Permissions, type SkillsLock } from '@internals/schemas';
 import type ora from 'ora';
 import { extract } from 'tar';
+
 import { buildSkillKey, type ResolvedNode } from './dependency-resolver.js';
 import { logger } from './logger.js';
 

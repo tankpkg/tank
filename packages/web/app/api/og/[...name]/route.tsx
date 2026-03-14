@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import type { NextRequest } from 'next/server';
+
 import { getSkillDetail } from '@/lib/data/skills';
 
 export const dynamic = 'force-dynamic';

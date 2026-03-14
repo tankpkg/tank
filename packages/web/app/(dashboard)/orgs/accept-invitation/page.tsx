@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
+
 import { acceptInvitation, getInvitation } from '../actions';
 
 type InvitationState =

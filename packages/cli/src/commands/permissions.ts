@@ -1,7 +1,9 @@
 import fs from 'node:fs';
-import type { Permissions, SkillsJson, SkillsLock } from '@internal/shared';
+
+import type { Permissions, SkillsJson, SkillsLock } from '@internals/schemas';
 import chalk from 'chalk';
-import { resolveLockfilePath, resolveManifestPath } from '../lib/manifest.js';
+
+import { resolveLockfilePath, resolveManifestPath } from '~/lib/manifest.js';
 
 export interface PermissionsOptions {
   directory?: string;

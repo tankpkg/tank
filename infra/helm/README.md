@@ -135,7 +135,7 @@ docker compose exec web node -e "
 Or use the npm script if running outside Docker:
 
 ```bash
-just db-admin
+just db admin
 ```
 
 ### 5. Smoke test

@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { LOCKFILE_FILENAME } from '@internal/shared';
-import { readLockfile } from '../lib/lockfile.js';
-import { logger } from '../lib/logger.js';
+
+import { LOCKFILE_FILENAME } from '@internals/schemas';
+
+import { readLockfile } from '~/lib/lockfile.js';
+import { logger } from '~/lib/logger.js';
 
 export interface VerifyOptions {
   directory?: string;

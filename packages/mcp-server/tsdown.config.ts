@@ -8,6 +8,6 @@ export default defineConfig({
   dts: true,
   clean: true,
   deps: {
-    alwaysBundle: [/^@internal\//]
+    alwaysBundle: [/^@tankpkg\//, /^@internals\//]
   }
 });

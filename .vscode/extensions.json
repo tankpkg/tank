@@ -1,6 +1,8 @@
 {
   "recommendations": [
     "biomejs.biome",
-    "esbenp.prettier-vscode"
+    "esbenp.prettier-vscode",
+    "astro-build.astro-vscode",
+    "charliermarsh.ruff"
   ]
 }

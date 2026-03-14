@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { getAllLinkStatuses, getSkillLinkStatus, linkSkillToAgents, unlinkSkillFromAgents } from '../lib/linker.js';
-import { readLinks } from '../lib/links.js';
+
+import { getAllLinkStatuses, getSkillLinkStatus, linkSkillToAgents, unlinkSkillFromAgents } from '~/lib/linker.js';
+import { readLinks } from '~/lib/links.js';
 
 const createTmpDir = (): string => fs.mkdtempSync(path.join(os.tmpdir(), 'tank-test-'));
 

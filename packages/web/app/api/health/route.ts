@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+
 import { createSession, deleteSession, getSession } from '@/lib/cli-auth-store';
 import { db } from '@/lib/db';
 import { getStorageProvider } from '@/lib/storage/provider';
@@ -54,7 +55,7 @@ async function checkStorage(): Promise<HealthCheckResult> {
     const storage = getStorageProvider();
     const bucket = process.env.S3_BUCKET || 'packages';
     if ('listObjects' in storage && typeof storage.listObjects === 'function') {
-      await (storage as any).listObjects(bucket, '', 1);
+      await storage.listObjects(bucket, '', 1);
     }
     return { status: 'healthy', latency: Date.now() - start };
   } catch (error) {

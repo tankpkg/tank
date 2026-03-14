@@ -14,6 +14,7 @@
 When accessing the Python API on Vercel, the deployment fails with a `ModuleNotFoundError: No module named 'fastapi'`. The error occurs during module import when Vercel's Python runtime attempts to execute `index.py`.
 
 **Error Log:**
+
 ```
 2026-03-06 14:37:54.318 [error] could not import "index.py":
 Traceback (most recent call last):
@@ -36,6 +37,7 @@ Vercel should install Python dependencies from `requirements.txt` and the FastAP
 Vercel fails to install dependencies, resulting in a module import error.
 
 **Impact:**
+
 - **Affected users:** All users attempting to use the Python API endpoints
 - **Affected features:** All security scanning endpoints (`/api/analyze/scan`, `/api/analyze/security`, `/api/analyze/permissions`)
 - **Severity:** Critical - Production API is completely non-functional
@@ -47,11 +49,13 @@ Vercel fails to install dependencies, resulting in a module import error.
 **Can Reproduce:** Yes (Consistent)
 
 **Reproduction Steps:**
+
 1. Deploy current main branch to Vercel
 2. Access any Python API endpoint (e.g., `https://python-api.tankpkg.dev/health`)
 3. Observe 500 error with module import failure in logs
 
 **Environment:**
+
 - Mode: PRODUCTION (Vercel serverless)
 - Runtime: Python 3.12 (as specified in `python-api/runtime.txt`)
 - Platform: Vercel Serverless Functions
@@ -62,15 +66,15 @@ Vercel fails to install dependencies, resulting in a module import error.
 
 ### Related Files
 
-| File | Role | Status |
-|------|------|--------|
-| `requirements.txt` (root) | **MISSING** - Redirect to python-api/requirements.txt | Deleted (uncommitted) |
-| `python-api/requirements.txt` | Contains actual dependencies including fastapi | Exists |
-| `python-api/index.py` | Vercel entrypoint (imports api.main) | Exists |
-| `python-api/api/main.py` | FastAPI application (imports fastapi) | Exists |
-| `api/index.py` | Alternative entrypoint (adds python-api to path) | Exists |
-| `python-api/runtime.txt` | Specifies Python 3.12 | Exists |
-| `vercel.json` (root) | Monorepo build configuration | Exists |
+| File                          | Role                                                  | Status                |
+| ----------------------------- | ----------------------------------------------------- | --------------------- |
+| `requirements.txt` (root)     | **MISSING** - Redirect to python-api/requirements.txt | Deleted (uncommitted) |
+| `python-api/requirements.txt` | Contains actual dependencies including fastapi        | Exists                |
+| `python-api/index.py`         | Vercel entrypoint (imports api.main)                  | Exists                |
+| `python-api/api/main.py`      | FastAPI application (imports fastapi)                 | Exists                |
+| `api/index.py`                | Alternative entrypoint (adds python-api to path)      | Exists                |
+| `python-api/runtime.txt`      | Specifies Python 3.12                                 | Exists                |
+| `vercel.json` (root)          | Monorepo build configuration                          | Exists                |
 
 ### Code Flow
 
@@ -133,6 +137,7 @@ Current uncommitted changes:
 ```
 
 The deleted file content was:
+
 ```
 # Vercel Python dependencies - redirects to python-api
 -r python-api/requirements.txt
@@ -148,6 +153,7 @@ The deleted file content was:
 Restore the `python-api/vercel.json` file with proper rewrites configuration to route all requests to the FastAPI application.
 
 **Why This Fix:**
+
 - Directly addresses the routing issue
 - Required for Vercel to forward requests to Python serverless function
 - Minimal configuration change
@@ -156,15 +162,15 @@ Restore the `python-api/vercel.json` file with proper rewrites configuration to 
 ### Implementation Steps
 
 1. **Create python-api/vercel.json:**
+
    ```json
    {
-     "rewrites": [
-       { "source": "/(.*)", "destination": "/index" }
-     ]
+     "rewrites": [{ "source": "/(.*)", "destination": "/index" }]
    }
    ```
 
 2. **Commit and push:**
+
    ```bash
    git add python-api/vercel.json
    git commit -m "fix(vercel): restore rewrites configuration for FastAPI routing"
@@ -178,8 +184,8 @@ Restore the `python-api/vercel.json` file with proper rewrites configuration to 
 
 ### Files to Modify
 
-| File | Change |
-|------|--------|
+| File                     | Change                             |
+| ------------------------ | ---------------------------------- |
 | `python-api/vercel.json` | Create with rewrites configuration |
 
 ### Testing Strategy
@@ -187,17 +193,20 @@ Restore the `python-api/vercel.json` file with proper rewrites configuration to 
 **Unit tests:** Not applicable (deployment configuration issue)
 
 **Integration tests:**
+
 1. Verify Vercel build succeeds
 2. Verify `/health` returns `{"status": "healthy"}`
 3. Verify `/api/analyze/scan/health` returns health status
 4. Verify security scanning endpoints work end-to-end
 
 **Edge cases to test:**
+
 - Cold start (first request after deployment)
 - Multiple concurrent requests
 - Request timeout scenarios
 
 **Validation:**
+
 - Monitor Vercel deployment logs for successful build
 - Check Vercel function logs for successful startup
 - Test all documented API endpoints
@@ -208,16 +217,17 @@ Restore the `python-api/vercel.json` file with proper rewrites configuration to 
 
 ### Current Impact
 
-| Aspect | Impact |
-|--------|--------|
-| **Users affected** | All users of the Python API |
-| **Features affected** | All security scanning endpoints |
-| **Data impact** | None (no data corruption) |
-| **Severity** | Critical - Complete service outage |
+| Aspect                | Impact                             |
+| --------------------- | ---------------------------------- |
+| **Users affected**    | All users of the Python API        |
+| **Features affected** | All security scanning endpoints    |
+| **Data impact**       | None (no data corruption)          |
+| **Severity**          | Critical - Complete service outage |
 
 ### Potential Side Effects
 
 **None expected** - This is a straightforward restoration of a deleted file. The fix:
+
 - Does not modify any application code
 - Does not change dependency versions
 - Does not affect other services (Next.js web app)
@@ -236,6 +246,7 @@ Restore the `python-api/vercel.json` file with proper rewrites configuration to 
 ### Recommended Documentation Addition
 
 Add to `python-api/README.md`:
+
 ```markdown
 ## Vercel Deployment
 
@@ -252,18 +263,21 @@ It contains a redirect to this package's dependencies:
 ## Alternative Solutions Considered
 
 ### Option 1: Let Vercel Auto-Detect (Current State - FAILED)
+
 - **Approach:** Remove vercel.json and let Vercel auto-configure
 - **Pros:** No configuration file needed
 - **Cons:** Doesn't work for FastAPI - requests not routed correctly
 - **Risk:** High - Already proven to fail (current state)
 
 ### Option 2: Use Vercel API Routes Configuration
+
 - **Approach:** Configure routes in Vercel dashboard instead of vercel.json
 - **Pros:** No file in repository
 - **Cons:** Configuration drift between code and Vercel dashboard, not version controlled
 - **Risk:** Medium - Harder to maintain and reproduce
 
 ### Option 3: Use Different Entrypoint Structure
+
 - **Approach:** Restructure to put FastAPI app directly in index.py
 - **Pros:** Simpler file structure
 - **Cons:** Doesn't solve routing issue, adds complexity
@@ -275,13 +289,13 @@ It contains a redirect to this package's dependencies:
 
 ## Timeline
 
-| Time | Event |
-|------|-------|
-| 2026-03-06 14:37 | Initial error: `ModuleNotFoundError: No module named 'fastapi'` |
-| 2026-03-06 15:20 | Commit 8b7faa3: Fixed dependencies but removed vercel.json |
-| 2026-03-06 15:40 | RCA created (misdiagnosed as requirements.txt issue) |
+| Time             | Event                                                                   |
+| ---------------- | ----------------------------------------------------------------------- |
+| 2026-03-06 14:37 | Initial error: `ModuleNotFoundError: No module named 'fastapi'`         |
+| 2026-03-06 15:20 | Commit 8b7faa3: Fixed dependencies but removed vercel.json              |
+| 2026-03-06 15:40 | RCA created (misdiagnosed as requirements.txt issue)                    |
 | 2026-03-06 15:55 | Testing revealed `FUNCTION_INVOCATION_FAILED` - actual issue identified |
-| 2026-03-06 15:58 | Fix implemented: Restore vercel.json with rewrites |
+| 2026-03-06 15:58 | Fix implemented: Restore vercel.json with rewrites                      |
 
 ---
 

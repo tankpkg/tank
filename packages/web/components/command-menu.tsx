@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+
 import {
   CommandDialog,
   CommandEmpty,
@@ -33,6 +34,18 @@ interface SkillResult {
   name: string;
   description?: string;
   owner?: string;
+}
+
+interface SearchApiItem {
+  name: string;
+  description?: string | null;
+  owner?: string;
+  ownerName?: string;
+}
+
+interface SearchApiResponse {
+  skills?: SearchApiItem[];
+  results?: SearchApiItem[];
 }
 
 const DOC_PAGES = [
@@ -94,15 +107,12 @@ export function CommandMenu() {
           signal: controller.signal
         });
         if (res.ok) {
-          const data = await res.json();
-          const items: SkillResult[] = (data.skills ?? data.results ?? []).map(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (s: any) => ({
-              name: s.name,
-              description: s.description ?? '',
-              owner: s.owner ?? s.ownerName ?? ''
-            })
-          );
+          const data = (await res.json()) as SearchApiResponse;
+          const items: SkillResult[] = (data.skills ?? data.results ?? []).map((skill) => ({
+            name: skill.name,
+            description: skill.description ?? '',
+            owner: skill.owner ?? skill.ownerName ?? ''
+          }));
           setSkills(items);
         }
       } catch {

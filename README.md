@@ -113,8 +113,8 @@ If any skill exceeds the permission budget, Tank prompts you to review and appro
 git clone https://github.com/tankpkg/tank.git
 cd tank
 bun install
-cp .env.example .env.local  # fill in credentials
-just db-admin                # promotes FIRST_ADMIN_EMAIL to admin
+cp .env.example .env  # fill in credentials
+just db admin                # promotes FIRST_ADMIN_EMAIL to admin
 ```
 
 ### Commands
@@ -123,10 +123,11 @@ just db-admin                # promotes FIRST_ADMIN_EMAIL to admin
 just dev                    # Start all workspaces in dev mode
 just build                  # Build all packages
 just test                   # Run all unit tests
-just test-python            # Run Python scanner tests
-just test-perf              # Run performance tests
+just test scanner           # Run Python scanner tests
+just test perf              # Run performance tests
 just check                  # Biome lint + format validation
 just fmt                    # Auto-format code
+just verify                 # Validation-only pipeline
 just --list                 # See all available commands
 ```
 
@@ -134,14 +135,17 @@ just --list                 # See all available commands
 
 ```
 tank/
-├── packages/
+├── apps/
 │   ├── web/          # Next.js 15 web app + API (Vercel)
+│   └── python-api/   # Python security scanner (FastAPI)
+├── packages/
 │   ├── cli/          # Tank CLI (TypeScript)
+│   ├── internals-helpers/ # Shared pure helpers
+│   ├── internals-schemas/ # Shared schemas, types, constants
 │   ├── mcp-server/   # MCP server for editor integration
-│   ├── scanner/      # Python security scanner (FastAPI)
-│   └── shared/       # Shared schemas, types, constants
+│   └── ...
 ├── infra/            # Docker Compose, Helm charts
-└── docs/             # Product brief, architecture
+└── .docs/            # Product brief, architecture
 ```
 
 ## Project Status
@@ -150,12 +154,12 @@ tank/
 
 ## Documentation
 
-| Document                                           | Description                                    |
-| -------------------------------------------------- | ---------------------------------------------- |
-| [Product Brief](docs/product-brief.md)             | Full vision, features, and technical direction |
-| [Architecture](docs/architecture.md)               | Technical design and decisions                 |
-| [Performance Testing](docs/performance-testing.md) | Methodology and regression protocol            |
-| [Contributing](CONTRIBUTING.md)                    | How to get involved                            |
+| Document                                            | Description                                    |
+| --------------------------------------------------- | ---------------------------------------------- |
+| [Product Brief](.docs/product-brief.md)             | Full vision, features, and technical direction |
+| [Architecture](.docs/architecture.md)               | Technical design and decisions                 |
+| [Performance Testing](.docs/performance-testing.md) | Methodology and regression protocol            |
+| [Contributing](CONTRIBUTING.md)                     | How to get involved                            |
 
 ## Why "Tank"?
 

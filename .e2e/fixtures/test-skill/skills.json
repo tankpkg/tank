@@ -1,0 +1,14 @@
+{
+  "name": "@testorg/hello-world",
+  "version": "1.0.0",
+  "description": "A test skill for E2E verification",
+  "permissions": {
+    "network": {
+      "outbound": ["*.example.com"]
+    },
+    "filesystem": {
+      "read": ["./src/**"]
+    },
+    "subprocess": false
+  }
+}

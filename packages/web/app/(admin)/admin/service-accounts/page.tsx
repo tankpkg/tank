@@ -1,6 +1,7 @@
 'use client';
 
-import { type ChangeEvent, useEffect, useMemo, useState, useTransition } from 'react';
+import { type ChangeEvent, useEffect, useEffectEvent, useMemo, useState, useTransition } from 'react';
+
 import { Button } from '@/components/ui/button';
 
 type ServiceAccountKey = {
@@ -47,7 +48,7 @@ export default function AdminServiceAccountsPage() {
   const [expiresInDays, setExpiresInDays] = useState('30');
   const [scopes, setScopes] = useState<string[]>(defaultScopes);
 
-  const loadAccounts = async () => {
+  const loadAccounts = useEffectEvent(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -65,11 +66,11 @@ export default function AdminServiceAccountsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
   useEffect(() => {
     void loadAccounts();
-  }, [loadAccounts]);
+  }, []);
 
   const toggleScope = (scope: string) => {
     setScopes((current: string[]) => {

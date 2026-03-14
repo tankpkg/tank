@@ -41,28 +41,28 @@ Tank is **MVP code-complete** with 461 tests passing. Right now, the most valuab
 3. **Set up environment variables**
 
    ```bash
-   cp .env.example .env.local
+   cp .env.example .env
    ```
 
    Fill in the values — see `.env.example` for what's needed.
 
-4. **Push database schema** (requires DATABASE_URL in .env.local)
+4. **Push database schema** (requires DATABASE_URL in .env)
 
    ```bash
-   bun --filter @internal/web exec drizzle-kit push
+   bun --filter @tankpkg/web exec drizzle-kit push
    ```
 
 5. **Start the dev server**
 
    ```bash
-   just dev-web
+   just dev web
    ```
 
 6. **Run tests**
 
    ```bash
    just test              # All unit tests
-   just test-python       # Python tests
+   just test scanner      # Python scanner tests
    ```
 
 7. **Discover all commands** — run `just --list` for the full command surface
@@ -71,13 +71,14 @@ Tank is **MVP code-complete** with 461 tests passing. Right now, the most valuab
 
 This is a monorepo managed by [Turborepo](https://turbo.build/repo) with Bun workspaces:
 
-- `packages/web` — Next.js 15 web app + API routes (deployed to Vercel)
+- `apps/web` — Next.js 15 web app + API routes (deployed to Vercel)
 - `packages/cli` — `tank` CLI tool (TypeScript, commander.js)
-- `packages/scanner` — Python security scanner (FastAPI, 6-stage pipeline)
-- `packages/shared` — Shared Zod schemas, TypeScript types, constants
+- `apps/python-api` — Python security scanner (FastAPI, 6-stage pipeline)
+- `packages/internals-schemas` — Shared Zod schemas, TypeScript types, contract constants
+- `packages/internals-helpers` — Shared pure helpers
 - `packages/mcp-server` — MCP server for editor integration
 - `infra/` — Docker Compose, Helm charts, Grafana/Loki configs
-- `docs/` — Product brief, architecture
+- `.docs/` — Product brief, architecture
 
 ## How to Contribute
 

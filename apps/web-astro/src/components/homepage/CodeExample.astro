@@ -1,0 +1,43 @@
+<section class="container mx-auto px-4 py-16 md:py-24">
+  <div class="max-w-3xl mx-auto">
+    <div class="text-center mb-8">
+      <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-3">
+        Declare what your agent is <span class="text-emerald-400">allowed to do</span>
+      </h2>
+      <p class="text-muted-foreground max-w-xl mx-auto">
+        <code class="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">tank.json</code> is like package.json — but with a
+        <code class="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">permissions</code> field. If any skill exceeds the
+        budget, installation fails.
+      </p>
+    </div>
+
+    <div class="tank-terminal tank-scanlines rounded-xl overflow-hidden">
+      <div class="flex items-center gap-2 px-4 py-2.5 border-b border-emerald-500/20 bg-[#0c1222]">
+        <span class="size-3 rounded-full bg-red-500/80"></span>
+        <span class="size-3 rounded-full bg-amber-500/80"></span>
+        <span class="size-3 rounded-full bg-emerald-500/80"></span>
+        <span class="ml-3 text-xs text-emerald-400/60 font-mono">tank.json</span>
+        <div class="ml-auto flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="text-xs text-emerald-400/60">verified</span>
+        </div>
+      </div>
+
+      <pre
+        class="p-4 md:p-6 text-sm md:text-base overflow-x-auto leading-relaxed font-mono"><code><span class="text-slate-500">{"{"}</span>
+  <span class="text-emerald-400">"skills"</span><span class="text-slate-500">: {"{"}</span>
+    <span class="text-emerald-400">"@vercel/next-skill"</span><span class="text-slate-500">:</span> <span class="text-amber-400">"^2.1.0"</span><span class="text-slate-500">,</span>
+    <span class="text-emerald-400">"@community/seo-audit"</span><span class="text-slate-500">:</span> <span class="text-amber-400">"3.0.0"</span>
+  <span class="text-slate-500">{"}"}</span>
+  <span class="text-emerald-400">"permissions"</span><span class="text-slate-500">: {"{"}</span>
+    <span class="text-emerald-400">"network"</span><span class="text-slate-500">: {"{"}</span> <span class="text-emerald-400">"outbound"</span><span class="text-slate-500">:</span> <span class="text-amber-400">["*.anthropic.com"]</span> <span class="text-slate-500">{"}"}</span>
+    <span class="text-emerald-400">"filesystem"</span><span class="text-slate-500">: {"{"}</span>
+      <span class="text-emerald-400">"read"</span><span class="text-slate-500">:</span> <span class="text-amber-400">["./src/**"]</span><span class="text-slate-500">,</span>
+      <span class="text-emerald-400">"write"</span><span class="text-slate-500">:</span> <span class="text-amber-400">["./output/**"]</span>
+    <span class="text-slate-500">{"}"}</span>
+    <span class="text-emerald-400">"subprocess"</span><span class="text-slate-500">:</span> <span class="text-pink-400">false</span>
+  <span class="text-slate-500">{"}"}</span>
+<span class="text-slate-500">{"}"}</span></code></pre>
+    </div>
+  </div>
+</section>

@@ -7,12 +7,13 @@
  * Pure logic tests — no DB, no HTTP, no mocks.
  * Imports checkPermissionEscalation directly from the source module.
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from 'vitest';
+
 import {
   checkPermissionEscalation,
-  type VersionPermissions,
   type EscalationCheckResult,
-} from "../../packages/web/lib/permission-escalation.js";
+  type VersionPermissions
+} from '../../apps/web/lib/permission-escalation';
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -25,11 +26,11 @@ interface EscalationWorld {
 }
 
 const world: EscalationWorld = {
-  oldVersion: "1.0.0",
+  oldVersion: '1.0.0',
   oldPerms: {},
-  newVersion: "1.0.1",
+  newVersion: '1.0.1',
   newPerms: {},
-  result: null,
+  result: null
 };
 
 // ── Given ──────────────────────────────────────────────────────────────────
@@ -68,7 +69,7 @@ function givenPreviousVersionHasNoPermissions(version: string): void {
 
 function whenCheckingEscalationWithNetworkOutboundAdded(newVersion: string): void {
   world.newVersion = newVersion;
-  world.newPerms = { network: { outbound: ["api.example.com"] } };
+  world.newPerms = { network: { outbound: ['api.example.com'] } };
   world.result = checkPermissionEscalation(world.oldVersion, world.oldPerms, world.newVersion, world.newPerms);
 }
 
@@ -80,13 +81,13 @@ function whenCheckingEscalationWithSubprocessEnabled(newVersion: string): void {
 
 function whenCheckingEscalationWithFilesystemReadAdded(newVersion: string): void {
   world.newVersion = newVersion;
-  world.newPerms = { filesystem: { read: ["./src/**"] } };
+  world.newPerms = { filesystem: { read: ['./src/**'] } };
   world.result = checkPermissionEscalation(world.oldVersion, world.oldPerms, world.newVersion, world.newPerms);
 }
 
 function whenCheckingEscalationWithFilesystemWriteAdded(newVersion: string): void {
   world.newVersion = newVersion;
-  world.newPerms = { filesystem: { write: ["./output/**"] } };
+  world.newPerms = { filesystem: { write: ['./output/**'] } };
   world.result = checkPermissionEscalation(world.oldVersion, world.oldPerms, world.newVersion, world.newPerms);
 }
 
@@ -105,7 +106,7 @@ function whenCheckingEscalationWithNetworkOutboundRemoved(newVersion: string): v
 function whenCheckingEscalationWithNoPreviousVersion(newPerms: VersionPermissions): void {
   // First publish: pass empty strings for old — the function handles null/unknown bump gracefully
   // We simulate "no previous version" by passing a fresh check with explicit empty old state
-  world.result = checkPermissionEscalation("", {}, "1.0.0", newPerms);
+  world.result = checkPermissionEscalation('', {}, '1.0.0', newPerms);
 }
 
 // ── Then ───────────────────────────────────────────────────────────────────
@@ -124,94 +125,94 @@ function thenResultIsNotAllowed(): void {
 
 function thenViolationsMention(keyword: string): void {
   expect(world.result).not.toBeNull();
-  const mentionsKeyword = world.result!.violations.some((v) => v.toUpperCase().includes(keyword.toUpperCase()));
+  const mentionsKeyword = world.result!.violations.some((v: string) => v.toUpperCase().includes(keyword.toUpperCase()));
   expect(mentionsKeyword).toBe(true);
 }
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: Permission escalation detection logic", () => {
+describe('Feature: Permission escalation detection logic', () => {
   // ── MAJOR bump always allowed (C1) ────────────────────────────────
 
-  describe("Scenario: MAJOR bump with any new permission is allowed (E1)", () => {
-    it("runs Given/When/Then", () => {
-      givenPreviousVersionHasNoNetworkPermissions("1.0.0");
-      whenCheckingEscalationWithNetworkOutboundAdded("2.0.0");
+  describe('Scenario: MAJOR bump with any new permission is allowed (E1)', () => {
+    it('runs Given/When/Then', () => {
+      givenPreviousVersionHasNoNetworkPermissions('1.0.0');
+      whenCheckingEscalationWithNetworkOutboundAdded('2.0.0');
       thenResultIsAllowed();
     });
   });
 
   // ── MINOR bump rules (C2) ──────────────────────────────────────────
 
-  describe("Scenario: MINOR bump adding network.outbound is blocked (E2)", () => {
-    it("runs Given/When/Then", () => {
-      givenPreviousVersionHasNoNetworkPermissions("1.0.0");
-      whenCheckingEscalationWithNetworkOutboundAdded("1.1.0");
+  describe('Scenario: MINOR bump adding network.outbound is blocked (E2)', () => {
+    it('runs Given/When/Then', () => {
+      givenPreviousVersionHasNoNetworkPermissions('1.0.0');
+      whenCheckingEscalationWithNetworkOutboundAdded('1.1.0');
       thenResultIsNotAllowed();
-      thenViolationsMention("MAJOR");
+      thenViolationsMention('MAJOR');
     });
   });
 
-  describe("Scenario: MINOR bump adding subprocess is blocked (E3 variant)", () => {
-    it("runs Given/When/Then", () => {
-      givenPreviousVersionHasSubprocessDisabled("1.0.0");
-      whenCheckingEscalationWithSubprocessEnabled("1.1.0");
+  describe('Scenario: MINOR bump adding subprocess is blocked (E3 variant)', () => {
+    it('runs Given/When/Then', () => {
+      givenPreviousVersionHasSubprocessDisabled('1.0.0');
+      whenCheckingEscalationWithSubprocessEnabled('1.1.0');
       thenResultIsNotAllowed();
     });
   });
 
-  describe("Scenario: MINOR bump adding filesystem.read is allowed (E5)", () => {
-    it("runs Given/When/Then", () => {
-      givenPreviousVersionHasNoFilesystemRead("1.0.0");
-      whenCheckingEscalationWithFilesystemReadAdded("1.1.0");
+  describe('Scenario: MINOR bump adding filesystem.read is allowed (E5)', () => {
+    it('runs Given/When/Then', () => {
+      givenPreviousVersionHasNoFilesystemRead('1.0.0');
+      whenCheckingEscalationWithFilesystemReadAdded('1.1.0');
       thenResultIsAllowed();
     });
   });
 
   // ── PATCH bump rules (C3) ──────────────────────────────────────────
 
-  describe("Scenario: PATCH bump with any new permission is blocked (E3, E4)", () => {
-    it("runs Given/When/Then", () => {
-      givenPreviousVersionHasNoPermissions("1.0.0");
-      whenCheckingEscalationWithNetworkOutboundAdded("1.0.1");
+  describe('Scenario: PATCH bump with any new permission is blocked (E3, E4)', () => {
+    it('runs Given/When/Then', () => {
+      givenPreviousVersionHasNoPermissions('1.0.0');
+      whenCheckingEscalationWithNetworkOutboundAdded('1.0.1');
       thenResultIsNotAllowed();
-      thenViolationsMention("PATCH");
+      thenViolationsMention('PATCH');
     });
   });
 
-  describe("Scenario: PATCH bump adding filesystem.write is blocked (E4)", () => {
-    it("runs Given/When/Then", () => {
-      givenPreviousVersionHasNoFilesystemWrite("1.0.0");
-      whenCheckingEscalationWithFilesystemWriteAdded("1.0.1");
+  describe('Scenario: PATCH bump adding filesystem.write is blocked (E4)', () => {
+    it('runs Given/When/Then', () => {
+      givenPreviousVersionHasNoFilesystemWrite('1.0.0');
+      whenCheckingEscalationWithFilesystemWriteAdded('1.0.1');
       thenResultIsNotAllowed();
     });
   });
 
   // ── No escalation (C3 negative) ────────────────────────────────────
 
-  describe("Scenario: PATCH bump with no permission changes is allowed (E6)", () => {
-    it("runs Given/When/Then", () => {
-      givenPreviousVersionHasNetworkOutbound("1.0.0", "api.example.com");
-      whenCheckingEscalationWithSamePermissions("1.0.1", "api.example.com");
+  describe('Scenario: PATCH bump with no permission changes is allowed (E6)', () => {
+    it('runs Given/When/Then', () => {
+      givenPreviousVersionHasNetworkOutbound('1.0.0', 'api.example.com');
+      whenCheckingEscalationWithSamePermissions('1.0.1', 'api.example.com');
       thenResultIsAllowed();
     });
   });
 
   // ── Removing permissions (C5) ──────────────────────────────────────
 
-  describe("Scenario: Removing permissions is always allowed (E7)", () => {
-    it("runs Given/When/Then", () => {
-      givenPreviousVersionHasNetworkOutbound("1.0.0", "api.example.com");
-      whenCheckingEscalationWithNetworkOutboundRemoved("1.0.1");
+  describe('Scenario: Removing permissions is always allowed (E7)', () => {
+    it('runs Given/When/Then', () => {
+      givenPreviousVersionHasNetworkOutbound('1.0.0', 'api.example.com');
+      whenCheckingEscalationWithNetworkOutboundRemoved('1.0.1');
       thenResultIsAllowed();
     });
   });
 
   // ── First publish (C4) ─────────────────────────────────────────────
 
-  describe("Scenario: First publish with no previous version is always allowed (E8)", () => {
-    it("runs Given/When/Then", () => {
-      whenCheckingEscalationWithNoPreviousVersion({ network: { outbound: ["api.example.com"] } });
+  describe('Scenario: First publish with no previous version is always allowed (E8)', () => {
+    it('runs Given/When/Then', () => {
+      whenCheckingEscalationWithNoPreviousVersion({ network: { outbound: ['api.example.com'] } });
       thenResultIsAllowed();
     });
   });

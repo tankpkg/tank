@@ -1,6 +1,8 @@
 import { headers } from 'next/headers';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense } from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -249,9 +251,12 @@ async function UsersTable({ searchParams }: { searchParams: SearchParams }) {
                       <TableCell>
                         <Link href={`/admin/users/${user.id}`} className="flex items-center gap-3">
                           {user.image ? (
-                            <img
+                            <Image
                               src={user.image}
                               alt={user.name ?? user.email}
+                              width={36}
+                              height={36}
+                              unoptimized
                               className="size-9 rounded-full object-cover"
                             />
                           ) : (

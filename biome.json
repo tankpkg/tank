@@ -1,11 +1,13 @@
 {
-  "$schema": "https://biomejs.dev/schemas/latest/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
   "files": {
     "ignoreUnknown": true,
     "includes": [
       "packages/**",
+      "apps/**",
       "scripts/**",
-      "e2e/**",
+      ".e2e/**",
+      ".bdd/**",
       "*.json",
       "*.jsonc",
       "*.js",
@@ -14,10 +16,16 @@
       "!**/dist",
       "!**/build",
       "!**/.next",
+      "!**/.output",
       "!**/.turbo",
       "!**/coverage",
       "!**/.source",
-      "!**/next-env.d.ts"
+      "!**/.astro",
+      "!**/.features-gen",
+      "!**/next-env.d.ts",
+      "!**/routeTree.gen.ts",
+      "!**/.tanstack",
+      "!**/auth-schema.ts"
     ]
   },
   "formatter": {
@@ -32,13 +40,24 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noUselessStringConcat": "error"
+        "noUselessStringConcat": "error",
+        "noUselessEmptyExport": "error",
+        "noForEach": "warn"
       },
       "correctness": {
-        "useExhaustiveDependencies": "warn"
+        "useExhaustiveDependencies": "warn",
+        "noUnusedImports": "error",
+        "useHookAtTopLevel": "error"
       },
       "performance": {
         "noImgElement": "warn"
+      },
+      "security": {},
+      "suspicious": {
+        "noConsole": "warn",
+        "noFocusedTests": "error",
+        "noSkippedTests": "warn",
+        "noExplicitAny": "warn"
       },
       "style": {
         "noNonNullAssertion": "warn",
@@ -57,7 +76,11 @@
         "useCollapsedElseIf": "error",
         "useConst": "error",
         "useTrimStartEnd": "error",
-        "useTemplate": "warn"
+        "useTemplate": "warn",
+        "useImportType": "error",
+        "useShorthandAssign": "error",
+        "useExponentiationOperator": "error",
+        "useFragmentSyntax": "error"
       }
     }
   },
@@ -75,8 +98,7 @@
   },
   "css": {
     "parser": {
-      "cssModules": true,
-      "tailwindDirectives": true
+      "cssModules": true
     }
   },
   "assist": {
@@ -86,5 +108,32 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.astro"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useConst": "off",
+            "useImportType": "off"
+          },
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/cli/**", "scripts/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ]
 }

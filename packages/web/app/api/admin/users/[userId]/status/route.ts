@@ -1,6 +1,7 @@
-import { userStatusSchema } from '@internal/shared';
+import { userStatusSchema } from '@internals/schemas';
 import { eq } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
+
 import { type AdminAuthContext, withAdminAuth } from '@/lib/admin-middleware';
 import { db } from '@/lib/db';
 import { auditEvents, user, userStatus } from '@/lib/db/schema';

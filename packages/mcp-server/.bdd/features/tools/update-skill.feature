@@ -3,7 +3,8 @@ Feature: Update Skill Tool
   I want to update installed skills to newer versions
   So I can get the latest features and security fixes
 
-  @auth @network
+  @auth
+  @network
   Scenario: Update a specific installed skill
     Given I am authenticated with Tank
     And I have a project with "@test/hello-world@1.0.0" installed
@@ -11,7 +12,8 @@ Feature: Update Skill Tool
       | name | @test/hello-world |
     Then the response should indicate the update result
 
-  @auth @network
+  @auth
+  @network
   Scenario: Update all installed skills
     Given I am authenticated with Tank
     And I have a project with installed skills

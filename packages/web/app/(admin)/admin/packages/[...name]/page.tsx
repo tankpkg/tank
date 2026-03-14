@@ -1,11 +1,13 @@
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/auth-schema';
-import { auditEvents, skillDownloadDaily, skills, skillVersions } from '@/lib/db/schema';
+import { auditEvents, organization, skillAccess, skillDownloadDaily, skills, skillVersions } from '@/lib/db/schema';
+
 import { AccessGrantsCard } from './components/access-grants-card';
 import { DeleteVersionButton } from './components/delete-version-button';
 import { FeatureButton } from './components/feature-button';
@@ -108,6 +110,21 @@ export default async function AdminPackageDetailPage({ params }: { params: Promi
     .where(and(eq(auditEvents.targetId, skill.id), eq(auditEvents.targetType, 'skill')))
     .orderBy(desc(auditEvents.createdAt))
     .limit(50);
+  const accessGrants = await db
+    .select({
+      id: skillAccess.id,
+      grantedUserId: skillAccess.grantedUserId,
+      grantedOrgId: skillAccess.grantedOrgId,
+      userName: user.name,
+      userEmail: user.email,
+      orgName: organization.name,
+      orgSlug: organization.slug
+    })
+    .from(skillAccess)
+    .leftJoin(user, eq(user.id, skillAccess.grantedUserId))
+    .leftJoin(organization, eq(organization.id, skillAccess.grantedOrgId))
+    .where(eq(skillAccess.skillId, skill.id))
+    .orderBy(desc(skillAccess.createdAt));
 
   const status = (skill.status ?? 'active') as PackageStatus;
 
@@ -232,7 +249,7 @@ export default async function AdminPackageDetailPage({ params }: { params: Promi
             currentVisibility={skill.visibility === 'private' ? 'private' : 'public'}
           />
 
-          <AccessGrantsCard packageName={name} />
+          <AccessGrantsCard packageName={name} initialGrants={accessGrants} />
 
           <ForceDeleteCard packageName={name} />
 

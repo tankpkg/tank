@@ -195,6 +195,17 @@ function getSeverityIcon(severity: string): string {
   }
 }
 
+function getFindingKey(finding: Finding): string {
+  return [
+    finding.stage,
+    finding.severity,
+    finding.type,
+    finding.location ?? 'no-location',
+    finding.tool ?? 'no-tool',
+    finding.description
+  ].join('::');
+}
+
 // Expanded finding detail component
 function ExpandedFinding({ finding }: { finding: Finding }) {
   const remediation = getRemediation(finding.type);
@@ -339,6 +350,7 @@ export function FindingsList({ findings }: FindingsListProps) {
         <div className="flex gap-2">
           {(['all', 'critical', 'high', 'medium', 'low'] as const).map((filter) => (
             <button
+              type="button"
               key={filter}
               onClick={() => setSeverityFilter(filter)}
               className={`px-3 py-1 text-sm rounded-md transition-colors ${
@@ -373,10 +385,11 @@ export function FindingsList({ findings }: FindingsListProps) {
       <div className="space-y-3">
         {sortedFindings.map((finding, index) => (
           <div
-            key={`${finding.stage}-${finding.type}-${index}`}
+            key={getFindingKey(finding)}
             className={`border-l-4 rounded-lg overflow-hidden ${getSeverityColor(finding.severity)}`}>
             {/* Header */}
             <button
+              type="button"
               onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
               className="w-full px-4 py-3 flex items-start justify-between hover:bg-black/5 transition-colors text-left">
               <div className="flex items-start gap-3 flex-1">

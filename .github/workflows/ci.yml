@@ -22,7 +22,7 @@ jobs:
       - name: Check if scanner changed
         id: check-changes
         run: |
-          if git diff --name-only HEAD^ HEAD | grep -q "^packages/scanner/"; then
+          if git diff --name-only HEAD^ HEAD | grep -q "^apps/python-api/"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
@@ -31,7 +31,7 @@ jobs:
       - name: Deploy Scanner to Vercel
         if: steps.check-changes.outputs.changed == 'true'
         run: |
-          cd packages/scanner
+          cd apps/python-api
           npx vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -65,7 +65,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -78,14 +78,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Biome format check
-        run: bun biome ci --linter-enabled=false --assist-enabled=false .
-
       - name: Build all packages
         run: bun run build
 
-      - name: Lint
-        run: bun run lint
+      - name: Lint & format check
+        run: bun run lint:check && bun run format:check
 
       - name: Run JavaScript/TypeScript tests
         run: bun run test
@@ -97,13 +94,13 @@ jobs:
         run: uv sync --frozen
 
       - name: Run Python tests
-        run: cd packages/scanner && PYTHONPATH=. uv run pytest lib/scan/test_llm_analyzer.py -v
+        run: cd apps/python-api && PYTHONPATH=. uv run pytest lib/scan/test_llm_analyzer.py -v
 
       - name: Ruff lint
-        run: uv run ruff check packages/scanner
+        run: uv run ruff check apps/python-api
 
       - name: Ruff format check
-        run: uv run ruff format --check packages/scanner
+        run: uv run ruff format --check apps/python-api
 
   performance:
     if: github.ref == 'refs/heads/main'
@@ -132,7 +129,7 @@ jobs:
       DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
       BETTER_AUTH_SECRET: ci-perf-secret-not-real
       NEXT_PUBLIC_APP_URL: http://localhost:3999
-      TANK_PERF_MODE: "1"
+      TANK_PERF_MODE: '1'
 
     steps:
       - name: Checkout code
@@ -181,26 +178,26 @@ jobs:
           DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
 
       - name: Provision database schema
-        run: cd packages/web && bun x drizzle-kit push --force
+        run: cd apps/web && bun x drizzle-kit push --force
         env:
           DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
 
       - name: Seed deterministic perf data
-        run: cd packages/web && bun run perf:seed
+        run: cd apps/web && bun run perf:seed
 
       - name: Run performance tests
         id: perf-test
-        run: cd packages/web && bun run perf:test
+        run: cd apps/web && bun run perf:test
 
       - name: Generate performance report
         if: always() && steps.perf-test.outcome != 'skipped'
-        run: cd packages/web && bun run perf:report || true
+        run: cd apps/web && bun run perf:report || true
 
       - name: Upload performance artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: perf-results
-          path: packages/web/perf/results/*.json
+          path: apps/web/perf/results/*.json
           if-no-files-found: warn
           retention-days: 30

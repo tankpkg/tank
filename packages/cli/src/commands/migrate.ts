@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import {
   LEGACY_LOCKFILE_FILENAME,
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
   MANIFEST_FILENAME
-} from '@internal/shared';
-import { logger } from '../lib/logger.js';
+} from '@internals/schemas';
+
+import { logger } from '~/lib/logger.js';
 
 export interface MigrateOptions {
   directory?: string;

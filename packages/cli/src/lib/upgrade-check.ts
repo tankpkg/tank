@@ -1,8 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { resolve } from '@internal/shared';
+
+import { resolve } from '@internals/helpers';
 import chalk from 'chalk';
-import { VERSION } from '../version.js';
+
+import { VERSION } from '~/version.js';
+
 import { getConfigDir } from './config.js';
 
 interface UpgradeCache {

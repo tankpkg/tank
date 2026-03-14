@@ -1,5 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+
 import * as schema from './db/schema';
 
 const connectionString = process.env.DATABASE_URL;
@@ -10,9 +11,8 @@ if (!connectionString && process.env.NODE_ENV !== 'production') {
 
 // Declare global type for caching across hot reloads
 declare global {
-  // eslint-disable-next-line no-var
   var _pgClient: ReturnType<typeof postgres> | undefined;
-  // eslint-disable-next-line no-var
+
   var _db: ReturnType<typeof drizzle<typeof schema>> | undefined;
 }
 
@@ -55,4 +55,4 @@ function getDb() {
 const sql = getPostgresClient();
 const db = getDb();
 
-export { sql, db };
+export { db, sql };

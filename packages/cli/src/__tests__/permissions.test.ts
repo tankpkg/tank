@@ -3,6 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 // Mock chalk to strip colors for assertion simplicity
 vi.mock('chalk', () => ({
   default: {
@@ -15,7 +17,7 @@ vi.mock('chalk', () => ({
   }
 }));
 
-import { permissionsCommand } from '../commands/permissions.js';
+import { permissionsCommand } from '~/commands/permissions.js';
 
 describe('permissionsCommand', () => {
   let tmpDir: string;
@@ -35,11 +37,11 @@ describe('permissionsCommand', () => {
   });
 
   function writeLockfile(skills: Record<string, unknown>): void {
-    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify({ lockfileVersion: 1, skills }, null, 2) + '\n');
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), `${JSON.stringify({ lockfileVersion: 1, skills }, null, 2)}\n`);
   }
 
   function writeSkillsJson(obj: Record<string, unknown>): void {
-    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(obj, null, 2) + '\n');
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), `${JSON.stringify(obj, null, 2)}\n`);
   }
 
   it('shows "No skills installed" when no lockfile exists', async () => {

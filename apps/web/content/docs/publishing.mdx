@@ -1,0 +1,315 @@
+---
+title: Publishing AI Agent Skills
+description: Build, validate, and publish AI agent skills to the Tank registry — with security scanning, permission declarations, and version escalation protection.
+---
+
+# Publishing AI Agent Skills
+
+Publishing to Tank is a deliberate process, not a one-liner. Every skill goes through a 6-stage security pipeline before it becomes installable. Permission escalation is enforced at the version level. This guide walks you through every step, from initial manifest authoring to post-publish validation.
+
+## Preflight Checklist
+
+Before running `tank publish`, confirm all of the following:
+
+- [ ] `tank.json` exists at the root of your skill directory
+- [ ] `name` is scoped correctly (`@org/skill-name`) and matches your registry org membership
+- [ ] `version` is a valid semver string and is **higher** than the previously published version
+- [ ] `permissions` declares the minimum set your code actually uses — no more
+- [ ] A `README.md` or `SKILL.md` file is present with usage documentation
+- [ ] No secrets, credentials, or `.env` files are included in the directory
+- [ ] `tank login` has been completed and `tank whoami` confirms your identity
+- [ ] `tank doctor` exits with no errors
+
+## The `tank.json` Manifest
+
+The `tank.json` file is the single source of truth for your skill's identity, version, and permission declarations.
+
+### Full manifest example
+
+```json
+{
+  "name": "@org/my-skill",
+  "version": "1.0.0",
+  "description": "A concise description of what this skill does and why an agent would use it.",
+  "repository": "https://github.com/org/my-skill",
+  "permissions": {
+    "network": {
+      "outbound": ["api.openai.com", "*.anthropic.com"]
+    },
+    "filesystem": {
+      "read": ["./src/**", "./data/**"],
+      "write": ["./output/**"]
+    },
+    "subprocess": false,
+    "environment": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"]
+  }
+}
+```
+
+### Permission field reference
+
+| Field              | Type       | Description                                                             |
+| ------------------ | ---------- | ----------------------------------------------------------------------- |
+| `network.outbound` | `string[]` | Allowlist of hostnames or glob patterns the skill may connect to        |
+| `filesystem.read`  | `string[]` | Glob patterns for paths the skill may read                              |
+| `filesystem.write` | `string[]` | Glob patterns for paths the skill may write                             |
+| `subprocess`       | `boolean`  | Whether the skill may spawn child processes. Use `false` if not needed. |
+| `environment`      | `string[]` | Environment variable names the skill may read                           |
+
+<Callout type="info">
+  Be specific with network hostnames. `*.anthropic.com` is acceptable. `*` is a red flag that the security scanner will
+  flag as an overly broad network permission. Broad wildcards directly lower your audit score.
+</Callout>
+
+### Manifest validation rules
+
+- `name` must be scoped (`@org/skill-name`). Unscoped names are not accepted.
+- `version` must be a valid semver string (`MAJOR.MINOR.PATCH`).
+- `description` must be present and non-empty.
+- `permissions` must be present. If your skill needs no special permissions, declare an empty object: `"permissions": {}`.
+
+## Publish Flow
+
+The recommended publish flow has three steps:
+
+### Step 1 — Self-diagnostic
+
+```bash
+tank doctor
+```
+
+`tank doctor` checks your local config, auth token, registry connectivity, and manifest validity. Fix any errors before proceeding.
+
+### Step 2 — Dry run
+
+```bash
+tank publish --dry-run
+```
+
+The dry run packs your skill into a tarball and validates it locally — checking manifest schema, file count, total size, ignored file exclusions, and permission declaration completeness — **without uploading anything**. This is the fastest way to catch problems.
+
+Supported publish flags:
+
+| Flag                  | Description                                   |
+| --------------------- | --------------------------------------------- |
+| `--dry-run`           | Validate and pack locally, do not upload      |
+| `--private`           | Publish as a private skill (org members only) |
+| `--visibility <mode>` | Explicit visibility: `public` or `private`    |
+
+### Step 3 — Publish
+
+```bash
+tank publish
+```
+
+The full publish flow:
+
+1. Packs the skill directory into a tarball (excluding ignored files)
+2. Computes SHA-512 of the tarball
+3. Uploads to the registry
+4. Triggers the 6-stage security scanner
+5. Returns the published version URL and initial scan status
+
+The skill becomes installable after the scanner completes. You can monitor scan progress with `tank info @org/my-skill`.
+
+## Organization and Scoped Publishing
+
+Publishing `@org/skill-name` requires membership in the `org` organization on Tank. If you attempt to publish to a scope you don't belong to, the request is rejected with a `403 Forbidden` error.
+
+To publish under an organization:
+
+1. The organization must exist in the Tank registry (created via the web dashboard or admin API).
+2. Your account must be an active member of that organization.
+3. The `name` field in `tank.json` must match the org scope exactly.
+
+To publish under your personal namespace, use your GitHub username as the scope: `@your-username/skill-name`.
+
+<Callout type="info">
+  Service accounts (for CI/CD) can publish to an org if the service account's API key was created with `skills:publish`
+  scope and the service account is a member of the org. See the dashboard under **Tokens → Service Accounts**.
+</Callout>
+
+## Versioning Policy and Permission Escalation Rules
+
+Tank enforces strict rules about what changes are allowed at each semver bump level. These rules are applied automatically at publish time — violations are rejected with a descriptive error, not a warning.
+
+### Semver bump types
+
+| Bump      | Example           | Description                          |
+| --------- | ----------------- | ------------------------------------ |
+| **PATCH** | `1.0.0` → `1.0.1` | Bug fixes only — no behavior changes |
+| **MINOR** | `1.0.0` → `1.1.0` | Backward-compatible new features     |
+| **MAJOR** | `1.0.0` → `2.0.0` | Breaking changes                     |
+
+### Permission escalation rules
+
+| Bump level | Allowed permission changes                                                                                                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PATCH**  | **No new permissions** — a patch that adds any new permission (even a new `environment` variable) is rejected. Bug fixes must not expand capability.                                    |
+| **MINOR**  | **No dangerous permissions** — you may add new non-dangerous permissions (e.g., new `filesystem.read` paths), but adding `network.*` or `subprocess: true` at a minor bump is rejected. |
+| **MAJOR**  | **Any changes allowed** — a major version bump signals a contract change. All permission additions are permitted.                                                                       |
+
+These rules exist to prevent supply chain attacks where an attacker publishes a patch version of a trusted skill that silently acquires network or subprocess access.
+
+### Example: rejected PATCH bump
+
+```
+ERROR  Permission escalation rejected for PATCH bump (1.2.3 → 1.2.4):
+  New permission detected: network.outbound = ["evil.example.com"]
+  PATCH versions may not add new permissions.
+  Bump to MINOR (1.3.0) or MAJOR (2.0.0) to include permission changes.
+```
+
+### Example: rejected MINOR bump
+
+```
+ERROR  Permission escalation rejected for MINOR bump (1.2.0 → 1.3.0):
+  Dangerous permission added: subprocess = true
+  MINOR versions may not add network or subprocess permissions.
+  Bump to MAJOR (2.0.0) to include this permission change.
+```
+
+## Ignored Files
+
+The following are automatically excluded from the published tarball and are never uploaded to the registry, regardless of what's in your skill directory:
+
+| Pattern                   | Reason                                                            |
+| ------------------------- | ----------------------------------------------------------------- |
+| `.git/` and `.gitignore`  | Version control metadata                                          |
+| `node_modules/`           | Dependencies must not be bundled                                  |
+| `.env`, `.env.*`, `*.env` | Credential files — never publish secrets                          |
+| `.DS_Store`               | macOS metadata                                                    |
+| `dist/`, `build/`         | Build artifacts — ship source or a compiled entry point, not both |
+| `*.log`                   | Log files                                                         |
+| `coverage/`               | Test coverage output                                              |
+| `.tank/`                  | Tank's own install directory                                      |
+
+<Callout type="info">
+  If `node_modules/` is not excluded, your tarball will almost certainly exceed the 50 MB size limit. Tank excludes it
+  automatically, but this means your skill's runtime dependencies must be peer dependencies, not bundled ones.
+</Callout>
+
+## Size Limits
+
+| Limit            | Value           | Enforcement                                                    |
+| ---------------- | --------------- | -------------------------------------------------------------- |
+| Max tarball size | **50 MB**       | Enforced at pack time (client) and upload time (server)        |
+| Max file count   | **1,000 files** | Enforced at pack time (client) and extraction time (installer) |
+
+Skills exceeding either limit are rejected at publish time. The dry run (`--dry-run`) will surface these before upload.
+
+## What the Security Scanner Checks
+
+After upload, Tank runs a 6-stage security pipeline. The stages are:
+
+| Stage | Name                    | What it checks                                          |
+| ----- | ----------------------- | ------------------------------------------------------- |
+| 0     | **Ingest**              | File hashing, archive structure, metadata extraction    |
+| 1     | **Structure**           | Directory layout, file types, suspicious patterns       |
+| 2     | **Static analysis**     | AST-level analysis for dangerous API usage              |
+| 3     | **Injection detection** | Prompt injection patterns, jailbreak attempts           |
+| 4     | **Secrets detection**   | Hardcoded credentials, API keys, private keys           |
+| 5     | **Supply chain**        | Dependency confusion, typosquatting, known-bad packages |
+
+See the [Security Model](/docs/security) page for a detailed breakdown of each stage's verdict criteria.
+
+### Verdict rules
+
+| Condition                   | Verdict                                                    |
+| --------------------------- | ---------------------------------------------------------- |
+| 1 or more critical findings | **FAIL** — skill is blocked from installation              |
+| 4 or more high findings     | **FAIL** — skill is blocked from installation              |
+| 1–3 high findings           | **FLAGGED** — installable with warning                     |
+| Medium / low findings only  | **PASS_WITH_NOTES** — installable, findings shown in audit |
+| No findings                 | **PASS**                                                   |
+
+A `FAIL` verdict means `tank install @org/skill-name` will refuse to install the skill until the findings are resolved and a new version is published.
+
+## Post-Publish Validation
+
+After publishing, verify the skill is available and correctly scanned:
+
+```bash
+tank info @org/my-skill
+tank audit @org/my-skill
+```
+
+Confirm:
+
+- The published version appears in the version list
+- The declared permissions in the registry match your `tank.json`
+- The security audit shows no unexpected critical or high findings
+- The audit score (0–10) is at or above your acceptable threshold
+
+An audit score below 5 indicates issues worth addressing before recommending the skill to other users.
+
+## Security Publishing Rules
+
+- **Request only what you use** — every permission you declare is visible to every user who reviews your skill. Unused permissions are the first signal of a malicious or sloppy skill.
+- **Avoid broad network wildcards** — prefer exact hostnames over `*`. If you need to call multiple endpoints on the same domain, use `*.domain.com` rather than `*`.
+- **Never embed secrets** — the scanner's stage 4 runs entropy analysis and known-pattern matching. Hardcoded API keys will be detected and will produce a critical finding.
+- **Pin your own dependencies** — if your skill depends on other skills, pin them to exact versions in your `tank.json` to prevent your users from being affected by upstream updates.
+- **Review scanner findings before each release** — run `tank audit @org/my-skill` after publishing and before promoting the version in any downstream systems.
+
+## Common Failures and Fixes
+
+### `tank.json` validation failure
+
+```
+ERROR  Invalid manifest: "name" must be scoped (e.g. "@org/skill-name")
+```
+
+Fix the `tank.json` field indicated in the error message, then re-run `tank publish --dry-run`.
+
+### Permission escalation rejected
+
+```
+ERROR  Permission escalation rejected for PATCH bump
+```
+
+The version bump level is too low for the permission changes you made. Either remove the new permission (if it was unintentional) or bump to the appropriate version level (MINOR or MAJOR).
+
+### Security finding blocks release
+
+```
+ERROR  Skill blocked: FAIL verdict (2 critical findings)
+  Stage 4 — Secrets: Hardcoded API key detected at ./src/client.ts:42
+```
+
+Address the finding in your source code — remove the hardcoded secret and use the `environment` permission to declare the environment variable instead. Then publish a new version.
+
+### Size limit exceeded
+
+```
+ERROR  Tarball exceeds 50 MB limit (current: 73.2 MB)
+  Hint: node_modules/ is excluded automatically. Check for large binary files.
+```
+
+Identify and remove large files that don't belong in the published skill. Use `tank publish --dry-run` to see the file list before uploading.
+
+### Organization membership error
+
+```
+ERROR  403 Forbidden: You are not a member of @org
+```
+
+You must be an active member of the organization to publish under its scope. Contact an org admin to be added, or publish under your personal scope instead.
+
+### Wrong visibility after publish
+
+Republish the skill with explicit visibility:
+
+```bash
+tank publish --visibility private
+# or
+tank publish --private
+```
+
+Note: changing visibility for an already-published version requires an admin action on the web dashboard.
+
+## Next Steps
+
+- **[Installing Skills](/docs/installing)** — how consumers install, verify, and manage your published skill
+- **[Security Model](/docs/security)** — the full 6-stage scanner breakdown and verdict rules
+- **[Permissions Reference](/docs/permissions)** — all permission types, syntax, and enforcement behavior
+- **[CLI Reference](/docs/cli)** — all `tank publish` flags and related commands

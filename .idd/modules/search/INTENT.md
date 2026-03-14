@@ -12,8 +12,8 @@ partial typing, org browsing, typo tolerance, and keyword relevance.
 **Consumers:** Web UI (Server Component `searchSkills()`), CLI (`tank search`
 via `GET /api/v1/search`), MCP server (`search-skills` tool via same API).
 
-**Single source of truth:** `packages/web/lib/data/skills.ts` — the `searchSkills()`
-function. The API route at `packages/web/app/api/v1/search/route.ts` is a thin
+**Single source of truth:** `apps/web/lib/data/skills.ts` — the `searchSkills()`
+function. The API route at `apps/web/app/api/v1/search/route.ts` is a thin
 delegation layer (15 lines).
 
 ---
@@ -21,7 +21,7 @@ delegation layer (15 lines).
 ## Layer 1: Structure
 
 ```
-packages/web/
+apps/web/
   lib/data/skills.ts            # searchSkills(), escapeLike(), mapSearchResults()
   app/api/v1/search/route.ts    # GET handler — delegates to searchSkills()
   app/(registry)/skills/

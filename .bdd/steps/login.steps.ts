@@ -8,7 +8,7 @@
  * Requires E2E_REGISTRY_URL in environment (defaults to http://localhost:3003).
  * Seeds sessions via HTTP (start endpoint), validates exchange behavior.
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from 'vitest';
 
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 
@@ -23,11 +23,11 @@ interface LoginWorld {
 }
 
 const world: LoginWorld = {
-  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
   lastStatus: 0,
   lastBody: {},
-  sessionCode: "",
-  state: "",
+  sessionCode: '',
+  state: ''
 };
 
 // ── Given ──────────────────────────────────────────────────────────────────
@@ -35,12 +35,12 @@ const world: LoginWorld = {
 async function givenAPendingLoginSessionExists(): Promise<void> {
   world.state = `bdd-state-${Date.now()}`;
   const res = await fetch(`${world.registry}/api/v1/cli-auth/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ state: world.state }),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: world.state })
   });
   const body = (await res.json()) as Record<string, unknown>;
-  world.sessionCode = body["sessionCode"] as string;
+  world.sessionCode = body['sessionCode'] as string;
 }
 
 // ── When ───────────────────────────────────────────────────────────────────
@@ -48,9 +48,9 @@ async function givenAPendingLoginSessionExists(): Promise<void> {
 async function whenIPostToStartWithValidState(): Promise<void> {
   world.state = `bdd-state-${Date.now()}`;
   const res = await fetch(`${world.registry}/api/v1/cli-auth/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ state: world.state }),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: world.state })
   });
   world.lastStatus = res.status;
   world.lastBody = (await res.json()) as Record<string, unknown>;
@@ -58,9 +58,9 @@ async function whenIPostToStartWithValidState(): Promise<void> {
 
 async function whenIPostToStartWithoutState(): Promise<void> {
   const res = await fetch(`${world.registry}/api/v1/cli-auth/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
   });
   world.lastStatus = res.status;
   world.lastBody = (await res.json()) as Record<string, unknown>;
@@ -68,9 +68,9 @@ async function whenIPostToStartWithoutState(): Promise<void> {
 
 async function whenIPostToExchangeWithSessionCode(sessionCode: string, state: string): Promise<void> {
   const res = await fetch(`${world.registry}/api/v1/cli-auth/exchange`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionCode, state }),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionCode, state })
   });
   world.lastStatus = res.status;
   world.lastBody = (await res.json()) as Record<string, unknown>;
@@ -78,9 +78,9 @@ async function whenIPostToExchangeWithSessionCode(sessionCode: string, state: st
 
 async function whenIPostToExchangeWithWrongState(): Promise<void> {
   const res = await fetch(`${world.registry}/api/v1/cli-auth/exchange`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionCode: world.sessionCode, state: "wrong-state-bdd" }),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionCode: world.sessionCode, state: 'wrong-state-bdd' })
   });
   world.lastStatus = res.status;
   world.lastBody = (await res.json().catch(() => ({}))) as Record<string, unknown>;
@@ -107,30 +107,30 @@ function thenErrorContains(substring: string): void {
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: CLI OAuth login flow via browser handshake", () => {
+describe('Feature: CLI OAuth login flow via browser handshake', () => {
   // ── Start session (C1, C2) ────────────────────────────────────────
 
-  describe("Scenario: Starting a login session returns authUrl and sessionCode (E1)", () => {
-    it.skipIf(!hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Starting a login session returns authUrl and sessionCode (E1)', () => {
+    it.skipIf(!hasRegistry)('runs Given/When/Then', async () => {
       await whenIPostToStartWithValidState();
       thenStatusIs(200);
-      thenBodyContainsKey("authUrl");
-      thenBodyContainsKey("sessionCode");
+      thenBodyContainsKey('authUrl');
+      thenBodyContainsKey('sessionCode');
     });
   });
 
-  describe("Scenario: Start without state returns 400 (E2)", () => {
-    it.skipIf(!hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Start without state returns 400 (E2)', () => {
+    it.skipIf(!hasRegistry)('runs Given/When/Then', async () => {
       await whenIPostToStartWithoutState();
       thenStatusIs(400);
-      thenErrorContains("state");
+      thenErrorContains('state');
     });
   });
 
   // ── Exchange before authorization (C3) ───────────────────────────
 
-  describe("Scenario: Polling exchange before authorization returns 400 (E3)", () => {
-    it.skipIf(!hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Polling exchange before authorization returns 400 (E3)', () => {
+    it.skipIf(!hasRegistry)('runs Given/When/Then', async () => {
       await givenAPendingLoginSessionExists();
       await whenIPostToExchangeWithSessionCode(world.sessionCode, world.state);
       thenStatusIs(400);
@@ -139,8 +139,8 @@ describe("Feature: CLI OAuth login flow via browser handshake", () => {
 
   // ── State validation (C7) ─────────────────────────────────────────
 
-  describe("Scenario: Exchange with mismatched state is rejected (E5)", () => {
-    it.skipIf(!hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Exchange with mismatched state is rejected (E5)', () => {
+    it.skipIf(!hasRegistry)('runs Given/When/Then', async () => {
       await givenAPendingLoginSessionExists();
       await whenIPostToExchangeWithWrongState();
       thenStatusIs400Or404();

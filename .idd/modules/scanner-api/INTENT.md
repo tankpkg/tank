@@ -28,7 +28,7 @@ packages/scanner/lib/scan/                    # 6 stage implementations
 | C1  | `POST /api/analyze/scan` accepts `{ tarball_url, version_id, manifest, permissions }` | All data needed for a full scan                      | BDD scenario |
 | C2  | Returns `{ verdict, findings, stage_results, duration_ms, file_hashes }`              | Callers need structured results to store and display | BDD scenario |
 | C3  | `verdict` is one of: `pass`, `pass_with_notes`, `flagged`, `fail`                     | Four-tier verdict for different risk levels          | BDD scenario |
-| C4  | `GET /health` returns 200 with `{ status: "healthy" }` when scanner is up               | Used by `GET /api/health` dependency check           | BDD scenario |
+| C4  | `GET /health` returns 200 with `{ status: "healthy" }` when scanner is up             | Used by `GET /api/health` dependency check           | BDD scenario |
 | C5  | Malformed request body → 422 (FastAPI validation)                                     | Scanner must reject bad inputs explicitly            | BDD scenario |
 
 ---

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock global fetch
@@ -8,7 +9,7 @@ const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
 // Mock logger
-vi.mock('../lib/logger.js', () => ({
+vi.mock('~/lib/logger.js', () => ({
   logger: {
     info: vi.fn(),
     success: vi.fn(),
@@ -18,7 +19,7 @@ vi.mock('../lib/logger.js', () => ({
 }));
 
 // Mock install command — update delegates to install for the actual download
-vi.mock('../commands/install.js', () => ({
+vi.mock('~/commands/install.js', () => ({
   installCommand: vi.fn().mockResolvedValue(undefined)
 }));
 
@@ -104,17 +105,17 @@ describe('updateCommand', () => {
   });
 
   function writeSkillsJson(data: Record<string, unknown> = baseSkillsJson) {
-    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(data, null, 2) + '\n');
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), `${JSON.stringify(data, null, 2)}\n`);
   }
 
   function writeLockfile(data: Record<string, unknown> = baseLockfile) {
-    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(data, null, 2) + '\n');
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), `${JSON.stringify(data, null, 2)}\n`);
   }
 
   function writeGlobalLockfile(data: Record<string, unknown> = baseGlobalLockfile) {
     const tankDir = path.join(homedir, '.tank');
     fs.mkdirSync(tankDir, { recursive: true });
-    fs.writeFileSync(path.join(tankDir, 'tank.lock'), JSON.stringify(data, null, 2) + '\n');
+    fs.writeFileSync(path.join(tankDir, 'tank.lock'), `${JSON.stringify(data, null, 2)}\n`);
   }
 
   function mockVersionsResponse(versions: string[]) {
@@ -154,8 +155,8 @@ describe('updateCommand', () => {
   }
 
   it('updates skill when newer version available', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -176,7 +177,7 @@ describe('updateCommand', () => {
   });
 
   it('sends bearer token when config contains token', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
 
     fs.writeFileSync(
       path.join(configDir, 'config.json'),
@@ -195,9 +196,9 @@ describe('updateCommand', () => {
   });
 
   it('prints "Already at latest" when no newer version', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
-    const { logger } = await import('../lib/logger.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
+    const { logger } = await import('~/lib/logger.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -214,7 +215,7 @@ describe('updateCommand', () => {
   });
 
   it('errors when tank.json is missing', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
 
     await expect(updateCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir })).rejects.toThrow(
       /tank\.json/i
@@ -222,7 +223,7 @@ describe('updateCommand', () => {
   });
 
   it('errors when skill is not in tank.json', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
     writeSkillsJson();
 
     await expect(updateCommand({ name: '@nonexistent/skill', directory: tmpDir, configDir })).rejects.toThrow(
@@ -231,7 +232,7 @@ describe('updateCommand', () => {
   });
 
   it('handles network errors gracefully', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -244,8 +245,8 @@ describe('updateCommand', () => {
   });
 
   it('updates all skills when no name provided', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -285,8 +286,8 @@ describe('updateCommand', () => {
   });
 
   it('prints summary after updating all', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { logger } = await import('../lib/logger.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { logger } = await import('~/lib/logger.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -324,9 +325,9 @@ describe('updateCommand', () => {
   });
 
   it('handles mix of up-to-date and outdated skills', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
-    const { logger } = await import('../lib/logger.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
+    const { logger } = await import('~/lib/logger.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -370,9 +371,9 @@ describe('updateCommand', () => {
   });
 
   it('prints "All skills up to date" when nothing to update', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
-    const { logger } = await import('../lib/logger.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
+    const { logger } = await import('~/lib/logger.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -406,8 +407,8 @@ describe('updateCommand', () => {
   });
 
   it('handles missing lockfile gracefully (treats all as needing update)', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
     writeSkillsJson();
     // No lockfile written
 
@@ -426,8 +427,8 @@ describe('updateCommand', () => {
   });
 
   it('updates global skill using global lockfile entry', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
     writeGlobalLockfile();
 
     mockVersionsResponse(['2.0.0', '2.1.0']);
@@ -451,7 +452,7 @@ describe('updateCommand', () => {
   });
 
   it('does not require tank.json for global updates', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
     writeGlobalLockfile();
 
     mockVersionsResponse(['2.0.0', '2.1.0']);
@@ -467,8 +468,8 @@ describe('updateCommand', () => {
   });
 
   it('updates all global skills from global lockfile', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
     writeGlobalLockfile();
 
     mockVersionsResponseFor('@test-org/my-skill', ['2.0.0', '2.1.0']);
@@ -494,15 +495,15 @@ describe('updateCommand', () => {
   });
 
   it('errors when global lockfile is missing', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
 
     await expect(updateCommand({ configDir, global: true, homedir })).rejects.toThrow(/tank\.lock|global/i);
   });
 
   it('prints "Already at latest" for global updates', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
-    const { logger } = await import('../lib/logger.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
+    const { logger } = await import('~/lib/logger.js');
     writeGlobalLockfile();
 
     mockVersionsResponse(['2.0.0']);
@@ -519,7 +520,7 @@ describe('updateCommand', () => {
   });
 
   it('errors when global skill is not in lockfile', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
     writeGlobalLockfile({
       lockfileVersion: 1,
       skills: {
@@ -543,8 +544,8 @@ describe('updateCommand', () => {
   });
 
   it('passes homedir through for local updates', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { installCommand } = await import('../commands/install.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { installCommand } = await import('~/commands/install.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -568,7 +569,7 @@ describe('updateCommand', () => {
   });
 
   it('errors when tank.json is corrupt (invalid JSON)', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
 
     // Write invalid JSON to tank.json
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{ invalid json content }');
@@ -579,7 +580,7 @@ describe('updateCommand', () => {
   });
 
   it('errors when registry returns 404 for single skill update', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -592,7 +593,7 @@ describe('updateCommand', () => {
   });
 
   it('errors when no version satisfies range for single skill update', async () => {
-    const { updateCommand } = await import('../commands/update.js');
+    const { updateCommand } = await import('~/commands/update.js');
 
     // Write tank.json with a version range that won't be satisfied
     writeSkillsJson({
@@ -614,8 +615,8 @@ describe('updateCommand', () => {
   });
 
   it('logs message when updating all skills with empty skills map', async () => {
-    const { updateCommand } = await import('../commands/update.js');
-    const { logger } = await import('../lib/logger.js');
+    const { updateCommand } = await import('~/commands/update.js');
+    const { logger } = await import('~/lib/logger.js');
 
     // Write tank.json with empty skills object
     writeSkillsJson({

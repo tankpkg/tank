@@ -1,13 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
+
 import { McpTestClient } from '../interactions/mcp-client.js';
-import { registerMcpHooks, type McpBddWorld } from '../support/hooks.js';
+import { type McpBddWorld, registerMcpHooks } from '../support/hooks.js';
 
 const world: McpBddWorld = {
   client: new McpTestClient(),
   home: '',
-  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003'
 };
 
 registerMcpHooks(world);
@@ -26,15 +28,20 @@ function writeSkillsJson(skills: Record<string, string>): void {
     name: 'test-project',
     version: '1.0.0',
     skills,
-    permissions: { network: { outbound: [] }, filesystem: { read: [], write: [] }, subprocess: false },
+    permissions: { network: { outbound: [] }, filesystem: { read: [], write: [] }, subprocess: false }
   };
-  fs.writeFileSync(path.join(projectDir(), 'tank.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 }
 
-function writeLockfile(skills: Record<string, { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }>): void {
+function writeLockfile(
+  skills: Record<
+    string,
+    { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }
+  >
+): void {
   ensureProjectDir();
   const lock = { lockfileVersion: 1, skills };
-  fs.writeFileSync(path.join(projectDir(), 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.lock'), `${JSON.stringify(lock, null, 2)}\n`);
 }
 
 function installSkillFiles(skillName: string, _version: string): void {
@@ -62,12 +69,17 @@ function createSymlink(skillName: string): void {
   fs.writeFileSync(path.join(linkPath, 'link.json'), '{}');
 }
 
-function makeLockEntry(version: string): { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null } {
+function makeLockEntry(version: string): {
+  resolved: string;
+  integrity: string;
+  permissions: Record<string, unknown>;
+  audit_score: number | null;
+} {
   return {
     resolved: `https://registry.tankpkg.dev/tarballs/skill-${version}.tgz`,
     integrity: `sha512-${Buffer.from(version).toString('base64')}`,
     permissions: { network: { outbound: [] }, filesystem: { read: [], write: [] }, subprocess: false },
-    audit_score: 8.0,
+    audit_score: 8.0
   };
 }
 
@@ -139,7 +151,7 @@ describe('Feature: Skill removal via MCP tool', () => {
       writeSkillsJson({ '@acme/web-search': '^2.1.0', '@acme/code-runner': '^1.0.0' });
       writeLockfile({
         '@acme/web-search@2.1.0': makeLockEntry('2.1.0'),
-        '@acme/code-runner@1.0.0': makeLockEntry('1.0.0'),
+        '@acme/code-runner@1.0.0': makeLockEntry('1.0.0')
       });
       installSkillFiles('@acme/web-search', '2.1.0');
       installSkillFiles('@acme/code-runner', '1.0.0');

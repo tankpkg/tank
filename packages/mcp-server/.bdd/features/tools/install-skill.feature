@@ -3,7 +3,8 @@ Feature: Install Skill Tool
   I want to install skills from the Tank registry
   So I can use them in my agent workspace
 
-  @auth @network
+  @auth
+  @network
   Scenario: Install a skill by name
     Given I am authenticated with Tank
     And I have a consumer project directory
@@ -13,7 +14,8 @@ Feature: Install Skill Tool
     And a skills.lock file should exist
     And the skill files should be extracted to .tank/skills/
 
-  @auth @network
+  @auth
+  @network
   Scenario: Install a skill with specific version
     Given I am authenticated with Tank
     And I have a consumer project directory
@@ -29,7 +31,8 @@ Feature: Install Skill Tool
       | name | @test/hello-world |
     Then I should see a message to log in first
 
-  @auth @network
+  @auth
+  @network
   Scenario: Install non-existent skill
     Given I am authenticated with Tank
     And I have a consumer project directory
@@ -37,7 +40,8 @@ Feature: Install Skill Tool
       | name | @test/does-not-exist-xyz |
     Then the response should indicate skill not found
 
-  @auth @network
+  @auth
+  @network
   Scenario: Install skill verifies SHA-512 integrity
     Given I am authenticated with Tank
     And I have a consumer project directory

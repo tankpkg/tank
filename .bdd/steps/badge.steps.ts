@@ -8,9 +8,10 @@
  * Requires DATABASE_URL and E2E_REGISTRY_URL in environment.
  * Seeds a test skill with an audit score directly via SQL; reads via badge endpoint.
  */
-import { randomUUID } from "node:crypto";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import postgres from "postgres";
+import { randomUUID } from 'node:crypto';
+
+import postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const hasDatabase = !!process.env.DATABASE_URL;
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
@@ -30,15 +31,15 @@ interface BadgeWorld {
 }
 
 const world: BadgeWorld = {
-  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
   sql: null,
-  runId: "",
-  testOrg: "",
-  skillName: "",
+  runId: '',
+  testOrg: '',
+  skillName: '',
   auditScore: 8.5,
   lastStatus: 0,
-  lastBody: "",
-  lastContentType: "",
+  lastBody: '',
+  lastContentType: ''
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ const world: BadgeWorld = {
 async function getBadge(path: string): Promise<{ status: number; body: string; contentType: string }> {
   const res = await fetch(`${world.registry}${path}`);
   const body = await res.text();
-  const contentType = res.headers.get("content-type") ?? "";
+  const contentType = res.headers.get('content-type') ?? '';
   return { status: res.status, body, contentType };
 }
 
@@ -59,27 +60,27 @@ async function seedSkillWithScore(sql: postgres.Sql, name: string, version: stri
 
   await sql`
     INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
-    VALUES (${publisherId}, ${"Badge BDD User"}, ${`badge-bdd-${world.runId}@tank.test`}, true, ${now}, ${now})
+    VALUES (${publisherId}, ${'Badge BDD User'}, ${`badge-bdd-${world.runId}@tank.test`}, true, ${now}, ${now})
     ON CONFLICT (id) DO NOTHING
   `;
 
   await sql`
     INSERT INTO "organization" (id, name, slug, created_at)
-    VALUES (${orgId}, ${"Badge BDD Org"}, ${world.testOrg}, ${now})
+    VALUES (${orgId}, ${'Badge BDD Org'}, ${world.testOrg}, ${now})
     ON CONFLICT (slug) DO NOTHING
   `;
 
   await sql`
     INSERT INTO "member" (id, organization_id, user_id, role, created_at)
-    VALUES (${`badge-mem-${world.runId}`}, ${orgId}, ${publisherId}, ${"owner"}, ${now})
+    VALUES (${`badge-mem-${world.runId}`}, ${orgId}, ${publisherId}, ${'owner'}, ${now})
     ON CONFLICT DO NOTHING
   `;
 
   await sql`
     INSERT INTO skills (id, name, description, publisher_id, org_id, status, visibility, created_at, updated_at)
     VALUES (
-      ${skillId}, ${name}, ${"Badge BDD test skill"},
-      ${publisherId}, ${orgId}, ${"active"}, ${"public"}, ${now}, ${now}
+      ${skillId}, ${name}, ${'Badge BDD test skill'},
+      ${publisherId}, ${orgId}, ${'active'}, ${'public'}, ${now}, ${now}
     )
     ON CONFLICT (name) DO UPDATE SET updated_at = ${now}
   `;
@@ -91,12 +92,12 @@ async function seedSkillWithScore(sql: postgres.Sql, name: string, version: stri
     )
     VALUES (
       ${versionId}, ${skillId}, ${version},
-      ${"sha512-bdd-badge-test"},
-      ${"skills/badge-bdd/test-1.0.0.tgz"},
+      ${'sha512-bdd-badge-test'},
+      ${'skills/badge-bdd/test-1.0.0.tgz'},
       ${512}, ${3},
-      ${JSON.stringify({ name, version, description: "BDD badge test" })},
+      ${JSON.stringify({ name, version, description: 'BDD badge test' })},
       ${JSON.stringify({})},
-      ${"completed"},
+      ${'completed'},
       ${auditScore},
       ${publisherId},
       ${now}
@@ -109,26 +110,26 @@ async function cleanupBadgeData(sql: postgres.Sql): Promise<void> {
   const orgSlug = world.testOrg;
   if (!orgSlug) return;
 
-  await sql`DELETE FROM skill_versions WHERE tarball_path LIKE ${"skills/badge-bdd/%"}`;
+  await sql`DELETE FROM skill_versions WHERE tarball_path LIKE ${'skills/badge-bdd/%'}`;
   await sql`DELETE FROM skills WHERE name LIKE ${`@${orgSlug}/%`}`;
-  await sql`DELETE FROM "member" WHERE id LIKE ${"badge-mem-%"}`;
+  await sql`DELETE FROM "member" WHERE id LIKE ${'badge-mem-%'}`;
   await sql`DELETE FROM "organization" WHERE slug = ${orgSlug}`;
-  await sql`DELETE FROM "user" WHERE id LIKE ${"badge-pub-%"}`;
+  await sql`DELETE FROM "user" WHERE id LIKE ${'badge-pub-%'}`;
 }
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: Audit score SVG badge", () => {
+describe('Feature: Audit score SVG badge', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
     const connectionString = process.env.DATABASE_URL!;
 
     world.sql = postgres(connectionString);
-    world.runId = randomUUID().replace(/-/g, "").slice(0, 10);
+    world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.testOrg = `badge-bdd-${world.runId}`;
     world.skillName = `@${world.testOrg}/badge-skill`;
 
-    await seedSkillWithScore(world.sql, world.skillName, "1.0.0", world.auditScore);
+    await seedSkillWithScore(world.sql, world.skillName, '1.0.0', world.auditScore);
   }, 30_000);
 
   afterAll(async () => {
@@ -140,21 +141,21 @@ describe("Feature: Audit score SVG badge", () => {
 
   // ── SVG content type (C1) ─────────────────────────────────────────────
 
-  describe("Scenario: Badge response has Content-Type image/svg+xml (E3)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("returns svg+xml content-type", async () => {
-      const encoded = encodeURIComponent(world.skillName).replace(/%40/g, "@");
+  describe('Scenario: Badge response has Content-Type image/svg+xml (E3)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('returns svg+xml content-type', async () => {
+      const encoded = encodeURIComponent(world.skillName).replace(/%40/g, '@');
       const { status, contentType } = await getBadge(`/api/v1/badge/${encoded}`);
       world.lastStatus = status;
       world.lastContentType = contentType;
-      expect(contentType).toContain("image/svg+xml");
+      expect(contentType).toContain('image/svg+xml');
     });
   });
 
   // ── Badge for known skill (C2) ────────────────────────────────────────
 
-  describe("Scenario: Badge for known skill contains the audit score (E1)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("returns 200", async () => {
-      const encoded = encodeURIComponent(world.skillName).replace(/%40/g, "@");
+  describe('Scenario: Badge for known skill contains the audit score (E1)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('returns 200', async () => {
+      const encoded = encodeURIComponent(world.skillName).replace(/%40/g, '@');
       const { status, body, contentType } = await getBadge(`/api/v1/badge/${encoded}`);
       world.lastStatus = status;
       world.lastBody = body;
@@ -162,7 +163,7 @@ describe("Feature: Audit score SVG badge", () => {
       expect(status).toBe(200);
     });
 
-    it.skipIf(!hasDatabase || !hasRegistry)("SVG body contains the audit score value", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('SVG body contains the audit score value', () => {
       // Badge renders e.g. "8.5/10" for score 8.5
       const scoreText = `${world.auditScore}/10`;
       expect(world.lastBody).toContain(scoreText);
@@ -171,8 +172,8 @@ describe("Feature: Audit score SVG badge", () => {
 
   // ── Badge for unknown skill (C3) ─────────────────────────────────────
 
-  describe("Scenario: Badge for unknown skill returns a badge (not 404) (E2)", () => {
-    it.skipIf(!hasRegistry)("returns 200", async () => {
+  describe('Scenario: Badge for unknown skill returns a badge (not 404) (E2)', () => {
+    it.skipIf(!hasRegistry)('returns 200', async () => {
       const { status } = await getBadge(`/api/v1/badge/@${world.testOrg}/nonexistent-badge-skill`);
       world.lastStatus = status;
       // Badge endpoint returns SVG even for unknown skills (with "not found" text)
@@ -180,9 +181,9 @@ describe("Feature: Audit score SVG badge", () => {
       expect(status).toBe(200);
     });
 
-    it.skipIf(!hasRegistry)("Content-Type is image/svg+xml", async () => {
+    it.skipIf(!hasRegistry)('Content-Type is image/svg+xml', async () => {
       const { contentType } = await getBadge(`/api/v1/badge/@${world.testOrg}/nonexistent-badge-skill`);
-      expect(contentType).toContain("image/svg+xml");
+      expect(contentType).toContain('image/svg+xml');
     });
   });
 });

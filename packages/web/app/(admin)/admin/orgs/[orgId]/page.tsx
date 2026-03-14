@@ -1,8 +1,11 @@
-import { encodeSkillName } from '@internal/shared';
+import { encodeSkillName } from '@internals/helpers';
 import { headers } from 'next/headers';
+import Image from 'next/image';
 import Link from 'next/link';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { MemberList } from './components/member-list';
 
 interface OrgDetailsResponse {
@@ -57,7 +60,14 @@ export default async function AdminOrgDetailPage({ params }: { params: Promise<{
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {org.logo ? (
-            <img src={org.logo} alt={org.name} className="h-10 w-10 rounded object-cover" />
+            <Image
+              src={org.logo}
+              alt={org.name}
+              width={40}
+              height={40}
+              unoptimized
+              className="h-10 w-10 rounded object-cover"
+            />
           ) : (
             <div className="h-10 w-10 rounded bg-muted flex items-center justify-center font-medium">
               {org.name.charAt(0).toUpperCase()}

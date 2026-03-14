@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiClient } from '../lib/api-client.js';
-import type { TankConfig } from '../lib/config.js';
-import { USER_AGENT } from '../version.js';
+
+import { ApiClient } from '~/lib/api-client.js';
+import type { TankConfig } from '~/lib/config.js';
+import { USER_AGENT } from '~/version.js';
 
 // Mock global fetch
 const mockFetch = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));

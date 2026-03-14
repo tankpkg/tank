@@ -1,16 +1,19 @@
-import fs from "node:fs";
-import path from "node:path";
-import { describe, expect, it } from "vitest";
-import { McpTestClient } from "../interactions/mcp-client.js";
-import { registerMcpHooks, type McpBddWorld } from "../support/hooks.js";
-import { setupE2E } from "../support/setup.js";
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { describe, expect, it } from 'vitest';
+
+import { McpTestClient } from '../interactions/mcp-client.js';
+import { type McpBddWorld, registerMcpHooks } from '../support/hooks.js';
+import { setupE2E } from '../support/setup.js';
 
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
+const hasDatabase = !!process.env.DATABASE_URL;
 
 const world: McpBddWorld = {
   client: new McpTestClient(),
-  home: "",
-  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
+  home: '',
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003'
 };
 
 registerMcpHooks(world);
@@ -31,14 +34,14 @@ async function givenEmmaIsAuthenticatedWithTank(): Promise<void> {
   await world.client.start({
     home: ctx.home,
     env: {
-      TANK_TOKEN: ctx.token,
-    },
+      TANK_TOKEN: ctx.token
+    }
   });
 }
 
 async function givenNoUserIsAuthenticatedWithTank(): Promise<void> {
-  const configPath = path.join(world.home, ".tank", "config.json");
-  const raw = fs.readFileSync(configPath, "utf-8");
+  const configPath = path.join(world.home, '.tank', 'config.json');
+  const raw = fs.readFileSync(configPath, 'utf-8');
   const config = JSON.parse(raw) as {
     registry: string;
     token?: string;
@@ -46,7 +49,7 @@ async function givenNoUserIsAuthenticatedWithTank(): Promise<void> {
   };
 
   delete config.token;
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
   await world.client.stop();
   await world.client.start({ home: world.home });
@@ -58,53 +61,53 @@ function givenRegistryIsReachable(): void {
 }
 
 async function givenRegistryIsUnreachable(): Promise<void> {
-  const configPath = path.join(world.home, ".tank", "config.json");
-  const raw = fs.readFileSync(configPath, "utf-8");
+  const configPath = path.join(world.home, '.tank', 'config.json');
+  const raw = fs.readFileSync(configPath, 'utf-8');
   const config = JSON.parse(raw) as {
     registry: string;
     token?: string;
     user?: { name: string; email: string };
   };
-  config.registry = "http://127.0.0.1:1";
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+  config.registry = 'http://127.0.0.1:1';
+  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
   await world.client.stop();
   await world.client.start({
     home: world.home,
-    env: world.e2eContext ? { TANK_TOKEN: world.e2eContext.token } : undefined,
+    env: world.e2eContext ? { TANK_TOKEN: world.e2eContext.token } : undefined
   });
 }
 
 function givenNodeVersionMeetsMinimum(): void {
-  const major = parseInt(process.version.replace("v", ""), 10);
+  const major = Number.parseInt(process.version.replace('v', ''), 10);
   expect(major).toBeGreaterThanOrEqual(24);
 }
 
 function givenConfigFileExistsAndIsValid(): void {
-  const configPath = path.join(world.home, ".tank", "config.json");
+  const configPath = path.join(world.home, '.tank', 'config.json');
   expect(fs.existsSync(configPath)).toBe(true);
-  const raw = fs.readFileSync(configPath, "utf-8");
+  const raw = fs.readFileSync(configPath, 'utf-8');
   JSON.parse(raw);
 }
 
 async function givenEmmaHasExpiredCredentials(): Promise<void> {
-  const configPath = path.join(world.home, ".tank", "config.json");
-  const raw = fs.readFileSync(configPath, "utf-8");
+  const configPath = path.join(world.home, '.tank', 'config.json');
+  const raw = fs.readFileSync(configPath, 'utf-8');
   const config = JSON.parse(raw) as {
     registry: string;
     token?: string;
     user?: { name: string; email: string };
   };
-  config.token = "tank_expired_token_for_bdd";
-  config.user = { name: "Emma", email: "emma@example.com" };
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+  config.token = 'tank_expired_token_for_bdd';
+  config.user = { name: 'Emma', email: 'emma@example.com' };
+  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
   await world.client.stop();
   await world.client.start({ home: world.home });
 }
 
 async function givenNoConfigFileExists(): Promise<void> {
-  const configPath = path.join(world.home, ".tank", "config.json");
+  const configPath = path.join(world.home, '.tank', 'config.json');
   if (fs.existsSync(configPath)) {
     fs.unlinkSync(configPath);
   }
@@ -114,8 +117,8 @@ async function givenNoConfigFileExists(): Promise<void> {
 }
 
 async function givenMalformedConfigFileExists(): Promise<void> {
-  const configPath = path.join(world.home, ".tank", "config.json");
-  fs.writeFileSync(configPath, "{ this is not valid json !!!");
+  const configPath = path.join(world.home, '.tank', 'config.json');
+  fs.writeFileSync(configPath, '{ this is not valid json !!!');
 
   await world.client.stop();
   await world.client.start({ home: world.home });
@@ -124,30 +127,30 @@ async function givenMalformedConfigFileExists(): Promise<void> {
 // ── When steps ───────────────────────────────────────────────────────────────
 
 async function whenAgentCallsDoctorTool(): Promise<void> {
-  world.lastToolResult = await world.client.callTool("doctor");
+  world.lastToolResult = await world.client.callTool('doctor');
 }
 
 // ── Then helpers ─────────────────────────────────────────────────────────────
 
 function getContent(): string {
-  return world.lastToolResult?.content ?? "";
+  return world.lastToolResult?.content ?? '';
 }
 
 function thenResponseContains(pattern: RegExp): void {
   expect(getContent()).toMatch(pattern);
 }
 
-function thenCheckShowsStatus(checkName: string, status: "PASS" | "FAIL"): void {
+function thenCheckShowsStatus(checkName: string, status: 'PASS' | 'FAIL'): void {
   const content = getContent();
-  const checkPattern = new RegExp(`\\[${status}\\]\\s+${checkName}`, "i");
+  const checkPattern = new RegExp(`\\[${status}\\]\\s+${checkName}`, 'i');
   expect(content).toMatch(checkPattern);
 }
 
 // ── Feature: Environment diagnostics via MCP tool ────────────────────────────
 
-describe("Feature: Environment diagnostics via MCP tool", () => {
-  describe("Scenario: Agent runs diagnostics on a fully healthy environment", () => {
-    it.skipIf(!hasRegistry)("Given/When/Then for all checks passing", async () => {
+describe('Feature: Environment diagnostics via MCP tool', () => {
+  describe('Scenario: Agent runs diagnostics on a fully healthy environment', () => {
+    it.skipIf(!hasRegistry || !hasDatabase)('Given/When/Then for all checks passing', async () => {
       await givenMcpServerIsRunning();
       await givenEmmaIsAuthenticatedWithTank();
       givenRegistryIsReachable();
@@ -157,17 +160,17 @@ describe("Feature: Environment diagnostics via MCP tool", () => {
       await whenAgentCallsDoctorTool();
 
       thenResponseContains(/Tank Doctor Report/);
-      thenCheckShowsStatus("Configuration File", "PASS");
-      thenCheckShowsStatus("Registry Connectivity", "PASS");
-      thenCheckShowsStatus("Node.js Version", "PASS");
+      thenCheckShowsStatus('Configuration File', 'PASS');
+      thenCheckShowsStatus('Registry Connectivity', 'PASS');
+      thenCheckShowsStatus('Node.js Version', 'PASS');
 
       const content = getContent();
       expect(content).toMatch(/\[(PASS|FAIL)\]\s+Authentication/);
     });
   });
 
-  describe("Scenario: Agent runs diagnostics when not authenticated", () => {
-    it.skipIf(!hasRegistry)("Given/When/Then for auth failure with other checks passing", async () => {
+  describe('Scenario: Agent runs diagnostics when not authenticated', () => {
+    it.skipIf(!hasRegistry || !hasDatabase)('Given/When/Then for auth failure with other checks passing', async () => {
       await givenMcpServerIsRunning();
       await givenNoUserIsAuthenticatedWithTank();
       givenRegistryIsReachable();
@@ -175,28 +178,28 @@ describe("Feature: Environment diagnostics via MCP tool", () => {
 
       await whenAgentCallsDoctorTool();
 
-      thenCheckShowsStatus("Authentication", "FAIL");
+      thenCheckShowsStatus('Authentication', 'FAIL');
       thenResponseContains(/login/i);
-      thenCheckShowsStatus("Registry Connectivity", "PASS");
-      thenCheckShowsStatus("Node.js Version", "PASS");
+      thenCheckShowsStatus('Registry Connectivity', 'PASS');
+      thenCheckShowsStatus('Node.js Version', 'PASS');
     });
   });
 
-  describe("Scenario: Agent runs diagnostics when credentials are expired", () => {
-    it.skipIf(!hasRegistry)("Given/When/Then for expired credentials", async () => {
+  describe('Scenario: Agent runs diagnostics when credentials are expired', () => {
+    it.skipIf(!hasRegistry || !hasDatabase)('Given/When/Then for expired credentials', async () => {
       await givenMcpServerIsRunning();
       await givenEmmaHasExpiredCredentials();
 
       await whenAgentCallsDoctorTool();
 
-      thenCheckShowsStatus("Authentication", "FAIL");
+      thenCheckShowsStatus('Authentication', 'FAIL');
       thenResponseContains(/expired|invalid/i);
       thenResponseContains(/login/i);
     });
   });
 
-  describe("Scenario: Agent runs diagnostics when the registry is unreachable", () => {
-    it("Given/When/Then for registry connectivity failure", async () => {
+  describe('Scenario: Agent runs diagnostics when the registry is unreachable', () => {
+    it.skipIf(!hasDatabase)('Given/When/Then for registry connectivity failure', async () => {
       await givenMcpServerIsRunning();
       await givenEmmaIsAuthenticatedWithTank();
       await givenRegistryIsUnreachable();
@@ -204,82 +207,82 @@ describe("Feature: Environment diagnostics via MCP tool", () => {
 
       await whenAgentCallsDoctorTool();
 
-      thenCheckShowsStatus("Registry Connectivity", "FAIL");
+      thenCheckShowsStatus('Registry Connectivity', 'FAIL');
       thenResponseContains(/127\.0\.0\.1/);
-      thenCheckShowsStatus("Node.js Version", "PASS");
+      thenCheckShowsStatus('Node.js Version', 'PASS');
     });
   });
 
-  describe("Scenario: Agent runs diagnostics when Node.js version is below the minimum", () => {
+  describe('Scenario: Agent runs diagnostics when Node.js version is below the minimum', () => {
     // We cannot change the actual Node.js version in tests.
     // Since we run on Node 24+, this check always passes.
     // This test verifies the tool reports PASS for the current version,
     // confirming the version check logic works for the passing case.
-    it("Given/When/Then for Node.js version check (always passes on Node 24+)", async () => {
+    it('Given/When/Then for Node.js version check (always passes on Node 24+)', async () => {
       await givenMcpServerIsRunning();
       givenNodeVersionMeetsMinimum();
 
       await whenAgentCallsDoctorTool();
 
-      thenCheckShowsStatus("Node.js Version", "PASS");
+      thenCheckShowsStatus('Node.js Version', 'PASS');
       thenResponseContains(/v\d+\.\d+\.\d+/);
       thenResponseContains(/24\.0\.0/);
     });
   });
 
-  describe("Scenario: Agent runs diagnostics when Node.js version meets the minimum exactly", () => {
-    it("Given/When/Then for Node.js version at minimum", async () => {
+  describe('Scenario: Agent runs diagnostics when Node.js version meets the minimum exactly', () => {
+    it('Given/When/Then for Node.js version at minimum', async () => {
       await givenMcpServerIsRunning();
       givenNodeVersionMeetsMinimum();
 
       await whenAgentCallsDoctorTool();
 
-      thenCheckShowsStatus("Node.js Version", "PASS");
+      thenCheckShowsStatus('Node.js Version', 'PASS');
     });
   });
 
-  describe("Scenario: Agent runs diagnostics when the configuration file is missing", () => {
-    it("Given/When/Then for missing config file", async () => {
+  describe('Scenario: Agent runs diagnostics when the configuration file is missing', () => {
+    it('Given/When/Then for missing config file', async () => {
       await givenMcpServerIsRunning();
       await givenNoConfigFileExists();
 
       await whenAgentCallsDoctorTool();
 
-      thenCheckShowsStatus("Configuration File", "FAIL");
+      thenCheckShowsStatus('Configuration File', 'FAIL');
       thenResponseContains(/config\.json/i);
     });
   });
 
-  describe("Scenario: Agent runs diagnostics when the configuration file is malformed", () => {
-    it("Given/When/Then for malformed config file", async () => {
+  describe('Scenario: Agent runs diagnostics when the configuration file is malformed', () => {
+    it('Given/When/Then for malformed config file', async () => {
       await givenMcpServerIsRunning();
       await givenMalformedConfigFileExists();
 
       await whenAgentCallsDoctorTool();
 
-      thenCheckShowsStatus("Configuration File", "FAIL");
+      thenCheckShowsStatus('Configuration File', 'FAIL');
       thenResponseContains(/malformed/i);
     });
   });
 
-  describe("Scenario: Agent runs diagnostics when multiple checks fail", () => {
-    it("Given/When/Then for multiple failures", async () => {
+  describe('Scenario: Agent runs diagnostics when multiple checks fail', () => {
+    it('Given/When/Then for multiple failures', async () => {
       await givenMcpServerIsRunning();
       await givenNoUserIsAuthenticatedWithTank();
       await givenRegistryIsUnreachable();
 
       await whenAgentCallsDoctorTool();
 
-      thenCheckShowsStatus("Authentication", "FAIL");
-      thenCheckShowsStatus("Registry Connectivity", "FAIL");
+      thenCheckShowsStatus('Authentication', 'FAIL');
+      thenCheckShowsStatus('Registry Connectivity', 'FAIL');
       thenResponseContains(/not healthy/i);
       thenResponseContains(/login/i);
       thenResponseContains(/network|connection|registry/i);
     });
   });
 
-  describe("Scenario: Agent receives a structured summary from the doctor tool", () => {
-    it("Given/When/Then for structured summary", async () => {
+  describe('Scenario: Agent receives a structured summary from the doctor tool', () => {
+    it.skipIf(!hasDatabase)('Given/When/Then for structured summary', async () => {
       await givenMcpServerIsRunning();
       await givenEmmaIsAuthenticatedWithTank();
 

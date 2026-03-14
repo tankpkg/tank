@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../lib/packer.js', () => ({
+vi.mock('~/lib/packer.js', () => ({
   pack: vi.fn()
 }));
 
@@ -21,7 +22,7 @@ vi.mock('ora', () => {
   return { default: vi.fn(() => spinner) };
 });
 
-import { pack } from '../lib/packer.js';
+import { pack } from '~/lib/packer.js';
 
 const mockPack = vi.mocked(pack);
 
@@ -102,7 +103,7 @@ describe('scanCommand', () => {
   }
 
   it('throws when not logged in', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     const noAuthDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-scan-noauth-'));
     fs.writeFileSync(path.join(noAuthDir, 'config.json'), JSON.stringify({ registry: 'https://tankpkg.dev' }));
@@ -113,7 +114,7 @@ describe('scanCommand', () => {
   });
 
   it('throws when packing fails', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockRejectedValueOnce(new Error('Missing required file: skills.json'));
 
@@ -121,7 +122,7 @@ describe('scanCommand', () => {
   });
 
   it('displays scan results for a clean skill', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(makeScanResponse()), { status: 200 }));
@@ -136,7 +137,7 @@ describe('scanCommand', () => {
   });
 
   it('displays findings grouped by severity', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(
@@ -199,7 +200,7 @@ describe('scanCommand', () => {
   });
 
   it('displays scan stages', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(
@@ -227,7 +228,7 @@ describe('scanCommand', () => {
   });
 
   it('displays link to full report when scan_id present', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(
@@ -241,7 +242,7 @@ describe('scanCommand', () => {
   });
 
   it('throws on 401 auth error', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }));
@@ -250,7 +251,7 @@ describe('scanCommand', () => {
   });
 
   it('throws on non-401 API error', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Skill too large' }), { status: 413 }));
@@ -259,7 +260,7 @@ describe('scanCommand', () => {
   });
 
   it('throws on network error', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockRejectedValueOnce(new Error('Connection refused'));
@@ -268,7 +269,7 @@ describe('scanCommand', () => {
   });
 
   it('calls correct API URL with auth header', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(makeScanResponse()), { status: 200 }));
@@ -282,7 +283,7 @@ describe('scanCommand', () => {
   });
 
   it('sends FormData with tarball and manifest', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(makeScanResponse()), { status: 200 }));
@@ -303,7 +304,7 @@ describe('scanCommand', () => {
   });
 
   it('displays fail verdict with correct formatting', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(
@@ -339,7 +340,7 @@ describe('scanCommand', () => {
   });
 
   it('handles scan response without scan_id', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(makeScanResponse({ scan_id: null })), { status: 200 }));
@@ -351,7 +352,7 @@ describe('scanCommand', () => {
   });
 
   it('handles scan response without stage_results', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(
@@ -365,7 +366,7 @@ describe('scanCommand', () => {
   });
 
   it('uses default directory (process.cwd()) when none specified', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     const originalCwd = process.cwd;
     process.cwd = vi.fn(() => tmpDir);
@@ -383,7 +384,7 @@ describe('scanCommand', () => {
   });
 
   it('displays pass_with_notes verdict correctly', async () => {
-    const { scanCommand } = await import('../commands/scan.js');
+    const { scanCommand } = await import('~/commands/scan.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(

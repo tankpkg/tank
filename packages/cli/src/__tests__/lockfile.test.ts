@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import type { Permissions, SkillsLock } from '@internal/shared';
+
+import type { Permissions, SkillsLock } from '@internals/schemas';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { computeBudgetCheck, computeResolvedPermissions, readLockfile, writeLockfile } from '../lib/lockfile.js';
+import { computeBudgetCheck, computeResolvedPermissions, readLockfile, writeLockfile } from '~/lib/lockfile.js';
 
 describe('readLockfile', () => {
   let tmpDir: string;
@@ -34,7 +35,7 @@ describe('readLockfile', () => {
         }
       }
     };
-    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), `${JSON.stringify(lock, null, 2)}\n`);
 
     const result = readLockfile(tmpDir);
     expect(result).toEqual(lock);

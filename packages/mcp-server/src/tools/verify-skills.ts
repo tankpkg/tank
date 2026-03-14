@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { LEGACY_LOCKFILE_FILENAME, LOCKFILE_FILENAME, type SkillsLock } from '@internal/shared';
+
+import { LEGACY_LOCKFILE_FILENAME, LOCKFILE_FILENAME, type SkillsLock } from '@internals/schemas';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 

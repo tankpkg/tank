@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { MANIFEST_FILENAME } from '@internal/shared';
-import { getGlobalAgentSkillsDir, getSymlinkName } from '../lib/agents.js';
-import { unlinkSkillFromAgents } from '../lib/linker.js';
-import { logger } from '../lib/logger.js';
-import { resolveManifestPath } from '../lib/manifest.js';
+
+import { MANIFEST_FILENAME } from '@internals/schemas';
+
+import { getGlobalAgentSkillsDir, getSymlinkName } from '~/lib/agents.js';
+import { unlinkSkillFromAgents } from '~/lib/linker.js';
+import { logger } from '~/lib/logger.js';
+import { resolveManifestPath } from '~/lib/manifest.js';
 
 export interface UnlinkOptions {
   directory?: string;

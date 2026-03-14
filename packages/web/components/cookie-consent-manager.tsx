@@ -1,9 +1,10 @@
 'use client';
 
+import 'vanilla-cookieconsent/dist/cookieconsent.css';
+
+import posthog from 'posthog-js';
 import { useEffect } from 'react';
 import * as CookieConsent from 'vanilla-cookieconsent';
-import 'vanilla-cookieconsent/dist/cookieconsent.css';
-import posthog from 'posthog-js';
 
 declare global {
   interface Window {

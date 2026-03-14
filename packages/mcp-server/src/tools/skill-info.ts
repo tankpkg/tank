@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { TankApiClient } from '../lib/api-client.js';
+
+import { TankApiClient } from '~/lib/api-client.js';
 
 interface SkillVersion {
   version: string;

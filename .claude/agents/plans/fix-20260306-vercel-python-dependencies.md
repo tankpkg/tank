@@ -15,6 +15,7 @@ The `python-api/vercel.json` file was removed in commit 8b7faa3, breaking reques
 ## Fix Strategy
 
 Restore the `python-api/vercel.json` file with proper rewrites configuration to route all requests to the FastAPI application. This is a minimal, low-risk change that:
+
 - Directly addresses the routing issue
 - Required for Vercel to forward requests to Python serverless function
 - Proven working pattern from earlier deployments
@@ -40,6 +41,7 @@ Restore the `python-api/vercel.json` file with proper rewrites configuration to 
 ## Testing Strategy
 
 **Integration tests (production):**
+
 1. Wait for Vercel to rebuild after commit
 2. Test `/health` endpoint returns `{"status": "healthy"}`
 3. Test `/api/analyze/scan/health` endpoint
@@ -50,6 +52,7 @@ Restore the `python-api/vercel.json` file with proper rewrites configuration to 
 ## Validation
 
 **Validation steps:**
+
 1. File created successfully
 2. File has correct content
 3. Git shows file as new/modified

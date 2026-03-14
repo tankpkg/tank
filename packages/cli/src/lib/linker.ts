@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { type AgentInfo, detectInstalledAgents, getSymlinkName } from './agents.js';
 import { type LinkEntry, type LinksManifest, readLinks, writeLinks } from './links.js';
 

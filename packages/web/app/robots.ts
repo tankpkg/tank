@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tankpkg.dev';
 
 export default function robots(): MetadataRoute.Robots {
   return {

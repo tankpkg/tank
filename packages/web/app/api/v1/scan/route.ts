@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
+
 import { NextResponse } from 'next/server';
+
 import { verifyCliAuth } from '@/lib/auth-helpers';
 import { getStorageProvider } from '@/lib/storage/provider';
 
@@ -55,23 +57,26 @@ async function triggerSecurityScan(tarballBuffer: Buffer, manifest: Record<strin
 
   // Upload tarball to temp storage
   const storage = getStorageProvider();
-  const { signedUrl: uploadUrl } = await storage.createSignedUploadUrl(tempPath);
+  const tarballBytes = new Uint8Array(tarballBuffer);
+  if ('putObject' in storage && typeof storage.putObject === 'function') {
+    await storage.putObject(tempPath, tarballBytes, 'application/gzip');
+  } else {
+    const { signedUrl: uploadUrl } = await storage.createSignedUploadUrl(tempPath);
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/gzip'
+      },
+      body: tarballBytes
+    });
 
-  // Upload the tarball (convert Buffer to Uint8Array for fetch compatibility)
-  const uploadRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/gzip'
-    },
-    body: new Uint8Array(tarballBuffer)
-  });
-
-  if (!uploadRes.ok) {
-    throw new Error(`Failed to upload tarball for scanning: ${uploadRes.statusText}`);
+    if (!uploadRes.ok) {
+      throw new Error(`Failed to upload tarball for scanning: ${uploadRes.statusText}`);
+    }
   }
 
   // Generate signed download URL for scanner
-  const { signedUrl: downloadUrl } = await storage.createSignedUrl(tempPath, 600);
+  const { signedUrl: downloadUrl } = await storage.createSignedUrl(tempPath, 600, 'internal');
 
   // Call Python scan endpoint
   const pythonApiUrl = (process.env.PYTHON_API_URL || '').trim();

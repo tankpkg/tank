@@ -1,13 +1,15 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { MANIFEST_FILENAME } from '@internal/shared';
-import { detectInstalledAgents, getGlobalAgentSkillsDir } from '../lib/agents.js';
-import { hasFrontmatter, prepareAgentSkillDir } from '../lib/frontmatter.js';
-import { linkSkillToAgents } from '../lib/linker.js';
-import { readGlobalLinks } from '../lib/links.js';
-import { logger } from '../lib/logger.js';
-import { resolveManifestPath } from '../lib/manifest.js';
+
+import { MANIFEST_FILENAME } from '@internals/schemas';
+
+import { detectInstalledAgents, getGlobalAgentSkillsDir } from '~/lib/agents.js';
+import { hasFrontmatter, prepareAgentSkillDir } from '~/lib/frontmatter.js';
+import { linkSkillToAgents } from '~/lib/linker.js';
+import { readGlobalLinks } from '~/lib/links.js';
+import { logger } from '~/lib/logger.js';
+import { resolveManifestPath } from '~/lib/manifest.js';
 
 export interface LinkOptions {
   directory?: string;

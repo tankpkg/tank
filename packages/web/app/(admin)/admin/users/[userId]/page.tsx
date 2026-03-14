@@ -1,8 +1,10 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
+
 import { StatusDialog } from './components/status-dialog';
 
 type UserStatus = 'active' | 'suspended' | 'banned';

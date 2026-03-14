@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the packer module — we don't want to actually create tarballs in tests
-vi.mock('../lib/packer.js', () => ({
+vi.mock('~/lib/packer.js', () => ({
   pack: vi.fn()
 }));
 
@@ -24,7 +25,7 @@ vi.mock('ora', () => {
   return { default: vi.fn(() => spinner) };
 });
 
-import { pack } from '../lib/packer.js';
+import { pack } from '~/lib/packer.js';
 
 const mockPack = vi.mocked(pack);
 
@@ -91,7 +92,7 @@ describe('publishCommand', () => {
   }
 
   it('publishes successfully: pack → API step 1 → upload → confirm', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -160,7 +161,7 @@ describe('publishCommand', () => {
   });
 
   it('dry run: packs, prints summary, and verifies auth with server', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -177,7 +178,7 @@ describe('publishCommand', () => {
   });
 
   it('dry run: warns when server auth check fails', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -190,7 +191,7 @@ describe('publishCommand', () => {
   });
 
   it('dry run: warns when server is unreachable', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -203,7 +204,7 @@ describe('publishCommand', () => {
   });
 
   it('sets manifest.visibility=private when private option is enabled', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(
@@ -229,7 +230,7 @@ describe('publishCommand', () => {
   });
 
   it('uses explicit visibility option when provided', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
     mockFetch.mockResolvedValueOnce(
@@ -255,7 +256,7 @@ describe('publishCommand', () => {
   });
 
   it('errors when not logged in (no token)', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     // Write config without token
     fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ registry: 'https://tankpkg.dev' }));
@@ -268,7 +269,7 @@ describe('publishCommand', () => {
   });
 
   it('errors when tank.json is missing', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     // Remove tank.json
     fs.unlinkSync(path.join(tmpDir, 'tank.json'));
@@ -279,7 +280,7 @@ describe('publishCommand', () => {
   });
 
   it('handles API 401 with auth error message', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -289,7 +290,7 @@ describe('publishCommand', () => {
   });
 
   it('handles API 403 by forwarding server error message', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -301,7 +302,7 @@ describe('publishCommand', () => {
   });
 
   it('handles API 403 with scope error by forwarding message', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -313,7 +314,7 @@ describe('publishCommand', () => {
   });
 
   it('handles API 404 for org not found', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -330,7 +331,7 @@ describe('publishCommand', () => {
   });
 
   it('handles API 409 with version conflict message', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -343,7 +344,7 @@ describe('publishCommand', () => {
   });
 
   it('handles upload failure', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -366,7 +367,7 @@ describe('publishCommand', () => {
   });
 
   it('handles confirm step failure', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -392,7 +393,7 @@ describe('publishCommand', () => {
   });
 
   it('handles generic API error with message from response', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -405,7 +406,7 @@ describe('publishCommand', () => {
   });
 
   it('formats file size correctly in dry run output', async () => {
-    const { formatSize } = await import('../commands/publish.js');
+    const { formatSize } = await import('~/commands/publish.js');
 
     expect(formatSize(500)).toBe('500 B');
     expect(formatSize(1024)).toBe('1.0 KB');
@@ -415,7 +416,7 @@ describe('publishCommand', () => {
   });
 
   it('errors when tank.json is invalid JSON', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     // Write invalid JSON to tank.json
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{ invalid json }');
@@ -426,7 +427,7 @@ describe('publishCommand', () => {
   });
 
   it('errors when visibility option is invalid', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     await expect(publishCommand({ directory: tmpDir, configDir, visibility: 'internal' })).rejects.toThrow(
       /Invalid visibility/
@@ -437,7 +438,7 @@ describe('publishCommand', () => {
   });
 
   it('errors when pack fails', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockRejectedValueOnce(new Error('Missing required file: SKILL.md'));
 
@@ -447,7 +448,7 @@ describe('publishCommand', () => {
   });
 
   it('dry run: warns when server returns non-ok, non-401 status', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -461,7 +462,7 @@ describe('publishCommand', () => {
   });
 
   it('step 1 non-ok with non-JSON body uses statusText', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 
@@ -474,7 +475,7 @@ describe('publishCommand', () => {
   });
 
   it('confirm step non-ok with non-JSON body uses statusText', async () => {
-    const { publishCommand } = await import('../commands/publish.js');
+    const { publishCommand } = await import('~/commands/publish.js');
 
     mockPack.mockResolvedValueOnce(mockPackResult);
 

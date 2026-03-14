@@ -1,45 +1,45 @@
-name: "Tank Publish"
-description: "Publish AI agent skills to the Tank registry with security scanning"
-author: "Tank Team"
+name: 'Tank Publish'
+description: 'Publish AI agent skills to the Tank registry with security scanning'
+author: 'Tank Team'
 
 branding:
-  icon: "shield"
-  color: "blue"
+  icon: 'shield'
+  color: 'blue'
 
 inputs:
   token:
-    description: "Tank API token (from tank login or dashboard)"
+    description: 'Tank API token (from tank login or dashboard)'
     required: true
   registry:
-    description: "Registry URL (default: https://tankpkg.dev)"
+    description: 'Registry URL (default: https://tankpkg.dev)'
     required: false
-    default: "https://tankpkg.dev"
+    default: 'https://tankpkg.dev'
   directory:
-    description: "Skill directory containing SKILL.md (default: .)"
+    description: 'Skill directory containing SKILL.md (default: .)'
     required: false
-    default: "."
+    default: '.'
   dry-run:
-    description: "Validate and pack without publishing"
+    description: 'Validate and pack without publishing'
     required: false
-    default: "false"
+    default: 'false'
 
 outputs:
   name:
-    description: "Published skill name"
+    description: 'Published skill name'
   version:
-    description: "Published version"
+    description: 'Published version'
   audit-score:
-    description: "Audit score (0-10)"
+    description: 'Audit score (0-10)'
   badge-url:
-    description: "Badge URL for README embedding"
+    description: 'Badge URL for README embedding'
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: "24"
+        node-version: '24'
 
     - name: Install Tank CLI
       shell: bash

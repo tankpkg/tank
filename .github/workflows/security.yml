@@ -4,18 +4,18 @@ on:
   push:
     branches: [main]
     paths:
-      - "infra/docker-compose*.yml"
-      - ".env.example*"
-      - "Dockerfile*"
-      - "scripts/onprem/**"
-      - "docs/onprem*"
+      - 'infra/docker-compose*.yml'
+      - '.env.example*'
+      - 'Dockerfile*'
+      - 'scripts/onprem/**'
+      - '.docs/onprem*'
   pull_request:
     paths:
-      - "infra/docker-compose*.yml"
-      - ".env.example*"
-      - "Dockerfile*"
-      - "scripts/onprem/**"
-      - "docs/onprem*"
+      - 'infra/docker-compose*.yml'
+      - '.env.example*'
+      - 'Dockerfile*'
+      - 'scripts/onprem/**'
+      - '.docs/onprem*'
 
 permissions:
   contents: read
@@ -124,7 +124,7 @@ jobs:
           echo "Checking that all required env vars are documented..."
 
           # Extract env vars from code
-          REQUIRED_VARS=$(grep -rh "process\.env\.[A-Z_]" packages/web/lib/*.ts packages/web/app --include="*.ts" 2>/dev/null | \
+          REQUIRED_VARS=$(grep -rh "process\.env\.[A-Z_]" apps/web/lib/*.ts apps/web/app --include="*.ts" 2>/dev/null | \
             grep -oE "process\.env\.[A-Z_]+" | \
             sort -u | \
             sed 's/process\.env\.//' | \

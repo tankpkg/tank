@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock global fetch
@@ -145,7 +146,7 @@ describe('installCommand', () => {
   }
 
   it('installs a skill successfully: fetch versions → resolve → download → verify → extract → update files', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -175,7 +176,7 @@ describe('installCommand', () => {
   });
 
   it('auto-creates tank.json when missing', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     fs.unlinkSync(path.join(tmpDir, 'tank.json'));
 
@@ -191,7 +192,7 @@ describe('installCommand', () => {
   });
 
   it('errors when skill is not found (404)', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // Versions endpoint returns 404
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Skill not found' }), { status: 404 }));
@@ -202,7 +203,7 @@ describe('installCommand', () => {
   });
 
   it('sends bearer token when config contains token', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     fs.writeFileSync(
       path.join(configDir, 'config.json'),
@@ -223,7 +224,7 @@ describe('installCommand', () => {
   });
 
   it('shows scope error when versions endpoint returns 403', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     mockFetch.mockResolvedValueOnce(
       new Response(JSON.stringify({ error: 'Insufficient API key scope. Required: skills:read' }), { status: 403 })
@@ -235,7 +236,7 @@ describe('installCommand', () => {
   });
 
   it('errors when no version satisfies the range', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // Return versions that don't match the range
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(versionsResponse), { status: 200 }));
@@ -251,7 +252,7 @@ describe('installCommand', () => {
   });
 
   it('aborts with error when integrity check fails', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // Setup with mismatched integrity
     setupSuccessfulInstall({
@@ -264,7 +265,7 @@ describe('installCommand', () => {
   });
 
   it('aborts when skill permissions exceed project budget', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // Write tank.json with restrictive permissions
     fs.writeFileSync(
@@ -306,7 +307,7 @@ describe('installCommand', () => {
   });
 
   it('installs with warning when no permission budget is defined', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // Write tank.json WITHOUT permissions
     const noBudgetSkillsJson = {
@@ -330,7 +331,7 @@ describe('installCommand', () => {
   });
 
   it('updates tank.json with the new dependency', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -346,7 +347,7 @@ describe('installCommand', () => {
   });
 
   it('updates tank.lock with correct entry', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -371,7 +372,7 @@ describe('installCommand', () => {
   });
 
   it('handles scoped package names correctly (URL encoding)', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -386,7 +387,7 @@ describe('installCommand', () => {
   });
 
   it('skips install when same version is already installed', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // Pre-populate tank.json with the skill already installed
     const existingSkillsJson = {
@@ -426,7 +427,7 @@ describe('installCommand', () => {
   });
 
   it('extracts tarball to correct directory path', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -441,7 +442,7 @@ describe('installCommand', () => {
   });
 
   it('aborts when skill requests network domains not in project budget', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // Skill requests domains not in project budget
     const metaWithExtraDomains = {
@@ -466,7 +467,7 @@ describe('installCommand', () => {
   });
 
   it('sorts lockfile keys alphabetically', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // Pre-populate lock with an entry that comes after alphabetically
     const existingLock = {
@@ -498,7 +499,7 @@ describe('installCommand', () => {
   });
 
   it('uses specified version range instead of default *', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     // 1. GET versions
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(versionsResponse), { status: 200 }));
@@ -534,10 +535,10 @@ describe('installCommand', () => {
     vi.resetModules();
     const prepareAgentSkillDir = vi.fn().mockReturnValue('/mock/agent-skills/test-org--my-skill');
     const linkSkillToAgents = vi.fn().mockReturnValue({ linked: ['claude'], skipped: [], failed: [] });
-    vi.doMock('../lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
-    vi.doMock('../lib/linker.js', () => ({ linkSkillToAgents }));
+    vi.doMock('~/lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
+    vi.doMock('~/lib/linker.js', () => ({ linkSkillToAgents }));
 
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -565,17 +566,17 @@ describe('installCommand', () => {
 
   it('succeeds with warning when no agents are detected', async () => {
     vi.resetModules();
-    vi.doMock('../lib/linker.js', () => ({
+    vi.doMock('~/lib/linker.js', () => ({
       linkSkillToAgents: vi.fn().mockReturnValue({ linked: [], skipped: [], failed: [] })
     }));
-    vi.doMock('../lib/agents.js', async () => {
-      const actual = await vi.importActual<typeof import('../lib/agents.js')>('../lib/agents.js');
+    vi.doMock('~/lib/agents.js', async () => {
+      const actual = await vi.importActual<typeof import('~/lib/agents.js')>('~/lib/agents.js');
       return {
         ...actual,
         detectInstalledAgents: vi.fn().mockReturnValue([])
       };
     });
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -590,13 +591,13 @@ describe('installCommand', () => {
 
   it('succeeds with warning when agent linking fails', async () => {
     vi.resetModules();
-    vi.doMock('../lib/linker.js', () => ({
+    vi.doMock('~/lib/linker.js', () => ({
       linkSkillToAgents: vi.fn(() => {
         throw new Error('link failed');
       })
     }));
 
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -613,10 +614,10 @@ describe('installCommand', () => {
     vi.resetModules();
     const prepareAgentSkillDir = vi.fn().mockReturnValue('/mock/agent-skills/test-org--my-skill');
     const linkSkillToAgents = vi.fn().mockReturnValue({ linked: [], skipped: [], failed: [] });
-    vi.doMock('../lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
-    vi.doMock('../lib/linker.js', () => ({ linkSkillToAgents }));
+    vi.doMock('~/lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
+    vi.doMock('~/lib/linker.js', () => ({ linkSkillToAgents }));
 
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -632,7 +633,7 @@ describe('installCommand', () => {
   });
 
   it('blocks install when audit score is below min_score threshold', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
@@ -664,7 +665,7 @@ describe('installCommand', () => {
   });
 
   it('allows install when audit score meets min_score threshold', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
@@ -699,7 +700,7 @@ describe('installCommand', () => {
   });
 
   it('allows install with warning when audit score is null (not yet scored)', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
@@ -739,7 +740,7 @@ describe('installCommand', () => {
   });
 
   it('skips audit score check when no audit.min_score is defined', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
@@ -840,8 +841,8 @@ describe('installCommand --global', () => {
     logSpy.mockRestore();
     errorSpy.mockRestore();
     vi.resetModules();
-    vi.unmock('../lib/frontmatter.js');
-    vi.unmock('../lib/linker.js');
+    vi.doUnmock('~/lib/frontmatter.js');
+    vi.doUnmock('~/lib/linker.js');
   });
 
   function setupSuccessfulInstall() {
@@ -853,7 +854,7 @@ describe('installCommand --global', () => {
   }
 
   it('extracts to ~/.tank/skills/ for global install', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -869,7 +870,7 @@ describe('installCommand --global', () => {
   });
 
   it('does NOT create or modify project tank.json for global install', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     const original = fs.readFileSync(path.join(tmpDir, 'tank.json'), 'utf-8');
@@ -886,7 +887,7 @@ describe('installCommand --global', () => {
   });
 
   it('writes to ~/.tank/tank.lock for global install', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -905,10 +906,10 @@ describe('installCommand --global', () => {
     vi.resetModules();
     const prepareAgentSkillDir = vi.fn().mockReturnValue('/mock/global-agent-skills/test-org--my-skill');
     const linkSkillToAgents = vi.fn().mockReturnValue({ linked: ['claude'], skipped: [], failed: [] });
-    vi.doMock('../lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
-    vi.doMock('../lib/linker.js', () => ({ linkSkillToAgents }));
+    vi.doMock('~/lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
+    vi.doMock('~/lib/linker.js', () => ({ linkSkillToAgents }));
 
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     setupSuccessfulInstall();
 
     await installCommand({
@@ -998,7 +999,7 @@ describe('installFromLockfile', () => {
   }
 
   it('installs all skills from lockfile with correct integrity', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
 
     writeLockfile({
       '@test-org/my-skill@2.0.0': {
@@ -1037,7 +1038,7 @@ describe('installFromLockfile', () => {
   });
 
   it('sends bearer token when config contains token', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
 
     fs.writeFileSync(
       path.join(configDir, 'config.json'),
@@ -1075,7 +1076,7 @@ describe('installFromLockfile', () => {
   });
 
   it('aborts entire install when integrity mismatch on any skill', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
 
     writeLockfile({
       '@test-org/my-skill@2.0.0': {
@@ -1108,7 +1109,7 @@ describe('installFromLockfile', () => {
   });
 
   it('prints summary with count after successful install', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
     const ora = (await import('ora')).default;
 
     writeLockfile({
@@ -1143,7 +1144,7 @@ describe('installFromLockfile', () => {
   });
 
   it('installs multiple skills from lockfile', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
 
     writeLockfile({
       '@test-org/my-skill@2.0.0': {
@@ -1203,7 +1204,7 @@ describe('installFromLockfile', () => {
   });
 
   it('handles scoped package names with correct extraction paths', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
 
     writeLockfile({
       '@my-org/deep-skill@3.0.0': {
@@ -1235,7 +1236,7 @@ describe('installFromLockfile', () => {
   });
 
   it('re-extracts when directory already exists (fresh install)', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
 
     // Pre-create the extraction directory with a marker file
     const existingDir = path.join(tmpDir, '.tank', 'skills', 'simple-skill');
@@ -1273,7 +1274,7 @@ describe('installFromLockfile', () => {
   });
 
   it('cleans up .tank/skills on integrity failure mid-install', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
 
     writeLockfile({
       '@test-org/my-skill@2.0.0': {
@@ -1324,7 +1325,7 @@ describe('installFromLockfile', () => {
   });
 
   it('errors when tank.lock file is missing', async () => {
-    const { installFromLockfile } = await import('../commands/install.js');
+    const { installFromLockfile } = await import('~/commands/install.js');
 
     // No lockfile exists
     await expect(installFromLockfile({ directory: tmpDir, configDir })).rejects.toThrow(/tank\.lock/i);
@@ -1394,7 +1395,7 @@ describe('installAll (no-args dispatch)', () => {
   }
 
   it('returns gracefully when neither tank.json nor tank.lock exists', async () => {
-    const { installAll } = await import('../commands/install.js');
+    const { installAll } = await import('~/commands/install.js');
 
     await installAll({ directory: tmpDir, configDir });
 
@@ -1402,7 +1403,7 @@ describe('installAll (no-args dispatch)', () => {
   });
 
   it('uses lockfile when tank.lock exists (deterministic mode)', async () => {
-    const { installAll } = await import('../commands/install.js');
+    const { installAll } = await import('~/commands/install.js');
 
     // Write tank.json
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(validSkillsJson, null, 2));
@@ -1450,7 +1451,7 @@ describe('installAll (no-args dispatch)', () => {
   });
 
   it('resolves from tank.json when no lockfile exists (first install)', async () => {
-    const { installAll } = await import('../commands/install.js');
+    const { installAll } = await import('~/commands/install.js');
 
     // Write tank.json with a skill dependency
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(validSkillsJson, null, 2));
@@ -1547,7 +1548,7 @@ describe('installCommand — additional error paths', () => {
   });
 
   it('throws network error when fetch rejects on versions endpoint', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED: Connection refused'));
 
@@ -1557,7 +1558,7 @@ describe('installCommand — additional error paths', () => {
   });
 
   it('throws when tarball download returns non-ok status', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(versionsResponse), { status: 200 }));
     mockFetch.mockResolvedValueOnce(
@@ -1571,7 +1572,7 @@ describe('installCommand — additional error paths', () => {
   });
 
   it('throws network error when fetch rejects on tarball download', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(versionsResponse), { status: 200 }));
     mockFetch.mockResolvedValueOnce(
@@ -1585,7 +1586,7 @@ describe('installCommand — additional error paths', () => {
   });
 
   it('recovers gracefully when tank.lock contains invalid JSON', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
 
     fs.writeFileSync(path.join(tmpDir, 'tank.lock'), '{ this is not valid json !!!');
 
@@ -1604,7 +1605,7 @@ describe('installCommand — additional error paths', () => {
   });
 
   it('throws when tank.json contains invalid JSON (installAll)', async () => {
-    const { installAll } = await import('../commands/install.js');
+    const { installAll } = await import('~/commands/install.js');
 
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{ invalid json here !!!');
 
@@ -1612,7 +1613,7 @@ describe('installCommand — additional error paths', () => {
   });
 
   it('prints nothing-to-install message when tank.json has empty skills map', async () => {
-    const { installAll } = await import('../commands/install.js');
+    const { installAll } = await import('~/commands/install.js');
 
     fs.writeFileSync(
       path.join(tmpDir, 'tank.json'),
@@ -1712,7 +1713,7 @@ describe('installCommand — transitive dependency resolution', () => {
   }
 
   it('installs transitive dependencies declared in extracted tank.json', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     const { extract } = await import('tar');
 
     // Primary skill's extract writes a tank.json with a dependency
@@ -1757,7 +1758,7 @@ describe('installCommand — transitive dependency resolution', () => {
   });
 
   it('does not add transitive deps to project tank.json', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     const { extract } = await import('tar');
 
     vi.mocked(extract)
@@ -1795,7 +1796,7 @@ describe('installCommand — transitive dependency resolution', () => {
   });
 
   it('skips already-installed transitive deps', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     const { extract } = await import('tar');
 
     // Pre-populate lockfile with the dependency already installed
@@ -1849,7 +1850,7 @@ describe('installCommand — transitive dependency resolution', () => {
   });
 
   it('handles circular dependencies without infinite recursion', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     const { extract } = await import('tar');
 
     const circularDepVersions = {
@@ -1918,7 +1919,7 @@ describe('installCommand — transitive dependency resolution', () => {
   });
 
   it('works normally when skill has no dependencies', async () => {
-    const { installCommand } = await import('../commands/install.js');
+    const { installCommand } = await import('~/commands/install.js');
     const { extract } = await import('tar');
 
     // Extract writes a tank.json with no skills field

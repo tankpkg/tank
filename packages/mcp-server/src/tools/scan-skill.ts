@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME } from '@internal/shared';
+
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME } from '@internals/schemas';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { TankApiClient } from '../lib/api-client.js';
-import { getConfig } from '../lib/config.js';
-import { pack, packForScan } from '../lib/packer.js';
+
+import { TankApiClient } from '~/lib/api-client.js';
+import { getConfig } from '~/lib/config.js';
+import { pack, packForScan } from '~/lib/packer.js';
 
 interface ScanFinding {
   stage: string;

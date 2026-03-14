@@ -1,5 +1,5 @@
 [tool.uv.workspace]
-members = ["packages/scanner"]
+members = ["apps/python-api"]
 
 [tool.uv]
 dev-dependencies = [

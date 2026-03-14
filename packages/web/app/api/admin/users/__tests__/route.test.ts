@@ -8,8 +8,18 @@ let mockAuthResult: { user: typeof mockAdminUser; session: typeof mockSession } 
   session: mockSession
 };
 
+type AdminRouteHandler = (
+  req: NextRequest,
+  authResult: { user: typeof mockAdminUser; session: typeof mockSession }
+) => Response | Promise<Response>;
+
+type ChainMethod = 'from' | 'where' | 'limit' | 'orderBy' | 'offset' | 'leftJoin' | 'as';
+type QueryChain = PromiseLike<unknown[]> & Record<ChainMethod, ReturnType<typeof vi.fn>>;
+type ReturningChain = Promise<unknown[]> & { returning: ReturnType<typeof vi.fn> };
+type UpdateSetChain = Promise<void> & { where: ReturnType<typeof vi.fn> };
+
 vi.mock('@/lib/admin-middleware', () => ({
-  withAdminAuth: vi.fn((handler: Function) => {
+  withAdminAuth: vi.fn((handler: AdminRouteHandler) => {
     return async (req: NextRequest) => {
       if (!mockAuthResult) {
         const { NextResponse } = await import('next/server');
@@ -30,12 +40,20 @@ function nextResult(): unknown[] {
   return dbResults[dbResultIndex++] ?? [];
 }
 
-function createChain(): Record<string, unknown> {
-  const chain: Record<string, unknown> = {};
-  for (const m of ['from', 'where', 'limit', 'orderBy', 'offset', 'leftJoin', 'as']) {
-    chain[m] = vi.fn(() => chain);
+function createChain(): QueryChain {
+  const methods = {} as Record<ChainMethod, ReturnType<typeof vi.fn>>;
+  const chain = new Proxy(methods, {
+    get(target, prop, receiver) {
+      if (prop === 'then') {
+        const promise = Promise.resolve(nextResult());
+        return promise.then.bind(promise);
+      }
+      return Reflect.get(target, prop, receiver);
+    }
+  }) as QueryChain;
+  for (const method of ['from', 'where', 'limit', 'orderBy', 'offset', 'leftJoin', 'as'] as const) {
+    chain[method] = vi.fn(() => chain);
   }
-  chain.then = (resolve: (v: unknown) => unknown) => resolve(nextResult());
   return chain;
 }
 
@@ -44,22 +62,22 @@ const mockSelect = vi.fn((..._args: unknown[]) => createChain());
 const mockInsertFn = vi.fn((...tableArgs: unknown[]) => ({
   values: vi.fn((...vArgs: unknown[]) => {
     insertCalls.push({ table: tableArgs[0], values: vArgs[0] });
-    const inner: Record<string, unknown> = {};
-    inner.returning = vi.fn(() => ({
-      then: (resolve: (v: unknown) => unknown) => resolve(nextResult())
-    }));
-    inner.then = (resolve: (v: unknown) => unknown) => resolve(nextResult());
+    const inner = Promise.resolve(nextResult()) as ReturningChain;
+    inner.returning = vi.fn(() => Promise.resolve(nextResult()));
     return inner;
   })
 }));
 
 const mockUpdate = vi.fn((...tableArgs: unknown[]) => ({
   set: vi.fn((...sArgs: unknown[]) => ({
-    where: vi.fn((...wArgs: unknown[]) => {
-      updateCalls.push({ table: tableArgs[0], set: sArgs[0], where: wArgs[0] });
-      return { then: (resolve: (v: unknown) => unknown) => resolve(undefined) };
-    }),
-    then: (resolve: (v: unknown) => unknown) => resolve(undefined)
+    ...((): UpdateSetChain => {
+      const setChain = Promise.resolve() as UpdateSetChain;
+      setChain.where = vi.fn((...wArgs: unknown[]) => {
+        updateCalls.push({ table: tableArgs[0], set: sArgs[0], where: wArgs[0] });
+        return Promise.resolve();
+      });
+      return setChain;
+    })()
   }))
 }));
 
@@ -126,7 +144,7 @@ vi.mock('drizzle-orm', () => ({
   sql: vi.fn()
 }));
 
-vi.mock('@internal/shared', () => ({
+vi.mock('@internals/schemas', () => ({
   userRoleSchema: {
     safeParse: (value: unknown) => {
       if (value === 'user' || value === 'admin') {

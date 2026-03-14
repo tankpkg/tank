@@ -1,0 +1,76 @@
+---
+interface Props {
+  skillCount: number;
+}
+
+const { skillCount } = Astro.props;
+---
+
+{
+  skillCount > 0 && (
+    <section class="container mx-auto px-4 py-8">
+      <div class="max-w-2xl mx-auto flex items-center justify-center gap-8 sm:gap-12 text-center">
+        <div>
+          <div class="flex items-center justify-center gap-1.5 mb-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-4 h-4 text-emerald-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <path d="m9 11 3 3L22 4" />
+              </>
+            </svg>
+            <span class="text-2xl font-bold text-foreground">{skillCount}</span>
+          </div>
+          <span class="text-xs text-muted-foreground">Skills Published</span>
+        </div>
+        <div class="h-8 w-px bg-emerald-500/20" />
+        <div>
+          <div class="flex items-center justify-center gap-1.5 mb-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-4 h-4 text-emerald-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+            </svg>
+            <span class="text-2xl font-bold text-foreground">{skillCount}</span>
+          </div>
+          <span class="text-xs text-muted-foreground">Security Scans</span>
+        </div>
+        <div class="h-8 w-px bg-emerald-500/20" />
+        <div>
+          <div class="flex items-center justify-center gap-1.5 mb-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-4 h-4 text-emerald-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                <path d="M2 12h20" />
+              </>
+            </svg>
+            <span class="text-2xl font-bold text-foreground">MIT</span>
+          </div>
+          <span class="text-xs text-muted-foreground">Open Source</span>
+        </div>
+      </div>
+    </section>
+  )
+}

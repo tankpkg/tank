@@ -1,6 +1,6 @@
-import { getConfig } from '../lib/config.js';
-import { logger } from '../lib/logger.js';
-import { USER_AGENT } from '../version.js';
+import { getConfig } from '~/lib/config.js';
+import { logger } from '~/lib/logger.js';
+import { USER_AGENT } from '~/version.js';
 
 export interface WhoamiOptions {
   configDir?: string;

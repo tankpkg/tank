@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock global fetch
@@ -20,7 +21,7 @@ describe('whoamiCommand', () => {
   });
 
   it('prints "Not logged in" when no token in config', async () => {
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -51,7 +52,7 @@ describe('whoamiCommand', () => {
     // Mock API verification response
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ valid: true }), { status: 200 }));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await whoamiCommand({ configDir: tmpDir });
@@ -75,7 +76,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ valid: true }), { status: 200 }));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await whoamiCommand({ configDir: tmpDir });
@@ -100,7 +101,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -125,7 +126,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -153,7 +154,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Internal error' }), { status: 500 }));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -181,7 +182,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ valid: true }), { status: 200 }));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     process.exitCode = 0;
@@ -206,7 +207,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Internal error' }), { status: 500 }));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -234,7 +235,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -263,7 +264,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ valid: true }), { status: 200 }));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await whoamiCommand({ configDir: tmpDir });
@@ -288,7 +289,7 @@ describe('whoamiCommand', () => {
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 }));
 
-    const { whoamiCommand } = await import('../commands/whoami.js');
+    const { whoamiCommand } = await import('~/commands/whoami.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

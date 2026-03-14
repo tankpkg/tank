@@ -1,0 +1,24 @@
+{
+  "name": "@internals/schemas",
+  "version": "0.8.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "devDependencies": {
+    "vitest": "^4"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}

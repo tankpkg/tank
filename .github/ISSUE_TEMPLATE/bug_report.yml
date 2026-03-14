@@ -1,7 +1,7 @@
 name: Bug Report
 description: Report a bug or unexpected behavior
-title: "[Bug]: "
-labels: ["bug", "triage"]
+title: '[Bug]: '
+labels: ['bug', 'triage']
 body:
   - type: markdown
     attributes:
@@ -83,7 +83,7 @@ body:
     attributes:
       label: Tank Version
       description: Output of `tank --version`
-      placeholder: "0.1.0"
+      placeholder: '0.1.0'
     validations:
       required: true
 
@@ -92,7 +92,7 @@ body:
     attributes:
       label: Node.js Version
       description: Output of `node --version`
-      placeholder: "v24.0.0"
+      placeholder: 'v24.0.0'
     validations:
       required: true
 

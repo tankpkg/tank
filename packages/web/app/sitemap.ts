@@ -1,11 +1,12 @@
-import { encodeSkillName } from '@internal/shared';
+import { encodeSkillName } from '@internals/helpers';
 import { eq } from 'drizzle-orm';
 import type { MetadataRoute } from 'next';
+
 import { db } from '@/lib/db';
 import { skills } from '@/lib/db/schema';
 import { source } from '@/lib/source';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tankpkg.dev';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;

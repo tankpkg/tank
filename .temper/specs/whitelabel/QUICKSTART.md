@@ -3,6 +3,7 @@
 ## For Developers (Implementation)
 
 ### 1. Create shared types
+
 ```typescript
 // packages/shared/src/brand.ts
 export interface BrandConfig {
@@ -13,7 +14,7 @@ export interface BrandConfig {
   favicon: string;
   ogImage: string;
   colors: {
-    primary: string;    // hex without #
+    primary: string; // hex without #
     secondary: string;
     accent: string;
     background: string;
@@ -36,16 +37,17 @@ export const DEFAULT_BRAND: BrandConfig = {
     primary: '10b981',
     secondary: '3b82f6',
     accent: 'f59e0b',
-    background: '0f172a',
+    background: '0f172a'
   },
   social: {
     twitter: '@tankpkg',
-    github: 'tankpkg/tank',
-  },
+    github: 'tankpkg/tank'
+  }
 };
 ```
 
 ### 2. Create config accessor
+
 ```typescript
 // apps/web/lib/branding.ts
 import { BrandConfig, DEFAULT_BRAND } from '@tank/shared';
@@ -57,7 +59,7 @@ export function getBrandConfig(): BrandConfig {
     url: process.env.BRAND_URL || DEFAULT_BRAND.url,
     logo: {
       default: process.env.BRAND_LOGO_URL || DEFAULT_BRAND.logo.default,
-      tight: process.env.BRAND_LOGO_TIGHT_URL || DEFAULT_BRAND.logo.tight,
+      tight: process.env.BRAND_LOGO_TIGHT_URL || DEFAULT_BRAND.logo.tight
     },
     favicon: process.env.BRAND_FAVICON_URL || DEFAULT_BRAND.favicon,
     ogImage: process.env.BRAND_OG_IMAGE_URL || DEFAULT_BRAND.ogImage,
@@ -65,18 +67,19 @@ export function getBrandConfig(): BrandConfig {
       primary: process.env.BRAND_COLOR_PRIMARY || DEFAULT_BRAND.colors.primary,
       secondary: process.env.BRAND_COLOR_SECONDARY || DEFAULT_BRAND.colors.secondary,
       accent: process.env.BRAND_COLOR_ACCENT || DEFAULT_BRAND.colors.accent,
-      background: process.env.BRAND_COLOR_BACKGROUND || DEFAULT_BRAND.colors.background,
+      background: process.env.BRAND_COLOR_BACKGROUND || DEFAULT_BRAND.colors.background
     },
     social: {
       twitter: process.env.BRAND_TWITTER || DEFAULT_BRAND.social.twitter,
       github: process.env.BRAND_GITHUB || DEFAULT_BRAND.social.github,
-      email: process.env.BRAND_SUPPORT_EMAIL,
-    },
+      email: process.env.BRAND_SUPPORT_EMAIL
+    }
   };
 }
 ```
 
 ### 3. Add CSS variables
+
 ```css
 /* apps/web/app/globals.css */
 :root {
@@ -88,6 +91,7 @@ export function getBrandConfig(): BrandConfig {
 ```
 
 ### 4. Update components
+
 ```tsx
 // apps/web/components/logo.tsx
 import { getBrandConfig } from '@/lib/branding';
@@ -97,18 +101,12 @@ export function Logo({ tight = false }: { tight?: boolean }) {
   const brand = getBrandConfig();
   const src = tight ? brand.logo.tight : brand.logo.default;
 
-  return (
-    <Image
-      src={src}
-      alt={`${brand.name} logo`}
-      width={tight ? 32 : 120}
-      height={tight ? 32 : 40}
-    />
-  );
+  return <Image src={src} alt={`${brand.name} logo`} width={tight ? 32 : 120} height={tight ? 32 : 40} />;
 }
 ```
 
 ### 5. Powered by footer
+
 ```tsx
 // apps/web/components/footer.tsx
 export function Footer() {
@@ -150,12 +148,12 @@ BRAND_COLOR_PRIMARY="3b82f6"  # Blue instead of green
 
 ### Asset Requirements
 
-| Asset | Size | Format | Notes |
-|-------|------|--------|-------|
-| Logo | 120×40px | PNG/SVG | Transparent background |
-| Logo tight | 32×32px | PNG/SVG | Icon-only version |
-| Favicon | 32×32px | ICO/PNG | Browser tab icon |
-| OG image | 1200×630px | PNG | Social media preview |
+| Asset      | Size       | Format  | Notes                  |
+| ---------- | ---------- | ------- | ---------------------- |
+| Logo       | 120×40px   | PNG/SVG | Transparent background |
+| Logo tight | 32×32px    | PNG/SVG | Icon-only version      |
+| Favicon    | 32×32px    | ICO/PNG | Browser tab icon       |
+| OG image   | 1200×630px | PNG     | Social media preview   |
 
 Place assets in `apps/web/public/brand/` directory.
 

@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { confirm, input } from '@inquirer/prompts';
-import { MANIFEST_FILENAME, skillsJsonSchema } from '@internal/shared';
-import { getConfig } from '../lib/config.js';
-import { logger } from '../lib/logger.js';
-import { resolveManifestPath } from '../lib/manifest.js';
+import { MANIFEST_FILENAME, skillsJsonSchema } from '@internals/schemas';
+
+import { getConfig } from '~/lib/config.js';
+import { logger } from '~/lib/logger.js';
+import { resolveManifestPath } from '~/lib/manifest.js';
 
 const NAME_PATTERN = /^(@[a-z0-9-]+\/)?[a-z0-9][a-z0-9-]*$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
@@ -86,7 +88,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
     }
 
     // Write file
-    fs.writeFileSync(filePath, JSON.stringify(manifest, null, 2) + '\n');
+    fs.writeFileSync(filePath, `${JSON.stringify(manifest, null, 2)}\n`);
     logger.success(`Created ${MANIFEST_FILENAME}`);
     return;
   }
@@ -164,6 +166,6 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   }
 
   // Write file
-  fs.writeFileSync(filePath, JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(filePath, `${JSON.stringify(manifest, null, 2)}\n`);
   logger.success(`Created ${MANIFEST_FILENAME}`);
 }

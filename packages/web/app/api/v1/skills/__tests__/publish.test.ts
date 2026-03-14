@@ -55,19 +55,6 @@ vi.mock('@/lib/db/schema', () => ({
     auditStatus: 'skill_versions.audit_status',
     publishedBy: 'skill_versions.published_by',
     createdAt: 'skill_versions.created_at'
-  },
-  scanResults: {
-    id: 'scan_results.id',
-    versionId: 'scan_results.version_id',
-    verdict: 'scan_results.verdict',
-    criticalCount: 'scan_results.critical_count',
-    highCount: 'scan_results.high_count',
-    mediumCount: 'scan_results.medium_count',
-    lowCount: 'scan_results.low_count'
-  },
-  scanFindings: {
-    id: 'scan_findings.id',
-    resultId: 'scan_findings.result_id'
   }
 }));
 

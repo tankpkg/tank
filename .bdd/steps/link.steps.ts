@@ -1,13 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
+
 import { McpTestClient } from '../interactions/mcp-client.js';
-import { registerMcpHooks, type McpBddWorld } from '../support/hooks.js';
+import { type McpBddWorld, registerMcpHooks } from '../support/hooks.js';
 
 const world: McpBddWorld = {
   client: new McpTestClient(),
   home: '',
-  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003'
 };
 
 registerMcpHooks(world);
@@ -83,7 +85,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('link-skill', {
         name: '@acme/web-search',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolCompletesWithoutError();
@@ -96,9 +98,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       expect(stats.isSymbolicLink()).toBe(true);
 
       const target = fs.readlinkSync(symlinkPath);
-      const resolvedTarget = path.isAbsolute(target)
-        ? target
-        : path.resolve(path.dirname(symlinkPath), target);
+      const resolvedTarget = path.isAbsolute(target) ? target : path.resolve(path.dirname(symlinkPath), target);
       expect(path.resolve(resolvedTarget)).toBe(path.resolve(getSkillDir('@acme/web-search')));
     });
   });
@@ -115,7 +115,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('link-skill', {
         name: '@acme/web-search',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolCompletesWithoutError();
@@ -135,14 +135,14 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('link-skill', {
         name: '@acme/web-search',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
       thenToolCompletesWithoutError();
 
       await callTool('link-skill', {
         name: '@acme/code-runner',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
       thenToolCompletesWithoutError();
 
@@ -172,7 +172,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('link-skill', {
         name: '@acme/nonexistent-skill',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolReturnsError();
@@ -189,7 +189,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('link-skill', {
         name: '@acme/web-search',
         workspace: nonexistentWorkspace,
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolReturnsError();
@@ -202,7 +202,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('link-skill', {
         name: 'web-search',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolReturnsError();
@@ -222,7 +222,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('unlink-skill', {
         name: '@acme/web-search',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolCompletesWithoutError();
@@ -243,7 +243,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('unlink-skill', {
         name: '@acme/web-search',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolCompletesWithoutError();
@@ -261,7 +261,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('unlink-skill', {
         name: '@acme/nonexistent-skill',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolReturnsError();
@@ -274,7 +274,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('unlink-skill', {
         name: 'web-search',
         workspace: workspaceDir(),
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolReturnsError();
@@ -291,7 +291,7 @@ describe('Feature: Skill linking and unlinking via MCP tools', () => {
       await callTool('unlink-skill', {
         name: '@acme/web-search',
         workspace: nonexistentWorkspace,
-        directory: projectDir(),
+        directory: projectDir()
       });
 
       thenToolReturnsError();

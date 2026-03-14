@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+
+import { resolve } from '@internals/helpers';
 import {
   LEGACY_LOCKFILE_FILENAME,
   LEGACY_MANIFEST_FILENAME,
@@ -8,13 +10,13 @@ import {
   LOCKFILE_VERSION,
   MANIFEST_FILENAME,
   type Permissions,
-  resolve,
   type SkillsLock
-} from '@internal/shared';
+} from '@internals/schemas';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { extract } from 'tar';
 import { z } from 'zod';
-import { TankApiClient } from '../lib/api-client.js';
+
+import { TankApiClient } from '~/lib/api-client.js';
 
 const SCOPED_NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
 

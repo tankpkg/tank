@@ -2,9 +2,11 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolve } from '@internal/shared';
+
+import { resolve } from '@internals/helpers';
 import chalk from 'chalk';
-import { USER_AGENT, VERSION } from '../version.js';
+
+import { USER_AGENT, VERSION } from '~/version.js';
 
 export interface UpgradeOptions {
   version?: string;

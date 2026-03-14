@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
-import { eq, and, sql } from 'drizzle-orm';
-import { db } from '@/lib/db';
-import { skills, skillStars } from '@/lib/db/schema';
-import { auth } from '@/lib/auth';
+import { and, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
+
+import { auth } from '@/lib/auth';
 import { canReadSkill, resolveRequestUserId } from '@/lib/auth-helpers';
+import { db } from '@/lib/db';
+import { skillStars, skills } from '@/lib/db/schema';
 
 interface RouteParams {
   params: Promise<{ name: string }>;
@@ -130,7 +131,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   }
 }
 
-export async function POST(request: Request, { params }: RouteParams) {
+export async function POST(_request: Request, { params }: RouteParams) {
   try {
     const { name: rawName } = await params;
     const name = decodeURIComponent(rawName);
@@ -175,7 +176,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(_request: Request, { params }: RouteParams) {
   try {
     const { name: rawName } = await params;
     const name = decodeURIComponent(rawName);

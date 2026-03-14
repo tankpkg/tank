@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@inquirer/prompts', () => ({
@@ -51,7 +52,7 @@ describe('init command', () => {
   }
 
   it('creates tank.json with prompted values', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@test-org/my-cool-skill', '1.0.0', 'A cool skill', 'Test Author', false);
 
     await initCommand();
@@ -69,7 +70,7 @@ describe('init command', () => {
   });
 
   it('omits description when empty', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@test-org/my-skill', '0.1.0', '', '', false);
 
     await initCommand();
@@ -79,8 +80,8 @@ describe('init command', () => {
   });
 
   it('generates output that passes strict schema validation', async () => {
-    const { initCommand } = await import('../commands/init.js');
-    const { skillsJsonSchema } = await import('@internal/shared');
+    const { initCommand } = await import('~/commands/init.js');
+    const { skillsJsonSchema } = await import('@internals/schemas');
     mockPrompts('@test-org/my-skill', '1.2.3', 'A test skill', 'Author Name', false);
 
     await initCommand();
@@ -91,7 +92,7 @@ describe('init command', () => {
   });
 
   it('writes pretty-printed JSON with trailing newline', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@test-org/my-skill', '0.1.0', '', '', false);
 
     await initCommand();
@@ -102,7 +103,7 @@ describe('init command', () => {
   });
 
   it('supports scoped package names', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@myorg/cool-skill', '2.0.0', 'Scoped skill', '', false);
 
     await initCommand();
@@ -111,7 +112,7 @@ describe('init command', () => {
   });
 
   it('prints success message', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@test-org/my-skill', '0.1.0', '', '');
 
     await initCommand();
@@ -122,7 +123,7 @@ describe('init command', () => {
   });
 
   it('asks to overwrite when tank.json exists and user confirms', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{"name":"old"}');
 
     // First confirm: overwrite (true), then mockPrompts sets up private confirm (false)
@@ -136,7 +137,7 @@ describe('init command', () => {
   });
 
   it('aborts when user declines overwrite', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     const original = '{"name":"old"}';
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), original);
 
@@ -150,7 +151,7 @@ describe('init command', () => {
   });
 
   it('validates name: rejects uppercase, spaces, empty, too long', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
 
     let nameValidate: ((v: string) => string | true) | undefined;
     let callIdx = 0;
@@ -175,7 +176,7 @@ describe('init command', () => {
   });
 
   it('validates version: rejects non-semver', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
 
     let versionValidate: ((v: string) => string | true) | undefined;
     let callIdx = 0;
@@ -197,7 +198,7 @@ describe('init command', () => {
   });
 
   it('does not include author in output (strict schema)', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@test-org/my-skill', '0.1.0', '', 'Some Author');
 
     await initCommand();
@@ -206,7 +207,7 @@ describe('init command', () => {
   });
 
   it('sets visibility to private when user chooses private', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@test-org/my-skill', '0.1.0', 'A test skill', '', true);
 
     await initCommand();
@@ -216,7 +217,7 @@ describe('init command', () => {
   });
 
   it('sets visibility to public when user chooses public', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@test-org/my-skill', '0.1.0', 'A test skill', '', false);
 
     await initCommand();
@@ -226,7 +227,7 @@ describe('init command', () => {
   });
 
   it('unscoped name defaults private confirm to false', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('my-unscoped-skill', '0.1.0', '', '', false);
 
     await initCommand();
@@ -242,7 +243,7 @@ describe('init command', () => {
   });
 
   it('scoped name defaults private confirm to true', async () => {
-    const { initCommand } = await import('../commands/init.js');
+    const { initCommand } = await import('~/commands/init.js');
     mockPrompts('@org/my-skill', '0.1.0', '', '', false);
 
     await initCommand();
@@ -259,7 +260,7 @@ describe('init command', () => {
 
   describe('non-interactive mode (--yes)', () => {
     it('creates tank.json with explicit values', async () => {
-      const { initCommand } = await import('../commands/init.js');
+      const { initCommand } = await import('~/commands/init.js');
 
       await initCommand({
         yes: true,
@@ -284,7 +285,7 @@ describe('init command', () => {
     });
 
     it('creates tank.json with defaults when only --yes and name provided', async () => {
-      const { initCommand } = await import('../commands/init.js');
+      const { initCommand } = await import('~/commands/init.js');
 
       await initCommand({ yes: true, name: '@test-org/default-skill' });
 
@@ -299,7 +300,7 @@ describe('init command', () => {
     });
 
     it('errors on invalid name', async () => {
-      const { initCommand } = await import('../commands/init.js');
+      const { initCommand } = await import('~/commands/init.js');
 
       await initCommand({ yes: true, name: 'UPPERCASE' });
 
@@ -311,7 +312,7 @@ describe('init command', () => {
     });
 
     it('errors on invalid version', async () => {
-      const { initCommand } = await import('../commands/init.js');
+      const { initCommand } = await import('~/commands/init.js');
 
       await initCommand({ yes: true, name: '@test-org/valid-name', version: 'not-semver' });
 
@@ -323,7 +324,7 @@ describe('init command', () => {
     });
 
     it('errors when tank.json exists without --force', async () => {
-      const { initCommand } = await import('../commands/init.js');
+      const { initCommand } = await import('~/commands/init.js');
       fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{"name":"old"}');
 
       await initCommand({ yes: true, name: '@test-org/valid-name' });
@@ -338,7 +339,7 @@ describe('init command', () => {
     });
 
     it('overwrites when --force is set', async () => {
-      const { initCommand } = await import('../commands/init.js');
+      const { initCommand } = await import('~/commands/init.js');
       fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{"name":"old"}');
 
       await initCommand({ yes: true, name: '@test-org/new-skill', version: '2.0.0', force: true });
@@ -351,7 +352,7 @@ describe('init command', () => {
     });
 
     it('sets visibility to private when --private passed', async () => {
-      const { initCommand } = await import('../commands/init.js');
+      const { initCommand } = await import('~/commands/init.js');
 
       await initCommand({ yes: true, name: '@test-org/my-skill', private: true });
 
@@ -361,7 +362,7 @@ describe('init command', () => {
     });
 
     it('omits description when empty', async () => {
-      const { initCommand } = await import('../commands/init.js');
+      const { initCommand } = await import('~/commands/init.js');
 
       await initCommand({ yes: true, name: '@test-org/my-skill', description: '' });
 

@@ -1,6 +1,7 @@
-import { encodeSkillName } from '@internal/shared';
+import { encodeSkillName } from '@internals/helpers';
 import { count, desc, eq, inArray } from 'drizzle-orm';
 import Link from 'next/link';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { db } from '@/lib/db';
