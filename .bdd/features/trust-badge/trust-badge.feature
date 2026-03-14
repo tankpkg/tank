@@ -68,3 +68,18 @@ Feature: Trust Badge Display
     When I call GET /api/v1/badge/@{testOrg}/badge-skill
     Then the response is 200
     And the SVG contains "verified"
+
+  # ── Lightweight trust signals (Issue #68) ──────────────────────────────
+  @high
+  Scenario: Skill cards show install count and last scan date
+    Given a public skill "@{testOrg}/signals-skill" exists with verdict "pass" and 0 findings
+    When I visit the skills browse page
+    Then I see install count for "@{testOrg}/signals-skill"
+    And I see last scan date for "@{testOrg}/signals-skill"
+
+  @high
+  Scenario: Skill detail page shows verified publisher and install count
+    Given a public skill "@{testOrg}/signals-skill" exists with verdict "pass" and 0 findings
+    When I visit the skill detail page for "@{testOrg}/signals-skill"
+    Then I see a verified publisher badge for "@{testOrg}/signals-skill"
+    And I see install count in metadata for "@{testOrg}/signals-skill"
