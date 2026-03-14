@@ -79,9 +79,25 @@ if [ "$TS_CHANGED" -eq 1 ]; then
     echo "  │  ✓ lint passed"
   fi
 
-  echo "  └─ typecheck"
-  if ! bun tsc -b --noEmit > /dev/null 2>&1; then
-    echo "     ✗ typecheck failed"
+  echo "  ├─ build @internal/shared (typecheck prerequisite)"
+  if ! bun run --filter '@internal/shared' build > /dev/null 2>&1; then
+    echo "  │  ✗ shared build failed"
+    FAILED=1
+  else
+    echo "  │  ✓ shared build passed"
+  fi
+
+  echo "  └─ typecheck (per-package)"
+  TC_FAILED=0
+  for pkg in "${TS_PACKAGES[@]}"; do
+    if [ -f "${pkg}/tsconfig.json" ] && echo "$CHANGED" | grep -q "^${pkg}/"; then
+      if ! bun tsc --noEmit --project "${pkg}/tsconfig.json" > /dev/null 2>&1; then
+        echo "     ✗ typecheck failed: ${pkg}"
+        TC_FAILED=1
+      fi
+    fi
+  done
+  if [ "$TC_FAILED" -ne 0 ]; then
     FAILED=1
   else
     echo "     ✓ typecheck passed"
