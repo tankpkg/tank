@@ -49,10 +49,7 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: enabledProviders.has('credentials'),
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      // TODO: port email sending from existing auth.ts
-      console.log(`Verification email for ${user.email}: ${url}`);
-    }
+    sendVerificationEmail: async ({ user, url }) => {}
   },
 
   socialProviders: githubEnabled

@@ -1,5 +1,0 @@
-{
-  "installCommand": "cd ../.. && bun install",
-  "buildCommand": "cd ../.. && bun turbo build --filter=@internal/web...",
-  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"main\" ]; then exit 1; fi; exit 0"
-}

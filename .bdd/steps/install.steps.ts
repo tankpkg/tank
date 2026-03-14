@@ -203,7 +203,7 @@ describe('Feature: Skill installation via MCP tool', () => {
       await world.client.stop();
       await world.client.start({
         home: world.home,
-        env: { TANK_TOKEN: world.e2eContext!.token }
+        env: { TANK_TOKEN: world.e2eContext?.token }
       });
 
       await whenAgentCallsTool('install-skill', {

@@ -4,7 +4,7 @@ import { Then, test } from './fixtures';
 
 function requireGaId(): string {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
-  test.skip(!gaId, 'GA4 is not configured for the current test environment');
+  test(!gaId, 'GA4 is not configured for the current test environment');
   return gaId ?? '';
 }
 

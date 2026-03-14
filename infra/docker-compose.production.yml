@@ -27,7 +27,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-tank} -d ${POSTGRES_DB:-tank}']
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tank} -d ${POSTGRES_DB:-tank}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,7 +45,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -66,9 +66,9 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -105,7 +105,7 @@ services:
     container_name: tank-web
     restart: unless-stopped
     ports:
-      - '${APP_PORT:-3000}:3000'
+      - "${APP_PORT:-3000}:3000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-tank}@postgres:5432/${POSTGRES_DB:-tank}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}

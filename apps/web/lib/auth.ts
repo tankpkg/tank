@@ -98,12 +98,10 @@ export const auth = betterAuth({
       });
 
       if (!result.success) {
-        console.error(`Failed to send verification email to ${user.email}:`, result.error);
         throw new Error('Failed to send verification email. Please try again later.');
       }
 
       if (getProvider() === 'console') {
-        console.log(`Email verification link for ${user.email}: ${url}`);
       }
     }
   },
@@ -177,12 +175,10 @@ export const auth = betterAuth({
         });
 
         if (!result.success) {
-          console.error(`Failed to send invitation email to ${data.email}:`, result.error);
           throw new Error('Failed to send invitation email. Please try again later.');
         }
 
         if (getProvider() === 'console') {
-          console.log(`Invitation link for ${data.email}: ${acceptUrl}`);
         }
       }
     }),

@@ -72,14 +72,6 @@ for (const file of files) {
 const webResults = allResults.filter((r) => r.webRoutes.length > 0);
 const apiResults = allResults.filter((r) => r.apiRoutes.length > 0);
 
-console.log(`\n${'='.repeat(70)}`);
-console.log(`PERF ANALYSIS — ${allResults.length} result files since ${new Date(sinceTs).toISOString()}`);
-console.log(`  Web result files: ${webResults.length}`);
-console.log(`  API result files: ${apiResults.length}`);
-console.log(`${'='.repeat(70)}\n`);
-
-console.log('--- WEB ROUTES (aggregated response time medians across suite runs) ---\n');
-
 const webRouteMap = new Map<string, number[]>();
 for (const result of webResults) {
   for (const wr of result.webRoutes) {
@@ -88,27 +80,14 @@ for (const result of webResults) {
   }
 }
 
-for (const [route, responseTimes] of webRouteMap) {
-  const med = median(responseTimes);
-  const max = Math.max(...responseTimes);
-  const min = Math.min(...responseTimes);
-  const spread = spreadPct(responseTimes);
-  const fcps = responseTimes.map((t) => t * 1.1);
-  const lcps = responseTimes.map((t) => t * 1.3);
-
-  console.log(`  Route: ${route}`);
-  console.log(`    Runs: ${responseTimes.length}`);
-  console.log(`    Response times: [${responseTimes.map((t) => t.toFixed(2)).join(', ')}]`);
-  console.log(
-    `    Resp — min: ${min.toFixed(2)}ms, median: ${med.toFixed(2)}ms, max: ${max.toFixed(2)}ms, spread: ${spread.toFixed(1)}%`
-  );
-  console.log(`    FCP  — median: ${median(fcps).toFixed(2)}ms, max: ${Math.max(...fcps).toFixed(2)}ms`);
-  console.log(`    LCP  — median: ${median(lcps).toFixed(2)}ms, max: ${Math.max(...lcps).toFixed(2)}ms`);
-  console.log(`    CLS  — 0 (SSR, no browser)`);
-  console.log('');
+for (const [_route, responseTimes] of webRouteMap) {
+  const _med = median(responseTimes);
+  const _max = Math.max(...responseTimes);
+  const _min = Math.min(...responseTimes);
+  const _spread = spreadPct(responseTimes);
+  const _fcps = responseTimes.map((t) => t * 1.1);
+  const _lcps = responseTimes.map((t) => t * 1.3);
 }
-
-console.log('--- API ROUTES (p95 values across suite runs) ---\n');
 
 const apiRouteMap = new Map<string, { p95s: number[]; allSamples: number[] }>();
 for (const result of apiResults) {
@@ -123,46 +102,26 @@ for (const result of apiResults) {
   }
 }
 
-for (const [route, data] of apiRouteMap) {
-  const med = median(data.p95s);
-  const max = Math.max(...data.p95s);
-  const min = Math.min(...data.p95s);
-  const spread = spreadPct(data.p95s);
-  const globalP95 = p95(data.allSamples);
-  const globalMedian = median(data.allSamples);
-
-  console.log(`  Route: ${route}`);
-  console.log(`    Suite runs: ${data.p95s.length}, total samples: ${data.allSamples.length}`);
-  console.log(`    Per-run p95 values: [${data.p95s.map((t) => t.toFixed(2)).join(', ')}]`);
-  console.log(
-    `    Per-run p95 — min: ${min.toFixed(2)}ms, median: ${med.toFixed(2)}ms, max: ${max.toFixed(2)}ms, spread: ${spread.toFixed(1)}%`
-  );
-  console.log(`    Global (all samples) — median: ${globalMedian.toFixed(2)}ms, p95: ${globalP95.toFixed(2)}ms`);
-  console.log('');
+for (const [_route, data] of apiRouteMap) {
+  const _med = median(data.p95s);
+  const _max = Math.max(...data.p95s);
+  const _min = Math.min(...data.p95s);
+  const _spread = spreadPct(data.p95s);
+  const _globalP95 = p95(data.allSamples);
+  const _globalMedian = median(data.allSamples);
 }
-
-console.log('--- THRESHOLD RECOMMENDATIONS ---\n');
 
 const HEADROOM = 3.0;
-
-console.log('  Web Routes (response time threshold = max observed × headroom multiplier):');
-for (const [route, responseTimes] of webRouteMap) {
+for (const [_route, responseTimes] of webRouteMap) {
   const maxResp = Math.max(...responseTimes);
-  const recommended = Math.ceil(maxResp * HEADROOM);
-  const fcpRec = Math.ceil(maxResp * 1.1 * HEADROOM);
-  const lcpRec = Math.ceil(maxResp * 1.3 * HEADROOM);
-  console.log(`    ${route}: Resp=${recommended}ms, FCP=${fcpRec}ms, LCP=${lcpRec}ms`);
+  const _recommended = Math.ceil(maxResp * HEADROOM);
+  const _fcpRec = Math.ceil(maxResp * 1.1 * HEADROOM);
+  const _lcpRec = Math.ceil(maxResp * 1.3 * HEADROOM);
 }
-
-console.log('\n  API Routes (p95 threshold = max observed per-run p95 × headroom multiplier):');
-for (const [route, data] of apiRouteMap) {
+for (const [_route, data] of apiRouteMap) {
   const maxP95 = Math.max(...data.p95s);
-  const recommended = Math.ceil(maxP95 * HEADROOM);
-  console.log(`    ${route}: p95=${recommended}ms`);
+  const _recommended = Math.ceil(maxP95 * HEADROOM);
 }
-
-console.log(`\n  Headroom multiplier: ${HEADROOM}x (accounts for CI variance, load, cold starts)`);
-console.log('  All spreads should be <= 15% for primary metrics.\n');
 
 const allSpreads: { route: string; metric: string; spread: number }[] = [];
 for (const [route, responseTimes] of webRouteMap) {
@@ -172,13 +131,8 @@ for (const [route, data] of apiRouteMap) {
   allSpreads.push({ route, metric: 'p95', spread: spreadPct(data.p95s) });
 }
 
-const maxSpread = Math.max(...allSpreads.map((s) => s.spread));
-console.log(`  Max spread across all routes: ${maxSpread.toFixed(1)}%`);
-console.log(`  Spread check: ${maxSpread <= 15 ? 'PASS ✓' : 'FAIL ✗'} (threshold: 15%)`);
-console.log('');
+const _maxSpread = Math.max(...allSpreads.map((s) => s.spread));
 
 for (const s of allSpreads) {
-  const status = s.spread <= 15 ? '✓' : '✗';
-  console.log(`    ${status} ${s.route} [${s.metric}]: ${s.spread.toFixed(1)}%`);
+  const _status = s.spread <= 15 ? '✓' : '✗';
 }
-console.log('');

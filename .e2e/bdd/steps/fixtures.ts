@@ -147,15 +147,14 @@ async function cleanupUserFixture(ctx: E2EContext, user: UserFixture): Promise<v
     await ctx.sql`DELETE FROM "apikey" WHERE user_id = ${user.id}`;
     await ctx.sql`DELETE FROM "session" WHERE user_id = ${user.id}`;
     await ctx.sql`DELETE FROM "user" WHERE id = ${user.id}`;
-  } catch (err) {
-    console.warn(`BDD user cleanup warning (non-fatal): ${err}`);
-  }
+  } catch (_err) {}
 
   cleanupHomeDir(user.home);
 }
 
 export const test = base.extend<BddTestFixtures, BddWorkerFixtures>({
   e2eContext: [
+    // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture API requires destructuring
     async ({}, use) => {
       const ctx = await setupE2E();
       await use(ctx);

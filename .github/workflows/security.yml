@@ -4,18 +4,18 @@ on:
   push:
     branches: [main]
     paths:
-      - 'infra/docker-compose*.yml'
-      - '.env.example*'
-      - 'Dockerfile*'
-      - 'scripts/onprem/**'
-      - '.docs/onprem*'
+      - "infra/docker-compose*.yml"
+      - ".env.example*"
+      - "Dockerfile*"
+      - "scripts/onprem/**"
+      - ".docs/onprem*"
   pull_request:
     paths:
-      - 'infra/docker-compose*.yml'
-      - '.env.example*'
-      - 'Dockerfile*'
-      - 'scripts/onprem/**'
-      - '.docs/onprem*'
+      - "infra/docker-compose*.yml"
+      - ".env.example*"
+      - "Dockerfile*"
+      - "scripts/onprem/**"
+      - ".docs/onprem*"
 
 permissions:
   contents: read

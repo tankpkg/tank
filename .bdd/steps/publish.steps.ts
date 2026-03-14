@@ -40,7 +40,7 @@ async function postPublishStart(
   token?: string
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${world.registry}/api/v1/skills`, {
     method: 'POST',
     headers,
@@ -85,13 +85,13 @@ async function whenIAttemptToPublishWithoutAuth(manifest: Record<string, unknown
 }
 
 async function whenIAttemptToPublish(manifest: Record<string, unknown>): Promise<void> {
-  const { status, body } = await postPublishStart(manifest, world.ctx!.token);
+  const { status, body } = await postPublishStart(manifest, world.ctx?.token);
   world.lastStatus = status;
   world.lastBody = body;
 }
 
 async function whenIConfirmVersion(versionId: string): Promise<void> {
-  const { status, body } = await postConfirm(versionId, world.ctx!.token);
+  const { status, body } = await postConfirm(versionId, world.ctx?.token);
   world.lastStatus = status;
   world.lastBody = body;
 }
@@ -136,7 +136,7 @@ describe('Feature: Skill publish via 3-step API flow', () => {
   describe('Scenario: Invalid manifest missing version is rejected (E3)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await givenIAmAuthenticated();
-      const invalidManifest = { name: `@${world.ctx!.orgSlug}/bdd-no-version` };
+      const invalidManifest = { name: `@${world.ctx?.orgSlug}/bdd-no-version` };
       await whenIAttemptToPublish(invalidManifest);
       thenStatusIs(400);
     });
@@ -158,15 +158,15 @@ describe('Feature: Skill publish via 3-step API flow', () => {
   describe('Scenario: Re-publishing an existing version returns 409 (E5)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await givenIAmAuthenticated();
-      const name = `@${world.ctx!.orgSlug}/conflict-test-${randomUUID().slice(0, 8)}`;
+      const name = `@${world.ctx?.orgSlug}/conflict-test-${randomUUID().slice(0, 8)}`;
 
-      const { status: firstStatus } = await postPublishStart(buildManifest(name, '1.0.0'), world.ctx!.token);
+      const { status: firstStatus } = await postPublishStart(buildManifest(name, '1.0.0'), world.ctx?.token);
       expect([200, 409]).toContain(firstStatus);
       if (firstStatus !== 200) return;
 
       const { status: secondStatus, body: secondBody } = await postPublishStart(
         buildManifest(name, '1.0.0'),
-        world.ctx!.token
+        world.ctx?.token
       );
       expect(secondStatus).toBe(409);
       expect(JSON.stringify(secondBody).toLowerCase()).toContain('already exists');
@@ -178,14 +178,14 @@ describe('Feature: Skill publish via 3-step API flow', () => {
   describe('Scenario: PATCH bump adding network permission is rejected (E6)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await givenIAmAuthenticated();
-      const name = `@${world.ctx!.orgSlug}/escalation-test-${randomUUID().slice(0, 8)}`;
+      const name = `@${world.ctx?.orgSlug}/escalation-test-${randomUUID().slice(0, 8)}`;
 
-      const { status: s1 } = await postPublishStart(buildManifest(name, '1.0.0'), world.ctx!.token);
+      const { status: s1 } = await postPublishStart(buildManifest(name, '1.0.0'), world.ctx?.token);
       if (s1 !== 200) return;
 
       const { status, body } = await postPublishStart(
         buildManifest(name, '1.0.1', { permissions: { network: { outbound: ['api.example.com'] } } }),
-        world.ctx!.token
+        world.ctx?.token
       );
       expect(status).toBe(400);
       expect(JSON.stringify(body).toLowerCase()).toContain('permission escalation');
@@ -195,14 +195,14 @@ describe('Feature: Skill publish via 3-step API flow', () => {
   describe('Scenario: MAJOR bump adding network permission is allowed (E7)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await givenIAmAuthenticated();
-      const name = `@${world.ctx!.orgSlug}/escalation-major-${randomUUID().slice(0, 8)}`;
+      const name = `@${world.ctx?.orgSlug}/escalation-major-${randomUUID().slice(0, 8)}`;
 
-      const { status: s1 } = await postPublishStart(buildManifest(name, '1.0.0'), world.ctx!.token);
+      const { status: s1 } = await postPublishStart(buildManifest(name, '1.0.0'), world.ctx?.token);
       if (s1 !== 200) return;
 
       const { status } = await postPublishStart(
         buildManifest(name, '2.0.0', { permissions: { network: { outbound: ['api.example.com'] } } }),
-        world.ctx!.token
+        world.ctx?.token
       );
       thenStatusIs(200);
       expect(status).toBe(200);
@@ -214,12 +214,12 @@ describe('Feature: Skill publish via 3-step API flow', () => {
   describe('Scenario: Confirming an already-confirmed version returns 400 (E10)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await givenIAmAuthenticated();
-      const name = `@${world.ctx!.orgSlug}/confirm-test-${randomUUID().slice(0, 8)}`;
+      const name = `@${world.ctx?.orgSlug}/confirm-test-${randomUUID().slice(0, 8)}`;
 
-      const { status, body } = await postPublishStart(buildManifest(name, '1.0.0'), world.ctx!.token);
+      const { status, body } = await postPublishStart(buildManifest(name, '1.0.0'), world.ctx?.token);
       if (status !== 200) return;
 
-      const versionId = body['versionId'] as string;
+      const versionId = body.versionId as string;
       if (!versionId) return;
 
       await whenIConfirmVersion(versionId);

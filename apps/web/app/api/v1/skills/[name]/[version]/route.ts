@@ -103,8 +103,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ name
     try {
       const downloadData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
       signedDownloadUrl = downloadData.signedUrl;
-    } catch (error) {
-      console.error('[Version] Signed URL error:', error);
+    } catch (_error) {
       return NextResponse.json({ error: 'Failed to generate download URL' }, { status: 500 });
     }
 
@@ -163,7 +162,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ name
       dependencies
     });
   } catch (error) {
-    console.error('[Version] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

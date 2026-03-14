@@ -27,22 +27,22 @@ export interface BrandConfig {
 }
 
 export const DEFAULT_BRAND: BrandConfig = {
-  name: 'Tank',
-  tagline: 'Security-first package manager for AI agent skills',
-  url: 'https://tankpkg.dev',
-  logo: { default: '/logo.png', tight: '/logo-tight.png' },
-  favicon: '/favicon.ico',
-  ogImage: '/og-default.png',
+  name: "Tank",
+  tagline: "Security-first package manager for AI agent skills",
+  url: "https://tankpkg.dev",
+  logo: { default: "/logo.png", tight: "/logo-tight.png" },
+  favicon: "/favicon.ico",
+  ogImage: "/og-default.png",
   colors: {
-    primary: '10b981',
-    secondary: '3b82f6',
-    accent: 'f59e0b',
-    background: '0f172a'
+    primary: "10b981",
+    secondary: "3b82f6",
+    accent: "f59e0b",
+    background: "0f172a",
   },
   social: {
-    twitter: '@tankpkg',
-    github: 'tankpkg/tank'
-  }
+    twitter: "@tankpkg",
+    github: "tankpkg/tank",
+  },
 };
 ```
 
@@ -50,7 +50,7 @@ export const DEFAULT_BRAND: BrandConfig = {
 
 ```typescript
 // apps/web/lib/branding.ts
-import { BrandConfig, DEFAULT_BRAND } from '@tank/shared';
+import { BrandConfig, DEFAULT_BRAND } from "@tank/shared";
 
 export function getBrandConfig(): BrandConfig {
   return {
@@ -59,7 +59,7 @@ export function getBrandConfig(): BrandConfig {
     url: process.env.BRAND_URL || DEFAULT_BRAND.url,
     logo: {
       default: process.env.BRAND_LOGO_URL || DEFAULT_BRAND.logo.default,
-      tight: process.env.BRAND_LOGO_TIGHT_URL || DEFAULT_BRAND.logo.tight
+      tight: process.env.BRAND_LOGO_TIGHT_URL || DEFAULT_BRAND.logo.tight,
     },
     favicon: process.env.BRAND_FAVICON_URL || DEFAULT_BRAND.favicon,
     ogImage: process.env.BRAND_OG_IMAGE_URL || DEFAULT_BRAND.ogImage,
@@ -67,13 +67,13 @@ export function getBrandConfig(): BrandConfig {
       primary: process.env.BRAND_COLOR_PRIMARY || DEFAULT_BRAND.colors.primary,
       secondary: process.env.BRAND_COLOR_SECONDARY || DEFAULT_BRAND.colors.secondary,
       accent: process.env.BRAND_COLOR_ACCENT || DEFAULT_BRAND.colors.accent,
-      background: process.env.BRAND_COLOR_BACKGROUND || DEFAULT_BRAND.colors.background
+      background: process.env.BRAND_COLOR_BACKGROUND || DEFAULT_BRAND.colors.background,
     },
     social: {
       twitter: process.env.BRAND_TWITTER || DEFAULT_BRAND.social.twitter,
       github: process.env.BRAND_GITHUB || DEFAULT_BRAND.social.github,
-      email: process.env.BRAND_SUPPORT_EMAIL
-    }
+      email: process.env.BRAND_SUPPORT_EMAIL,
+    },
   };
 }
 ```
@@ -94,8 +94,8 @@ export function getBrandConfig(): BrandConfig {
 
 ```tsx
 // apps/web/components/logo.tsx
-import { getBrandConfig } from '@/lib/branding';
-import Image from 'next/image';
+import { getBrandConfig } from "@/lib/branding";
+import Image from "next/image";
 
 export function Logo({ tight = false }: { tight?: boolean }) {
   const brand = getBrandConfig();
@@ -116,7 +116,7 @@ export function Footer() {
     <footer>
       {/* ... other footer content ... */}
       <div className="powered-by">
-        Powered by{' '}
+        Powered by{" "}
         <a href="https://tankpkg.dev" target="_blank" rel="noopener">
           Tank
         </a>

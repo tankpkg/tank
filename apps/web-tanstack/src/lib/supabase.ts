@@ -5,11 +5,9 @@ const supabaseUrl = (process.env.SUPABASE_URL || '').trim();
 const supabaseServiceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 if (!supabaseUrl && process.env.NODE_ENV !== 'production') {
-  console.warn('Missing SUPABASE_URL environment variable');
 }
 
 if (!supabaseServiceRoleKey && process.env.NODE_ENV !== 'production') {
-  console.warn('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
 }
 
 /**

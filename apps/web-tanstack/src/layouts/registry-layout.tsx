@@ -1,4 +1,4 @@
-import { useQuery, queryOptions } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Link, Outlet } from '@tanstack/react-router';
 
 import { CommandMenu } from '~/components/command-menu';
@@ -67,9 +67,7 @@ export function RegistryLayout() {
                   />
                 </svg>
                 <span>Star</span>
-                {starCount != null && (
-                  <span className="font-medium tabular-nums text-emerald-400">{starCount}</span>
-                )}
+                {starCount != null && <span className="font-medium tabular-nums text-emerald-400">{starCount}</span>}
               </a>
               <HomeNavAuthCta />
             </div>

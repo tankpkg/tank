@@ -18,28 +18,17 @@ async function main() {
     .limit(20);
 
   if (users.length === 0) {
-    console.log('No users found. Log in with GitHub first.');
     return;
   }
 
-  console.log(`\nFound ${users.length} user(s):\n`);
-  console.log(`${'Email'.padEnd(35) + 'Name'.padEnd(20) + 'Role'.padEnd(8)}GitHub`);
-  console.log('-'.repeat(90));
-
   for (const u of users) {
-    const email = u.email.padEnd(34);
-    const name = (u.name || '-').padEnd(19);
-    const role = u.role.padEnd(7);
-    const github = u.githubUsername || '-';
-    console.log(`${email} ${name} ${role} ${github}`);
+    const _email = u.email.padEnd(34);
+    const _name = (u.name || '-').padEnd(19);
+    const _role = u.role.padEnd(7);
+    const _github = u.githubUsername || '-';
   }
-
-  console.log('');
-  console.log('To promote a user to admin:');
-  console.log('  bun admin:bootstrap --email=user@example.com');
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
+main().catch((_error: unknown) => {
   process.exit(1);
 });

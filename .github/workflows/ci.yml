@@ -65,7 +65,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Cache Bun dependencies
         uses: actions/cache@v4
@@ -129,7 +129,7 @@ jobs:
       DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
       BETTER_AUTH_SECRET: ci-perf-secret-not-real
       NEXT_PUBLIC_APP_URL: http://localhost:3999
-      TANK_PERF_MODE: '1'
+      TANK_PERF_MODE: "1"
 
     steps:
       - name: Checkout code

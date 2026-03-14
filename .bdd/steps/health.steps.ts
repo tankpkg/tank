@@ -48,13 +48,13 @@ function thenBodyContains(key: string): void {
 }
 
 function thenChecksInclude(checkName: string): void {
-  const checks = world.lastBody['checks'] as Record<string, unknown> | undefined;
+  const checks = world.lastBody.checks as Record<string, unknown> | undefined;
   expect(checks).toBeDefined();
   expect(checks).toHaveProperty(checkName);
 }
 
 function thenStatusFieldIs(value: string): void {
-  expect(world.lastBody['status']).toBe(value);
+  expect(world.lastBody.status).toBe(value);
 }
 
 // ── Feature ────────────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ describe('Feature: Health check endpoint for dependency monitoring', () => {
       if (world.lastStatus === 200) {
         thenStatusFieldIs('ok');
       } else {
-        expect(['ok', 'degraded', 'error']).toContain(world.lastBody['status']);
+        expect(['ok', 'degraded', 'error']).toContain(world.lastBody.status);
       }
     });
   });
@@ -103,7 +103,7 @@ describe('Feature: Health check endpoint for dependency monitoring', () => {
   describe('Scenario: status field is always one of the valid values', () => {
     it.skipIf(!hasRegistry)('status is ok, degraded, or error', async () => {
       await whenICallGetHealth();
-      expect(['ok', 'degraded', 'error']).toContain(world.lastBody['status']);
+      expect(['ok', 'degraded', 'error']).toContain(world.lastBody.status);
     });
   });
 });

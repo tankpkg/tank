@@ -75,7 +75,7 @@ function thenBodyHasKeyValue(key: string, value: unknown): void {
 }
 
 function thenVerdictIsValid(): void {
-  const verdict = world.lastBody['verdict'];
+  const verdict = world.lastBody.verdict;
   expect(VALID_VERDICTS).toContain(verdict);
 }
 

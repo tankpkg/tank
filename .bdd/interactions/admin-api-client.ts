@@ -146,7 +146,7 @@ export async function postRescan(
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (client.session) {
-    headers['Cookie'] = client.session.cookieHeader;
+    headers.Cookie = client.session.cookieHeader;
   }
 
   const response = await fetch(url, { method: 'POST', headers });
@@ -182,7 +182,5 @@ export async function cleanupAdminSession(client: AdminApiClient, runId: string)
     await sql`DELETE FROM "account" WHERE user_id = ${userId}`;
     await sql`DELETE FROM "session" WHERE user_id = ${userId}`;
     await sql`DELETE FROM "user" WHERE id = ${userId}`;
-  } catch (error) {
-    console.warn(`Admin BDD cleanup warning (non-fatal): ${error}`);
-  }
+  } catch (_error) {}
 }

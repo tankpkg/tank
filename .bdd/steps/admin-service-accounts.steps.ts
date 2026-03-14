@@ -52,7 +52,7 @@ async function adminFetch(
   cookieHeader?: string
 ): Promise<{ status: number; body: unknown }> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (cookieHeader) headers['Cookie'] = cookieHeader;
+  if (cookieHeader) headers.Cookie = cookieHeader;
   const res = await fetch(`${world.registry}${path}`, {
     method,
     headers,
@@ -92,8 +92,7 @@ describe('Feature: Admin service account management', () => {
           world.client?.session?.cookieHeader
         ).catch(() => {});
       }
-    } catch (e) {
-      console.warn('admin-service-accounts cleanup warning:', e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
@@ -116,14 +115,14 @@ describe('Feature: Admin service account management', () => {
         'POST',
         '/api/admin/service-accounts',
         { displayName: `BDD CI Publisher ${world.runId}`, scopes: ['skills:publish'] },
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect([200, 201]).toContain(status);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('serviceAccount');
-      const account = b['serviceAccount'] as Record<string, unknown>;
+      const account = b.serviceAccount as Record<string, unknown>;
       expect(account).toHaveProperty('id');
-      world.createdAccountId = account['id'] as string;
+      world.createdAccountId = account.id as string;
     });
   });
 
@@ -132,24 +131,23 @@ describe('Feature: Admin service account management', () => {
   describe('Scenario: POST /admin/service-accounts/[id]/keys returns the raw key once (E2)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       if (!world.createdAccountId) {
-        console.warn('Skipping: no service account created');
         return;
       }
       const { status, body } = await adminFetch(
         'POST',
         `/api/admin/service-accounts/${world.createdAccountId}/keys`,
         { keyName: `bdd-key-${world.runId}`, scopes: ['skills:publish'] },
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('apiKey');
-      const apiKey = b['apiKey'] as Record<string, unknown>;
+      const apiKey = b.apiKey as Record<string, unknown>;
       expect(apiKey).toHaveProperty('key');
-      const rawKey = apiKey['key'] as string;
+      const rawKey = apiKey.key as string;
       expect(rawKey).toMatch(/^tank_/);
       expect(apiKey).toHaveProperty('id');
-      world.createdKeyId = apiKey['id'] as string;
+      world.createdKeyId = apiKey.id as string;
     });
   });
 
@@ -158,20 +156,19 @@ describe('Feature: Admin service account management', () => {
   describe('Scenario: DELETE /admin/service-accounts/[id]/keys/[keyId] revokes the key (E3)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       if (!world.createdAccountId || !world.createdKeyId) {
-        console.warn('Skipping: missing account or key id');
         return;
       }
       const { status, body } = await adminFetch(
         'DELETE',
         `/api/admin/service-accounts/${world.createdAccountId}/keys/${world.createdKeyId}`,
         undefined,
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('success', true);
-      const revokedKey = b['key'] as Record<string, unknown>;
-      expect(revokedKey['enabled']).toBe(false);
+      const revokedKey = b.key as Record<string, unknown>;
+      expect(revokedKey.enabled).toBe(false);
     });
   });
 
@@ -183,12 +180,12 @@ describe('Feature: Admin service account management', () => {
         'GET',
         '/api/admin/service-accounts',
         undefined,
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('serviceAccounts');
-      expect(Array.isArray(b['serviceAccounts'])).toBe(true);
+      expect(Array.isArray(b.serviceAccounts)).toBe(true);
     });
   });
 });

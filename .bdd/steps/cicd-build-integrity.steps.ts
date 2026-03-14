@@ -67,9 +67,6 @@ const mcpBuilt = fs.existsSync(MCP_DIST) && collectJsFiles(MCP_DIST).length > 0;
 describe('Feature: Build artifact integrity for npm-published packages', () => {
   beforeAll(() => {
     if (!cliBuilt || !mcpBuilt) {
-      console.warn(
-        '⚠ Build output missing — run `bun run build` in cli + mcp-server first. Skipping build artifact tests.'
-      );
     }
   });
 

@@ -86,8 +86,8 @@ interface BrandConfig {
     email?: string;
   };
   poweredBy: {
-    name: 'Tank';
-    url: 'https://tankpkg.dev';
+    name: "Tank";
+    url: "https://tankpkg.dev";
     required: true;
   };
 }

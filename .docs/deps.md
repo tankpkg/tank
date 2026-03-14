@@ -13,16 +13,16 @@ npm: `npmjs.com/package/{name}` · pypi: `pypi.org/project/{name}`
 
 ## Workspaces
 
-| Workspace | Role | Framework |
-|-----------|------|-----------|
-| `apps/web` | primary registry, API, docs | Next.js, React, Fumadocs |
-| `apps/web-astro` | alternate Astro implementation | Astro, Hono, React |
-| `apps/web-tanstack` | alternate TanStack implementation | TanStack Start, TanStack Router, Hono |
-| `apps/python-api` | security scanner | FastAPI, Pydantic |
-| `packages/cli` | `tank` CLI | Commander |
-| `packages/mcp-server` | editor integration | MCP SDK |
-| `packages/internals-schemas` | shared Zod schemas + types | Zod |
-| `packages/internals-helpers` | shared pure helpers | semver |
+| Workspace                    | Role                              | Framework                             |
+| ---------------------------- | --------------------------------- | ------------------------------------- |
+| `apps/web`                   | primary registry, API, docs       | Next.js, React, Fumadocs              |
+| `apps/web-astro`             | alternate Astro implementation    | Astro, Hono, React                    |
+| `apps/web-tanstack`          | alternate TanStack implementation | TanStack Start, TanStack Router, Hono |
+| `apps/python-api`            | security scanner                  | FastAPI, Pydantic                     |
+| `packages/cli`               | `tank` CLI                        | Commander                             |
+| `packages/mcp-server`        | editor integration                | MCP SDK                               |
+| `packages/internals-schemas` | shared Zod schemas + types        | Zod                                   |
+| `packages/internals-helpers` | shared pure helpers               | semver                                |
 
 Note: Supabase = file storage only. DB = Drizzle ORM → PostgreSQL.
 
@@ -185,23 +185,23 @@ Helm subcharts: Bitnami PostgreSQL, Bitnami Redis, MinIO
 
 Confirmed live 2026-03-14. Fetch these for up-to-date API/usage docs in agent context.
 
-| Dep | llms.txt | llms-full.txt | Other |
-|-----|----------|---------------|-------|
-| Next.js | [llms.txt](https://nextjs.org/llms.txt) | [llms-full.txt](https://nextjs.org/docs/llms-full.txt) | MCP: `/_next/mcp` (dev) |
-| Astro | [llms.txt](https://docs.astro.build/llms.txt) | [llms-full.txt](https://docs.astro.build/llms-full.txt) | MCP: `mcp.docs.astro.build/mcp` |
-| React | [llms.txt](https://react.dev/llms.txt) | — | — |
-| Hono | [llms.txt](https://hono.dev/llms.txt) | [llms-full.txt](https://hono.dev/llms-full.txt) | — |
-| TanStack | [llms.txt](https://tanstack.com/llms.txt) | — | — |
-| Better Auth | [llms.txt](https://better-auth.com/llms.txt) | — | MCP: `mcp.inkeep.com/better-auth/mcp` · skills: `npx skills add better-auth/skills` |
-| Drizzle | [llms.txt](https://orm.drizzle.team/llms.txt) | [llms-full.txt](https://orm.drizzle.team/llms-full.txt) | — |
-| Zod | [llms.txt](https://zod.dev/llms.txt) | [llms-full.txt](https://zod.dev/llms-full.txt) | MCP: `mcp.inkeep.com/zod/mcp` |
-| Vitest | [llms.txt](https://vitest.dev/llms.txt) | [llms-full.txt](https://vitest.dev/llms-full.txt) | — |
-| Bun | [llms.txt](https://bun.sh/llms.txt) | [llms-full.txt](https://bun.sh/llms-full.txt) | — |
-| Fumadocs | [llms.txt](https://fumadocs.dev/llms.txt) | [llms-full.txt](https://fumadocs.dev/llms-full.txt) | — |
-| MCP SDK | [llms.txt](https://modelcontextprotocol.io/llms.txt) | [llms-full.txt](https://modelcontextprotocol.io/llms-full.txt) | — |
-| shadcn/ui | [llms.txt](https://ui.shadcn.com/llms.txt) | — | — |
-| Ruff | [llms.txt](https://docs.astral.sh/ruff/llms.txt) | — | — |
-| PostHog | [llms.txt](https://posthog.com/llms.txt) | — | — |
-| Supabase | [llms.txt](https://supabase.com/llms.txt) | — | Per-language: `supabase.com/llms/js.txt` |
+| Dep         | llms.txt                                             | llms-full.txt                                                  | Other                                                                               |
+| ----------- | ---------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Next.js     | [llms.txt](https://nextjs.org/llms.txt)              | [llms-full.txt](https://nextjs.org/docs/llms-full.txt)         | MCP: `/_next/mcp` (dev)                                                             |
+| Astro       | [llms.txt](https://docs.astro.build/llms.txt)        | [llms-full.txt](https://docs.astro.build/llms-full.txt)        | MCP: `mcp.docs.astro.build/mcp`                                                     |
+| React       | [llms.txt](https://react.dev/llms.txt)               | —                                                              | —                                                                                   |
+| Hono        | [llms.txt](https://hono.dev/llms.txt)                | [llms-full.txt](https://hono.dev/llms-full.txt)                | —                                                                                   |
+| TanStack    | [llms.txt](https://tanstack.com/llms.txt)            | —                                                              | —                                                                                   |
+| Better Auth | [llms.txt](https://better-auth.com/llms.txt)         | —                                                              | MCP: `mcp.inkeep.com/better-auth/mcp` · skills: `npx skills add better-auth/skills` |
+| Drizzle     | [llms.txt](https://orm.drizzle.team/llms.txt)        | [llms-full.txt](https://orm.drizzle.team/llms-full.txt)        | —                                                                                   |
+| Zod         | [llms.txt](https://zod.dev/llms.txt)                 | [llms-full.txt](https://zod.dev/llms-full.txt)                 | MCP: `mcp.inkeep.com/zod/mcp`                                                       |
+| Vitest      | [llms.txt](https://vitest.dev/llms.txt)              | [llms-full.txt](https://vitest.dev/llms-full.txt)              | —                                                                                   |
+| Bun         | [llms.txt](https://bun.sh/llms.txt)                  | [llms-full.txt](https://bun.sh/llms-full.txt)                  | —                                                                                   |
+| Fumadocs    | [llms.txt](https://fumadocs.dev/llms.txt)            | [llms-full.txt](https://fumadocs.dev/llms-full.txt)            | —                                                                                   |
+| MCP SDK     | [llms.txt](https://modelcontextprotocol.io/llms.txt) | [llms-full.txt](https://modelcontextprotocol.io/llms-full.txt) | —                                                                                   |
+| shadcn/ui   | [llms.txt](https://ui.shadcn.com/llms.txt)           | —                                                              | —                                                                                   |
+| Ruff        | [llms.txt](https://docs.astral.sh/ruff/llms.txt)     | —                                                              | —                                                                                   |
+| PostHog     | [llms.txt](https://posthog.com/llms.txt)             | —                                                              | —                                                                                   |
+| Supabase    | [llms.txt](https://supabase.com/llms.txt)            | —                                                              | Per-language: `supabase.com/llms/js.txt`                                            |
 
 No AI surface confirmed: Tailwind CSS, Radix UI, Lucide, Biome, Playwright, Pino, FastAPI, Pydantic, Motion, Commander, Chalk, PostgreSQL, Redis, MinIO

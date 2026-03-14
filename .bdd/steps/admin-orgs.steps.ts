@@ -44,7 +44,7 @@ const world: AdminOrgsWorld = {
 
 async function adminGet(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
   const headers: Record<string, string> = {};
-  if (cookieHeader) headers['Cookie'] = cookieHeader;
+  if (cookieHeader) headers.Cookie = cookieHeader;
   const res = await fetch(`${world.registry}${path}`, { headers });
   let body: unknown;
   try {
@@ -108,8 +108,7 @@ describe('Feature: Admin organization management', () => {
       await sql`DELETE FROM "member" WHERE id = ${memberId}`;
       await sql`DELETE FROM "organization" WHERE id = ${orgId}`;
       await sql`DELETE FROM "user" WHERE id = ${userId}`;
-    } catch (e) {
-      console.warn('admin-orgs cleanup warning:', e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
@@ -128,12 +127,12 @@ describe('Feature: Admin organization management', () => {
 
   describe('Scenario: GET /admin/orgs returns paginated org list (E1)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status, body } = await adminGet('/api/admin/orgs', world.client!.session!.cookieHeader);
+      const { status, body } = await adminGet('/api/admin/orgs', world.client?.session?.cookieHeader);
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('orgs');
       expect(b).toHaveProperty('total');
-      expect(Array.isArray(b['orgs'])).toBe(true);
+      expect(Array.isArray(b.orgs)).toBe(true);
     });
   });
 
@@ -143,13 +142,13 @@ describe('Feature: Admin organization management', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       const { status, body } = await adminGet(
         `/api/admin/orgs/${world.testOrgId}`,
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('id');
       expect(b).toHaveProperty('members');
-      const members = b['members'] as unknown[];
+      const members = b.members as unknown[];
       expect(Array.isArray(members)).toBe(true);
       expect(members.length).toBeGreaterThanOrEqual(1);
     });
@@ -159,7 +158,7 @@ describe('Feature: Admin organization management', () => {
 
   describe('Scenario: GET /admin/orgs/[id] returns 404 for unknown org', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status } = await adminGet(`/api/admin/orgs/nonexistent-org-bdd-zzz`, world.client!.session!.cookieHeader);
+      const { status } = await adminGet(`/api/admin/orgs/nonexistent-org-bdd-zzz`, world.client?.session?.cookieHeader);
       expect(status).toBe(404);
     });
   });

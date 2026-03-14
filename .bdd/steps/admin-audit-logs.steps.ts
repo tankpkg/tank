@@ -45,7 +45,7 @@ const world: AuditLogsWorld = {
 
 async function adminGet(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
   const headers: Record<string, string> = {};
-  if (cookieHeader) headers['Cookie'] = cookieHeader;
+  if (cookieHeader) headers.Cookie = cookieHeader;
   const res = await fetch(`${world.registry}${path}`, { headers });
   let body: unknown;
   try {
@@ -92,8 +92,7 @@ describe('Feature: Admin audit log access', () => {
         await sql`DELETE FROM audit_events WHERE id = ${world.seededEventId}`;
       }
       if (world.client) await cleanupAdminSession(world.client, world.runId);
-    } catch (e) {
-      console.warn('admin-audit-logs cleanup warning:', e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
@@ -112,13 +111,13 @@ describe('Feature: Admin audit log access', () => {
 
   describe('Scenario: GET /admin/audit-logs returns paginated events (E1)', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
-      const { status, body } = await adminGet('/api/admin/audit-logs', world.client!.session!.cookieHeader);
+      const { status, body } = await adminGet('/api/admin/audit-logs', world.client?.session?.cookieHeader);
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
       expect(b).toHaveProperty('events');
       expect(b).toHaveProperty('total');
       expect(b).toHaveProperty('totalPages');
-      expect(Array.isArray(b['events'])).toBe(true);
+      expect(Array.isArray(b.events)).toBe(true);
     });
   });
 
@@ -129,13 +128,13 @@ describe('Feature: Admin audit log access', () => {
       const adminUserId = `e2e-admin-${world.runId}`;
       const { status, body } = await adminGet(
         `/api/admin/audit-logs?actorId=${adminUserId}`,
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(200);
-      const events = (body as Record<string, unknown>)['events'] as Array<Record<string, unknown>>;
+      const events = (body as Record<string, unknown>).events as Array<Record<string, unknown>>;
       expect(Array.isArray(events)).toBe(true);
       expect(events.length).toBeGreaterThanOrEqual(1);
-      const hasActorInfo = events.some((e) => e['actorName'] !== undefined || e['actorEmail'] !== undefined);
+      const hasActorInfo = events.some((e) => e.actorName !== undefined || e.actorEmail !== undefined);
       expect(hasActorInfo).toBe(true);
     });
   });
@@ -146,7 +145,7 @@ describe('Feature: Admin audit log access', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       const { status, body } = await adminGet(
         '/api/admin/audit-logs?startDate=not-a-date',
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(400);
       const bodyStr = JSON.stringify(body).toLowerCase();
@@ -160,13 +159,13 @@ describe('Feature: Admin audit log access', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       const { status, body } = await adminGet(
         '/api/admin/audit-logs?action=bdd.test.event',
-        world.client!.session!.cookieHeader
+        world.client?.session?.cookieHeader
       );
       expect(status).toBe(200);
-      const events = (body as Record<string, unknown>)['events'] as Array<Record<string, unknown>>;
+      const events = (body as Record<string, unknown>).events as Array<Record<string, unknown>>;
       expect(Array.isArray(events)).toBe(true);
       for (const event of events) {
-        expect(event['action']).toBe('bdd.test.event');
+        expect(event.action).toBe('bdd.test.event');
       }
     });
   });

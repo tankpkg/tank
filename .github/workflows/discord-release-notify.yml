@@ -16,7 +16,7 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}
           nodetail: true
-          title: '${{ github.event.release.tag_name }} released'
+          title: "${{ github.event.release.tag_name }} released"
           description: |
             **${{ github.event.release.name }}**
 
