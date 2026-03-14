@@ -1,0 +1,197 @@
+# Tank — TanStack Start variant
+# Replaces Next.js web app with TanStack Start + Hono
+#
+# Usage:
+#   docker compose -f infra/docker-compose.tanstack.yml up -d
+#   docker compose -f infra/docker-compose.tanstack.yml logs -f web
+#   docker compose -f infra/docker-compose.tanstack.yml down
+
+services:
+  # ===================
+  # PostgreSQL Database
+  # ===================
+  postgres:
+    image: postgres:17-alpine
+    container_name: tank-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tank}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tank}
+      POSTGRES_DB: ${POSTGRES_DB:-tank}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tank} -d ${POSTGRES_DB:-tank}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tank-network
+
+  # ===================
+  # Redis (Session Store)
+  # ===================
+  redis:
+    image: redis:8-alpine
+    container_name: tank-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tank-network
+
+  # ===================
+  # MinIO (S3-Compatible Storage)
+  # ===================
+  minio:
+    image: minio/minio:latest
+    container_name: tank-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-tank}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-tank123456}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - tank-network
+
+  # ===================
+  # Python Security Scanner
+  # ===================
+  scanner:
+    build:
+      context: ..
+      dockerfile: apps/python-api/Dockerfile
+    container_name: tank-scanner
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-tank}@postgres:5432/${POSTGRES_DB:-tank}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      LLM_SCAN_TIMEOUT_MS: ${LLM_SCAN_TIMEOUT_MS:-8000}
+      S3_ENDPOINT: http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tank-network
+
+  # ================================
+  # Tank Web — TanStack Start + Hono
+  # ================================
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web-tanstack/Dockerfile
+    container_name: tank-web-tanstack
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-tank}@postgres:5432/${POSTGRES_DB:-tank}
+
+      # Auth
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+
+      # Auth Providers
+      AUTH_PROVIDERS: ${AUTH_PROVIDERS:-credentials}
+
+      # GitHub OAuth (optional)
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+
+      # OIDC SSO (optional)
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-enterprise-oidc}
+      OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_AUTHORIZATION_URL: ${OIDC_AUTHORIZATION_URL:-}
+      OIDC_TOKEN_URL: ${OIDC_TOKEN_URL:-}
+      OIDC_USER_INFO_URL: ${OIDC_USER_INFO_URL:-}
+
+      # Storage (S3/MinIO)
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-tank}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-tank123456}
+      S3_BUCKET: ${S3_BUCKET:-packages}
+      S3_REGION: ${S3_REGION:-us-east-1}
+
+      # Redis Session Store
+      REDIS_URL: redis://redis:6379
+      SESSION_STORE: ${SESSION_STORE:-redis}
+
+      # Python Scanner
+      PYTHON_API_URL: http://scanner:8000
+
+      # App
+      NODE_ENV: production
+
+      # Email (optional)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@tank.local}
+
+      # First Admin
+      FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      scanner:
+        condition: service_started
+    networks:
+      - tank-network
+
+  # ===================
+  # Optional: Local LLM
+  # ===================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: tank-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - tank-network
+    profiles:
+      - llm-local
+
+networks:
+  tank-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  ollama_data:

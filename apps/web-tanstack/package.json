@@ -14,10 +14,11 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
-    "@content-collections/vinxi": "^0.1.2",
     "@aws-sdk/client-s3": "^3.1008.0",
     "@aws-sdk/s3-request-presigner": "^3.1008.0",
     "@better-auth/api-key": "1.5.5",
+    "@content-collections/core": "^0.14.2",
+    "@content-collections/vinxi": "^0.1.2",
     "@fontsource-variable/geist": "^5.2.8",
     "@hono/zod-validator": "^0.7.6",
     "@internals/helpers": "workspace:*",
