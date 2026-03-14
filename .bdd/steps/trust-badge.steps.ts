@@ -47,6 +47,12 @@ async function fetchSkillPage(name: string): Promise<{ status: number; html: str
   return { status: res.status, html };
 }
 
+async function fetchSkillsBrowsePage(): Promise<{ status: number; html: string }> {
+  const res = await fetch(`${world.registry}/skills`);
+  const html = await res.text();
+  return { status: res.status, html };
+}
+
 async function fetchBadge(name: string): Promise<{ status: number; body: string }> {
   const encoded = encodeURIComponent(name).replace(/%40/g, "@");
   const res = await fetch(`${world.registry}/api/v1/badge/${encoded}`);
@@ -59,7 +65,7 @@ async function seedSkillWithVerdict(
   name: string,
   version: string,
   verdict: string | null,
-  findings: { critical: number; high: number; medium: number; low: number }
+  findings: { critical: number; high: number; medium: number; low: number },
 ): Promise<void> {
   const now = new Date();
   const publisherId = `trust-pub-${world.runId}`;
@@ -69,8 +75,16 @@ async function seedSkillWithVerdict(
   const scanId = randomUUID();
 
   await sql`
-    INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
-    VALUES (${publisherId}, ${"Trust BDD User"}, ${`trust-bdd-${world.runId}@tank.test`}, true, ${now}, ${now})
+    INSERT INTO "user" (id, name, email, email_verified, github_username, created_at, updated_at)
+    VALUES (
+      ${publisherId},
+      ${"Trust BDD User"},
+      ${`trust-bdd-${world.runId}@tank.test`},
+      true,
+      ${`trust-bdd-${world.runId}`},
+      ${now},
+      ${now}
+    )
     ON CONFLICT (id) DO NOTHING
   `;
 
@@ -130,6 +144,13 @@ async function seedSkillWithVerdict(
     `;
   }
 
+  await sql`
+    INSERT INTO skill_download_daily (id, skill_id, date, count)
+    VALUES (${randomUUID()}, ${skillId}, ${now.toISOString().slice(0, 10)}, ${42})
+    ON CONFLICT (skill_id, date)
+    DO UPDATE SET count = skill_download_daily.count + EXCLUDED.count
+  `;
+
   world.skills.set(name, { verdict, findings: findings.critical + findings.high + findings.medium + findings.low });
 }
 
@@ -158,12 +179,48 @@ describe("Feature: Trust Badge Display", () => {
     world.testOrg = `trust-bdd-${world.runId}`;
 
     // Seed test skills for different trust levels
-    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/verified-skill`, "1.0.0", "pass", { critical: 0, high: 0, medium: 0, low: 0 });
-    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/review-skill`, "1.0.0", "pass_with_notes", { critical: 0, high: 0, medium: 2, low: 0 });
-    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/flagged-skill`, "1.0.0", "flagged", { critical: 0, high: 1, medium: 0, low: 0 });
-    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/unsafe-skill`, "1.0.0", "fail", { critical: 1, high: 0, medium: 0, low: 0 });
-    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/pending-skill`, "1.0.0", null, { critical: 0, high: 0, medium: 0, low: 0 });
-    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/badge-skill`, "1.0.0", "pass", { critical: 0, high: 0, medium: 0, low: 0 });
+    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/verified-skill`, "1.0.0", "pass", {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+    });
+    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/review-skill`, "1.0.0", "pass_with_notes", {
+      critical: 0,
+      high: 0,
+      medium: 2,
+      low: 0,
+    });
+    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/flagged-skill`, "1.0.0", "flagged", {
+      critical: 0,
+      high: 1,
+      medium: 0,
+      low: 0,
+    });
+    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/unsafe-skill`, "1.0.0", "fail", {
+      critical: 1,
+      high: 0,
+      medium: 0,
+      low: 0,
+    });
+    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/pending-skill`, "1.0.0", null, {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+    });
+    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/badge-skill`, "1.0.0", "pass", {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+    });
+    await seedSkillWithVerdict(world.sql, `@${world.testOrg}/signals-skill`, "1.0.0", "pass", {
+      critical: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+    });
   }, 60_000);
 
   afterAll(async () => {
@@ -238,5 +295,25 @@ describe("Feature: Trust Badge Display", () => {
     it.skipIf(!hasDatabase || !hasRegistry)("SVG contains verified", () => {
       expect(world.lastBody.toLowerCase()).toContain("verified");
     });
+  });
+
+  describe("Scenario: Skill cards show install count and last scan date", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)("shows install count and scan recency on cards", async () => {
+      const { html } = await fetchSkillsBrowsePage();
+      expect(html).toContain(`@${world.testOrg}/signals-skill`);
+      expect(html.toLowerCase()).toContain("installs");
+      expect(html).toContain("Scanned");
+    });
+  });
+
+  describe("Scenario: Skill detail page shows verified publisher and install count", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)(
+      "shows verified publisher badge and install count in metadata",
+      async () => {
+        const { html } = await fetchSkillPage(`@${world.testOrg}/signals-skill`);
+        expect(html).toContain("Verified Publisher");
+        expect(html).toContain("Installs");
+      },
+    );
   });
 });
