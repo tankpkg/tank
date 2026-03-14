@@ -211,6 +211,7 @@ function FindingsList({ findings }: { findings: ScanFinding[] }) {
         </thead>
         <tbody>
           {findings.map((f, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: findings can have duplicate stage+type
             <tr key={`${f.stage}-${f.type}-${i}`} className="border-b last:border-0">
               <td className="px-3 py-2">
                 <span

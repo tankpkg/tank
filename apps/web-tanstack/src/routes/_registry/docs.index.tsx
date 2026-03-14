@@ -24,7 +24,7 @@ function DocsIndexPage() {
     <DocsLayout>
       {doc ? (
         <article className="prose prose-invert prose-emerald max-w-none">
-          {/* Content from local MDX files processed by content-collections (trusted source) */}
+          {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted MDX from content-collections */}
           <div dangerouslySetInnerHTML={{ __html: doc.html }} />
         </article>
       ) : (

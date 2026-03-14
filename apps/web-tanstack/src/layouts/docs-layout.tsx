@@ -32,12 +32,12 @@ function isSeparator(item: DocMeta | { separator: string }): item is { separator
   return 'separator' in item;
 }
 
-function getActiveSlug(): string | null {
+function useActiveSlug(): string | null {
   const matches = useMatches();
   const last = matches[matches.length - 1];
   if (!last) return null;
 
-  const splat = (last.params as Record<string, string>)['_splat'];
+  const splat = (last.params as Record<string, string>)._splat;
   if (splat) return splat;
 
   if (last.fullPath.endsWith('/docs') || last.fullPath.endsWith('/docs/')) return 'index';
@@ -45,7 +45,7 @@ function getActiveSlug(): string | null {
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const activeSlug = getActiveSlug();
+  const activeSlug = useActiveSlug();
 
   return (
     <nav className="flex flex-col gap-1">
@@ -104,6 +104,8 @@ export function DocsLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile sidebar overlay */}
         {mobileOpen && (
           <div className="fixed inset-0 z-40 lg:hidden">
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: backdrop overlay dismiss */}
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop overlay dismiss */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
             <aside className="absolute left-0 top-0 h-full w-72 overflow-y-auto bg-background border-r border-emerald-500/10 p-6">
               <SidebarContent onNavigate={() => setMobileOpen(false)} />

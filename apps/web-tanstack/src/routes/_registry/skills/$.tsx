@@ -6,7 +6,7 @@ import { SkillDetailScreen } from '~/screens/skills/skill-detail-screen';
 
 export const Route = createFileRoute('/_registry/skills/$')({
   loader: async ({ context, params }) => {
-    const rawPath = params['_splat'] ?? '';
+    const rawPath = params._splat ?? '';
     const skillName = decodeURIComponent(rawPath);
     const data = await context.queryClient.ensureQueryData(skillDetailQueryOptions(skillName));
     return { data, skillName };
