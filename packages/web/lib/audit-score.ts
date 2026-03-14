@@ -30,7 +30,7 @@ export interface AuditScoreInput {
 
 export interface ScoreDetail {
   /** Security-relevant vs non-security quality signal */
-  category: "security" | "quality";
+  category: 'security' | 'quality';
   /** Human-readable check name */
   check: string;
   /** Did this check pass? */
@@ -59,7 +59,7 @@ const MAX_TARBALL_SIZE = 5_242_880; // 5 MB
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function makeDetail(category: "security" | "quality", check: string, passed: boolean, maxPoints: number): ScoreDetail {
+function makeDetail(category: 'security' | 'quality', check: string, passed: boolean, maxPoints: number): ScoreDetail {
   return { category, check, passed, points: passed ? maxPoints : 0, maxPoints };
 }
 
@@ -86,13 +86,13 @@ function extractedPermissionsMatch(declared: Record<string, unknown>, extracted:
 
 function getSeverityPenalty(severity: string): number {
   switch (severity) {
-    case "critical":
+    case 'critical':
       return 10;
-    case "high":
+    case 'high':
       return 6;
-    case "medium":
+    case 'medium':
       return 3;
-    case "low":
+    case 'low':
       return 2;
     default:
       return 3;
@@ -114,10 +114,10 @@ export function computeAuditScore(input: AuditScoreInput): AuditScoreResult {
   // 1. SKILL.md present — if we're scoring, the SKILL.md existed at pack
   //    time. We use manifest.name as a proxy: non-empty means the skill was
   //    properly packaged.
-  const skillMdPresent = typeof manifest.name === "string" && manifest.name.length > 0;
+  const skillMdPresent = typeof manifest.name === 'string' && manifest.name.length > 0;
 
   // 2. Description present in manifest
-  const descriptionPresent = typeof manifest.description === "string" && manifest.description.length > 0;
+  const descriptionPresent = typeof manifest.description === 'string' && manifest.description.length > 0;
 
   // 3. Permissions declared (not empty {})
   const permissionsDeclared = Object.keys(permissions).length > 0;
@@ -137,21 +137,21 @@ export function computeAuditScore(input: AuditScoreInput): AuditScoreResult {
   const fileCountOk = fileCount < MAX_FILE_COUNT;
 
   // 7. Has README/documentation
-  const readmePresent = typeof readme === "string" && readme.trim().length > 0;
+  const readmePresent = typeof readme === 'string' && readme.trim().length > 0;
 
   // 8. Package size reasonable (< 5 MB)
   const sizeOk = tarballSize < MAX_TARBALL_SIZE;
 
   // Build details array — always exactly 8 entries
   const details: ScoreDetail[] = [
-    makeDetail("quality", "SKILL.md present", skillMdPresent, 1),
-    makeDetail("quality", "Description present", descriptionPresent, 1),
-    makeDetail("quality", "Permissions declared", permissionsDeclared, 1),
-    makeDetail("security", "No security findings", noSecurityIssues, 10),
-    makeDetail("security", "Permission extraction match", permissionMatch, 2),
-    makeDetail("quality", "File count reasonable", fileCountOk, 1),
-    makeDetail("quality", "README documentation", readmePresent, 1),
-    makeDetail("quality", "Package size reasonable", sizeOk, 1),
+    makeDetail('quality', 'SKILL.md present', skillMdPresent, 1),
+    makeDetail('quality', 'Description present', descriptionPresent, 1),
+    makeDetail('quality', 'Permissions declared', permissionsDeclared, 1),
+    makeDetail('security', 'No security findings', noSecurityIssues, 10),
+    makeDetail('security', 'Permission extraction match', permissionMatch, 2),
+    makeDetail('quality', 'File count reasonable', fileCountOk, 1),
+    makeDetail('quality', 'README documentation', readmePresent, 1),
+    makeDetail('quality', 'Package size reasonable', sizeOk, 1)
   ];
 
   // Security score calculation (non-security checks intentionally excluded)
@@ -160,7 +160,7 @@ export function computeAuditScore(input: AuditScoreInput): AuditScoreResult {
   if (hasFindingsData) {
     const penalty = analysisResults!.securityIssues!.reduce(
       (sum, issue) => sum + getSeverityPenalty(issue.severity),
-      0,
+      0
     );
     score = Math.max(0, 10 - penalty);
   }
