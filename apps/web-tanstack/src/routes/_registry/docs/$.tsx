@@ -5,7 +5,7 @@ import { getDocBySlug } from '~/server-fns/docs';
 
 export const Route = createFileRoute('/_registry/docs/$')({
   loader: async ({ params }) => {
-    const slug = params['_splat'] ?? '';
+    const slug = params._splat ?? '';
     const doc = await getDocBySlug({ data: slug });
     return { doc, slug };
   },
@@ -54,7 +54,7 @@ function DocPage() {
   return (
     <DocsLayout>
       <article className="prose prose-invert prose-emerald max-w-none">
-        {/* Content from local MDX files processed by content-collections (trusted source) */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted MDX from content-collections */}
         <div dangerouslySetInnerHTML={{ __html: doc.html }} />
       </article>
     </DocsLayout>
