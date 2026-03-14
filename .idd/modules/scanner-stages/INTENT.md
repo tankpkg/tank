@@ -37,16 +37,20 @@ packages/scanner/lib/scan/permission_extractor.py # Extract declared permissions
 | C6  | Stage 5 (supply): runs pip-audit and queries OSV for known CVEs in declared dependencies                                   | Supply chain compromise via known-vulnerable deps         | BDD scenario |
 | C7  | Verdict: `pass` if no critical/high findings; `pass_with_notes` if medium only; `flagged` if high; `fail` if critical      | Four-tier verdict matches different risk tolerances       | BDD scenario |
 | C8  | Each stage result includes `stage`, `status`, `findings`, `duration_ms`                                                    | Per-stage results enable targeted remediation             | BDD scenario |
+| C9  | Security score uses only security findings from stages 2-5; stage1 structural hygiene never lowers security score          | Separates quality/hygiene checks from risk scoring        | BDD scenario |
+| C10 | Security score is exactly `10.0` only when total findings are zero; any finding lowers it                                  | Prevents inflated trust signals for "pass with notes"     | BDD scenario |
 
 ---
 
 ## Layer 3: Examples
 
-| #   | Input                                                     | Expected                                             |
-| --- | --------------------------------------------------------- | ---------------------------------------------------- |
-| E1  | Clean skill tarball                                       | All stages pass; verdict `pass`                      |
-| E2  | Tarball with `exec(base64.b64decode(...))` in Python file | Stage 2 finding: critical; verdict `fail`            |
-| E3  | Tarball with `IGNORE ALL PREVIOUS INSTRUCTIONS` in README | Stage 3 finding: prompt injection; verdict `flagged` |
-| E4  | Tarball with hardcoded `ANTHROPIC_API_KEY=sk-...`         | Stage 4 finding: critical; verdict `fail`            |
-| E5  | Tarball with `requests==2.26.0` (known CVE)               | Stage 5 finding: high; verdict `flagged`             |
-| E6  | Tarball with only medium findings                         | Verdict `pass_with_notes`                            |
+| #   | Input                                                     | Expected                                                    |
+| --- | --------------------------------------------------------- | ----------------------------------------------------------- |
+| E1  | Clean skill tarball                                       | All stages pass; verdict `pass`                             |
+| E2  | Tarball with `exec(base64.b64decode(...))` in Python file | Stage 2 finding: critical; verdict `fail`                   |
+| E3  | Tarball with `IGNORE ALL PREVIOUS INSTRUCTIONS` in README | Stage 3 finding: prompt injection; verdict `flagged`        |
+| E4  | Tarball with hardcoded `ANTHROPIC_API_KEY=sk-...`         | Stage 4 finding: critical; verdict `fail`                   |
+| E5  | Tarball with `requests==2.26.0` (known CVE)               | Stage 5 finding: high; verdict `flagged`                    |
+| E6  | Tarball with only medium findings                         | Verdict `pass_with_notes`                                   |
+| E7  | Tarball with only stage1 oversized-file finding           | Security score remains `10.0`; hygiene issue still reported |
+| E8  | Tarball with only low severity finding in stage3          | Verdict `pass_with_notes`; security score below `10.0`      |

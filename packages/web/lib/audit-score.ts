@@ -29,6 +29,8 @@ export interface AuditScoreInput {
 }
 
 export interface ScoreDetail {
+  /** Security-relevant vs non-security quality signal */
+  category: "security" | "quality";
   /** Human-readable check name */
   check: string;
   /** Did this check pass? */
@@ -57,8 +59,8 @@ const MAX_TARBALL_SIZE = 5_242_880; // 5 MB
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function makeDetail(check: string, passed: boolean, maxPoints: number): ScoreDetail {
-  return { check, passed, points: passed ? maxPoints : 0, maxPoints };
+function makeDetail(category: "security" | "quality", check: string, passed: boolean, maxPoints: number): ScoreDetail {
+  return { category, check, passed, points: passed ? maxPoints : 0, maxPoints };
 }
 
 /**
@@ -82,19 +84,29 @@ function extractedPermissionsMatch(declared: Record<string, unknown>, extracted:
 // Main
 // ---------------------------------------------------------------------------
 
+function getSeverityPenalty(severity: string): number {
+  switch (severity) {
+    case "critical":
+      return 10;
+    case "high":
+      return 6;
+    case "medium":
+      return 3;
+    case "low":
+      return 2;
+    default:
+      return 3;
+  }
+}
+
 /**
- * Compute a 0-10 audit score based on available signals from a published
- * skill package.
+ * Compute a 0-10 security score for a published skill package.
  *
- * Scoring rubric:
- *  - SKILL.md present (manifest name non-empty): +1
- *  - Description present in manifest: +1
- *  - Permissions declared (not empty {}): +1
- *  - No security issues found: +2 (default pass if no analysis)
- *  - Permission extraction matches declared: +2 (default pass if no analysis)
- *  - File count reasonable (< 100): +1
- *  - Has README/documentation: +1
- *  - Package size reasonable (< 5 MB): +1
+ * Scoring rules:
+ *  - Score is security-first and is based only on security findings + permission mismatch.
+ *  - Non-security quality checks (size, file count, docs, metadata) are reported separately
+ *    in `details` but never alter `score`.
+ *  - 10/10 is only possible when scanner findings are available and zero findings were found.
  */
 export function computeAuditScore(input: AuditScoreInput): AuditScoreResult {
   const { manifest, permissions, fileCount, tarballSize, readme, analysisResults } = input;
@@ -102,17 +114,18 @@ export function computeAuditScore(input: AuditScoreInput): AuditScoreResult {
   // 1. SKILL.md present — if we're scoring, the SKILL.md existed at pack
   //    time. We use manifest.name as a proxy: non-empty means the skill was
   //    properly packaged.
-  const skillMdPresent = typeof manifest.name === 'string' && manifest.name.length > 0;
+  const skillMdPresent = typeof manifest.name === "string" && manifest.name.length > 0;
 
   // 2. Description present in manifest
-  const descriptionPresent = typeof manifest.description === 'string' && manifest.description.length > 0;
+  const descriptionPresent = typeof manifest.description === "string" && manifest.description.length > 0;
 
   // 3. Permissions declared (not empty {})
   const permissionsDeclared = Object.keys(permissions).length > 0;
 
-  // 4. No security issues found (+2, default pass if no analysis ran)
-  const noSecurityIssues =
-    analysisResults == null || analysisResults.securityIssues == null || analysisResults.securityIssues.length === 0;
+  // 4. Scanner findings available + no findings present (security-only)
+  const hasFindingsData = Array.isArray(analysisResults?.securityIssues);
+  const issueCount = hasFindingsData ? analysisResults!.securityIssues!.length : 0;
+  const noSecurityIssues = hasFindingsData && issueCount === 0;
 
   // 5. Permission extraction matches declared (+2, default pass if no analysis)
   let permissionMatch = true;
@@ -124,26 +137,44 @@ export function computeAuditScore(input: AuditScoreInput): AuditScoreResult {
   const fileCountOk = fileCount < MAX_FILE_COUNT;
 
   // 7. Has README/documentation
-  const readmePresent = typeof readme === 'string' && readme.trim().length > 0;
+  const readmePresent = typeof readme === "string" && readme.trim().length > 0;
 
   // 8. Package size reasonable (< 5 MB)
   const sizeOk = tarballSize < MAX_TARBALL_SIZE;
 
   // Build details array — always exactly 8 entries
   const details: ScoreDetail[] = [
-    makeDetail('SKILL.md present', skillMdPresent, 1),
-    makeDetail('Description present', descriptionPresent, 1),
-    makeDetail('Permissions declared', permissionsDeclared, 1),
-    makeDetail('No security issues', noSecurityIssues, 2),
-    makeDetail('Permission extraction match', permissionMatch, 2),
-    makeDetail('File count reasonable', fileCountOk, 1),
-    makeDetail('README documentation', readmePresent, 1),
-    makeDetail('Package size reasonable', sizeOk, 1)
+    makeDetail("quality", "SKILL.md present", skillMdPresent, 1),
+    makeDetail("quality", "Description present", descriptionPresent, 1),
+    makeDetail("quality", "Permissions declared", permissionsDeclared, 1),
+    makeDetail("security", "No security findings", noSecurityIssues, 10),
+    makeDetail("security", "Permission extraction match", permissionMatch, 2),
+    makeDetail("quality", "File count reasonable", fileCountOk, 1),
+    makeDetail("quality", "README documentation", readmePresent, 1),
+    makeDetail("quality", "Package size reasonable", sizeOk, 1),
   ];
 
-  // Score = sum of awarded points, clamped to [0, 10]
-  const rawScore = details.reduce((sum, d) => sum + d.points, 0);
-  const score = Math.max(0, Math.min(10, rawScore));
+  // Security score calculation (non-security checks intentionally excluded)
+  let score = hasFindingsData ? 10 : 5;
+
+  if (hasFindingsData) {
+    const penalty = analysisResults!.securityIssues!.reduce(
+      (sum, issue) => sum + getSeverityPenalty(issue.severity),
+      0,
+    );
+    score = Math.max(0, 10 - penalty);
+  }
+
+  if (!permissionMatch) {
+    score = Math.max(0, score - 2);
+  }
+
+  // 10/10 is only valid when scanner data exists and no findings were found.
+  if (!(hasFindingsData && issueCount === 0)) {
+    score = Math.min(score, 9.9);
+  }
+
+  score = Math.round(score * 10) / 10;
 
   return { score, details };
 }
