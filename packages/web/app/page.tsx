@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq } from 'drizzle-orm';
 import {
   AlertTriangle,
   ArrowRight,
@@ -12,32 +12,32 @@ import {
   Shield,
   Star,
   Terminal,
-  Zap,
-} from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { Navbar } from "@/components/navbar";
-import { SearchTrigger } from "@/components/search-trigger";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { db } from "@/lib/db";
-import { skills } from "@/lib/db/schema";
-import { CookiePreferencesButton } from "./cookie-preferences-button";
-import { CopyInstallButton } from "./copy-install-button";
-import { HomeNavAuthCta, HomePrimaryAuthCta } from "./home-auth-cta";
+  Zap
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Navbar } from '@/components/navbar';
+import { SearchTrigger } from '@/components/search-trigger';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { db } from '@/lib/db';
+import { skills } from '@/lib/db/schema';
+import { CookiePreferencesButton } from './cookie-preferences-button';
+import { CopyInstallButton } from './copy-install-button';
+import { HomeNavAuthCta, HomePrimaryAuthCta } from './home-auth-cta';
 
-const GITHUB_REPO = "tankpkg/tank";
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.tankpkg.dev";
+const GITHUB_REPO = 'tankpkg/tank';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
 
 async function getGitHubStars(): Promise<number | null> {
   try {
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {
       next: { revalidate: 3600 },
-      headers: { Accept: "application/vnd.github.v3+json" },
+      headers: { Accept: 'application/vnd.github.v3+json' }
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return typeof data.stargazers_count === "number" ? data.stargazers_count : null;
+    return typeof data.stargazers_count === 'number' ? data.stargazers_count : null;
   } catch {
     return null;
   }
@@ -46,124 +46,123 @@ async function getGitHubStars(): Promise<number | null> {
 const features = [
   {
     icon: Lock,
-    title: "Integrity Verification",
+    title: 'Integrity Verification',
     description:
-      "Every skill pinned with sha512 hashes. If content doesn't match, installation fails. No silent tampering.",
+      "Every skill pinned with sha512 hashes. If content doesn't match, installation fails. No silent tampering."
   },
   {
     icon: Shield,
-    title: "Permission Budgets",
+    title: 'Permission Budgets',
     description:
-      "Declare what your agent can do — network, filesystem, subprocess. Skills exceeding the budget are rejected.",
+      'Declare what your agent can do — network, filesystem, subprocess. Skills exceeding the budget are rejected.'
   },
   {
     icon: Eye,
-    title: "Audit Scores",
-    description:
-      "Transparent 0–10 security score. Static analysis, permission matching, package hygiene — all visible.",
+    title: 'Audit Scores',
+    description: 'Transparent 0–10 security score. Static analysis, permission matching, package hygiene — all visible.'
   },
   {
     icon: GitBranch,
-    title: "Enforced Semver",
+    title: 'Enforced Semver',
     description:
-      "Not a social contract. A patch that adds network access? Detected and flagged. Permission escalation requires a major bump.",
+      'Not a social contract. A patch that adds network access? Detected and flagged. Permission escalation requires a major bump.'
   },
   {
     icon: Terminal,
-    title: "CLI-First Workflow",
-    description: "Install, publish, audit, manage permissions from terminal. Designed for developers, not dashboards.",
+    title: 'CLI-First Workflow',
+    description: 'Install, publish, audit, manage permissions from terminal. Designed for developers, not dashboards.'
   },
   {
     icon: Globe,
-    title: "Open Source (MIT)",
-    description: "Built in the open from day one. MIT licensed. Transparent scanning. No vendor lock-in.",
-  },
+    title: 'Open Source (MIT)',
+    description: 'Built in the open from day one. MIT licensed. Transparent scanning. No vendor lock-in.'
+  }
 ];
 
-const installCommand = "curl -fsSL https://raw.githubusercontent.com/tankpkg/tank/main/install.sh | sh";
+const installCommand = 'curl -fsSL https://raw.githubusercontent.com/tankpkg/tank/main/install.sh | sh';
 
 const cliCommands = [
-  { cmd: "tank install @vercel/next-skill", desc: "Install with integrity verification" },
-  { cmd: "tank permissions", desc: "See what your agent can do" },
-  { cmd: "tank audit", desc: "Check security scan results" },
-  { cmd: "tank publish", desc: "Publish with 6-stage analysis" },
+  { cmd: 'tank install @vercel/next-skill', desc: 'Install with integrity verification' },
+  { cmd: 'tank permissions', desc: 'See what your agent can do' },
+  { cmd: 'tank audit', desc: 'Check security scan results' },
+  { cmd: 'tank publish', desc: 'Publish with 6-stage analysis' }
 ];
 
 const faqItems = [
   {
-    question: "What is Tank?",
+    question: 'What is Tank?',
     answer:
-      "Tank is a security-first package manager for AI agent skills. It provides integrity verification (SHA-512), permission budgets, 6-stage security scanning, and enforced semver \u2014 features that current skill registries lack.",
+      'Tank is a security-first package manager for AI agent skills. It provides integrity verification (SHA-512), permission budgets, 6-stage security scanning, and enforced semver \u2014 features that current skill registries lack.'
   },
   {
     question: 'What are "agent skills"?',
     answer:
-      "Agent skills are reusable capability packages you add to AI coding tools like Claude Code, Cursor, or Copilot. They teach your agent how to perform specific tasks \u2014 like deploying to Vercel, running SEO audits, or writing tests. Think of them like plugins, but for AI agents.",
+      'Agent skills are reusable capability packages you add to AI coding tools like Claude Code, Cursor, or Copilot. They teach your agent how to perform specific tasks \u2014 like deploying to Vercel, running SEO audits, or writing tests. Think of them like plugins, but for AI agents.'
   },
   {
-    question: "How is this different from npm?",
+    question: 'How is this different from npm?',
     answer:
-      "npm manages JavaScript packages. Tank manages AI agent skills \u2014 the reusable capabilities you add to coding agents like Claude Code or Cursor. Unlike npm, Tank enforces permission budgets and scans every package through a 6-stage security pipeline before publication.",
+      'npm manages JavaScript packages. Tank manages AI agent skills \u2014 the reusable capabilities you add to coding agents like Claude Code or Cursor. Unlike npm, Tank enforces permission budgets and scans every package through a 6-stage security pipeline before publication.'
   },
   {
-    question: "Is Tank free?",
+    question: 'Is Tank free?',
     answer:
-      "Yes. Tank is open source under the MIT license. The registry, CLI, and security scanner are all free to use.",
+      'Yes. Tank is open source under the MIT license. The registry, CLI, and security scanner are all free to use.'
   },
   {
-    question: "How does the security scanning work?",
+    question: 'How does the security scanning work?',
     answer:
-      "Every skill goes through 6 stages: ingestion (SHA-512 hashing), structure validation, static analysis (Semgrep + Bandit), injection detection, secrets scanning (detect-secrets), and dependency audit (OSV). Skills receive a 0\u201310 audit score and a verdict: PASS, FLAGGED, or FAIL.",
+      'Every skill goes through 6 stages: ingestion (SHA-512 hashing), structure validation, static analysis (Semgrep + Bandit), injection detection, secrets scanning (detect-secrets), and dependency audit (OSV). Skills receive a 0\u201310 audit score and a verdict: PASS, FLAGGED, or FAIL.'
   },
   {
-    question: "Who built Tank?",
+    question: 'Who built Tank?',
     answer:
-      "Tank is built by developers who saw the ClawHavoc incident \u2014 where 341 malicious skills (12% of a major marketplace) distributed credential-stealing malware \u2014 and decided AI agent skills deserved the same security infrastructure as npm packages.",
-  },
+      'Tank is built by developers who saw the ClawHavoc incident \u2014 where 341 malicious skills (12% of a major marketplace) distributed credential-stealing malware \u2014 and decided AI agent skills deserved the same security infrastructure as npm packages.'
+  }
 ];
 
 function buildHomepageJsonLd(_skillCount: number) {
   return {
-    "@context": "https://schema.org",
-    "@graph": [
+    '@context': 'https://schema.org',
+    '@graph': [
       {
-        "@type": "Organization",
-        name: "Tank",
+        '@type': 'Organization',
+        name: 'Tank',
         url: BASE_URL,
         logo: `${BASE_URL}/logo.png`,
         description:
-          "Security-first package registry for AI agent skills. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.",
-        sameAs: ["https://github.com/tankpkg", "https://x.com/tankpkg"],
+          'Security-first package registry for AI agent skills. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
+        sameAs: ['https://github.com/tankpkg', 'https://x.com/tankpkg']
       },
       {
-        "@type": "WebSite",
-        name: "Tank",
+        '@type': 'WebSite',
+        name: 'Tank',
         url: BASE_URL,
         potentialAction: {
-          "@type": "SearchAction",
+          '@type': 'SearchAction',
           target: `${BASE_URL}/skills?q={search_term_string}`,
-          "query-input": "required name=search_term_string",
-        },
+          'query-input': 'required name=search_term_string'
+        }
       },
       {
-        "@type": "FAQPage",
+        '@type': 'FAQPage',
         mainEntity: faqItems.map((item) => ({
-          "@type": "Question",
+          '@type': 'Question',
           name: item.question,
           acceptedAnswer: {
-            "@type": "Answer",
-            text: item.answer,
-          },
-        })),
-      },
-    ],
+            '@type': 'Answer',
+            text: item.answer
+          }
+        }))
+      }
+    ]
   };
 }
 
 export default async function Home() {
   let skillCount = 0;
   try {
-    const result = await db.select({ name: skills.name }).from(skills).where(eq(skills.visibility, "public"));
+    const result = await db.select({ name: skills.name }).from(skills).where(eq(skills.visibility, 'public'));
     skillCount = result.length;
   } catch {
     // DB unavailable at build time
@@ -187,8 +186,8 @@ export default async function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div
             className="h-16"
-            style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flexShrink: 0 }}>
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
               <Link
                 href="/"
                 className="flex items-center gap-2.5 font-bold text-lg tracking-tight hover:opacity-80 transition-all group">
@@ -202,16 +201,16 @@ export default async function Home() {
             <div
               className="max-lg:hidden"
               style={{
-                position: "absolute",
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: "100%",
-                maxWidth: "28rem",
-                pointerEvents: "auto",
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '100%',
+                maxWidth: '28rem',
+                pointerEvents: 'auto'
               }}>
               <SearchTrigger />
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
               <a
                 href="https://github.com/tankpkg/tank"
                 target="_blank"
@@ -300,7 +299,7 @@ export default async function Home() {
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span>Star on GitHub{starCount !== null ? ` (${starCount})` : ""}</span>
+                  <span>Star on GitHub{starCount !== null ? ` (${starCount})` : ''}</span>
                 </a>
               </div>
             </div>
@@ -336,7 +335,7 @@ export default async function Home() {
                   Agent skills are <span className="text-red-400">more dangerous</span> than npm packages
                 </h2>
                 <p className="text-muted-foreground leading-relaxed text-base max-w-2xl mx-auto">
-                  A malicious npm package runs inside your app&apos;s sandbox. A malicious agent skill runs with the{" "}
+                  A malicious npm package runs inside your app&apos;s sandbox. A malicious agent skill runs with the{' '}
                   <span className="text-foreground font-medium">agent&apos;s full permissions</span> — reading any file,
                   making API calls with your credentials, executing shell commands. No sandbox. No limits.
                 </p>
@@ -345,9 +344,9 @@ export default async function Home() {
               {/* Three-column risk summary */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { icon: Lock, label: "No versioning", detail: "Skills update silently with no lockfile" },
-                  { icon: Shield, label: "No permissions", detail: "Any skill can access anything your agent can" },
-                  { icon: Eye, label: "No scanning", detail: "Malicious code ships undetected to thousands" },
+                  { icon: Lock, label: 'No versioning', detail: 'Skills update silently with no lockfile' },
+                  { icon: Shield, label: 'No permissions', detail: 'Any skill can access anything your agent can' },
+                  { icon: Eye, label: 'No scanning', detail: 'Malicious code ships undetected to thousands' }
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -385,26 +384,26 @@ export default async function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
                 {[
                   {
-                    step: "1",
+                    step: '1',
                     icon: Shield,
-                    title: "Publish with scanning",
+                    title: 'Publish with scanning',
                     detail:
-                      "Every skill goes through a 6-stage security pipeline before it appears in the registry. Malware, secrets, and permission escalation are caught at publish time.",
+                      'Every skill goes through a 6-stage security pipeline before it appears in the registry. Malware, secrets, and permission escalation are caught at publish time.'
                   },
                   {
-                    step: "2",
+                    step: '2',
                     icon: Lock,
-                    title: "Install with integrity",
+                    title: 'Install with integrity',
                     detail:
-                      "Tank pins every skill to a SHA-512 hash. If the content changes after you install it, the next install fails. No silent supply-chain attacks.",
+                      'Tank pins every skill to a SHA-512 hash. If the content changes after you install it, the next install fails. No silent supply-chain attacks.'
                   },
                   {
-                    step: "3",
+                    step: '3',
                     icon: Zap,
-                    title: "Run with permission limits",
+                    title: 'Run with permission limits',
                     detail:
-                      "Declare what your agent is allowed to do. Skills that ask for more than you've budgeted are rejected before they run.",
-                  },
+                      "Declare what your agent is allowed to do. Skills that ask for more than you've budgeted are rejected before they run."
+                  }
                 ].map((item) => (
                   <div key={item.step} className="flex flex-col items-center text-center">
                     <div className="relative mb-4">
@@ -464,7 +463,7 @@ export default async function Home() {
               </h2>
               <p className="text-muted-foreground max-w-xl mx-auto">
                 <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">tank.json</code> is like package.json
-                — but with a <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">permissions</code>{" "}
+                — but with a <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">permissions</code>{' '}
                 field. If any skill exceeds the budget, installation fails.
               </p>
             </div>
@@ -485,58 +484,58 @@ export default async function Home() {
               {/* Code content */}
               <pre className="p-4 md:p-6 text-sm md:text-base overflow-x-auto leading-relaxed font-mono">
                 <code>
-                  <span className="text-slate-500">{"{"}</span>
-                  {"\n"}
-                  {"  "}
+                  <span className="text-slate-500">{'{'}</span>
+                  {'\n'}
+                  {'  '}
                   <span className="text-emerald-400">"skills"</span>
-                  <span className="text-slate-500">: {"{"}</span>
-                  {"\n"}
-                  {"    "}
+                  <span className="text-slate-500">: {'{'}</span>
+                  {'\n'}
+                  {'    '}
                   <span className="text-emerald-400">"@vercel/next-skill"</span>
                   <span className="text-slate-500">:</span> <span className="text-amber-400">"^2.1.0"</span>
                   <span className="text-slate-500">,</span>
-                  {"\n"}
-                  {"    "}
+                  {'\n'}
+                  {'    '}
                   <span className="text-emerald-400">"@community/seo-audit"</span>
                   <span className="text-slate-500">:</span> <span className="text-amber-400">"3.0.0"</span>
-                  {"\n"}
-                  {"  "}
-                  <span className="text-slate-500">{"}"}</span>
-                  {"\n"}
-                  {"  "}
+                  {'\n'}
+                  {'  '}
+                  <span className="text-slate-500">{'}'}</span>
+                  {'\n'}
+                  {'  '}
                   <span className="text-emerald-400">"permissions"</span>
-                  <span className="text-slate-500">: {"{"}</span>
-                  {"\n"}
-                  {"    "}
+                  <span className="text-slate-500">: {'{'}</span>
+                  {'\n'}
+                  {'    '}
                   <span className="text-emerald-400">"network"</span>
-                  <span className="text-slate-500">: {"{"}</span> <span className="text-emerald-400">"outbound"</span>
-                  <span className="text-slate-500">:</span> <span className="text-amber-400">["*.anthropic.com"]</span>{" "}
-                  <span className="text-slate-500">{"}"}</span>
-                  {"\n"}
-                  {"    "}
+                  <span className="text-slate-500">: {'{'}</span> <span className="text-emerald-400">"outbound"</span>
+                  <span className="text-slate-500">:</span> <span className="text-amber-400">["*.anthropic.com"]</span>{' '}
+                  <span className="text-slate-500">{'}'}</span>
+                  {'\n'}
+                  {'    '}
                   <span className="text-emerald-400">"filesystem"</span>
-                  <span className="text-slate-500">: {"{"}</span>
-                  {"\n"}
-                  {"      "}
+                  <span className="text-slate-500">: {'{'}</span>
+                  {'\n'}
+                  {'      '}
                   <span className="text-emerald-400">"read"</span>
                   <span className="text-slate-500">:</span> <span className="text-amber-400">["./src/**"]</span>
                   <span className="text-slate-500">,</span>
-                  {"\n"}
-                  {"      "}
+                  {'\n'}
+                  {'      '}
                   <span className="text-emerald-400">"write"</span>
                   <span className="text-slate-500">:</span> <span className="text-amber-400">["./output/**"]</span>
-                  {"\n"}
-                  {"    "}
-                  <span className="text-slate-500">{"}"}</span>
-                  {"\n"}
-                  {"    "}
+                  {'\n'}
+                  {'    '}
+                  <span className="text-slate-500">{'}'}</span>
+                  {'\n'}
+                  {'    '}
                   <span className="text-emerald-400">"subprocess"</span>
                   <span className="text-slate-500">:</span> <span className="text-pink-400">false</span>
-                  {"\n"}
-                  {"  "}
-                  <span className="text-slate-500">{"}"}</span>
-                  {"\n"}
-                  <span className="text-slate-500">{"}"}</span>
+                  {'\n'}
+                  {'  '}
+                  <span className="text-slate-500">{'}'}</span>
+                  {'\n'}
+                  <span className="text-slate-500">{'}'}</span>
                 </code>
               </pre>
             </div>
@@ -667,7 +666,7 @@ export default async function Home() {
                 <Button variant="outline" size="lg" asChild>
                   <a href="https://github.com/tankpkg/tank" target="_blank" rel="noopener noreferrer">
                     <Star className="mr-2 h-4 w-4" />
-                    Star on GitHub{starCount !== null ? ` (${starCount})` : ""}
+                    Star on GitHub{starCount !== null ? ` (${starCount})` : ''}
                   </a>
                 </Button>
               </div>
