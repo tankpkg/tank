@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, type ReactNode } from 'react';
-import { getBrandConfig, getBrandCssVars } from '@/lib/branding';
 import type { BrandConfig } from '@internal/shared';
+import { createContext, type ReactNode, useContext, useEffect } from 'react';
+import { getBrandConfig, getBrandCssVars } from '@/lib/branding';
 
 interface BrandContextValue {
   brand: BrandConfig;

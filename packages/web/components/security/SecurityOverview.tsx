@@ -2,8 +2,8 @@
 
 import { Brain } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { TrustBadge } from './TrustBadge';
 import { computeTrustLevel } from '@/lib/trust-level';
+import { TrustBadge } from './TrustBadge';
 
 interface LLMAnalysisInfo {
   enabled: boolean;

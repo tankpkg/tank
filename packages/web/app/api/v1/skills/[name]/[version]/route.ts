@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
+import { resolveRequestUserId } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { getStorageProvider } from '@/lib/storage/provider';
-import { resolveRequestUserId } from '@/lib/auth-helpers';
 
 async function recordDownload(skillId: string): Promise<void> {
   await db.execute(sql`

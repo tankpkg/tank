@@ -1,7 +1,7 @@
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { auth } from './auth';
 import { db } from './db';
-import { userStatus, member, skillAccess, serviceAccounts } from './db/schema';
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { member, serviceAccounts, skillAccess, userStatus } from './db/schema';
 
 export interface VerifiedApiKey {
   userId: string;

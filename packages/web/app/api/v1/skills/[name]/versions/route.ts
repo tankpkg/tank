@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
+import { resolveRequestUserId } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { skills } from '@/lib/db/schema';
-import { resolveRequestUserId } from '@/lib/auth-helpers';
 
 /**
  * GET /api/v1/skills/[name]/versions — single query for skill + all versions.

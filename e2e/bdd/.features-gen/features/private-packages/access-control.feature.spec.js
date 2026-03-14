@@ -14,7 +14,12 @@ test.describe('Private skill access control', () => {
   test('Publisher can view their own private skill via tank info', {
     tag: ['@private-packages', '@smoke', '@critical']
   }, async ({ When, Then, bddState, e2eContext, secondUser, thirdUser }) => {
-    await When('Alice requests info for "private-access-skill"', null, { bddState, e2eContext, secondUser, thirdUser });
+    await When('Alice requests info for "private-access-skill"', null, {
+      bddState,
+      e2eContext,
+      secondUser,
+      thirdUser
+    });
     await Then('Alice should see the skill metadata', null, { bddState });
   });
 

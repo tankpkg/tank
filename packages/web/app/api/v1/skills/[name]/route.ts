@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
+import { resolveRequestUserId } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { skills, user } from '@/lib/db/schema';
-import { resolveRequestUserId } from '@/lib/auth-helpers';
 
 /**
  * GET /api/v1/skills/[name] — single-query skill metadata with latest version.
