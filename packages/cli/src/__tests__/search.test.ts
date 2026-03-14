@@ -3,6 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 // Mock global fetch
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
@@ -57,7 +59,7 @@ describe('searchCommand', () => {
   }
 
   it('displays results in table format', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(searchResults), { status: 200 }));
 
@@ -73,7 +75,7 @@ describe('searchCommand', () => {
   });
 
   it('shows "No skills found" for empty results', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     mockFetch.mockResolvedValueOnce(
       new Response(JSON.stringify({ results: [], page: 1, limit: 20, total: 0 }), { status: 200 })
@@ -87,7 +89,7 @@ describe('searchCommand', () => {
   });
 
   it('calls correct API URL with encoded query', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     mockFetch.mockResolvedValueOnce(
       new Response(JSON.stringify({ results: [], page: 1, limit: 20, total: 0 }), { status: 200 })
@@ -101,7 +103,7 @@ describe('searchCommand', () => {
   });
 
   it('shows result count', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(searchResults), { status: 200 }));
 
@@ -112,7 +114,7 @@ describe('searchCommand', () => {
   });
 
   it('handles network errors', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     mockFetch.mockRejectedValueOnce(new Error('Network timeout'));
 
@@ -120,7 +122,7 @@ describe('searchCommand', () => {
   });
 
   it('truncates long descriptions', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     const longDescResults = {
       results: [
@@ -149,7 +151,7 @@ describe('searchCommand', () => {
   });
 
   it('handles non-200 API responses', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 }));
 
@@ -157,7 +159,7 @@ describe('searchCommand', () => {
   });
 
   it('color-codes scores: green for high, yellow for medium, red for low', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     const mixedScoreResults = {
       results: [
@@ -203,7 +205,7 @@ describe('searchCommand', () => {
   });
 
   it('includes auth token when present in config', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     fs.writeFileSync(
       path.join(configDir, 'config.json'),
@@ -222,7 +224,7 @@ describe('searchCommand', () => {
   });
 
   it('non-200 with non-JSON body uses statusText fallback', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     mockFetch.mockResolvedValueOnce(new Response('Server Error', { status: 500, statusText: 'Internal Server Error' }));
 
@@ -230,7 +232,7 @@ describe('searchCommand', () => {
   });
 
   it('single result uses singular "skill" in count', async () => {
-    const { searchCommand } = await import('../commands/search.js');
+    const { searchCommand } = await import('~/commands/search.js');
 
     const singleResult = {
       results: [

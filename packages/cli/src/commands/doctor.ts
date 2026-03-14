@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import chalk from 'chalk';
-import { detectInstalledAgents, getGlobalSkillsDir, getSupportedAgents } from '../lib/agents.js';
-import { type AgentLinkStatus, getSkillLinkStatus } from '../lib/linker.js';
-import { readGlobalLinks } from '../lib/links.js';
-import { resolveLockfilePath, resolveManifestPath } from '../lib/manifest.js';
+
+import { detectInstalledAgents, getGlobalSkillsDir, getSupportedAgents } from '~/lib/agents.js';
+import { type AgentLinkStatus, getSkillLinkStatus } from '~/lib/linker.js';
+import { readGlobalLinks } from '~/lib/links.js';
+import { resolveLockfilePath, resolveManifestPath } from '~/lib/manifest.js';
 
 export interface DoctorOptions {
   directory?: string;

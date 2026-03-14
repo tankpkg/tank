@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { logoutCommand } from '../commands/logout.js';
-import { getConfig, setConfig } from '../lib/config.js';
+
+import { logoutCommand } from '~/commands/logout.js';
+import { getConfig, setConfig } from '~/lib/config.js';
 
 describe('logout', () => {
   let tmpDir: string;

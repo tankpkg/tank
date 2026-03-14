@@ -1,6 +1,7 @@
 'use server';
 
 import { headers } from 'next/headers';
+
 import { auth } from '@/lib/auth';
 
 const SLUG_REGEX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;

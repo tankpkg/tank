@@ -4,6 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useState } from 'react';
 import { useSession } from '@/lib/auth-client';
 
+import { useSession } from '@/lib/auth-client';
+
 function CliLoginContent() {
   const searchParams = useSearchParams();
   const sessionCode = searchParams.get('session');
@@ -106,7 +108,7 @@ function CliLoginContent() {
         <div style={styles.card}>
           <h1 style={styles.heading}>Authorization Failed</h1>
           <p style={styles.errorText}>{errorMessage}</p>
-          <button style={styles.primaryButton} onClick={() => setStatus('idle')}>
+          <button type="button" style={styles.primaryButton} onClick={() => setStatus('idle')}>
             Try Again
           </button>
         </div>
@@ -128,10 +130,14 @@ function CliLoginContent() {
         </div>
         <p style={styles.text}>This will create an API key that allows the CLI to act on your behalf.</p>
         <div style={styles.buttonRow}>
-          <button style={styles.primaryButton} onClick={handleAuthorize} disabled={status === 'authorizing'}>
+          <button
+            type="button"
+            style={styles.primaryButton}
+            onClick={handleAuthorize}
+            disabled={status === 'authorizing'}>
             {status === 'authorizing' ? 'Authorizing...' : 'Authorize'}
           </button>
-          <button style={styles.secondaryButton} onClick={handleDeny} disabled={status === 'authorizing'}>
+          <button type="button" style={styles.secondaryButton} onClick={handleDeny} disabled={status === 'authorizing'}>
             Deny
           </button>
         </div>

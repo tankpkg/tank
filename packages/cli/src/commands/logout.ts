@@ -1,5 +1,5 @@
-import { getConfig, setConfig } from '../lib/config.js';
-import { logger } from '../lib/logger.js';
+import { getConfig, setConfig } from '~/lib/config.js';
+import { logger } from '~/lib/logger.js';
 
 export interface LogoutOptions {
   configDir?: string;

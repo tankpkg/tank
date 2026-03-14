@@ -2,20 +2,22 @@
   "name": "tank",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "apps/*",
+    "packages/*",
+    ".bdd"
   ],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "test": "turbo run test",
-    "test:e2e": "vitest run --config e2e/vitest.config.ts",
-    "test:bdd": "bunx bddgen test -c e2e/bdd/playwright.config.ts && bunx playwright test -c e2e/bdd/playwright.config.ts",
-    "test:perf": "bun --filter=@internal/web run perf:test",
-    "lint": "turbo run lint",
+    "test:e2e": "vitest run --config .e2e/vitest.config.ts",
+    "test:bdd": "bunx bddgen test -c .e2e/bdd/playwright.config.ts && bunx playwright test -c .e2e/bdd/playwright.config.ts",
+    "test:perf": "bun run --filter @tankpkg/web perf:test",
+    "lint": "biome check --write .",
+    "lint:check": "biome check .",
     "format": "biome format --write . && prettier --write '**/*.md' '**/*.feature' '**/*.yaml' '**/*.yml'",
-    "check": "biome check .",
-    "lint:fix": "biome check --fix .",
-    "typecheck": "tsc -b --noEmit"
+    "format:check": "biome format . && prettier --check '**/*.md' '**/*.feature' '**/*.yaml' '**/*.yml'",
+    "typecheck": "tsc -b tsconfig.solution.json --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
@@ -26,14 +28,13 @@
     "postgres": "^3.4.8",
     "prettier": "^3.8.1",
     "prettier-plugin-gherkin": "^3.1.3",
-    "tsdown": "^0.21.0",
-    "turbo": "^2",
-    "typescript": "^5",
-    "vitest": "^4"
+    "tsdown": "^0.21.2",
+    "turbo": "^2.8.16",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   },
   "packageManager": "bun@1.3.10",
   "overrides": {
-    "ajv": ">=8.18.0",
     "hono": ">=4.12.2",
     "minimatch": ">=10.2.1",
     "esbuild": ">=0.25.0",

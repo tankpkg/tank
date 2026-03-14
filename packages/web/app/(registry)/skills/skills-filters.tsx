@@ -2,6 +2,7 @@
 
 import { Clock, FileText, SlidersHorizontal, TrendingUp, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
 import type { FreshnessBucket, PopularityBucket, ScoreBucket, VisibilityFilter } from '@/lib/data/skills';
 import { cn } from '@/lib/utils';

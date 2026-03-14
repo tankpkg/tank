@@ -1,0 +1,62 @@
+---
+import { buttonVariants } from '~/components/ui';
+import { cn } from '~/lib/utils';
+
+interface Props {
+  starCount: number | null;
+}
+
+const { starCount } = Astro.props;
+---
+
+<section class="relative overflow-hidden">
+  <div class="tank-divider"></div>
+  <div class="container mx-auto px-4 py-16 md:py-24">
+    <div class="max-w-2xl mx-auto text-center relative">
+      <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">
+        Ready to <span class="text-emerald-400">secure</span> your agent skills?
+      </h2>
+      <p class="text-muted-foreground mb-8 text-lg">
+        Tank is open source and free. Start publishing and installing skills with confidence.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a
+          href="/skills"
+          class={cn(buttonVariants({ size: 'lg' }), 'bg-emerald-600 hover:bg-emerald-500 text-white group')}>
+          Browse Skills
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path>
+          </svg>
+        </a>
+        <a
+          href="https://github.com/tankpkg/tank"
+          target="_blank"
+          rel="noopener noreferrer"
+          class={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="mr-2 h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+            ></polygon>
+          </svg>
+          Star on GitHub{starCount !== null ? ` (${starCount})` : ''}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

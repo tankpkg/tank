@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+
 import { getBrandConfig } from '@/lib/branding';
 
 export const dynamic = 'force-dynamic';

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { getSymlinkName } from './agents.js';
 
 export interface PrepareOptions {

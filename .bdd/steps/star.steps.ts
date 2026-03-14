@@ -11,10 +11,10 @@
  * Auth note: star POST/DELETE require a session cookie (browser auth), not an API key.
  * We obtain a session by POSTing to /api/auth/sign-in/email with a seeded user account.
  */
-import { randomUUID } from "node:crypto";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import postgres from "postgres";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from 'node:crypto';
+
+import postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const hasDatabase = !!process.env.DATABASE_URL;
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
@@ -37,25 +37,25 @@ interface StarWorld {
 }
 
 const world: StarWorld = {
-  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
   sql: null,
-  runId: "",
-  testOrg: "",
-  skillName: "",
-  skillId: "",
-  userId: "",
-  userEmail: "",
-  userPassword: "BddStarPass1!",
-  sessionCookie: "",
+  runId: '',
+  testOrg: '',
+  skillName: '',
+  skillId: '',
+  userId: '',
+  userEmail: '',
+  userPassword: 'BddStarPass1!',
+  sessionCookie: '',
   lastStatus: 0,
-  lastBody: {},
+  lastBody: {}
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function getJson(path: string, cookie?: string): Promise<{ status: number; body: Record<string, unknown> }> {
   const hdrs: Record<string, string> = {};
-  if (cookie) hdrs["Cookie"] = cookie;
+  if (cookie) hdrs['Cookie'] = cookie;
   const res = await fetch(`${world.registry}${path}`, { headers: hdrs });
   let body: Record<string, unknown>;
   try {
@@ -67,11 +67,11 @@ async function getJson(path: string, cookie?: string): Promise<{ status: number;
 }
 
 async function postJson(path: string, cookie?: string): Promise<{ status: number; body: Record<string, unknown> }> {
-  const hdrs: Record<string, string> = { "Content-Type": "application/json" };
-  if (cookie) hdrs["Cookie"] = cookie;
+  const hdrs: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (cookie) hdrs['Cookie'] = cookie;
   const res = await fetch(`${world.registry}${path}`, {
-    method: "POST",
-    headers: hdrs,
+    method: 'POST',
+    headers: hdrs
   });
   let body: Record<string, unknown>;
   try {
@@ -84,10 +84,10 @@ async function postJson(path: string, cookie?: string): Promise<{ status: number
 
 async function deleteJson(path: string, cookie?: string): Promise<{ status: number; body: Record<string, unknown> }> {
   const hdrs: Record<string, string> = {};
-  if (cookie) hdrs["Cookie"] = cookie;
+  if (cookie) hdrs['Cookie'] = cookie;
   const res = await fetch(`${world.registry}${path}`, {
-    method: "DELETE",
-    headers: hdrs,
+    method: 'DELETE',
+    headers: hdrs
   });
   let body: Record<string, unknown>;
   try {
@@ -104,17 +104,17 @@ async function seedUser(sql: postgres.Sql): Promise<void> {
 
   await sql`
     INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
-    VALUES (${world.userId}, ${"Star BDD User"}, ${world.userEmail}, true, ${now}, ${now})
+    VALUES (${world.userId}, ${'Star BDD User'}, ${world.userEmail}, true, ${now}, ${now})
     ON CONFLICT (id) DO NOTHING
   `;
 
-  const passwordHash = createHash("sha256").update(world.userPassword).digest("hex");
+  const passwordHash = createHash('sha256').update(world.userPassword).digest('hex');
 
   await sql`
     INSERT INTO "account" (id, user_id, account_id, provider_id, password, created_at, updated_at)
     VALUES (
       ${`star-acc-${world.runId}`}, ${world.userId},
-      ${world.userEmail}, ${"credential"},
+      ${world.userEmail}, ${'credential'},
       ${passwordHash},
       ${now}, ${now}
     )
@@ -124,18 +124,18 @@ async function seedUser(sql: postgres.Sql): Promise<void> {
 
 async function signIn(): Promise<void> {
   const res = await fetch(`${world.registry}/api/auth/sign-in/email`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       email: world.userEmail,
-      password: world.userPassword,
+      password: world.userPassword
     }),
-    redirect: "manual",
+    redirect: 'manual'
   });
 
-  const setCookie = res.headers.get("set-cookie");
+  const setCookie = res.headers.get('set-cookie');
   if (setCookie) {
-    world.sessionCookie = setCookie.split(";")[0];
+    world.sessionCookie = setCookie.split(';')[0];
   }
 }
 
@@ -145,21 +145,21 @@ async function seedSkill(sql: postgres.Sql): Promise<void> {
 
   await sql`
     INSERT INTO "organization" (id, name, slug, created_at)
-    VALUES (${orgId}, ${"Star BDD Org"}, ${world.testOrg}, ${now})
+    VALUES (${orgId}, ${'Star BDD Org'}, ${world.testOrg}, ${now})
     ON CONFLICT (slug) DO NOTHING
   `;
 
   await sql`
     INSERT INTO "member" (id, organization_id, user_id, role, created_at)
-    VALUES (${`star-mem-${world.runId}`}, ${orgId}, ${world.userId}, ${"owner"}, ${now})
+    VALUES (${`star-mem-${world.runId}`}, ${orgId}, ${world.userId}, ${'owner'}, ${now})
     ON CONFLICT DO NOTHING
   `;
 
   await sql`
     INSERT INTO skills (id, name, description, publisher_id, org_id, status, visibility, created_at, updated_at)
     VALUES (
-      ${world.skillId}, ${world.skillName}, ${"Star BDD test skill"},
-      ${world.userId}, ${orgId}, ${"active"}, ${"public"}, ${now}, ${now}
+      ${world.skillId}, ${world.skillName}, ${'Star BDD test skill'},
+      ${world.userId}, ${orgId}, ${'active'}, ${'public'}, ${now}, ${now}
     )
     ON CONFLICT (name) DO UPDATE SET updated_at = ${now}
   `;
@@ -170,13 +170,13 @@ async function seedSkill(sql: postgres.Sql): Promise<void> {
       manifest, permissions, audit_status, published_by, created_at
     )
     VALUES (
-      ${randomUUID()}, ${world.skillId}, ${"1.0.0"},
-      ${"sha512-bdd-star-test"},
-      ${"skills/star-bdd/test-1.0.0.tgz"},
+      ${randomUUID()}, ${world.skillId}, ${'1.0.0'},
+      ${'sha512-bdd-star-test'},
+      ${'skills/star-bdd/test-1.0.0.tgz'},
       ${512}, ${3},
-      ${JSON.stringify({ name: world.skillName, version: "1.0.0", description: "BDD star test" })},
+      ${JSON.stringify({ name: world.skillName, version: '1.0.0', description: 'BDD star test' })},
       ${JSON.stringify({})},
-      ${"completed"},
+      ${'completed'},
       ${world.userId},
       ${now}
     )
@@ -195,21 +195,21 @@ async function cleanupStarData(sql: postgres.Sql): Promise<void> {
   await sql`DELETE FROM skill_stars WHERE skill_id = ${world.skillId}`;
   await sql`DELETE FROM skill_versions WHERE skill_id = ${world.skillId}`;
   await sql`DELETE FROM skills WHERE id = ${world.skillId}`;
-  await sql`DELETE FROM "member" WHERE id = ${"star-mem-" + world.runId}`;
+  await sql`DELETE FROM "member" WHERE id = ${`star-mem-${world.runId}`}`;
   await sql`DELETE FROM "organization" WHERE slug = ${world.testOrg}`;
-  await sql`DELETE FROM "account" WHERE id = ${"star-acc-" + world.runId}`;
+  await sql`DELETE FROM "account" WHERE id = ${`star-acc-${world.runId}`}`;
   await sql`DELETE FROM "user" WHERE id = ${world.userId}`;
 }
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: Skill starring and unstarring", () => {
+describe('Feature: Skill starring and unstarring', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
     const connectionString = process.env.DATABASE_URL!;
 
     world.sql = postgres(connectionString);
-    world.runId = randomUUID().replace(/-/g, "").slice(0, 10);
+    world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.testOrg = `star-bdd-${world.runId}`;
     world.skillName = `@${world.testOrg}/star-test-skill`;
     world.skillId = randomUUID();
@@ -229,39 +229,39 @@ describe("Feature: Skill starring and unstarring", () => {
 
   // ── Read star count (C1) ──────────────────────────────────────────────
 
-  describe("Scenario: GET /star returns count and isStarred for unauthenticated user (E1)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("returns 200", async () => {
+  describe('Scenario: GET /star returns count and isStarred for unauthenticated user (E1)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('returns 200', async () => {
       const { status, body } = await getJson(starPath(world.skillName));
       world.lastStatus = status;
       world.lastBody = body;
       expect(status).toBe(200);
     });
 
-    it.skipIf(!hasDatabase || !hasRegistry)("response contains starCount", () => {
-      expect(world.lastBody).toHaveProperty("starCount");
+    it.skipIf(!hasDatabase || !hasRegistry)('response contains starCount', () => {
+      expect(world.lastBody).toHaveProperty('starCount');
     });
 
-    it.skipIf(!hasDatabase || !hasRegistry)("isStarred is false for unauthenticated user", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('isStarred is false for unauthenticated user', () => {
       expect(world.lastBody.isStarred).toBe(false);
     });
   });
 
   // ── Star a skill (C2) ─────────────────────────────────────────────────
 
-  describe("Scenario: POST /star authenticated adds a star (E2)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("returns 200", async () => {
+  describe('Scenario: POST /star authenticated adds a star (E2)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('returns 200', async () => {
       const { status, body } = await postJson(starPath(world.skillName), world.sessionCookie);
       world.lastStatus = status;
       world.lastBody = body;
       expect([200, 503]).toContain(status);
     });
 
-    it.skipIf(!hasDatabase || !hasRegistry)("starCount is 1", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('starCount is 1', () => {
       if (world.lastStatus === 503) return;
       expect(world.lastBody.starCount).toBe(1);
     });
 
-    it.skipIf(!hasDatabase || !hasRegistry)("isStarred is true", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('isStarred is true', () => {
       if (world.lastStatus === 503) return;
       expect(world.lastBody.isStarred).toBe(true);
     });
@@ -269,26 +269,26 @@ describe("Feature: Skill starring and unstarring", () => {
 
   // ── Idempotent star (C3) ──────────────────────────────────────────────
 
-  describe("Scenario: Starring an already-starred skill is idempotent (E3)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("returns Already starred message", async () => {
+  describe('Scenario: Starring an already-starred skill is idempotent (E3)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('returns Already starred message', async () => {
       const { body } = await postJson(starPath(world.skillName), world.sessionCookie);
       world.lastBody = body;
-      const message = String(body.message ?? body.error ?? body.code ?? "").toLowerCase();
+      const message = String(body.message ?? body.error ?? body.code ?? '').toLowerCase();
       expect(message).toMatch(/already starred|stars_unavailable/i);
     });
   });
 
   // ── Unstar (C4) ───────────────────────────────────────────────────────
 
-  describe("Scenario: DELETE /star removes the star (E4)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("returns 200", async () => {
+  describe('Scenario: DELETE /star removes the star (E4)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('returns 200', async () => {
       const { status, body } = await deleteJson(starPath(world.skillName), world.sessionCookie);
       world.lastStatus = status;
       world.lastBody = body;
       expect([200, 503]).toContain(status);
     });
 
-    it.skipIf(!hasDatabase || !hasRegistry)("isStarred is false after unstar", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('isStarred is false after unstar', () => {
       if (world.lastStatus === 503) return;
       expect(world.lastBody.isStarred).toBe(false);
     });
@@ -296,8 +296,8 @@ describe("Feature: Skill starring and unstarring", () => {
 
   // ── Auth required for write (C2) ─────────────────────────────────────
 
-  describe("Scenario: POST /star without auth returns 401 (E5)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("returns 401", async () => {
+  describe('Scenario: POST /star without auth returns 401 (E5)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('returns 401', async () => {
       const { status } = await postJson(starPath(world.skillName));
       expect(status).toBe(401);
     });
@@ -305,8 +305,8 @@ describe("Feature: Skill starring and unstarring", () => {
 
   // ── 404 for nonexistent skill (C5) ────────────────────────────────────
 
-  describe("Scenario: GET /star for nonexistent skill returns 404 (E6)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("returns 404", async () => {
+  describe('Scenario: GET /star for nonexistent skill returns 404 (E6)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('returns 404', async () => {
       const { status } = await getJson(starPath(`@${world.testOrg}/nonexistent-star-skill`));
       expect(status).toBe(404);
     });

@@ -1,15 +1,14 @@
 'use client';
 
-import { Download, LayoutGrid, List, Lock, Star } from 'lucide-react';
+import { Download, LayoutGrid, List, Lock, Shield, Star } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { TrustBadge } from '@/components/security/TrustBadge';
+
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { SkillSearchResult, SortOption } from '@/lib/data/skills';
-import { computeTrustLevel } from '@/lib/trust-level';
 import { cn } from '@/lib/utils';
 
 type ViewMode = 'grid' | 'list';
@@ -26,7 +25,7 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'updated', label: 'Recently Updated' },
   { value: 'downloads', label: 'Most Downloads' },
   { value: 'stars', label: 'Most Stars' },
-  { value: 'security', label: 'Most Secure' },
+  { value: 'score', label: 'Highest Score' },
   { value: 'name', label: 'Name A–Z' }
 ];
 
@@ -144,14 +143,6 @@ export function SkillsResults({ results, totalCount, currentSort, currentQuery }
 }
 
 function SkillCard({ skill }: { skill: SkillSearchResult }) {
-  const trustLevel = computeTrustLevel(
-    skill.verdict,
-    skill.criticalCount,
-    skill.highCount,
-    skill.mediumCount,
-    skill.lowCount
-  );
-
   return (
     <Link href={`/skills/${encodeURIComponent(skill.name)}`}>
       <Card className="tank-card h-full cursor-pointer">
@@ -169,16 +160,7 @@ function SkillCard({ skill }: { skill: SkillSearchResult }) {
                 v{skill.latestVersion}
               </Badge>
             )}
-            <TrustBadge
-              trustLevel={trustLevel}
-              findings={{
-                critical: skill.criticalCount,
-                high: skill.highCount,
-                medium: skill.mediumCount,
-                low: skill.lowCount
-              }}
-              size="sm"
-            />
+            {skill.auditScore !== null && <ScoreBadge score={skill.auditScore} />}
             <span className="flex items-center gap-1 ml-auto">
               <Download className="size-3" />
               {skill.downloads.toLocaleString()}
@@ -195,14 +177,6 @@ function SkillCard({ skill }: { skill: SkillSearchResult }) {
 }
 
 function SkillListItem({ skill }: { skill: SkillSearchResult }) {
-  const trustLevel = computeTrustLevel(
-    skill.verdict,
-    skill.criticalCount,
-    skill.highCount,
-    skill.mediumCount,
-    skill.lowCount
-  );
-
   return (
     <Link
       href={`/skills/${encodeURIComponent(skill.name)}`}
@@ -221,16 +195,12 @@ function SkillListItem({ skill }: { skill: SkillSearchResult }) {
       </div>
 
       <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
-        <TrustBadge
-          trustLevel={trustLevel}
-          findings={{
-            critical: skill.criticalCount,
-            high: skill.highCount,
-            medium: skill.mediumCount,
-            low: skill.lowCount
-          }}
-          size="sm"
-        />
+        {skill.auditScore !== null && (
+          <span className="hidden sm:flex items-center gap-1">
+            <Shield className="size-3" />
+            <ScoreText score={skill.auditScore} />
+          </span>
+        )}
         <span className="hidden sm:flex items-center gap-1">
           <Download className="size-3" />
           {skill.downloads.toLocaleString()}
@@ -241,6 +211,29 @@ function SkillListItem({ skill }: { skill: SkillSearchResult }) {
         </span>
       </div>
     </Link>
+  );
+}
+
+function ScoreBadge({ score }: { score: number }) {
+  if (score >= 7) {
+    return <Badge className="text-[10px] px-1.5 py-0 tank-badge-success border">Score: {score}</Badge>;
+  }
+  if (score >= 4) {
+    return <Badge className="text-[10px] px-1.5 py-0 tank-badge-warning border">Score: {score}</Badge>;
+  }
+  return (
+    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+      Score: {score}
+    </Badge>
+  );
+}
+
+function ScoreText({ score }: { score: number }) {
+  const color = score >= 7 ? 'var(--tank-matrix-green)' : score >= 4 ? 'var(--tank-amber)' : '#ef4444';
+  return (
+    <span style={{ color }} className="font-medium tabular-nums">
+      {score}
+    </span>
   );
 }
 

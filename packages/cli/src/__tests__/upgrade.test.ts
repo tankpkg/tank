@@ -2,8 +2,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { upgradeCommand } from '../commands/upgrade.js';
+
+import { upgradeCommand } from '~/commands/upgrade.js';
 
 vi.mock('chalk', () => ({
   default: {
@@ -58,7 +60,7 @@ describe('upgradeCommand', () => {
   });
 
   it('shows already up-to-date when versions match', async () => {
-    const { VERSION } = await import('../version.js');
+    const { VERSION } = await import('~/version.js');
     const mockFetch = vi.fn();
     globalThis.fetch = mockFetch as unknown as typeof fetch;
 
@@ -180,7 +182,7 @@ describe('upgradeCommand', () => {
       fs.writeFileSync(fakeBinPath, 'old-binary');
       process.argv[1] = fakeBinPath;
 
-      const { VERSION } = await import('../version.js');
+      const { VERSION } = await import('~/version.js');
       const mockFetch = vi.fn();
       globalThis.fetch = mockFetch as unknown as typeof fetch;
 

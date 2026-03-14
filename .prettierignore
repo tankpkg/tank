@@ -2,6 +2,9 @@ node_modules
 dist
 build
 .next
+.astro
+.output
+.tanstack
 .turbo
 coverage
 bun.lock

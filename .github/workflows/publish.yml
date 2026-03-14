@@ -3,7 +3,7 @@ name: Publish
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
   contents: read
@@ -26,10 +26,10 @@ jobs:
       matrix:
         include:
           - image: tank-web
-            dockerfile: packages/web/Dockerfile
+            dockerfile: apps/web/Dockerfile
             context: .
           - image: tank-scanner
-            dockerfile: packages/scanner/Dockerfile
+            dockerfile: apps/python-api/Dockerfile
             context: .
 
     steps:

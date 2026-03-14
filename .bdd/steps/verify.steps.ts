@@ -1,13 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { describe, expect, it } from 'vitest';
+
 import { McpTestClient } from '../interactions/mcp-client.js';
-import { registerMcpHooks, type McpBddWorld } from '../support/hooks.js';
+import { type McpBddWorld, registerMcpHooks } from '../support/hooks.js';
 
 const world: McpBddWorld = {
   client: new McpTestClient(),
   home: '',
-  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003'
 };
 
 registerMcpHooks(world);
@@ -20,10 +22,15 @@ function ensureProjectDir(): void {
   fs.mkdirSync(projectDir(), { recursive: true });
 }
 
-function writeLockfile(skills: Record<string, { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }>): void {
+function writeLockfile(
+  skills: Record<
+    string,
+    { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null }
+  >
+): void {
   ensureProjectDir();
   const lock = { lockfileVersion: 1, skills };
-  fs.writeFileSync(path.join(projectDir(), 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
+  fs.writeFileSync(path.join(projectDir(), 'tank.lock'), `${JSON.stringify(lock, null, 2)}\n`);
 }
 
 function installSkillFiles(skillName: string): void {
@@ -48,12 +55,17 @@ function getSkillDir(skillName: string): string {
   return path.join(projectDir(), '.tank', 'skills', skillName);
 }
 
-function makeLockEntry(version: string): { resolved: string; integrity: string; permissions: Record<string, unknown>; audit_score: number | null } {
+function makeLockEntry(version: string): {
+  resolved: string;
+  integrity: string;
+  permissions: Record<string, unknown>;
+  audit_score: number | null;
+} {
   return {
     resolved: `https://registry.tankpkg.dev/tarballs/skill-${version}.tgz`,
     integrity: `sha512-${Buffer.from(version).toString('base64')}`,
     permissions: { network: { outbound: [] }, filesystem: { read: [], write: [] }, subprocess: false },
-    audit_score: 8.0,
+    audit_score: 8.0
   };
 }
 
@@ -79,7 +91,7 @@ describe('Feature: Skill integrity verification via MCP tool', () => {
     it('Given/When/Then for all skills passing verification', async () => {
       writeLockfile({
         '@acme/web-search@2.1.0': makeLockEntry('2.1.0'),
-        '@acme/code-runner@1.0.0': makeLockEntry('1.0.0'),
+        '@acme/code-runner@1.0.0': makeLockEntry('1.0.0')
       });
       installSkillFiles('@acme/web-search');
       installSkillFiles('@acme/code-runner');
@@ -97,7 +109,7 @@ describe('Feature: Skill integrity verification via MCP tool', () => {
     it('Given/When/Then for one tampered skill', async () => {
       writeLockfile({
         '@acme/web-search@2.1.0': makeLockEntry('2.1.0'),
-        '@acme/code-runner@1.0.0': makeLockEntry('1.0.0'),
+        '@acme/code-runner@1.0.0': makeLockEntry('1.0.0')
       });
       installEmptySkillDir('@acme/web-search');
       installSkillFiles('@acme/code-runner');
@@ -114,7 +126,7 @@ describe('Feature: Skill integrity verification via MCP tool', () => {
   describe('Scenario: Agent verifies skills and one is missing from disk', () => {
     it('Given/When/Then for missing skill directory', async () => {
       writeLockfile({
-        '@acme/web-search@2.1.0': makeLockEntry('2.1.0'),
+        '@acme/web-search@2.1.0': makeLockEntry('2.1.0')
       });
 
       await whenAgentCallsTool('verify-skills', { directory: projectDir() });
@@ -154,7 +166,7 @@ describe('Feature: Skill integrity verification via MCP tool', () => {
       writeLockfile({
         '@acme/web-search@2.1.0': makeLockEntry('2.1.0'),
         '@acme/code-runner@1.0.0': makeLockEntry('1.0.0'),
-        '@acme/file-manager@3.0.0': makeLockEntry('3.0.0'),
+        '@acme/file-manager@3.0.0': makeLockEntry('3.0.0')
       });
       installEmptySkillDir('@acme/web-search');
       installEmptySkillDir('@acme/code-runner');
@@ -174,7 +186,7 @@ describe('Feature: Skill integrity verification via MCP tool', () => {
     it.each([
       { skill: '@acme/web-search' },
       { skill: '@my-org/code-runner' },
-      { skill: '@tools/file-manager' },
+      { skill: '@tools/file-manager' }
     ])('Given/When/Then for verifying "$skill"', async ({ skill }) => {
       const lockKey = `${skill}@1.0.0`;
       writeLockfile({ [lockKey]: makeLockEntry('1.0.0') });

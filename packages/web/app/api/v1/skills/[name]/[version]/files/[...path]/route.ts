@@ -1,11 +1,29 @@
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME } from '@internals/schemas';
 import { and, eq } from 'drizzle-orm';
 import { unpackTar } from 'modern-tar';
 import { NextResponse } from 'next/server';
 import pako from 'pako';
+
 import { canReadSkill, resolveRequestUserId } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { skills, skillVersions } from '@/lib/db/schema';
 import { getStorageProvider } from '@/lib/storage/provider';
+
+function normalizeEntryName(name: string): string {
+  return name.replace(/^package\//, '').replace(/^\.\//, '');
+}
+
+function getCandidatePaths(filePath: string): string[] {
+  if (filePath === LEGACY_MANIFEST_FILENAME) {
+    return [LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME];
+  }
+
+  if (filePath === MANIFEST_FILENAME) {
+    return [MANIFEST_FILENAME, LEGACY_MANIFEST_FILENAME];
+  }
+
+  return [filePath];
+}
 
 export async function GET(
   request: Request,
@@ -49,7 +67,7 @@ export async function GET(
 
     let signedDownloadUrl: string;
     try {
-      const downloadData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
+      const downloadData = await getStorageProvider().createSignedUrl(tarballPath, 3600, 'internal');
       signedDownloadUrl = downloadData.signedUrl;
     } catch (error) {
       console.error('[FileContent] Signed URL error:', error);
@@ -68,15 +86,16 @@ export async function GET(
     const decompressed = pako.ungzip(new Uint8Array(compressedBuffer));
 
     // Extract using modern-tar
+    const candidatePaths = new Set(getCandidatePaths(filePath));
     const entries = await unpackTar(decompressed.buffer, {
-      filter: (header) => header.name.replace(/^package\//, '') === filePath
+      filter: (header) => candidatePaths.has(normalizeEntryName(header.name))
     });
 
     if (entries.length === 0) {
       return NextResponse.json({ error: 'File not found in package' }, { status: 404 });
     }
 
-    const entry = entries[0];
+    const entry = entries.find((candidate) => normalizeEntryName(candidate.header.name) === filePath) ?? entries[0];
     const fileContent = new TextDecoder().decode(entry.data);
 
     const extension = filePath.split('.').pop()?.toLowerCase();

@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+
 import { verifyCliAuth } from '@/lib/auth-helpers';
 import { db } from '@/lib/db';
 import { user } from '@/lib/db/auth-schema';

@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import postgres from 'postgres';
 
 export interface E2EContext {
@@ -19,12 +20,20 @@ function hashApiKey(plainKey: string): string {
   return hash.toString('base64url');
 }
 
+function createApiKey(seed: string): string {
+  let key = `tank_e2e_${seed}_${randomUUID().replace(/-/g, '')}`;
+  while (key.length < 64) {
+    key += randomUUID().replace(/-/g, '');
+  }
+  return key;
+}
+
 export async function setupE2E(
-  registry = process.env.E2E_REGISTRY_URL || 'http://localhost:3003',
+  registry = process.env.E2E_REGISTRY_URL || 'http://localhost:3003'
 ): Promise<E2EContext> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    throw new Error('DATABASE_URL is required for BDD tests. Set it in .env.local');
+    throw new Error('DATABASE_URL is required for BDD tests. Set it in .env');
   }
 
   const sql = postgres(connectionString);
@@ -34,7 +43,7 @@ export async function setupE2E(
   const orgId = `e2e-org-${runId}`;
   const memberId = `e2e-member-${runId}`;
   const apiKeyId = `e2e-apikey-${runId}`;
-  const plainKey = `tank_e2e_${runId}_${randomUUID().replace(/-/g, '')}`;
+  const plainKey = createApiKey(runId);
   const hashedKey = hashApiKey(plainKey);
   const now = new Date();
 
@@ -66,16 +75,16 @@ export async function setupE2E(
   fs.mkdirSync(tankDir, { recursive: true, mode: 0o700 });
   fs.writeFileSync(
     path.join(tankDir, 'config.json'),
-    JSON.stringify(
+    `${JSON.stringify(
       {
         registry,
         token: plainKey,
-        user: { name: 'E2E Test User', email: `e2e-${runId}@tank.test` },
+        user: { name: 'E2E Test User', email: `e2e-${runId}@tank.test` }
       },
       null,
-      2,
-    ) + '\n',
-    { mode: 0o600 },
+      2
+    )}\n`,
+    { mode: 0o600 }
   );
 
   return {
@@ -85,7 +94,7 @@ export async function setupE2E(
     orgSlug,
     home,
     registry,
-    sql,
+    sql
   };
 }
 
@@ -107,11 +116,10 @@ export async function cleanupE2E(ctx: E2EContext): Promise<void> {
 
   try {
     const skillIds = sql`SELECT id FROM skills WHERE publisher_id = ${userId}`;
-    const versionIds =
-      sql`SELECT sv.id FROM skill_versions sv JOIN skills s ON sv.skill_id = s.id WHERE s.publisher_id = ${userId}`;
+    const versionIds = sql`SELECT sv.id FROM skill_versions sv JOIN skills s ON sv.skill_id = s.id WHERE s.publisher_id = ${userId}`;
 
     await safeDelete(
-      sql`DELETE FROM scan_findings WHERE scan_id IN (SELECT id FROM scan_results WHERE version_id IN (${versionIds}))`,
+      sql`DELETE FROM scan_findings WHERE scan_id IN (SELECT id FROM scan_results WHERE version_id IN (${versionIds}))`
     );
     await safeDelete(sql`DELETE FROM scan_results WHERE version_id IN (${versionIds})`);
     await safeDelete(sql`DELETE FROM skill_stars WHERE skill_id IN (${skillIds})`);
@@ -121,9 +129,9 @@ export async function cleanupE2E(ctx: E2EContext): Promise<void> {
     await sql`DELETE FROM skills WHERE publisher_id = ${userId}`;
 
     await sql`DELETE FROM audit_events WHERE actor_id = ${userId}`;
-    await sql`DELETE FROM "member" WHERE id LIKE ${'e2e-member-' + runId + '%'}`;
+    await sql`DELETE FROM "member" WHERE id LIKE ${`e2e-member-${runId}%`}`;
     await sql`DELETE FROM "organization" WHERE id = ${orgId}`;
-    await sql`DELETE FROM "apikey" WHERE id LIKE ${'e2e-apikey-' + runId + '%'}`;
+    await sql`DELETE FROM "apikey" WHERE id LIKE ${`e2e-apikey-${runId}%`}`;
     await sql`DELETE FROM "session" WHERE user_id = ${userId}`;
     await sql`DELETE FROM "user" WHERE id = ${userId}`;
   } catch (error) {

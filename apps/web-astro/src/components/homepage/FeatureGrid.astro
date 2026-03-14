@@ -1,0 +1,59 @@
+---
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui';
+import { featureIcons, features } from '~/consts';
+---
+
+<section class="container mx-auto px-4 pb-16 md:pb-24">
+  <div class="text-center mb-12">
+    <div
+      class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="w-6 h-6 text-emerald-400"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
+        <path
+          d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+        ></path>
+      </svg>
+    </div>
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-3">
+      Security at <span class="text-emerald-400">every layer</span>
+    </h2>
+    <p class="text-muted-foreground max-w-xl mx-auto">
+      From publish to install — every skill is scanned, scored, and verified.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+    {
+      features.map((feature) => (
+        <Card className="tank-card bg-card/50 backdrop-blur-sm hover:bg-card/80 group">
+          <CardHeader>
+            <div class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 mb-3 group-hover:bg-emerald-500/20 transition-colors">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-emerald-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <Fragment set:html={featureIcons[feature.icon]} />
+              </svg>
+            </div>
+            <CardTitle className="text-base">{feature.title}</CardTitle>
+          </CardHeader>
+          <CardContent className="-mt-2">
+            <p class="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+          </CardContent>
+        </Card>
+      ))
+    }
+  </div>
+</section>

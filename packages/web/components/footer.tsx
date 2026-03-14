@@ -1,4 +1,5 @@
 import Link from 'next/link';
+
 import { getBrandConfig } from '@/lib/branding';
 
 export function Footer() {
@@ -31,7 +32,7 @@ export function Footer() {
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <span>Powered by</span>
           <Link
-            href={process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev'}
+            href="https://tankpkg.dev"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-emerald-400 hover:text-emerald-300 transition-colors">

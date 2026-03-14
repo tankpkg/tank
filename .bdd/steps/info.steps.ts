@@ -7,9 +7,10 @@
  * Runs against REAL PostgreSQL + REAL registry HTTP — zero mocks.
  * Requires DATABASE_URL and E2E_REGISTRY_URL in environment.
  */
-import { randomUUID } from "node:crypto";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import postgres from "postgres";
+import { randomUUID } from 'node:crypto';
+
+import postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const hasDatabase = !!process.env.DATABASE_URL;
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
@@ -31,35 +32,35 @@ interface InfoWorld {
 
 const world: InfoWorld = {
   sql: null as unknown as postgres.Sql,
-  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
-  org: "",
-  runId: "",
-  publisherId: "",
-  publicSkillId: "",
-  privateSkillId: "",
-  versionId: "",
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
+  org: '',
+  runId: '',
+  publisherId: '',
+  publicSkillId: '',
+  privateSkillId: '',
+  versionId: '',
   lastStatus: 0,
-  lastBody: {},
+  lastBody: {}
 };
 
 // ── Setup ──────────────────────────────────────────────────────────────────
 
 async function setupSkills(): Promise<void> {
   const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) throw new Error("DATABASE_URL required — set it in .env.local");
+  if (!dbUrl) throw new Error('DATABASE_URL required — set it in .env.local');
   world.sql = postgres(dbUrl);
 
   world.runId = Date.now().toString();
   world.org = `e2e-bdd-info-${world.runId}`;
 
   const users = await world.sql`SELECT id FROM "user" LIMIT 1`;
-  if (users.length === 0) throw new Error("No users in database — need at least one to seed test skills");
+  if (users.length === 0) throw new Error('No users in database — need at least one to seed test skills');
   world.publisherId = users[0].id as string;
 
   const publicName = `@${world.org}/info-skill`;
   const [publicRow] = await world.sql`
     INSERT INTO skills (id, name, description, publisher_id, visibility, status, created_at, updated_at)
-    VALUES (${randomUUID()}, ${publicName}, ${"Test skill for info BDD"}, ${world.publisherId}, ${"public"}, ${"active"}, NOW(), NOW())
+    VALUES (${randomUUID()}, ${publicName}, ${'Test skill for info BDD'}, ${world.publisherId}, ${'public'}, ${'active'}, NOW(), NOW())
     RETURNING id
   `;
   world.publicSkillId = publicRow.id as string;
@@ -67,11 +68,11 @@ async function setupSkills(): Promise<void> {
   const [versionRow] = await world.sql`
     INSERT INTO skill_versions (id, skill_id, version, integrity, tarball_path, tarball_size, file_count, manifest, permissions, audit_status, published_by, created_at)
     VALUES (
-      ${randomUUID()}, ${world.publicSkillId}, ${"1.0.0"},
-      ${"sha512-bdd-info-test"}, ${"skills/test/info-1.0.0.tgz"}, ${1024}, ${3},
-      ${JSON.stringify({ name: publicName, version: "1.0.0", description: "Test skill for info BDD" })},
-      ${JSON.stringify({ network: { outbound: ["api.test.com"] } })},
-      ${"pending"}, ${world.publisherId}, NOW()
+      ${randomUUID()}, ${world.publicSkillId}, ${'1.0.0'},
+      ${'sha512-bdd-info-test'}, ${'skills/test/info-1.0.0.tgz'}, ${1024}, ${3},
+      ${JSON.stringify({ name: publicName, version: '1.0.0', description: 'Test skill for info BDD' })},
+      ${JSON.stringify({ network: { outbound: ['api.test.com'] } })},
+      ${'pending'}, ${world.publisherId}, NOW()
     )
     RETURNING id
   `;
@@ -82,7 +83,7 @@ async function setupSkills(): Promise<void> {
   const privateName = `@${world.org}/private-info-skill`;
   const [privateRow] = await world.sql`
     INSERT INTO skills (id, name, description, publisher_id, visibility, status, created_at, updated_at)
-    VALUES (${randomUUID()}, ${privateName}, ${"Private test skill"}, ${world.publisherId}, ${"private"}, ${"active"}, NOW(), NOW())
+    VALUES (${randomUUID()}, ${privateName}, ${'Private test skill'}, ${world.publisherId}, ${'private'}, ${'active'}, NOW(), NOW())
     RETURNING id
   `;
   world.privateSkillId = privateRow.id as string;
@@ -90,11 +91,11 @@ async function setupSkills(): Promise<void> {
   const [privVersionRow] = await world.sql`
     INSERT INTO skill_versions (id, skill_id, version, integrity, tarball_path, tarball_size, file_count, manifest, permissions, audit_status, published_by, created_at)
     VALUES (
-      ${randomUUID()}, ${world.privateSkillId}, ${"1.0.0"},
-      ${"sha512-bdd-private-test"}, ${"skills/test/private-1.0.0.tgz"}, ${512}, ${2},
-      ${JSON.stringify({ name: privateName, version: "1.0.0" })},
+      ${randomUUID()}, ${world.privateSkillId}, ${'1.0.0'},
+      ${'sha512-bdd-private-test'}, ${'skills/test/private-1.0.0.tgz'}, ${512}, ${2},
+      ${JSON.stringify({ name: privateName, version: '1.0.0' })},
       ${JSON.stringify({})},
-      ${"pending"}, ${world.publisherId}, NOW()
+      ${'pending'}, ${world.publisherId}, NOW()
     )
     RETURNING id
   `;
@@ -110,16 +111,16 @@ async function cleanup(): Promise<void> {
 // ── When ───────────────────────────────────────────────────────────────────
 
 async function whenICallGetSkill(name: string, auth?: string): Promise<void> {
-  const encodedName = encodeURIComponent(name).replace(/%2F/g, "/");
+  const encodedName = encodeURIComponent(name).replace(/%2F/g, '/');
   const headers: Record<string, string> = {};
-  if (auth) headers["Authorization"] = `Bearer ${auth}`;
+  if (auth) headers['Authorization'] = `Bearer ${auth}`;
   const res = await fetch(`${world.registry}/api/v1/skills/${encodedName}`, { headers });
   world.lastStatus = res.status;
   world.lastBody = (await res.json().catch(() => ({}))) as Record<string, unknown>;
 }
 
 async function whenICallGetSkillVersion(name: string, version: string): Promise<void> {
-  const encodedName = encodeURIComponent(name).replace(/%2F/g, "/");
+  const encodedName = encodeURIComponent(name).replace(/%2F/g, '/');
   const res = await fetch(`${world.registry}/api/v1/skills/${encodedName}/${version}`);
   world.lastStatus = res.status;
   world.lastBody = (await res.json().catch(() => ({}))) as Record<string, unknown>;
@@ -137,7 +138,7 @@ function thenBodyContainsKey(key: string): void {
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: Skill info lookup via registry API", () => {
+describe('Feature: Skill info lookup via registry API', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
     await setupSkills();
@@ -150,20 +151,20 @@ describe("Feature: Skill info lookup via registry API", () => {
 
   // ── Successful lookup (C2) ────────────────────────────────────────
 
-  describe("Scenario: Fetching info for an existing skill returns metadata (E1)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Fetching info for an existing skill returns metadata (E1)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGetSkill(`@${world.org}/info-skill`);
       thenStatusIs(200);
-      thenBodyContainsKey("name");
-      thenBodyContainsKey("latestVersion");
-      thenBodyContainsKey("publisher");
+      thenBodyContainsKey('name');
+      thenBodyContainsKey('latestVersion');
+      thenBodyContainsKey('publisher');
     });
   });
 
   // ── 404 for unknown skill (C1) ────────────────────────────────────
 
-  describe("Scenario: Fetching info for a nonexistent skill returns 404 (E2)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Fetching info for a nonexistent skill returns 404 (E2)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGetSkill(`@${world.org}/nonexistent-zzz`);
       thenStatusIs(404);
     });
@@ -171,18 +172,18 @@ describe("Feature: Skill info lookup via registry API", () => {
 
   // ── Version detail with permissions (C3) ─────────────────────────
 
-  describe("Scenario: Fetching a version returns permissions and auditScore (E3)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
-      await whenICallGetSkillVersion(`@${world.org}/info-skill`, "1.0.0");
+  describe('Scenario: Fetching a version returns permissions and auditScore (E3)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
+      await whenICallGetSkillVersion(`@${world.org}/info-skill`, '1.0.0');
       thenStatusIs(200);
-      thenBodyContainsKey("permissions");
+      thenBodyContainsKey('permissions');
     });
   });
 
   // ── Private skill visibility (C3) ─────────────────────────────────
 
-  describe("Scenario: Private skill is not visible to unauthenticated users (E4)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Private skill is not visible to unauthenticated users (E4)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGetSkill(`@${world.org}/private-info-skill`);
       thenStatusIs(404);
     });

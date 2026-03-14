@@ -1,0 +1,10 @@
+{
+  "name": "network-declared",
+  "version": "1.0.0",
+  "description": "A skill with properly declared network permissions",
+  "permissions": {
+    "network": {
+      "outbound": ["api.github.com", "pypi.org"]
+    }
+  }
+}

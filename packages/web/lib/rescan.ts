@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm';
+
 import { type AuditScoreInput, computeAuditScore } from '@/lib/audit-score';
 import { db } from '@/lib/db';
 import { scanFindings, scanResults, skillVersions } from '@/lib/db/schema';
@@ -85,7 +86,7 @@ export async function triggerSecurityScan(
   try {
     let signedUrl: string;
     try {
-      const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
+      const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600, 'internal');
       signedUrl = urlData.signedUrl;
     } catch (error) {
       console.error('Failed to generate signed URL for scan:', error);

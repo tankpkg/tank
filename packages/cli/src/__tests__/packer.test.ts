@@ -2,8 +2,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { pack, packForScan } from '../lib/packer.js';
+
+import { pack, packForScan } from '~/lib/packer.js';
 
 // Minimal valid tank.json content
 const VALID_SKILLS_JSON = JSON.stringify({

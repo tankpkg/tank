@@ -3,12 +3,13 @@
  * Reads environment variables and provides typed brand config
  */
 
-import type { BrandConfig, BrandEnvVars } from '@internal/shared';
-import { DEFAULT_BRAND, isValidHexColor } from '@internal/shared';
+import type { BrandConfig, BrandEnvVars } from '@/lib/brand';
+import { DEFAULT_BRAND, isValidHexColor } from '@/lib/brand';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace NodeJS {
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     interface ProcessEnv extends BrandEnvVars {}
   }
 }
@@ -37,6 +38,7 @@ export function getBrandConfig(): BrandConfig {
   if (_cachedBrand) return _cachedBrand;
 
   const env = process.env;
+  const defaultDarkColors = DEFAULT_BRAND.darkColors ?? DEFAULT_BRAND.colors;
 
   const config: BrandConfig = {
     name: env.BRAND_NAME || DEFAULT_BRAND.name,
@@ -58,19 +60,17 @@ export function getBrandConfig(): BrandConfig {
       primary:
         parseHexColor(env.BRAND_COLOR_DARK_PRIMARY) ||
         parseHexColor(env.BRAND_COLOR_PRIMARY) ||
-        DEFAULT_BRAND.darkColors!.primary,
+        defaultDarkColors.primary,
       secondary:
         parseHexColor(env.BRAND_COLOR_DARK_SECONDARY) ||
         parseHexColor(env.BRAND_COLOR_SECONDARY) ||
-        DEFAULT_BRAND.darkColors!.secondary,
+        defaultDarkColors.secondary,
       accent:
-        parseHexColor(env.BRAND_COLOR_DARK_ACCENT) ||
-        parseHexColor(env.BRAND_COLOR_ACCENT) ||
-        DEFAULT_BRAND.darkColors!.accent,
+        parseHexColor(env.BRAND_COLOR_DARK_ACCENT) || parseHexColor(env.BRAND_COLOR_ACCENT) || defaultDarkColors.accent,
       background:
         parseHexColor(env.BRAND_COLOR_DARK_BACKGROUND) ||
         parseHexColor(env.BRAND_COLOR_BACKGROUND) ||
-        DEFAULT_BRAND.darkColors!.background
+        defaultDarkColors.background
     },
     social: {
       twitter: env.BRAND_TWITTER || DEFAULT_BRAND.social.twitter,

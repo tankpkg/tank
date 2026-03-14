@@ -1,10 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+
 import { Button } from '@/components/ui/button';
 
-type AccessGrant = {
+export type AccessGrant = {
   id: string;
   grantedUserId: string | null;
   grantedOrgId: string | null;
@@ -14,53 +15,29 @@ type AccessGrant = {
   orgSlug: string | null;
 };
 
-export function AccessGrantsCard({ packageName }: { packageName: string }) {
+function getUniqueIds(values: Array<string | null>): string[] {
+  return Array.from(new Set(values.filter((value): value is string => Boolean(value))));
+}
+
+export function AccessGrantsCard({
+  packageName,
+  initialGrants
+}: {
+  packageName: string;
+  initialGrants: AccessGrant[];
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [grants, setGrants] = useState<AccessGrant[]>([]);
-  const [userIdsInput, setUserIdsInput] = useState('');
-  const [orgIdsInput, setOrgIdsInput] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const load = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/admin/packages/${encodeURIComponent(packageName)}/access-grants`);
-        const payload = (await response.json()) as { error?: string; grants?: AccessGrant[] };
-
-        if (!response.ok) {
-          if (!cancelled) setError(payload.error ?? 'Failed to load access grants.');
-          return;
-        }
-
-        if (!cancelled) {
-          const nextGrants = payload.grants ?? [];
-          setGrants(nextGrants);
-          const userIds = nextGrants.map((grant) => grant.grantedUserId).filter((id): id is string => Boolean(id));
-          const orgIds = nextGrants.map((grant) => grant.grantedOrgId).filter((id): id is string => Boolean(id));
-          setUserIdsInput(Array.from(new Set(userIds)).join(', '));
-          setOrgIdsInput(Array.from(new Set(orgIds)).join(', '));
-        }
-      } catch {
-        if (!cancelled) setError('Unexpected error while loading access grants.');
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [packageName]);
+  const [grants, setGrants] = useState<AccessGrant[]>(initialGrants);
+  const [userIdsInput, setUserIdsInput] = useState(
+    getUniqueIds(initialGrants.map((grant) => grant.grantedUserId)).join(', ')
+  );
+  const [orgIdsInput, setOrgIdsInput] = useState(
+    getUniqueIds(initialGrants.map((grant) => grant.grantedOrgId)).join(', ')
+  );
 
   const displayRows = useMemo(() => grants.slice(0, 12), [grants]);
 
@@ -98,13 +75,19 @@ export function AccessGrantsCard({ packageName }: { packageName: string }) {
         setSuccess('Access grants updated.');
         router.refresh();
 
+        setIsLoading(true);
         const refreshed = await fetch(`/api/admin/packages/${encodeURIComponent(packageName)}/access-grants`);
         const refreshedPayload = (await refreshed.json()) as { grants?: AccessGrant[] };
         if (refreshed.ok) {
-          setGrants(refreshedPayload.grants ?? []);
+          const nextGrants = refreshedPayload.grants ?? [];
+          setGrants(nextGrants);
+          setUserIdsInput(getUniqueIds(nextGrants.map((grant) => grant.grantedUserId)).join(', '));
+          setOrgIdsInput(getUniqueIds(nextGrants.map((grant) => grant.grantedOrgId)).join(', '));
         }
       } catch {
         setError('Unexpected error while saving access grants.');
+      } finally {
+        setIsLoading(false);
       }
     });
   };

@@ -23,6 +23,7 @@ export function CopyInstallButton({ command, className = '' }: CopyInstallButton
 
   return (
     <button
+      type="button"
       onClick={handleCopy}
       className={`inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${className}`}
       aria-label={copied ? 'Copied!' : 'Copy install command'}

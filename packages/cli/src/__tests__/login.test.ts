@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock `open` package
@@ -9,7 +10,7 @@ vi.mock('open', () => ({
 }));
 
 // Mock debug-logger to prevent Loki transport from calling global fetch
-vi.mock('../lib/debug-logger.js', () => {
+vi.mock('~/lib/debug-logger.js', () => {
   const noop = () => {};
   const noopLog = {
     info: noop,
@@ -79,7 +80,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
 
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -120,7 +121,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await loginCommand({ configDir: tmpDir, timeout: 2000 });
@@ -156,7 +157,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await loginCommand({ configDir: tmpDir, timeout: 2000 });
@@ -175,7 +176,7 @@ describe('loginCommand', () => {
   it('handles start endpoint failure', async () => {
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Server error' }), { status: 500 }));
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -199,7 +200,7 @@ describe('loginCommand', () => {
     // Exchange returns 500 (server error, not 400 pending)
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 }));
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -237,7 +238,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await loginCommand({ configDir: tmpDir, timeout: 10000, pollInterval: 10 });
@@ -268,7 +269,7 @@ describe('loginCommand', () => {
       new Response(JSON.stringify({ error: 'Session was not properly authorized' }), { status: 400 })
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -303,7 +304,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -338,7 +339,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await loginCommand({ configDir: tmpDir, timeout: 2000 });
@@ -351,7 +352,7 @@ describe('loginCommand', () => {
   it('handles start endpoint non-JSON error body with statusText fallback', async () => {
     mockFetch.mockResolvedValueOnce(new Response('not json', { status: 500, statusText: 'Internal Server Error' }));
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -389,7 +390,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await loginCommand({ configDir: tmpDir, timeout: 10000, pollInterval: 10 });
@@ -423,7 +424,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await loginCommand({ configDir: tmpDir, timeout: 2000 });
@@ -455,7 +456,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await loginCommand({ configDir: tmpDir, timeout: 2000 });
@@ -491,7 +492,7 @@ describe('loginCommand', () => {
       )
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
     await loginCommand({ configDir: tmpDir, timeout: 2000 });
@@ -520,7 +521,7 @@ describe('loginCommand', () => {
       new Response('Internal Server Error', { status: 500, statusText: 'Internal Server Error' })
     );
 
-    const { loginCommand } = await import('../commands/login.js');
+    const { loginCommand } = await import('~/commands/login.js');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 

@@ -32,9 +32,9 @@ export function validateAuthConfig(): void {
 
     if (missing.length > 0) {
       throw new Error(
-        `AUTH_PROVIDERS includes "oidc" but required environment variables are missing:\n` +
-          missing.map((v) => `  - ${v}`).join('\n') +
-          '\n\nEither set these variables or remove "oidc" from AUTH_PROVIDERS.'
+        `AUTH_PROVIDERS includes "oidc" but required environment variables are missing:\n${missing
+          .map((v) => `  - ${v}`)
+          .join('\n')}\n\nEither set these variables or remove "oidc" from AUTH_PROVIDERS.`
       );
     }
   }
@@ -47,9 +47,9 @@ export function validateAuthConfig(): void {
 
     if (missing.length > 0) {
       throw new Error(
-        `AUTH_PROVIDERS includes "github" but required environment variables are missing:\n` +
-          missing.map((v) => `  - ${v}`).join('\n') +
-          '\n\nEither set these variables or remove "github" from AUTH_PROVIDERS.'
+        `AUTH_PROVIDERS includes "github" but required environment variables are missing:\n${missing
+          .map((v) => `  - ${v}`)
+          .join('\n')}\n\nEither set these variables or remove "github" from AUTH_PROVIDERS.`
       );
     }
   }
@@ -75,8 +75,9 @@ export function validateStorageConfig(): void {
 
     if (missing.length > 0) {
       throw new Error(
-        `STORAGE_BACKEND is 's3' but required environment variables are missing:\n` +
-          missing.map((v) => `  - ${v}`).join('\n')
+        `STORAGE_BACKEND is 's3' but required environment variables are missing:\n${missing
+          .map((v) => `  - ${v}`)
+          .join('\n')}`
       );
     }
   }
@@ -88,8 +89,9 @@ export function validateStorageConfig(): void {
 
     if (missing.length > 0) {
       throw new Error(
-        `STORAGE_BACKEND is 'supabase' but required environment variables are missing:\n` +
-          missing.map((v) => `  - ${v}`).join('\n')
+        `STORAGE_BACKEND is 'supabase' but required environment variables are missing:\n${missing
+          .map((v) => `  - ${v}`)
+          .join('\n')}`
       );
     }
   }

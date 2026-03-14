@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
@@ -83,7 +84,9 @@ export function registerLinkSkillTool(server: McpServer): void {
 
           fs.unlinkSync(symlinkPath);
         }
-      } catch {}
+      } catch {
+        // intentionally empty
+      }
 
       fs.mkdirSync(skillsLinkDir, { recursive: true });
       fs.symlinkSync(skillDir, symlinkPath, 'dir');

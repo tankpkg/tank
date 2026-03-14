@@ -1,5 +1,6 @@
-import { randomUUID, scryptSync, randomBytes } from 'node:crypto';
-import postgres from 'postgres';
+import { randomBytes, randomUUID, scryptSync } from 'node:crypto';
+
+import type postgres from 'postgres';
 
 export interface AdminSession {
   userId: string;
@@ -19,22 +20,16 @@ function hashPassword(password: string): string {
     N: 16384,
     p: 1,
     r: 16,
-    maxmem: 128 * 16384 * 16 * 2,
+    maxmem: 128 * 16384 * 16 * 2
   });
   return `${salt}:${key.toString('hex')}`;
 }
 
-export function createAdminApiClient(
-  registry: string,
-  sql: postgres.Sql,
-): AdminApiClient {
+export function createAdminApiClient(registry: string, sql: postgres.Sql): AdminApiClient {
   return { registry, session: null, sql };
 }
 
-export async function createAdminSession(
-  client: AdminApiClient,
-  runId: string,
-): Promise<AdminSession> {
+export async function createAdminSession(client: AdminApiClient, runId: string): Promise<AdminSession> {
   const { sql, registry } = client;
   const userId = `e2e-admin-${runId}`;
   const email = `e2e-admin-${runId}@tank.test`;
@@ -64,7 +59,7 @@ export async function createAdminSession(
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: registry },
     body: JSON.stringify({ email, password }),
-    redirect: 'manual',
+    redirect: 'manual'
   });
 
   if (!signInRes.ok && signInRes.status !== 302) {
@@ -78,7 +73,7 @@ export async function createAdminSession(
   if (!sessionCookie) {
     throw new Error(
       `BDD admin sign-in did not return session cookie. Status: ${signInRes.status}, ` +
-        `Set-Cookie headers: ${JSON.stringify(setCookies)}`,
+        `Set-Cookie headers: ${JSON.stringify(setCookies)}`
     );
   }
 
@@ -96,7 +91,7 @@ export async function createTestPackageVersion(
     packageName: string;
     version: string;
     publisherId: string;
-  },
+  }
 ): Promise<{ skillId: string; versionId: string }> {
   const { sql } = client;
   const skillId = randomUUID();
@@ -145,7 +140,7 @@ export async function createTestPackageVersion(
 export async function postRescan(
   client: AdminApiClient,
   packageName: string,
-  version: string,
+  version: string
 ): Promise<{ status: number; body: Record<string, unknown> }> {
   const url = `${client.registry}/api/admin/packages/${encodeURIComponent(packageName)}/versions/${encodeURIComponent(version)}/rescan`;
 
@@ -159,10 +154,7 @@ export async function postRescan(
   return { status: response.status, body };
 }
 
-export async function cleanupAdminSession(
-  client: AdminApiClient,
-  runId: string,
-): Promise<void> {
+export async function cleanupAdminSession(client: AdminApiClient, runId: string): Promise<void> {
   const { sql } = client;
   const userId = `e2e-admin-${runId}`;
 
@@ -177,11 +169,10 @@ export async function cleanupAdminSession(
 
   try {
     const skillIds = sql`SELECT id FROM skills WHERE publisher_id = ${userId}`;
-    const versionIds =
-      sql`SELECT sv.id FROM skill_versions sv JOIN skills s ON sv.skill_id = s.id WHERE s.publisher_id = ${userId}`;
+    const versionIds = sql`SELECT sv.id FROM skill_versions sv JOIN skills s ON sv.skill_id = s.id WHERE s.publisher_id = ${userId}`;
 
     await safeDelete(
-      sql`DELETE FROM scan_findings WHERE scan_id IN (SELECT id FROM scan_results WHERE version_id IN (${versionIds}))`,
+      sql`DELETE FROM scan_findings WHERE scan_id IN (SELECT id FROM scan_results WHERE version_id IN (${versionIds}))`
     );
     await safeDelete(sql`DELETE FROM scan_results WHERE version_id IN (${versionIds})`);
     await safeDelete(sql`DELETE FROM skill_download_daily WHERE skill_id IN (${skillIds})`);

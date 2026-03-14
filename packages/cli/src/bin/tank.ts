@@ -1,27 +1,28 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { auditCommand } from '../commands/audit.js';
-import { doctorCommand } from '../commands/doctor.js';
-import { infoCommand } from '../commands/info.js';
-import { initCommand } from '../commands/init.js';
-import { installAll, installCommand } from '../commands/install.js';
-import { linkCommand } from '../commands/link.js';
-import { loginCommand } from '../commands/login.js';
-import { logoutCommand } from '../commands/logout.js';
-import { migrateCommand } from '../commands/migrate.js';
-import { permissionsCommand } from '../commands/permissions.js';
-import { publishCommand } from '../commands/publish.js';
-import { removeCommand } from '../commands/remove.js';
-import { scanCommand } from '../commands/scan.js';
-import { searchCommand } from '../commands/search.js';
-import { unlinkCommand } from '../commands/unlink.js';
-import { updateCommand } from '../commands/update.js';
-import { upgradeCommand } from '../commands/upgrade.js';
-import { verifyCommand } from '../commands/verify.js';
-import { whoamiCommand } from '../commands/whoami.js';
-import { flushLogs } from '../lib/debug-logger.js';
-import { checkForUpgrade } from '../lib/upgrade-check.js';
-import { VERSION } from '../version.js';
+
+import { auditCommand } from '~/commands/audit.js';
+import { doctorCommand } from '~/commands/doctor.js';
+import { infoCommand } from '~/commands/info.js';
+import { initCommand } from '~/commands/init.js';
+import { installAll, installCommand } from '~/commands/install.js';
+import { linkCommand } from '~/commands/link.js';
+import { loginCommand } from '~/commands/login.js';
+import { logoutCommand } from '~/commands/logout.js';
+import { migrateCommand } from '~/commands/migrate.js';
+import { permissionsCommand } from '~/commands/permissions.js';
+import { publishCommand } from '~/commands/publish.js';
+import { removeCommand } from '~/commands/remove.js';
+import { scanCommand } from '~/commands/scan.js';
+import { searchCommand } from '~/commands/search.js';
+import { unlinkCommand } from '~/commands/unlink.js';
+import { updateCommand } from '~/commands/update.js';
+import { upgradeCommand } from '~/commands/upgrade.js';
+import { verifyCommand } from '~/commands/verify.js';
+import { whoamiCommand } from '~/commands/whoami.js';
+import { flushLogs } from '~/lib/debug-logger.js';
+import { checkForUpgrade } from '~/lib/upgrade-check.js';
+import { VERSION } from '~/version.js';
 
 const program = new Command();
 
@@ -131,13 +132,12 @@ program
   .argument('[name]', 'Skill name (e.g., @org/skill-name). Omit to install from lockfile.')
   .argument('[version-range]', 'Semver range (default: *)', '*')
   .option('-g, --global', 'Install skill globally (available to all projects)')
-  .option('-y, --yes', 'Auto-accept permission budget expansion')
-  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean; yes?: boolean }) => {
+  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean }) => {
     try {
       if (name) {
-        await installCommand({ name, versionRange, global: opts.global, yes: opts.yes });
+        await installCommand({ name, versionRange, global: opts.global });
       } else {
-        await installAll({ global: opts.global, yes: opts.yes });
+        await installAll({ global: opts.global });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -266,30 +266,7 @@ program
 program
   .command('link')
   .alias('ln')
-  .description('Link current skill to all detected AI agents for local development')
-  .addHelpText(
-    'after',
-    `
-Creates symlinks from each agent's skills directory to this skill source,
-so changes are reflected immediately without re-publishing.
-
-Must be run from a directory containing a valid tank.json.
-
-Supported agents:
-  Claude Code    ~/.claude/skills
-  OpenCode       ~/.config/opencode/skills
-  Cursor         ~/.cursor/skills
-  Codex          ~/.codex/skills
-  OpenClaw       ~/.openclaw/skills
-  Universal      ~/.agents/skills
-
-Examples:
-  $ cd my-skill && tank link     Link to all detected agents
-  $ tank doctor                  Verify link health
-  $ tank unlink                  Remove all symlinks
-
-See also: tank unlink, tank doctor`
-  )
+  .description('Link current skill directory to AI agent directories (for development)')
   .action(async () => {
     try {
       await linkCommand();
@@ -302,18 +279,7 @@ See also: tank unlink, tank doctor`
 
 program
   .command('unlink')
-  .description('Remove skill symlinks from all AI agent directories')
-  .addHelpText(
-    'after',
-    `
-Removes the symlinks created by \`tank link\` from every detected agent.
-Must be run from the same skill directory that was originally linked.
-
-Examples:
-  $ cd my-skill && tank unlink   Remove links for this skill
-
-See also: tank link, tank doctor`
-  )
+  .description('Remove skill symlinks from AI agent directories')
   .action(async () => {
     try {
       await unlinkCommand();

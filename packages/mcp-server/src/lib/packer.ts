@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
-import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, skillsJsonSchema } from '@internal/shared';
+
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, skillsJsonSchema } from '@internals/schemas';
 import ignore from 'ignore';
 import { create } from 'tar';
 

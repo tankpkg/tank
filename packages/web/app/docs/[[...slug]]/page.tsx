@@ -1,13 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from 'fumadocs-ui/page';
 import { notFound } from 'next/navigation';
 import Script from 'next/script';
+
 import { CopyToLLMButton } from '@/components/copy-to-llm-button';
 import { source } from '@/lib/source';
 import { getMDXComponents } from '@/mdx-components';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tankpkg.dev';
 
 async function getRawContent(slug: string[]): Promise<string> {
   try {
@@ -102,7 +104,7 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
         tableOfContent={{
           footer: (
             <a
-              href="https://github.com/tankpkg/tank/tree/main/packages/web/content/docs"
+              href="https://github.com/tankpkg/tank/tree/main/apps/web/content/docs"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">

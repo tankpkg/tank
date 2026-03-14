@@ -1,6 +1,8 @@
 import fs from 'node:fs';
-import { beforeAll, beforeEach, afterEach } from 'vitest';
-import { McpTestClient, getMcpServerEntrypoint } from '../interactions/mcp-client.js';
+
+import { afterEach, beforeAll, beforeEach } from 'vitest';
+
+import { getMcpServerEntrypoint, McpTestClient } from '../interactions/mcp-client.js';
 import { createConfigDir } from './fixtures.js';
 import { cleanupE2E, type E2EContext } from './setup.js';
 
@@ -23,14 +25,14 @@ export function registerMcpHooks(world: McpBddWorld): void {
     const entrypoint = getMcpServerEntrypoint();
     if (!fs.existsSync(entrypoint)) {
       throw new Error(
-        `MCP server build output not found at ${entrypoint}. Run: bun run build --filter=@tankpkg/mcp-server`,
+        `MCP server build output not found at ${entrypoint}. Run: bun run build --filter=@tankpkg/mcp-server`
       );
     }
   });
 
   beforeEach(async () => {
     const configFixture = createConfigDir({
-      registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
+      registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003'
     });
 
     world.client = new McpTestClient();

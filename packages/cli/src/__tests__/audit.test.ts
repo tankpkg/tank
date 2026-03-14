@@ -3,6 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 // Mock global fetch
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
@@ -61,7 +63,7 @@ describe('auditCommand', () => {
   // ── Test 1: Audit all with 2 scored skills (one green, one red) ──
 
   it('displays table with audit scores for all installed skills', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/skill-a@1.0.0': {
@@ -122,7 +124,7 @@ describe('auditCommand', () => {
   // ── Test 2: Skill with null auditScore shows "pending" ──
 
   it('shows "Analysis pending" for skills with null auditScore', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/pending-skill@1.0.0': {
@@ -156,7 +158,7 @@ describe('auditCommand', () => {
   // ── Test 3: Empty lockfile ──
 
   it('shows "No skills installed" for empty lockfile', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({});
 
@@ -169,7 +171,7 @@ describe('auditCommand', () => {
   // ── Test 4: No lockfile ──
 
   it('shows "No lockfile found" when skills.lock does not exist', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     // No lockfile written
 
@@ -182,7 +184,7 @@ describe('auditCommand', () => {
   // ── Test 5: Audit specific skill — scored ──
 
   it('displays detailed audit info for a specific skill', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/skill-a@1.0.0': {
@@ -227,7 +229,7 @@ describe('auditCommand', () => {
   // ── Test 6: Audit specific skill not in lockfile ──
 
   it('shows error when specific skill is not in lockfile', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/other-skill@1.0.0': {
@@ -248,7 +250,7 @@ describe('auditCommand', () => {
   // ── Test 7: Audit specific skill with pending analysis ──
 
   it('shows pending status for specific skill with incomplete analysis', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/pending-skill@1.0.0': {
@@ -282,7 +284,7 @@ describe('auditCommand', () => {
   // ── Test 8: Network error ──
 
   it('throws on network error', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/skill-a@1.0.0': {
@@ -301,7 +303,7 @@ describe('auditCommand', () => {
   // ── Test 9: Summary line format ──
 
   it('displays summary line with pass/issues counts', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/skill-a@1.0.0': {
@@ -380,7 +382,7 @@ describe('auditCommand', () => {
   // ── Test 10: Color coding ──
 
   it('uses correct color coding for scores', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/green@1.0.0': {
@@ -460,7 +462,7 @@ describe('auditCommand', () => {
   // ── Test 11: Calls correct API URL with encoded name ──
 
   it('calls correct API URL with encoded skill name', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/skill-a@1.0.0': {
@@ -483,7 +485,7 @@ describe('auditCommand', () => {
   // ── Test 12: Summary with pending skills counted as issues ──
 
   it('counts pending skills as issues in summary', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/good@1.0.0': {
@@ -538,7 +540,7 @@ describe('auditCommand', () => {
   // ── Test 13: API returns non-200 for a skill ──
 
   it('handles API error for individual skill gracefully', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/skill-a@1.0.0': {
@@ -561,7 +563,7 @@ describe('auditCommand', () => {
   // ── Test 14: Network error for specific skill audit throws ──
 
   it('throws on network error when auditing specific skill', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/skill-a@1.0.0': {
@@ -580,7 +582,7 @@ describe('auditCommand', () => {
   // ── Test 15: API error for specific skill audit throws ──
 
   it('throws on API error when auditing specific skill', async () => {
-    const { auditCommand } = await import('../commands/audit.js');
+    const { auditCommand } = await import('~/commands/audit.js');
 
     writeLockfile({
       '@test/skill-a@1.0.0': {

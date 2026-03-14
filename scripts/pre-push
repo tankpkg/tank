@@ -22,11 +22,12 @@ fi
 FAILED=0
 
 # ── Python scanner ──────────────────────────────────────────────────
-if echo "$CHANGED" | grep -q "^packages/scanner/"; then
-  echo "▸ packages/scanner changed — running Python checks"
+if echo "$CHANGED" | grep -q "^apps/python-api/"; then
+  echo "▸ apps/python-api changed — running Python checks"
+  export UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}"
 
   echo "  ├─ ruff check"
-  if ! uvx ruff check --config packages/scanner/pyproject.toml packages/scanner/; then
+  if ! uvx ruff check --config apps/python-api/pyproject.toml apps/python-api/; then
     echo "  │  ✗ ruff check failed"
     FAILED=1
   else
@@ -34,15 +35,15 @@ if echo "$CHANGED" | grep -q "^packages/scanner/"; then
   fi
 
   echo "  ├─ ruff format --check"
-  if ! uvx ruff format --check --config packages/scanner/pyproject.toml packages/scanner/ > /dev/null 2>&1; then
-    echo "  │  ✗ ruff format check failed (run: just fmt-python)"
+  if ! uvx ruff format --check --config apps/python-api/pyproject.toml apps/python-api/ > /dev/null 2>&1; then
+    echo "  │  ✗ ruff format check failed (run: just fmt python)"
     FAILED=1
   else
     echo "  │  ✓ ruff format passed"
   fi
 
   echo "  └─ pytest"
-  if ! (cd packages/scanner && PYTHONPATH=. uv run pytest lib/scan/test_snyk_scanner.py lib/scan/test_llm_analyzer.py -q 2>/dev/null); then
+  if ! (cd apps/python-api && PYTHONPATH=. uv run pytest lib/scan/test_snyk_scanner.py lib/scan/test_llm_analyzer.py -q 2>/dev/null); then
     echo "     ✗ pytest failed"
     FAILED=1
   else
@@ -50,8 +51,18 @@ if echo "$CHANGED" | grep -q "^packages/scanner/"; then
   fi
 fi
 
-# ── TypeScript packages (cli, web, mcp-server, shared) ──────────────
-TS_PACKAGES=("packages/cli" "packages/web" "packages/mcp-server" "packages/shared")
+# ── TypeScript packages (cli, web, mcp-server, internals) ───────────
+TS_PACKAGES=(
+  "packages/cli"
+  "apps/web"
+  "apps/web-astro"
+  "apps/web-tanstack"
+  "packages/mcp-server"
+  "packages/internals-schemas"
+  "packages/internals-helpers"
+  ".bdd"
+  ".e2e"
+)
 TS_CHANGED=0
 for pkg in "${TS_PACKAGES[@]}"; do
   if echo "$CHANGED" | grep -q "^${pkg}/"; then
@@ -63,41 +74,25 @@ done
 if [ "$TS_CHANGED" -eq 1 ]; then
   echo "▸ TypeScript packages changed — running JS/TS checks"
 
-  echo "  ├─ biome check"
-  if ! bun biome ci --linter-enabled=false --assist-enabled=false . > /dev/null 2>&1; then
-    echo "  │  ✗ biome format check failed (run: just fmt)"
-    FAILED=1
-  else
-    echo "  │  ✓ biome format passed"
-  fi
-
-  echo "  ├─ lint"
-  if ! bun run lint > /dev/null 2>&1; then
-    echo "  │  ✗ lint failed (run: just lint-fix)"
+  echo "  ├─ lint check"
+  if ! bun run lint:check > /dev/null 2>&1; then
+    echo "  │  ✗ lint failed (run: just lint)"
     FAILED=1
   else
     echo "  │  ✓ lint passed"
   fi
 
-  echo "  ├─ build @internal/shared (typecheck prerequisite)"
-  if ! bun run --filter '@internal/shared' build > /dev/null 2>&1; then
-    echo "  │  ✗ shared build failed"
+  echo "  ├─ format check"
+  if ! bun run format:check > /dev/null 2>&1; then
+    echo "  │  ✗ format check failed (run: just fmt)"
     FAILED=1
   else
-    echo "  │  ✓ shared build passed"
+    echo "  │  ✓ format passed"
   fi
 
-  echo "  └─ typecheck (per-package)"
-  TC_FAILED=0
-  for pkg in "${TS_PACKAGES[@]}"; do
-    if [ -f "${pkg}/tsconfig.json" ] && echo "$CHANGED" | grep -q "^${pkg}/"; then
-      if ! bun tsc --noEmit --project "${pkg}/tsconfig.json" > /dev/null 2>&1; then
-        echo "     ✗ typecheck failed: ${pkg}"
-        TC_FAILED=1
-      fi
-    fi
-  done
-  if [ "$TC_FAILED" -ne 0 ]; then
+  echo "  └─ typecheck"
+  if ! bun tsc -b --noEmit > /dev/null 2>&1; then
+    echo "     ✗ typecheck failed"
     FAILED=1
   else
     echo "     ✓ typecheck passed"
@@ -105,11 +100,11 @@ if [ "$TS_CHANGED" -eq 1 ]; then
 fi
 
 # ── Root config / CI changes ────────────────────────────────────────
-if echo "$CHANGED" | grep -qE "^(\.github/|biome\.json|tsconfig|package\.json|justfile)"; then
+if echo "$CHANGED" | grep -qE "^(\.github/|eslint\.config\.ts|\.prettierrc|\.prettierignore|tsconfig|package\.json|justfile)"; then
   echo "▸ Root config changed — running full verification"
 
-  if ! bun biome ci --linter-enabled=false --assist-enabled=false . > /dev/null 2>&1; then
-    echo "  ✗ biome format check failed"
+  if ! bun prettier --check . > /dev/null 2>&1; then
+    echo "  ✗ prettier format check failed"
     FAILED=1
   fi
 fi

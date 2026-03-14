@@ -1,5 +1,6 @@
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
+
 import { user } from '../auth-schema';
 import {
   auditEvents,

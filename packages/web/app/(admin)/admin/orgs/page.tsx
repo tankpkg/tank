@@ -1,6 +1,8 @@
 import { headers } from 'next/headers';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Suspense } from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -165,7 +167,14 @@ async function OrgsTable({ searchParams }: { searchParams: SearchParams }) {
                     <TableCell>
                       <Link href={`/admin/orgs/${org.id}`} className="flex items-center gap-3">
                         {org.logo ? (
-                          <img src={org.logo} alt={org.name} className="h-8 w-8 rounded object-cover" />
+                          <Image
+                            src={org.logo}
+                            alt={org.name}
+                            width={32}
+                            height={32}
+                            unoptimized
+                            className="h-8 w-8 rounded object-cover"
+                          />
                         ) : (
                           <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-xs font-medium">
                             {org.name.charAt(0).toUpperCase()}

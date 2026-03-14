@@ -1,8 +1,11 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+
+import { Logo } from '@/components/logo';
 import { Separator } from '@/components/ui/separator';
 import { auth } from '@/lib/auth';
+
 import { SignOutButton } from './sign-out-button';
 import { Logo } from '@/components/logo';
 

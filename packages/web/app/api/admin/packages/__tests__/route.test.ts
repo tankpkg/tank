@@ -138,7 +138,7 @@ vi.mock('postgres', () => {
   return { default: vi.fn(() => mockSql) };
 });
 
-vi.mock('@internal/shared', () => ({
+vi.mock('@internals/schemas', () => ({
   skillStatusSchema: {
     safeParse: (value: unknown) => {
       if (value === 'pending' || value === 'approved' || value === 'banned' || value === 'quarantined') {

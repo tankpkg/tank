@@ -1,6 +1,7 @@
 'use client';
 
 import { type ChangeEvent, type KeyboardEvent, useCallback, useEffect, useState } from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,19 +16,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 import { createToken, listTokens, revokeToken } from './actions';
 
-interface ApiKeyItem {
-  id: string;
-  name: string | null;
-  start: string | null;
-  prefix: string | null;
-  createdAt: Date;
-  lastRequest: Date | null;
-  expiresAt: Date | null;
-  enabled: boolean;
-  permissions?: string | null;
-}
+type ApiKeyItem = Awaited<ReturnType<typeof listTokens>>['apiKeys'][number];
 
 export default function TokensPage() {
   const [tokens, setTokens] = useState<ApiKeyItem[]>([]);
@@ -43,8 +35,8 @@ export default function TokensPage() {
 
   const loadTokens = useCallback(async () => {
     try {
-      const keys = await listTokens();
-      setTokens(keys as ApiKeyItem[]);
+      const result = await listTokens();
+      setTokens(result.apiKeys);
     } catch {
       // User may not be authenticated — layout handles redirect
     } finally {
@@ -116,14 +108,12 @@ export default function TokensPage() {
     });
   };
 
-  const parseScopes = (raw: string | null | undefined) => {
+  const parseScopes = (raw: ApiKeyItem['permissions']) => {
     if (!raw) return [];
-    try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? (parsed.filter((item) => typeof item === 'string') as string[]) : [];
-    } catch {
-      return [];
-    }
+
+    return Object.values(raw)
+      .flat()
+      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
   };
 
   const formatDate = (date: Date | string | null) => {

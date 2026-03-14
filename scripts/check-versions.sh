@@ -7,58 +7,55 @@ set -euo pipefail
 # Files to check
 declare -a FILES=(
   "packages/cli/package.json"
-  "packages/web/package.json"
+  "apps/web/package.json"
+  "apps/web-astro/package.json"
+  "apps/web-tanstack/package.json"
   "packages/mcp-server/package.json"
-  "packages/shared/package.json"
+  "packages/internals-schemas/package.json"
+  "packages/internals-helpers/package.json"
   "infra/helm/tank/Chart.yaml"
 )
 
-# Extract versions
-declare -A versions
+# Extract versions and check they all match
+versions=()
+first_version=""
+all_match=true
 
-# Extract from package.json files
 for file in "${FILES[@]}"; do
   if [[ "$file" == *.json ]]; then
     version=$(jq -r '.version' "$file" 2>/dev/null || echo "")
     if [[ -z "$version" ]]; then
-      echo "❌ Failed to extract version from $file"
+      echo "Failed to extract version from $file"
       exit 1
     fi
-    versions["$file"]="$version"
+  else
+    version=$(grep "^appVersion:" "$file" | sed 's/appVersion: "\(.*\)"/\1/' | tr -d ' ')
+    if [[ -z "$version" ]]; then
+      echo "Failed to extract appVersion from $file"
+      exit 1
+    fi
   fi
-done
 
-# Extract from Chart.yaml
-chart_file="infra/helm/tank/Chart.yaml"
-chart_version=$(grep "^appVersion:" "$chart_file" | sed 's/appVersion: "\(.*\)"/\1/' | tr -d ' ')
-if [[ -z "$chart_version" ]]; then
-  echo "❌ Failed to extract appVersion from $chart_file"
-  exit 1
-fi
-versions["$chart_file"]="$chart_version"
+  versions+=("$file:$version")
 
-# Check all versions match
-first_version=""
-all_match=true
-
-for file in "${!versions[@]}"; do
-  version="${versions[$file]}"
   if [[ -z "$first_version" ]]; then
     first_version="$version"
   elif [[ "$version" != "$first_version" ]]; then
     all_match=false
-    echo "❌ Version mismatch: $file has version $version (expected $first_version)"
+    echo "Version mismatch: $file has version $version (expected $first_version)"
   fi
 done
 
 if [[ "$all_match" == true ]]; then
-  echo "✓ All versions match: $first_version"
+  echo "All versions match: $first_version"
   exit 0
 else
   echo ""
   echo "Version summary:"
-  for file in "${!versions[@]}"; do
-    echo "  $file: ${versions[$file]}"
+  for entry in "${versions[@]}"; do
+    file=${entry%%:*}
+    version=${entry#*:}
+    echo "  $file: $version"
   done
   exit 1
 fi

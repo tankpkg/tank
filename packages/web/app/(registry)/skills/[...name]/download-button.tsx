@@ -2,6 +2,7 @@
 
 import { Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { trackSkillDownload } from '@/lib/analytics';
 
@@ -38,7 +39,7 @@ export function DownloadButton({ name, version }: DownloadButtonProps) {
 
       // 3. Create a local blob URL and trigger download
       const blobUrl = URL.createObjectURL(blob);
-      const packageName = name.includes('/') ? name.split('/').pop()! : name;
+      const packageName = name.includes('/') ? (name.split('/').at(-1) ?? name) : name;
       const filename = `${packageName}-${version}.tgz`;
 
       const link = document.createElement('a');

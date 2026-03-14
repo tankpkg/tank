@@ -1,6 +1,7 @@
 import chalk from 'chalk';
-import { getConfig } from '../lib/config.js';
-import { USER_AGENT } from '../version.js';
+
+import { getConfig } from '~/lib/config.js';
+import { USER_AGENT } from '~/version.js';
 
 export interface SearchOptions {
   query: string;

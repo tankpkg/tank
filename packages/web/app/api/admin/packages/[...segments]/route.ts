@@ -1,6 +1,7 @@
-import { skillStatusSchema } from '@internal/shared';
+import { skillStatusSchema } from '@internals/schemas';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { type NextRequest, NextResponse } from 'next/server';
+
 import { type AdminAuthContext, withAdminAuth } from '@/lib/admin-middleware';
 import { db } from '@/lib/db';
 import { organization, user } from '@/lib/db/auth-schema';

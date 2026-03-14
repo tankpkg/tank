@@ -7,23 +7,25 @@
  * Runs against REAL PostgreSQL — zero mocks.
  * Requires DATABASE_URL in .env.local.
  */
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+const hasDatabase = !!process.env.DATABASE_URL;
 
 // ── World ──────────────────────────────────────────────────────────────────
 
 interface SearchWorld {
-  sql: postgres.Sql;
+  sql: postgres.Sql | null;
   org: string;
   insertedIds: string[];
   lastResults: Array<{ name: string; description: string | null; score: number }>;
 }
 
 const world: SearchWorld = {
-  sql: null as unknown as postgres.Sql,
+  sql: null,
   org: `e2e-bdd-srch-${Date.now()}`,
   insertedIds: [],
-  lastResults: [],
+  lastResults: []
 };
 
 const SEED_SKILLS = [
@@ -31,7 +33,7 @@ const SEED_SKILLS = [
   { suffix: 'react-hooks', desc: 'Custom React hooks collection' },
   { suffix: 'clean-code', desc: 'Code quality and refactoring patterns' },
   { suffix: 'seo-audit', desc: 'SEO audit and optimization tools' },
-  { suffix: 'auth-patterns', desc: 'Authentication and authorization helpers' },
+  { suffix: 'auth-patterns', desc: 'Authentication and authorization helpers' }
 ];
 
 function skillName(suffix: string): string {
@@ -47,7 +49,7 @@ function escapeLike(input: string): string {
 async function hybridSearch(
   sql: postgres.Sql,
   q: string,
-  limit = 20,
+  limit = 20
 ): Promise<Array<{ name: string; description: string | null; score: number }>> {
   const escaped = escapeLike(q);
 
@@ -57,9 +59,9 @@ async function hybridSearch(
       s.description,
       (
         CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
-        + CASE WHEN s.name ILIKE ${q + '%'} THEN 800 ELSE 0 END
-        + CASE WHEN s.name ILIKE ${'%/' + escaped + '%'} THEN 600 ELSE 0 END
-        + CASE WHEN s.name ILIKE ${'%' + escaped + '%'} THEN 400 ELSE 0 END
+        + CASE WHEN s.name ILIKE ${`${q}%`} THEN 800 ELSE 0 END
+        + CASE WHEN s.name ILIKE ${`%/${escaped}%`} THEN 600 ELSE 0 END
+        + CASE WHEN s.name ILIKE ${`%${escaped}%`} THEN 400 ELSE 0 END
         + (greatest(similarity(s.name, ${q}), similarity(split_part(s.name, '/', 2), ${q})) * 300)::int
         + (ts_rank(
             to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
@@ -68,7 +70,7 @@ async function hybridSearch(
       ) AS score
     FROM skills s
     WHERE (
-      s.name ILIKE ${'%' + escaped + '%'}
+      s.name ILIKE ${`%${escaped}%`}
       OR similarity(s.name, ${q}) > 0.15
       OR similarity(split_part(s.name, '/', 2), ${q}) > 0.15
       OR to_tsvector('english', s.name || ' ' || coalesce(s.description, ''))
@@ -82,7 +84,7 @@ async function hybridSearch(
   return rows.map((r) => ({
     name: r.name as string,
     description: r.description as string | null,
-    score: Number(r.score),
+    score: Number(r.score)
   }));
 }
 
@@ -118,6 +120,9 @@ async function givenPublishedSkillsInTheRegistry(): Promise<void> {
 // ── When ───────────────────────────────────────────────────────────────────
 
 async function whenISearchFor(query: string): Promise<void> {
+  if (!world.sql) {
+    throw new Error('Search database client was not initialized');
+  }
   world.lastResults = await hybridSearch(world.sql, query);
 }
 
@@ -174,6 +179,9 @@ function thenNoResultsMatchSeededOrg(): void {
 // ── Cleanup ────────────────────────────────────────────────────────────────
 
 async function cleanup(): Promise<void> {
+  if (!world.sql) {
+    return;
+  }
   if (world.insertedIds.length > 0) {
     await world.sql`DELETE FROM skills WHERE id = ANY(${world.insertedIds}::uuid[])`;
   }
@@ -182,7 +190,7 @@ async function cleanup(): Promise<void> {
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe('Feature: Skill discovery via hybrid search', () => {
+describe.skipIf(!hasDatabase)('Feature: Skill discovery via hybrid search', () => {
   beforeAll(async () => {
     await givenPublishedSkillsInTheRegistry();
   }, 30_000);

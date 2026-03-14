@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { authorizeSession, clearAllSessions, consumeSession, createSession, getSession } from '@/lib/cli-auth-store';
 
 // ─── CLI Auth Store Tests ────────────────────────────────────────────────────

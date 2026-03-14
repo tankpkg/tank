@@ -42,6 +42,10 @@ vi.mock('../db', () => ({
   }
 }));
 
+vi.mock('../db/auth-schema', () => ({
+  apikey: { id: 'apikey.id', userId: 'apikey.user_id' }
+}));
+
 import { verifyCliAuth } from '../auth-helpers';
 
 describe('verifyCliAuth', () => {
@@ -84,7 +88,7 @@ describe('verifyCliAuth', () => {
   it('extracts Bearer token and calls verifyApiKey', async () => {
     mockVerifyApiKey.mockResolvedValue({
       valid: true,
-      key: { id: 'key-123', userId: 'user-456' }
+      key: { id: 'key-123', referenceId: 'user-456' }
     });
 
     const request = new Request('http://localhost:3000/api/test', {
@@ -94,6 +98,21 @@ describe('verifyCliAuth', () => {
 
     expect(mockVerifyApiKey).toHaveBeenCalledWith({ body: { key: 'tank_abc123' } });
     expect(result).toEqual({ userId: 'user-456', keyId: 'key-123', scopes: [] });
+  });
+
+  it('falls back to the apikey row when verifyApiKey omits referenceId', async () => {
+    mockVerifyApiKey.mockResolvedValue({
+      valid: true,
+      key: { id: 'key-123', permissions: { skills: ['publish'] } }
+    });
+    mockLimit.mockResolvedValueOnce([{ userId: 'user-789' }]).mockResolvedValueOnce([]);
+
+    const request = new Request('http://localhost:3000/api/test', {
+      headers: { Authorization: 'Bearer tank_abc123' }
+    });
+    const result = await verifyCliAuth(request, ['skills:publish']);
+
+    expect(result).toEqual({ userId: 'user-789', keyId: 'key-123', scopes: ['skills:publish'] });
   });
 
   it('returns null when verifyApiKey returns invalid', async () => {

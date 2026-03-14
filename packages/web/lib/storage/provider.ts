@@ -1,14 +1,26 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  CreateBucketCommand,
+  GetObjectCommand,
+  HeadBucketCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
 import { supabaseAdmin } from '@/lib/supabase';
 
 export interface SignedUrlResult {
   signedUrl: string;
 }
 
+export type SignedUrlTarget = 'internal' | 'public';
+
 export interface StorageProvider {
   createSignedUploadUrl(path: string, expiresInSeconds?: number): Promise<SignedUrlResult>;
-  createSignedUrl(path: string, expiresInSeconds?: number): Promise<SignedUrlResult>;
+  createSignedUrl(path: string, expiresInSeconds?: number, target?: SignedUrlTarget): Promise<SignedUrlResult>;
+  putObject?(path: string, body: Uint8Array, contentType?: string): Promise<void>;
+  listObjects?(bucket: string, prefix: string, limit: number): Promise<unknown>;
 }
 
 class SupabaseStorageProvider implements StorageProvider {
@@ -41,11 +53,14 @@ class SupabaseStorageProvider implements StorageProvider {
 
 class S3StorageProvider implements StorageProvider {
   private readonly bucket: string;
-  private readonly client: S3Client;
+  private readonly internalClient: S3Client;
+  private readonly publicClient: S3Client;
+  private bucketReady: Promise<void> | null = null;
 
   constructor(bucket: string) {
     const region = (process.env.S3_REGION || 'us-east-1').trim();
-    const endpoint = (process.env.S3_ENDPOINT || '').trim();
+    const internalEndpoint = (process.env.S3_ENDPOINT || '').trim();
+    const publicEndpoint = (process.env.S3_PUBLIC_ENDPOINT || internalEndpoint).trim();
     const accessKeyId = (process.env.S3_ACCESS_KEY || '').trim();
     const secretAccessKey = (process.env.S3_SECRET_KEY || '').trim();
 
@@ -54,7 +69,12 @@ class S3StorageProvider implements StorageProvider {
     }
 
     this.bucket = bucket;
-    this.client = new S3Client({
+    this.internalClient = this.createClient(region, internalEndpoint, accessKeyId, secretAccessKey);
+    this.publicClient = this.createClient(region, publicEndpoint, accessKeyId, secretAccessKey);
+  }
+
+  private createClient(region: string, endpoint: string, accessKeyId: string, secretAccessKey: string): S3Client {
+    return new S3Client({
       region,
       endpoint: endpoint || undefined,
       forcePathStyle: !!endpoint,
@@ -65,31 +85,106 @@ class S3StorageProvider implements StorageProvider {
     });
   }
 
+  private async ensureBucketExists(): Promise<void> {
+    if (!this.bucketReady) {
+      this.bucketReady = this.ensureBucketExistsOnce();
+    }
+    await this.bucketReady;
+  }
+
+  private async ensureBucketExistsOnce(): Promise<void> {
+    try {
+      await this.internalClient.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      return;
+    } catch (error) {
+      const statusCode = this.getStatusCode(error);
+      const errorName = this.getErrorName(error);
+
+      if (statusCode !== 404 && errorName !== 'NotFound' && errorName !== 'NoSuchBucket') {
+        throw error;
+      }
+    }
+
+    try {
+      await this.internalClient.send(new CreateBucketCommand({ Bucket: this.bucket }));
+    } catch (error) {
+      const errorName = this.getErrorName(error);
+      if (errorName !== 'BucketAlreadyOwnedByYou' && errorName !== 'BucketAlreadyExists') {
+        throw error;
+      }
+    }
+  }
+
+  private getErrorName(error: unknown): string | undefined {
+    if (typeof error !== 'object' || error === null) return undefined;
+    return 'name' in error && typeof error.name === 'string' ? error.name : undefined;
+  }
+
+  private getStatusCode(error: unknown): number | undefined {
+    if (typeof error !== 'object' || error === null || !('$metadata' in error)) return undefined;
+    const metadata = error.$metadata;
+    if (typeof metadata !== 'object' || metadata === null || !('httpStatusCode' in metadata)) return undefined;
+    return typeof metadata.httpStatusCode === 'number' ? metadata.httpStatusCode : undefined;
+  }
+
   async createSignedUploadUrl(path: string, expiresInSeconds = 3600): Promise<SignedUrlResult> {
+    await this.ensureBucketExists();
+
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: path,
       ContentType: 'application/octet-stream'
     });
 
-    const signedUrl = await getSignedUrl(this.client, command, {
+    const signedUrl = await getSignedUrl(this.publicClient, command, {
       expiresIn: expiresInSeconds
     });
 
     return { signedUrl };
   }
 
-  async createSignedUrl(path: string, expiresInSeconds = 3600): Promise<SignedUrlResult> {
+  async createSignedUrl(
+    path: string,
+    expiresInSeconds = 3600,
+    target: SignedUrlTarget = 'public'
+  ): Promise<SignedUrlResult> {
+    await this.ensureBucketExists();
+
     const command = new GetObjectCommand({
       Bucket: this.bucket,
       Key: path
     });
 
-    const signedUrl = await getSignedUrl(this.client, command, {
+    const signedUrl = await getSignedUrl(target === 'internal' ? this.internalClient : this.publicClient, command, {
       expiresIn: expiresInSeconds
     });
 
     return { signedUrl };
+  }
+
+  async putObject(path: string, body: Uint8Array, contentType = 'application/octet-stream'): Promise<void> {
+    await this.ensureBucketExists();
+
+    await this.internalClient.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: path,
+        Body: body,
+        ContentType: contentType
+      })
+    );
+  }
+
+  async listObjects(bucket: string, prefix: string, limit: number): Promise<unknown> {
+    await this.ensureBucketExists();
+
+    return this.internalClient.send(
+      new ListObjectsV2Command({
+        Bucket: bucket || this.bucket,
+        Prefix: prefix,
+        MaxKeys: limit
+      })
+    );
   }
 }
 

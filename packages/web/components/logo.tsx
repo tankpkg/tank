@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+
 import { getBrandConfig } from '@/lib/branding';
 
 interface LogoProps {

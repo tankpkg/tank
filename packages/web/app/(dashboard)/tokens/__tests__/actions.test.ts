@@ -89,42 +89,47 @@ describe('token server actions', () => {
   });
 
   describe('listTokens', () => {
-    it('returns array of API keys', async () => {
+    it('returns paginated API keys', async () => {
       mockGetSession.mockResolvedValue({
         user: { id: 'user-123', name: 'Test User', email: 'test@example.com' },
         session: { id: 'session-1' }
       });
-      const mockKeys = [
-        {
-          id: 'key-1',
-          name: 'Token 1',
-          start: 'tank_a',
-          prefix: 'tank_',
-          createdAt: new Date(),
-          lastRequest: null,
-          expiresAt: null,
-          enabled: true
-        },
-        {
-          id: 'key-2',
-          name: 'Token 2',
-          start: 'tank_b',
-          prefix: 'tank_',
-          createdAt: new Date(),
-          lastRequest: new Date(),
-          expiresAt: new Date(Date.now() + 86400000),
-          enabled: true
-        }
-      ];
+      const mockKeys = {
+        apiKeys: [
+          {
+            id: 'key-1',
+            name: 'Token 1',
+            start: 'tank_a',
+            prefix: 'tank_',
+            createdAt: new Date(),
+            lastRequest: null,
+            expiresAt: null,
+            enabled: true
+          },
+          {
+            id: 'key-2',
+            name: 'Token 2',
+            start: 'tank_b',
+            prefix: 'tank_',
+            createdAt: new Date(),
+            lastRequest: new Date(),
+            expiresAt: new Date(Date.now() + 86400000),
+            enabled: true
+          }
+        ],
+        total: 2,
+        limit: 20,
+        offset: 0
+      };
       mockListApiKeys.mockResolvedValue(mockKeys);
 
       const { listTokens } = await import('../actions');
       const result = await listTokens();
 
-      expect(Array.isArray(result)).toBe(true);
-      expect(result).toHaveLength(2);
-      expect(result[0].name).toBe('Token 1');
-      expect(result[1].name).toBe('Token 2');
+      expect(Array.isArray(result.apiKeys)).toBe(true);
+      expect(result.apiKeys).toHaveLength(2);
+      expect(result.apiKeys[0].name).toBe('Token 1');
+      expect(result.apiKeys[1].name).toBe('Token 2');
     });
 
     it('throws when user is not authenticated', async () => {

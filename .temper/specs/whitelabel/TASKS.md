@@ -19,4 +19,3 @@
 - [x] **2.6** Update landing page hero section
 - [x] **2.7** Update dashboard sidebar/header
 - [x] **2.8** Update admin pages
-
