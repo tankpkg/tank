@@ -39,6 +39,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 tanstack
 
 COPY --from=builder /app/apps/web-tanstack/.output ./.output
+COPY --from=builder /app/apps/web-tanstack/content ./content
 
 RUN chown -R tanstack:nodejs /app
 
