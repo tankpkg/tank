@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock the postgres module with a realistic enough client shape
 // that Drizzle's constructor doesn't blow up.

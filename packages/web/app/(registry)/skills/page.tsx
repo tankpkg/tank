@@ -1,46 +1,46 @@
-import { encodeSkillName } from "@internal/shared";
-import { Download, Lock, Star } from "lucide-react";
-import type { Metadata } from "next";
-import { unstable_noStore as noStore } from "next/cache";
-import { headers } from "next/headers";
-import Link from "next/link";
-import { Suspense } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrustBadge, VerifiedPublisherBadge } from "@/components/security";
-import { auth } from "@/lib/auth";
-import { formatInstallCount, formatLastScanLabel } from "@/lib/trust-signals";
-import { computeTrustLevel } from "@/lib/trust-level";
+import { encodeSkillName } from '@internal/shared';
+import { Download, Lock, Star } from 'lucide-react';
+import type { Metadata } from 'next';
+import { unstable_noStore as noStore } from 'next/cache';
+import { headers } from 'next/headers';
+import Link from 'next/link';
+import { Suspense } from 'react';
+import { TrustBadge, VerifiedPublisherBadge } from '@/components/security';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { auth } from '@/lib/auth';
 import type {
   FreshnessBucket,
   PopularityBucket,
   ScoreBucket,
   SkillSearchResult,
   SortOption,
-  VisibilityFilter,
-} from "@/lib/data/skills";
-import { searchSkills } from "@/lib/data/skills";
-import { SearchBar } from "./search-bar";
-import { SkillsFilters } from "./skills-filters";
-import { SkillsSort } from "./skills-sort";
+  VisibilityFilter
+} from '@/lib/data/skills';
+import { searchSkills } from '@/lib/data/skills';
+import { computeTrustLevel } from '@/lib/trust-level';
+import { formatInstallCount, formatLastScanLabel } from '@/lib/trust-signals';
+import { SearchBar } from './search-bar';
+import { SkillsFilters } from './skills-filters';
+import { SkillsSort } from './skills-sort';
 
 export const revalidate = 60;
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://www.tankpkg.dev";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tankpkg.dev';
 
 export const metadata: Metadata = {
-  title: "Browse AI Agent Skills",
+  title: 'Browse AI Agent Skills',
   description:
-    "Discover, compare, and install security-verified AI agent skills. Every skill is scanned for credential theft, prompt injection, and supply chain attacks.",
+    'Discover, compare, and install security-verified AI agent skills. Every skill is scanned for credential theft, prompt injection, and supply chain attacks.',
   alternates: { canonical: `${BASE_URL}/skills` },
   openGraph: {
-    title: "Browse AI Agent Skills — Tank",
-    description: "Discover, compare, and install security-verified AI agent skills.",
+    title: 'Browse AI Agent Skills — Tank',
+    description: 'Discover, compare, and install security-verified AI agent skills.',
     url: `${BASE_URL}/skills`,
-    type: "website",
-    siteName: "Tank",
-  },
+    type: 'website',
+    siteName: 'Tank'
+  }
 };
 
 interface SkillsPageProps {
@@ -56,50 +56,50 @@ interface SkillsPageProps {
   }>;
 }
 
-const VALID_SORTS: SortOption[] = ["updated", "downloads", "stars", "security", "name"];
-const VALID_VISIBILITY: VisibilityFilter[] = ["all", "public", "private"];
-const VALID_SCORE: ScoreBucket[] = ["all", "high", "medium", "low"];
-const VALID_FRESHNESS: FreshnessBucket[] = ["all", "week", "month", "year"];
-const VALID_POPULARITY: PopularityBucket[] = ["all", "popular", "growing", "new"];
+const VALID_SORTS: SortOption[] = ['updated', 'downloads', 'stars', 'security', 'name'];
+const VALID_VISIBILITY: VisibilityFilter[] = ['all', 'public', 'private'];
+const VALID_SCORE: ScoreBucket[] = ['all', 'high', 'medium', 'low'];
+const VALID_FRESHNESS: FreshnessBucket[] = ['all', 'week', 'month', 'year'];
+const VALID_POPULARITY: PopularityBucket[] = ['all', 'popular', 'growing', 'new'];
 
 function parseSortParam(raw: string | undefined): SortOption {
   if (raw && (VALID_SORTS as string[]).includes(raw)) return raw as SortOption;
-  return "updated";
+  return 'updated';
 }
 
 function parseVisibilityParam(raw: string | undefined): VisibilityFilter {
   if (raw && (VALID_VISIBILITY as string[]).includes(raw)) return raw as VisibilityFilter;
-  return "all";
+  return 'all';
 }
 
 function parseScoreParam(raw: string | undefined): ScoreBucket {
   if (raw && (VALID_SCORE as string[]).includes(raw)) return raw as ScoreBucket;
-  return "all";
+  return 'all';
 }
 
 function parseFreshnessParam(raw: string | undefined): FreshnessBucket {
   if (raw && (VALID_FRESHNESS as string[]).includes(raw)) return raw as FreshnessBucket;
-  return "all";
+  return 'all';
 }
 
 function parsePopularityParam(raw: string | undefined): PopularityBucket {
   if (raw && (VALID_POPULARITY as string[]).includes(raw)) return raw as PopularityBucket;
-  return "all";
+  return 'all';
 }
 
 export default async function SkillsPage({ searchParams }: SkillsPageProps) {
-  if (process.env.TANK_PERF_MODE === "1") noStore();
+  if (process.env.TANK_PERF_MODE === '1') noStore();
 
   const params = await searchParams;
-  const query = params.q ?? "";
-  const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
+  const query = params.q ?? '';
+  const page = Math.max(1, Number.parseInt(params.page ?? '1', 10) || 1);
   const limit = 20;
   const sort = parseSortParam(params.sort);
   const visibility = parseVisibilityParam(params.visibility);
   const scoreBucket = parseScoreParam(params.score);
   const freshness = parseFreshnessParam(params.freshness);
   const popularity = parsePopularityParam(params.popularity);
-  const hasReadme = params.docs === "1";
+  const hasReadme = params.docs === '1';
 
   if (query) noStore();
 
@@ -116,14 +116,14 @@ export default async function SkillsPage({ searchParams }: SkillsPageProps) {
     freshness,
     popularity,
     hasReadme: hasReadme || undefined,
-    requesterUserId: session?.user?.id ?? null,
+    requesterUserId: session?.user?.id ?? null
   });
 
   const totalPages = Math.max(1, Math.ceil(data.total / limit));
 
   const countLabel = query
-    ? `${data.total.toLocaleString()} result${data.total !== 1 ? "s" : ""} for "${query}"`
-    : `${data.total.toLocaleString()} skill${data.total !== 1 ? "s" : ""}`;
+    ? `${data.total.toLocaleString()} result${data.total !== 1 ? 's' : ''} for "${query}"`
+    : `${data.total.toLocaleString()} skill${data.total !== 1 ? 's' : ''}`;
 
   return (
     <div className="space-y-6" data-testid="skills-list-root">
@@ -214,7 +214,7 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
             <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
             <div className="mt-0.5 flex items-center gap-1.5 shrink-0">
               {skill.publisherVerified && <VerifiedPublisherBadge compact />}
-              {isLoggedIn && skill.visibility === "private" && <Lock className="size-3.5 text-muted-foreground" />}
+              {isLoggedIn && skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground" />}
             </div>
           </div>
           {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
@@ -232,13 +232,13 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
                 skill.criticalCount,
                 skill.highCount,
                 skill.mediumCount,
-                skill.lowCount,
+                skill.lowCount
               )}
               findings={{
                 critical: skill.criticalCount,
                 high: skill.highCount,
                 medium: skill.mediumCount,
-                low: skill.lowCount,
+                low: skill.lowCount
               }}
               size="sm"
             />
@@ -261,11 +261,11 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
 function EmptyState({ query }: { query: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/40 py-16 text-center">
-      <p className="text-lg font-medium">{query ? "No skills found" : "No skills published yet"}</p>
+      <p className="text-lg font-medium">{query ? 'No skills found' : 'No skills published yet'}</p>
       <p className="mt-1 text-sm text-muted-foreground">
         {query
           ? `No results for "${query}". Try a different search term or adjust filters.`
-          : "Be the first to publish a skill!"}
+          : 'Be the first to publish a skill!'}
       </p>
     </div>
   );
@@ -280,7 +280,7 @@ function Pagination({
   scoreBucket,
   freshness,
   popularity,
-  hasReadme,
+  hasReadme
 }: {
   page: number;
   totalPages: number;
@@ -294,16 +294,16 @@ function Pagination({
 }) {
   function buildHref(p: number) {
     const urlParams = new URLSearchParams();
-    if (query) urlParams.set("q", query);
-    if (sort !== "updated") urlParams.set("sort", sort);
-    if (visibility !== "all") urlParams.set("visibility", visibility);
-    if (scoreBucket !== "all") urlParams.set("score", scoreBucket);
-    if (freshness !== "all") urlParams.set("freshness", freshness);
-    if (popularity !== "all") urlParams.set("popularity", popularity);
-    if (hasReadme) urlParams.set("docs", "1");
-    if (p > 1) urlParams.set("page", String(p));
+    if (query) urlParams.set('q', query);
+    if (sort !== 'updated') urlParams.set('sort', sort);
+    if (visibility !== 'all') urlParams.set('visibility', visibility);
+    if (scoreBucket !== 'all') urlParams.set('score', scoreBucket);
+    if (freshness !== 'all') urlParams.set('freshness', freshness);
+    if (popularity !== 'all') urlParams.set('popularity', popularity);
+    if (hasReadme) urlParams.set('docs', '1');
+    if (p > 1) urlParams.set('page', String(p));
     const qs = urlParams.toString();
-    return `/skills${qs ? `?${qs}` : ""}`;
+    return `/skills${qs ? `?${qs}` : ''}`;
   }
 
   return (

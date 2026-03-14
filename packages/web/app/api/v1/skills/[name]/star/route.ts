@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
-import { eq, and, sql } from 'drizzle-orm';
-import { db } from '@/lib/db';
-import { skills, skillStars } from '@/lib/db/schema';
-import { auth } from '@/lib/auth';
+import { and, eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
 import { canReadSkill, resolveRequestUserId } from '@/lib/auth-helpers';
+import { db } from '@/lib/db';
+import { skillStars, skills } from '@/lib/db/schema';
 
 interface RouteParams {
   params: Promise<{ name: string }>;
