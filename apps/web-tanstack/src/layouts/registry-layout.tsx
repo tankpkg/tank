@@ -94,7 +94,7 @@ export function RegistryLayout() {
               <span>Security-first package manager for AI agent skills</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <Link to="/skills" className="hover:text-emerald-400 transition-colors">
+              <Link to="/skills" search={{} as never} className="hover:text-emerald-400 transition-colors">
                 Skills
               </Link>
               <Link to="/docs" className="hover:text-emerald-400 transition-colors">
