@@ -9,6 +9,8 @@
  * Seeds test packages directly via SQL; no publish flow needed for read-only tests.
  */
 import { randomUUID } from "node:crypto";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import postgres from "postgres";
 
@@ -260,6 +262,156 @@ describe("Feature: Registry read API for skill metadata", () => {
       await whenICallGet(`/api/v1/skills/${encoded}`);
       thenStatusIs(200);
       thenBodyFieldEquals("name", `@${world.testOrg}/registry-read-skill`);
+    });
+  });
+});
+
+// ── Homepage UX feature (source-level assertions) ──────────────────────────
+
+interface HomepageUxWorld {
+  source: string;
+  heroSection: string;
+}
+
+const homepageWorld: HomepageUxWorld = {
+  source: "",
+  heroSection: "",
+};
+
+const homepagePath = fileURLToPath(new URL("../../packages/web/app/page.tsx", import.meta.url));
+
+function givenINavigateToTankHomepage(): void {
+  homepageWorld.source = fs.readFileSync(homepagePath, "utf-8");
+  const heroStart = homepageWorld.source.indexOf("{/* Hero Section */}");
+  const problemStart = homepageWorld.source.indexOf("{/* Problem Statement — moved up, immediately below hero */}");
+  expect(heroStart).toBeGreaterThan(-1);
+  expect(problemStart).toBeGreaterThan(heroStart);
+  homepageWorld.heroSection = homepageWorld.source.slice(heroStart, problemStart);
+}
+
+function givenIReadOnlyHeroHeadlineAndSubheadline(): void {
+  if (!homepageWorld.heroSection) givenINavigateToTankHomepage();
+}
+
+function thenHeroDefinesAgentSkillsInPlainLanguage(): void {
+  expect(homepageWorld.heroSection).toContain("Agent skills");
+  expect(homepageWorld.heroSection).toContain("are plugins that extend what your AI coding");
+  expect(homepageWorld.heroSection).toContain("tool can do");
+}
+
+function thenDefinitionDoesNotAssumePriorKnowledge(): void {
+  expect(homepageWorld.heroSection).toContain("plugins");
+  expect(homepageWorld.heroSection).toContain("AI coding");
+}
+
+function thenHeroIdentifiesAudience(): void {
+  expect(homepageWorld.heroSection).toContain("For developers using Claude Code, Cursor, and other AI coding agents");
+}
+
+function thenAudienceStatementIsVisibleWithoutScrollAt1280(): void {
+  expect(homepageWorld.heroSection).toContain("For developers using Claude Code, Cursor, and other AI coding agents");
+}
+
+function thenSecurityRiskReferenceIsVisible(): void {
+  expect(homepageWorld.source).toContain("malicious skills");
+  expect(homepageWorld.source).toContain("credential-stealing malware");
+}
+
+function thenRiskFramingIsWithinFirstTwoSections(): void {
+  const riskPos = homepageWorld.source.indexOf("341 malicious skills");
+  const explainerPos = homepageWorld.source.indexOf(
+    "{/* What is Tank — plain-language explainer before feature grid */}",
+  );
+  expect(riskPos).toBeGreaterThan(-1);
+  expect(explainerPos).toBeGreaterThan(riskPos);
+}
+
+function thenBeginnerFriendlyWhatIsTankAppears(): void {
+  expect(homepageWorld.source).toContain("Tank is");
+  expect(homepageWorld.source).toContain("npm for agent skills");
+  expect(homepageWorld.source).toContain("Just like npm manages JavaScript packages");
+}
+
+function thenExplainerAppearsBeforeFeatureCards(): void {
+  const explainerPos = homepageWorld.source.indexOf(
+    "{/* What is Tank — plain-language explainer before feature grid */}",
+  );
+  const featureGridPos = homepageWorld.source.indexOf("{/* Feature Grid */}");
+  expect(explainerPos).toBeGreaterThan(-1);
+  expect(featureGridPos).toBeGreaterThan(explainerPos);
+}
+
+function thenPrimaryCtaIsInHeroSection(): void {
+  expect(homepageWorld.heroSection).toContain('data-testid="home-primary-cta"');
+  expect(homepageWorld.heroSection).toContain("Browse Skills");
+}
+
+function thenPrimaryCtaVisibleWithoutScrollAt1280(): void {
+  expect(homepageWorld.heroSection).toContain('data-testid="home-primary-cta"');
+}
+
+function thenICanAnswerWhatIsTankWithoutReadingFurther(): void {
+  expect(homepageWorld.heroSection).toContain("Tank");
+  expect(homepageWorld.heroSection).toContain("is the package manager for agent skills");
+}
+
+function thenICanAnswerWhoIsTankForWithoutReadingFurther(): void {
+  expect(homepageWorld.heroSection).toContain("For developers using Claude Code, Cursor, and other AI coding agents");
+}
+
+function thenICanAnswerWhyTankExistsWithoutReadingFurther(): void {
+  expect(homepageWorld.heroSection).toContain("skill registries have no security scanning");
+  expect(homepageWorld.heroSection).toContain("attackers are already");
+}
+
+describe("Feature: Homepage first-time visitor UX", () => {
+  describe('Scenario: Hero section defines "agent skills" in plain language', () => {
+    it("runs Given/When/Then", () => {
+      givenINavigateToTankHomepage();
+      thenHeroDefinesAgentSkillsInPlainLanguage();
+      thenDefinitionDoesNotAssumePriorKnowledge();
+    });
+  });
+
+  describe("Scenario: Hero section identifies the target audience", () => {
+    it("runs Given/When/Then", () => {
+      givenINavigateToTankHomepage();
+      thenHeroIdentifiesAudience();
+      thenAudienceStatementIsVisibleWithoutScrollAt1280();
+    });
+  });
+
+  describe("Scenario: Security problem is visible above or immediately below the fold", () => {
+    it("runs Given/When/Then", () => {
+      givenINavigateToTankHomepage();
+      thenSecurityRiskReferenceIsVisible();
+      thenRiskFramingIsWithinFirstTwoSections();
+    });
+  });
+
+  describe('Scenario: Plain-language "What is Tank?" explanation appears before feature grid', () => {
+    it("runs Given/When/Then", () => {
+      givenINavigateToTankHomepage();
+      thenBeginnerFriendlyWhatIsTankAppears();
+      thenExplainerAppearsBeforeFeatureCards();
+    });
+  });
+
+  describe("Scenario: Primary CTA is visible without scrolling on desktop", () => {
+    it("runs Given/When/Then", () => {
+      givenINavigateToTankHomepage();
+      thenPrimaryCtaIsInHeroSection();
+      thenPrimaryCtaVisibleWithoutScrollAt1280();
+    });
+  });
+
+  describe("Scenario: Value proposition is understandable in under 5 seconds", () => {
+    it("runs Given/When/Then", () => {
+      givenINavigateToTankHomepage();
+      givenIReadOnlyHeroHeadlineAndSubheadline();
+      thenICanAnswerWhatIsTankWithoutReadingFurther();
+      thenICanAnswerWhoIsTankForWithoutReadingFurther();
+      thenICanAnswerWhyTankExistsWithoutReadingFurther();
     });
   });
 });
