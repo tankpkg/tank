@@ -9,7 +9,7 @@ import { healthRoute } from './routes/health';
 import { seoRoutes } from './routes/seo';
 import { v1Routes } from './routes/v1';
 
-const app = new Hono();
+const app = new Hono().basePath('/api');
 
 app.use(
   '*',
