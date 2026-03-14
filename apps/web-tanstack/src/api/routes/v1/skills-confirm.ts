@@ -1,5 +1,7 @@
+import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
+import { z } from 'zod';
 
 import { type AuditScoreInput, computeAuditScore } from '~/lib/audit-score';
 import { verifyCliAuth } from '~/lib/auth-helpers';
@@ -88,32 +90,21 @@ async function triggerSecurityScan(
   }
 }
 
-export const skillsConfirmRoutes = new Hono();
+const confirmSchema = z.object({
+  versionId: z.string().uuid(),
+  integrity: z.string().regex(/^sha512-/, 'Must be a sha512 integrity hash').max(256),
+  fileCount: z.number().int().min(0).max(10_000).optional(),
+  tarballSize: z.number().int().min(0).max(100 * 1024 * 1024).optional(),
+  readme: z.string().max(500_000).optional()
+});
 
-skillsConfirmRoutes.post('/confirm', async (c) => {
+export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json', confirmSchema), async (c) => {
   const verified = await verifyCliAuth(c.req.raw);
   if (!verified) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
-  let body: unknown;
-  try {
-    body = await c.req.json();
-  } catch {
-    return c.json({ error: 'Invalid JSON body' }, 400);
-  }
-
-  const { versionId, integrity, fileCount, tarballSize, readme } = body as {
-    versionId?: string;
-    integrity?: string;
-    fileCount?: number;
-    tarballSize?: number;
-    readme?: string;
-  };
-
-  if (!versionId || !integrity) {
-    return c.json({ error: 'Missing required fields: versionId, integrity' }, 400);
-  }
+  const { versionId, integrity, fileCount, tarballSize, readme } = c.req.valid('json');
 
   const existingVersions = await db.select().from(skillVersions).where(eq(skillVersions.id, versionId)).limit(1);
 

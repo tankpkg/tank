@@ -47,16 +47,16 @@ async function recordDownload(skillId: string): Promise<void> {
   `);
 }
 
-export const skillsReadRoutes = new Hono();
+export const skillsReadRoutes = new Hono()
 
-// GET /skills/:name — single skill metadata with latest version
-skillsReadRoutes.get('/:name', async (c) => {
-  const requesterUserId = await resolveRequestUserId(c.req.raw);
-  const rawName = c.req.param('name');
-  const name = decodeURIComponent(rawName);
-  const visClause = visibilityClause(requesterUserId);
+  // GET /skills/:name — single skill metadata with latest version
+  .get('/:name', async (c) => {
+    const requesterUserId = await resolveRequestUserId(c.req.raw);
+    const rawName = c.req.param('name');
+    const name = decodeURIComponent(rawName);
+    const visClause = visibilityClause(requesterUserId);
 
-  const results = await db.execute(sql`
+    const results = await db.execute(sql`
     SELECT
       s.name,
       s.description,
@@ -75,33 +75,33 @@ skillsReadRoutes.get('/:name', async (c) => {
     LIMIT 1
   `);
 
-  if (results.length === 0) {
-    return c.json({ error: 'Skill not found' }, 404);
-  }
+    if (results.length === 0) {
+      return c.json({ error: 'Skill not found' }, 404);
+    }
 
-  const row = results[0] as Record<string, unknown>;
+    const row = results[0] as Record<string, unknown>;
 
-  return c.json({
-    name: row.name as string,
-    description: row.description as string | null,
-    visibility: row.visibility as 'public' | 'private',
-    latestVersion: (row.latestVersion as string) ?? null,
-    publisher: {
-      name: (row.publisherName as string) || null
-    },
-    createdAt: row.createdAt as string,
-    updatedAt: row.updatedAt as string
-  });
-});
+    return c.json({
+      name: row.name as string,
+      description: row.description as string | null,
+      visibility: row.visibility as 'public' | 'private',
+      latestVersion: (row.latestVersion as string) ?? null,
+      publisher: {
+        name: (row.publisherName as string) || null
+      },
+      createdAt: row.createdAt as string,
+      updatedAt: row.updatedAt as string
+    });
+  })
 
-// GET /skills/:name/versions — all versions for a skill
-skillsReadRoutes.get('/:name/versions', async (c) => {
-  const requesterUserId = await resolveRequestUserId(c.req.raw);
-  const rawName = c.req.param('name');
-  const name = decodeURIComponent(rawName);
-  const visClause = visibilityClause(requesterUserId);
+  // GET /skills/:name/versions — all versions for a skill
+  .get('/:name/versions', async (c) => {
+    const requesterUserId = await resolveRequestUserId(c.req.raw);
+    const rawName = c.req.param('name');
+    const name = decodeURIComponent(rawName);
+    const visClause = visibilityClause(requesterUserId);
 
-  const rows = await db.execute(sql`
+    const rows = await db.execute(sql`
     SELECT
       s.name,
       sv.version,
@@ -115,39 +115,39 @@ skillsReadRoutes.get('/:name/versions', async (c) => {
     ORDER BY sv.created_at DESC
   `);
 
-  if (rows.length === 0) {
-    return c.json({ error: 'Skill not found' }, 404);
-  }
+    if (rows.length === 0) {
+      return c.json({ error: 'Skill not found' }, 404);
+    }
 
-  const skillName = (rows[0] as Record<string, unknown>).name as string;
+    const skillName = (rows[0] as Record<string, unknown>).name as string;
 
-  return c.json({
-    name: skillName,
-    versions: rows
-      .filter(
-        (r: Record<string, unknown>) =>
-          r.version !== null && r.integrity !== 'pending' && r.auditStatus !== 'pending-upload'
-      )
-      .map((r: Record<string, unknown>) => ({
-        version: r.version as string,
-        integrity: r.integrity as string,
-        auditScore: r.auditScore != null ? Number(r.auditScore) : null,
-        auditStatus: r.auditStatus as string,
-        publishedAt: r.publishedAt as string
-      }))
-  });
-});
+    return c.json({
+      name: skillName,
+      versions: rows
+        .filter(
+          (r: Record<string, unknown>) =>
+            r.version !== null && r.integrity !== 'pending' && r.auditStatus !== 'pending-upload'
+        )
+        .map((r: Record<string, unknown>) => ({
+          version: r.version as string,
+          integrity: r.integrity as string,
+          auditScore: r.auditScore != null ? Number(r.auditScore) : null,
+          auditStatus: r.auditStatus as string,
+          publishedAt: r.publishedAt as string
+        }))
+    });
+  })
 
-// GET /skills/:name/:version — specific version detail with download URL
-skillsReadRoutes.get('/:name/:version', async (c) => {
-  try {
-    const requesterUserId = await resolveRequestUserId(c.req.raw);
-    const rawName = c.req.param('name');
-    const version = c.req.param('version');
-    const name = decodeURIComponent(rawName);
-    const visClause = visibilityClause(requesterUserId);
+  // GET /skills/:name/:version — specific version detail with download URL
+  .get('/:name/:version', async (c) => {
+    try {
+      const requesterUserId = await resolveRequestUserId(c.req.raw);
+      const rawName = c.req.param('name');
+      const version = c.req.param('version');
+      const name = decodeURIComponent(rawName);
+      const visClause = visibilityClause(requesterUserId);
 
-    const skillVersionRows = await db.execute(sql`
+      const skillVersionRows = await db.execute(sql`
       SELECT
         s.id AS "skillId",
         s.name,
@@ -168,37 +168,37 @@ skillsReadRoutes.get('/:name/:version', async (c) => {
       LIMIT 1
     `);
 
-    if (skillVersionRows.length === 0) {
-      const skillCheck = await db.execute(sql`
+      if (skillVersionRows.length === 0) {
+        const skillCheck = await db.execute(sql`
         SELECT s.id
         FROM skills s
         WHERE s.name = ${name} AND ${visClause}
         LIMIT 1
       `);
 
-      if (skillCheck.length === 0) {
-        return c.json({ error: 'Skill not found' }, 404);
+        if (skillCheck.length === 0) {
+          return c.json({ error: 'Skill not found' }, 404);
+        }
+        return c.json({ error: `Version ${version} not found for ${name}` }, 404);
       }
-      return c.json({ error: `Version ${version} not found for ${name}` }, 404);
-    }
 
-    const row = skillVersionRows[0] as Record<string, unknown>;
-    const skillId = row.skillId as string;
-    const versionId = row.versionId as string;
-    const tarballPath = row.tarballPath as string;
+      const row = skillVersionRows[0] as Record<string, unknown>;
+      const skillId = row.skillId as string;
+      const versionId = row.versionId as string;
+      const tarballPath = row.tarballPath as string;
 
-    let signedDownloadUrl: string;
-    try {
-      const downloadData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
-      signedDownloadUrl = downloadData.signedUrl;
-    } catch {
-      return c.json({ error: 'Failed to generate download URL' }, 500);
-    }
+      let signedDownloadUrl: string;
+      try {
+        const downloadData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
+        signedDownloadUrl = downloadData.signedUrl;
+      } catch {
+        return c.json({ error: 'Failed to generate download URL' }, 500);
+      }
 
-    // Fire-and-forget download recording
-    recordDownload(skillId).catch(() => {});
+      // Fire-and-forget download recording
+      recordDownload(skillId).catch(() => {});
 
-    const metaRows = await db.execute(sql`
+      const metaRows = await db.execute(sql`
       SELECT
         coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = ${skillId} AND date >= CURRENT_DATE - 7), 0) AS "downloadCount",
         sr.verdict AS "scanVerdict",
@@ -216,42 +216,42 @@ skillsReadRoutes.get('/:name/:version', async (c) => {
       LEFT JOIN scan_findings sf ON sf.scan_id = sr.id
     `);
 
-    const rawDownloadCount = metaRows.length > 0 ? Number((metaRows[0] as Record<string, unknown>).downloadCount) : 0;
-    const downloadCount = Number.isFinite(rawDownloadCount) ? rawDownloadCount : 0;
-    const scanVerdict =
-      metaRows.length > 0 ? ((metaRows[0] as Record<string, unknown>).scanVerdict as string | null) : null;
+      const rawDownloadCount = metaRows.length > 0 ? Number((metaRows[0] as Record<string, unknown>).downloadCount) : 0;
+      const downloadCount = Number.isFinite(rawDownloadCount) ? rawDownloadCount : 0;
+      const scanVerdict =
+        metaRows.length > 0 ? ((metaRows[0] as Record<string, unknown>).scanVerdict as string | null) : null;
 
-    const scanFindingsList = metaRows
-      .filter((r: Record<string, unknown>) => r.findingStage !== null)
-      .map((r: Record<string, unknown>) => ({
-        stage: r.findingStage as string,
-        severity: r.findingSeverity as string,
-        type: r.findingType as string,
-        description: r.findingDescription as string,
-        location: r.findingLocation as string | null
-      }));
+      const scanFindingsList = metaRows
+        .filter((r: Record<string, unknown>) => r.findingStage !== null)
+        .map((r: Record<string, unknown>) => ({
+          stage: r.findingStage as string,
+          severity: r.findingSeverity as string,
+          type: r.findingType as string,
+          description: r.findingDescription as string,
+          location: r.findingLocation as string | null
+        }));
 
-    const dependencies = (row.dependencies as Record<string, string> | null) ?? {};
+      const dependencies = (row.dependencies as Record<string, string> | null) ?? {};
 
-    return c.json({
-      name: row.name as string,
-      version: row.version as string,
-      description: row.description as string | null,
-      integrity: row.integrity as string,
-      permissions: row.permissions,
-      auditScore: row.auditScore != null ? Number(row.auditScore) : null,
-      auditStatus: row.auditStatus as string,
-      downloadUrl: signedDownloadUrl,
-      publishedAt: row.publishedAt as string,
-      downloads: downloadCount,
-      scanVerdict,
-      scanFindings: scanFindingsList,
-      dependencies
-    });
-  } catch (error) {
-    return c.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      500
-    );
-  }
-});
+      return c.json({
+        name: row.name as string,
+        version: row.version as string,
+        description: row.description as string | null,
+        integrity: row.integrity as string,
+        permissions: row.permissions,
+        auditScore: row.auditScore != null ? Number(row.auditScore) : null,
+        auditStatus: row.auditStatus as string,
+        downloadUrl: signedDownloadUrl,
+        publishedAt: row.publishedAt as string,
+        downloads: downloadCount,
+        scanVerdict,
+        scanFindings: scanFindingsList,
+        dependencies
+      });
+    } catch (error) {
+      return c.json(
+        { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+        500
+      );
+    }
+  });
