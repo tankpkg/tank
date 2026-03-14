@@ -1,25 +1,38 @@
 import { createFileRoute } from '@tanstack/react-router';
 
+import { DocsLayout } from '~/layouts/docs-layout';
+import { getDocBySlug } from '~/server-fns/docs';
+
 export const Route = createFileRoute('/_registry/docs/')({
-  head: () => ({
+  loader: async () => {
+    const doc = await getDocBySlug({ data: 'index' });
+    return { doc };
+  },
+  head: ({ loaderData }) => ({
     meta: [
-      {
-        title: 'Docs | Tank TanStack Migration'
-      }
+      { title: loaderData?.doc?.title ? `${loaderData.doc.title} | Tank` : 'Documentation | Tank' },
+      ...(loaderData?.doc?.description ? [{ name: 'description', content: loaderData.doc.description }] : [])
     ]
   }),
-  component: DocsPage
+  component: DocsIndexPage
 });
 
-function DocsPage() {
+function DocsIndexPage() {
+  const { doc } = Route.useLoaderData();
+
   return (
-    <section className="tank-card rounded-[1.75rem] p-8">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-leaf">Docs</p>
-      <h1 className="mt-4 text-3xl font-semibold text-forest">Docs content stays intact; the renderer comes next.</h1>
-      <p className="mt-3 max-w-2xl text-ink-soft">
-        Fumadocs and the existing MDX content are not moved in this foundation step. This route exists so the new app
-        already has the same high-level IA shape as the current web surface.
-      </p>
-    </section>
+    <DocsLayout>
+      {doc ? (
+        <article className="prose prose-invert prose-emerald max-w-none">
+          {/* Content from local MDX files processed by content-collections (trusted source) */}
+          <div dangerouslySetInnerHTML={{ __html: doc.html }} />
+        </article>
+      ) : (
+        <div className="py-16 text-center">
+          <h1 className="text-2xl font-bold mb-2">Documentation</h1>
+          <p className="text-muted-foreground">Documentation content is being loaded.</p>
+        </div>
+      )}
+    </DocsLayout>
   );
 }
