@@ -20,6 +20,7 @@ import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dash
 import { Route as AdminAdminRouteImport } from './routes/_admin/admin'
 import { Route as RegistrySkillsIndexRouteImport } from './routes/_registry/skills.index'
 import { Route as RegistryDocsIndexRouteImport } from './routes/_registry/docs.index'
+import { Route as RegistrySkillsSplatRouteImport } from './routes/_registry/skills/$'
 
 const RegistryRoute = RegistryRouteImport.update({
   id: '/_registry',
@@ -73,6 +74,11 @@ const RegistryDocsIndexRoute = RegistryDocsIndexRouteImport.update({
   path: '/docs/',
   getParentRoute: () => RegistryRoute,
 } as any)
+const RegistrySkillsSplatRoute = RegistrySkillsSplatRouteImport.update({
+  id: '/skills/$',
+  path: '/skills/$',
+  getParentRoute: () => RegistryRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof RegistryIndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/cli-login': typeof RegistryCliLoginRoute
   '/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
+  '/skills/$': typeof RegistrySkillsSplatRoute
   '/docs/': typeof RegistryDocsIndexRoute
   '/skills/': typeof RegistrySkillsIndexRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/cli-login': typeof RegistryCliLoginRoute
   '/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
+  '/skills/$': typeof RegistrySkillsSplatRoute
   '/docs': typeof RegistryDocsIndexRoute
   '/skills': typeof RegistrySkillsIndexRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/_registry/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/_registry/': typeof RegistryIndexRoute
+  '/_registry/skills/$': typeof RegistrySkillsSplatRoute
   '/_registry/docs/': typeof RegistryDocsIndexRoute
   '/_registry/skills/': typeof RegistrySkillsIndexRoute
 }
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/cli-login'
     | '/login'
     | '/api/$'
+    | '/skills/$'
     | '/docs/'
     | '/skills/'
   fileRoutesByTo: FileRoutesByTo
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/cli-login'
     | '/login'
     | '/api/$'
+    | '/skills/$'
     | '/docs'
     | '/skills'
   id:
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_registry/login'
     | '/api/$'
     | '/_registry/'
+    | '/_registry/skills/$'
     | '/_registry/docs/'
     | '/_registry/skills/'
   fileRoutesById: FileRoutesById
@@ -230,6 +242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegistryDocsIndexRouteImport
       parentRoute: typeof RegistryRoute
     }
+    '/_registry/skills/$': {
+      id: '/_registry/skills/$'
+      path: '/skills/$'
+      fullPath: '/skills/$'
+      preLoaderRoute: typeof RegistrySkillsSplatRouteImport
+      parentRoute: typeof RegistryRoute
+    }
   }
 }
 
@@ -259,6 +278,7 @@ interface RegistryRouteChildren {
   RegistryCliLoginRoute: typeof RegistryCliLoginRoute
   RegistryLoginRoute: typeof RegistryLoginRoute
   RegistryIndexRoute: typeof RegistryIndexRoute
+  RegistrySkillsSplatRoute: typeof RegistrySkillsSplatRoute
   RegistryDocsIndexRoute: typeof RegistryDocsIndexRoute
   RegistrySkillsIndexRoute: typeof RegistrySkillsIndexRoute
 }
@@ -267,6 +287,7 @@ const RegistryRouteChildren: RegistryRouteChildren = {
   RegistryCliLoginRoute: RegistryCliLoginRoute,
   RegistryLoginRoute: RegistryLoginRoute,
   RegistryIndexRoute: RegistryIndexRoute,
+  RegistrySkillsSplatRoute: RegistrySkillsSplatRoute,
   RegistryDocsIndexRoute: RegistryDocsIndexRoute,
   RegistrySkillsIndexRoute: RegistrySkillsIndexRoute,
 }

@@ -92,9 +92,17 @@ async function triggerSecurityScan(
 
 const confirmSchema = z.object({
   versionId: z.string().uuid(),
-  integrity: z.string().regex(/^sha512-/, 'Must be a sha512 integrity hash').max(256),
+  integrity: z
+    .string()
+    .regex(/^sha512-/, 'Must be a sha512 integrity hash')
+    .max(256),
   fileCount: z.number().int().min(0).max(10_000).optional(),
-  tarballSize: z.number().int().min(0).max(100 * 1024 * 1024).optional(),
+  tarballSize: z
+    .number()
+    .int()
+    .min(0)
+    .max(100 * 1024 * 1024)
+    .optional(),
   readme: z.string().max(500_000).optional()
 });
 

@@ -108,7 +108,7 @@ export function HomeScreen({ publicSkillCount, starCount }: HomeScreenProps) {
                 asChild
                 className="bg-emerald-600 hover:bg-emerald-500 text-white group"
                 data-testid="home-primary-cta">
-                <Link to="/skills">
+                <Link to="/skills" search={{} as never}>
                   Browse Skills
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -408,7 +408,7 @@ export function HomeScreen({ publicSkillCount, starCount }: HomeScreenProps) {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button size="lg" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white group">
-                <Link to="/skills">
+                <Link to="/skills" search={{} as never}>
                   Browse Skills
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
