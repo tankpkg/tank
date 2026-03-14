@@ -11,10 +11,10 @@
  * way to be fast is to minimize the number of separate queries.
  */
 
-import { sql } from 'drizzle-orm';
-import { db } from '@/lib/db';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
+import { sql } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,11 +83,11 @@ export interface SkillVersionSummary {
 export interface SkillDetailResult {
   name: string;
   description: string | null;
-  visibility: 'public' | 'private';
+  visibility: "public" | "private";
   repositoryUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
-  publisher: { name: string; githubUsername: string | null };
+  publisher: { name: string; githubUsername: string | null; emailVerified: boolean };
   downloadCount: number;
   starCount: number;
   isStarred: boolean;
@@ -98,7 +98,7 @@ export interface SkillDetailResult {
 export interface SkillSearchResult {
   name: string;
   description: string | null;
-  visibility: 'public' | 'private';
+  visibility: "public" | "private";
   latestVersion: string | null;
   auditScore: number | null;
   verdict: string | null;
@@ -107,8 +107,10 @@ export interface SkillSearchResult {
   mediumCount: number;
   lowCount: number;
   publisher: string;
+  publisherVerified: boolean;
   downloads: number;
   stars: number;
+  scannedAt: Date | null;
   updatedAt?: Date;
 }
 
@@ -121,11 +123,11 @@ export interface SkillSearchResponse {
 
 // ── Search params ─────────────────────────────────────────────────────────────
 
-export type SortOption = 'updated' | 'downloads' | 'stars' | 'security' | 'name';
-export type VisibilityFilter = 'all' | 'public' | 'private';
-export type ScoreBucket = 'all' | 'high' | 'medium' | 'low';
-export type FreshnessBucket = 'all' | 'week' | 'month' | 'year';
-export type PopularityBucket = 'all' | 'popular' | 'growing' | 'new';
+export type SortOption = "updated" | "downloads" | "stars" | "security" | "name";
+export type VisibilityFilter = "all" | "public" | "private";
+export type ScoreBucket = "all" | "high" | "medium" | "low";
+export type FreshnessBucket = "all" | "week" | "month" | "year";
+export type PopularityBucket = "all" | "popular" | "growing" | "new";
 
 export interface SkillsSearchParams {
   q: string;
@@ -232,7 +234,8 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
       s.updated_at AS "skillUpdatedAt",
       coalesce(u.name, '') AS "publisherName",
       u.github_username AS "publisherGithubUsername",
-      coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) AS "downloadCount",
+      u.email_verified AS "publisherEmailVerified",
+      coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id), 0) AS "downloadCount",
       ${starCountSql} AS "starCount",
       ${isStarredSql} AS "isStarred",
       s.repository_url AS "skillRepositoryUrl",
@@ -286,7 +289,7 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
       integrity: r.integrity as string,
       auditScore: r.auditScore != null ? Number(r.auditScore) : null,
       auditStatus: r.auditStatus as string,
-      publishedAt: new Date(r.publishedAt as string)
+      publishedAt: new Date(r.publishedAt as string),
     }));
 
   // Parse scan data from the latest version row (first row, already ordered DESC)
@@ -312,7 +315,7 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
     ? {
         verdict: scanResultJson.verdict as string | null,
         stagesRun: Array.isArray(scanResultJson.stagesRun) ? (scanResultJson.stagesRun as string[]) : [],
-        durationMs: typeof scanResultJson.durationMs === 'number' ? scanResultJson.durationMs : null,
+        durationMs: typeof scanResultJson.durationMs === "number" ? scanResultJson.durationMs : null,
         scannedAt,
         findings: Array.isArray(scanFindingsJson) ? scanFindingsJson : [],
         criticalCount: Number(scanResultJson.criticalCount) || 0,
@@ -320,9 +323,9 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
         mediumCount: Number(scanResultJson.mediumCount) || 0,
         lowCount: Number(scanResultJson.lowCount) || 0,
         llm_analysis:
-          scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === 'object'
+          scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === "object"
             ? (scanResultJson.llm_analysis as LLMAnalysisInfo)
-            : null
+            : null,
       }
     : {
         verdict: null,
@@ -334,7 +337,7 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
         highCount: 0,
         mediumCount: 0,
         lowCount: 0,
-        llm_analysis: null
+        llm_analysis: null,
       };
 
   const latestVersion: SkillVersionDetail | null = latestRow
@@ -349,7 +352,7 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
         readme: (latestRowData?.readme as string) ?? null,
         fileCount: Number(latestRowData?.versionFileCount) ?? 0,
         tarballSize: Number(latestRowData?.versionTarballSize) ?? 0,
-        scanDetails
+        scanDetails,
       }
     : null;
 
@@ -358,16 +361,20 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
   const result: SkillDetailResult = {
     name: first.skillName as string,
     description: first.skillDescription as string | null,
-    visibility: (first.skillVisibility as 'public' | 'private') ?? 'public',
+    visibility: (first.skillVisibility as "public" | "private") ?? "public",
     repositoryUrl: first.skillRepositoryUrl as string | null,
     createdAt: new Date(first.skillCreatedAt as string),
     updatedAt: new Date(first.skillUpdatedAt as string),
-    publisher: { name: first.publisherName as string, githubUsername: first.publisherGithubUsername as string | null },
+    publisher: {
+      name: first.publisherName as string,
+      githubUsername: first.publisherGithubUsername as string | null,
+      emailVerified: Boolean(first.publisherEmailVerified),
+    },
     downloadCount: Number.isFinite(parsedDownloadCount) ? parsedDownloadCount : 0,
     starCount: Number(first.starCount) || 0,
     isStarred: Boolean(first.isStarred),
     latestVersion,
-    versions
+    versions,
   };
 
   return result;
@@ -376,7 +383,7 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
 // ── Skills Search ────────────────────────────────────────────────────────────
 
 function escapeLike(input: string): string {
-  return input.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  return input.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
 /**
@@ -390,11 +397,11 @@ function escapeLike(input: string): string {
  */
 function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
   switch (sort) {
-    case 'downloads':
-      return sql`coalesce(dl.downloads_7d, 0) DESC`;
-    case 'stars':
+    case "downloads":
+      return sql`coalesce(dl.downloads_total, 0) DESC`;
+    case "stars":
       return starsAvailable ? sql`coalesce(st.stars_count, 0) DESC` : sql`s.updated_at DESC`;
-    case 'security':
+    case "security":
       // Sort by trust level: verified(4) > review_recommended(3) > concerns(2) > unsafe(1) > pending(0)
       return sql`(CASE sr.verdict
         WHEN 'pass' THEN CASE WHEN sr.critical_count + sr.high_count + sr.medium_count + sr.low_count = 0 THEN 4 ELSE 3 END
@@ -403,9 +410,9 @@ function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
         WHEN 'fail' THEN 1
         ELSE 0
       END) DESC, coalesce(sv.audit_score, 0) DESC`;
-    case 'name':
+    case "name":
       return sql`s.name ASC`;
-    case 'updated':
+    case "updated":
     default:
       return sql`s.updated_at DESC`;
   }
@@ -416,13 +423,13 @@ function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
  */
 function buildScoreBucketClause(scoreBucket: ScoreBucket) {
   switch (scoreBucket) {
-    case 'high':
+    case "high":
       return sql`AND coalesce(sv.audit_score, 0) >= 7`;
-    case 'medium':
+    case "medium":
       return sql`AND coalesce(sv.audit_score, 0) >= 4 AND coalesce(sv.audit_score, 0) < 7`;
-    case 'low':
+    case "low":
       return sql`AND sv.audit_score IS NOT NULL AND sv.audit_score < 4`;
-    case 'all':
+    case "all":
     default:
       return sql``;
   }
@@ -433,18 +440,18 @@ function buildScoreBucketClause(scoreBucket: ScoreBucket) {
  * Only meaningful when the user is logged in and wants to see only public or only private.
  */
 function buildVisibilityFilterClause(visibility: VisibilityFilter) {
-  if (visibility === 'public') return sql`AND s.visibility = 'public'`;
-  if (visibility === 'private') return sql`AND s.visibility = 'private'`;
+  if (visibility === "public") return sql`AND s.visibility = 'public'`;
+  if (visibility === "private") return sql`AND s.visibility = 'private'`;
   return sql``;
 }
 
 function buildFreshnessClause(freshness: FreshnessBucket | undefined) {
   switch (freshness) {
-    case 'week':
+    case "week":
       return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '7 days'`;
-    case 'month':
+    case "month":
       return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '30 days'`;
-    case 'year':
+    case "year":
       return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '365 days'`;
     default:
       return sql``;
@@ -453,11 +460,11 @@ function buildFreshnessClause(freshness: FreshnessBucket | undefined) {
 
 function buildPopularityClause(popularity: PopularityBucket | undefined) {
   switch (popularity) {
-    case 'popular':
+    case "popular":
       return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) >= 10`;
-    case 'growing':
+    case "growing":
       return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) BETWEEN 1 AND 9`;
-    case 'new':
+    case "new":
       return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) = 0`;
     default:
       return sql``;
@@ -490,19 +497,19 @@ export async function searchSkills(
   paramsOrQ: SkillsSearchParams | string,
   page?: number,
   limit?: number,
-  requesterUserId?: string | null
+  requesterUserId?: string | null,
 ): Promise<SkillSearchResponse> {
   // Normalize: support both new object API and old positional API
   let params: SkillsSearchParams;
-  if (typeof paramsOrQ === 'string') {
+  if (typeof paramsOrQ === "string") {
     params = {
       q: paramsOrQ,
       page: page ?? 1,
       limit: limit ?? 20,
-      sort: 'updated',
-      visibility: 'all',
-      scoreBucket: 'all',
-      requesterUserId
+      sort: "updated",
+      visibility: "all",
+      scoreBucket: "all",
+      requesterUserId,
     };
   } else {
     params = paramsOrQ;
@@ -517,14 +524,13 @@ export async function searchSkills(
   const visClause = visibilityClause(viewerUserId);
   const offset = (resolvedPage - 1) * resolvedLimit;
 
-  const needsDownloads = sort === 'downloads';
+  const needsDownloads = sort === "downloads";
 
   // Pre-aggregated subquery JOINs (only included when needed for sort)
   const downloadJoin = needsDownloads
     ? sql`LEFT JOIN (
-        SELECT skill_id, SUM(count)::int AS downloads_7d
+        SELECT skill_id, SUM(count)::int AS downloads_total
         FROM skill_download_daily
-        WHERE date >= CURRENT_DATE - 7
         GROUP BY skill_id
       ) dl ON dl.skill_id = s.id`
     : sql``;
@@ -539,8 +545,8 @@ export async function searchSkills(
 
   // Inline downloads for display (when not using the aggregated join)
   const downloadsSql = needsDownloads
-    ? sql`coalesce(dl.downloads_7d, 0)`
-    : sql`coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0)`;
+    ? sql`coalesce(dl.downloads_total, 0)`
+    : sql`coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id), 0)`;
 
   const starsSql = starsTableAvailable ? sql`coalesce(st.stars_count, 0)` : sql`0`;
 
@@ -566,6 +572,9 @@ export async function searchSkills(
         sr.medium_count AS "mediumCount",
         sr.low_count AS "lowCount",
         coalesce(u.name, '') AS publisher,
+        u.github_username AS "publisherGithubUsername",
+        u.email_verified AS "publisherEmailVerified",
+        sr.created_at AS "scannedAt",
         ${downloadsSql} AS downloads,
         ${starsSql} AS stars,
         count(*) OVER() AS total
@@ -611,6 +620,9 @@ export async function searchSkills(
       sr.medium_count AS "mediumCount",
       sr.low_count AS "lowCount",
       coalesce(u.name, '') AS publisher,
+      u.github_username AS "publisherGithubUsername",
+      u.email_verified AS "publisherEmailVerified",
+      sr.created_at AS "scannedAt",
       ${downloadsSql} AS downloads,
       ${starsSql} AS stars,
       count(*) OVER() AS total
@@ -627,7 +639,7 @@ export async function searchSkills(
     ${downloadJoin}
     ${starsJoin}
     WHERE (
-      s.name ILIKE ${'%' + escaped + '%'}
+      s.name ILIKE ${"%" + escaped + "%"}
       OR similarity(s.name, ${q}) > 0.15
       OR similarity(split_part(s.name, '/', 2), ${q}) > 0.15
       OR to_tsvector('english', s.name || ' ' || coalesce(s.description, ''))
@@ -639,11 +651,11 @@ export async function searchSkills(
     ${freshnessClause}
     ${popularityClause}
     ${readmeClause}
-    ORDER BY ${sort !== 'updated' ? sql`${primarySort},` : sql``} (
+    ORDER BY ${sort !== "updated" ? sql`${primarySort},` : sql``} (
       CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
-      + CASE WHEN s.name ILIKE ${q + '%'} THEN 800 ELSE 0 END
-      + CASE WHEN s.name ILIKE ${'%/' + escaped + '%'} THEN 600 ELSE 0 END
-      + CASE WHEN s.name ILIKE ${'%' + escaped + '%'} THEN 400 ELSE 0 END
+      + CASE WHEN s.name ILIKE ${q + "%"} THEN 800 ELSE 0 END
+      + CASE WHEN s.name ILIKE ${"%/" + escaped + "%"} THEN 600 ELSE 0 END
+      + CASE WHEN s.name ILIKE ${"%" + escaped + "%"} THEN 400 ELSE 0 END
       + (greatest(similarity(s.name, ${q}), similarity(split_part(s.name, '/', 2), ${q})) * 300)::int
       + (ts_rank(
           to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
@@ -664,7 +676,7 @@ function mapSearchResults(rows: Record<string, unknown>[], page: number, limit: 
     results: rows.map((row) => ({
       name: row.name as string,
       description: row.description as string | null,
-      visibility: (row.visibility as 'public' | 'private') ?? 'public',
+      visibility: (row.visibility as "public" | "private") ?? "public",
       latestVersion: (row.latestVersion as string) ?? null,
       auditScore: row.auditScore != null ? Number(row.auditScore) : null,
       verdict: (row.verdict as string) ?? null,
@@ -672,13 +684,15 @@ function mapSearchResults(rows: Record<string, unknown>[], page: number, limit: 
       highCount: Number(row.highCount) || 0,
       mediumCount: Number(row.mediumCount) || 0,
       lowCount: Number(row.lowCount) || 0,
-      publisher: (row.publisher as string) ?? '',
+      publisher: (row.publisher as string) ?? "",
+      publisherVerified: Boolean(row.publisherEmailVerified) && Boolean(row.publisherGithubUsername),
       downloads: Number(row.downloads) || 0,
       stars: Number(row.stars) || 0,
-      updatedAt: row.updatedAt ? new Date(row.updatedAt as string) : undefined
+      scannedAt: row.scannedAt ? new Date(row.scannedAt as string) : null,
+      updatedAt: row.updatedAt ? new Date(row.updatedAt as string) : undefined,
     })),
     page,
     limit,
-    total
+    total,
   };
 }
