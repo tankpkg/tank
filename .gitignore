@@ -21,6 +21,7 @@ out/
 .wrangler/
 .output/
 .vinxi/
+.content-collections/
 __unconfig*
 todos.json
 *.tsbuildinfo
