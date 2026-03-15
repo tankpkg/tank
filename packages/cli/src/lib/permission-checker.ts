@@ -1,5 +1,11 @@
 import type { Permissions } from '@internals/schemas';
 
+export interface PermissionViolation {
+  skillName: string;
+  type: 'network.outbound' | 'filesystem.read' | 'filesystem.write' | 'subprocess';
+  requested: string;
+}
+
 /**
  * Check if a skill's permissions fit within the project's permission budget.
  * Throws if any permission exceeds the budget.
