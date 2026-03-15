@@ -1,12 +1,23 @@
 'use client';
 
+import { useForm } from '@tanstack/react-form';
 import { useState } from 'react';
+import { z } from 'zod';
 
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
 import { authClient } from '~/lib/auth-client';
+
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
+  password: z.string().min(8, 'Password must be at least 8 characters')
+});
+
+const signupSchema = loginSchema.extend({
+  name: z.string().min(1, 'Name is required')
+});
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -25,23 +36,54 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
   const githubEnabled = enabledProviders.has('github');
   const oidcEnabled = enabledProviders.has('oidc');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
 
+  const form = useForm({
+    defaultValues: { name: '', email: '', password: '' },
+    onSubmit: async ({ value }) => {
+      setError(null);
+      setIsLoading(true);
+      try {
+        if (mode === 'signin') {
+          const result = await authClient.signIn.email({
+            email: value.email,
+            password: value.password,
+            callbackURL: '/dashboard'
+          });
+          if (result.error) {
+            setError(result.error.message || 'Failed to sign in');
+          }
+        } else {
+          const result = await authClient.signUp.email({
+            name: value.name || value.email.split('@')[0] || 'User',
+            email: value.email,
+            password: value.password,
+            callbackURL: '/dashboard'
+          });
+          if (result.error) {
+            setError(result.error.message || 'Failed to create account');
+          } else {
+            setVerificationSent(true);
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  });
+
   const handleSignIn = async () => {
     setError(null);
     setIsLoading(true);
-
     try {
       const result = await authClient.signIn.social({
         provider: 'github',
         callbackURL: '/dashboard'
       });
-
       if (result.error) {
         setError(result.error.message || 'Failed to sign in with GitHub');
       }
@@ -55,51 +97,13 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
   const handleSsoSignIn = async () => {
     setError(null);
     setIsLoading(true);
-
     try {
       const result = await authClient.signIn.oauth2({
         providerId: oidcProviderId,
         callbackURL: '/dashboard'
       });
-
       if (result.error) {
         setError(result.error.message || 'Failed to sign in with SSO');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEmailAuth = async () => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      if (mode === 'signin') {
-        const result = await authClient.signIn.email({
-          email,
-          password,
-          callbackURL: '/dashboard'
-        });
-
-        if (result.error) {
-          setError(result.error.message || 'Failed to sign in');
-        }
-      } else {
-        const result = await authClient.signUp.email({
-          name: name || email.split('@')[0] || 'User',
-          email,
-          password,
-          callbackURL: '/dashboard'
-        });
-
-        if (result.error) {
-          setError(result.error.message || 'Failed to create account');
-        } else {
-          setVerificationSent(true);
-        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');
@@ -120,7 +124,7 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
             <div className="text-4xl">📧</div>
             <h3 className="text-lg font-semibold">Check your email</h3>
             <p className="text-sm text-muted-foreground">
-              We sent a verification link to <strong>{email}</strong>. Click the link to activate your account.
+              We sent a verification link to <strong>{form.getFieldValue('email')}</strong>. Click the link to activate your account.
             </p>
             <p className="text-xs text-muted-foreground">
               Didn&apos;t get it? Check your spam folder or{' '}
@@ -134,78 +138,130 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
             </p>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant={mode === 'signin' ? 'default' : 'outline'}
-                onClick={() => setMode('signin')}
-                disabled={isLoading}>
-                Sign in
-              </Button>
-              <Button
-                type="button"
-                variant={mode === 'signup' ? 'default' : 'outline'}
-                onClick={() => setMode('signup')}
-                disabled={isLoading}>
-                Create account
-              </Button>
-            </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
 
-            {mode === 'signup' && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Jane Doe"
-                  disabled={isLoading}
-                />
+              const schema = mode === 'signup' ? signupSchema : loginSchema;
+              const values = { name: form.getFieldValue('name'), email: form.getFieldValue('email'), password: form.getFieldValue('password') };
+              const result = schema.safeParse(values);
+              if (!result.success) {
+                const issues = result.error.issues;
+                for (const issue of issues) {
+                  const field = issue.path?.[0];
+                  if (field && typeof field === 'string') {
+                    form.setFieldMeta(field as 'name' | 'email' | 'password', (prev) => ({
+                      ...prev,
+                      errorMap: { ...prev.errorMap, onChange: issue.message }
+                    }));
+                  }
+                }
+                return;
+              }
+
+              form.handleSubmit();
+            }}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={mode === 'signin' ? 'default' : 'outline'}
+                  onClick={() => setMode('signin')}
+                  disabled={isLoading}>
+                  Sign in
+                </Button>
+                <Button
+                  type="button"
+                  variant={mode === 'signup' ? 'default' : 'outline'}
+                  onClick={() => setMode('signup')}
+                  disabled={isLoading}>
+                  Create account
+                </Button>
               </div>
-            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@company.com"
-                autoComplete="email"
-                disabled={isLoading}
-              />
+              {mode === 'signup' && (
+                <form.Field name="name">
+                  {(field) => (
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={field.handleBlur}
+                        placeholder="Jane Doe"
+                        disabled={isLoading}
+                      />
+                      {field.state.meta.errorMap.onChange && (
+                        <p className="text-xs text-destructive">{field.state.meta.errorMap.onChange}</p>
+                      )}
+                    </div>
+                  )}
+                </form.Field>
+              )}
+
+              <form.Field name="email">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      placeholder="you@company.com"
+                      autoComplete="email"
+                      disabled={isLoading}
+                    />
+                    {field.state.meta.errorMap.onChange && (
+                      <p className="text-xs text-destructive">{field.state.meta.errorMap.onChange}</p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name="password">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      placeholder="********"
+                      autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                      disabled={isLoading}
+                    />
+                    {field.state.meta.errorMap.onChange && (
+                      <p className="text-xs text-destructive">{field.state.meta.errorMap.onChange}</p>
+                    )}
+                  </div>
+                )}
+              </form.Field>
+
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={isLoading}>
+                {isLoading
+                  ? mode === 'signin'
+                    ? 'Signing in...'
+                    : 'Creating account...'
+                  : mode === 'signin'
+                    ? 'Sign in with email'
+                    : 'Create account'}
+              </Button>
             </div>
+          </form>
+        )}
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="********"
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                disabled={isLoading}
-              />
-            </div>
-
-            <Button
-              type="button"
-              onClick={handleEmailAuth}
-              className="w-full"
-              size="lg"
-              disabled={isLoading || !email || !password}>
-              {isLoading
-                ? mode === 'signin'
-                  ? 'Signing in...'
-                  : 'Creating account...'
-                : mode === 'signin'
-                  ? 'Sign in with email'
-                  : 'Create account'}
-            </Button>
-
+        {!verificationSent && (
+          <>
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
