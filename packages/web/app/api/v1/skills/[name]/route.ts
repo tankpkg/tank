@@ -1,8 +1,8 @@
-import { sql } from 'drizzle-orm';
-import { NextResponse } from 'next/server';
-import { resolveRequestUserId } from '@/lib/auth-helpers';
-import { db } from '@/lib/db';
-import { skills, user } from '@/lib/db/schema';
+import { sql } from "drizzle-orm";
+import { NextResponse } from "next/server";
+import { resolveRequestUserId } from "@/lib/auth-helpers";
+import { db } from "@/lib/db";
+import { skills, user } from "@/lib/db/schema";
 
 /**
  * GET /api/v1/skills/[name] — single-query skill metadata with latest version.
@@ -51,6 +51,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ nam
       s.description,
       s.visibility,
       sv.version AS "latestVersion",
+      sv.token_count AS "tokenCount",
       coalesce(u.name, '') AS "publisherName",
       s.created_at AS "createdAt",
       s.updated_at AS "updatedAt"
@@ -65,7 +66,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ nam
   `);
 
   if (results.length === 0) {
-    return NextResponse.json({ error: 'Skill not found' }, { status: 404 });
+    return NextResponse.json({ error: "Skill not found" }, { status: 404 });
   }
 
   const row = results[0] as Record<string, unknown>;
@@ -73,12 +74,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ nam
   return NextResponse.json({
     name: row.name as string,
     description: row.description as string | null,
-    visibility: row.visibility as 'public' | 'private',
+    visibility: row.visibility as "public" | "private",
     latestVersion: (row.latestVersion as string) ?? null,
+    tokenCount: row.tokenCount != null ? Number(row.tokenCount) : null,
     publisher: {
-      name: (row.publisherName as string) || null
+      name: (row.publisherName as string) || null,
     },
     createdAt: row.createdAt as string,
-    updatedAt: row.updatedAt as string
+    updatedAt: row.updatedAt as string,
   });
 }

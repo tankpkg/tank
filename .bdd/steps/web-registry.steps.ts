@@ -58,7 +58,7 @@ async function getJson(path: string): Promise<{ status: number; body: unknown }>
 
 // ── Given ──────────────────────────────────────────────────────────────────
 
-async function givenPublicSkillExists(name: string, version: string): Promise<void> {
+async function givenPublicSkillExists(name: string, version: string, tokenCount = 500): Promise<void> {
   const sql = world.sql!;
   const now = new Date();
   const publisherId = `reg-pub-${world.runId}`;
@@ -94,12 +94,12 @@ async function givenPublicSkillExists(name: string, version: string): Promise<vo
   world.skillId = (existing?.id as string) ?? skillId;
 
   await sql`
-    INSERT INTO skill_versions (id, skill_id, version, integrity, tarball_path, tarball_size, file_count, manifest, permissions, audit_status, published_by, created_at)
+    INSERT INTO skill_versions (id, skill_id, version, integrity, tarball_path, tarball_size, file_count, token_count, manifest, permissions, audit_status, published_by, created_at)
     VALUES (
       ${vId}, ${world.skillId}, ${version},
       ${"sha512-bdd-registry-read"},
       ${"skills/registry-bdd/test-1.0.0.tgz"},
-      ${512}, ${3},
+      ${512}, ${3}, ${tokenCount},
       ${JSON.stringify({ name, version, description: "BDD registry read test" })},
       ${JSON.stringify({})},
       ${"completed"},
@@ -176,6 +176,17 @@ function thenBodyFieldEquals(field: string, value: unknown): void {
   expect(body[field]).toBe(value);
 }
 
+function thenSearchResultsSortedByTokenCount(): void {
+  const body = world.lastBody as { results?: Array<{ tokenCount: number | null }> };
+  expect(Array.isArray(body.results)).toBe(true);
+  expect((body.results?.length ?? 0) > 0).toBe(true);
+
+  const counts = (body.results ?? []).map((r) => r.tokenCount ?? -1);
+  for (let i = 1; i < counts.length; i++) {
+    expect(counts[i]).toBeLessThanOrEqual(counts[i - 1]);
+  }
+}
+
 // ── Feature ────────────────────────────────────────────────────────────────
 
 describe("Feature: Registry read API for skill metadata", () => {
@@ -186,7 +197,8 @@ describe("Feature: Registry read API for skill metadata", () => {
     world.runId = randomUUID().replace(/-/g, "").slice(0, 10);
     world.testOrg = `reg-bdd-${world.runId}`;
 
-    await givenPublicSkillExists(`@${world.testOrg}/registry-read-skill`, "2.3.1");
+    await givenPublicSkillExists(`@${world.testOrg}/registry-read-skill`, "2.3.1", 1337);
+    await givenPublicSkillExists(`@${world.testOrg}/registry-heavy-skill`, "1.4.0", 4000);
     await givenPrivateSkillExists(`@${world.testOrg}/private-registry-skill`, "1.0.0");
   }, 30_000);
 
@@ -262,6 +274,24 @@ describe("Feature: Registry read API for skill metadata", () => {
       await whenICallGet(`/api/v1/skills/${encoded}`);
       thenStatusIs(200);
       thenBodyFieldEquals("name", `@${world.testOrg}/registry-read-skill`);
+    });
+  });
+
+  // ── Token metadata and sorting (C7, C8) ───────────────────────────
+
+  describe("Scenario: Search supports sort=tokens for latest versions (E6)", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+      await whenICallGet(`/api/v1/search?sort=tokens`);
+      thenStatusIs(200);
+      thenSearchResultsSortedByTokenCount();
+    });
+  });
+
+  describe("Scenario: Skill metadata includes latest tokenCount when available (E7)", () => {
+    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+      await whenICallGet(`/api/v1/skills/@${world.testOrg}/registry-read-skill`);
+      thenStatusIs(200);
+      thenBodyFieldEquals("tokenCount", 1337);
     });
   });
 });

@@ -1,6 +1,6 @@
-import { getTableColumns, getTableName } from 'drizzle-orm';
-import { describe, expect, it } from 'vitest';
-import { user } from '../auth-schema';
+import { getTableColumns, getTableName } from "drizzle-orm";
+import { describe, expect, it } from "vitest";
+import { user } from "../auth-schema";
 import {
   auditEvents,
   skillDownloadDaily,
@@ -8,34 +8,34 @@ import {
   skills,
   skillsRelations,
   skillVersions,
-  skillVersionsRelations
-} from '../schema';
+  skillVersionsRelations,
+} from "../schema";
 
-describe('schema exports', () => {
-  it('exports all 4 business tables', () => {
+describe("schema exports", () => {
+  it("exports all 4 business tables", () => {
     expect(skills).toBeDefined();
     expect(skillVersions).toBeDefined();
     expect(skillDownloadDaily).toBeDefined();
     expect(auditEvents).toBeDefined();
   });
 
-  it('exports user table from auth-schema', () => {
+  it("exports user table from auth-schema", () => {
     expect(user).toBeDefined();
   });
 
-  it('exports all relation definitions', () => {
+  it("exports all relation definitions", () => {
     expect(skillsRelations).toBeDefined();
     expect(skillVersionsRelations).toBeDefined();
     expect(skillDownloadDailyRelations).toBeDefined();
   });
 });
 
-describe('user table (auth-schema)', () => {
-  it('has correct table name', () => {
-    expect(getTableName(user)).toBe('user');
+describe("user table (auth-schema)", () => {
+  it("has correct table name", () => {
+    expect(getTableName(user)).toBe("user");
   });
 
-  it('has expected columns including githubUsername', () => {
+  it("has expected columns including githubUsername", () => {
     const cols = getTableColumns(user);
     expect(cols.id).toBeDefined();
     expect(cols.name).toBeDefined();
@@ -47,19 +47,19 @@ describe('user table (auth-schema)', () => {
     expect(cols.updatedAt).toBeDefined();
   });
 
-  it('githubUsername is unique and nullable', () => {
+  it("githubUsername is unique and nullable", () => {
     const cols = getTableColumns(user);
     expect(cols.githubUsername.notNull).toBe(false);
     expect(cols.githubUsername.isUnique).toBe(true);
   });
 });
 
-describe('skills table', () => {
-  it('has correct table name', () => {
-    expect(getTableName(skills)).toBe('skills');
+describe("skills table", () => {
+  it("has correct table name", () => {
+    expect(getTableName(skills)).toBe("skills");
   });
 
-  it('has expected columns', () => {
+  it("has expected columns", () => {
     const cols = getTableColumns(skills);
     expect(cols.id).toBeDefined();
     expect(cols.name).toBeDefined();
@@ -71,30 +71,30 @@ describe('skills table', () => {
     expect(cols.updatedAt).toBeDefined();
   });
 
-  it('name is unique and not null', () => {
+  it("name is unique and not null", () => {
     const cols = getTableColumns(skills);
     expect(cols.name.notNull).toBe(true);
     expect(cols.name.isUnique).toBe(true);
   });
 
-  it('publisherId is text type referencing user.id', () => {
+  it("publisherId is text type referencing user.id", () => {
     const cols = getTableColumns(skills);
-    expect(cols.publisherId.dataType).toBe('string');
+    expect(cols.publisherId.dataType).toBe("string");
     expect(cols.publisherId.notNull).toBe(true);
   });
 
-  it('orgId is nullable', () => {
+  it("orgId is nullable", () => {
     const cols = getTableColumns(skills);
     expect(cols.orgId.notNull).toBe(false);
   });
 });
 
-describe('skill_versions table', () => {
-  it('has correct table name', () => {
-    expect(getTableName(skillVersions)).toBe('skill_versions');
+describe("skill_versions table", () => {
+  it("has correct table name", () => {
+    expect(getTableName(skillVersions)).toBe("skill_versions");
   });
 
-  it('has expected columns', () => {
+  it("has expected columns", () => {
     const cols = getTableColumns(skillVersions);
     expect(cols.id).toBeDefined();
     expect(cols.skillId).toBeDefined();
@@ -103,6 +103,7 @@ describe('skill_versions table', () => {
     expect(cols.tarballPath).toBeDefined();
     expect(cols.tarballSize).toBeDefined();
     expect(cols.fileCount).toBeDefined();
+    expect(cols.tokenCount).toBeDefined();
     expect(cols.manifest).toBeDefined();
     expect(cols.permissions).toBeDefined();
     expect(cols.auditScore).toBeDefined();
@@ -112,29 +113,34 @@ describe('skill_versions table', () => {
     expect(cols.createdAt).toBeDefined();
   });
 
-  it('publishedBy is text type referencing user.id', () => {
+  it("publishedBy is text type referencing user.id", () => {
     const cols = getTableColumns(skillVersions);
-    expect(cols.publishedBy.dataType).toBe('string');
+    expect(cols.publishedBy.dataType).toBe("string");
     expect(cols.publishedBy.notNull).toBe(true);
   });
 
-  it('auditStatus defaults to pending', () => {
+  it("auditStatus defaults to pending", () => {
     const cols = getTableColumns(skillVersions);
     expect(cols.auditStatus.hasDefault).toBe(true);
   });
 
-  it('auditScore is nullable', () => {
+  it("auditScore is nullable", () => {
     const cols = getTableColumns(skillVersions);
     expect(cols.auditScore.notNull).toBe(false);
   });
+
+  it("tokenCount is nullable", () => {
+    const cols = getTableColumns(skillVersions);
+    expect(cols.tokenCount.notNull).toBe(false);
+  });
 });
 
-describe('skill_download_daily table', () => {
-  it('has correct table name', () => {
-    expect(getTableName(skillDownloadDaily)).toBe('skill_download_daily');
+describe("skill_download_daily table", () => {
+  it("has correct table name", () => {
+    expect(getTableName(skillDownloadDaily)).toBe("skill_download_daily");
   });
 
-  it('has expected columns', () => {
+  it("has expected columns", () => {
     const cols = getTableColumns(skillDownloadDaily);
     expect(cols.id).toBeDefined();
     expect(cols.skillId).toBeDefined();
@@ -142,18 +148,18 @@ describe('skill_download_daily table', () => {
     expect(cols.count).toBeDefined();
   });
 
-  it('count is not null', () => {
+  it("count is not null", () => {
     const cols = getTableColumns(skillDownloadDaily);
     expect(cols.count.notNull).toBe(true);
   });
 });
 
-describe('audit_events table', () => {
-  it('has correct table name', () => {
-    expect(getTableName(auditEvents)).toBe('audit_events');
+describe("audit_events table", () => {
+  it("has correct table name", () => {
+    expect(getTableName(auditEvents)).toBe("audit_events");
   });
 
-  it('has expected columns', () => {
+  it("has expected columns", () => {
     const cols = getTableColumns(auditEvents);
     expect(cols.id).toBeDefined();
     expect(cols.action).toBeDefined();
@@ -164,19 +170,19 @@ describe('audit_events table', () => {
     expect(cols.createdAt).toBeDefined();
   });
 
-  it('actorId is nullable for system events', () => {
+  it("actorId is nullable for system events", () => {
     const cols = getTableColumns(auditEvents);
     expect(cols.actorId.notNull).toBe(false);
   });
 
-  it('action is required', () => {
+  it("action is required", () => {
     const cols = getTableColumns(auditEvents);
     expect(cols.action.notNull).toBe(true);
   });
 });
 
-describe('type inference', () => {
-  it('$inferSelect produces correct types', () => {
+describe("type inference", () => {
+  it("$inferSelect produces correct types", () => {
     type User = typeof user.$inferSelect;
     type Skill = typeof skills.$inferSelect;
     type SkillVersion = typeof skillVersions.$inferSelect;

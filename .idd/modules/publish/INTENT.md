@@ -26,20 +26,22 @@ packages/web/lib/storage/provider.ts          # Signed URL generation (Supabase 
 
 ## Layer 2: Constraints
 
-| #   | Rule                                                                                                              | Rationale                                                            | Verified by  |
-| --- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------ |
-| C1  | Auth token required for all publish steps (401 if missing)                                                        | Unauthenticated publish must be impossible                           | BDD scenario |
-| C2  | Manifest must pass skillsJsonSchema validation (name, version, semver)                                            | Malformed skills must be rejected before storage                     | BDD scenario |
-| C3  | Name is normalized to lowercase before persistence                                                                | Case-sensitive name collisions cause install errors                  | BDD scenario |
-| C4  | Scoped names (`@org/skill`) require org membership; unknown org → 404                                             | Org namespace squatting prevention                                   | BDD scenario |
-| C5  | Version conflict on same name+version → 409                                                                       | Immutable publish: re-publishing same version must be blocked        | BDD scenario |
-| C6  | PATCH bump cannot add any new permissions → 400 with violations list                                              | Security contract: small bumps cannot silently expand authority      | BDD scenario |
-| C7  | MINOR bump cannot add network.outbound or subprocess permissions → 400                                            | Dangerous permissions need a MAJOR bump                              | BDD scenario |
-| C8  | MAJOR bump allows any permission change                                                                           | Major signal to users that authority is expanding                    | BDD scenario |
-| C9  | `--dry-run` packs, verifies token, prints summary, does NOT upload                                                | Allows authors to check before real publish                          | BDD scenario |
-| C10 | Step 2 is a direct PUT to signed URL (not proxied through API)                                                    | Avoids proxying large tarballs through Next.js                       | Architecture |
-| C11 | `POST /confirm` only succeeds if version is `pending-upload` status                                               | Idempotency guard: prevents double-confirm                           | BDD scenario |
-| C12 | Scan is triggered synchronously inside confirm; on scan failure → `scan-failed` status but publish still succeeds | Graceful degradation: registry must not go down when scanner is slow | Code review  |
+| #   | Rule                                                                                                                                          | Rationale                                                                          | Verified by  |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------ |
+| C1  | Auth token required for all publish steps (401 if missing)                                                                                    | Unauthenticated publish must be impossible                                         | BDD scenario |
+| C2  | Manifest must pass skillsJsonSchema validation (name, version, semver)                                                                        | Malformed skills must be rejected before storage                                   | BDD scenario |
+| C3  | Name is normalized to lowercase before persistence                                                                                            | Case-sensitive name collisions cause install errors                                | BDD scenario |
+| C4  | Scoped names (`@org/skill`) require org membership; unknown org → 404                                                                         | Org namespace squatting prevention                                                 | BDD scenario |
+| C5  | Version conflict on same name+version → 409                                                                                                   | Immutable publish: re-publishing same version must be blocked                      | BDD scenario |
+| C6  | PATCH bump cannot add any new permissions → 400 with violations list                                                                          | Security contract: small bumps cannot silently expand authority                    | BDD scenario |
+| C7  | MINOR bump cannot add network.outbound or subprocess permissions → 400                                                                        | Dangerous permissions need a MAJOR bump                                            | BDD scenario |
+| C8  | MAJOR bump allows any permission change                                                                                                       | Major signal to users that authority is expanding                                  | BDD scenario |
+| C9  | `--dry-run` packs, verifies token, prints summary, does NOT upload                                                                            | Allows authors to check before real publish                                        | BDD scenario |
+| C10 | Step 2 is a direct PUT to signed URL (not proxied through API)                                                                                | Avoids proxying large tarballs through Next.js                                     | Architecture |
+| C11 | `POST /confirm` only succeeds if version is `pending-upload` status                                                                           | Idempotency guard: prevents double-confirm                                         | BDD scenario |
+| C12 | Scan is triggered synchronously inside confirm; on scan failure → `scan-failed` status but publish still succeeds                             | Graceful degradation: registry must not go down when scanner is slow               | Code review  |
+| C13 | Confirm calculates `tokenCount` from concatenated tarball file text using heuristic `ceil(charCount / 4)` and stores it on the version record | Registry must expose rough prompt-size cost per skill without heavy tokenizer deps | BDD scenario |
+| C14 | Token counting failures must not block publish; confirm still returns 200 and scan/audit flow continues                                       | Metadata enrichment must be best-effort, never a publish outage source             | BDD scenario |
 
 ---
 
@@ -57,3 +59,5 @@ packages/web/lib/storage/provider.ts          # Signed URL generation (Supabase 
 | E8  | `tank publish --dry-run`                                         | Prints size/file count, does NOT create a version record     |
 | E9  | `tank publish --private`                                         | Skill created with `visibility = 'private'`                  |
 | E10 | Duplicate confirm call (confirm called twice for same versionId) | 400: "Version is already confirmed or published"             |
+| E11 | Confirm succeeds for a tarball with 9,600 characters of text     | Stored `tokenCount` is `2400`                                |
+| E12 | Tarball parse fails during confirm                               | 200 success response; `tokenCount` remains null              |

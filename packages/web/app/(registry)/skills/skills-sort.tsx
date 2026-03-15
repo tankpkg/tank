@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { SortOption } from '@/lib/data/skills';
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { SortOption } from "@/lib/data/skills";
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'updated', label: 'Recently Updated' },
-  { value: 'downloads', label: 'Most Downloads' },
-  { value: 'stars', label: 'Most Stars' },
-  { value: 'security', label: 'Most Secure' },
-  { value: 'name', label: 'Name A–Z' }
+  { value: "updated", label: "Recently Updated" },
+  { value: "downloads", label: "Most Downloads" },
+  { value: "stars", label: "Most Stars" },
+  { value: "security", label: "Most Secure" },
+  { value: "tokens", label: "Most Tokens" },
+  { value: "name", label: "Name A–Z" },
 ];
 
 export function SkillsSort({ currentSort }: { currentSort: SortOption }) {
@@ -19,14 +20,14 @@ export function SkillsSort({ currentSort }: { currentSort: SortOption }) {
 
   function handleSortChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === 'updated') {
-      params.delete('sort');
+    if (value === "updated") {
+      params.delete("sort");
     } else {
-      params.set('sort', value);
+      params.set("sort", value);
     }
-    params.delete('page');
+    params.delete("page");
     const qs = params.toString();
-    router.push(`${pathname}${qs ? `?${qs}` : ''}`);
+    router.push(`${pathname}${qs ? `?${qs}` : ""}`);
   }
 
   return (

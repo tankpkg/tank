@@ -1,5 +1,5 @@
 # Intent: .idd/modules/publish/INTENT.md
-# Layer: Constraints (C1–C12), Examples (E1–E10)
+# Layer: Constraints (C1–C14), Examples (E1–E12)
 
 @publish
 @real-db
@@ -71,3 +71,18 @@ Feature: Skill publish via 3-step API flow
     Given a version record with status "completed" exists
     When I POST to /api/v1/skills/confirm with that versionId
     Then the API returns 400 with "already confirmed"
+
+  # ── Token counting at confirm (C13, C14) ───────────────────────────────
+  @high
+  Scenario: Confirm stores token count from uploaded tarball content (E11)
+    Given a pending-upload version exists with tarball text payload of 9600 characters
+    When I POST to /api/v1/skills/confirm with that versionId
+    Then the API returns 200
+    And the version metadata includes tokenCount 2400
+
+  @high
+  Scenario: Token counting failure does not block publish confirm (E12)
+    Given a pending-upload version exists with an unreadable tarball payload
+    When I POST to /api/v1/skills/confirm with that versionId
+    Then the API returns 200
+    And the version metadata tokenCount remains unset

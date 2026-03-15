@@ -31,14 +31,16 @@ packages/web/app/api/v1/badge/[...name]/route.ts # GET — SVG badge for auditSc
 
 ## Layer 2: Constraints
 
-| #   | Rule                                                                                          | Rationale                                              | Verified by  |
-| --- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------ |
-| C1  | `GET /skills/[name]` returns 404 for unknown or private-to-others skills                      | Privacy must not leak existence of private skills      | BDD scenario |
-| C2  | `GET /skills/[name]` returns `latestVersion` derived from the most recently created version   | Consumers need the current version without listing all | BDD scenario |
-| C3  | `GET /skills/[name]/[version]` includes `permissions`, `auditScore`, `integrity`              | Installers use these to verify safety before install   | BDD scenario |
-| C4  | `GET /skills/[name]/versions` returns all versions in descending creation order               | Version list must be stable and paginated              | BDD scenario |
-| C5  | Unauthenticated requests can read public skills; private skills require the publisher's token | Visibility enforcement at the API layer                | BDD scenario |
-| C6  | Skill name is URL-decoded before DB lookup                                                    | `@org/skill` must survive URL encoding in path params  | BDD scenario |
+| #   | Rule                                                                                                      | Rationale                                              | Verified by  |
+| --- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------ |
+| C1  | `GET /skills/[name]` returns 404 for unknown or private-to-others skills                                  | Privacy must not leak existence of private skills      | BDD scenario |
+| C2  | `GET /skills/[name]` returns `latestVersion` derived from the most recently created version               | Consumers need the current version without listing all | BDD scenario |
+| C3  | `GET /skills/[name]/[version]` includes `permissions`, `auditScore`, `integrity`                          | Installers use these to verify safety before install   | BDD scenario |
+| C4  | `GET /skills/[name]/versions` returns all versions in descending creation order                           | Version list must be stable and paginated              | BDD scenario |
+| C5  | Unauthenticated requests can read public skills; private skills require the publisher's token             | Visibility enforcement at the API layer                | BDD scenario |
+| C6  | Skill name is URL-decoded before DB lookup                                                                | `@org/skill` must survive URL encoding in path params  | BDD scenario |
+| C7  | Search/list payload includes latest-version `tokenCount` when available                                   | CLI and web need comparable package size metadata      | BDD scenario |
+| C8  | Skills support `sort=tokens` (descending token count, nulls last) without changing existing sort defaults | Users can find compact vs heavy skills predictably     | BDD scenario |
 
 ---
 
@@ -51,6 +53,8 @@ packages/web/app/api/v1/badge/[...name]/route.ts # GET — SVG badge for auditSc
 | E3  | `GET /api/v1/skills/@org/react/1.0.0`                   | 200: `{ version, permissions, auditScore, integrity, downloadUrl }` |
 | E4  | `GET /api/v1/skills/@org/react/versions`                | 200: array of version objects                                       |
 | E5  | `GET /api/v1/skills/@org/private-skill` unauthenticated | 404 (same as not found)                                             |
+| E6  | `GET /api/v1/search?sort=tokens`                        | 200: results sorted by descending latest token count                |
+| E7  | `GET /api/v1/skills/@org/react`                         | 200 includes latest version `tokenCount` metadata when present      |
 
 ---
 

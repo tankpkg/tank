@@ -1,5 +1,5 @@
 # Intent: .idd/modules/web-registry/INTENT.md
-# Layer: Constraints (C1–C6), Examples (E1–E5)
+# Layer: Constraints (C1–C8), Examples (E1–E7)
 
 @web-registry
 @real-db
@@ -50,3 +50,18 @@ Feature: Registry read API for skill metadata
     When I call GET /api/v1/skills/%40{testOrg}%2Fregistry-read-skill
     Then the response is 200
     And the response "name" equals "@{testOrg}/registry-read-skill"
+
+  # ── Token metadata and sorting (C7, C8) ─────────────────────────────────
+  @medium
+  Scenario: Search supports sort=tokens for latest versions (E6)
+    Given public skills include token counts on their latest versions
+    When I call GET /api/v1/search?sort=tokens
+    Then the response is 200
+    And search results are ordered by descending latest token count
+
+  @medium
+  Scenario: Skill metadata includes latest tokenCount when available (E7)
+    Given a public skill "@{testOrg}/registry-read-skill" version "2.3.1" has tokenCount 1337
+    When I call GET /api/v1/skills/@{testOrg}/registry-read-skill
+    Then the response is 200
+    And the response "tokenCount" equals 1337
