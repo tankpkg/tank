@@ -1,0 +1,9 @@
+{
+  "name": "@internal/bdd",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@internals/helpers": "workspace:*",
+    "postgres": "^3.4.8"
+  }
+}
