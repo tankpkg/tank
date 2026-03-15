@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LOCKFILE_SCHEMA_URL } from '../constants/registry.js';
 import { skillsLockSchema } from '../schemas/skills-lock.js';
 
 describe('skillsLockSchema', () => {
@@ -69,6 +70,15 @@ describe('skillsLockSchema', () => {
 
   it('accepts lockfileVersion 2', () => {
     const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {}
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts canonical $schema url for editor validation', () => {
+    const result = skillsLockSchema.safeParse({
+      $schema: LOCKFILE_SCHEMA_URL,
       lockfileVersion: 2,
       skills: {}
     });

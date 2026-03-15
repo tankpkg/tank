@@ -40,20 +40,23 @@ packages/web/lib/storage/provider.ts          # Signed URL generation (Supabase 
 | C10 | Step 2 is a direct PUT to signed URL (not proxied through API)                                                    | Avoids proxying large tarballs through Next.js                       | Architecture |
 | C11 | `POST /confirm` only succeeds if version is `pending-upload` status                                               | Idempotency guard: prevents double-confirm                           | BDD scenario |
 | C12 | Scan is triggered synchronously inside confirm; on scan failure → `scan-failed` status but publish still succeeds | Graceful degradation: registry must not go down when scanner is slow | Code review  |
+| C13 | Skills manifest and lockfile JSON Schemas are generated from shared Zod schemas (single source of truth)          | Prevents schema drift between editor UX and runtime validation       | BDD scenario |
+| C14 | Generated schemas are served as static assets at `/schemas/v1/skills.json` and `/schemas/v1/skills.lock`          | Predictable, cacheable URLs without API route complexity             | BDD scenario |
 
 ---
 
 ## Layer 3: Examples
 
-| #   | Input                                                            | Expected Output                                              |
-| --- | ---------------------------------------------------------------- | ------------------------------------------------------------ |
-| E1  | `tank publish` in a valid skill directory, authenticated         | 3-step flow completes; success message includes name@version |
-| E2  | `tank publish` without token                                     | Error: "Not logged in. Run: tank login"                      |
-| E3  | `tank publish` with `tank.json` missing `version` field          | 400: invalid manifest, fieldErrors listed                    |
-| E4  | `tank publish` scoped `@nonexistent-org/skill`                   | 404: org not found                                           |
-| E5  | `tank publish` version already in registry                       | 409: "Version already exists"                                |
-| E6  | PATCH bump (`1.0.0 → 1.0.1`) that adds `network.outbound`        | 400: permission escalation, violations array                 |
-| E7  | MAJOR bump (`1.0.0 → 2.0.0`) that adds `network.outbound`        | 200: allowed                                                 |
-| E8  | `tank publish --dry-run`                                         | Prints size/file count, does NOT create a version record     |
-| E9  | `tank publish --private`                                         | Skill created with `visibility = 'private'`                  |
-| E10 | Duplicate confirm call (confirm called twice for same versionId) | 400: "Version is already confirmed or published"             |
+| #   | Input                                                                                  | Expected Output                                               |
+| --- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| E1  | `tank publish` in a valid skill directory, authenticated                               | 3-step flow completes; success message includes name@version  |
+| E2  | `tank publish` without token                                                           | Error: "Not logged in. Run: tank login"                       |
+| E3  | `tank publish` with `tank.json` missing `version` field                                | 400: invalid manifest, fieldErrors listed                     |
+| E4  | `tank publish` scoped `@nonexistent-org/skill`                                         | 404: org not found                                            |
+| E5  | `tank publish` version already in registry                                             | 409: "Version already exists"                                 |
+| E6  | PATCH bump (`1.0.0 → 1.0.1`) that adds `network.outbound`                              | 400: permission escalation, violations array                  |
+| E7  | MAJOR bump (`1.0.0 → 2.0.0`) that adds `network.outbound`                              | 200: allowed                                                  |
+| E8  | `tank publish --dry-run`                                                               | Prints size/file count, does NOT create a version record      |
+| E9  | `tank publish --private`                                                               | Skill created with `visibility = 'private'`                   |
+| E10 | Duplicate confirm call (confirm called twice for same versionId)                       | 400: "Version is already confirmed or published"              |
+| E11 | Web build generates `/public/schemas/v1/skills.json` and `skills.lock` from shared Zod | Published site serves schema files for editor `$schema` usage |

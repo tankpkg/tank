@@ -9,6 +9,7 @@ vi.mock('@inquirer/prompts', () => ({
 }));
 
 const originalCwd = process.cwd;
+const MANIFEST_SCHEMA_URL = 'https://www.tankpkg.dev/schemas/v1/skills.json';
 
 describe('init command', () => {
   let tmpDir: string;
@@ -60,6 +61,7 @@ describe('init command', () => {
     expect(content.name).toBe('@test-org/my-cool-skill');
     expect(content.version).toBe('1.0.0');
     expect(content.description).toBe('A cool skill');
+    expect(content.$schema).toBe(MANIFEST_SCHEMA_URL);
     expect(content.skills).toEqual({});
     expect(content.permissions).toEqual({
       network: { outbound: [] },
@@ -80,7 +82,7 @@ describe('init command', () => {
 
   it('generates output that passes strict schema validation', async () => {
     const { initCommand } = await import('../commands/init.js');
-    const { skillsJsonSchema } = await import('@internal/shared');
+    const { skillsJsonSchema } = await import('../../../shared/src/schemas/skills-json.js');
     mockPrompts('@test-org/my-skill', '1.2.3', 'A test skill', 'Author Name', false);
 
     await initCommand();
@@ -272,6 +274,7 @@ describe('init command', () => {
       expect(content.name).toBe('@test-org/my-cool-skill');
       expect(content.version).toBe('1.0.0');
       expect(content.description).toBe('A cool skill');
+      expect(content.$schema).toBe(MANIFEST_SCHEMA_URL);
       expect(content.visibility).toBe('public');
       expect(content.skills).toEqual({});
       expect(content.permissions).toEqual({
@@ -291,6 +294,7 @@ describe('init command', () => {
       const content = readOutput();
       expect(content.name).toBe('@test-org/default-skill');
       expect(content.version).toBe('0.1.0');
+      expect(content.$schema).toBe(MANIFEST_SCHEMA_URL);
       expect(content).not.toHaveProperty('description');
       expect(content.visibility).toBe('public');
       expect(content.skills).toEqual({});

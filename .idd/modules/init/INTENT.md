@@ -44,17 +44,20 @@ shared/src/schemas/skills-json.ts      # skillsJsonSchema — Zod schema for tan
 | C8  | Generated manifest includes `skills: {}` (empty dependency map)                                      | Ready to declare dependencies immediately                               | BDD assertion |
 | C9  | `visibility` defaults to `public` for unscoped names, `private` for scoped names in interactive mode | Sensible defaults aligned with typical use cases                        | BDD assertion |
 | C10 | Invalid name or version inputs return a clear validation error message                               | Developer knows exactly what format is required                         | BDD scenario  |
+| C11 | Generated `tank.json` includes `"$schema": "https://www.tankpkg.dev/schemas/v1/skills.json"`         | Editors can validate/autocomplete manifest fields from a stable URL     | BDD assertion |
+| C12 | `$schema` URL is versioned (`/schemas/v1/`) and does not depend on local filesystem paths            | Team and CI editors resolve the same schema everywhere                  | BDD scenario  |
 
 ---
 
 ## Layer 3: Examples
 
-| #   | Input                                                         | Expected Output                                                             |
-| --- | ------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| E1  | `init-skill({ name: "@org/my-skill", version: "1.0.0" })`     | Creates `tank.json` with name, version, permissions block, empty skills map |
-| E2  | `init-skill({ name: "my-skill" })` (unscoped)                 | Creates valid `tank.json` with unscoped name                                |
-| E3  | `init-skill({ name: "UPPERCASE" })`                           | Fails with name validation error (must be lowercase)                        |
-| E4  | `init-skill({ version: "not-semver" })`                       | Fails with version validation error                                         |
-| E5  | `init-skill` when `tank.json` already exists                  | Fails with "already exists" error; file not modified                        |
-| E6  | `init-skill({ force: true })` when `tank.json` already exists | Overwrites existing file; reports "Created tank.json"                       |
-| E7  | `init-skill({ name: "@org/skill", description: "My skill" })` | `tank.json` includes description field                                      |
+| #   | Input                                                         | Expected Output                                                                              |
+| --- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| E1  | `init-skill({ name: "@org/my-skill", version: "1.0.0" })`     | Creates `tank.json` with name, version, permissions block, empty skills map                  |
+| E2  | `init-skill({ name: "my-skill" })` (unscoped)                 | Creates valid `tank.json` with unscoped name                                                 |
+| E3  | `init-skill({ name: "UPPERCASE" })`                           | Fails with name validation error (must be lowercase)                                         |
+| E4  | `init-skill({ version: "not-semver" })`                       | Fails with version validation error                                                          |
+| E5  | `init-skill` when `tank.json` already exists                  | Fails with "already exists" error; file not modified                                         |
+| E6  | `init-skill({ force: true })` when `tank.json` already exists | Overwrites existing file; reports "Created tank.json"                                        |
+| E7  | `init-skill({ name: "@org/skill", description: "My skill" })` | `tank.json` includes description field                                                       |
+| E8  | `tank init --yes --name @org/skill`                           | Created `tank.json` includes `$schema` with `https://www.tankpkg.dev/schemas/v1/skills.json` |

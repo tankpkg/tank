@@ -10,12 +10,14 @@
   },
   "scripts": {
     "build": "tsdown",
+    "generate:schemas": "bun run scripts/generate-json-schemas.ts",
     "test": "vitest run",
     "lint": "biome check src/",
     "lint:fix": "biome check --fix src/",
     "format": "biome format --write src/"
   },
   "devDependencies": {
+    "ajv": "^8.17.1",
     "@types/semver": "^7.7.1",
     "vitest": "^4"
   },

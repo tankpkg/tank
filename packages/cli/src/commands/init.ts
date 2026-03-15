@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { confirm, input } from '@inquirer/prompts';
-import { MANIFEST_FILENAME, skillsJsonSchema } from '@internal/shared';
+import { MANIFEST_FILENAME, MANIFEST_SCHEMA_URL, skillsJsonSchema } from '@internal/shared';
 import { getConfig } from '../lib/config.js';
 import { logger } from '../lib/logger.js';
 import { resolveManifestPath } from '../lib/manifest.js';
@@ -63,6 +63,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
     }
 
     const manifest: Record<string, unknown> = {
+      $schema: MANIFEST_SCHEMA_URL,
       name,
       version,
       ...(description ? { description } : {}),
@@ -141,6 +142,7 @@ export async function initCommand(options: InitOptions = {}): Promise<void> {
   void author;
 
   const manifest: Record<string, unknown> = {
+    $schema: MANIFEST_SCHEMA_URL,
     name,
     version,
     ...(description ? { description } : {}),

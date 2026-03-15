@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MANIFEST_SCHEMA_URL } from '../constants/registry.js';
 import { skillsJsonSchema } from '../schemas/skills-json.js';
 
 describe('skillsJsonSchema', () => {
@@ -25,6 +26,15 @@ describe('skillsJsonSchema', () => {
 
   it('accepts valid manifest with only required fields (name, version)', () => {
     const result = skillsJsonSchema.safeParse({
+      name: '@my-org/my-skill',
+      version: '1.0.0'
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts canonical $schema url for editor validation', () => {
+    const result = skillsJsonSchema.safeParse({
+      $schema: MANIFEST_SCHEMA_URL,
       name: '@my-org/my-skill',
       version: '1.0.0'
     });

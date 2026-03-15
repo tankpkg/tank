@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "bun run generate:schemas && next build",
+    "generate:schemas": "bun run --cwd ../shared generate:schemas",
     "start": "next start",
     "test": "vitest run",
     "lint": "npx react-doctor .",
