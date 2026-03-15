@@ -74,6 +74,8 @@ function hasRequiredScopes(grantedScopes: string[], requiredScopes: string[]): b
     return true;
   }
 
+  // Legacy backward-compat: keys created before scope enforcement have empty scopes.
+  // Treat as unrestricted. To tighten: migrate existing keys to explicit scopes first.
   if (grantedScopes.length === 0) {
     return true;
   }
@@ -194,56 +196,11 @@ export async function resolveRequestUserId(request: Request): Promise<string | n
   }
 }
 
-export async function canReadSkill(skill: SkillAccessSubject, userId: string | null): Promise<boolean> {
-  if (skill.visibility === 'public') {
-    return true;
-  }
-
-  if (!userId) {
-    return false;
-  }
-
-  if (skill.publisherId === userId) {
-    return true;
-  }
-
-  if (!skill.orgId) {
-    const directGrant = await db
-      .select({ id: skillAccess.id })
-      .from(skillAccess)
-      .where(and(eq(skillAccess.skillId, skill.skillId), eq(skillAccess.grantedUserId, userId)))
-      .limit(1);
-
-    if (directGrant.length > 0) {
-      return true;
-    }
-
-    const orgGrant = await db.execute(sql`
-      SELECT sa.id
-      FROM skill_access sa
-      INNER JOIN "member" m ON m.organization_id = sa.granted_org_id
-      WHERE sa.skill_id = ${skill.skillId}
-        AND m.user_id = ${userId}
-      LIMIT 1
-    `);
-
-    return orgGrant.length > 0;
-  }
-
-  const membership = await db
-    .select({ id: member.id })
-    .from(member)
-    .where(and(eq(member.organizationId, skill.orgId), eq(member.userId, userId)))
-    .limit(1);
-
-  if (membership.length > 0) {
-    return true;
-  }
-
+async function checkAccessGrants(skillId: string, userId: string): Promise<boolean> {
   const directGrant = await db
     .select({ id: skillAccess.id })
     .from(skillAccess)
-    .where(and(eq(skillAccess.skillId, skill.skillId), eq(skillAccess.grantedUserId, userId)))
+    .where(and(eq(skillAccess.skillId, skillId), eq(skillAccess.grantedUserId, userId)))
     .limit(1);
 
   if (directGrant.length > 0) {
@@ -254,10 +211,30 @@ export async function canReadSkill(skill: SkillAccessSubject, userId: string | n
     SELECT sa.id
     FROM skill_access sa
     INNER JOIN "member" m ON m.organization_id = sa.granted_org_id
-    WHERE sa.skill_id = ${skill.skillId}
+    WHERE sa.skill_id = ${skillId}
       AND m.user_id = ${userId}
     LIMIT 1
   `);
 
   return orgGrant.length > 0;
+}
+
+export async function canReadSkill(skill: SkillAccessSubject, userId: string | null): Promise<boolean> {
+  if (skill.visibility === 'public') return true;
+  if (!userId) return false;
+  if (skill.publisherId === userId) return true;
+
+  if (!skill.orgId) {
+    return checkAccessGrants(skill.skillId, userId);
+  }
+
+  const membership = await db
+    .select({ id: member.id })
+    .from(member)
+    .where(and(eq(member.organizationId, skill.orgId), eq(member.userId, userId)))
+    .limit(1);
+
+  if (membership.length > 0) return true;
+
+  return checkAccessGrants(skill.skillId, userId);
 }
