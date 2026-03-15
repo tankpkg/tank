@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import Redis from 'ioredis';
 
-import { env } from '../env';
+import { env } from '~/consts/env';
 
 export interface CliAuthSession {
   state: string;

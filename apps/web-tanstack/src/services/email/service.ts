@@ -1,7 +1,7 @@
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
 
-import { env } from '~/lib/env';
+import { env } from '~/consts/env';
 
 export type EmailConfig = {
   from: string;

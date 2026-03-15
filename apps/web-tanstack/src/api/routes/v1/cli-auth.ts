@@ -1,12 +1,11 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
-
-import { auth } from '~/lib/auth/core';
+import { env } from '~/consts/env';
 import { isUserBlocked } from '~/lib/auth/authz';
 import { authorizeSession, consumeSession, createSession, getSession } from '~/lib/auth/cli-store';
-import { env } from '~/lib/env';
-import { authLog } from '~/lib/services/logger';
+import { auth } from '~/lib/auth/core';
+import { authLog } from '~/services/logger';
 
 const startSchema = z.object({
   state: z.string().min(8).max(256)

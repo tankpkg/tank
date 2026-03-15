@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { DocsLayout } from '~/layouts/docs-layout';
+import { DocsLayout } from '~/components/layouts/docs-layout';
 import { getDocBySlug } from '~/server-fns/docs';
 
 export const Route = createFileRoute('/_registry/docs/')({

@@ -2,14 +2,13 @@ import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
-
-import { type AuditScoreInput, computeAuditScore } from '~/lib/skills/audit-score';
+import { env } from '~/consts/env';
 import { verifyCliAuth } from '~/lib/auth/authz';
-import type { ScanFinding } from '~/lib/skills/data';
 import { db } from '~/lib/db';
 import { scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
-import { env } from '~/lib/env';
-import { getStorageProvider } from '~/lib/services/storage/provider';
+import { type AuditScoreInput, computeAuditScore } from '~/lib/skills/audit-score';
+import type { ScanFinding } from '~/lib/skills/data';
+import { getStorageProvider } from '~/services/storage/provider';
 
 interface LLMAnalysis {
   enabled: boolean;

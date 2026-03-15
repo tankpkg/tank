@@ -1,28 +1,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-import { env } from '../env';
+import { env } from '~/consts/env';
 
 const supabaseUrl = env.SUPABASE_URL;
 const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl && process.env.NODE_ENV !== 'production') {
-}
-
-if (!supabaseServiceRoleKey && process.env.NODE_ENV !== 'production') {
-}
-
-/**
- * Supabase admin client — used for Storage operations ONLY.
- *
- * We do NOT use Supabase Auth (we use better-auth instead).
- * This client uses the service role key to bypass RLS for
- * managing the `packages` storage bucket.
- *
- * NEVER expose this client or its key to the browser.
- *
- * Uses lazy initialization (Proxy) to avoid throwing during
- * Next.js build when env vars are not available.
- */
 export const supabaseAdmin: SupabaseClient =
   supabaseUrl && supabaseServiceRoleKey
     ? createClient(supabaseUrl, supabaseServiceRoleKey, {

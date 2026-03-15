@@ -1,10 +1,11 @@
 import pino from 'pino';
 
-const lokiUrl = process.env.LOKI_URL || 'http://localhost:3100';
+import { env } from '~/consts/env';
+
+const lokiUrl = env.LOKI_URL;
 
 const MAX_BUFFER_SIZE = 1000;
 
-// Buffer logs and push to Loki via HTTP (no worker threads — compatible with Next.js dev)
 const logBuffer: string[] = [];
 let flushTimer: ReturnType<typeof setInterval> | null = null;
 let consecutiveFailures = 0;

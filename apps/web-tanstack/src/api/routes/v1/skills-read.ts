@@ -5,8 +5,8 @@ import { resolveRequestUserId } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
 import { visibilityClause } from '~/lib/db/visibility';
-import { apiLog } from '~/lib/services/logger';
-import { getStorageProvider } from '~/lib/services/storage/provider';
+import { apiLog } from '~/services/logger';
+import { getStorageProvider } from '~/services/storage/provider';
 
 async function recordDownload(skillId: string): Promise<void> {
   await db.execute(sql`
