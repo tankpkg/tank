@@ -19,7 +19,7 @@ app.use(
   })
 );
 
-app.on(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/auth/**', (c) => auth.handler(c.req.raw));
+app.all('/auth/*', (c) => auth.handler(c.req.raw));
 app.route('/health', healthRoute);
 app.route('/', seoRoutes);
 app.route('/v1', v1Routes);
