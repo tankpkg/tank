@@ -1,8 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// Trim env vars to handle accidental whitespace/newlines
-const supabaseUrl = (process.env.SUPABASE_URL || '').trim();
-const supabaseServiceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+import { env } from '../env';
+
+const supabaseUrl = env.SUPABASE_URL;
+const supabaseServiceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl && process.env.NODE_ENV !== 'production') {
 }

@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 
 import Redis from 'ioredis';
 
+import { env } from '../env';
+
 export interface CliAuthSession {
   state: string;
   status: 'pending' | 'authorized';
@@ -189,13 +191,12 @@ let storeInstance: CliAuthStore | null = null;
 function getStore(): CliAuthStore {
   if (storeInstance) return storeInstance;
 
-  const backend = (process.env.SESSION_STORE || 'memory').trim().toLowerCase();
+  const backend = env.SESSION_STORE;
   if (backend === 'redis') {
-    const redisUrl = (process.env.REDIS_URL || '').trim();
-    if (!redisUrl) {
+    if (!env.REDIS_URL) {
       throw new Error('SESSION_STORE=redis requires REDIS_URL');
     }
-    storeInstance = new RedisCliAuthStore(redisUrl);
+    storeInstance = new RedisCliAuthStore(env.REDIS_URL);
     return storeInstance;
   }
 

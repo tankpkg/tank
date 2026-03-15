@@ -1,8 +1,8 @@
 import { SkillSidebar } from '~/components/skills/skill-sidebar';
 import { SkillTabs } from '~/components/skills/skill-tabs';
 import { Badge } from '~/components/ui/badge';
-import type { SkillDetailResult } from '~/lib/data/skills';
 import { safeParseJson, safeParsePermissions } from '~/lib/format';
+import type { SkillDetailResult } from '~/lib/skills/data';
 import { buildSecurityTab, buildSkillJsonLd } from './skill-detail-helpers';
 
 interface SkillDetailScreenProps {

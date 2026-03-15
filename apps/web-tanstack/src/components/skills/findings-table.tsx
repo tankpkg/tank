@@ -1,4 +1,4 @@
-import type { ScanFinding } from '~/lib/data/skills';
+import type { ScanFinding } from '~/lib/skills/data';
 
 export interface FindingsTableProps {
   findings: ScanFinding[];

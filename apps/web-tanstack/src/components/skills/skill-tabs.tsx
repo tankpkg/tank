@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { Badge } from '~/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
-import type { SkillVersionSummary } from '~/lib/data/skills';
+import type { SkillVersionSummary } from '~/lib/skills/data';
 
 import { FileExplorer } from './file-explorer';
 import { SkillReadme } from './skill-readme';

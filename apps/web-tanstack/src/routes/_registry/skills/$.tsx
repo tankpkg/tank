@@ -1,7 +1,7 @@
 import { encodeSkillName } from '@internals/helpers';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { skillDetailQueryOptions } from '~/lib/query/skills-options';
+import { skillDetailQueryOptions } from '~/query/skills-options';
 import { SkillDetailScreen } from '~/screens/skills/skill-detail-screen';
 
 export const Route = createFileRoute('/_registry/skills/$')({

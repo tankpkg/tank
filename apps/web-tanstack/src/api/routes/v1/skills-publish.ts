@@ -2,12 +2,12 @@ import { skillsJsonSchema } from '@internals/schemas';
 import { and, desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { verifyCliAuth } from '~/lib/auth-helpers';
+import { verifyCliAuth } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { account, member, organization, user } from '~/lib/db/auth-schema';
 import { skills, skillVersions } from '~/lib/db/schema';
-import { checkPermissionEscalation, type VersionPermissions } from '~/lib/permission-escalation';
-import { getStorageProvider } from '~/lib/storage/provider';
+import { checkPermissionEscalation, type VersionPermissions } from '~/lib/skills/permission-escalation';
+import { getStorageProvider } from '~/lib/services/storage/provider';
 
 export const skillsPublishRoutes = new Hono().post('/', async (c) => {
   const verified = await verifyCliAuth(c.req.raw, ['skills:publish']);
@@ -65,7 +65,7 @@ export const skillsPublishRoutes = new Hono().post('/', async (c) => {
         try {
           const ghRes = await fetch('https://api.github.com/user', {
             headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' },
-            signal: AbortSignal.timeout(5000),
+            signal: AbortSignal.timeout(5000)
           });
           if (ghRes.ok) {
             const gh = (await ghRes.json()) as { login: string };
@@ -189,13 +189,15 @@ export const skillsPublishRoutes = new Hono().post('/', async (c) => {
   }
 
   // Clean up stale pending-upload versions before creating new one
-  await db.delete(skillVersions).where(
-    and(
-      eq(skillVersions.skillId, skill.id),
-      eq(skillVersions.publishedBy, verified.userId),
-      eq(skillVersions.auditStatus, 'pending-upload')
-    )
-  );
+  await db
+    .delete(skillVersions)
+    .where(
+      and(
+        eq(skillVersions.skillId, skill.id),
+        eq(skillVersions.publishedBy, verified.userId),
+        eq(skillVersions.auditStatus, 'pending-upload')
+      )
+    );
 
   // Create skill_version record with pending-upload status
   const tarballPath = `skills/${skill.id}/${version}.tgz`;

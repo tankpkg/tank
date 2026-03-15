@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { LoginScreen } from '~/screens/auth/login-screen';
-import { getAuthProviders } from '~/server-fns/auth';
+import { getAuthProviders } from '~/server-fns/session';
 
 export const Route = createFileRoute('/_registry/login')({
   loader: async () => {

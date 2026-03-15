@@ -1,12 +1,12 @@
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { resolveRequestUserId } from '~/lib/auth-helpers';
+import { resolveRequestUserId } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
 import { visibilityClause } from '~/lib/db/visibility';
-import { apiLog } from '~/lib/logger';
-import { getStorageProvider } from '~/lib/storage/provider';
+import { apiLog } from '~/lib/services/logger';
+import { getStorageProvider } from '~/lib/services/storage/provider';
 
 async function recordDownload(skillId: string): Promise<void> {
   await db.execute(sql`

@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 
-import { auth } from '~/lib/auth';
+import { auth } from '~/lib/auth/core';
 import {
   type FreshnessBucket,
   getSkillDetail,
@@ -13,7 +13,7 @@ import {
   type SortOption,
   searchSkills,
   type VisibilityFilter
-} from '~/lib/data/skills';
+} from '~/lib/skills/data';
 
 async function getViewerUserId(): Promise<string | null> {
   try {

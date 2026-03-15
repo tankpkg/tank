@@ -1,4 +1,4 @@
-import type { LLMAnalysisInfo } from '~/lib/data/skills';
+import type { LLMAnalysisInfo } from '~/lib/skills/data';
 
 export interface ScoreCriterion {
   label: string;

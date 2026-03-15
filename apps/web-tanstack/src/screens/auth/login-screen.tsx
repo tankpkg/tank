@@ -8,7 +8,7 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
-import { authClient } from '~/lib/auth-client';
+import { authClient } from '~/lib/auth/client';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -124,7 +124,8 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
             <div className="text-4xl">📧</div>
             <h3 className="text-lg font-semibold">Check your email</h3>
             <p className="text-sm text-muted-foreground">
-              We sent a verification link to <strong>{form.getFieldValue('email')}</strong>. Click the link to activate your account.
+              We sent a verification link to <strong>{form.getFieldValue('email')}</strong>. Click the link to activate
+              your account.
             </p>
             <p className="text-xs text-muted-foreground">
               Didn&apos;t get it? Check your spam folder or{' '}
@@ -144,7 +145,11 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
               e.stopPropagation();
 
               const schema = mode === 'signup' ? signupSchema : loginSchema;
-              const values = { name: form.getFieldValue('name'), email: form.getFieldValue('email'), password: form.getFieldValue('password') };
+              const values = {
+                name: form.getFieldValue('name'),
+                email: form.getFieldValue('email'),
+                password: form.getFieldValue('password')
+              };
               const result = schema.safeParse(values);
               if (!result.success) {
                 const issues = result.error.issues;
@@ -243,11 +248,7 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
                 )}
               </form.Field>
 
-              <Button
-                type="submit"
-                className="w-full"
-                size="lg"
-                disabled={isLoading}>
+              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
                 {isLoading
                   ? mode === 'signin'
                     ? 'Signing in...'

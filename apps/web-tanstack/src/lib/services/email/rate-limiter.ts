@@ -1,4 +1,4 @@
-import { redis } from '~/lib/redis';
+import { redis } from '~/lib/services/redis';
 
 const EMAIL_RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const EMAIL_RATE_LIMIT_MAX = 3; // Max 3 emails per minute per address

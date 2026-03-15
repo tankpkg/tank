@@ -2,19 +2,20 @@ import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
-import { auth } from '~/lib/auth';
-import { isUserBlocked } from '~/lib/auth-helpers';
-import { authorizeSession, consumeSession, createSession, getSession } from '~/lib/cli-auth-store';
-import { authLog } from '~/lib/logger';
+import { auth } from '~/lib/auth/core';
+import { isUserBlocked } from '~/lib/auth/authz';
+import { authorizeSession, consumeSession, createSession, getSession } from '~/lib/auth/cli-store';
+import { env } from '~/lib/env';
+import { authLog } from '~/lib/services/logger';
 
 const startSchema = z.object({
   state: z.string().min(8).max(256)
 });
 const authorizeSchema = z.object({
-  sessionCode: z.string().uuid()
+  sessionCode: z.uuid()
 });
 const exchangeSchema = z.object({
-  sessionCode: z.string().uuid(),
+  sessionCode: z.uuid(),
   state: z.string().min(8).max(256)
 });
 
@@ -28,7 +29,7 @@ export const cliAuthRoutes = new Hono()
 
       const sessionCode = await createSession(state);
 
-      const baseUrl = process.env.APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3001';
+      const baseUrl = env.APP_URL;
       const authUrl = `${baseUrl}/cli-login?session=${sessionCode}`;
 
       authLog.info(

@@ -8,7 +8,8 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-import { supabaseAdmin } from '~/lib/supabase';
+import { env } from '~/lib/env';
+import { supabaseAdmin } from '~/lib/services/supabase';
 
 export interface SignedUrlResult {
   signedUrl: string;
@@ -58,11 +59,11 @@ class S3StorageProvider implements StorageProvider {
   private bucketReady: Promise<void> | null = null;
 
   constructor(bucket: string) {
-    const region = (process.env.S3_REGION || 'us-east-1').trim();
-    const internalEndpoint = (process.env.S3_ENDPOINT || '').trim();
-    const publicEndpoint = (process.env.S3_PUBLIC_ENDPOINT || internalEndpoint).trim();
-    const accessKeyId = (process.env.S3_ACCESS_KEY || '').trim();
-    const secretAccessKey = (process.env.S3_SECRET_KEY || '').trim();
+    const region = env.S3_REGION;
+    const internalEndpoint = env.S3_ENDPOINT;
+    const publicEndpoint = env.S3_PUBLIC_ENDPOINT || internalEndpoint;
+    const accessKeyId = env.S3_ACCESS_KEY;
+    const secretAccessKey = env.S3_SECRET_KEY;
 
     if (!accessKeyId || !secretAccessKey) {
       throw new Error('Missing S3_ACCESS_KEY or S3_SECRET_KEY environment variable');
@@ -193,8 +194,8 @@ let providerInstance: StorageProvider | null = null;
 export function getStorageProvider(): StorageProvider {
   if (providerInstance) return providerInstance;
 
-  const backend = (process.env.STORAGE_BACKEND || 'supabase').trim().toLowerCase();
-  const bucket = (process.env.STORAGE_BUCKET || process.env.S3_BUCKET || 'packages').trim();
+  const backend = env.STORAGE_BACKEND;
+  const bucket = env.STORAGE_BUCKET || env.S3_BUCKET;
 
   if (backend === 's3') {
     providerInstance = new S3StorageProvider(bucket);
