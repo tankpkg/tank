@@ -69,7 +69,8 @@ export const skillsPublishRoutes = new Hono().post('/', async (c) => {
       if (githubAccount?.accessToken) {
         try {
           const ghRes = await fetch('https://api.github.com/user', {
-            headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' }
+            headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' },
+            signal: AbortSignal.timeout(5000),
           });
           if (ghRes.ok) {
             const gh = (await ghRes.json()) as { login: string };
