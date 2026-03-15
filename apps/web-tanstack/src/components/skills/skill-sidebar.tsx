@@ -3,7 +3,15 @@ import { Star } from 'lucide-react';
 import { InstallCommand } from '~/components/skills/install-command';
 import { Separator } from '~/components/ui/separator';
 import { formatSize, timeAgo } from '~/lib/format';
+import { getScoreTextClass } from '~/lib/score';
 import type { ScanDetails } from '~/lib/skills/data';
+
+const findings = [
+  { key: 'criticalCount', label: 'critical', color: 'text-red-600' },
+  { key: 'highCount', label: 'high', color: 'text-orange-500' },
+  { key: 'mediumCount', label: 'medium', color: 'text-yellow-500' },
+  { key: 'lowCount', label: 'low', color: 'text-blue-500' }
+] as const;
 
 export interface SkillSidebarProps {
   name: string;
@@ -66,48 +74,48 @@ export function SkillSidebar({
 
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Metadata</h3>
-        <dl className="space-y-2 text-sm">
+        <dl className="space-y-2 text-sm [&>div]:flex [&>div]:justify-between [&_dt]:text-muted-foreground">
           {latestVersion && (
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">Version</dt>
+            <div>
+              <dt>Version</dt>
               <dd className="font-mono text-xs">{latestVersion.version}</dd>
             </div>
           )}
           {license && (
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">License</dt>
+            <div>
+              <dt>License</dt>
               <dd>{license}</dd>
             </div>
           )}
-          <div className="flex justify-between items-center">
-            <dt className="text-muted-foreground flex items-center gap-1">
+          <div className="items-center">
+            <dt className="flex items-center gap-1">
               <Star className="h-3 w-3" />
               Stars
             </dt>
             <dd className="text-sm">{starCount}</dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Weekly</dt>
+          <div>
+            <dt>Weekly</dt>
             <dd>{downloadCount.toLocaleString()}</dd>
           </div>
           {latestVersion && (
             <>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Files</dt>
+              <div>
+                <dt>Files</dt>
                 <dd>{latestVersion.fileCount}</dd>
               </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Size</dt>
+              <div>
+                <dt>Size</dt>
                 <dd>{formatSize(latestVersion.tarballSize)}</dd>
               </div>
             </>
           )}
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Published</dt>
+          <div>
+            <dt>Published</dt>
             <dd>{latestVersion ? timeAgo(latestVersion.publishedAt) : '\u2014'}</dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Publisher</dt>
+          <div>
+            <dt>Publisher</dt>
             <dd>
               {publisher.githubUsername ? (
                 <a
@@ -122,8 +130,8 @@ export function SkillSidebar({
               )}
             </dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-muted-foreground">Visibility</dt>
+          <div>
+            <dt>Visibility</dt>
             <dd>{visibility}</dd>
           </div>
         </dl>
@@ -135,16 +143,7 @@ export function SkillSidebar({
           <div>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Security</h3>
             <div className="flex items-center gap-2 mb-2">
-              <span
-                className={`text-2xl font-bold ${
-                  latestVersion.auditScore >= 8
-                    ? 'text-green-600'
-                    : latestVersion.auditScore >= 6
-                      ? 'text-yellow-600'
-                      : latestVersion.auditScore >= 4
-                        ? 'text-orange-600'
-                        : 'text-red-600'
-                }`}>
+              <span className={`text-2xl font-bold ${getScoreTextClass(latestVersion.auditScore)}`}>
                 {latestVersion.auditScore}
               </span>
               <span className="text-sm text-muted-foreground">/10</span>
@@ -179,45 +178,20 @@ export function SkillSidebar({
               </div>
             )}
 
-            <div className="text-xs space-y-1 mb-3">
-              {(scanDetails?.criticalCount ?? 0) > 0 && (
-                <div className="flex items-center gap-2 text-red-600">
-                  <span>&#9679;</span>
-                  <span>
-                    {scanDetails?.criticalCount} critical finding
-                    {(scanDetails?.criticalCount ?? 0) !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
-              {(scanDetails?.highCount ?? 0) > 0 && (
-                <div className="flex items-center gap-2 text-orange-600">
-                  <span>&#9679;</span>
-                  <span>
-                    {scanDetails?.highCount} high finding
-                    {(scanDetails?.highCount ?? 0) !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
-              {(scanDetails?.mediumCount ?? 0) > 0 && (
-                <div className="flex items-center gap-2 text-yellow-600">
-                  <span>&#9679;</span>
-                  <span>
-                    {scanDetails?.mediumCount} medium finding
-                    {(scanDetails?.mediumCount ?? 0) !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
-              {(scanDetails?.lowCount ?? 0) > 0 && (
-                <div className="flex items-center gap-2 text-blue-600">
-                  <span>&#9679;</span>
-                  <span>
-                    {scanDetails?.lowCount} low finding
-                    {(scanDetails?.lowCount ?? 0) !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
+            <div className="text-xs space-y-1 mb-3 [&>div]:flex [&>div]:items-center [&>div]:gap-2">
+              {findings
+                .filter(({ key }) => (scanDetails?.[key] ?? 0) > 0)
+                .map(({ key, label, color }) => (
+                  <div key={key} className={color}>
+                    <span>&#9679;</span>
+                    <span>
+                      {scanDetails?.[key]} {label} finding
+                      {(scanDetails?.[key] ?? 0) !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                ))}
               {(scanDetails?.findings?.length ?? 0) === 0 && (
-                <div className="flex items-center gap-2 text-green-600">
+                <div className="text-green-600">
                   <span>&#10003;</span>
                   <span>No security issues</span>
                 </div>
