@@ -1,3 +1,4 @@
+import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 
@@ -50,3 +51,19 @@ export const getSkillDetailFn = createServerFn({ method: 'GET' })
     const viewerUserId = await getViewerUserId();
     return getSkillDetail(name, viewerUserId);
   });
+
+export function skillsListQueryOptions(params: SkillsListParams) {
+  return queryOptions({
+    queryKey: ['skills', 'list', params],
+    queryFn: () => getSkillsList({ data: params }),
+    staleTime: 60_000
+  });
+}
+
+export function skillDetailQueryOptions(name: string) {
+  return queryOptions({
+    queryKey: ['skills', 'detail', name],
+    queryFn: () => getSkillDetailFn({ data: name }),
+    staleTime: 60_000
+  });
+}

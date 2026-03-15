@@ -1,3 +1,4 @@
+import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/react-start';
 
 import { GITHUB_REPO } from '~/consts/brand';
@@ -13,4 +14,10 @@ export const getGitHubStars = createServerFn({ method: 'GET' }).handler(async ()
   } catch {
     return null;
   }
+});
+
+export const githubStarsQueryOptions = queryOptions({
+  queryKey: ['github', 'stars'],
+  queryFn: () => getGitHubStars(),
+  staleTime: 3600000
 });

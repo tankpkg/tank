@@ -44,7 +44,7 @@ function rehypeCollectHeadings() {
         headings.push({
           id: node.properties.id as string,
           text: extractText(node),
-          level: Number.parseInt(node.tagName[1])
+          level: Number.parseInt(node.tagName[1], 10)
         });
       }
     });
@@ -111,8 +111,3 @@ export const getDocBySlug = createServerFn({ method: 'GET' })
     const doc = docs.find((d) => d.slug === normalized);
     return doc ?? null;
   });
-
-export const getAllDocs = createServerFn({ method: 'GET' }).handler(async () => {
-  const docs = await loadDocs();
-  return docs.map((d) => ({ title: d.title, description: d.description, slug: d.slug }));
-});
