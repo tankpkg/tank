@@ -175,11 +175,6 @@ function thenAuditScoreIsExactly(expected: number): void {
   expect(scoreWorld.result!.score).toBe(expected);
 }
 
-function thenAuditScoreIsBelow10(): void {
-  expect(scoreWorld.result).not.toBeNull();
-  expect(scoreWorld.result!.score).toBeLessThan(10);
-}
-
 function startServeServer(tarballs: Map<string, Buffer>): Promise<number> {
   return new Promise((resolve, reject) => {
     const srv = http.createServer((req, res) => {
@@ -380,7 +375,7 @@ describe("Feature: Security scanner 6-stage pipeline", () => {
       givenSkillTarballWithOnlyMediumSeverityFindings();
       whenTheScannerAnalyzesScoreInput();
       thenScoreVerdictIs("pass_with_notes");
-      thenAuditScoreIsBelow10();
+      thenAuditScoreIsExactly(7);
     });
   });
 
