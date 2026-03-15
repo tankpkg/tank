@@ -118,12 +118,8 @@ function NavDropdownItem({ icon, text, description, href }: DropdownItem) {
           {icon}
         </div>
         <div className="min-w-0">
-          <span className="block text-sm font-medium text-foreground">
-            {text}
-          </span>
-          <span className="block text-xs text-muted-foreground">
-            {description}
-          </span>
+          <span className="block text-sm font-medium text-foreground">{text}</span>
+          <span className="block text-xs text-muted-foreground">{description}</span>
         </div>
       </Link>
     </li>
@@ -260,11 +256,7 @@ export function Navbar() {
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={mobileOpen}>
-        {mobileOpen ? (
-          <XIcon className="size-5" />
-        ) : (
-          <MenuIcon className="size-5" />
-        )}
+        {mobileOpen ? <XIcon className="size-5" /> : <MenuIcon className="size-5" />}
       </button>
 
       {mobileOpen && (

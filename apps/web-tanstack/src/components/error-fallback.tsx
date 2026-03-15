@@ -1,5 +1,5 @@
-import { Link, useRouter } from '@tanstack/react-router';
 import type { ErrorComponentProps } from '@tanstack/react-router';
+import { Link, useRouter } from '@tanstack/react-router';
 import { ArrowLeft, RefreshCw, Shield } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
@@ -27,8 +27,7 @@ export function ErrorFallback({ error, reset }: ErrorComponentProps) {
               onClick={() => {
                 reset();
                 router.invalidate();
-              }}
-            >
+              }}>
               <RefreshCw className="size-4" />
               Try again
             </Button>
