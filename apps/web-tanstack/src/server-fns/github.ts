@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 
-const GITHUB_REPO = 'tankpkg/tank';
+import { GITHUB_REPO } from '~/consts/brand';
 
 export const getGitHubStars = createServerFn({ method: 'GET' }).handler(async () => {
   try {

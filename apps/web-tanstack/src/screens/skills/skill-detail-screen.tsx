@@ -3,7 +3,7 @@ import { SkillTabs } from '~/components/skills/skill-tabs';
 import { Badge } from '~/components/ui/badge';
 import { safeParseJson, safeParsePermissions } from '~/lib/format';
 import type { SkillDetailResult } from '~/lib/skills/data';
-import { buildSecurityTab, buildSkillJsonLd } from './skill-detail-helpers';
+import { buildSecurityTab, buildSkillJsonLd } from '~/screens/skills/skill-detail-helpers';
 
 interface SkillDetailScreenProps {
   data: SkillDetailResult;
