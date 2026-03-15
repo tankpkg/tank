@@ -43,7 +43,8 @@ export const Route = createFileRoute('/_registry/')({
         content:
           'Every skill is scanned for credential theft, prompt injection, and supply chain attacks before installation.'
       }
-    ]
+    ],
+    links: [{ rel: 'canonical', href: 'https://www.tankpkg.dev/' }]
   }),
   component: HomePage
 });
