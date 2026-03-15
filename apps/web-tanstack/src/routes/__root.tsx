@@ -3,6 +3,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
+import { NotFoundScreen } from '~/screens/not-found-screen';
+
 import globalCss from '../styles/global.css?url';
 
 export const Route = createRootRouteWithContext<{
@@ -18,7 +20,8 @@ export const Route = createRootRouteWithContext<{
     links: [{ rel: 'stylesheet', href: globalCss }]
   }),
   component: RootLayout,
-  shellComponent: RootDocument
+  shellComponent: RootDocument,
+  notFoundComponent: NotFoundScreen
 });
 
 function RootLayout() {
