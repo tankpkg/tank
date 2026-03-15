@@ -2,9 +2,12 @@ import pino from 'pino';
 
 const lokiUrl = process.env.LOKI_URL || 'http://localhost:3100';
 
+const MAX_BUFFER_SIZE = 1000;
+
 // Buffer logs and push to Loki via HTTP (no worker threads — compatible with Next.js dev)
 const logBuffer: string[] = [];
 let flushTimer: ReturnType<typeof setInterval> | null = null;
+let consecutiveFailures = 0;
 
 async function flushToLoki() {
   if (logBuffer.length === 0) return;
@@ -34,9 +37,23 @@ async function flushToLoki() {
         ]
       })
     });
+    consecutiveFailures = 0;
   } catch {
-    // Re-add on failure so we don't lose logs
-    logBuffer.unshift(...logs);
+    consecutiveFailures++;
+
+    if (consecutiveFailures >= 10) {
+      process.stderr.write(`[logger] Loki unreachable after ${consecutiveFailures} consecutive failures — dropping ${logs.length} logs\n`);
+      return;
+    }
+
+    if (logBuffer.length + logs.length > MAX_BUFFER_SIZE) {
+      const capacity = MAX_BUFFER_SIZE - logBuffer.length;
+      if (capacity > 0) {
+        logBuffer.unshift(...logs.slice(-capacity));
+      }
+    } else {
+      logBuffer.unshift(...logs);
+    }
   }
 }
 
