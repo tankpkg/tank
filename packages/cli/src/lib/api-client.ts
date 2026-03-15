@@ -1,4 +1,5 @@
-import { USER_AGENT } from '../version.js';
+import { USER_AGENT } from '~/version.js';
+
 import { getConfig, type TankConfig } from './config.js';
 import { httpLog } from './debug-logger.js';
 

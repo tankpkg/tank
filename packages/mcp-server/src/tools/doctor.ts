@@ -1,7 +1,9 @@
 import fs from 'node:fs';
+
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { TankApiClient } from '../lib/api-client.js';
-import { getConfig, getConfigPath } from '../lib/config.js';
+
+import { TankApiClient } from '~/lib/api-client.js';
+import { getConfig, getConfigPath } from '~/lib/config.js';
 
 const MIN_NODE_MAJOR = 24;
 

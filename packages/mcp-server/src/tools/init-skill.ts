@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, type SkillsJson, skillsJsonSchema } from '@internal/shared';
+
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, type SkillsJson, skillsJsonSchema } from '@internals/schemas';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 

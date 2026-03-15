@@ -1,7 +1,8 @@
 import open from 'open';
-import { getConfig, setConfig } from '../lib/config.js';
-import { authFlowLog } from '../lib/debug-logger.js';
-import { logger } from '../lib/logger.js';
+
+import { getConfig, setConfig } from '~/lib/config.js';
+import { authFlowLog } from '~/lib/debug-logger.js';
+import { logger } from '~/lib/logger.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes

@@ -21,14 +21,14 @@
 
 ### Tasks
 
-| # | Task | File(s) | Est. |
-|---|------|---------|------|
-| 1.1 | Create `BrandConfig` types in `@tank/shared` | `packages/shared/src/brand.ts` | 20m |
-| 1.2 | Create `apps/web/lib/branding.ts` config accessor | `apps/web/lib/branding.ts` | 30m |
-| 1.3 | Add env vars to `.env.example` | `apps/web/.env.example` | 10m |
-| 1.4 | Add CSS custom properties for theme colors | `apps/web/app/globals.css` | 20m |
-| 1.5 | Create `BrandProvider` client context | `apps/web/components/brand-provider.tsx` | 30m |
-| 1.6 | Export brand types from shared package | `packages/shared/src/index.ts` | 5m |
+| #   | Task                                              | File(s)                                  | Est. |
+| --- | ------------------------------------------------- | ---------------------------------------- | ---- |
+| 1.1 | Create `BrandConfig` types in `@tank/shared`      | `packages/shared/src/brand.ts`           | 20m  |
+| 1.2 | Create `apps/web/lib/branding.ts` config accessor | `apps/web/lib/branding.ts`               | 30m  |
+| 1.3 | Add env vars to `.env.example`                    | `apps/web/.env.example`                  | 10m  |
+| 1.4 | Add CSS custom properties for theme colors        | `apps/web/app/globals.css`               | 20m  |
+| 1.5 | Create `BrandProvider` client context             | `apps/web/components/brand-provider.tsx` | 30m  |
+| 1.6 | Export brand types from shared package            | `packages/shared/src/index.ts`           | 5m   |
 
 **Deliverable:** `getBrandConfig()` function returning typed config with defaults
 
@@ -40,14 +40,14 @@
 
 ### Tasks
 
-| # | Task | File(s) | Est. |
-|---|------|---------|------|
-| 2.1 | Create `Logo` component | `apps/web/components/logo.tsx` | 30m |
-| 2.2 | Update `Header` to use `Logo` component | `apps/web/components/header.tsx` | 20m |
-| 2.3 | Update `Footer` with "Powered by Tank" | `apps/web/components/footer.tsx` | 30m |
-| 2.4 | Find/replace static "Tank" text in components | Various components | 1h |
-| 2.5 | Update auth pages (login, signup) | `apps/web/app/(auth)/*` | 30m |
-| 2.6 | Update landing page hero | `apps/web/app/page.tsx` | 20m |
+| #   | Task                                          | File(s)                          | Est. |
+| --- | --------------------------------------------- | -------------------------------- | ---- |
+| 2.1 | Create `Logo` component                       | `apps/web/components/logo.tsx`   | 30m  |
+| 2.2 | Update `Header` to use `Logo` component       | `apps/web/components/header.tsx` | 20m  |
+| 2.3 | Update `Footer` with "Powered by Tank"        | `apps/web/components/footer.tsx` | 30m  |
+| 2.4 | Find/replace static "Tank" text in components | Various components               | 1h   |
+| 2.5 | Update auth pages (login, signup)             | `apps/web/app/(auth)/*`          | 30m  |
+| 2.6 | Update landing page hero                      | `apps/web/app/page.tsx`          | 20m  |
 
 **Deliverable:** All visible branding is dynamic via config
 
@@ -59,13 +59,13 @@
 
 ### Tasks
 
-| # | Task | File(s) | Est. |
-|---|------|---------|------|
-| 3.1 | Update root layout metadata | `apps/web/app/layout.tsx` | 30m |
-| 3.2 | Update OG image generation route | `apps/web/app/og/[...name]/route.tsx` | 40m |
-| 3.3 | Create dynamic manifest route | `apps/web/app/manifest.ts` | 30m |
-| 3.4 | Update sitemap generation | `apps/web/app/sitemap.ts` | 15m |
-| 3.5 | Update robots.txt if needed | `apps/web/app/robots.ts` | 10m |
+| #   | Task                             | File(s)                               | Est. |
+| --- | -------------------------------- | ------------------------------------- | ---- |
+| 3.1 | Update root layout metadata      | `apps/web/app/layout.tsx`             | 30m  |
+| 3.2 | Update OG image generation route | `apps/web/app/og/[...name]/route.tsx` | 40m  |
+| 3.3 | Create dynamic manifest route    | `apps/web/app/manifest.ts`            | 30m  |
+| 3.4 | Update sitemap generation        | `apps/web/app/sitemap.ts`             | 15m  |
+| 3.5 | Update robots.txt if needed      | `apps/web/app/robots.ts`              | 10m  |
 
 **Deliverable:** All SEO/meta reflects custom brand
 
@@ -77,11 +77,11 @@
 
 ### Tasks
 
-| # | Task | File(s) | Est. |
-|---|------|---------|------|
-| 4.1 | Audit existing email templates | `apps/web/lib/email/*` | 20m |
-| 4.2 | Add brand config to email service | `apps/web/lib/email/service.ts` | 30m |
-| 4.3 | Update email templates with brand | Email templates | 1h |
+| #   | Task                              | File(s)                         | Est. |
+| --- | --------------------------------- | ------------------------------- | ---- |
+| 4.1 | Audit existing email templates    | `apps/web/lib/email/*`          | 20m  |
+| 4.2 | Add brand config to email service | `apps/web/lib/email/service.ts` | 30m  |
+| 4.3 | Update email templates with brand | Email templates                 | 1h   |
 
 **Deliverable:** Emails show custom brand name/logo
 
@@ -93,12 +93,12 @@
 
 ### Tasks
 
-| # | Task | File(s) | Est. |
-|---|------|---------|------|
-| 5.1 | Create white-label setup guide | `docs/self-hosting/white-label.md` | 1h |
-| 5.2 | Update main self-hosting docs | `docs/self-hosting/README.md` | 30m |
-| 5.3 | Add brand asset checklist | `docs/self-hosting/assets.md` | 30m |
-| 5.4 | Update README with white-label mention | `README.md` | 15m |
+| #   | Task                                   | File(s)                            | Est. |
+| --- | -------------------------------------- | ---------------------------------- | ---- |
+| 5.1 | Create white-label setup guide         | `docs/self-hosting/white-label.md` | 1h   |
+| 5.2 | Update main self-hosting docs          | `docs/self-hosting/README.md`      | 30m  |
+| 5.3 | Add brand asset checklist              | `docs/self-hosting/assets.md`      | 30m  |
+| 5.4 | Update README with white-label mention | `README.md`                        | 15m  |
 
 **Deliverable:** Complete setup documentation
 
@@ -107,6 +107,7 @@
 ## File Changes Summary
 
 ### New Files (6)
+
 ```
 apps/web/lib/branding.ts
 apps/web/components/logo.tsx
@@ -117,6 +118,7 @@ docs/self-hosting/white-label.md
 ```
 
 ### Modified Files (35-45)
+
 ```
 apps/web/app/layout.tsx
 apps/web/app/page.tsx
@@ -136,6 +138,7 @@ apps/web/lib/email/service.ts
 ## Testing Strategy
 
 ### Manual Testing
+
 1. Set all `BRAND_*` env vars
 2. Verify logo, name, colors appear correctly
 3. Check meta tags in page source
@@ -144,6 +147,7 @@ apps/web/lib/email/service.ts
 6. Test OG image generation
 
 ### Automated Testing
+
 - Unit test for `getBrandConfig()` defaults
 - Unit test for `getBrandConfig()` with env vars
 - Component snapshot tests with custom brand
@@ -163,9 +167,9 @@ apps/web/lib/email/service.ts
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Layout shift on logo load | Preload logo, use aspect-ratio |
-| XSS via brand URLs | Validate URLs, use Next.js Image |
-| Missing env var | Graceful fallback to Tank default |
-| Color contrast issues | Document recommended contrast ratios |
+| Risk                      | Mitigation                           |
+| ------------------------- | ------------------------------------ |
+| Layout shift on logo load | Preload logo, use aspect-ratio       |
+| XSS via brand URLs        | Validate URLs, use Next.js Image     |
+| Missing env var           | Graceful fallback to Tank default    |
+| Color contrast issues     | Document recommended contrast ratios |

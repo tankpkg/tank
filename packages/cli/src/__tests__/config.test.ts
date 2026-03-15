@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { getConfig, getConfigDir, getConfigPath, setConfig } from '../lib/config.js';
+
+import { getConfig, getConfigDir, getConfigPath, setConfig } from '~/lib/config.js';
 
 describe('config', () => {
   let tmpDir: string;

@@ -1,12 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { MANIFEST_FILENAME } from '@internal/shared';
+
+import { MANIFEST_FILENAME } from '@internals/schemas';
 import ora from 'ora';
-import { getConfig } from '../lib/config.js';
-import { logger } from '../lib/logger.js';
-import { resolveManifestPath } from '../lib/manifest.js';
-import { pack } from '../lib/packer.js';
-import { USER_AGENT } from '../version.js';
+
+import { getConfig } from '~/lib/config.js';
+import { logger } from '~/lib/logger.js';
+import { resolveManifestPath } from '~/lib/manifest.js';
+import { pack } from '~/lib/packer.js';
+import { USER_AGENT } from '~/version.js';
 
 export interface PublishOptions {
   directory?: string;

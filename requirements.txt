@@ -1,2 +1,2 @@
-# Vercel Python dependencies - redirects to packages/scanner
--r packages/scanner/requirements.txt
+# Vercel Python dependencies - redirects to apps/python-api
+-r apps/python-api/requirements.txt

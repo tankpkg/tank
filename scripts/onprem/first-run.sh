@@ -18,6 +18,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/load-env.sh"
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

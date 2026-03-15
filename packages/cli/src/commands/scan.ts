@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import chalk from 'chalk';
 import ora from 'ora';
-import { getConfig } from '../lib/config.js';
-import { resolveManifestPath } from '../lib/manifest.js';
-import { pack, packForScan } from '../lib/packer.js';
-import { USER_AGENT } from '../version.js';
+
+import { getConfig } from '~/lib/config.js';
+import { resolveManifestPath } from '~/lib/manifest.js';
+import { pack, packForScan } from '~/lib/packer.js';
+import { USER_AGENT } from '~/version.js';
 
 export interface ScanOptions {
   directory?: string;

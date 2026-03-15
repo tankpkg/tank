@@ -2,7 +2,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
-import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, skillsJsonSchema } from '@internal/shared';
+
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, skillsJsonSchema } from '@internals/schemas';
 import ignore from 'ignore';
 import { create } from 'tar';
 
@@ -187,6 +188,10 @@ export async function packForScan(directory: string): Promise<PackResult> {
 
   // 4. Collect files with validation
   const files = collectFiles(absDir, absDir, ig);
+
+  if (files.length === 0) {
+    throw new Error(`No manifest found and no files to scan in ${absDir}`);
+  }
 
   // 5. Enforce file count limit
   if (files.length > MAX_FILE_COUNT) {

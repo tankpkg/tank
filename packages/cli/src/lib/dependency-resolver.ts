@@ -1,4 +1,4 @@
-import { resolve } from '@internal/shared';
+import { resolve } from '@internals/helpers';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 

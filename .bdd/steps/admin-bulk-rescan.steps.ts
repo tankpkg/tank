@@ -8,18 +8,20 @@
  * Uses createAdminSession/cleanupAdminSession to provision real admin credentials.
  * POST /api/admin/rescan-skills starts a background job and returns a jobId + total count.
  */
-import { randomUUID } from "node:crypto";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import postgres from "postgres";
+import { randomUUID } from 'node:crypto';
+
+import postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const hasDatabase = !!process.env.DATABASE_URL;
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
+
 import {
-  createAdminApiClient,
-  createAdminSession,
-  cleanupAdminSession,
   type AdminApiClient,
-} from "../interactions/admin-api-client.js";
+  cleanupAdminSession,
+  createAdminApiClient,
+  createAdminSession
+} from '../interactions/admin-api-client.js';
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -31,18 +33,18 @@ interface BulkRescanWorld {
 }
 
 const world: BulkRescanWorld = {
-  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
   sql: null,
-  runId: "",
-  client: null,
+  runId: '',
+  client: null
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function adminPost(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (cookieHeader) headers["Cookie"] = cookieHeader;
-  const res = await fetch(`${world.registry}${path}`, { method: "POST", headers });
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (cookieHeader) headers.Cookie = cookieHeader;
+  const res = await fetch(`${world.registry}${path}`, { method: 'POST', headers });
   let body: unknown;
   try {
     body = await res.json();
@@ -54,12 +56,12 @@ async function adminPost(path: string, cookieHeader?: string): Promise<{ status:
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: Admin bulk rescan of skill versions", () => {
+describe('Feature: Admin bulk rescan of skill versions', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
     const connectionString = process.env.DATABASE_URL!;
     world.sql = postgres(connectionString);
-    world.runId = randomUUID().replace(/-/g, "").slice(0, 10);
+    world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.client = createAdminApiClient(world.registry, world.sql);
     await createAdminSession(world.client, world.runId);
   }, 30_000);
@@ -69,8 +71,7 @@ describe("Feature: Admin bulk rescan of skill versions", () => {
     if (!sql) return;
     try {
       if (world.client) await cleanupAdminSession(world.client, world.runId);
-    } catch (e) {
-      console.warn("admin-bulk-rescan cleanup warning:", e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
@@ -78,39 +79,39 @@ describe("Feature: Admin bulk rescan of skill versions", () => {
 
   // ── Auth enforcement (C1) ─────────────────────────────────────────
 
-  describe("Scenario: POST /admin/rescan-skills as non-admin returns 401 (E2)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
-      const { status } = await adminPost("/api/admin/rescan-skills");
+  describe('Scenario: POST /admin/rescan-skills as non-admin returns 401 (E2)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
+      const { status } = await adminPost('/api/admin/rescan-skills');
       expect(status).toBe(401);
     });
   });
 
   // ── Bulk rescan (C3) ─────────────────────────────────────────────
 
-  describe("Scenario: POST /admin/rescan-skills returns count of queued versions (E1)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
-      const { status, body } = await adminPost("/api/admin/rescan-skills", world.client!.session!.cookieHeader);
+  describe('Scenario: POST /admin/rescan-skills returns count of queued versions (E1)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
+      const { status, body } = await adminPost('/api/admin/rescan-skills', world.client?.session?.cookieHeader);
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
-      expect(b).toHaveProperty("total");
-      expect(typeof b["total"]).toBe("number");
+      expect(b).toHaveProperty('total');
+      expect(typeof b.total).toBe('number');
     });
   });
 
   // ── Job tracking (C4) ────────────────────────────────────────────
 
-  describe("Scenario: Response includes jobId when there are versions to rescan", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
-      const { status, body } = await adminPost("/api/admin/rescan-skills", world.client!.session!.cookieHeader);
+  describe('Scenario: Response includes jobId when there are versions to rescan', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
+      const { status, body } = await adminPost('/api/admin/rescan-skills', world.client?.session?.cookieHeader);
       expect(status).toBe(200);
       const b = body as Record<string, unknown>;
-      const total = b["total"] as number;
+      const total = b.total as number;
       if (total > 0) {
-        expect(b).toHaveProperty("jobId");
-        expect(typeof b["jobId"]).toBe("string");
-        expect(b).toHaveProperty("statusUrl");
+        expect(b).toHaveProperty('jobId');
+        expect(typeof b.jobId).toBe('string');
+        expect(b).toHaveProperty('statusUrl');
       } else {
-        expect(b["jobId"]).toBeNull();
+        expect(b.jobId).toBeNull();
       }
     });
   });

@@ -1,5 +1,5 @@
 import { confirm } from '@inquirer/prompts';
-import type { Permissions } from '@internal/shared';
+import type { Permissions } from '@internals/schemas';
 import { logger } from './logger.js';
 import type { PermissionViolation } from './permission-checker.js';
 

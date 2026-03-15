@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { TankApiClient } from '../lib/api-client.js';
+
+import { TankApiClient } from '~/lib/api-client.js';
 
 export function registerWhoamiTool(server: McpServer): void {
   server.tool('whoami', 'Show the authenticated Tank user for the current local session.', {}, async () => {

@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
+
 import {
   buildSkillKey,
   type RegistryFetcher,
   type RegistrySkillMeta,
   type RegistryVersionInfo,
   resolveDependencyTree
-} from '../lib/dependency-resolver.js';
+} from '~/lib/dependency-resolver.js';
 
 function makeVersionInfo(version: string): RegistryVersionInfo {
   return {

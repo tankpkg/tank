@@ -1,6 +1,6 @@
 {
   "name": "@tankpkg/cli",
-  "version": "0.9.1",
+  "version": "0.8.1",
   "description": "Security-first package manager for AI agent skills",
   "type": "module",
   "bin": {
@@ -18,20 +18,20 @@
     "build:sea": "bash scripts/build-binary.sh",
     "build:binary": "bun run build && bun run build:bundle && bun run build:sea",
     "test": "vitest run",
-    "lint": "biome check src/",
-    "lint:fix": "biome check --fix src/",
-    "format": "biome format --write src/"
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
   },
   "devDependencies": {
-    "@internal/shared": "workspace:*",
-    "@types/node": "^25",
-    "@types/tar": "^6.1.13",
-    "esbuild": "^0.25.9",
-    "tsdown": "^0.21.0",
-    "vitest": "^4"
+    "@internals/helpers": "workspace:*",
+    "@internals/schemas": "workspace:*",
+    "@types/node": "^25.5.0",
+    "@types/tar": "^7.0.87",
+    "esbuild": "^0.27.4",
+    "tsdown": "^0.21.2",
+    "vitest": "^4.1.0"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.2.0",
+    "@inquirer/prompts": "^8.3.0",
     "chalk": "^5.6.2",
     "commander": "^14.0.3",
     "ignore": "^7.0.5",
@@ -40,7 +40,7 @@
     "pino": "^10.3.1",
     "pino-loki": "^3.0.0",
     "semver": "^7.7.4",
-    "tar": "^7.5.8",
+    "tar": "^7.5.11",
     "zod": "^4.3.6"
   }
 }

@@ -1,0 +1,34 @@
+# AI search crawlers
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+# AI training crawlers
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+# All crawlers
+User-agent: *
+Allow: /
+Disallow: /api/auth/
+Disallow: /dashboard
+Disallow: /admin
+
+Sitemap: https://www.tankpkg.dev/sitemap.xml

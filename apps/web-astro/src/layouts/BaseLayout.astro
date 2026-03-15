@@ -1,0 +1,65 @@
+---
+import '../styles/globals.css';
+
+import { Font } from 'astro:assets';
+
+interface Props {
+  title: string;
+  description?: string;
+  jsonLd?: string;
+}
+
+const { title, description = 'Security-first package manager for AI agent skills', jsonLd } = Astro.props;
+
+const gaId = import.meta.env.PUBLIC_GA_ID;
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <Font cssVariable="--font-inter" preload />
+
+    <!-- OpenGraph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tankpkg.dev" />
+    <meta property="og:image" content="https://tankpkg.dev/og-image.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="https://tankpkg.dev/og-image.png" />
+
+    {jsonLd && <script type="application/ld+json" set:html={jsonLd} />}
+
+    {
+      gaId && (
+        <>
+          <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
+          <script
+            define:vars={{ gaId }}
+            set:html={`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){window.dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', gaId);
+          `}
+          />
+        </>
+      )
+    }
+  </head>
+  <body
+    class="min-h-screen bg-background text-foreground antialiased"
+    style="font-family: var(--font-inter), sans-serif;">
+    <slot />
+  </body>
+</html>

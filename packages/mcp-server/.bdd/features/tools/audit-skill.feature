@@ -3,7 +3,8 @@ Feature: Audit Skill Tool
   I want to view the security audit results for installed skills
   So I can make informed decisions about skill safety
 
-  @auth @network
+  @auth
+  @network
   Scenario: Audit a specific installed skill
     Given I am authenticated with Tank
     And I have a project with "@test/hello-world" installed
@@ -12,7 +13,8 @@ Feature: Audit Skill Tool
     Then the response should show the audit score
     And it should show the scan verdict
 
-  @auth @network
+  @auth
+  @network
   Scenario: Audit all installed skills
     Given I am authenticated with Tank
     And I have a project with installed skills

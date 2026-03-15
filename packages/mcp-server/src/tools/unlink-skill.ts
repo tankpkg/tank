@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
@@ -74,7 +75,9 @@ export function registerUnlinkSkillTool(server: McpServer): void {
             ]
           };
         }
-      } catch {}
+      } catch {
+        // intentionally empty
+      }
 
       return {
         content: [

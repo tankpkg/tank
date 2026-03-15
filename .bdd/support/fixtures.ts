@@ -32,22 +32,16 @@ export function createSkillFixture(options: {
   const manifest = {
     name: options.name,
     version: options.version,
-    description: options.description ?? `BDD fixture skill ${options.name}`,
+    description: options.description ?? `BDD fixture skill ${options.name}`
   };
 
-  fs.writeFileSync(
-    path.join(dir, 'tank.json'),
-    JSON.stringify(manifest, null, 2) + '\n',
-  );
+  fs.writeFileSync(path.join(dir, 'tank.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
-  fs.writeFileSync(
-    path.join(dir, 'SKILL.md'),
-    `# ${options.name}\n\nBDD fixture skill for MCP tests.\n`,
-  );
+  fs.writeFileSync(path.join(dir, 'SKILL.md'), `# ${options.name}\n\nBDD fixture skill for MCP tests.\n`);
 
   fs.writeFileSync(
     path.join(dir, 'index.js'),
-    `export function run() { return '${options.name}@${options.version}'; }\n`,
+    `export function run() { return '${options.name}@${options.version}'; }\n`
   );
 
   if (options.files) {
@@ -64,15 +58,13 @@ export function createSkillFixture(options: {
     version: options.version,
     cleanup: async () => {
       fs.rmSync(dir, { recursive: true, force: true });
-    },
+    }
   };
 }
 
-export function createConfigDir(options: {
-  token?: string;
-  registry?: string;
-  user?: { name: string; email: string };
-} = {}): ConfigFixture {
+export function createConfigDir(
+  options: { token?: string; registry?: string; user?: { name: string; email: string } } = {}
+): ConfigFixture {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-bdd-home-'));
   const tankDir = path.join(home, '.tank');
   const configPath = path.join(tankDir, 'config.json');
@@ -84,7 +76,7 @@ export function createConfigDir(options: {
     token?: string;
     user?: { name: string; email: string };
   } = {
-    registry: options.registry ?? process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
+    registry: options.registry ?? process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003'
   };
 
   if (options.token) {
@@ -94,14 +86,14 @@ export function createConfigDir(options: {
     config.user = options.user;
   }
 
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 });
+  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
 
   return {
     home,
     configPath,
     cleanup: async () => {
       fs.rmSync(home, { recursive: true, force: true });
-    },
+    }
   };
 }
 
@@ -114,16 +106,16 @@ export function createConsumerProject(): ConsumerProjectFixture {
     permissions: {
       network: { outbound: [] },
       filesystem: { read: [], write: [] },
-      subprocess: false,
-    },
+      subprocess: false
+    }
   };
 
-  fs.writeFileSync(path.join(dir, 'tank.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.writeFileSync(path.join(dir, 'tank.json'), `${JSON.stringify(manifest, null, 2)}\n`);
 
   return {
     dir,
     cleanup: async () => {
       fs.rmSync(dir, { recursive: true, force: true });
-    },
+    }
   };
 }

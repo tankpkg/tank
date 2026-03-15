@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { LOCKFILE_VERSION, MANIFEST_FILENAME, type SkillsLock } from '@internal/shared';
-import { getGlobalAgentSkillsDir, getGlobalSkillsDir, getSymlinkName } from '../lib/agents.js';
-import { unlinkSkillFromAgents } from '../lib/linker.js';
-import { logger } from '../lib/logger.js';
-import { resolveLockfilePath, resolveManifestPath } from '../lib/manifest.js';
+
+import { LOCKFILE_VERSION, MANIFEST_FILENAME, type SkillsLock } from '@internals/schemas';
+
+import { getGlobalAgentSkillsDir, getGlobalSkillsDir, getSymlinkName } from '~/lib/agents.js';
+import { unlinkSkillFromAgents } from '~/lib/linker.js';
+import { logger } from '~/lib/logger.js';
+import { resolveLockfilePath, resolveManifestPath } from '~/lib/manifest.js';
 
 export interface RemoveOptions {
   name: string;
@@ -106,7 +108,7 @@ export async function removeCommand(options: RemoveOptions): Promise<void> {
   skillsJson.skills = skills;
 
   // 4. Write updated manifest
-  fs.writeFileSync(resolvedManifest.path, JSON.stringify(skillsJson, null, 2) + '\n');
+  fs.writeFileSync(resolvedManifest.path, `${JSON.stringify(skillsJson, null, 2)}\n`);
 
   // 5. Read lockfile if present
   const resolvedLocalLock = resolveLockfilePath(directory);

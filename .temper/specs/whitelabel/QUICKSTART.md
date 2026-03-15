@@ -3,6 +3,7 @@
 ## For Developers (Implementation)
 
 ### 1. Create shared types
+
 ```typescript
 // packages/shared/src/brand.ts
 export interface BrandConfig {
@@ -13,7 +14,7 @@ export interface BrandConfig {
   favicon: string;
   ogImage: string;
   colors: {
-    primary: string;    // hex without #
+    primary: string; // hex without #
     secondary: string;
     accent: string;
     background: string;
@@ -26,29 +27,30 @@ export interface BrandConfig {
 }
 
 export const DEFAULT_BRAND: BrandConfig = {
-  name: 'Tank',
-  tagline: 'Security-first package manager for AI agent skills',
-  url: 'https://tankpkg.dev',
-  logo: { default: '/logo.png', tight: '/logo-tight.png' },
-  favicon: '/favicon.ico',
-  ogImage: '/og-default.png',
+  name: "Tank",
+  tagline: "Security-first package manager for AI agent skills",
+  url: "https://tankpkg.dev",
+  logo: { default: "/logo.png", tight: "/logo-tight.png" },
+  favicon: "/favicon.ico",
+  ogImage: "/og-default.png",
   colors: {
-    primary: '10b981',
-    secondary: '3b82f6',
-    accent: 'f59e0b',
-    background: '0f172a',
+    primary: "10b981",
+    secondary: "3b82f6",
+    accent: "f59e0b",
+    background: "0f172a",
   },
   social: {
-    twitter: '@tankpkg',
-    github: 'tankpkg/tank',
+    twitter: "@tankpkg",
+    github: "tankpkg/tank",
   },
 };
 ```
 
 ### 2. Create config accessor
+
 ```typescript
 // apps/web/lib/branding.ts
-import { BrandConfig, DEFAULT_BRAND } from '@tank/shared';
+import { BrandConfig, DEFAULT_BRAND } from "@tank/shared";
 
 export function getBrandConfig(): BrandConfig {
   return {
@@ -77,6 +79,7 @@ export function getBrandConfig(): BrandConfig {
 ```
 
 ### 3. Add CSS variables
+
 ```css
 /* apps/web/app/globals.css */
 :root {
@@ -88,27 +91,22 @@ export function getBrandConfig(): BrandConfig {
 ```
 
 ### 4. Update components
+
 ```tsx
 // apps/web/components/logo.tsx
-import { getBrandConfig } from '@/lib/branding';
-import Image from 'next/image';
+import { getBrandConfig } from "@/lib/branding";
+import Image from "next/image";
 
 export function Logo({ tight = false }: { tight?: boolean }) {
   const brand = getBrandConfig();
   const src = tight ? brand.logo.tight : brand.logo.default;
 
-  return (
-    <Image
-      src={src}
-      alt={`${brand.name} logo`}
-      width={tight ? 32 : 120}
-      height={tight ? 32 : 40}
-    />
-  );
+  return <Image src={src} alt={`${brand.name} logo`} width={tight ? 32 : 120} height={tight ? 32 : 40} />;
 }
 ```
 
 ### 5. Powered by footer
+
 ```tsx
 // apps/web/components/footer.tsx
 export function Footer() {
@@ -118,7 +116,7 @@ export function Footer() {
     <footer>
       {/* ... other footer content ... */}
       <div className="powered-by">
-        Powered by{' '}
+        Powered by{" "}
         <a href="https://tankpkg.dev" target="_blank" rel="noopener">
           Tank
         </a>
@@ -150,12 +148,12 @@ BRAND_COLOR_PRIMARY="3b82f6"  # Blue instead of green
 
 ### Asset Requirements
 
-| Asset | Size | Format | Notes |
-|-------|------|--------|-------|
-| Logo | 120×40px | PNG/SVG | Transparent background |
-| Logo tight | 32×32px | PNG/SVG | Icon-only version |
-| Favicon | 32×32px | ICO/PNG | Browser tab icon |
-| OG image | 1200×630px | PNG | Social media preview |
+| Asset      | Size       | Format  | Notes                  |
+| ---------- | ---------- | ------- | ---------------------- |
+| Logo       | 120×40px   | PNG/SVG | Transparent background |
+| Logo tight | 32×32px    | PNG/SVG | Icon-only version      |
+| Favicon    | 32×32px    | ICO/PNG | Browser tab icon       |
+| OG image   | 1200×630px | PNG     | Social media preview   |
 
 Place assets in `apps/web/public/brand/` directory.
 

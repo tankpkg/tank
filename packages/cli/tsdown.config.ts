@@ -9,6 +9,6 @@ export default defineConfig({
   clean: true,
   copy: ['package.json'],
   deps: {
-    alwaysBundle: [/^@internal\//]
+    alwaysBundle: [/^@tankpkg\//, /^@internals\//]
   }
 });

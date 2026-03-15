@@ -1,15 +1,13 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { Client } from '../../packages/mcp-server/node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js';
 import { StdioClientTransport } from '../../packages/mcp-server/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const MCP_SERVER_ENTRYPOINT = path.resolve(
-  __dirname,
-  '../../packages/mcp-server/dist/index.js',
-);
+const MCP_SERVER_ENTRYPOINT = path.resolve(__dirname, '../../packages/mcp-server/dist/index.js');
 
 export interface McpToolResult {
   content: string;
@@ -44,39 +42,36 @@ export class McpTestClient {
       command: 'node',
       args: [MCP_SERVER_ENTRYPOINT],
       env: mergedEnv,
-      stderr: 'pipe',
+      stderr: 'pipe'
     });
 
     this.client = new Client(
       {
         name: 'tank-mcp-bdd-tests',
-        version: '0.1.0',
+        version: '0.1.0'
       },
       {
-        capabilities: {},
-      },
+        capabilities: {}
+      }
     );
 
     await this.client.connect(this.transport);
     this.started = true;
   }
 
-  async callTool(
-    name: string,
-    args: Record<string, unknown> = {},
-  ): Promise<McpToolResult> {
+  async callTool(name: string, args: Record<string, unknown> = {}): Promise<McpToolResult> {
     if (!this.client) {
       throw new Error('MCP client is not started');
     }
 
     const result = await this.client.callTool({
       name,
-      arguments: args,
+      arguments: args
     });
 
     return {
       content: this.contentToText(result.content),
-      isError: typeof result.isError === 'boolean' ? result.isError : undefined,
+      isError: typeof result.isError === 'boolean' ? result.isError : undefined
     };
   }
 

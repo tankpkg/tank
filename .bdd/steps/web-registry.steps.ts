@@ -8,9 +8,10 @@
  * Requires DATABASE_URL and E2E_REGISTRY_URL in environment.
  * Seeds test packages directly via SQL; no publish flow needed for read-only tests.
  */
-import { randomUUID } from "node:crypto";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import postgres from "postgres";
+import { randomUUID } from 'node:crypto';
+
+import postgres from 'postgres';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 const hasDatabase = !!process.env.DATABASE_URL;
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
@@ -30,15 +31,15 @@ interface RegistryWorld {
 }
 
 const world: RegistryWorld = {
-  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
   sql: null,
-  runId: "",
-  testOrg: "",
-  skillId: "",
-  versionId: "",
-  privateSkillId: "",
+  runId: '',
+  testOrg: '',
+  skillId: '',
+  versionId: '',
+  privateSkillId: '',
   lastStatus: 0,
-  lastBody: null,
+  lastBody: null
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -66,25 +67,25 @@ async function givenPublicSkillExists(name: string, version: string): Promise<vo
 
   await sql`
     INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
-    VALUES (${publisherId}, ${"Registry BDD User"}, ${`reg-bdd-${world.runId}@tank.test`}, true, ${now}, ${now})
+    VALUES (${publisherId}, ${'Registry BDD User'}, ${`reg-bdd-${world.runId}@tank.test`}, true, ${now}, ${now})
     ON CONFLICT (id) DO NOTHING
   `;
 
   await sql`
     INSERT INTO "organization" (id, name, slug, created_at)
-    VALUES (${orgId}, ${"Registry BDD Org"}, ${world.testOrg}, ${now})
+    VALUES (${orgId}, ${'Registry BDD Org'}, ${world.testOrg}, ${now})
     ON CONFLICT (slug) DO NOTHING
   `;
 
   await sql`
     INSERT INTO "member" (id, organization_id, user_id, role, created_at)
-    VALUES (${`reg-mem-${world.runId}`}, ${orgId}, ${publisherId}, ${"owner"}, ${now})
+    VALUES (${`reg-mem-${world.runId}`}, ${orgId}, ${publisherId}, ${'owner'}, ${now})
     ON CONFLICT DO NOTHING
   `;
 
   await sql`
     INSERT INTO skills (id, name, description, publisher_id, org_id, status, visibility, created_at, updated_at)
-    VALUES (${skillId}, ${name}, ${"Registry BDD public skill"}, ${publisherId}, ${orgId}, ${"active"}, ${"public"}, ${now}, ${now})
+    VALUES (${skillId}, ${name}, ${'Registry BDD public skill'}, ${publisherId}, ${orgId}, ${'active'}, ${'public'}, ${now}, ${now})
     ON CONFLICT (name) DO UPDATE SET updated_at = ${now}
   `;
 
@@ -95,12 +96,12 @@ async function givenPublicSkillExists(name: string, version: string): Promise<vo
     INSERT INTO skill_versions (id, skill_id, version, integrity, tarball_path, tarball_size, file_count, manifest, permissions, audit_status, published_by, created_at)
     VALUES (
       ${vId}, ${world.skillId}, ${version},
-      ${"sha512-bdd-registry-read"},
-      ${"skills/registry-bdd/test-1.0.0.tgz"},
+      ${'sha512-bdd-registry-read'},
+      ${'skills/registry-bdd/test-1.0.0.tgz'},
       ${512}, ${3},
-      ${JSON.stringify({ name, version, description: "BDD registry read test" })},
+      ${JSON.stringify({ name, version, description: 'BDD registry read test' })},
       ${JSON.stringify({})},
-      ${"completed"},
+      ${'completed'},
       ${publisherId},
       ${now}
     )
@@ -120,7 +121,7 @@ async function givenPrivateSkillExists(name: string, version: string): Promise<v
 
   await sql`
     INSERT INTO skills (id, name, description, publisher_id, status, visibility, created_at, updated_at)
-    VALUES (${privateSkillId}, ${name}, ${"Registry BDD private skill"}, ${publisherId}, ${"active"}, ${"private"}, ${now}, ${now})
+    VALUES (${privateSkillId}, ${name}, ${'Registry BDD private skill'}, ${publisherId}, ${'active'}, ${'private'}, ${now}, ${now})
     ON CONFLICT (name) DO UPDATE SET updated_at = ${now}
   `;
 
@@ -131,12 +132,12 @@ async function givenPrivateSkillExists(name: string, version: string): Promise<v
     INSERT INTO skill_versions (id, skill_id, version, integrity, tarball_path, tarball_size, file_count, manifest, permissions, audit_status, published_by, created_at)
     VALUES (
       ${randomUUID()}, ${world.privateSkillId}, ${version},
-      ${"sha512-bdd-registry-private"},
-      ${"skills/registry-bdd/private-1.0.0.tgz"},
+      ${'sha512-bdd-registry-private'},
+      ${'skills/registry-bdd/private-1.0.0.tgz'},
       ${256}, ${2},
       ${JSON.stringify({ name, version })},
       ${JSON.stringify({})},
-      ${"completed"},
+      ${'completed'},
       ${publisherId},
       ${now}
     )
@@ -176,16 +177,16 @@ function thenBodyFieldEquals(field: string, value: unknown): void {
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: Registry read API for skill metadata", () => {
+describe('Feature: Registry read API for skill metadata', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
     const connectionString = process.env.DATABASE_URL!;
     world.sql = postgres(connectionString);
-    world.runId = randomUUID().replace(/-/g, "").slice(0, 10);
+    world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.testOrg = `reg-bdd-${world.runId}`;
 
-    await givenPublicSkillExists(`@${world.testOrg}/registry-read-skill`, "2.3.1");
-    await givenPrivateSkillExists(`@${world.testOrg}/private-registry-skill`, "1.0.0");
+    await givenPublicSkillExists(`@${world.testOrg}/registry-read-skill`, '2.3.1');
+    await givenPrivateSkillExists(`@${world.testOrg}/private-registry-skill`, '1.0.0');
   }, 30_000);
 
   afterAll(async () => {
@@ -199,8 +200,7 @@ describe("Feature: Registry read API for skill metadata", () => {
       await sql`DELETE FROM "member" WHERE id = ${`reg-mem-${world.runId}`}`;
       await sql`DELETE FROM "organization" WHERE slug = ${world.testOrg}`;
       await sql`DELETE FROM "user" WHERE id = ${publisherId}`;
-    } catch (e) {
-      console.warn("web-registry cleanup warning:", e);
+    } catch (_e) {
     } finally {
       await sql.end();
     }
@@ -208,16 +208,16 @@ describe("Feature: Registry read API for skill metadata", () => {
 
   // ── Single skill metadata (C1, C2) ────────────────────────────────
 
-  describe("Scenario: GET /skills/[name] returns metadata for a public skill (E1)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: GET /skills/[name] returns metadata for a public skill (E1)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGet(`/api/v1/skills/@${world.testOrg}/registry-read-skill`);
       thenStatusIs(200);
-      thenBodyIncludes("name", "latestVersion");
+      thenBodyIncludes('name', 'latestVersion');
     });
   });
 
-  describe("Scenario: GET /skills/[name] returns 404 for unknown skill (E2)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: GET /skills/[name] returns 404 for unknown skill (E2)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGet(`/api/v1/skills/@${world.testOrg}/does-not-exist-zzz`);
       thenStatusIs(404);
     });
@@ -225,8 +225,8 @@ describe("Feature: Registry read API for skill metadata", () => {
 
   // ── Private visibility enforcement (C5) ──────────────────────────
 
-  describe("Scenario: Private skill is not visible to unauthenticated requests (E5)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Private skill is not visible to unauthenticated requests (E5)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGet(`/api/v1/skills/@${world.testOrg}/private-registry-skill`);
       thenStatusIs(404);
     });
@@ -234,18 +234,18 @@ describe("Feature: Registry read API for skill metadata", () => {
 
   // ── Version detail (C3) ───────────────────────────────────────────
 
-  describe("Scenario: GET /skills/[name]/[version] returns version detail (E3)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: GET /skills/[name]/[version] returns version detail (E3)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGet(`/api/v1/skills/@${world.testOrg}/registry-read-skill/2.3.1`);
       thenStatusIs(200);
-      thenBodyIncludes("version");
+      thenBodyIncludes('version');
     });
   });
 
   // ── Version list (C4) ─────────────────────────────────────────────
 
-  describe("Scenario: GET /skills/[name]/versions returns list of versions (E4)", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: GET /skills/[name]/versions returns list of versions (E4)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGet(`/api/v1/skills/@${world.testOrg}/registry-read-skill/versions`);
       thenStatusIs(200);
       thenBodyIsArray();
@@ -254,12 +254,12 @@ describe("Feature: Registry read API for skill metadata", () => {
 
   // ── URL encoding (C6) ─────────────────────────────────────────────
 
-  describe("Scenario: Skill name with @ and / survives URL encoding in path", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Skill name with @ and / survives URL encoding in path', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
       const encoded = encodeURIComponent(`@${world.testOrg}/registry-read-skill`);
       await whenICallGet(`/api/v1/skills/${encoded}`);
       thenStatusIs(200);
-      thenBodyFieldEquals("name", `@${world.testOrg}/registry-read-skill`);
+      thenBodyFieldEquals('name', `@${world.testOrg}/registry-read-skill`);
     });
   });
 });

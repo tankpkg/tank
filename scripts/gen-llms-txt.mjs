@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const DOCS_DIR = join(ROOT, 'packages/web/content/docs');
-const PUBLIC_DIR = join(ROOT, 'packages/web/public');
+const DOCS_DIR = join(ROOT, 'apps/web/content/docs');
+const PUBLIC_DIR = join(ROOT, 'apps/web/public');
 
 const BASE_URL = 'https://tankpkg.dev';
 

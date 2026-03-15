@@ -1,0 +1,55 @@
+---
+import { Image } from 'astro:assets';
+
+import { GITHUB_ICON_PATH } from '~/consts';
+
+import logo from '../assets/logo.png';
+import { NavAuthCta } from './NavAuthCta';
+import { Navbar } from './Navbar';
+import { SearchTrigger } from './SearchTrigger';
+
+interface Props {
+  starCount: number | null;
+}
+
+const { starCount } = Astro.props;
+---
+
+<header class="sticky top-0 z-50 border-b border-emerald-500/10 bg-background/80 backdrop-blur-xl">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="h-16" style="position: relative; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 0.375rem; flex-shrink: 0;">
+        <a
+          href="/"
+          class="flex items-center gap-2.5 font-bold text-lg tracking-tight hover:opacity-80 transition-all group">
+          <div class="relative">
+            <Image src={logo} alt="Tank" width={28} height={28} class="rounded-sm" />
+          </div>
+          <span>Tank</span>
+        </a>
+        <Navbar client:load />
+      </div>
+      <div
+        class="max-lg:hidden"
+        style="position: absolute; left: 50%; transform: translateX(-50%); width: 100%; max-width: 28rem; pointer-events: auto;">
+        <SearchTrigger client:load />
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0;">
+        <a
+          href="https://github.com/tankpkg/tank"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all"
+          aria-label="Star Tank on GitHub">
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <title>GitHub</title>
+            <path fill-rule="evenodd" d={GITHUB_ICON_PATH} clip-rule="evenodd"></path>
+          </svg>
+          <span>Star</span>
+          {starCount !== null && <span class="font-medium tabular-nums text-emerald-400">{starCount}</span>}
+        </a>
+        <NavAuthCta client:load />
+      </div>
+    </div>
+  </div>
+</header>

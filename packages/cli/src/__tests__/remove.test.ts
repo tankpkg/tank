@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock logger
-vi.mock('../lib/logger.js', () => ({
+vi.mock('~/lib/logger.js', () => ({
   logger: {
     info: vi.fn(),
     success: vi.fn(),
@@ -63,15 +64,15 @@ describe('removeCommand', () => {
     logSpy.mockRestore();
     errorSpy.mockRestore();
     vi.resetModules();
-    vi.doUnmock('../lib/linker.js');
+    vi.doUnmock('~/lib/linker.js');
   });
 
   function writeSkillsJson(data: Record<string, unknown> = baseSkillsJson) {
-    fs.writeFileSync(path.join(tmpDir, 'tank.json'), JSON.stringify(data, null, 2) + '\n');
+    fs.writeFileSync(path.join(tmpDir, 'tank.json'), `${JSON.stringify(data, null, 2)}\n`);
   }
 
   function writeLockfile(data: Record<string, unknown> = baseLockfile) {
-    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(data, null, 2) + '\n');
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), `${JSON.stringify(data, null, 2)}\n`);
   }
 
   function readSkillsJson(): Record<string, unknown> {
@@ -83,7 +84,7 @@ describe('removeCommand', () => {
   }
 
   it('removes skill from tank.json', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -98,8 +99,8 @@ describe('removeCommand', () => {
   it('unlinks from agents before removing local skill', async () => {
     vi.resetModules();
     const unlinkSkillFromAgents = vi.fn().mockReturnValue({ unlinked: ['claude'], notFound: [] });
-    vi.doMock('../lib/linker.js', () => ({ unlinkSkillFromAgents }));
-    const { removeCommand } = await import('../commands/remove.js');
+    vi.doMock('~/lib/linker.js', () => ({ unlinkSkillFromAgents }));
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -113,8 +114,8 @@ describe('removeCommand', () => {
   });
 
   it('removes agent-skills wrapper dir on local remove', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
-    const { getSymlinkName } = await import('../lib/agents.js');
+    const { removeCommand } = await import('~/commands/remove.js');
+    const { getSymlinkName } = await import('~/lib/agents.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -129,7 +130,7 @@ describe('removeCommand', () => {
   });
 
   it('succeeds when skill was never linked (no links entry)', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -137,8 +138,8 @@ describe('removeCommand', () => {
   });
 
   it('handles broken/missing symlinks gracefully', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
-    const { writeLinks } = await import('../lib/links.js');
+    const { removeCommand } = await import('~/commands/remove.js');
+    const { writeLinks } = await import('~/lib/links.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -161,7 +162,7 @@ describe('removeCommand', () => {
   });
 
   it('removes ALL lockfile entries for the skill name', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -176,7 +177,7 @@ describe('removeCommand', () => {
   });
 
   it('deletes skill directory from .tank/skills/', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -191,7 +192,7 @@ describe('removeCommand', () => {
   });
 
   it('handles scoped packages (@org/skill) correctly', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -210,13 +211,13 @@ describe('removeCommand', () => {
   });
 
   it('errors when tank.json is missing', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
 
     await expect(removeCommand({ name: '@test-org/my-skill', directory: tmpDir })).rejects.toThrow(/tank\.json/i);
   });
 
   it('errors when skill is not in tank.json', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
 
     await expect(removeCommand({ name: '@nonexistent/skill', directory: tmpDir })).rejects.toThrow(
@@ -225,7 +226,7 @@ describe('removeCommand', () => {
   });
 
   it('handles missing tank.lock gracefully (just skips lockfile update)', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     // No lockfile written
 
@@ -240,8 +241,8 @@ describe('removeCommand', () => {
   });
 
   it('prints success message', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
-    const { logger } = await import('../lib/logger.js');
+    const { removeCommand } = await import('~/commands/remove.js');
+    const { logger } = await import('~/lib/logger.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -251,7 +252,7 @@ describe('removeCommand', () => {
   });
 
   it('writes tank.json with trailing newline', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     writeLockfile();
 
@@ -262,7 +263,7 @@ describe('removeCommand', () => {
   });
 
   it('writes tank.lock with sorted keys', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
 
     // Add skills in non-alphabetical order
     const skillsJson = {
@@ -308,7 +309,7 @@ describe('removeCommand', () => {
   });
 
   it('removes global skill from ~/.tank/skills/', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
     writeSkillsJson();
     writeLockfile();
@@ -324,7 +325,7 @@ describe('removeCommand', () => {
   });
 
   it('does NOT touch project tank.json for global remove', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
     writeSkillsJson();
     writeLockfile();
@@ -339,7 +340,7 @@ describe('removeCommand', () => {
   });
 
   it('updates ~/.tank/tank.lock for global remove', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
     writeSkillsJson();
     writeLockfile();
@@ -358,8 +359,8 @@ describe('removeCommand', () => {
   });
 
   it('removes agent-skills wrapper dir on global remove', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
-    const { getSymlinkName } = await import('../lib/agents.js');
+    const { removeCommand } = await import('~/commands/remove.js');
+    const { getSymlinkName } = await import('~/lib/agents.js');
     const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-remove-home-'));
     writeSkillsJson();
     writeLockfile();
@@ -376,7 +377,7 @@ describe('removeCommand', () => {
   });
 
   it('errors when tank.json is corrupt (invalid JSON)', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     // Write invalid JSON to tank.json
     fs.writeFileSync(path.join(tmpDir, 'tank.json'), '{invalid json}');
 
@@ -384,7 +385,7 @@ describe('removeCommand', () => {
   });
 
   it('handles corrupt lockfile gracefully (initializes fresh)', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     writeSkillsJson();
     // Write invalid JSON to lockfile
     fs.writeFileSync(path.join(tmpDir, 'tank.lock'), '{invalid json}');
@@ -403,7 +404,7 @@ describe('removeCommand', () => {
   });
 
   it('removes unscoped skill directory from .tank/skills/', async () => {
-    const { removeCommand } = await import('../commands/remove.js');
+    const { removeCommand } = await import('~/commands/remove.js');
     const skillsJson = {
       ...baseSkillsJson,
       skills: {

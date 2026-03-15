@@ -1,7 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { TankApiClient } from '../lib/api-client.js';
-import { getConfig, setConfig } from '../lib/config.js';
+
+import { TankApiClient } from '~/lib/api-client.js';
+import { getConfig, setConfig } from '~/lib/config.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes

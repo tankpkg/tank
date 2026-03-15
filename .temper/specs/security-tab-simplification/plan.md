@@ -11,11 +11,11 @@
 
 ## Blast Radius
 
-| Area | Impact | Risk |
-|------|--------|------|
-| `skills/page.tsx` | Medium - Replace ScoreBadge | Low |
-| `SecurityOverview.tsx` | High - Remove score display | Low |
-| Security tab in `[...name]/page.tsx` | Medium - Use QualityChecks | Low |
+| Area                                 | Impact                      | Risk |
+| ------------------------------------ | --------------------------- | ---- |
+| `skills/page.tsx`                    | Medium - Replace ScoreBadge | Low  |
+| `SecurityOverview.tsx`               | High - Remove score display | Low  |
+| Security tab in `[...name]/page.tsx` | Medium - Use QualityChecks  | Low  |
 
 ## Tasks
 
@@ -51,16 +51,17 @@
 
 ## Existing Components to Use
 
-| Component | Location | Usage |
-|-----------|----------|-------|
-| `TrustBadge` | `components/security/TrustBadge.tsx` | Already exists, use in list |
-| `QualityChecks` | `components/security/QualityChecks.tsx` | Already exists, use in security tab |
-| `computeTrustLevel` | `lib/trust-level.ts` | Already exists |
-| `computeQualityChecks` | `components/security/QualityChecks.tsx` | Already exists |
+| Component              | Location                                | Usage                               |
+| ---------------------- | --------------------------------------- | ----------------------------------- |
+| `TrustBadge`           | `components/security/TrustBadge.tsx`    | Already exists, use in list         |
+| `QualityChecks`        | `components/security/QualityChecks.tsx` | Already exists, use in security tab |
+| `computeTrustLevel`    | `lib/trust-level.ts`                    | Already exists                      |
+| `computeQualityChecks` | `components/security/QualityChecks.tsx` | Already exists                      |
 
 ## Code Changes Summary
 
 ### T1: skills/page.tsx
+
 ```diff
 - import { Badge } from '@/components/ui/badge';
 + import { TrustBadge } from '@/components/security';
@@ -88,6 +89,7 @@
 ```
 
 ### T3: Security Tab
+
 ```diff
 - import { ScoreBreakdown } from '@/components/security';
 + import { QualityChecks, computeQualityChecks } from '@/components/security';

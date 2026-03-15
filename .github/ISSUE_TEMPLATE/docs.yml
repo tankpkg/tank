@@ -27,7 +27,7 @@ body:
     attributes:
       label: Page URL or File Path
       description: Link to the page or path to the file with the issue.
-      placeholder: "https://tank.dev/docs/... or packages/web/content/docs/..."
+      placeholder: "https://tank.dev/docs/... or apps/web/content/docs/..."
     validations:
       required: true
 

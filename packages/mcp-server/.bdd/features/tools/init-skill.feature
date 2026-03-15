@@ -6,10 +6,10 @@ Feature: Init Skill Tool
   Scenario: Create skills.json with all parameters
     Given a directory without skills.json
     When I call the "init-skill" tool with:
-      | name        | @test/my-skill             |
-      | version     | 1.0.0                      |
-      | description | A test skill for demos     |
-      | private     | false                      |
+      | name        | @test/my-skill         |
+      | version     | 1.0.0                  |
+      | description | A test skill for demos |
+      | private     | false                  |
     Then a skills.json file should be created
     And it should have name "@test/my-skill"
     And it should have version "1.0.0"

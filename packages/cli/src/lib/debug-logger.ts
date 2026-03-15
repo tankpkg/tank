@@ -1,4 +1,5 @@
 import { appendFileSync } from 'node:fs';
+
 import pino from 'pino';
 
 const lokiUrl = process.env.TANK_LOKI_URL || 'http://localhost:3100';
@@ -43,7 +44,9 @@ const lokiStream = {
     if (debugEnabled) {
       try {
         appendFileSync('/tmp/tank-cli-debug.log', `${trimmed}\n`);
-      } catch {}
+      } catch {
+        // intentionally empty
+      }
     }
 
     if (!flushTimer) {

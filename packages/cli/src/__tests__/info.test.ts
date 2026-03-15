@@ -63,7 +63,7 @@ describe('infoCommand', () => {
   }
 
   it('displays full skill info', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
     setupSuccessfulInfo();
 
     await infoCommand({ name: '@vercel/next-skill', configDir });
@@ -77,7 +77,7 @@ describe('infoCommand', () => {
   });
 
   it('shows "Skill not found" for 404', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'Not found' }), { status: 404 }));
 
@@ -89,7 +89,7 @@ describe('infoCommand', () => {
   });
 
   it('calls correct API URL with encoded name', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
     setupSuccessfulInfo();
 
     await infoCommand({ name: '@vercel/next-skill', configDir });
@@ -104,7 +104,7 @@ describe('infoCommand', () => {
   });
 
   it('displays permissions section', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
     setupSuccessfulInfo();
 
     await infoCommand({ name: '@vercel/next-skill', configDir });
@@ -117,7 +117,7 @@ describe('infoCommand', () => {
   });
 
   it('handles missing optional fields gracefully', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
 
     // Skill metadata with minimal fields
     const minimalMeta = {
@@ -150,7 +150,7 @@ describe('infoCommand', () => {
   });
 
   it('shows install command', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
     setupSuccessfulInfo();
 
     await infoCommand({ name: '@vercel/next-skill', configDir });
@@ -160,7 +160,7 @@ describe('infoCommand', () => {
   });
 
   it('handles network errors', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
 
     mockFetch.mockRejectedValueOnce(new Error('Connection refused'));
 
@@ -168,7 +168,7 @@ describe('infoCommand', () => {
   });
 
   it('displays created date', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
     setupSuccessfulInfo();
 
     await infoCommand({ name: '@vercel/next-skill', configDir });
@@ -178,7 +178,7 @@ describe('infoCommand', () => {
   });
 
   it('shows subprocess permission as no when false', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
     setupSuccessfulInfo();
 
     await infoCommand({ name: '@vercel/next-skill', configDir });
@@ -190,7 +190,7 @@ describe('infoCommand', () => {
   });
 
   it('uses statusText when non-200 non-404 response has non-JSON body', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
 
     // Mock 500 response with plain text body (not JSON)
     mockFetch.mockResolvedValueOnce(
@@ -203,7 +203,7 @@ describe('infoCommand', () => {
   });
 
   it('skips version details when version fetch returns non-ok status', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
 
     // Mock successful meta fetch
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(skillMetadata), { status: 200 }));
@@ -223,7 +223,7 @@ describe('infoCommand', () => {
   });
 
   it('shows visibility field when present in metadata', async () => {
-    const { infoCommand } = await import('../commands/info.js');
+    const { infoCommand } = await import('~/commands/info.js');
 
     // Mock meta with visibility field
     const metaWithVisibility = {

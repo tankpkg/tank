@@ -1,7 +1,8 @@
 import chalk from 'chalk';
-import { getConfig } from '../lib/config.js';
-import { readLockfile } from '../lib/lockfile.js';
-import { USER_AGENT } from '../version.js';
+
+import { getConfig } from '~/lib/config.js';
+import { readLockfile } from '~/lib/lockfile.js';
+import { USER_AGENT } from '~/version.js';
 
 export interface AuditOptions {
   name?: string;

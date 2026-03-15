@@ -1,11 +1,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import type { SkillsLock } from '@internal/shared';
+
+import type { SkillsLock } from '@internals/schemas';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock logger to capture output
-vi.mock('../lib/logger.js', () => ({
+vi.mock('~/lib/logger.js', () => ({
   logger: {
     info: vi.fn(),
     success: vi.fn(),
@@ -14,8 +15,8 @@ vi.mock('../lib/logger.js', () => ({
   }
 }));
 
-import { verifyCommand } from '../commands/verify.js';
-import { logger } from '../lib/logger.js';
+import { verifyCommand } from '~/commands/verify.js';
+import { logger } from '~/lib/logger.js';
 
 describe('verifyCommand', () => {
   let tmpDir: string;
@@ -34,7 +35,7 @@ describe('verifyCommand', () => {
 
   function writeLockfile(skills: SkillsLock['skills']) {
     const lock: SkillsLock = { lockfileVersion: 1, skills };
-    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), JSON.stringify(lock, null, 2) + '\n');
+    fs.writeFileSync(path.join(tmpDir, 'tank.lock'), `${JSON.stringify(lock, null, 2)}\n`);
   }
 
   function createSkillDir(skillName: string) {

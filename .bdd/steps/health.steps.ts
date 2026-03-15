@@ -7,7 +7,7 @@
  * Runs against REAL registry HTTP — zero mocks.
  * Requires E2E_REGISTRY_URL in environment (defaults to http://localhost:3003).
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from 'vitest';
 
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 
@@ -20,9 +20,9 @@ interface HealthWorld {
 }
 
 const world: HealthWorld = {
-  registry: process.env.E2E_REGISTRY_URL ?? "http://localhost:3003",
+  registry: process.env.E2E_REGISTRY_URL ?? 'http://localhost:3003',
   lastStatus: 0,
-  lastBody: {},
+  lastBody: {}
 };
 
 // ── When ───────────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ function thenStatusIs200Or503(): void {
   expect([200, 503]).toContain(world.lastStatus);
 }
 
-function thenStatusIs200(): void {
+function _thenStatusIs200(): void {
   expect(world.lastStatus).toBe(200);
 }
 
@@ -48,62 +48,62 @@ function thenBodyContains(key: string): void {
 }
 
 function thenChecksInclude(checkName: string): void {
-  const checks = world.lastBody["checks"] as Record<string, unknown> | undefined;
+  const checks = world.lastBody.checks as Record<string, unknown> | undefined;
   expect(checks).toBeDefined();
   expect(checks).toHaveProperty(checkName);
 }
 
 function thenStatusFieldIs(value: string): void {
-  expect(world.lastBody["status"]).toBe(value);
+  expect(world.lastBody.status).toBe(value);
 }
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: Health check endpoint for dependency monitoring", () => {
+describe('Feature: Health check endpoint for dependency monitoring', () => {
   // ── Response structure (C1) ───────────────────────────────────────
 
-  describe("Scenario: Health check returns structured JSON with all checks (E1)", () => {
-    it.skipIf(!hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Health check returns structured JSON with all checks (E1)', () => {
+    it.skipIf(!hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGetHealth();
       thenStatusIs200Or503();
-      thenBodyContains("status");
-      thenBodyContains("checks");
-      thenChecksInclude("database");
-      thenChecksInclude("redis");
-      thenChecksInclude("storage");
-      thenChecksInclude("scanner");
+      thenBodyContains('status');
+      thenBodyContains('checks');
+      thenChecksInclude('database');
+      thenChecksInclude('redis');
+      thenChecksInclude('storage');
+      thenChecksInclude('scanner');
     });
   });
 
   // ── All healthy → ok (C2) ─────────────────────────────────────────
 
-  describe("Scenario: All dependencies healthy returns status ok with HTTP 200 (E1)", () => {
-    it.skipIf(!hasRegistry)("returns 200 and status ok when all deps are healthy", async () => {
+  describe('Scenario: All dependencies healthy returns status ok with HTTP 200 (E1)', () => {
+    it.skipIf(!hasRegistry)('returns 200 and status ok when all deps are healthy', async () => {
       await whenICallGetHealth();
       if (world.lastStatus === 200) {
-        thenStatusFieldIs("ok");
+        thenStatusFieldIs('ok');
       } else {
-        expect(["ok", "degraded", "error"]).toContain(world.lastBody["status"]);
+        expect(['ok', 'degraded', 'error']).toContain(world.lastBody.status);
       }
     });
   });
 
   // ── Response shape fields (C6) ────────────────────────────────────
 
-  describe("Scenario: Response includes timestamp and version fields (E4)", () => {
-    it.skipIf(!hasRegistry)("runs Given/When/Then", async () => {
+  describe('Scenario: Response includes timestamp and version fields (E4)', () => {
+    it.skipIf(!hasRegistry)('runs Given/When/Then', async () => {
       await whenICallGetHealth();
-      thenBodyContains("timestamp");
-      thenBodyContains("version");
+      thenBodyContains('timestamp');
+      thenBodyContains('version');
     });
   });
 
   // ── Status values are valid (C2, C3) ──────────────────────────────
 
-  describe("Scenario: status field is always one of the valid values", () => {
-    it.skipIf(!hasRegistry)("status is ok, degraded, or error", async () => {
+  describe('Scenario: status field is always one of the valid values', () => {
+    it.skipIf(!hasRegistry)('status is ok, degraded, or error', async () => {
       await whenICallGetHealth();
-      expect(["ok", "degraded", "error"]).toContain(world.lastBody["status"]);
+      expect(['ok', 'degraded', 'error']).toContain(world.lastBody.status);
     });
   });
 });

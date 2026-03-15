@@ -20,6 +20,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-tank}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tank} -d ${POSTGRES_DB:-tank}"]
       interval: 10s
@@ -32,12 +34,14 @@ services:
   # Redis (Session Store)
   # ===================
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: tank-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -60,6 +64,7 @@ services:
     volumes:
       - minio_data:/data
     ports:
+      - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -75,7 +80,7 @@ services:
   scanner:
     build:
       context: ..
-      dockerfile: packages/scanner/Dockerfile
+      dockerfile: apps/python-api/Dockerfile
     container_name: tank-scanner
     restart: unless-stopped
     environment:
@@ -98,6 +103,7 @@ services:
 
       # Tuning
       LLM_SCAN_TIMEOUT_MS: ${LLM_SCAN_TIMEOUT_MS:-8000}
+      S3_ENDPOINT: http://minio:9000
 
       # Advanced: Custom model selection (rarely needed)
       # GROQ_8B_MODEL: ${GROQ_8B_MODEL:-}
@@ -115,7 +121,7 @@ services:
   web:
     build:
       context: ..
-      dockerfile: packages/web/Dockerfile
+      dockerfile: apps/web/Dockerfile
     container_name: tank-web
     restart: unless-stopped
     ports:
@@ -150,6 +156,7 @@ services:
       # Storage
       STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
       S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
       S3_ACCESS_KEY: ${MINIO_ROOT_USER:-tank}
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-tank123456}
       S3_BUCKET: ${S3_BUCKET:-packages}

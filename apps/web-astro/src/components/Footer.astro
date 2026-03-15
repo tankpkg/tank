@@ -1,0 +1,41 @@
+---
+import { Image } from 'astro:assets';
+
+import { GITHUB_ICON_PATH } from '~/consts';
+
+import logo from '../assets/logo.png';
+import { CookiePreferencesButton } from './CookiePreferencesButton';
+---
+
+<footer class="border-t border-emerald-500/10 bg-background/50 backdrop-blur-sm">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex flex-col sm:flex-row items-center gap-4 text-sm text-muted-foreground">
+        <a
+          href="/"
+          class="flex items-center gap-2 font-semibold text-foreground hover:opacity-80 transition-opacity group">
+          <Image src={logo} alt="Tank" width={20} height={20} class="rounded-sm" />
+          <span>Tank</span>
+        </a>
+        <span class="hidden sm:inline text-muted-foreground/30">&bull;</span>
+        <span class="sm:hidden text-muted-foreground/30">&mdash;</span>
+        <span>Security-first package manager for AI agent skills</span>
+      </div>
+      <div class="flex items-center gap-6 text-sm text-muted-foreground">
+        <a href="/skills" class="hover:text-emerald-400 transition-colors">Skills</a>
+        <a href="/docs" class="hover:text-emerald-400 transition-colors">Docs</a>
+        <a
+          href="https://github.com/tankpkg/tank"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill-rule="evenodd" d={GITHUB_ICON_PATH} clip-rule="evenodd"></path>
+          </svg>
+          GitHub
+        </a>
+        <CookiePreferencesButton client:idle />
+      </div>
+    </div>
+  </div>
+</footer>
