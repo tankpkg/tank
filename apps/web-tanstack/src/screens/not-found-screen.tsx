@@ -14,9 +14,7 @@ export function NotFoundScreen() {
 
           <h1 className="mb-2 text-6xl font-extrabold tracking-tight text-foreground">404</h1>
           <p className="mb-2 text-xl font-semibold text-foreground">Page not found</p>
-          <p className="mb-8 text-muted-foreground">
-            The page you're looking for doesn't exist or has been moved.
-          </p>
+          <p className="mb-8 text-muted-foreground">The page you're looking for doesn't exist or has been moved.</p>
 
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Button asChild size="lg" className="gap-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/90">
@@ -26,7 +24,7 @@ export function NotFoundScreen() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="gap-2">
-              <Link to="/skills">
+              <Link to="/skills" search={{ q: undefined, page: undefined, sort: undefined, visibility: undefined, score: undefined, freshness: undefined, popularity: undefined, docs: undefined }}>
                 <Search className="size-4" />
                 Browse Skills
               </Link>
