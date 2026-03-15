@@ -20,7 +20,7 @@ import { visibilityClause } from '~/lib/db/visibility';
 
 export interface ScanFinding {
   stage: string;
-  severity: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
   type: string;
   description: string;
   location: string | null;

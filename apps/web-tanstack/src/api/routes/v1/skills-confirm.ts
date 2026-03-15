@@ -6,21 +6,10 @@ import { z } from 'zod';
 import { type AuditScoreInput, computeAuditScore } from '~/lib/audit-score';
 import { verifyCliAuth } from '~/lib/auth-helpers';
 import { db } from '~/lib/db';
+import { type ScanFinding } from '~/lib/data/skills';
+import { env } from '~/lib/env';
 import { scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
 import { getStorageProvider } from '~/lib/storage/provider';
-
-interface ScanFinding {
-  stage: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  type: string;
-  description: string;
-  location: string | null;
-  confidence: number | null;
-  tool: string | null;
-  evidence: string | null;
-  llm_verdict?: string | null;
-  llm_reviewed?: boolean;
-}
 
 interface LLMAnalysis {
   enabled: boolean;
@@ -66,8 +55,7 @@ async function triggerSecurityScan(
       return null;
     }
 
-    const pythonApiUrl = (process.env.PYTHON_API_URL || '').trim();
-    const scanApiUrl = pythonApiUrl || process.env.APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3001';
+    const scanApiUrl = env.PYTHON_API_URL || env.APP_URL;
 
     const scanResponse = await fetch(`${scanApiUrl}/api/analyze/scan`, {
       method: 'POST',
