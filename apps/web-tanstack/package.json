@@ -79,6 +79,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
     "drizzle-kit": "^0.31.9",
+    "hono-rate-limiter": "^0.5.3",
     "jsdom": "^28.1.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",

@@ -10,14 +10,9 @@ import { checkPermissionEscalation, type VersionPermissions } from '~/lib/permis
 import { getStorageProvider } from '~/lib/storage/provider';
 
 export const skillsPublishRoutes = new Hono().post('/', async (c) => {
-  const verifiedAny = await verifyCliAuth(c.req.raw);
-  if (!verifiedAny) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-
   const verified = await verifyCliAuth(c.req.raw, ['skills:publish']);
   if (!verified) {
-    return c.json({ error: 'Insufficient API key scope. Required: skills:publish' }, 403);
+    return c.json({ error: 'Unauthorized. Valid API key with skills:publish scope required.' }, 401);
   }
 
   let body: unknown;
@@ -69,7 +64,8 @@ export const skillsPublishRoutes = new Hono().post('/', async (c) => {
       if (githubAccount?.accessToken) {
         try {
           const ghRes = await fetch('https://api.github.com/user', {
-            headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' }
+            headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' },
+            signal: AbortSignal.timeout(5000),
           });
           if (ghRes.ok) {
             const gh = (await ghRes.json()) as { login: string };
@@ -191,6 +187,15 @@ export const skillsPublishRoutes = new Hono().post('/', async (c) => {
       );
     }
   }
+
+  // Clean up stale pending-upload versions before creating new one
+  await db.delete(skillVersions).where(
+    and(
+      eq(skillVersions.skillId, skill.id),
+      eq(skillVersions.publishedBy, verified.userId),
+      eq(skillVersions.auditStatus, 'pending-upload')
+    )
+  );
 
   // Create skill_version record with pending-upload status
   const tarballPath = `skills/${skill.id}/${version}.tgz`;
