@@ -30,27 +30,19 @@ export const Route = createFileRoute('/_registry/skills/')({
   loaderDeps: ({ search }) => search,
   loader: async ({ context, deps }) => {
     const session = await getSession();
-    const q = deps.q ?? '';
-    const page = deps.page ?? 1;
-    const sort = deps.sort ?? 'updated';
-    const visibility = deps.visibility ?? 'all';
-    const score = deps.score ?? 'all';
-    const freshness = deps.freshness ?? 'all';
-    const popularity = deps.popularity ?? 'all';
-    const docs = deps.docs ?? false;
     const params = {
-      q,
-      page,
+      q: deps.q ?? '',
+      page: deps.page ?? 1,
       limit: 20,
-      sort,
-      visibility,
-      scoreBucket: score,
-      freshness: freshness !== 'all' ? freshness : undefined,
-      popularity: popularity !== 'all' ? popularity : undefined,
-      hasReadme: docs || undefined
+      sort: deps.sort ?? 'updated',
+      visibility: deps.visibility ?? 'all',
+      scoreBucket: deps.score ?? 'all',
+      freshness: deps.freshness && deps.freshness !== 'all' ? deps.freshness : undefined,
+      popularity: deps.popularity && deps.popularity !== 'all' ? deps.popularity : undefined,
+      hasReadme: deps.docs || undefined
     };
     const data = await context.queryClient.ensureQueryData(skillsListQueryOptions(params));
-    return { data, isLoggedIn: !!session?.user, q, page, sort, visibility, score, freshness, popularity, docs };
+    return { data, isLoggedIn: !!session?.user };
   },
   head: () => ({
     meta: [
@@ -59,8 +51,21 @@ export const Route = createFileRoute('/_registry/skills/')({
         name: 'description',
         content:
           'Discover, compare, and install security-verified AI agent skills. Every skill is scanned for credential theft, prompt injection, and supply chain attacks.'
-      }
-    ]
+      },
+      { property: 'og:title', content: 'Browse AI Agent Skills | Tank' },
+      {
+        property: 'og:description',
+        content:
+          'Discover, compare, and install security-verified AI agent skills. Every skill is scanned for credential theft, prompt injection, and supply chain attacks.'
+      },
+      { property: 'og:url', content: 'https://www.tankpkg.dev/skills' },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:site_name', content: 'Tank' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'Browse AI Agent Skills | Tank' },
+      { name: 'twitter:description', content: 'Discover, compare, and install security-verified AI agent skills.' }
+    ],
+    links: [{ rel: 'canonical', href: 'https://www.tankpkg.dev/skills' }]
   }),
   component: SkillsPage
 });
