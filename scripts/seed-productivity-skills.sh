@@ -9,7 +9,11 @@
 
 set -euo pipefail
 
-TANK_BIN="/Users/eladbenhaim/.nvm/versions/node/v24.11.0/bin/tank"
+TANK_BIN="${TANK_BIN:-$(command -v tank 2>/dev/null || true)}"
+if [ -z "$TANK_BIN" ]; then
+  echo "Error: 'tank' CLI not found in PATH. Set TANK_BIN or install globally." >&2
+  exit 1
+fi
 WORK_DIR=$(mktemp -d)
 trap "rm -rf $WORK_DIR" EXIT
 
