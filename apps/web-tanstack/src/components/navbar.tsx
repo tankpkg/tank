@@ -34,25 +34,25 @@ const NAV_ITEMS: NavItem[] = [
     text: 'Browse Skills',
     items: [
       {
-        icon: <PackageSearchIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <PackageSearchIcon className="size-4" />,
         text: 'All Skills',
         description: 'Browse the full registry',
         href: '/skills'
       },
       {
-        icon: <TrendingUpIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <TrendingUpIcon className="size-4" />,
         text: 'Most Popular',
         description: 'Top downloaded skills',
         href: '/skills?sort=downloads'
       },
       {
-        icon: <SparklesIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <SparklesIcon className="size-4" />,
         text: 'Recently Updated',
         description: 'Fresh and maintained',
         href: '/skills?sort=updated'
       },
       {
-        icon: <ShieldCheckIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <ShieldCheckIcon className="size-4" />,
         text: 'Highest Rated',
         description: 'Best security scores',
         href: '/skills?sort=score'
@@ -63,43 +63,43 @@ const NAV_ITEMS: NavItem[] = [
     text: 'Docs',
     items: [
       {
-        icon: <RocketIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <RocketIcon className="size-4" />,
         text: 'Getting Started',
         description: 'Set up Tank in 2 minutes',
         href: '/docs/getting-started'
       },
       {
-        icon: <BookOpenIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <BookOpenIcon className="size-4" />,
         text: 'Publishing Guide',
         description: 'Share your first skill',
         href: '/docs/publish-first-skill'
       },
       {
-        icon: <TerminalIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <TerminalIcon className="size-4" />,
         text: 'CLI Reference',
         description: 'All commands documented',
         href: '/docs/cli'
       },
       {
-        icon: <FileTextIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <FileTextIcon className="size-4" />,
         text: 'API Reference',
         description: 'REST API for integrations',
         href: '/docs/api'
       },
       {
-        icon: <WrenchIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <WrenchIcon className="size-4" />,
         text: 'MCP Server',
         description: 'Editor integration',
         href: '/docs/mcp'
       },
       {
-        icon: <CloudIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <CloudIcon className="size-4" />,
         text: 'CI/CD',
         description: 'Automate publishing',
         href: '/docs/cicd'
       },
       {
-        icon: <ServerIcon style={{ width: '16px', height: '16px' }} />,
+        icon: <ServerIcon className="size-4" />,
         text: 'Self-Hosting',
         description: 'Run your own registry',
         href: '/docs/self-hosting'
@@ -113,33 +113,15 @@ function NavDropdownItem({ icon, text, description, href }: DropdownItem) {
     <li>
       <Link
         to={href}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          overflow: 'hidden',
-          borderRadius: '8px',
-          padding: '10px'
-        }}
-        className="transition-colors hover:bg-accent">
-        <div
-          style={{
-            display: 'flex',
-            width: '36px',
-            height: '36px',
-            flexShrink: 0,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '6px'
-          }}
-          className="border border-border bg-muted/50 text-muted-foreground">
+        className="flex items-center gap-3 overflow-hidden rounded-lg p-2.5 transition-colors hover:bg-accent">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 text-muted-foreground">
           {icon}
         </div>
-        <div style={{ minWidth: 0 }}>
-          <span style={{ display: 'block', fontSize: '14px', fontWeight: 500 }} className="text-foreground">
+        <div className="min-w-0">
+          <span className="block text-sm font-medium text-foreground">
             {text}
           </span>
-          <span style={{ display: 'block', fontSize: '12px' }} className="text-muted-foreground">
+          <span className="block text-xs text-muted-foreground">
             {description}
           </span>
         </div>
@@ -156,7 +138,7 @@ function ChevronIcon() {
       viewBox="0 0 10 6"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ width: '10px', height: '6px', opacity: 0.6 }}
+      className="size-2.5 opacity-60"
       aria-hidden="true">
       <title>Toggle dropdown</title>
       <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -209,15 +191,14 @@ export function Navbar() {
   return (
     <>
       <nav data-testid="desktop-nav" className="max-lg:hidden">
-        <ul style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <ul className="flex items-center gap-1">
           {NAV_ITEMS.map((item) => {
             if (item.href && !item.items) {
               return (
                 <li key={item.text}>
                   <Link
                     to={item.href}
-                    style={{ display: 'block', borderRadius: '6px', padding: '8px 12px', fontSize: '14px' }}
-                    className="text-muted-foreground transition-colors hover:text-foreground">
+                    className="block rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
                     {item.text}
                   </Link>
                 </li>
@@ -229,48 +210,28 @@ export function Navbar() {
             return (
               <li
                 key={item.text}
-                style={{ position: 'relative', perspective: '2000px' }}
+                className="relative"
+                /* perspective for 3D dropdown animation — no Tailwind equivalent */
+                style={{ perspective: '2000px' }}
                 onMouseEnter={() => handleMouseEnter(item.text)}
                 onMouseLeave={handleMouseLeave}>
                 <button
                   type="button"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    borderRadius: '6px',
-                    padding: '8px 12px',
-                    fontSize: '14px'
-                  }}
-                  className="text-muted-foreground transition-colors hover:text-foreground">
+                  className="flex items-center gap-1.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground">
                   {item.text}
                   {item.items && <ChevronIcon />}
                 </button>
 
                 {item.items && (
                   <div
+                    className={`absolute -left-3 top-full z-50 w-70 pt-2 origin-top-left transition-all duration-200 ${
+                      isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+                    }`}
+                    /* 3D rotateX transform — no Tailwind equivalent */
                     style={{
-                      position: 'absolute',
-                      left: '-12px',
-                      top: '100%',
-                      zIndex: 50,
-                      width: '280px',
-                      paddingTop: '8px',
-                      transformOrigin: 'top left',
-                      transition: 'opacity 200ms ease, transform 200ms ease',
-                      opacity: isOpen ? 1 : 0,
-                      pointerEvents: isOpen ? 'auto' : 'none',
                       transform: isOpen ? 'rotateX(0deg) scale(1)' : 'rotateX(-15deg) scale(0.95)'
                     }}>
-                    <ul
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '2px',
-                        borderRadius: '12px',
-                        padding: '8px'
-                      }}
-                      className="border border-border bg-popover shadow-lg">
+                    <ul className="flex flex-col gap-0.5 rounded-xl p-2 border border-border bg-popover shadow-lg">
                       {item.items.map((dropdownItem) => (
                         <NavDropdownItem key={dropdownItem.href} {...dropdownItem} />
                       ))}
@@ -286,20 +247,14 @@ export function Navbar() {
       <button
         data-testid="mobile-menu-toggle"
         type="button"
-        className="flex items-center justify-center lg:hidden text-muted-foreground hover:text-foreground transition-colors"
-        style={{
-          padding: '6px',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer'
-        }}
+        className="flex items-center justify-center p-1.5 bg-transparent border-none cursor-pointer lg:hidden text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setMobileOpen(!mobileOpen)}
         aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={mobileOpen}>
         {mobileOpen ? (
-          <XIcon style={{ width: '20px', height: '20px' }} />
+          <XIcon className="size-5" />
         ) : (
-          <MenuIcon style={{ width: '20px', height: '20px' }} />
+          <MenuIcon className="size-5" />
         )}
       </button>
 
@@ -307,31 +262,12 @@ export function Navbar() {
         <>
           <button
             type="button"
-            className="lg:hidden"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              top: '4rem',
-              backgroundColor: 'rgba(0, 0, 0, 0.4)',
-              zIndex: 40,
-              border: 'none',
-              cursor: 'default'
-            }}
+            className="fixed inset-0 top-16 z-40 border-none cursor-default bg-black/40 lg:hidden"
             onClick={() => setMobileOpen(false)}
             aria-label="Close menu"
           />
-          <div
-            className="lg:hidden border-b border-border bg-background/95 backdrop-blur-xl"
-            style={{
-              position: 'fixed',
-              left: 0,
-              right: 0,
-              top: '4rem',
-              zIndex: 50,
-              maxHeight: 'calc(100vh - 4rem)',
-              overflowY: 'auto'
-            }}>
-            <nav style={{ padding: '4px 16px 16px' }}>
+          <div className="fixed inset-x-0 top-16 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-border bg-background/95 backdrop-blur-xl lg:hidden">
+            <nav className="px-4 pt-1 pb-4">
               {NAV_ITEMS.map((item) => (
                 <div key={item.text}>
                   {item.items ? (
@@ -339,32 +275,16 @@ export function Navbar() {
                       <button
                         type="button"
                         onClick={() => toggleMobileSection(item.text)}
-                        style={{
-                          display: 'flex',
-                          width: '100%',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '10px 0',
-                          fontSize: '14px',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'inherit'
-                        }}
-                        className="text-muted-foreground hover:text-foreground transition-colors">
+                        className="flex w-full items-center justify-between py-2.5 text-sm bg-transparent border-none cursor-pointer text-inherit text-muted-foreground hover:text-foreground transition-colors">
                         {item.text}
                         <svg
                           width="10"
                           height="6"
                           viewBox="0 0 10 6"
                           fill="none"
-                          style={{
-                            width: '10px',
-                            height: '6px',
-                            opacity: 0.6,
-                            transform: mobileSection === item.text ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 200ms ease'
-                          }}
+                          className={`size-2.5 opacity-60 transition-transform duration-200 ${
+                            mobileSection === item.text ? 'rotate-180' : 'rotate-0'
+                          }`}
                           aria-hidden="true">
                           <path
                             d="M1 1L5 5L9 1"
@@ -376,21 +296,13 @@ export function Navbar() {
                         </svg>
                       </button>
                       {mobileSection === item.text && (
-                        <ul style={{ paddingBottom: '8px', paddingLeft: '4px' }}>
+                        <ul className="pb-2 pl-1">
                           {item.items.map((sub) => (
                             <li key={sub.href}>
                               <Link
                                 to={sub.href}
                                 onClick={() => setMobileOpen(false)}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '10px',
-                                  borderRadius: '6px',
-                                  padding: '8px 10px',
-                                  fontSize: '14px'
-                                }}
-                                className="text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
+                                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                                 {sub.icon}
                                 <span>{sub.text}</span>
                               </Link>
@@ -403,12 +315,7 @@ export function Navbar() {
                     <Link
                       to={item.href ?? '/'}
                       onClick={() => setMobileOpen(false)}
-                      style={{
-                        display: 'block',
-                        padding: '10px 0',
-                        fontSize: '14px'
-                      }}
-                      className="text-muted-foreground hover:text-foreground transition-colors">
+                      className="block py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                       {item.text}
                     </Link>
                   )}
