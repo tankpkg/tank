@@ -1,6 +1,6 @@
 import { Link, useMatches } from '@tanstack/react-router';
 import { BookOpen, ChevronRight, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { DocMeta } from '~/lib/docs-meta';
 
@@ -88,6 +88,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function DocsLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [mobileOpen]);
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
