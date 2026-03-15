@@ -5,10 +5,10 @@ import { getAdminSession } from '~/server-fns/session';
 
 export const Route = createFileRoute('/_admin')({
   errorComponent: ErrorFallback,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const session = await getAdminSession();
     if (!session) {
-      throw redirect({ to: '/login' });
+      throw redirect({ to: '/login', search: { redirect: location.href } });
     }
     return { session };
   },

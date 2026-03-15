@@ -5,10 +5,10 @@ import { getSession } from '~/server-fns/session';
 
 export const Route = createFileRoute('/_dashboard')({
   errorComponent: ErrorFallback,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const session = await getSession();
     if (!session) {
-      throw redirect({ to: '/login' });
+      throw redirect({ to: '/login', search: { redirect: location.href } });
     }
     return { session };
   },

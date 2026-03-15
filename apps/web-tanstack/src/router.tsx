@@ -2,6 +2,8 @@ import { QueryClient } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
 
+import { ErrorFallback } from '~/components/error-fallback';
+
 import { routeTree } from './routeTree.gen';
 
 export function getRouter() {
@@ -21,7 +23,8 @@ export function getRouter() {
     },
     scrollRestoration: true,
     defaultPreload: 'intent',
-    defaultPreloadStaleTime: 0
+    defaultPreloadStaleTime: 0,
+    defaultErrorComponent: ErrorFallback
   });
 
   setupRouterSsrQueryIntegration({ router, queryClient });
