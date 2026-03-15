@@ -31,7 +31,7 @@ export function RegistryLayout() {
         <div className="tank-orb tank-orb-green w-[400px] h-[400px] bottom-0 left-1/4 opacity-25" />
       </div>
 
-      <header className="sticky top-0 z-50 border-b border-emerald-500/10 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-emerald-500/10 bg-background/80 backdrop-blur-xl shadow-sm dark:shadow-none">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative flex h-16 items-center justify-between">
             <div className="flex items-center gap-1.5 shrink-0">
@@ -51,9 +51,9 @@ export function RegistryLayout() {
                 href="https://github.com/tankpkg/tank"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all"
+                className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/80 hover:shadow-md dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:shadow-none dark:hover:bg-emerald-500/10 dark:hover:border-emerald-500/40 transition-all"
                 aria-label="Star Tank on GitHub">
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <svg className="h-4 w-4 text-muted-foreground" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <title>GitHub</title>
                   <path
                     fillRule="evenodd"
@@ -61,8 +61,8 @@ export function RegistryLayout() {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span>Star</span>
-                {starCount != null && <span className="font-medium tabular-nums text-emerald-400">{starCount}</span>}
+                <span className="hidden sm:inline">Star</span>
+                {starCount != null && <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{starCount}</span>}
               </a>
               <HomeNavAuthCta />
             </div>

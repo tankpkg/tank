@@ -143,9 +143,16 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
-
 /* Animated gradient mesh background */
 .tank-gradient-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 50% 80%, rgba(16, 185, 129, 0.04) 0%, transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.dark .tank-gradient-bg {
   background:
     radial-gradient(ellipse 80% 50% at 20% 40%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
     radial-gradient(ellipse 60% 40% at 80% 20%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
@@ -155,6 +162,13 @@
 
 /* Matrix-style data stream grid */
 .tank-grid-overlay {
+  background-image:
+    linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.dark .tank-grid-overlay {
   background-image:
     linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
@@ -221,20 +235,26 @@
   opacity: 0.6;
 }
 
-/* Glowing text effects */
-.tank-text-glow-cyan {
+/* Glowing text effects — dark only */
+.tank-text-glow-cyan,
+.tank-text-glow-green,
+.tank-text-glow-amber {
+  text-shadow: none;
+}
+
+.dark .tank-text-glow-cyan {
   text-shadow:
     0 0 10px rgba(0, 212, 255, 0.5),
     0 0 40px rgba(0, 212, 255, 0.3);
 }
 
-.tank-text-glow-green {
+.dark .tank-text-glow-green {
   text-shadow:
     0 0 10px rgba(0, 255, 136, 0.5),
     0 0 40px rgba(0, 255, 136, 0.3);
 }
 
-.tank-text-glow-amber {
+.dark .tank-text-glow-amber {
   text-shadow:
     0 0 10px rgba(245, 158, 11, 0.5),
     0 0 40px rgba(245, 158, 11, 0.3);
@@ -251,21 +271,42 @@
 /* Hero gradient overlay */
 .tank-hero-gradient {
   background:
+    radial-gradient(ellipse 100% 80% at 50% -20%, rgba(16, 185, 129, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 50% at 80% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 20% 60%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+}
+
+.dark .tank-hero-gradient {
+  background:
     radial-gradient(ellipse 100% 80% at 50% -20%, rgba(0, 212, 255, 0.15) 0%, transparent 60%),
     radial-gradient(ellipse 80% 50% at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
     radial-gradient(ellipse 60% 40% at 20% 60%, rgba(0, 255, 136, 0.08) 0%, transparent 50%);
 }
 
-/* Card hover effects with depth (dark version) */
+/* Card hover effects with depth */
 .tank-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0, 212, 255, 0.1);
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(0, 212, 255, 0.03) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(16, 185, 129, 0.03) 100%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .tank-card:hover {
-  border-color: rgba(0, 212, 255, 0.3);
+  border-color: rgba(16, 185, 129, 0.35);
   transform: translateY(-2px);
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.1),
+    0 4px 10px rgba(16, 185, 129, 0.06);
+}
+
+.dark .tank-card {
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(0, 212, 255, 0.03) 100%);
+  box-shadow: none;
+}
+
+.dark .tank-card:hover {
+  border-color: rgba(0, 212, 255, 0.3);
   box-shadow:
     0 8px 30px rgba(0, 0, 0, 0.2),
     0 0 20px rgba(0, 212, 255, 0.1);
@@ -548,6 +589,25 @@
     line-height: 1.7;
     margin-top: 1.7em;
     margin-bottom: 1.7em;
+    background: oklch(0.968 0.007 247.896);
+    color: oklch(0.208 0.042 265.755);
+  }
+
+  & :not(pre) > code {
+    background: oklch(0.968 0.007 247.896);
+    padding: 0.15em 0.35em;
+    border-radius: 0.25rem;
+    color: oklch(0.45 0.1 260);
+  }
+
+  & pre code {
+    background: transparent !important;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  & pre code span {
+    background: transparent !important;
   }
 
   & table {
@@ -604,8 +664,36 @@
   max-width: none;
 }
 
-/* Dark mode prose */
-.prose.prose-invert {
+/* Shiki dual theme support */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+
+/* Heading anchor links */
+.anchor-heading {
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+}
+
+.anchor-heading:hover::before {
+  content: "#";
+  position: absolute;
+  margin-left: -1.5em;
+  font-weight: 400;
+  color: oklch(0.556 0.046 257.417);
+  opacity: 0.5;
+}
+
+.dark .prose.prose-invert {
   & a {
     color: oklch(0.929 0.013 255.508);
   }
@@ -613,8 +701,15 @@
     background: oklch(0.208 0.042 265.755);
     color: oklch(0.984 0.003 247.858);
   }
-  & code {
-    color: oklch(0.984 0.003 247.858);
+  & :not(pre) > code {
+    background: oklch(0.25 0.03 265);
+    color: oklch(0.85 0.05 260);
+    padding: 0.15em 0.35em;
+    border-radius: 0.25rem;
+  }
+  & pre code,
+  & pre code span {
+    background: transparent !important;
   }
   & thead {
     border-color: oklch(1 0 0 / 15%);
