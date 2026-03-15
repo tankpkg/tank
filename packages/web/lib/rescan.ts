@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm';
-import { type AuditScoreInput, computeAuditScore } from '@/lib/audit-score';
-import { db } from '@/lib/db';
-import { scanFindings, scanResults, skillVersions } from '@/lib/db/schema';
-import { getStorageProvider } from '@/lib/storage/provider';
+import { eq } from "drizzle-orm";
+import { type AuditScoreInput, computeAuditScore } from "@/lib/audit-score";
+import { db } from "@/lib/db";
+import { scanFindings, scanResults, skillVersions } from "@/lib/db/schema";
+import { getStorageProvider } from "@/lib/storage/provider";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -10,7 +10,7 @@ import { getStorageProvider } from '@/lib/storage/provider';
 
 export interface ScanFinding {
   stage: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: "critical" | "high" | "medium" | "low";
   type: string;
   description: string;
   location: string | null;
@@ -41,7 +41,7 @@ export interface LLMAnalysisInfo {
 
 export interface ScanResponse {
   scan_id: string | null;
-  verdict: 'pass' | 'pass_with_notes' | 'flagged' | 'fail';
+  verdict: "pass" | "pass_with_notes" | "flagged" | "fail";
   findings: ScanFinding[];
   stage_results: Array<{
     stage: string;
@@ -64,6 +64,7 @@ export interface RescanVersionInput {
   readme: string | null;
   fileCount: number;
   tarballSize: number;
+  auditScore?: number | null;
 }
 
 export interface RescanResult {
@@ -80,7 +81,7 @@ export async function triggerSecurityScan(
   tarballPath: string,
   versionId: string,
   manifest: Record<string, unknown>,
-  permissions: Record<string, unknown>
+  permissions: Record<string, unknown>,
 ): Promise<ScanResponse | null> {
   try {
     let signedUrl: string;
@@ -88,35 +89,35 @@ export async function triggerSecurityScan(
       const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
       signedUrl = urlData.signedUrl;
     } catch (error) {
-      console.error('Failed to generate signed URL for scan:', error);
+      console.error("Failed to generate signed URL for scan:", error);
       return null;
     }
 
-    const pythonApiUrl = (process.env.PYTHON_API_URL || '').trim();
+    const pythonApiUrl = (process.env.PYTHON_API_URL || "").trim();
     const scanApiUrl =
       pythonApiUrl ||
       process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
     const scanResponse = await fetch(`${scanApiUrl}/api/analyze/scan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         tarball_url: signedUrl,
         version_id: versionId,
         manifest,
-        permissions
-      })
+        permissions,
+      }),
     });
 
     if (!scanResponse.ok) {
-      console.error('Scan endpoint returned error:', scanResponse.status);
+      console.error("Scan endpoint returned error:", scanResponse.status);
       return null;
     }
 
     return (await scanResponse.json()) as ScanResponse;
   } catch (error) {
-    console.error('Failed to trigger security scan:', error);
+    console.error("Failed to trigger security scan:", error);
     return null;
   }
 }
@@ -126,7 +127,7 @@ export async function triggerSecurityScan(
 // ---------------------------------------------------------------------------
 
 export async function rescanVersion(version: RescanVersionInput): Promise<RescanResult> {
-  const manifest = version.manifest as AuditScoreInput['manifest'];
+  const manifest = version.manifest as AuditScoreInput["manifest"];
   const permissions = (version.permissions ?? {}) as Record<string, unknown>;
 
   try {
@@ -141,8 +142,8 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
         readme: version.readme,
         analysisResults: {
           securityIssues: scanResult.findings,
-          extractedPermissions: undefined
-        }
+          extractedPermissions: undefined,
+        },
       });
 
       // Store scan results (only if Python API didn't already store them)
@@ -155,14 +156,14 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
               versionId: version.id,
               verdict: scanResult.verdict,
               totalFindings: scanResult.findings.length,
-              criticalCount: scanResult.findings.filter((f) => f.severity === 'critical').length,
-              highCount: scanResult.findings.filter((f) => f.severity === 'high').length,
-              mediumCount: scanResult.findings.filter((f) => f.severity === 'medium').length,
-              lowCount: scanResult.findings.filter((f) => f.severity === 'low').length,
+              criticalCount: scanResult.findings.filter((f) => f.severity === "critical").length,
+              highCount: scanResult.findings.filter((f) => f.severity === "high").length,
+              mediumCount: scanResult.findings.filter((f) => f.severity === "medium").length,
+              lowCount: scanResult.findings.filter((f) => f.severity === "low").length,
               stagesRun: scanResult.stage_results?.map((s) => s.stage) || [],
               durationMs: scanResult.duration_ms || null,
               fileHashes: scanResult.file_hashes || null,
-              llmAnalysis: scanResult.llm_analysis as LLMAnalysisInfo | null
+              llmAnalysis: scanResult.llm_analysis as LLMAnalysisInfo | null,
             })
             .returning();
 
@@ -179,28 +180,28 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
                 tool: f.tool || null,
                 evidence: f.evidence || null,
                 llmVerdict: f.llm_verdict || null,
-                llmReviewed: f.llm_reviewed || false
-              }))
+                llmReviewed: f.llm_reviewed || false,
+              })),
             );
           }
         } catch (dbError) {
-          console.error('Failed to store scan results:', dbError);
+          console.error("Failed to store scan results:", dbError);
         }
       }
 
       // Map verdict to audit status
       const auditStatusMap: Record<string, string> = {
-        pass: 'completed',
-        pass_with_notes: 'completed',
-        flagged: 'flagged',
-        fail: 'failed'
+        pass: "completed",
+        pass_with_notes: "completed",
+        flagged: "flagged",
+        fail: "failed",
       };
 
       await db
         .update(skillVersions)
         .set({
           auditScore: result.score,
-          auditStatus: auditStatusMap[scanResult.verdict] ?? 'completed'
+          auditStatus: auditStatusMap[scanResult.verdict] ?? "completed",
         })
         .where(eq(skillVersions.id, version.id));
 
@@ -213,20 +214,21 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
       fileCount: version.fileCount,
       tarballSize: version.tarballSize,
       readme: version.readme,
-      analysisResults: null
+      analysisResults: null,
+      previousScore: version.auditScore,
     });
 
     await db
       .update(skillVersions)
       .set({
         auditScore: result.score,
-        auditStatus: 'scan-failed'
+        auditStatus: "scan-failed",
       })
       .where(eq(skillVersions.id, version.id));
 
-    return { success: false, error: 'Scan failed' };
+    return { success: false, error: "Scan failed" };
   } catch (error) {
-    console.error('Rescan error for version', version.id, error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    console.error("Rescan error for version", version.id, error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }
