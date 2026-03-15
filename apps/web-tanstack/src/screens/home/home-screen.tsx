@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowRight, CheckCircle2, Globe, HelpCircle, Shield, Star, Terminal } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useMemo } from 'react';
 
 import { CopyInstallButton } from '~/components/copy-install-button';
 import { HomePrimaryAuthCta } from '~/components/home-auth-cta';
@@ -57,7 +58,7 @@ function JsonLdScript({ data }: { data: ReturnType<typeof buildHomepageJsonLd> }
 }
 
 export function HomeScreen({ publicSkillCount, starCount }: HomeScreenProps) {
-  const jsonLd = buildHomepageJsonLd(publicSkillCount);
+  const jsonLd = useMemo(() => buildHomepageJsonLd(publicSkillCount), [publicSkillCount]);
 
   return (
     <>
