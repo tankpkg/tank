@@ -8,7 +8,26 @@ import rehypeStringify from 'rehype-stringify';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
+import type { Root } from 'hast';
+import { visit } from 'unist-util-visit';
 import { unified } from 'unified';
+
+const calloutStyles: Record<string, string> = {
+  info: 'border-l-4 border-blue-500 bg-blue-500/10 p-4 rounded-r-lg my-4',
+  warn: 'border-l-4 border-amber-500 bg-amber-500/10 p-4 rounded-r-lg my-4',
+  error: 'border-l-4 border-red-500 bg-red-500/10 p-4 rounded-r-lg my-4'
+};
+
+function rehypeCallout() {
+  return (tree: Root) => {
+    visit(tree, 'element', (node, index, parent) => {
+      if (node.tagName !== 'callout' || index == null || !parent) return;
+      const type = (node.properties?.type as string) || 'info';
+      node.tagName = 'blockquote';
+      node.properties = { className: calloutStyles[type] || calloutStyles.info };
+    });
+  };
+}
 
 interface DocEntry {
   title: string;
@@ -76,6 +95,7 @@ async function loadDocs(): Promise<DocEntry[]> {
     .use(remarkGfm)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
+    .use(rehypeCallout)
     .use(rehypeSlug)
     .use(rehypeShiki, { theme: 'github-dark' })
     .use(rehypeStringify);
