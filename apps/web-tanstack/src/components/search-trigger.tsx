@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import { useCommandMenuStore } from '~/stores/command-menu';
 
 export function SearchTrigger() {
-  const [isMac, setIsMac] = useState(true);
+  const [shortcut, setShortcut] = useState('');
   const toggle = useCommandMenuStore((s) => s.toggle);
 
   useEffect(() => {
-    setIsMac(!navigator.userAgent.includes('Windows'));
+    setShortcut(navigator.userAgent.includes('Windows') ? 'Ctrl ' : '⌘');
   }, []);
 
   return (
@@ -20,7 +20,7 @@ export function SearchTrigger() {
       <SearchIcon className="size-4 shrink-0" />
       <span className="flex-1 text-left">Search skills, docs...</span>
       <kbd className="pointer-events-none hidden select-none items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground/70 sm:inline-flex">
-        {isMac ? '⌘' : 'Ctrl '}K
+        {shortcut && `${shortcut}K`}
       </kbd>
     </button>
   );
