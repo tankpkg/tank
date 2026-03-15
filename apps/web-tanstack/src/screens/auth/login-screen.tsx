@@ -1,5 +1,3 @@
-'use client';
-
 import { useForm } from '@tanstack/react-form';
 import { useState } from 'react';
 import { z } from 'zod';
