@@ -125,7 +125,9 @@ function thenResultIsNotAllowed(): void {
 
 function thenViolationsMention(keyword: string): void {
   expect(world.result).not.toBeNull();
-  const mentionsKeyword = world.result?.violations.some((v) => `${v.field} ${v.reason}`.toUpperCase().includes(keyword.toUpperCase()));
+  const mentionsKeyword = world.result?.violations.some((v) =>
+    `${v.field} ${v.reason}`.toUpperCase().includes(keyword.toUpperCase())
+  );
   expect(mentionsKeyword).toBe(true);
 }
 
