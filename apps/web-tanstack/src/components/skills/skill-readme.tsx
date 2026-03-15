@@ -1,22 +1,41 @@
+import ReactMarkdown from 'react-markdown';
+import rehypeSanitize from 'rehype-sanitize';
+import remarkGfm from 'remark-gfm';
+
 interface SkillReadmeProps {
   content: string;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
 
 export function SkillReadme({ content }: SkillReadmeProps) {
   return (
     <div className="prose prose-neutral max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-a:text-primary">
-      <pre className="whitespace-pre-wrap break-words text-sm font-sans bg-transparent border-none p-0 m-0">
-        {escapeHtml(content)}
-      </pre>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeSanitize]}
+        components={{
+          code: ({ className, children, ...rest }) => {
+            const isInline = !className;
+            if (isInline) {
+              return (
+                <code
+                  className="rounded bg-muted px-1.5 py-0.5 text-sm text-foreground before:content-none after:content-none"
+                  {...rest}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code className={className} {...rest}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => (
+            <pre className="bg-muted border rounded-lg p-4 overflow-x-auto text-foreground text-sm">{children}</pre>
+          )
+        }}>
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }
