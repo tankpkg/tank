@@ -42,6 +42,7 @@ async function processRescanJob(
     readme: string | null;
     fileCount: number;
     tarballSize: number;
+    auditScore: number | null;
   }>
 ) {
   const job = jobs.get(jobId);
@@ -116,7 +117,8 @@ async function handler(req: NextRequest, _context: AdminAuthContext): Promise<Ne
         permissions: skillVersions.permissions,
         readme: skillVersions.readme,
         fileCount: skillVersions.fileCount,
-        tarballSize: skillVersions.tarballSize
+        tarballSize: skillVersions.tarballSize,
+        auditScore: skillVersions.auditScore
       })
       .from(skillVersions)
       .where(inArray(skillVersions.auditStatus, [...RESCANNABLE_STATUSES]))

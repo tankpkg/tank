@@ -175,11 +175,6 @@ export async function POST(request: Request) {
     if (scanResult) {
       scanVerdict = scanResult.verdict;
 
-      // Compute audit score with real scan data
-      const criticalHighFindings = scanResult.findings.filter(
-        (f) => f.severity === 'critical' || f.severity === 'high'
-      );
-
       const result = computeAuditScore({
         manifest,
         permissions,
@@ -187,7 +182,7 @@ export async function POST(request: Request) {
         tarballSize: tarballSize ?? 0,
         readme: typeof readme === 'string' ? readme : (version.readme ?? null),
         analysisResults: {
-          securityIssues: criticalHighFindings,
+          securityIssues: scanResult.findings,
           extractedPermissions: undefined
         }
       });
@@ -270,7 +265,8 @@ export async function POST(request: Request) {
         fileCount: fileCount ?? 0,
         tarballSize: tarballSize ?? 0,
         readme: typeof readme === 'string' ? readme : (version.readme ?? null),
-        analysisResults: null
+        analysisResults: null,
+        previousScore: version.auditScore
       });
 
       auditScore = result.score;
@@ -293,7 +289,8 @@ export async function POST(request: Request) {
       fileCount: fileCount ?? 0,
       tarballSize: tarballSize ?? 0,
       readme: typeof readme === 'string' ? readme : (version.readme ?? null),
-      analysisResults: null
+      analysisResults: null,
+      previousScore: version.auditScore
     });
 
     auditScore = result.score;

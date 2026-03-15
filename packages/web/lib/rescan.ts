@@ -64,6 +64,7 @@ export interface RescanVersionInput {
   readme: string | null;
   fileCount: number;
   tarballSize: number;
+  auditScore?: number | null;
 }
 
 export interface RescanResult {
@@ -133,10 +134,6 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
     const scanResult = await triggerSecurityScan(version.tarballPath, version.id, manifest, permissions);
 
     if (scanResult) {
-      const criticalHighFindings = scanResult.findings.filter(
-        (f) => f.severity === 'critical' || f.severity === 'high'
-      );
-
       const result = computeAuditScore({
         manifest,
         permissions,
@@ -144,7 +141,7 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
         tarballSize: version.tarballSize,
         readme: version.readme,
         analysisResults: {
-          securityIssues: criticalHighFindings,
+          securityIssues: scanResult.findings,
           extractedPermissions: undefined
         }
       });
@@ -217,7 +214,8 @@ export async function rescanVersion(version: RescanVersionInput): Promise<Rescan
       fileCount: version.fileCount,
       tarballSize: version.tarballSize,
       readme: version.readme,
-      analysisResults: null
+      analysisResults: null,
+      previousScore: version.auditScore
     });
 
     await db

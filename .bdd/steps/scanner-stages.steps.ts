@@ -14,6 +14,7 @@
 import { createGzip } from "node:zlib";
 import * as http from "node:http";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { computeAuditScore, type AuditScoreInput, type AuditScoreResult } from "../../packages/web/lib/audit-score.js";
 
 const hasScanner = !!process.env.SCANNER_URL;
 
@@ -33,6 +34,18 @@ const world: StagesWorld = {
   server: null,
   tarballs: new Map(),
   lastScanBody: {},
+};
+
+interface ScoreWorld {
+  input: AuditScoreInput | null;
+  result: AuditScoreResult | null;
+  inferredVerdict: "pass" | "pass_with_notes";
+}
+
+const scoreWorld: ScoreWorld = {
+  input: null,
+  result: null,
+  inferredVerdict: "pass",
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -94,6 +107,72 @@ async function gzip(buf: Buffer): Promise<Buffer> {
 
 async function buildTarball(files: Record<string, string>): Promise<Buffer> {
   return gzip(buildTar(files));
+}
+
+function baseScoreInput(): AuditScoreInput {
+  return {
+    manifest: {
+      name: "@bdd/stages-score",
+      version: "1.0.0",
+      description: "score test skill",
+    },
+    permissions: { network: { outbound: ["*.example.com"] } },
+    fileCount: 10,
+    tarballSize: 100_000,
+    readme: "# docs",
+    analysisResults: {
+      securityIssues: [],
+      extractedPermissions: { network: { outbound: ["*.example.com"] } },
+    },
+  };
+}
+
+// ── Given (scoring scenarios) ───────────────────────────────────────────────
+
+function givenSkillTarballWithNoSecurityIssues(): void {
+  scoreWorld.input = baseScoreInput();
+}
+
+function givenSkillTarballWithOnlyMediumSeverityFindings(): void {
+  scoreWorld.input = {
+    ...baseScoreInput(),
+    analysisResults: {
+      securityIssues: [{ severity: "medium", description: "suspicious prompt marker" }],
+      extractedPermissions: { network: { outbound: ["*.example.com"] } },
+    },
+  };
+}
+
+function givenSkillTarballWithOnlyAnOversizedFileStage1Finding(): void {
+  scoreWorld.input = {
+    ...baseScoreInput(),
+    fileCount: 10_000,
+    tarballSize: 50_000_000,
+    readme: null,
+    manifest: {
+      ...baseScoreInput().manifest,
+      description: "",
+    },
+  };
+}
+
+// ── When (scoring scenarios) ────────────────────────────────────────────────
+
+function whenTheScannerAnalyzesScoreInput(): void {
+  expect(scoreWorld.input).not.toBeNull();
+  scoreWorld.result = computeAuditScore(scoreWorld.input!);
+  scoreWorld.inferredVerdict = scoreWorld.result.score === 10 ? "pass" : "pass_with_notes";
+}
+
+// ── Then (scoring scenarios) ────────────────────────────────────────────────
+
+function thenScoreVerdictIs(expected: "pass" | "pass_with_notes"): void {
+  expect(scoreWorld.inferredVerdict).toBe(expected);
+}
+
+function thenAuditScoreIsExactly(expected: number): void {
+  expect(scoreWorld.result).not.toBeNull();
+  expect(scoreWorld.result!.score).toBe(expected);
 }
 
 function startServeServer(tarballs: Map<string, Buffer>): Promise<number> {
@@ -277,6 +356,35 @@ describe("Feature: Security scanner 6-stage pipeline", () => {
       const findings = cleanBody.findings as Array<Record<string, unknown>>;
       const criticalOrHigh = findings.filter((f) => f.severity === "critical" || f.severity === "high");
       expect(criticalOrHigh.length).toBe(0);
+    });
+  });
+
+  // ── Strict security scoring (#129) ───────────────────────────────────────
+
+  describe("Scenario: Clean skill receives pass verdict (E1) audit score is 10.0", () => {
+    it("runs Given/When/Then", () => {
+      givenSkillTarballWithNoSecurityIssues();
+      whenTheScannerAnalyzesScoreInput();
+      thenScoreVerdictIs("pass");
+      thenAuditScoreIsExactly(10);
+    });
+  });
+
+  describe("Scenario: Skill with only medium findings receives pass_with_notes verdict (E6)", () => {
+    it("runs Given/When/Then", () => {
+      givenSkillTarballWithOnlyMediumSeverityFindings();
+      whenTheScannerAnalyzesScoreInput();
+      thenScoreVerdictIs("pass_with_notes");
+      thenAuditScoreIsExactly(7);
+    });
+  });
+
+  describe("Scenario: Structural oversized file findings do not lower security score", () => {
+    it("runs Given/When/Then", () => {
+      givenSkillTarballWithOnlyAnOversizedFileStage1Finding();
+      whenTheScannerAnalyzesScoreInput();
+      thenScoreVerdictIs("pass");
+      thenAuditScoreIsExactly(10);
     });
   });
 });
