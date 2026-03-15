@@ -72,6 +72,7 @@ export const auth = betterAuth({
       }
 
       if (getProvider() === 'console') {
+        console.info(`[auth] Verification URL: ${url}`);
       }
     }
   },
