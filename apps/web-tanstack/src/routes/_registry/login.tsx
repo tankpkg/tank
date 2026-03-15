@@ -12,7 +12,8 @@ export const Route = createFileRoute('/_registry/login')({
     meta: [
       { title: 'Sign In | Tank' },
       { name: 'description', content: 'Sign in to Tank — security-first package manager for AI agent skills.' }
-    ]
+    ],
+    links: [{ rel: 'canonical', href: 'https://www.tankpkg.dev/login' }]
   }),
   component: LoginPage
 });

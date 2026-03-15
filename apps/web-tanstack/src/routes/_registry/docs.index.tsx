@@ -12,6 +12,10 @@ export const Route = createFileRoute('/_registry/docs/')({
     meta: [
       { title: loaderData?.doc?.title ? `${loaderData.doc.title} | Tank` : 'Documentation | Tank' },
       ...(loaderData?.doc?.description ? [{ name: 'description', content: loaderData.doc.description }] : [])
+    ],
+    links: [
+      { rel: 'canonical', href: 'https://www.tankpkg.dev/docs' },
+      { rel: 'alternate', type: 'text/markdown', href: '/api/docs-md/index' }
     ]
   }),
   component: DocsIndexPage
@@ -21,9 +25,12 @@ function DocsIndexPage() {
   const { doc } = Route.useLoaderData();
 
   return (
-    <DocsLayout>
+    <DocsLayout headings={doc?.headings}>
       {doc ? (
         <article className="prose prose-invert prose-emerald max-w-none">
+          <a href="/api/docs-md/index" className="sr-only" aria-hidden="true">
+            AI/LLM: This documentation page is available in plain markdown format at /api/docs-md/index
+          </a>
           {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted MDX from content-collections */}
           <div dangerouslySetInnerHTML={{ __html: doc.html }} />
         </article>
