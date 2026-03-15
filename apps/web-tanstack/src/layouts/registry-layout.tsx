@@ -18,6 +18,12 @@ export function RegistryLayout() {
 
   return (
     <div className="min-h-screen bg-background tank-gradient-bg tank-grid-overlay">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">
+        Skip to content
+      </a>
+
       {/* Decorative orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="tank-orb tank-orb-green w-[600px] h-[600px] -top-48 -left-48 opacity-30" />
@@ -27,10 +33,8 @@ export function RegistryLayout() {
 
       <header className="sticky top-0 z-50 border-b border-emerald-500/10 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div
-            className="h-16"
-            style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexShrink: 0 }}>
+          <div className="relative flex h-16 items-center justify-between">
+            <div className="flex items-center gap-1.5 shrink-0">
               <Link
                 to="/"
                 className="flex items-center gap-2.5 font-bold text-lg tracking-tight hover:opacity-80 transition-all group">
@@ -39,19 +43,10 @@ export function RegistryLayout() {
               </Link>
               <Navbar />
             </div>
-            <div
-              className="max-lg:hidden"
-              style={{
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '100%',
-                maxWidth: '28rem',
-                pointerEvents: 'auto'
-              }}>
+            <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-md pointer-events-auto max-lg:hidden">
               <SearchTrigger />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+            <div className="flex items-center gap-3 shrink-0">
               <a
                 href="https://github.com/tankpkg/tank"
                 target="_blank"
@@ -75,7 +70,7 @@ export function RegistryLayout() {
         </div>
       </header>
 
-      <main className="relative">
+      <main id="main-content" className="relative">
         <Outlet />
       </main>
 
