@@ -61,7 +61,7 @@ describe('Feature: Admin rescan a specific package version', () => {
           runId,
           packageName: `@e2e/rescan-test-${runId}`,
           version: '1.0.0',
-          publisherId: client.session?.userId
+          publisherId: client.session?.userId ?? ''
         });
         expect(result.versionId).toBeTruthy();
       }
