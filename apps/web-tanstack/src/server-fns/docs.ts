@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createServerFn } from '@tanstack/react-start';
+import rehypeShiki from '@shikijs/rehype';
 import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import rehypeStringify from 'rehype-stringify';
@@ -76,6 +77,7 @@ async function loadDocs(): Promise<DocEntry[]> {
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
     .use(rehypeSlug)
+    .use(rehypeShiki, { theme: 'github-dark' })
     .use(rehypeStringify);
 
   const entries: DocEntry[] = [];
