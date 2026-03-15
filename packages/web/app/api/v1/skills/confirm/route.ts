@@ -1,15 +1,15 @@
-import { eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
-import { type AuditScoreInput, computeAuditScore } from "@/lib/audit-score";
-import { verifyCliAuth } from "@/lib/auth-helpers";
-import { db } from "@/lib/db";
-import { scanFindings, scanResults, skills, skillVersions } from "@/lib/db/schema";
-import { getStorageProvider } from "@/lib/storage/provider";
+import { eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
+import { type AuditScoreInput, computeAuditScore } from '@/lib/audit-score';
+import { verifyCliAuth } from '@/lib/auth-helpers';
+import { db } from '@/lib/db';
+import { scanFindings, scanResults, skills, skillVersions } from '@/lib/db/schema';
+import { getStorageProvider } from '@/lib/storage/provider';
 
 // Types for Python scan endpoint response
 interface ScanFinding {
   stage: string;
-  severity: "critical" | "high" | "medium" | "low";
+  severity: 'critical' | 'high' | 'medium' | 'low';
   type: string;
   description: string;
   location: string | null;
@@ -36,7 +36,7 @@ interface LLMAnalysis {
 
 interface ScanResponse {
   scan_id: string | null;
-  verdict: "pass" | "pass_with_notes" | "flagged" | "fail";
+  verdict: 'pass' | 'pass_with_notes' | 'flagged' | 'fail';
   findings: ScanFinding[];
   stage_results: Array<{
     stage: string;
@@ -54,7 +54,7 @@ async function triggerSecurityScan(
   tarballPath: string,
   versionId: string,
   manifest: Record<string, unknown>,
-  permissions: Record<string, unknown>,
+  permissions: Record<string, unknown>
 ): Promise<ScanResponse | null> {
   try {
     // Generate signed download URL
@@ -63,39 +63,39 @@ async function triggerSecurityScan(
       const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
       signedUrl = urlData.signedUrl;
     } catch (error) {
-      console.error("Failed to generate signed URL for scan:", error);
+      console.error('Failed to generate signed URL for scan:', error);
       return null;
     }
 
     // Call Python scan endpoint (use separate Python API URL if configured)
     // Trim to handle any accidental whitespace/newlines in env vars
-    const pythonApiUrl = (process.env.PYTHON_API_URL || "").trim();
+    const pythonApiUrl = (process.env.PYTHON_API_URL || '').trim();
     const scanApiUrl =
       pythonApiUrl ||
       process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
-    console.log("[Scan] Calling Python API:", scanApiUrl);
+    console.log('[Scan] Calling Python API:', scanApiUrl);
 
     const scanResponse = await fetch(`${scanApiUrl}/api/analyze/scan`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tarball_url: signedUrl,
         version_id: versionId,
         manifest,
-        permissions,
-      }),
+        permissions
+      })
     });
 
     if (!scanResponse.ok) {
-      console.error("Scan endpoint returned error:", scanResponse.status);
+      console.error('Scan endpoint returned error:', scanResponse.status);
       return null;
     }
 
     return (await scanResponse.json()) as ScanResponse;
   } catch (error) {
-    console.error("Failed to trigger security scan:", error);
+    console.error('Failed to trigger security scan:', error);
     return null;
   }
 }
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
   // 1. Verify CLI auth
   const verified = await verifyCliAuth(request);
   if (!verified) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   // 2. Parse body
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
   const { versionId, integrity, fileCount, tarballSize, readme } = body as {
@@ -124,25 +124,25 @@ export async function POST(request: Request) {
   };
 
   if (!versionId || !integrity) {
-    return NextResponse.json({ error: "Missing required fields: versionId, integrity" }, { status: 400 });
+    return NextResponse.json({ error: 'Missing required fields: versionId, integrity' }, { status: 400 });
   }
 
   // 3. Look up version record
   const existingVersions = await db.select().from(skillVersions).where(eq(skillVersions.id, versionId)).limit(1);
 
   if (existingVersions.length === 0) {
-    return NextResponse.json({ error: "Skill version not found" }, { status: 404 });
+    return NextResponse.json({ error: 'Skill version not found' }, { status: 404 });
   }
 
   const version = existingVersions[0];
 
   if (version.publishedBy !== verified.userId) {
-    return NextResponse.json({ error: "Skill version not found" }, { status: 404 });
+    return NextResponse.json({ error: 'Skill version not found' }, { status: 404 });
   }
 
   // 4. Verify version is in pending-upload status
-  if (version.auditStatus !== "pending-upload") {
-    return NextResponse.json({ error: "Version is already confirmed or published" }, { status: 400 });
+  if (version.auditStatus !== 'pending-upload') {
+    return NextResponse.json({ error: 'Version is already confirmed or published' }, { status: 400 });
   }
 
   // 5. Look up skill name for response
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
 
   // 6. Update version record with initial data
   let auditScore: number | null = null;
-  const manifest = version.manifest as AuditScoreInput["manifest"];
+  const manifest = version.manifest as AuditScoreInput['manifest'];
   const permissions = (version.permissions ?? {}) as Record<string, unknown>;
 
   // Initial update with integrity and file info
@@ -162,8 +162,8 @@ export async function POST(request: Request) {
       integrity,
       fileCount: fileCount ?? 0,
       tarballSize: tarballSize ?? 0,
-      auditStatus: "scanning", // Mark as scanning in progress
-      ...(typeof readme === "string" ? { readme } : {}),
+      auditStatus: 'scanning', // Mark as scanning in progress
+      ...(typeof readme === 'string' ? { readme } : {})
     })
     .where(eq(skillVersions.id, versionId));
 
@@ -180,11 +180,11 @@ export async function POST(request: Request) {
         permissions,
         fileCount: fileCount ?? 0,
         tarballSize: tarballSize ?? 0,
-        readme: typeof readme === "string" ? readme : (version.readme ?? null),
+        readme: typeof readme === 'string' ? readme : (version.readme ?? null),
         analysisResults: {
           securityIssues: scanResult.findings,
-          extractedPermissions: undefined,
-        },
+          extractedPermissions: undefined
+        }
       });
 
       auditScore = result.score;
@@ -197,10 +197,10 @@ export async function POST(request: Request) {
             versionId: versionId,
             verdict: scanResult.verdict,
             totalFindings: scanResult.findings.length,
-            criticalCount: scanResult.findings.filter((f) => f.severity === "critical").length,
-            highCount: scanResult.findings.filter((f) => f.severity === "high").length,
-            mediumCount: scanResult.findings.filter((f) => f.severity === "medium").length,
-            lowCount: scanResult.findings.filter((f) => f.severity === "low").length,
+            criticalCount: scanResult.findings.filter((f) => f.severity === 'critical').length,
+            highCount: scanResult.findings.filter((f) => f.severity === 'high').length,
+            mediumCount: scanResult.findings.filter((f) => f.severity === 'medium').length,
+            lowCount: scanResult.findings.filter((f) => f.severity === 'low').length,
             stagesRun: scanResult.stage_results?.map((s) => s.stage) || [],
             durationMs: scanResult.duration_ms || null,
             fileHashes: scanResult.file_hashes || null,
@@ -215,7 +215,7 @@ export async function POST(request: Request) {
               provider_used?: string;
               latency_ms?: number;
               error?: string;
-            } | null,
+            } | null
           })
           .returning();
 
@@ -233,28 +233,28 @@ export async function POST(request: Request) {
               tool: f.tool || null,
               evidence: f.evidence || null,
               llmVerdict: (f as { llm_verdict?: string }).llm_verdict || null,
-              llmReviewed: (f as { llm_reviewed?: boolean }).llm_reviewed || false,
-            })),
+              llmReviewed: (f as { llm_reviewed?: boolean }).llm_reviewed || false
+            }))
           );
         }
       } catch (dbError) {
-        console.error("Failed to store scan results:", dbError);
+        console.error('Failed to store scan results:', dbError);
         // Continue - don't fail the whole publish if storage fails
       }
 
       // Map verdict to audit status
       const auditStatusMap: Record<string, string> = {
-        pass: "completed",
-        pass_with_notes: "completed",
-        flagged: "flagged",
-        fail: "failed",
+        pass: 'completed',
+        pass_with_notes: 'completed',
+        flagged: 'flagged',
+        fail: 'failed'
       };
 
       await db
         .update(skillVersions)
         .set({
           auditScore: result.score,
-          auditStatus: auditStatusMap[scanResult.verdict] ?? "completed",
+          auditStatus: auditStatusMap[scanResult.verdict] ?? 'completed'
         })
         .where(eq(skillVersions.id, versionId));
     } else {
@@ -264,9 +264,9 @@ export async function POST(request: Request) {
         permissions,
         fileCount: fileCount ?? 0,
         tarballSize: tarballSize ?? 0,
-        readme: typeof readme === "string" ? readme : (version.readme ?? null),
+        readme: typeof readme === 'string' ? readme : (version.readme ?? null),
         analysisResults: null,
-        previousScore: version.auditScore,
+        previousScore: version.auditScore
       });
 
       auditScore = result.score;
@@ -275,22 +275,22 @@ export async function POST(request: Request) {
         .update(skillVersions)
         .set({
           auditScore: result.score,
-          auditStatus: "scan-failed",
+          auditStatus: 'scan-failed'
         })
         .where(eq(skillVersions.id, versionId));
     }
   } catch (error) {
     // Scan threw an error - graceful degradation
-    console.error("Security scan error:", error);
+    console.error('Security scan error:', error);
 
     const result = computeAuditScore({
       manifest,
       permissions,
       fileCount: fileCount ?? 0,
       tarballSize: tarballSize ?? 0,
-      readme: typeof readme === "string" ? readme : (version.readme ?? null),
+      readme: typeof readme === 'string' ? readme : (version.readme ?? null),
       analysisResults: null,
-      previousScore: version.auditScore,
+      previousScore: version.auditScore
     });
 
     auditScore = result.score;
@@ -299,7 +299,7 @@ export async function POST(request: Request) {
       .update(skillVersions)
       .set({
         auditScore: result.score,
-        auditStatus: "scan-failed",
+        auditStatus: 'scan-failed'
       })
       .where(eq(skillVersions.id, versionId));
   }
@@ -307,9 +307,9 @@ export async function POST(request: Request) {
   // 8. Return success
   return NextResponse.json({
     success: true,
-    name: skill?.name ?? "unknown",
+    name: skill?.name ?? 'unknown',
     version: version.version,
     auditScore,
-    scanVerdict,
+    scanVerdict
   });
 }

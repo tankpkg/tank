@@ -1,25 +1,25 @@
-import { desc, inArray } from "drizzle-orm";
-import { type NextRequest, NextResponse } from "next/server";
-import { type AdminAuthContext, withAdminAuth } from "@/lib/admin-middleware";
-import { db } from "@/lib/db";
-import { skillVersions } from "@/lib/db/schema";
-import { rescanVersion } from "@/lib/rescan";
+import { desc, inArray } from 'drizzle-orm';
+import { type NextRequest, NextResponse } from 'next/server';
+import { type AdminAuthContext, withAdminAuth } from '@/lib/admin-middleware';
+import { db } from '@/lib/db';
+import { skillVersions } from '@/lib/db/schema';
+import { rescanVersion } from '@/lib/rescan';
 
 // Statuses that indicate a version has been scanned and can be rescanned
-const RESCANNABLE_STATUSES = ["completed", "flagged", "scan-failed"] as const;
+const RESCANNABLE_STATUSES = ['completed', 'flagged', 'scan-failed'] as const;
 
 // Process in batches to avoid connection pool exhaustion
 const BATCH_SIZE = 3;
 const BATCH_DELAY_MS = 3000;
 const SCAN_DELAY_MS = 1000;
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 // In-memory job tracking (resets on server restart, but fine for this use case)
 const jobs = new Map<
   string,
   {
-    status: "running" | "completed" | "failed";
+    status: 'running' | 'completed' | 'failed';
     total: number;
     processed: number;
     success: number;
@@ -43,14 +43,14 @@ async function processRescanJob(
     fileCount: number;
     tarballSize: number;
     auditScore: number | null;
-  }>,
+  }>
 ) {
   const job = jobs.get(jobId);
   if (!job) return;
 
   for (let i = 0; i < versionsToScan.length; i++) {
     // Check if job was cancelled (status changed externally)
-    if (job.status !== "running") break;
+    if (job.status !== 'running') break;
 
     const version = versionsToScan[i];
     try {
@@ -61,14 +61,14 @@ async function processRescanJob(
         job.failed++;
         job.errors.push({
           versionId: version.id,
-          error: result.error || "Unknown error",
+          error: result.error || 'Unknown error'
         });
       }
     } catch (error) {
       job.failed++;
       job.errors.push({
         versionId: version.id,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
 
@@ -86,7 +86,7 @@ async function processRescanJob(
     }
   }
 
-  job.status = "completed";
+  job.status = 'completed';
   job.completedAt = new Date();
   console.log(`[Rescan ${jobId}] Job completed: ${job.success} success, ${job.failed} failed`);
 }
@@ -94,13 +94,13 @@ async function processRescanJob(
 async function handler(req: NextRequest, _context: AdminAuthContext): Promise<NextResponse> {
   // Check if this is a status check request
   const url = new URL(req.url);
-  const jobId = url.searchParams.get("jobId");
+  const jobId = url.searchParams.get('jobId');
 
   if (jobId) {
     // Return job status
     const job = jobs.get(jobId);
     if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
     return NextResponse.json(job);
   }
@@ -118,7 +118,7 @@ async function handler(req: NextRequest, _context: AdminAuthContext): Promise<Ne
         readme: skillVersions.readme,
         fileCount: skillVersions.fileCount,
         tarballSize: skillVersions.tarballSize,
-        auditScore: skillVersions.auditScore,
+        auditScore: skillVersions.auditScore
       })
       .from(skillVersions)
       .where(inArray(skillVersions.auditStatus, [...RESCANNABLE_STATUSES]))
@@ -135,27 +135,27 @@ async function handler(req: NextRequest, _context: AdminAuthContext): Promise<Ne
     const versionsToScan = Array.from(latestVersions.values()).map((v) => ({
       ...v,
       fileCount: v.fileCount ?? 0,
-      tarballSize: v.tarballSize ?? 0,
+      tarballSize: v.tarballSize ?? 0
     }));
 
     if (versionsToScan.length === 0) {
       return NextResponse.json({
-        message: "No published versions to rescan",
+        message: 'No published versions to rescan',
         jobId: null,
-        total: 0,
+        total: 0
       });
     }
 
     // Create a new job
     const newJobId = `rescan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     jobs.set(newJobId, {
-      status: "running",
+      status: 'running',
       total: versionsToScan.length,
       processed: 0,
       success: 0,
       failed: 0,
       errors: [],
-      startedAt: new Date(),
+      startedAt: new Date()
     });
 
     // Start processing in background (don't await)
@@ -163,7 +163,7 @@ async function handler(req: NextRequest, _context: AdminAuthContext): Promise<Ne
       console.error(`[Rescan ${newJobId}] Job failed:`, error);
       const job = jobs.get(newJobId);
       if (job) {
-        job.status = "failed";
+        job.status = 'failed';
         job.completedAt = new Date();
       }
     });
@@ -173,11 +173,11 @@ async function handler(req: NextRequest, _context: AdminAuthContext): Promise<Ne
       message: `Rescan job started for ${versionsToScan.length} skill versions`,
       jobId: newJobId,
       total: versionsToScan.length,
-      statusUrl: `/api/admin/rescan-skills?jobId=${newJobId}`,
+      statusUrl: `/api/admin/rescan-skills?jobId=${newJobId}`
     });
   } catch (error) {
-    console.error("Rescan all skills error:", error);
-    return NextResponse.json({ error: "Failed to start rescan job" }, { status: 500 });
+    console.error('Rescan all skills error:', error);
+    return NextResponse.json({ error: 'Failed to start rescan job' }, { status: 500 });
   }
 }
 
@@ -187,9 +187,9 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    },
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+    }
   });
 }
