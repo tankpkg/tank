@@ -38,6 +38,27 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* Tank brand palette */
+  --color-tank-cyan: var(--tank-cyan);
+  --color-tank-cyan-muted: var(--tank-cyan-muted);
+  --color-tank-midnight: var(--tank-midnight);
+  --color-tank-deep: var(--tank-deep);
+  --color-tank-matrix-green: var(--tank-matrix-green);
+  --color-tank-matrix-dim: var(--tank-matrix-dim);
+  --color-tank-amber: var(--tank-amber);
+  --color-tank-amber-glow: var(--tank-amber-glow);
+  --color-tank-purple: var(--tank-purple);
+  --color-tank-purple-dim: var(--tank-purple-dim);
+  --color-brand: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-bg: var(--brand-background);
+
+  /* Tank glow shadows */
+  --shadow-tank-cyan: var(--tank-glow-cyan);
+  --shadow-tank-green: var(--tank-glow-green);
+  --shadow-tank-amber: var(--tank-glow-amber);
+
   /* Radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -88,7 +109,7 @@
   --sidebar-ring: oklch(0.704 0.04 256.788);
 
   /* Tank operator theme */
-  --tank-midnight: #0a0e1a;
+  --tank-midnight: #0c1222;
   --tank-deep: #0f172a;
   --tank-cyan: #00d4ff;
   --tank-cyan-muted: #0891b2;
@@ -288,7 +309,9 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(16, 185, 129, 0.15);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(16, 185, 129, 0.03) 100%);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .tank-card:hover {
