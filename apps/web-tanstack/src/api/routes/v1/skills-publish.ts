@@ -193,6 +193,15 @@ export const skillsPublishRoutes = new Hono().post('/', async (c) => {
     }
   }
 
+  // Clean up stale pending-upload versions before creating new one
+  await db.delete(skillVersions).where(
+    and(
+      eq(skillVersions.skillId, skill.id),
+      eq(skillVersions.publishedBy, verified.userId),
+      eq(skillVersions.auditStatus, 'pending-upload')
+    )
+  );
+
   // Create skill_version record with pending-upload status
   const tarballPath = `skills/${skill.id}/${version}.tgz`;
   const manifestWithFiles = {
