@@ -72,6 +72,7 @@ export const auth = betterAuth({
       }
 
       if (getProvider() === 'console') {
+        // biome-ignore lint/suspicious/noConsole: intentional — dev-only verification URL display
         console.info(`[auth] Verification URL: ${url}`);
       }
     }
