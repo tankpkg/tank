@@ -475,18 +475,65 @@ html {
   line-height: 1.75;
   max-width: 65ch;
 
-  & h1 { font-size: 2.25em; font-weight: 800; margin-top: 0; margin-bottom: 0.9em; line-height: 1.1; }
-  & h2 { font-size: 1.5em; font-weight: 700; margin-top: 2em; margin-bottom: 1em; line-height: 1.3; }
-  & h3 { font-size: 1.25em; font-weight: 600; margin-top: 1.6em; margin-bottom: 0.6em; line-height: 1.6; }
-  & h4 { font-weight: 600; margin-top: 1.5em; margin-bottom: 0.5em; }
-  & p { margin-top: 1.25em; margin-bottom: 1.25em; }
-  & a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
-  & strong { font-weight: 600; }
-  & code { font-size: 0.875em; font-weight: 500; }
+  & h1 {
+    font-size: 2.25em;
+    font-weight: 800;
+    margin-top: 0;
+    margin-bottom: 0.9em;
+    line-height: 1.1;
+  }
+  & h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-top: 2em;
+    margin-bottom: 1em;
+    line-height: 1.3;
+  }
+  & h3 {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin-top: 1.6em;
+    margin-bottom: 0.6em;
+    line-height: 1.6;
+  }
+  & h4 {
+    font-weight: 600;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+  }
+  & p {
+    margin-top: 1.25em;
+    margin-bottom: 1.25em;
+  }
+  & a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  & strong {
+    font-weight: 600;
+  }
+  & code {
+    font-size: 0.875em;
+    font-weight: 500;
+  }
 
-  & ul { list-style-type: disc; padding-left: 1.625em; margin-top: 1.25em; margin-bottom: 1.25em; }
-  & ol { list-style-type: decimal; padding-left: 1.625em; margin-top: 1.25em; margin-bottom: 1.25em; }
-  & li { margin-top: 0.5em; margin-bottom: 0.5em; }
+  & ul {
+    list-style-type: disc;
+    padding-left: 1.625em;
+    margin-top: 1.25em;
+    margin-bottom: 1.25em;
+  }
+  & ol {
+    list-style-type: decimal;
+    padding-left: 1.625em;
+    margin-top: 1.25em;
+    margin-bottom: 1.25em;
+  }
+  & li {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
 
   & blockquote {
     font-style: italic;
@@ -515,27 +562,74 @@ html {
     font-size: 0.875em;
     line-height: 1.7;
   }
-  & thead { border-bottom: 2px solid var(--border); }
-  & thead th { font-weight: 600; padding: 0 0 0.6em; vertical-align: bottom; }
-  & tbody tr { border-bottom: 1px solid var(--border); }
-  & tbody td { padding: 0.6em 0; vertical-align: top; }
-  & th:not(:first-child), & td:not(:first-child) { padding-left: 1em; }
+  & thead {
+    border-bottom: 2px solid var(--border);
+  }
+  & thead th {
+    font-weight: 600;
+    padding: 0 0 0.6em;
+    vertical-align: bottom;
+  }
+  & tbody tr {
+    border-bottom: 1px solid var(--border);
+  }
+  & tbody td {
+    padding: 0.6em 0;
+    vertical-align: top;
+  }
+  & th:not(:first-child),
+  & td:not(:first-child) {
+    padding-left: 1em;
+  }
 
-  & hr { border-color: var(--border); margin-top: 3em; margin-bottom: 3em; }
-  & img { margin-top: 2em; margin-bottom: 2em; border-radius: 0.5rem; }
-  & figure { margin-top: 2em; margin-bottom: 2em; }
-  & figcaption { font-size: 0.875em; line-height: 1.4; margin-top: 0.875em; }
+  & hr {
+    border-color: var(--border);
+    margin-top: 3em;
+    margin-bottom: 3em;
+  }
+  & img {
+    margin-top: 2em;
+    margin-bottom: 2em;
+    border-radius: 0.5rem;
+  }
+  & figure {
+    margin-top: 2em;
+    margin-bottom: 2em;
+  }
+  & figcaption {
+    font-size: 0.875em;
+    line-height: 1.4;
+    margin-top: 0.875em;
+  }
 }
 
-.prose.max-w-none { max-width: none; }
+.prose.max-w-none {
+  max-width: none;
+}
 
 /* Dark mode prose */
 .prose.prose-invert {
-  & a { color: oklch(0.929 0.013 255.508); }
-  & pre { background: oklch(0.208 0.042 265.755); color: oklch(0.984 0.003 247.858); }
-  & code { color: oklch(0.984 0.003 247.858); }
-  & thead { border-color: oklch(1 0 0 / 15%); }
-  & tbody tr { border-color: oklch(1 0 0 / 8%); }
-  & blockquote { border-color: oklch(1 0 0 / 20%); color: oklch(0.7 0.04 256.788); }
-  & hr { border-color: oklch(1 0 0 / 10%); }
+  & a {
+    color: oklch(0.929 0.013 255.508);
+  }
+  & pre {
+    background: oklch(0.208 0.042 265.755);
+    color: oklch(0.984 0.003 247.858);
+  }
+  & code {
+    color: oklch(0.984 0.003 247.858);
+  }
+  & thead {
+    border-color: oklch(1 0 0 / 15%);
+  }
+  & tbody tr {
+    border-color: oklch(1 0 0 / 8%);
+  }
+  & blockquote {
+    border-color: oklch(1 0 0 / 20%);
+    color: oklch(0.7 0.04 256.788);
+  }
+  & hr {
+    border-color: oklch(1 0 0 / 10%);
+  }
 }

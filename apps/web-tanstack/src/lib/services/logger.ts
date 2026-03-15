@@ -42,7 +42,9 @@ async function flushToLoki() {
     consecutiveFailures++;
 
     if (consecutiveFailures >= 10) {
-      process.stderr.write(`[logger] Loki unreachable after ${consecutiveFailures} consecutive failures — dropping ${logs.length} logs\n`);
+      process.stderr.write(
+        `[logger] Loki unreachable after ${consecutiveFailures} consecutive failures — dropping ${logs.length} logs\n`
+      );
       return;
     }
 
