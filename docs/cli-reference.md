@@ -4,7 +4,7 @@ Current `tank` CLI surface, key flows, and repo-specific behavior.
 
 ## Commands
 
-The CLI currently exposes 18 commands from `packages/cli/src/bin/tank.ts`.
+The CLI currently exposes 19 commands from `packages/cli/src/bin/tank.ts`.
 
 - `login`
 - `logout`
@@ -19,6 +19,7 @@ The CLI currently exposes 18 commands from `packages/cli/src/bin/tank.ts`.
 - `search`
 - `info`
 - `audit`
+- `cache` (`cache clean`)
 - `scan`
 - `link`
 - `unlink`
@@ -38,6 +39,14 @@ The CLI currently exposes 18 commands from `packages/cli/src/bin/tank.ts`.
 7. enforce optional audit threshold
 8. extract safely into `.tank/skills/...` or `~/.tank/skills/...`
 9. update `skills.lock`
+
+Tarball cache behavior:
+
+- global cache directory: `~/.tank/cache/`
+- cache key format: `{sha512-hex}.tgz`
+- cache hit: tarball download is skipped
+- cache miss: tarball is downloaded, verified, cached, then extracted
+- corrupted cache entry (extract failure): cache is invalidated and tarball is re-downloaded
 
 Flags:
 
