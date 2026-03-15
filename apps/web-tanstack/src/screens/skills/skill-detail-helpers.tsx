@@ -1,13 +1,13 @@
 import { encodeSkillName } from '@internals/helpers';
 import { FindingsTable } from '~/components/skills/findings-table';
-import { ScanPipeline } from '~/components/skills/scan-pipeline';
 import type { PipelineStage } from '~/components/skills/scan-pipeline';
-import { ScanningToolsStrip } from '~/components/skills/scanning-tools-strip';
+import { ScanPipeline } from '~/components/skills/scan-pipeline';
 import type { ScanningTool } from '~/components/skills/scanning-tools-strip';
-import { ScoreBreakdown } from '~/components/skills/score-breakdown';
+import { ScanningToolsStrip } from '~/components/skills/scanning-tools-strip';
 import type { ScoreCriterion } from '~/components/skills/score-breakdown';
+import { ScoreBreakdown } from '~/components/skills/score-breakdown';
 import { SecurityOverview } from '~/components/skills/security-overview';
-import type { ScanDetails, SkillDetailResult } from '~/lib/data/skills';
+import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
 
 function buildScanningTools(scanDetails: ScanDetails): ScanningTool[] {
   return [
@@ -15,8 +15,7 @@ function buildScanningTools(scanDetails: ScanDetails): ScanningTool[] {
       name: 'Semgrep',
       category: 'SAST',
       ran: scanDetails.stagesRun?.includes('stage2') ?? false,
-      findingCount:
-        scanDetails.findings?.filter((f) => f.stage === 'stage2' && f.tool?.includes('semgrep')).length ?? 0
+      findingCount: scanDetails.findings?.filter((f) => f.stage === 'stage2' && f.tool?.includes('semgrep')).length ?? 0
     },
     {
       name: 'Bandit',
@@ -63,8 +62,7 @@ function buildPipelineStages(scanDetails: ScanDetails): PipelineStage[] {
     return (scanDetails.findings?.filter((f) => f.stage === stageId).length ?? 0) > 0 ? 'flagged' : 'passed';
   };
 
-  const stageFindingCount = (stageId: string) =>
-    scanDetails.findings?.filter((f) => f.stage === stageId).length ?? 0;
+  const stageFindingCount = (stageId: string) => scanDetails.findings?.filter((f) => f.stage === stageId).length ?? 0;
 
   return [
     {
@@ -176,13 +174,7 @@ function buildScoreCriteria(data: SkillDetailResult, scanDetails: ScanDetails): 
   ];
 }
 
-export function buildSecurityTab({
-  data,
-  scanDetails
-}: {
-  data: SkillDetailResult;
-  scanDetails: ScanDetails;
-}) {
+export function buildSecurityTab({ data, scanDetails }: { data: SkillDetailResult; scanDetails: ScanDetails }) {
   return (
     <div className="space-y-6" data-testid="security-root">
       <SecurityOverview

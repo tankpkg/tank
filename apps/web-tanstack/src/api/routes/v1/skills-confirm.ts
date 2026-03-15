@@ -3,13 +3,13 @@ import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
-import { type AuditScoreInput, computeAuditScore } from '~/lib/audit-score';
-import { verifyCliAuth } from '~/lib/auth-helpers';
+import { type AuditScoreInput, computeAuditScore } from '~/lib/skills/audit-score';
+import { verifyCliAuth } from '~/lib/auth/authz';
+import type { ScanFinding } from '~/lib/skills/data';
 import { db } from '~/lib/db';
-import { type ScanFinding } from '~/lib/data/skills';
-import { env } from '~/lib/env';
 import { scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
-import { getStorageProvider } from '~/lib/storage/provider';
+import { env } from '~/lib/env';
+import { getStorageProvider } from '~/lib/services/storage/provider';
 
 interface LLMAnalysis {
   enabled: boolean;
@@ -79,7 +79,7 @@ async function triggerSecurityScan(
 }
 
 const confirmSchema = z.object({
-  versionId: z.string().uuid(),
+  versionId: z.uuid(),
   integrity: z
     .string()
     .regex(/^sha512-/, 'Must be a sha512 integrity hash')

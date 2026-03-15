@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
-import { auth } from '~/lib/auth';
+import { auth } from '~/lib/auth/core';
 
 import { requireAdmin } from './middleware/require-admin';
 import { seoRoutes } from './routes/seo';

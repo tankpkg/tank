@@ -1,9 +1,10 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-import * as schema from './db/schema';
+import { env } from '../env';
+import * as schema from './schema';
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = env.DATABASE_URL;
 
 if (!connectionString && process.env.NODE_ENV !== 'production') {
 }

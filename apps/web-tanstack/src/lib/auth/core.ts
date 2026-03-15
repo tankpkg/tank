@@ -3,9 +3,9 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { genericOAuth, organization } from 'better-auth/plugins';
 
-import { db } from './db';
-import { checkEmailRateLimit, checkVerificationRateLimit } from './email/rate-limiter';
-import { getFromAddress, getProvider, sendEmail } from './email/service';
+import { db } from '../db';
+import { checkEmailRateLimit, checkVerificationRateLimit } from '../services/email/rate-limiter';
+import { getFromAddress, getProvider, sendEmail } from '../services/email/service';
 
 const enabledProviders = new Set(
   (process.env.AUTH_PROVIDERS || 'github,credentials')

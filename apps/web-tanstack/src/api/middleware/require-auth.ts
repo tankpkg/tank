@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 
-import { isUserBlocked, resolveRequestUserId } from '~/lib/auth-helpers';
+import { isUserBlocked, resolveRequestUserId } from '~/lib/auth/authz';
 
 export function requireAuth(): MiddlewareHandler {
   return async (c, next) => {

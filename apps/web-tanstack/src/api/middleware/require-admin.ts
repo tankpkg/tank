@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 
-import { getSessionFromRequest, isAdmin } from '~/lib/auth-helpers';
+import { getSessionFromRequest, isAdmin } from '~/lib/auth/authz';
 
 export function requireAdmin(): MiddlewareHandler {
   return async (c, next) => {

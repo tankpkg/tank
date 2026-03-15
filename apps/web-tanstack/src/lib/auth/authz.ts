@@ -1,9 +1,9 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 
-import { auth } from './auth';
-import { db } from './db';
-import { apikey, member, user } from './db/auth-schema';
-import { serviceAccounts, skillAccess, userStatus } from './db/schema';
+import { db } from '../db';
+import { apikey, member, user } from '../db/auth-schema';
+import { serviceAccounts, skillAccess, userStatus } from '../db/schema';
+import { auth } from './core';
 
 export interface VerifiedApiKey {
   userId: string;

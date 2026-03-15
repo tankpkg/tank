@@ -29,7 +29,7 @@ import {
   CommandList,
   CommandSeparator
 } from '~/components/ui/command';
-import type { SkillSearchResponse } from '~/lib/data/skills';
+import type { SkillSearchResponse } from '~/lib/skills/data';
 import { useCommandMenuStore } from '~/stores/command-menu';
 
 interface SkillResult {

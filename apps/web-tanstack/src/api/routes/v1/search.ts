@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 
-import { resolveRequestUserId } from '~/lib/auth-helpers';
-import { searchSkills } from '~/lib/data/skills';
+import { resolveRequestUserId } from '~/lib/auth/authz';
+import { searchSkills } from '~/lib/skills/data';
 
 export const searchRoutes = new Hono().get('/', async (c) => {
   const requesterUserId = await resolveRequestUserId(c.req.raw);

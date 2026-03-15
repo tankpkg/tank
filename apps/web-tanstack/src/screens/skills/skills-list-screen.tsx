@@ -16,7 +16,7 @@ import type {
   SkillSearchResult,
   SortOption,
   VisibilityFilter
-} from '~/lib/data/skills';
+} from '~/lib/skills/data';
 
 export interface SkillsListScreenProps {
   data: SkillSearchResponse;

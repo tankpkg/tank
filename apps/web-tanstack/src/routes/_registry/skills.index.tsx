@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import type { FreshnessBucket, PopularityBucket, ScoreBucket, SortOption, VisibilityFilter } from '~/lib/data/skills';
-import { skillsListQueryOptions } from '~/lib/query/skills-options';
+import type { FreshnessBucket, PopularityBucket, ScoreBucket, SortOption, VisibilityFilter } from '~/lib/skills/data';
+import { skillsListQueryOptions } from '~/query/skills-options';
 import { SkillsListScreen } from '~/screens/skills/skills-list-screen';
-import { getSession } from '~/server-fns/auth';
+import { getSession } from '~/server-fns/session';
 
 const VALID_SORTS: SortOption[] = ['updated', 'downloads', 'stars', 'score', 'name'];
 const VALID_VISIBILITY: VisibilityFilter[] = ['all', 'public', 'private'];

@@ -1,6 +1,6 @@
 import { useNavigate } from '@tanstack/react-router';
 
-import type { SortOption } from '~/lib/data/skills';
+import type { SortOption } from '~/lib/skills/data';
 
 interface SkillsSortProps {
   currentSort: SortOption;

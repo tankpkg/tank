@@ -3,7 +3,7 @@ import { Star } from 'lucide-react';
 import { InstallCommand } from '~/components/skills/install-command';
 import { Separator } from '~/components/ui/separator';
 import { formatSize, timeAgo } from '~/lib/format';
-import type { ScanDetails } from '~/lib/data/skills';
+import type { ScanDetails } from '~/lib/skills/data';
 
 export interface SkillSidebarProps {
   name: string;
@@ -50,9 +50,7 @@ export function SkillSidebar({
       {repositoryUrl && (
         <>
           <div>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Repository
-            </h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Repository</h3>
             <a
               href={repositoryUrl}
               target="_blank"
@@ -135,9 +133,7 @@ export function SkillSidebar({
         <>
           <Separator />
           <div>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Security
-            </h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Security</h3>
             <div className="flex items-center gap-2 mb-2">
               <span
                 className={`text-2xl font-bold ${
@@ -239,9 +235,7 @@ export function SkillSidebar({
         <>
           <Separator />
           <div>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Permissions
-            </h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Permissions</h3>
             <ul className="space-y-1">
               {permItems.map((item) => (
                 <li key={item} className="text-sm flex items-center gap-1.5">

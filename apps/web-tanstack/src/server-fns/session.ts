@@ -1,8 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 
-import { auth } from '~/lib/auth';
-import { isAdmin as checkIsAdmin } from '~/lib/auth-helpers';
+import { isAdmin as checkIsAdmin } from '~/lib/auth/authz';
+import { auth } from '~/lib/auth/core';
+import { enabledProviders, env } from '~/lib/env';
 
 export const getSession = createServerFn({ method: 'GET' }).handler(async () => {
   const headers = getRequestHeaders();
@@ -20,11 +21,5 @@ export const getAdminSession = createServerFn({ method: 'GET' }).handler(async (
 });
 
 export const getAuthProviders = createServerFn({ method: 'GET' }).handler(async () => {
-  const raw = process.env.AUTH_PROVIDERS || 'github,credentials';
-  const providers = raw
-    .split(',')
-    .map((p) => p.trim().toLowerCase())
-    .filter(Boolean);
-  const oidcProviderId = process.env.OIDC_PROVIDER_ID || 'enterprise-oidc';
-  return { providers, oidcProviderId };
+  return { providers: [...enabledProviders], oidcProviderId: env.OIDC_PROVIDER_ID };
 });

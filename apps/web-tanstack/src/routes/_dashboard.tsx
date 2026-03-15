@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
 import { ErrorFallback } from '~/components/error-fallback';
-import { getSession } from '~/server-fns/auth';
+import { getSession } from '~/server-fns/session';
 
 export const Route = createFileRoute('/_dashboard')({
   errorComponent: ErrorFallback,

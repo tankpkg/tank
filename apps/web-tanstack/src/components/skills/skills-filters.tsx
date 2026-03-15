@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { Label } from '~/components/ui/label';
-import type { FreshnessBucket, PopularityBucket, ScoreBucket, VisibilityFilter } from '~/lib/data/skills';
+import type { FreshnessBucket, PopularityBucket, ScoreBucket, VisibilityFilter } from '~/lib/skills/data';
 
 interface SkillsFiltersProps {
   currentVisibility: VisibilityFilter;

@@ -1,5 +1,5 @@
+import type { LLMAnalysisInfo } from '~/lib/skills/data';
 import { formatDate } from '~/lib/format';
-import type { LLMAnalysisInfo } from '~/lib/data/skills';
 
 export interface SecurityOverviewProps {
   score: number | null;

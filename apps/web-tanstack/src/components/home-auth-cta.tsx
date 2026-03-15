@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '~/components/ui/button';
-import { useSession } from '~/lib/auth-client';
+import { useSession } from '~/lib/auth/client';
 
 function getDestination(isLoggedIn: boolean): string {
   return isLoggedIn ? '/dashboard' : '/login';

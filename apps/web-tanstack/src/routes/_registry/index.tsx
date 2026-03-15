@@ -1,7 +1,7 @@
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { homepageStatsQueryOptions } from '~/lib/query/homepage-options';
+import { homepageStatsQueryOptions } from '~/query/homepage-options';
 import { HomeScreen } from '~/screens/home/home-screen';
 import { getGitHubStars } from '~/server-fns/github';
 
