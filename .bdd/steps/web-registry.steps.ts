@@ -267,6 +267,17 @@ describe("Feature: Registry read API for skill metadata", () => {
 });
 
 // ── Homepage UX feature (source-level assertions) ──────────────────────────
+//
+// LOAD-BEARING JSX COMMENT ANCHORS (used by tests below):
+// These markers in page.tsx are referenced by regex patterns in the step definitions.
+// If you rename or remove these comments, update the corresponding regex patterns.
+//
+// - {/* Hero Section */}           → marks start of hero section
+// - {/* Problem Statement ... */}  → marks start of problem section (end of hero)
+// - {/* What is Tank ... */}       → marks start of "What is Tank" explainer
+// - {/* Feature Grid */}           → marks start of feature grid section
+//
+// All other assertions use flexible regex patterns that tolerate whitespace/line breaks.
 
 interface HomepageUxWorld {
   source: string;
@@ -282,8 +293,17 @@ const homepagePath = fileURLToPath(new URL("../../packages/web/app/page.tsx", im
 
 function givenINavigateToTankHomepage(): void {
   homepageWorld.source = fs.readFileSync(homepagePath, "utf-8");
-  const heroStart = homepageWorld.source.indexOf("{/* Hero Section */}");
-  const problemStart = homepageWorld.source.indexOf("{/* Problem Statement — moved up, immediately below hero */}");
+
+  // Use regex to find section boundaries (tolerates whitespace/line breaks)
+  const heroMatch = homepageWorld.source.match(/\{\s*\/\*\s*Hero\s+Section\s*\*\/\s*\}/);
+  const problemMatch = homepageWorld.source.match(/\{\s*\/\*\s*Problem\s+Statement[^}]*\*\/\s*\}/);
+
+  expect(heroMatch).toBeTruthy();
+  expect(problemMatch).toBeTruthy();
+
+  const heroStart = homepageWorld.source.indexOf(heroMatch![0]);
+  const problemStart = homepageWorld.source.indexOf(problemMatch![0]);
+
   expect(heroStart).toBeGreaterThan(-1);
   expect(problemStart).toBeGreaterThan(heroStart);
   homepageWorld.heroSection = homepageWorld.source.slice(heroStart, problemStart);
@@ -294,74 +314,91 @@ function givenIReadOnlyHeroHeadlineAndSubheadline(): void {
 }
 
 function thenHeroDefinesAgentSkillsInPlainLanguage(): void {
-  expect(homepageWorld.heroSection).toContain("Agent skills");
-  expect(homepageWorld.heroSection).toContain("are plugins that extend what your AI coding");
-  expect(homepageWorld.heroSection).toContain("tool can do");
+  // Regex patterns tolerate whitespace/line breaks between words
+  expect(homepageWorld.heroSection).toMatch(/Agent\s+skills/i);
+  expect(homepageWorld.heroSection).toMatch(/are\s+plugins\s+that\s+extend\s+what\s+your\s+AI\s+coding/i);
+  expect(homepageWorld.heroSection).toMatch(/tool\s+can\s+do/i);
 }
 
 function thenDefinitionDoesNotAssumePriorKnowledge(): void {
-  expect(homepageWorld.heroSection).toContain("plugins");
-  expect(homepageWorld.heroSection).toContain("AI coding");
+  expect(homepageWorld.heroSection).toMatch(/plugins/i);
+  expect(homepageWorld.heroSection).toMatch(/AI\s+coding/i);
 }
 
 function thenHeroIdentifiesAudience(): void {
-  expect(homepageWorld.heroSection).toContain("For developers using Claude Code, Cursor, and other AI coding agents");
+  expect(homepageWorld.heroSection).toMatch(
+    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i,
+  );
 }
 
 function thenAudienceStatementIsVisibleWithoutScrollAt1280(): void {
-  expect(homepageWorld.heroSection).toContain("For developers using Claude Code, Cursor, and other AI coding agents");
+  expect(homepageWorld.heroSection).toMatch(
+    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i,
+  );
 }
 
 function thenSecurityRiskReferenceIsVisible(): void {
-  expect(homepageWorld.source).toContain("malicious skills");
-  expect(homepageWorld.source).toContain("credential-stealing malware");
+  expect(homepageWorld.source).toMatch(/malicious\s+skills/i);
+  expect(homepageWorld.source).toMatch(/credential[\s-]*stealing\s+malware/i);
 }
 
 function thenRiskFramingIsWithinFirstTwoSections(): void {
-  const riskPos = homepageWorld.source.indexOf("341 malicious skills");
-  const explainerPos = homepageWorld.source.indexOf(
-    "{/* What is Tank — plain-language explainer before feature grid */}",
-  );
+  const riskMatch = homepageWorld.source.match(/341\s+malicious\s+skills/i);
+  const explainerMatch = homepageWorld.source.match(/\{\s*\/\*\s*What\s+is\s+Tank[^}]*\*\/\s*\}/);
+
+  expect(riskMatch).toBeTruthy();
+  expect(explainerMatch).toBeTruthy();
+
+  const riskPos = homepageWorld.source.indexOf(riskMatch![0]);
+  const explainerPos = homepageWorld.source.indexOf(explainerMatch![0]);
+
   expect(riskPos).toBeGreaterThan(-1);
   expect(explainerPos).toBeGreaterThan(riskPos);
 }
 
 function thenBeginnerFriendlyWhatIsTankAppears(): void {
-  expect(homepageWorld.source).toContain("Tank is");
-  expect(homepageWorld.source).toContain("npm for agent skills");
-  expect(homepageWorld.source).toContain("Just like npm manages JavaScript packages");
+  expect(homepageWorld.source).toMatch(/Tank\s+is/i);
+  expect(homepageWorld.source).toMatch(/npm\s+for\s+agent\s+skills/i);
+  expect(homepageWorld.source).toMatch(/Just\s+like\s+npm\s+manages\s+JavaScript\s+packages/i);
 }
 
 function thenExplainerAppearsBeforeFeatureCards(): void {
-  const explainerPos = homepageWorld.source.indexOf(
-    "{/* What is Tank — plain-language explainer before feature grid */}",
-  );
-  const featureGridPos = homepageWorld.source.indexOf("{/* Feature Grid */}");
+  const explainerMatch = homepageWorld.source.match(/\{\s*\/\*\s*What\s+is\s+Tank[^}]*\*\/\s*\}/);
+  const featureGridMatch = homepageWorld.source.match(/\{\s*\/\*\s*Feature\s+Grid\s*\*\/\s*\}/);
+
+  expect(explainerMatch).toBeTruthy();
+  expect(featureGridMatch).toBeTruthy();
+
+  const explainerPos = homepageWorld.source.indexOf(explainerMatch![0]);
+  const featureGridPos = homepageWorld.source.indexOf(featureGridMatch![0]);
+
   expect(explainerPos).toBeGreaterThan(-1);
   expect(featureGridPos).toBeGreaterThan(explainerPos);
 }
 
 function thenPrimaryCtaIsInHeroSection(): void {
-  expect(homepageWorld.heroSection).toContain('data-testid="home-primary-cta"');
-  expect(homepageWorld.heroSection).toContain("Browse Skills");
+  expect(homepageWorld.heroSection).toMatch(/data-testid\s*=\s*["']home-primary-cta["']/i);
+  expect(homepageWorld.heroSection).toMatch(/Browse\s+Skills/i);
 }
 
 function thenPrimaryCtaVisibleWithoutScrollAt1280(): void {
-  expect(homepageWorld.heroSection).toContain('data-testid="home-primary-cta"');
+  expect(homepageWorld.heroSection).toMatch(/data-testid\s*=\s*["']home-primary-cta["']/i);
 }
 
 function thenICanAnswerWhatIsTankWithoutReadingFurther(): void {
-  expect(homepageWorld.heroSection).toContain("Tank");
-  expect(homepageWorld.heroSection).toContain("is the package manager for agent skills");
+  expect(homepageWorld.heroSection).toMatch(/Tank/i);
+  expect(homepageWorld.heroSection).toMatch(/is\s+the\s+package\s+manager\s+for\s+agent\s+skills/i);
 }
 
 function thenICanAnswerWhoIsTankForWithoutReadingFurther(): void {
-  expect(homepageWorld.heroSection).toContain("For developers using Claude Code, Cursor, and other AI coding agents");
+  expect(homepageWorld.heroSection).toMatch(
+    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i,
+  );
 }
 
 function thenICanAnswerWhyTankExistsWithoutReadingFurther(): void {
-  expect(homepageWorld.heroSection).toContain("skill registries have no security scanning");
-  expect(homepageWorld.heroSection).toContain("attackers are already");
+  expect(homepageWorld.heroSection).toMatch(/skill\s+registries\s+have\s+no\s+security\s+scanning/i);
+  expect(homepageWorld.heroSection).toMatch(/attackers\s+are\s+already/i);
 }
 
 describe("Feature: Homepage first-time visitor UX", () => {
