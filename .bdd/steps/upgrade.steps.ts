@@ -111,6 +111,25 @@ function givenCurrentBinaryInCellar(): void {
   setMockFetch(makeFakeReleaseFetch("999.0.0"));
 }
 
+function givenCurrentBinaryInNodeModules(): void {
+  world.tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tank-upgrade-bdd-"));
+  const fakeBin = path.join(world.tmpDir, "node_modules", "@tankpkg", "cli", "dist", "bin", "tank.js");
+  fs.mkdirSync(path.dirname(fakeBin), { recursive: true });
+  fs.writeFileSync(fakeBin, "#!/usr/bin/env node\n");
+  world.origArgv = [...process.argv];
+  process.argv = ["node", fakeBin, "upgrade"];
+  setMockFetch(makeFakeReleaseFetch("999.0.0"));
+}
+
+function givenCurrentBinaryIsJsFile(): void {
+  world.tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tank-upgrade-bdd-"));
+  const fakeBin = path.join(world.tmpDir, "tank.js");
+  fs.writeFileSync(fakeBin, "#!/usr/bin/env node\n");
+  world.origArgv = [...process.argv];
+  process.argv = ["node", fakeBin, "upgrade"];
+  setMockFetch(makeFakeReleaseFetch("999.0.0"));
+}
+
 // ── When ───────────────────────────────────────────────────────────────────
 
 async function whenIRunUpgrade(): Promise<void> {
@@ -152,11 +171,21 @@ function thenNoBinaryDownloadOccurred(): void {
 // ── Feature ────────────────────────────────────────────────────────────────
 
 describe("Feature: Self-upgrade Tank CLI binary", () => {
+  let defaultBinDir = "";
+
   beforeEach(() => {
     world.capturedOutput = [];
     world.origFetch = globalThis.fetch;
     world.origArgv = [...process.argv];
     world.fetchCallUrls = [];
+
+    // Default argv[1] to a native-binary-like path so scenarios bypass
+    // the npm/Homebrew install guards. Scenarios that test those guards
+    // override argv[1] in their own Given step.
+    defaultBinDir = fs.mkdtempSync(path.join(os.tmpdir(), "tank-upgrade-bdd-default-"));
+    const defaultBin = path.join(defaultBinDir, "tank");
+    fs.writeFileSync(defaultBin, "binary-placeholder");
+    process.argv = ["node", defaultBin, "upgrade"];
   });
 
   afterEach(() => {
@@ -165,8 +194,12 @@ describe("Feature: Self-upgrade Tank CLI binary", () => {
     if (world.tmpDir && fs.existsSync(world.tmpDir)) {
       fs.rmSync(world.tmpDir, { recursive: true, force: true });
     }
+    if (defaultBinDir && fs.existsSync(defaultBinDir)) {
+      fs.rmSync(defaultBinDir, { recursive: true, force: true });
+    }
     world.tmpDir = "";
     world.capturedOutput = [];
+    defaultBinDir = "";
   });
 
   // ── Already on latest (C2) ────────────────────────────────────────
@@ -209,6 +242,30 @@ describe("Feature: Self-upgrade Tank CLI binary", () => {
       await upgradeCommand();
       world.capturedOutput = stop();
       thenOutputContains("brew upgrade tank");
+      thenNoBinaryDownloadOccurred();
+    });
+  });
+
+  // ── npm/npx detection (C9) ─────────────────────────────────────────
+
+  describe("Scenario: npm-installed CLI redirects to npm update (E6)", () => {
+    it("runs Given/When/Then", async () => {
+      givenCurrentBinaryInNodeModules();
+      const stop = captureConsole();
+      await upgradeCommand();
+      world.capturedOutput = stop();
+      thenOutputContains("npm update -g @tankpkg/cli");
+      thenNoBinaryDownloadOccurred();
+    });
+  });
+
+  describe("Scenario: JS entry point (.js) detected as npm install (E6)", () => {
+    it("runs Given/When/Then", async () => {
+      givenCurrentBinaryIsJsFile();
+      const stop = captureConsole();
+      await upgradeCommand();
+      world.capturedOutput = stop();
+      thenOutputContains("npm update -g @tankpkg/cli");
       thenNoBinaryDownloadOccurred();
     });
   });

@@ -38,6 +38,15 @@ export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
     return;
   }
 
+  if (
+    currentBinaryPath.includes('node_modules') ||
+    currentBinaryPath.endsWith('.js') ||
+    currentBinaryPath.endsWith('.mjs')
+  ) {
+    console.log(chalk.yellow('Tank was installed via npm/npx. Run `npm update -g @tankpkg/cli` to upgrade instead.'));
+    return;
+  }
+
   let targetVersion: string;
 
   if (opts?.version) {

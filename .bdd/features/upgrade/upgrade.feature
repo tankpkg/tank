@@ -1,5 +1,5 @@
 # Intent: .idd/modules/upgrade/INTENT.md
-# Layer: Constraints (C1–C8), Examples (E1–E5)
+# Layer: Constraints (C1–C9), Examples (E1–E6)
 
 @upgrade
 Feature: Self-upgrade Tank CLI binary
@@ -38,6 +38,21 @@ Feature: Self-upgrade Tank CLI binary
     Given the current binary path contains "/Cellar/"
     When I run upgrade
     Then the output contains "brew upgrade tank"
+    And no download is attempted
+
+  # ── npm/npx detection (C9) ─────────────────────────────────────────
+  @high
+  Scenario: npm-installed CLI redirects to npm update (E6)
+    Given the current binary path contains "node_modules"
+    When I run upgrade
+    Then the output contains "npm update -g @tankpkg/cli"
+    And no download is attempted
+
+  @high
+  Scenario: JS entry point (.js) detected as npm install (E6)
+    Given the current binary path ends with ".js"
+    When I run upgrade
+    Then the output contains "npm update -g @tankpkg/cli"
     And no download is attempted
 
   # ── Version bump detection (C1) ───────────────────────────────────────

@@ -24,12 +24,21 @@ describe('upgradeCommand', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
   let originalArgv1: string;
   let originalFetch: typeof globalThis.fetch;
+  let defaultBinDir: string;
 
   beforeEach(() => {
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     originalArgv1 = process.argv[1];
     originalFetch = globalThis.fetch;
+
+    // Default: point argv[1] to a native-binary-like path so tests bypass
+    // the npm/Homebrew installation guards. Tests that need a specific path
+    // (npm, Homebrew) override this in their own setup.
+    defaultBinDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-default-'));
+    const defaultBinPath = path.join(defaultBinDir, 'tank');
+    fs.writeFileSync(defaultBinPath, 'binary-placeholder');
+    process.argv[1] = defaultBinPath;
   });
 
   afterEach(() => {
@@ -37,6 +46,42 @@ describe('upgradeCommand', () => {
     errorSpy.mockRestore();
     process.argv[1] = originalArgv1;
     globalThis.fetch = originalFetch;
+    fs.rmSync(defaultBinDir, { recursive: true, force: true });
+  });
+
+  it('detects npm installation via node_modules path and warns', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-test-'));
+    try {
+      const fakeNpmBin = path.join(tmpDir, 'node_modules', '@tankpkg', 'cli', 'dist', 'bin', 'tank.js');
+      fs.mkdirSync(path.dirname(fakeNpmBin), { recursive: true });
+      fs.writeFileSync(fakeNpmBin, '#!/usr/bin/env node\n');
+      process.argv[1] = fakeNpmBin;
+
+      await upgradeCommand();
+
+      const output = collectOutput(logSpy);
+      expect(output).toContain('npm');
+      expect(output).toContain('npm update -g @tankpkg/cli');
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('detects npm installation via .js extension and warns', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-test-'));
+    try {
+      const fakeJsBin = path.join(tmpDir, 'tank.js');
+      fs.writeFileSync(fakeJsBin, '#!/usr/bin/env node\n');
+      process.argv[1] = fakeJsBin;
+
+      await upgradeCommand();
+
+      const output = collectOutput(logSpy);
+      expect(output).toContain('npm');
+      expect(output).toContain('npm update -g @tankpkg/cli');
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it('detects Homebrew installation and warns', async () => {
