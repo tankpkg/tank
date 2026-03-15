@@ -10,14 +10,9 @@ import { checkPermissionEscalation, type VersionPermissions } from '~/lib/permis
 import { getStorageProvider } from '~/lib/storage/provider';
 
 export const skillsPublishRoutes = new Hono().post('/', async (c) => {
-  const verifiedAny = await verifyCliAuth(c.req.raw);
-  if (!verifiedAny) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-
   const verified = await verifyCliAuth(c.req.raw, ['skills:publish']);
   if (!verified) {
-    return c.json({ error: 'Insufficient API key scope. Required: skills:publish' }, 403);
+    return c.json({ error: 'Unauthorized. Valid API key with skills:publish scope required.' }, 401);
   }
 
   let body: unknown;
