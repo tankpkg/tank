@@ -26,5 +26,7 @@ app.route('/v1', v1Routes);
 app.use('/admin/*', requireAdmin());
 app.route('/admin', adminRoutes);
 
+app.notFound((c) => c.json({ error: 'Not found', path: c.req.path }, 404));
+
 export type AppType = typeof app;
 export { app };
