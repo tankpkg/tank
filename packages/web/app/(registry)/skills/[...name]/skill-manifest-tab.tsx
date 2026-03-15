@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 interface SkillPermissions {
   network?: { outbound?: string[] };
@@ -126,28 +126,28 @@ export function SkillManifestTab({ manifest }: SkillManifestTabProps) {
       <div className="py-12 text-center text-muted-foreground" data-testid="manifest-empty-state">
         <p className="text-lg font-medium mb-1">No manifest available</p>
         <p className="text-sm">
-          This skill doesn&apos;t have a parseable{" "}
+          This skill doesn&apos;t have a parseable{' '}
           <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">skills.json</code> manifest.
         </p>
       </div>
     );
   }
 
-  const name = typeof manifest.name === "string" ? manifest.name : null;
-  const version = typeof manifest.version === "string" ? manifest.version : null;
-  const description = typeof manifest.description === "string" ? manifest.description : null;
-  const repository = typeof manifest.repository === "string" ? manifest.repository : null;
-  const visibility = typeof manifest.visibility === "string" ? manifest.visibility : null;
+  const name = typeof manifest.name === 'string' ? manifest.name : null;
+  const version = typeof manifest.version === 'string' ? manifest.version : null;
+  const description = typeof manifest.description === 'string' ? manifest.description : null;
+  const repository = typeof manifest.repository === 'string' ? manifest.repository : null;
+  const visibility = typeof manifest.visibility === 'string' ? manifest.visibility : null;
   const skills =
-    manifest.skills && typeof manifest.skills === "object" && !Array.isArray(manifest.skills)
+    manifest.skills && typeof manifest.skills === 'object' && !Array.isArray(manifest.skills)
       ? (manifest.skills as Record<string, string>)
       : null;
   const permissions =
-    manifest.permissions && typeof manifest.permissions === "object"
+    manifest.permissions && typeof manifest.permissions === 'object'
       ? (manifest.permissions as SkillPermissions)
       : null;
   const audit =
-    manifest.audit && typeof manifest.audit === "object" && !Array.isArray(manifest.audit)
+    manifest.audit && typeof manifest.audit === 'object' && !Array.isArray(manifest.audit)
       ? (manifest.audit as { min_score?: number })
       : null;
 
@@ -185,7 +185,7 @@ export function SkillManifestTab({ manifest }: SkillManifestTabProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline inline-flex items-center gap-1 text-sm">
-                  {repository.replace("https://github.com/", "")}
+                  {repository.replace('https://github.com/', '')}
                   <span className="text-xs">&#8599;</span>
                 </a>
               }
@@ -195,7 +195,7 @@ export function SkillManifestTab({ manifest }: SkillManifestTabProps) {
             <Field
               label="Visibility"
               value={
-                <Badge variant={visibility === "private" ? "outline" : "secondary"} className="text-xs capitalize">
+                <Badge variant={visibility === 'private' ? 'outline' : 'secondary'} className="text-xs capitalize">
                   {visibility}
                 </Badge>
               }

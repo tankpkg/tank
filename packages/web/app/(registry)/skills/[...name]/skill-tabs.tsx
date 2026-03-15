@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import type { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { SkillVersionSummary } from "@/lib/data/skills";
-import { FileExplorer } from "./file-explorer";
-import { SkillManifestTab } from "./skill-manifest-tab";
-import { SkillReadme } from "./skill-readme";
+import type { ReactNode } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { SkillVersionSummary } from '@/lib/data/skills';
+import { FileExplorer } from './file-explorer';
+import { SkillManifestTab } from './skill-manifest-tab';
+import { SkillReadme } from './skill-readme';
 
-type SerializedVersion = Omit<SkillVersionSummary, "publishedAt"> & { publishedAt: string };
+type SerializedVersion = Omit<SkillVersionSummary, 'publishedAt'> & { publishedAt: string };
 
 interface SkillTabsProps {
   readmeContent: string | null;
@@ -24,16 +24,16 @@ interface SkillTabsProps {
 }
 
 function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
   });
 }
 
 function formatAuditScore(score: number | null): string {
-  if (score === null || score === undefined) return "-";
+  if (score === null || score === undefined) return '-';
   return `${score}/10`;
 }
 
@@ -57,7 +57,7 @@ function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
             <TableCell className="text-muted-foreground">{formatDate(v.publishedAt)}</TableCell>
             <TableCell>{formatAuditScore(v.auditScore)}</TableCell>
             <TableCell>
-              <Badge variant={v.auditStatus === "published" || v.auditStatus === "completed" ? "secondary" : "outline"}>
+              <Badge variant={v.auditStatus === 'published' || v.auditStatus === 'completed' ? 'secondary' : 'outline'}>
                 {v.auditStatus}
               </Badge>
             </TableCell>
@@ -69,7 +69,7 @@ function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
 }
 
 const TAB_TRIGGER_CLASS =
-  "rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2";
+  'rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2';
 
 export function SkillTabs({
   readmeContent,
@@ -80,7 +80,7 @@ export function SkillTabs({
   readme,
   manifest,
   securityTab,
-  hasSecurityData = false,
+  hasSecurityData = false
 }: SkillTabsProps) {
   return (
     <Tabs defaultValue="readme" className="w-full">
