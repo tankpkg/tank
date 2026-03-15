@@ -74,10 +74,7 @@
     },
     "visibility": {
       "type": "string",
-      "enum": [
-        "public",
-        "private"
-      ]
+      "enum": ["public", "private"]
     },
     "audit": {
       "type": "object",
@@ -88,16 +85,11 @@
           "maximum": 10
         }
       },
-      "required": [
-        "min_score"
-      ],
+      "required": ["min_score"],
       "additionalProperties": false
     }
   },
-  "required": [
-    "name",
-    "version"
-  ],
+  "required": ["name", "version"],
   "additionalProperties": false,
   "$id": "https://www.tankpkg.dev/schemas/v1/skills.json"
 }
