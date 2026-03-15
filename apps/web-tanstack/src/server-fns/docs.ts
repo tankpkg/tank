@@ -1,8 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import rehypeShiki from '@shikijs/rehype';
 import { createServerFn } from '@tanstack/react-start';
 import type { Root } from 'hast';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import rehypeStringify from 'rehype-stringify';
@@ -11,6 +10,8 @@ import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
+
+import { parseFrontmatter, readDocFile, readDocFiles } from '~/lib/docs-fs';
 
 const calloutStyles: Record<string, string> = {
   info: 'border-l-4 border-blue-500 bg-blue-500/10 p-4 rounded-r-lg my-4',
@@ -29,67 +30,44 @@ function rehypeCallout() {
   };
 }
 
-interface DocEntry {
+function extractText(node: any): string {
+  if (node.type === 'text') return node.value || '';
+  if (node.children) return node.children.map(extractText).join('');
+  return '';
+}
+
+function rehypeCollectHeadings() {
+  return (tree: Root, file: any) => {
+    const headings: Array<{ id: string; text: string; level: number }> = [];
+    visit(tree, 'element', (node) => {
+      if (/^h[2-4]$/.test(node.tagName) && node.properties?.id) {
+        headings.push({
+          id: node.properties.id as string,
+          text: extractText(node),
+          level: Number.parseInt(node.tagName[1])
+        });
+      }
+    });
+    file.data = file.data || {};
+    file.data.headings = headings;
+  };
+}
+
+export interface DocEntry {
   title: string;
   description?: string;
   slug: string;
   html: string;
-}
-
-interface DocMeta {
-  title: string;
-  description?: string;
-  slug: string;
+  headings: Array<{ id: string; text: string; level: number }>;
 }
 
 let docsCache: DocEntry[] | null = null;
 
-function getDocsDir(): string {
-  // In production (.output/), content is at the repo root level
-  // In dev, it's relative to apps/web-tanstack/
-  const candidates = [
-    join(process.cwd(), 'content/docs'),
-    join(process.cwd(), '../../apps/web-tanstack/content/docs'),
-    join(process.cwd(), 'apps/web-tanstack/content/docs')
-  ];
-  for (const dir of candidates) {
-    try {
-      readdirSync(dir);
-      return dir;
-    } catch {}
-  }
-  return candidates[0];
-}
-
-function parseFrontmatter(content: string): { data: Record<string, string>; body: string } {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-  if (!match) return { data: {}, body: content };
-
-  const data: Record<string, string> = {};
-  for (const line of match[1].split('\n')) {
-    const sep = line.indexOf(':');
-    if (sep > 0) {
-      const key = line.slice(0, sep).trim();
-      const val = line
-        .slice(sep + 1)
-        .trim()
-        .replace(/^['"]|['"]$/g, '');
-      data[key] = val;
-    }
-  }
-  return { data, body: match[2] };
-}
-
 async function loadDocs(): Promise<DocEntry[]> {
   if (docsCache) return docsCache;
 
-  const dir = getDocsDir();
-  let files: string[];
-  try {
-    files = readdirSync(dir).filter((f) => f.endsWith('.mdx'));
-  } catch {
-    return [];
-  }
+  const files = readDocFiles();
+  if (files.length === 0) return [];
 
   const processor = unified()
     .use(remarkParse)
@@ -98,20 +76,26 @@ async function loadDocs(): Promise<DocEntry[]> {
     .use(rehypeRaw)
     .use(rehypeCallout)
     .use(rehypeSlug)
-    .use(rehypeShiki, { theme: 'github-dark' })
+    .use(rehypeAutolinkHeadings, { behavior: 'wrap', properties: { className: ['anchor-heading'] } })
+    .use(rehypeCollectHeadings)
+    .use(rehypeShiki, {
+      themes: { light: 'github-light', dark: 'github-dark' },
+      defaultColor: false
+    })
     .use(rehypeStringify);
 
   const entries: DocEntry[] = [];
   for (const file of files) {
-    const raw = readFileSync(join(dir, file), 'utf-8');
-    const { data, body } = parseFrontmatter(raw);
+    const { data, body } = parseFrontmatter(readDocFile(file));
     const result = await processor.process(body);
+    const headings = (result.data?.headings as Array<{ id: string; text: string; level: number }>) || [];
     const slug = file.replace(/\.mdx$/, '');
     entries.push({
       title: data.title || slug,
       description: data.description,
       slug: slug === 'index' ? '' : slug,
-      html: String(result)
+      html: String(result),
+      headings
     });
   }
 
@@ -125,8 +109,7 @@ export const getDocBySlug = createServerFn({ method: 'GET' })
     const docs = await loadDocs();
     const normalized = slug === '' || slug === 'index' ? '' : slug;
     const doc = docs.find((d) => d.slug === normalized);
-    if (!doc) return null;
-    return { title: doc.title, description: doc.description, slug: doc.slug, html: doc.html };
+    return doc ?? null;
   });
 
 export const getAllDocs = createServerFn({ method: 'GET' }).handler(async () => {
