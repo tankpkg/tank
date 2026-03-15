@@ -150,7 +150,18 @@ interface SkillDetailPageProps {
 export async function generateMetadata({ params }: SkillDetailPageProps): Promise<Metadata> {
   const { name: nameParts } = await params;
   const skillName = decodeURIComponent(nameParts.join('/'));
-  const data = await getSkillDetail(skillName);
+
+  let data: Awaited<ReturnType<typeof getSkillDetail>>;
+  try {
+    data = await getSkillDetail(skillName);
+  } catch (error) {
+    console.error('[generateMetadata] Error fetching skill detail:', error);
+    // Return minimal metadata on error - the page component will show error UI
+    return {
+      title: skillName,
+      description: `AI agent skill on Tank`
+    };
+  }
 
   if (!data) {
     return { title: 'Skill not found' };
@@ -253,44 +264,43 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
               name: 'Semgrep',
               category: 'SAST',
               ran: scanDetails?.stagesRun?.includes('stage2') ?? false,
-              findingCount:
-                scanDetails?.findings?.filter((f) => f.stage === 'stage2' && f.tool?.includes('semgrep')).length ?? 0
+              findingCount: scanDetails?.findings?.filter?.((f) => f.stage === 'stage2' && f.tool?.includes('semgrep'))?.length ?? 0
             },
             {
               name: 'Bandit',
               category: 'Python AST',
               ran: scanDetails?.stagesRun?.includes('stage2') ?? false,
-              findingCount: scanDetails?.findings?.filter((f) => f.tool === 'bandit').length ?? 0
+              findingCount: scanDetails?.findings?.filter?.((f) => f.tool === 'bandit')?.length ?? 0
             },
             {
               name: 'Cisco Skill Scanner',
               category: 'Agent Threats',
               ran: scanDetails?.stagesRun?.includes('stage3') ?? false,
-              findingCount: scanDetails?.findings?.filter((f) => f.tool === 'cisco-skill-scanner').length ?? 0
+              findingCount: scanDetails?.findings?.filter?.((f) => f.tool === 'cisco-skill-scanner')?.length ?? 0
             },
             {
               name: 'Snyk Agent Scan',
               category: 'AI Threats',
               ran: scanDetails?.stagesRun?.includes('stage3') ?? false,
-              findingCount: scanDetails?.findings?.filter((f) => f.tool === 'snyk-agent-scan').length ?? 0
+              findingCount: scanDetails?.findings?.filter?.((f) => f.tool === 'snyk-agent-scan')?.length ?? 0
             },
             {
               name: 'detect-secrets',
               category: 'Secrets',
               ran: scanDetails?.stagesRun?.includes('stage4') ?? false,
-              findingCount: scanDetails?.findings?.filter((f) => f.stage === 'stage4').length ?? 0
+              findingCount: scanDetails?.findings?.filter?.((f) => f.stage === 'stage4')?.length ?? 0
             },
             {
               name: 'OSV API',
               category: 'SCA',
               ran: scanDetails?.stagesRun?.includes('stage5') ?? false,
-              findingCount: scanDetails?.findings?.filter((f) => f.stage === 'stage5').length ?? 0
+              findingCount: scanDetails?.findings?.filter?.((f) => f.stage === 'stage5')?.length ?? 0
             },
             {
               name: 'LLM Corroboration',
               category: scanDetails?.llm_analysis?.mode === 'byollm' ? 'Custom LLM' : 'Built-in',
               ran: scanDetails?.llm_analysis?.enabled ?? false,
-              findingCount: scanDetails?.findings?.filter((f) => f.llm_reviewed).length ?? 0
+              findingCount: scanDetails?.findings?.filter?.((f) => f.llm_reviewed)?.length ?? 0
             }
           ]}
         />
