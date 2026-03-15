@@ -1,6 +1,8 @@
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
 
+import { env } from '~/lib/env';
+
 export type EmailConfig = {
   from: string;
   to: string;
@@ -21,19 +23,19 @@ export type SmtpConfig = {
 };
 
 export function getProvider(): EmailProvider {
-  if (process.env.RESEND_API_KEY) return 'resend';
-  if (process.env.SMTP_HOST) return 'smtp';
+  if (env.RESEND_API_KEY) return 'resend';
+  if (env.SMTP_HOST) return 'smtp';
   return 'console';
 }
 
 export function getSmtpConfig(): SmtpConfig {
   return {
-    host: process.env.SMTP_HOST || 'localhost',
-    port: Number.parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_SECURE === 'true',
-    user: process.env.SMTP_USER || '',
-    password: process.env.SMTP_PASSWORD || '',
-    from: process.env.SMTP_FROM || 'noreply@example.com'
+    host: env.SMTP_HOST || 'localhost',
+    port: Number.parseInt(env.SMTP_PORT, 10),
+    secure: env.SMTP_SECURE === 'true',
+    user: env.SMTP_USER,
+    password: env.SMTP_PASSWORD,
+    from: env.SMTP_FROM
   };
 }
 
@@ -65,7 +67,7 @@ export async function sendEmail(config: EmailConfig): Promise<{ success: boolean
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -106,5 +108,5 @@ export function getFromAddress(): string {
   if (provider === 'smtp') {
     return getSmtpConfig().from;
   }
-  return process.env.EMAIL_FROM || 'noreply@tank.example.com';
+  return env.EMAIL_FROM;
 }
