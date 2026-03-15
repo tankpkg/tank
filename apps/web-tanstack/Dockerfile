@@ -28,21 +28,20 @@ COPY --from=deps /app/apps/web-tanstack/node_modules ./apps/web-tanstack/node_mo
 
 RUN bun run --filter=@internals/schemas build
 RUN bun run --filter=@internals/helpers build
-ENV NITRO_PRESET=node-server
 RUN bun run --filter=@tankpkg/web-tanstack build
 
-FROM node:24-alpine AS runner
+FROM oven/bun:1-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs
+RUN addgroup --system --gid 1001 bunjs
 RUN adduser --system --uid 1001 tanstack
 
 COPY --from=builder /app/apps/web-tanstack/.output ./.output
 COPY --from=builder /app/apps/web-tanstack/content ./content
 
-RUN chown -R tanstack:nodejs /app
+RUN chown -R tanstack:bunjs /app
 
 USER tanstack
 
@@ -54,4 +53,4 @@ ENV HOST=0.0.0.0
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["node", ".output/server/index.mjs"]
+CMD ["bun", ".output/server/index.mjs"]
