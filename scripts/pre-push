@@ -60,8 +60,8 @@ TS_PACKAGES=(
   "packages/mcp-server"
   "packages/internals-schemas"
   "packages/internals-helpers"
-  ".bdd"
-  ".e2e"
+  "bdd"
+  "e2e"
 )
 TS_CHANGED=0
 for pkg in "${TS_PACKAGES[@]}"; do

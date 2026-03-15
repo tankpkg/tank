@@ -98,9 +98,9 @@ services:
       - tank-network
 
   # ===================
-  # Tank Web Application
+  # Tank Web Application (TanStack Start)
   # ===================
-  web:
+  web-tanstack:
     image: ghcr.io/tankpkg/tank-web:${TANK_IMAGE_TAG:-latest}
     container_name: tank-web
     restart: unless-stopped
@@ -109,23 +109,16 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-tank}@postgres:5432/${POSTGRES_DB:-tank}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required}
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      APP_URL: ${APP_URL:-http://localhost:3000}
       AUTH_PROVIDERS: ${AUTH_PROVIDERS:-credentials}
-      NEXT_PUBLIC_AUTH_PROVIDERS: ${NEXT_PUBLIC_AUTH_PROVIDERS:-credentials}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
-      OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-enterprise-oidc}
-      NEXT_PUBLIC_OIDC_PROVIDER_ID: ${NEXT_PUBLIC_OIDC_PROVIDER_ID:-enterprise-oidc}
+      OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-}
       OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
-      OIDC_AUTHORIZATION_URL: ${OIDC_AUTHORIZATION_URL:-}
-      OIDC_TOKEN_URL: ${OIDC_TOKEN_URL:-}
-      OIDC_USER_INFO_URL: ${OIDC_USER_INFO_URL:-}
       STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
       S3_ENDPOINT: http://minio:9000
-      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
       S3_ACCESS_KEY: ${MINIO_ROOT_USER:-tank}
       S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-tank123456}
       S3_BUCKET: ${S3_BUCKET:-packages}
@@ -133,7 +126,6 @@ services:
       REDIS_URL: redis://redis:6379
       SESSION_STORE: ${SESSION_STORE:-redis}
       PYTHON_API_URL: http://scanner:8000
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       NODE_ENV: production
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@tank.local}

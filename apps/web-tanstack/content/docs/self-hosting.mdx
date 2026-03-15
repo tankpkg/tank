@@ -58,10 +58,10 @@ A self-hosted Tank deployment runs five core services:
 ```bash
 git clone https://github.com/tankpkg/tank.git
 cd tank
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Edit `.env.local` with your values:
+Edit `.env` with your values:
 
 ```bash
 # Database
@@ -69,14 +69,14 @@ DATABASE_URL=postgresql://tank:password@postgres:5432/tank
 
 # Auth
 BETTER_AUTH_SECRET=$(openssl rand -base64 32)
-NEXT_PUBLIC_APP_URL=https://tank.yourcompany.com
+APP_URL=https://tank.yourcompany.com
 GITHUB_CLIENT_ID=your-github-oauth-app-id
 GITHUB_CLIENT_SECRET=your-github-oauth-app-secret
 
 # Storage (MinIO / S3)
 STORAGE_BACKEND=s3
-AWS_ACCESS_KEY_ID=minioadmin
-AWS_SECRET_ACCESS_KEY=minioadmin
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
 AWS_REGION=us-east-1
 S3_BUCKET=tank-skills
 S3_ENDPOINT=http://minio:9000

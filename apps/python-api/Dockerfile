@@ -1,55 +1,47 @@
-# Tank Security Scanner
-# FastAPI application for skill security analysis
+# Tank Security Scanner — FastAPI
 # Build context: repo root (for uv.lock access)
 
+# Stage 1: Build
 FROM python:3.14-alpine AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Install build dependencies
 RUN apk add --no-cache \
     build-base \
     libffi-dev \
     openssl-dev \
     postgresql-dev
 
-# Copy project files for dependency resolution
 COPY apps/python-api/pyproject.toml ./
 COPY uv.lock ./
 
-# Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
-# Copy application code
 COPY apps/python-api/api ./api
 COPY apps/python-api/lib ./lib
 
-# Production image
+# Stage 2: Production
 FROM python:3.14-alpine AS runner
 
 WORKDIR /app
 
-# Install runtime dependencies
 RUN apk add --no-cache \
     libffi \
     openssl \
     libpq
 
-# Copy virtual environment and app from builder
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/api ./api
-COPY --from=builder /app/lib ./lib
-
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Create non-root user
 RUN addgroup --system --gid 1001 tank && \
     adduser --system --uid 1001 --ingroup tank scanner
 
-RUN chown -R scanner:tank /app
+COPY --from=builder --chown=scanner:tank /app/.venv /app/.venv
+COPY --from=builder --chown=scanner:tank /app/api ./api
+COPY --from=builder --chown=scanner:tank /app/lib ./lib
+
+ENV PATH="/app/.venv/bin:$PATH"
+
 USER scanner
 
 EXPOSE 8000
@@ -57,7 +49,6 @@ EXPOSE 8000
 ENV HOST="0.0.0.0"
 ENV PORT=8000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8000/health || exit 1
 

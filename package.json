@@ -4,14 +4,18 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    ".bdd"
+    "bdd"
   ],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "test": "turbo run test",
-    "test:e2e": "vitest run --config .e2e/vitest.config.ts",
-    "test:bdd": "bunx bddgen test -c .e2e/bdd/playwright.config.ts && bunx playwright test -c .e2e/bdd/playwright.config.ts",
+    "test:e2e": "vitest run --config e2e/vitest.config.ts",
+    "test:e2e:tanstack": "TANK_APP_TARGET=tanstack vitest run --config e2e/vitest.config.ts",
+    "test:e2e:all": "TANK_APP_TARGET=next vitest run --config e2e/vitest.config.ts && TANK_APP_TARGET=tanstack vitest run --config e2e/vitest.config.ts",
+    "test:bdd:system": "vitest run --config bdd/vitest.config.ts",
+    "test:bdd:browser": "bunx bddgen test -c bdd/playwright.config.ts && bunx playwright test -c bdd/playwright.config.ts",
+    "test:bdd": "bun run test:bdd:system && bun run test:bdd:browser",
     "test:perf": "bun run --filter @tankpkg/web perf:test",
     "lint": "biome check --write .",
     "lint:readonly": "biome check .",
@@ -20,25 +24,24 @@
     "typecheck": "tsc -b tsconfig.solution.json --noEmit"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.6",
+    "@biomejs/biome": "2.4.7",
     "@playwright/test": "^1.58.2",
     "@tsconfig/bun": "^1.0.10",
     "@types/bun": "^1.3.10",
-    "playwright-bdd": "^8.4.2",
+    "playwright-bdd": "^8.5.0",
     "postgres": "^3.4.8",
     "prettier": "^3.8.1",
     "prettier-plugin-gherkin": "^3.1.3",
-    "tsdown": "^0.21.2",
-    "turbo": "^2.8.16",
+    "tsdown": "^0.21.3",
+    "turbo": "^2.8.17",
     "typescript": "^5.9.3",
     "vitest": "^4.1.0"
   },
   "packageManager": "bun@1.3.10",
   "overrides": {
-    "hono": ">=4.12.2",
-    "minimatch": ">=10.2.1",
-    "esbuild": ">=0.25.0",
-    "rollup": ">=4.59.0"
+    "minimatch": "10.2.4",
+    "esbuild": "0.27.4",
+    "rollup": "4.59.0"
   },
   "dependencies": {
     "@content-collections/vinxi": "^0.1.2",

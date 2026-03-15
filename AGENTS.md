@@ -1,85 +1,108 @@
 # Tank
 
-Security-first package manager for AI agent skills. Monorepo: CLI + MCP server + web registry + shared schemas + Python scanner. Bun workspaces. Born from ClawHavoc — 341 malicious skills, 12% of a major marketplace.
+Security-first package manager for AI agent skills. Monorepo: CLI + MCP server + web registries + shared schemas + Python scanner. Bun workspaces. Born from ClawHavoc — 341 malicious skills, 12% of a major marketplace.
 
 AGENTS.md and CLAUDE.md are symlinked. This file is your system prompt. Loads every context window. Every token has a cost. Keep it holy — concise, tight, agents-only.
 
 ## Philosophy
 
-- This file + .docs/ = diary. Fresh context = amnesia. Recover here first, then .docs/ for lost insights, decisions, workarounds.
-- .docs/ has details. This file references — never duplicates.
-- Tooling-enforced rules (Biome, EditorConfig, tsconfig) belong nowhere in this file.
-- Capabilities > file paths. `git log`, `just --list` = living docs.
-- Be extremely concise. Sacrifice grammar for concision. Every interaction, plan, commit, doc.
+- This file + `docs/` + `idd/` = memory. Fresh context = amnesia. Recover here first, then open only what you need.
+- `docs/` holds reference/process truth. `idd/` holds intent and active initiatives.
+- Tooling-enforced rules (Biome, tsconfig, EditorConfig) do not belong here.
+- Capabilities > file paths. `git log`, `just --list`, and source code are living docs.
+- Be extremely concise — sacrifice grammar, not information. Every interaction, plan, commit, doc.
+
+## Current State
+
+- `apps/web-tanstack` = active migration target for registry UI + API.
+- `apps/web` = maintained during cutover. Do not assume TanStack parity or Next parity without checking code.
+- `apps/web-astro` exists in the repo but is not an active first-class path for new work unless the task says so.
+- TanStack has: home, skills browse/detail, search, login, CLI auth, publish API, docs. Missing: admin CRUD, dashboard beyond tokens.
+- Browser behavior can diverge across Next and TanStack. Tests must encode the real contract, not copy selectors between apps.
 
 ## Context Recovery
 
-1. Read this file — your diary, your memory
-2. `find .docs -name "*.md" | sort` — scan docs, read any relevant to task
-3. `just --list` — available commands
-4. `.docs/where-to-look.md` — task → file location
-5. `.docs/deps.md` — stack, deps, external refs, agent surfaces
-6. Package reference: `.docs/{cli,mcp,api,scanner,shared}-reference.md`
-7. `.docs/methodology.md` — IDD → BDD → TDD → E2E
-8. `git log --oneline -20` — recent changes, decisions, context
-9. Scan relevant source dirs — ground in actual code
+1. Read this file.
+2. Quick start: `just install && just docker up && just db push && just dev web-tanstack`
+3. `find docs -name "*.md" | sort` and open only the docs needed for the task.
+4. `find idd -name "*.md" | sort` if intent or active initiatives matter.
+5. `just --list` for commands.
+6. Read first:
+   - `docs/core/where-to-look.md`
+   - `docs/core/deps.md`
+   - `docs/process/methodology.md`
+7. Read when relevant:
+   - `docs/core/architecture.md`
+   - `docs/core/anti-patterns.md`
+   - `docs/core/security.md`
+   - `docs/process/testing-reference.md`
+   - `docs/reference/packages/*`
+8. `git log --oneline -20` for recent decisions.
+9. Scan relevant source dirs. If docs and code conflict, code wins.
 
-## Identity
+## Roles
 
-Pick role(s) before starting. Compose for multi-domain. → `.docs/roles.md`
-Delegating: YOU assign each agent a role identity.
-Subagents = focused workers, report to you only. Use for quick isolated tasks.
-Teams = direct agent-to-agent communication. Cross-layer coordination, shared findings, challenge each other.
+- Software Architect
+  - Focus: boundaries, package ownership, auth/data/storage flow, failure surfaces.
+- TypeScript/Bun Engineer
+  - Focus: CLI, MCP, shared schemas, web routes, build/test ergonomics.
+- QA/Test Engineer
+  - Focus: IDD/BDD/TDD/E2E coverage, fixtures, real infra, target-specific regressions.
 
-## Workflow
-
-- New problem → issue with full overview → branch → PR. Never push to main.
-- Branches can resolve multiple issues — not strictly 1:1.
-- Conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`
-- Git history IS documentation — insightful commits, not descriptive. Searchable record of decisions.
-- Methodology: IDD → BDD → TDD → E2E → `.docs/methodology.md`
-- Plans: self-contained — include data, insights, decisions, constants. Fresh-context agent must execute without your memory.
-- End plans with unresolved questions.
+Full catalog: `docs/core/roles.md`
 
 ## Architecture
 
-Apps (deployed services, in `apps/`):
+Apps (`apps/`):
 
-- `web` — registry web app: API, dashboard, admin, docs (Vercel)
-- `python-api` — Python 6-stage security scanner (Vercel)
+- `web-tanstack` — TanStack Start registry app, docs, API, dashboard/admin migration target
+  Routes: TanStack Router file-based. API: Hono handlers in `src/api/`. Server fns: `src/query/`. Auth: Better Auth in `src/lib/auth/`.
+- `web` — maintained Next.js registry app during cutover
+- `python-api` — Python 6-stage security scanner
 
-Packages (libraries + CLI tools, in `packages/`):
+Packages (`packages/`):
 
 - `cli` — `tank` command: install, publish, scan, verify
-- `mcp-server` — editor integration, full CLI parity
-- `internals-schemas` — Zod schemas, shared types, contract constants. Pure, zero side effects
+- `mcp-server` — editor integration, CLI parity
+- `internals-schemas` — shared Zod schemas, types, contract constants. Pure, zero side effects
 - `internals-helpers` — pure shared helpers
 
 Non-obvious:
 
 - Supabase = file storage only. DB = Drizzle ORM → PostgreSQL.
-- `auth-schema.ts` auto-generated by better-auth. Never edit.
-- MCP shares auth with CLI — reads `~/.tank/config.json`.
-- CLI/web/mcp-server never import each other. Shared TS code only through `@internals/*`. Scanner independent.
-
-→ `.docs/architecture.md`
+- `auth-schema.ts` is generated by better-auth. Never edit it.
+- MCP shares auth with CLI via `~/.tank/config.json`.
+- CLI/web/mcp-server do not import each other. Shared TS code only through `@internals/*`.
+- TanStack and Next are both live surfaces. Check the actual target before changing browser or API behavior.
 
 ## Gotchas
 
-1. **safeParse(), never parse()** — parse() throws = invisible control flow
-2. **No cross-package imports** — CLI/web/mcp-server use only `@internals/*`
-3. **Supabase != database** — storage only. Drizzle for queries.
-4. **Auth in layouts, not pages** — route groups handle access control
-5. **No refactoring during bugfixes** — minimal fix, separate PR
+1. `safeParse()`, never `parse()`.
+2. No cross-package imports outside `@internals/*`.
+3. Supabase is not the database.
+4. Auth belongs in layouts/guards, not page-only checks.
+5. No refactoring during bugfixes.
+6. Browser tests must separate shared behavior from target-specific behavior.
 
-→ `.docs/anti-patterns.md` for full list
+## Agent Infra
 
-## Docs Index
+- `idd/` — intent layer
+  - `idd/modules/<capability>/INTENT.md`
+  - `idd/active/` for cross-cutting initiatives
+- `bdd/` — executable behavior layer
+  - `bdd/features/system/`
+  - `bdd/features/browser/shared/`
+  - `bdd/features/browser/next/`
+  - `bdd/features/browser/tanstack/`
+- `e2e/` — full-stack regression layer
+  - `e2e/cli/`, `e2e/api/`, `e2e/admin/`, `e2e/onprem/`
+- `docs/` — reference, process, product, and ops docs
 
-**Core:** where-to-look | deps | architecture | conventions | anti-patterns | security | roles
-**Process:** methodology | principles | testing-reference | performance-testing
-**Packages:** cli-reference | mcp-reference | api-reference | scanner-reference | shared-reference
-**Product:** product-brief | inspiration
-**Operations:** onprem-enterprise | ops-runbooks | e2e-test-publish
+## Workflow
 
-All docs in `.docs/`. Read on demand — don't front-load.
+- Conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`
+- Test commands: `just test unit`, `just test bdd`, `just test e2e`. Target: `TANK_APP_TARGET=tanstack|next|all`.
+- Git history is documentation. Make commits explain decisions, not only files.
+- Methodology: IDD → BDD → TDD → E2E
+- Plans must be self-contained enough for a fresh-context agent.
+- End plans with unresolved questions.

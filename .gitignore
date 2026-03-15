@@ -44,8 +44,6 @@ todos.json
 # Test
 coverage/
 test-results/
-.e2e/bdd/.features-gen/
-.e2e/bdd/e2e/bdd/reports/
 
 # Debug
 *.log

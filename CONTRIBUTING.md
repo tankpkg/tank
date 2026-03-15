@@ -4,12 +4,13 @@ Thank you for your interest in contributing to Tank! Every contribution matters 
 
 ## Project Status
 
-Tank is **MVP code-complete** with 461 tests passing. Right now, the most valuable contributions are:
+Tank is in active product and platform iteration. Right now, the most valuable contributions are:
 
 1. **Testing the CLI and web app** in real workflows
 2. **Opening issues** for bugs, edge cases, or missing features
 3. **Improving documentation** — clarity, examples, diagrams
 4. **Contributing security analysis rules** for the audit system
+5. **Improving the TanStack migration** without assuming parity with the maintained Next app
 
 ## Getting Started
 
@@ -71,14 +72,18 @@ Tank is **MVP code-complete** with 461 tests passing. Right now, the most valuab
 
 This is a monorepo managed by [Turborepo](https://turbo.build/repo) with Bun workspaces:
 
+- `apps/web-tanstack` — active TanStack Start registry app and migration target
 - `apps/web` — Next.js 15 web app + API routes (deployed to Vercel)
 - `packages/cli` — `tank` CLI tool (TypeScript, commander.js)
 - `apps/python-api` — Python security scanner (FastAPI, 6-stage pipeline)
 - `packages/internals-schemas` — Shared Zod schemas, TypeScript types, contract constants
 - `packages/internals-helpers` — Shared pure helpers
 - `packages/mcp-server` — MCP server for editor integration
+- `idd/` — intent-first design artifacts and active initiatives
+- `bdd/` — executable behavior specs
+- `e2e/` — full-stack regression tests
 - `infra/` — Docker Compose, Helm charts, Grafana/Loki configs
-- `.docs/` — Product brief, architecture
+- `docs/` — architecture, process, product, and ops reference
 
 ## How to Contribute
 
@@ -107,7 +112,7 @@ Open a [Feature Request](https://github.com/tankpkg/tank/issues/new?template=fea
 
 - Keep PRs focused — one logical change per PR
 - Update documentation if your change affects user-facing behavior
-- Add tests for new functionality (once test infrastructure exists)
+- Add or update tests in the right layer: unit, `bdd/`, or `e2e/`
 - Ensure all checks pass before requesting review
 
 ## Commit Messages
@@ -131,7 +136,7 @@ refactor: extract version resolution logic
 - **TDD** — write failing tests first, then implement (RED → GREEN → REFACTOR)
 - **vitest** for TypeScript tests, **pytest** for Python tests
 - **Drizzle ORM** for database access (not raw SQL, not Prisma)
-- **Server Components** by default in Next.js — `"use client"` only when needed
+- **React server/client boundaries** should match the target app architecture you are editing
 - **Zod** for all runtime validation (API inputs, config files, schemas)
 - Match existing patterns — look at similar files before writing new ones
 

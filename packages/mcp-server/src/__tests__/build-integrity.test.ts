@@ -1,5 +1,5 @@
 /**
- * Build artifact integrity — .idd/modules/cicd/INTENT.md C1/C2 (GH-158).
+ * Build artifact integrity — idd/modules/cicd/INTENT.md C1/C2 (GH-158).
  * Reads ALREADY-BUILT dist/. Run `bun run build` first if stale.
  */
 import fs from 'node:fs';

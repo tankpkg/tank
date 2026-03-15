@@ -26,6 +26,8 @@ vi.mock('tar', () => ({
   extract: vi.fn().mockResolvedValue(undefined)
 }));
 
+// Validates: idd/modules/install/INTENT.md C1-C11
+
 describe('installCommand', () => {
   let tmpDir: string;
   let configDir: string;

@@ -8,14 +8,14 @@ on:
       - ".env.example*"
       - "Dockerfile*"
       - "scripts/onprem/**"
-      - ".docs/onprem*"
+      - "docs/ops/onprem*"
   pull_request:
     paths:
       - "infra/docker-compose*.yml"
       - ".env.example*"
       - "Dockerfile*"
       - "scripts/onprem/**"
-      - ".docs/onprem*"
+      - "docs/ops/onprem*"
 
 permissions:
   contents: read

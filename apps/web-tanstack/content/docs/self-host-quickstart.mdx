@@ -47,10 +47,10 @@ Deploy Tank on your own infrastructure for complete control over your AI skill r
 ```bash
 git clone https://github.com/tankpkg/tank.git
 cd tank
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Edit `.env.local` with your values:
+Edit `.env` with your values:
 
 ```bash
 # Database
@@ -59,12 +59,12 @@ DATABASE_URL=postgresql://tank:password@localhost:5432/tank
 # Storage (choose one)
 STORAGE_BACKEND=s3
 S3_ENDPOINT=http://localhost:9000
-AWS_ACCESS_KEY_ID=minioadmin
-AWS_SECRET_ACCESS_KEY=minioadmin
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
 S3_BUCKET=tank-skills
 
 # Auth
-NEXT_PUBLIC_APP_URL=https://tank.yourcompany.com
+APP_URL=https://tank.yourcompany.com
 BETTER_AUTH_SECRET=$(openssl rand -base64 32)
 GITHUB_CLIENT_ID=your-github-oauth-id
 GITHUB_CLIENT_SECRET=your-github-oauth-secret
@@ -115,7 +115,7 @@ Promotes `FIRST_ADMIN_EMAIL` to admin role. The user must sign in with GitHub OA
 
 ## Step 5: Configure OIDC SSO (Optional)
 
-For enterprise single sign-on, add to `.env.local`:
+For enterprise single sign-on, add to `.env`:
 
 ```bash
 OIDC_ISSUER=https://sso.yourcompany.com

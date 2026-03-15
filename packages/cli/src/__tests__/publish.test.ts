@@ -29,6 +29,8 @@ import { pack } from '~/lib/packer.js';
 
 const mockPack = vi.mocked(pack);
 
+// Validates: idd/modules/publish/INTENT.md C1-C12
+
 describe('publishCommand', () => {
   let tmpDir: string;
   let configDir: string;

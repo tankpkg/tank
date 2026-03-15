@@ -136,7 +136,8 @@ just --list                 # See all available commands
 ```
 tank/
 ├── apps/
-│   ├── web/          # Next.js 15 web app + API (Vercel)
+│   ├── web/          # Maintained Next.js registry during cutover
+│   ├── web-tanstack/ # Active TanStack Start registry target
 │   └── python-api/   # Python security scanner (FastAPI)
 ├── packages/
 │   ├── cli/          # Tank CLI (TypeScript)
@@ -145,7 +146,10 @@ tank/
 │   ├── mcp-server/   # MCP server for editor integration
 │   └── ...
 ├── infra/            # Docker Compose, Helm charts
-└── .docs/            # Product brief, architecture
+├── docs/             # Reference, process, product, ops
+├── idd/              # Intent-driven development artifacts
+├── bdd/              # Executable behavior specs
+└── e2e/              # Full-stack regression tests
 ```
 
 ## Project Status
@@ -154,12 +158,12 @@ tank/
 
 ## Documentation
 
-| Document                                            | Description                                    |
-| --------------------------------------------------- | ---------------------------------------------- |
-| [Product Brief](.docs/product-brief.md)             | Full vision, features, and technical direction |
-| [Architecture](.docs/architecture.md)               | Technical design and decisions                 |
-| [Performance Testing](.docs/performance-testing.md) | Methodology and regression protocol            |
-| [Contributing](CONTRIBUTING.md)                     | How to get involved                            |
+| Document                                   | Description                                          |
+| ------------------------------------------ | ---------------------------------------------------- |
+| [Docs Index](docs/README.md)               | Start here for architecture, process, and references |
+| [Architecture](docs/core/architecture.md)  | Technical design and current app state               |
+| [Methodology](docs/process/methodology.md) | IDD → BDD → TDD → E2E workflow                       |
+| [Contributing](CONTRIBUTING.md)            | How to get involved                                  |
 
 ## Why "Tank"?
 

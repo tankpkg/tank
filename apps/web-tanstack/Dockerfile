@@ -1,3 +1,7 @@
+# Tank Web — TanStack Start
+# Multi-stage build for minimal production image
+
+# Stage 1: Install dependencies
 FROM oven/bun:1-alpine AS deps
 WORKDIR /app
 
@@ -9,14 +13,15 @@ COPY apps/web-astro/package.json ./apps/web-astro/
 COPY apps/web-tanstack/package.json ./apps/web-tanstack/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
-COPY .bdd/package.json ./.bdd/
+COPY bdd/package.json ./bdd/
 
 RUN bun install --frozen-lockfile
 
+# Stage 2: Build
 FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
-COPY package.json bun.lock tsconfig.json turbo.json biome.json ./
+COPY package.json bun.lock tsconfig.json ./
 COPY packages/internals-schemas ./packages/internals-schemas
 COPY packages/internals-helpers ./packages/internals-helpers
 COPY apps/web-tanstack ./apps/web-tanstack
@@ -26,22 +31,22 @@ COPY --from=deps /app/packages/internals-schemas/node_modules ./packages/interna
 COPY --from=deps /app/packages/internals-helpers/node_modules ./packages/internals-helpers/node_modules
 COPY --from=deps /app/apps/web-tanstack/node_modules ./apps/web-tanstack/node_modules
 
-RUN bun run --filter=@internals/schemas build
-RUN bun run --filter=@internals/helpers build
-RUN rm -rf apps/web-tanstack/.output && bun run --filter=@tankpkg/web-tanstack build
+RUN bun run --filter=@internals/schemas build && \
+    bun run --filter=@internals/helpers build && \
+    rm -rf apps/web-tanstack/.output && \
+    bun run --filter=@tankpkg/web-tanstack build
 
+# Stage 3: Production
 FROM oven/bun:1-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 bunjs
-RUN adduser --system --uid 1001 tanstack
+RUN addgroup --system --gid 1001 bunjs && \
+    adduser --system --uid 1001 tanstack
 
-COPY --from=builder /app/apps/web-tanstack/.output ./.output
-COPY --from=builder /app/apps/web-tanstack/content ./content
-
-RUN chown -R tanstack:bunjs /app
+COPY --from=builder --chown=tanstack:bunjs /app/apps/web-tanstack/.output ./.output
+COPY --from=builder --chown=tanstack:bunjs /app/apps/web-tanstack/content ./content
 
 USER tanstack
 
