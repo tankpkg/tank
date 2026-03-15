@@ -165,6 +165,7 @@
         "@hono/zod-validator": "^0.7.6",
         "@internals/helpers": "workspace:*",
         "@internals/schemas": "workspace:*",
+        "@shikijs/rehype": "^4.0.2",
         "@supabase/supabase-js": "^2.99.1",
         "@tailwindcss/typography": "^0.5.19",
         "@tailwindcss/vite": "^4.2.1",
