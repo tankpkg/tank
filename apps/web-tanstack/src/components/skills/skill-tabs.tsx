@@ -1,14 +1,11 @@
-'use client';
-
 import type { ReactNode } from 'react';
-
+import { FileExplorer } from '~/components/skills/file-explorer';
+import { SkillReadme } from '~/components/skills/skill-readme';
 import { Badge } from '~/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
+import { formatDate } from '~/lib/format';
 import type { SkillVersionSummary } from '~/lib/skills/data';
-
-import { FileExplorer } from './file-explorer';
-import { SkillReadme } from './skill-readme';
 
 type SerializedVersion = Omit<SkillVersionSummary, 'publishedAt'> & { publishedAt: string };
 
@@ -22,15 +19,6 @@ interface SkillTabsProps {
   manifest?: Record<string, unknown>;
   securityTab?: ReactNode;
   hasSecurityData?: boolean;
-}
-
-function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
 }
 
 function formatAuditScore(score: number | null): string {
