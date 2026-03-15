@@ -1,16 +1,16 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createServerFn } from '@tanstack/react-start';
 import rehypeShiki from '@shikijs/rehype';
+import { createServerFn } from '@tanstack/react-start';
+import type { Root } from 'hast';
 import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import rehypeStringify from 'rehype-stringify';
 import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
-import type { Root } from 'hast';
-import { visit } from 'unist-util-visit';
 import { unified } from 'unified';
+import { visit } from 'unist-util-visit';
 
 const calloutStyles: Record<string, string> = {
   info: 'border-l-4 border-blue-500 bg-blue-500/10 p-4 rounded-r-lg my-4',
@@ -56,9 +56,7 @@ function getDocsDir(): string {
     try {
       readdirSync(dir);
       return dir;
-    } catch {
-      continue;
-    }
+    } catch {}
   }
   return candidates[0];
 }
@@ -72,7 +70,10 @@ function parseFrontmatter(content: string): { data: Record<string, string>; body
     const sep = line.indexOf(':');
     if (sep > 0) {
       const key = line.slice(0, sep).trim();
-      const val = line.slice(sep + 1).trim().replace(/^['"]|['"]$/g, '');
+      const val = line
+        .slice(sep + 1)
+        .trim()
+        .replace(/^['"]|['"]$/g, '');
       data[key] = val;
     }
   }
