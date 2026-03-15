@@ -4,8 +4,6 @@ import { cors } from 'hono/cors';
 import { auth } from '~/lib/auth';
 
 import { requireAdmin } from './middleware/require-admin';
-import { adminRoutes } from './routes/admin';
-import { healthRoute } from './routes/health';
 import { seoRoutes } from './routes/seo';
 import { v1Routes } from './routes/v1';
 
@@ -20,11 +18,14 @@ app.use(
 );
 
 app.all('/auth/*', (c) => auth.handler(c.req.raw));
-app.route('/health', healthRoute);
+
+app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
 app.route('/', seoRoutes);
 app.route('/v1', v1Routes);
+
 app.use('/admin/*', requireAdmin());
-app.route('/admin', adminRoutes);
+app.get('/admin', (c) => c.json({ admin: true, status: 'scaffold' }));
 
 app.notFound((c) => c.json({ error: 'Not found', path: c.req.path }, 404));
 

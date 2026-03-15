@@ -1,9 +1,3 @@
-import { encodeSkillName } from '@internals/helpers';
-import { FindingsTable } from '~/components/skills/findings-table';
-import { ScanPipeline } from '~/components/skills/scan-pipeline';
-import { ScanningToolsStrip } from '~/components/skills/scanning-tools-strip';
-import { ScoreBreakdown } from '~/components/skills/score-breakdown';
-import { SecurityOverview } from '~/components/skills/security-overview';
 import { SkillSidebar } from '~/components/skills/skill-sidebar';
 import { SkillTabs } from '~/components/skills/skill-tabs';
 import { Badge } from '~/components/ui/badge';
@@ -31,9 +25,7 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
   const scanDetails = data.latestVersion?.scanDetails;
   const hasSecurityData = data.latestVersion?.auditScore != null && scanDetails != null;
 
-  const securityTab = hasSecurityData
-    ? buildSecurityTab({ data, scanDetails: scanDetails! })
-    : null;
+  const securityTab = hasSecurityData && scanDetails ? buildSecurityTab({ data, scanDetails }) : null;
 
   const jsonLd = buildSkillJsonLd(data);
 
