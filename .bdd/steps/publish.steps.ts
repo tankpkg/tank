@@ -85,13 +85,13 @@ async function whenIAttemptToPublishWithoutAuth(manifest: Record<string, unknown
 }
 
 async function whenIAttemptToPublish(manifest: Record<string, unknown>): Promise<void> {
-  const { status, body } = await postPublishStart(manifest, world.ctx?.token);
+  const { status, body } = await postPublishStart(manifest, world.ctx?.token ?? '');
   world.lastStatus = status;
   world.lastBody = body;
 }
 
 async function whenIConfirmVersion(versionId: string): Promise<void> {
-  const { status, body } = await postConfirm(versionId, world.ctx?.token);
+  const { status, body } = await postConfirm(versionId, world.ctx?.token ?? '');
   world.lastStatus = status;
   world.lastBody = body;
 }

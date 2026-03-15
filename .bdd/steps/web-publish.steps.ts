@@ -197,7 +197,7 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('returns 200 with success true', async () => {
       if (!world.pendingVersionId) return;
 
-      const { status, body } = await postConfirm(world.pendingVersionId, world.ctx?.token);
+      const { status, body } = await postConfirm(world.pendingVersionId, world.ctx?.token ?? '');
       world.lastStatus = status;
       world.lastBody = body;
       expect(status).toBe(200);
@@ -209,7 +209,7 @@ describe('Feature: Publish API — 3-step HTTP publish flow', () => {
     it.skipIf(!hasDatabase || !hasRegistry)('second confirm returns 400', async () => {
       if (!world.pendingVersionId) return;
 
-      const { status } = await postConfirm(world.pendingVersionId, world.ctx?.token);
+      const { status } = await postConfirm(world.pendingVersionId, world.ctx?.token ?? '');
       expect(status).toBe(400);
     });
   });

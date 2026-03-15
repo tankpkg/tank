@@ -11,9 +11,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   checkPermissionEscalation,
-  type EscalationCheckResult,
+  type EscalationResult,
   type VersionPermissions
-} from '../../apps/web/lib/permission-escalation';
+} from '../../apps/web-tanstack/src/lib/skills/permission-escalation';
 
 // ── World ──────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ interface EscalationWorld {
   oldPerms: VersionPermissions;
   newVersion: string;
   newPerms: VersionPermissions;
-  result: EscalationCheckResult | null;
+  result: EscalationResult | null;
 }
 
 const world: EscalationWorld = {
@@ -125,7 +125,7 @@ function thenResultIsNotAllowed(): void {
 
 function thenViolationsMention(keyword: string): void {
   expect(world.result).not.toBeNull();
-  const mentionsKeyword = world.result?.violations.some((v: string) => v.toUpperCase().includes(keyword.toUpperCase()));
+  const mentionsKeyword = world.result?.violations.some((v) => `${v.field} ${v.reason}`.toUpperCase().includes(keyword.toUpperCase()));
   expect(mentionsKeyword).toBe(true);
 }
 
