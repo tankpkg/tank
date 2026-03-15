@@ -3,7 +3,7 @@ import { setResponseHeader } from '@tanstack/react-start/server';
 
 import { parseFrontmatter, readDocFile, readDocFiles } from '~/lib/docs-fs';
 
-export const Route = createFileRoute('/llms-full.txt')({
+export const Route = createFileRoute('/_llm/llms-full.txt')({
   server: {
     handlers: {
       GET: async () => {

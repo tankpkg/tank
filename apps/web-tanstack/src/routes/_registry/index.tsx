@@ -1,23 +1,15 @@
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { homepageStatsQueryOptions } from '~/query/homepage-options';
-import { HomeScreen } from '~/screens/home/home-screen';
-import { getGitHubStars } from '~/server-fns/github';
-
-function githubStarsQueryOptions() {
-  return queryOptions({
-    queryKey: ['github', 'stars'],
-    queryFn: () => getGitHubStars(),
-    staleTime: 3600000
-  });
-}
+import { githubStarsQueryOptions } from '~/query/github';
+import { homepageStatsQueryOptions } from '~/query/homepage';
+import { HomeScreen } from '~/screens/home-screen';
 
 export const Route = createFileRoute('/_registry/')({
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(homepageStatsQueryOptions()),
-      context.queryClient.ensureQueryData(githubStarsQueryOptions())
+      context.queryClient.ensureQueryData(githubStarsQueryOptions)
     ]),
   head: () => ({
     meta: [
@@ -51,6 +43,6 @@ export const Route = createFileRoute('/_registry/')({
 
 function HomePage() {
   const { data: stats } = useSuspenseQuery(homepageStatsQueryOptions());
-  const { data: starCount } = useSuspenseQuery(githubStarsQueryOptions());
+  const { data: starCount } = useSuspenseQuery(githubStarsQueryOptions);
   return <HomeScreen publicSkillCount={stats.publicSkillCount} starCount={starCount} />;
 }

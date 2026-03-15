@@ -1,9 +1,10 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { ErrorFallback } from '~/components/error-fallback';
-import { getSession } from '~/server-fns/session';
+import { getSession } from '~/lib/auth/session';
+import { TokensScreen } from '~/screens/tokens-screen';
 
-export const Route = createFileRoute('/_dashboard')({
+export const Route = createFileRoute('/dashboard')({
   errorComponent: ErrorFallback,
   beforeLoad: async ({ location }) => {
     const session = await getSession();
@@ -12,9 +13,5 @@ export const Route = createFileRoute('/_dashboard')({
     }
     return { session };
   },
-  component: DashboardLayout
+  component: TokensScreen
 });
-
-function DashboardLayout() {
-  return <Outlet />;
-}

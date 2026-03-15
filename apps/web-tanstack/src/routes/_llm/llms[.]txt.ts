@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { setResponseHeader } from '@tanstack/react-start/server';
 
-export const Route = createFileRoute('/llms.txt')({
+export const Route = createFileRoute('/_llm/llms.txt')({
   server: {
     handlers: {
       GET: async () => {
