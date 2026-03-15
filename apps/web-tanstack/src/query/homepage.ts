@@ -1,3 +1,4 @@
+import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/react-start';
 import { count, eq } from 'drizzle-orm';
 
@@ -17,3 +18,10 @@ export const getHomepageStats = createServerFn({ method: 'GET' }).handler(async 
     };
   }
 });
+
+export function homepageStatsQueryOptions() {
+  return queryOptions({
+    queryKey: ['homepage', 'stats'],
+    queryFn: () => getHomepageStats()
+  });
+}
