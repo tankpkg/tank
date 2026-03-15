@@ -1,8 +1,14 @@
 import { Link, useMatches } from '@tanstack/react-router';
 import { BookOpen, ChevronRight, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
+import { TableOfContents } from '~/components/toc';
 import type { DocMeta } from '~/lib/docs-meta';
+
+interface Heading {
+  id: string;
+  text: string;
+  level: number;
+}
 
 const SIDEBAR_ORDER: Array<DocMeta | { separator: string }> = [
   { slug: 'index', title: 'Overview' },
@@ -25,7 +31,9 @@ const SIDEBAR_ORDER: Array<DocMeta | { separator: string }> = [
   { slug: 'api', title: 'API' },
   { separator: 'Quick Starts' },
   { slug: 'publish-first-skill', title: 'Publish First Skill' },
-  { slug: 'self-host-quickstart', title: 'Self-Host Quickstart' }
+  { slug: 'self-host-quickstart', title: 'Self-Host Quickstart' },
+  { separator: 'Community' },
+  { slug: 'contributors', title: 'Contributors' }
 ];
 
 function isSeparator(item: DocMeta | { separator: string }): item is { separator: string } {
@@ -74,7 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={`group flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
               isActive
-                ? 'bg-emerald-500/10 text-emerald-400 font-medium'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium'
                 : 'text-muted-foreground hover:bg-emerald-500/5 hover:text-foreground'
             }`}>
             {isActive && <ChevronRight className="h-3 w-3 shrink-0" />}
@@ -86,7 +94,49 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function DocsLayout({ children }: { children: React.ReactNode }) {
+function DocNavigation({ currentSlug }: { currentSlug: string | null }) {
+  if (!currentSlug) return null;
+
+  const docItems = SIDEBAR_ORDER.filter((item): item is DocMeta => !isSeparator(item));
+  const currentIndex = docItems.findIndex((item) => item.slug === currentSlug);
+  if (currentIndex === -1) return null;
+
+  const prev = currentIndex > 0 ? docItems[currentIndex - 1] : null;
+  const next = currentIndex < docItems.length - 1 ? docItems[currentIndex + 1] : null;
+
+  if (!prev && !next) return null;
+
+  const prevTo = prev ? (prev.slug === 'index' ? '/docs' : `/docs/${prev.slug}`) : null;
+  const nextTo = next ? (next.slug === 'index' ? '/docs' : `/docs/${next.slug}`) : null;
+
+  return (
+    <div className="flex justify-between items-center mt-12 pt-6 border-t border-border/50">
+      {prev && prevTo ? (
+        <a
+          href={prevTo}
+          className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ChevronRight className="h-4 w-4 rotate-180 transition-transform group-hover:-translate-x-0.5" />
+          {prev.title}
+        </a>
+      ) : (
+        <div />
+      )}
+      {next && nextTo ? (
+        <a
+          href={nextTo}
+          className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          {next.title}
+          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </a>
+      ) : (
+        <div />
+      )}
+    </div>
+  );
+}
+
+export function DocsLayout({ children, headings }: { children: React.ReactNode; headings?: Heading[] }) {
+  const activeSlug = useActiveSlug();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -130,7 +180,13 @@ export function DocsLayout({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* Main content */}
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          {children}
+          <DocNavigation currentSlug={activeSlug} />
+        </main>
+
+        {/* Table of contents */}
+        {headings && headings.length > 1 && <TableOfContents headings={headings} />}
       </div>
     </div>
   );
