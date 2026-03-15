@@ -37,7 +37,7 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
         // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD structured data from server-side values only
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="max-w-6xl mx-auto" data-testid="skill-detail-root">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="skill-detail-root">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold tracking-tight font-mono">{data.name}</h1>
