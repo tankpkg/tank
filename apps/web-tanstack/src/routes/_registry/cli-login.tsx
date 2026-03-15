@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-
-import { CliLoginScreen } from '~/screens/auth/cli-login-screen';
-import { getSession } from '~/server-fns/session';
+import { getSession } from '~/lib/auth/session';
+import { CliLoginScreen } from '~/screens/cli-login-screen';
 
 export const Route = createFileRoute('/_registry/cli-login')({
   validateSearch: (search: Record<string, unknown>) => ({

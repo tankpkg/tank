@@ -9,49 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as OgDotpngRouteImport } from './routes/og[.]png'
-import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
-import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as RegistryRouteImport } from './routes/_registry'
-import { Route as DashboardRouteImport } from './routes/_dashboard'
-import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as RegistryIndexRouteImport } from './routes/_registry/index'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as RegistryLoginRouteImport } from './routes/_registry/login'
 import { Route as RegistryCliLoginRouteImport } from './routes/_registry/cli-login'
-import { Route as DashboardDashboardRouteImport } from './routes/_dashboard.dashboard'
-import { Route as AdminAdminRouteImport } from './routes/_admin.admin'
+import { Route as LlmLlmsDottxtRouteImport } from './routes/_llm/llms[.]txt'
+import { Route as LlmLlmsFullDottxtRouteImport } from './routes/_llm/llms-full[.]txt'
 import { Route as RegistrySkillsIndexRouteImport } from './routes/_registry/skills.index'
 import { Route as RegistryDocsIndexRouteImport } from './routes/_registry/docs.index'
-import { Route as ApiOgSplatRouteImport } from './routes/api.og.$'
 import { Route as RegistrySkillsSplatRouteImport } from './routes/_registry/skills.$'
 import { Route as RegistryDocsSplatRouteImport } from './routes/_registry/docs.$'
 
-const OgDotpngRoute = OgDotpngRouteImport.update({
-  id: '/og.png',
-  path: '/og.png',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
-  id: '/llms.txt',
-  path: '/llms.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
-  id: '/llms-full.txt',
-  path: '/llms-full.txt',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistryRoute = RegistryRouteImport.update({
   id: '/_registry',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/_dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/_admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegistryIndexRoute = RegistryIndexRouteImport.update({
@@ -74,15 +57,15 @@ const RegistryCliLoginRoute = RegistryCliLoginRouteImport.update({
   path: '/cli-login',
   getParentRoute: () => RegistryRoute,
 } as any)
-const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => DashboardRoute,
+const LlmLlmsDottxtRoute = LlmLlmsDottxtRouteImport.update({
+  id: '/_llm/llms.txt',
+  path: '/llms.txt',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminAdminRoute = AdminAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AdminRoute,
+const LlmLlmsFullDottxtRoute = LlmLlmsFullDottxtRouteImport.update({
+  id: '/_llm/llms-full.txt',
+  path: '/llms-full.txt',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const RegistrySkillsIndexRoute = RegistrySkillsIndexRouteImport.update({
   id: '/skills/',
@@ -93,11 +76,6 @@ const RegistryDocsIndexRoute = RegistryDocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
   getParentRoute: () => RegistryRoute,
-} as any)
-const ApiOgSplatRoute = ApiOgSplatRouteImport.update({
-  id: '/api/og/$',
-  path: '/api/og/$',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const RegistrySkillsSplatRoute = RegistrySkillsSplatRouteImport.update({
   id: '/skills/$',
@@ -112,53 +90,45 @@ const RegistryDocsSplatRoute = RegistryDocsSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof RegistryIndexRoute
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/llms.txt': typeof LlmsDottxtRoute
-  '/og.png': typeof OgDotpngRoute
-  '/admin': typeof AdminAdminRoute
-  '/dashboard': typeof DashboardDashboardRoute
+  '/admin': typeof AdminRoute
+  '/dashboard': typeof DashboardRoute
+  '/llms-full.txt': typeof LlmLlmsFullDottxtRoute
+  '/llms.txt': typeof LlmLlmsDottxtRoute
   '/cli-login': typeof RegistryCliLoginRoute
   '/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/docs/$': typeof RegistryDocsSplatRoute
   '/skills/$': typeof RegistrySkillsSplatRoute
-  '/api/og/$': typeof ApiOgSplatRoute
   '/docs/': typeof RegistryDocsIndexRoute
   '/skills/': typeof RegistrySkillsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof RegistryIndexRoute
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/llms.txt': typeof LlmsDottxtRoute
-  '/og.png': typeof OgDotpngRoute
-  '/admin': typeof AdminAdminRoute
-  '/dashboard': typeof DashboardDashboardRoute
+  '/admin': typeof AdminRoute
+  '/dashboard': typeof DashboardRoute
+  '/llms-full.txt': typeof LlmLlmsFullDottxtRoute
+  '/llms.txt': typeof LlmLlmsDottxtRoute
   '/cli-login': typeof RegistryCliLoginRoute
   '/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
+  '/': typeof RegistryIndexRoute
   '/docs/$': typeof RegistryDocsSplatRoute
   '/skills/$': typeof RegistrySkillsSplatRoute
-  '/api/og/$': typeof ApiOgSplatRoute
   '/docs': typeof RegistryDocsIndexRoute
   '/skills': typeof RegistrySkillsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_admin': typeof AdminRouteWithChildren
-  '/_dashboard': typeof DashboardRouteWithChildren
   '/_registry': typeof RegistryRouteWithChildren
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/llms.txt': typeof LlmsDottxtRoute
-  '/og.png': typeof OgDotpngRoute
-  '/_admin/admin': typeof AdminAdminRoute
-  '/_dashboard/dashboard': typeof DashboardDashboardRoute
+  '/admin': typeof AdminRoute
+  '/dashboard': typeof DashboardRoute
+  '/_llm/llms-full.txt': typeof LlmLlmsFullDottxtRoute
+  '/_llm/llms.txt': typeof LlmLlmsDottxtRoute
   '/_registry/cli-login': typeof RegistryCliLoginRoute
   '/_registry/login': typeof RegistryLoginRoute
   '/api/$': typeof ApiSplatRoute
   '/_registry/': typeof RegistryIndexRoute
   '/_registry/docs/$': typeof RegistryDocsSplatRoute
   '/_registry/skills/$': typeof RegistrySkillsSplatRoute
-  '/api/og/$': typeof ApiOgSplatRoute
   '/_registry/docs/': typeof RegistryDocsIndexRoute
   '/_registry/skills/': typeof RegistrySkillsIndexRoute
 }
@@ -166,88 +136,71 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/llms-full.txt'
-    | '/llms.txt'
-    | '/og.png'
     | '/admin'
     | '/dashboard'
+    | '/llms-full.txt'
+    | '/llms.txt'
     | '/cli-login'
     | '/login'
     | '/api/$'
     | '/docs/$'
     | '/skills/$'
-    | '/api/og/$'
     | '/docs/'
     | '/skills/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/llms-full.txt'
-    | '/llms.txt'
-    | '/og.png'
     | '/admin'
     | '/dashboard'
+    | '/llms-full.txt'
+    | '/llms.txt'
     | '/cli-login'
     | '/login'
     | '/api/$'
+    | '/'
     | '/docs/$'
     | '/skills/$'
-    | '/api/og/$'
     | '/docs'
     | '/skills'
   id:
     | '__root__'
-    | '/_admin'
-    | '/_dashboard'
     | '/_registry'
-    | '/llms-full.txt'
-    | '/llms.txt'
-    | '/og.png'
-    | '/_admin/admin'
-    | '/_dashboard/dashboard'
+    | '/admin'
+    | '/dashboard'
+    | '/_llm/llms-full.txt'
+    | '/_llm/llms.txt'
     | '/_registry/cli-login'
     | '/_registry/login'
     | '/api/$'
     | '/_registry/'
     | '/_registry/docs/$'
     | '/_registry/skills/$'
-    | '/api/og/$'
     | '/_registry/docs/'
     | '/_registry/skills/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AdminRoute: typeof AdminRouteWithChildren
-  DashboardRoute: typeof DashboardRouteWithChildren
   RegistryRoute: typeof RegistryRouteWithChildren
-  LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
-  LlmsDottxtRoute: typeof LlmsDottxtRoute
-  OgDotpngRoute: typeof OgDotpngRoute
+  AdminRoute: typeof AdminRoute
+  DashboardRoute: typeof DashboardRoute
+  LlmLlmsFullDottxtRoute: typeof LlmLlmsFullDottxtRoute
+  LlmLlmsDottxtRoute: typeof LlmLlmsDottxtRoute
   ApiSplatRoute: typeof ApiSplatRoute
-  ApiOgSplatRoute: typeof ApiOgSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/og.png': {
-      id: '/og.png'
-      path: '/og.png'
-      fullPath: '/og.png'
-      preLoaderRoute: typeof OgDotpngRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/llms.txt': {
-      id: '/llms.txt'
-      path: '/llms.txt'
-      fullPath: '/llms.txt'
-      preLoaderRoute: typeof LlmsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/llms-full.txt': {
-      id: '/llms-full.txt'
-      path: '/llms-full.txt'
-      fullPath: '/llms-full.txt'
-      preLoaderRoute: typeof LlmsFullDottxtRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_registry': {
@@ -255,20 +208,6 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof RegistryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_dashboard': {
-      id: '/_dashboard'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_admin': {
-      id: '/_admin'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_registry/': {
@@ -299,19 +238,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegistryCliLoginRouteImport
       parentRoute: typeof RegistryRoute
     }
-    '/_dashboard/dashboard': {
-      id: '/_dashboard/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardDashboardRouteImport
-      parentRoute: typeof DashboardRoute
+    '/_llm/llms.txt': {
+      id: '/_llm/llms.txt'
+      path: '/llms.txt'
+      fullPath: '/llms.txt'
+      preLoaderRoute: typeof LlmLlmsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_admin/admin': {
-      id: '/_admin/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminAdminRouteImport
-      parentRoute: typeof AdminRoute
+    '/_llm/llms-full.txt': {
+      id: '/_llm/llms-full.txt'
+      path: '/llms-full.txt'
+      fullPath: '/llms-full.txt'
+      preLoaderRoute: typeof LlmLlmsFullDottxtRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_registry/skills/': {
       id: '/_registry/skills/'
@@ -326,13 +265,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/docs/'
       preLoaderRoute: typeof RegistryDocsIndexRouteImport
       parentRoute: typeof RegistryRoute
-    }
-    '/api/og/$': {
-      id: '/api/og/$'
-      path: '/api/og/$'
-      fullPath: '/api/og/$'
-      preLoaderRoute: typeof ApiOgSplatRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/_registry/skills/$': {
       id: '/_registry/skills/$'
@@ -350,28 +282,6 @@ declare module '@tanstack/react-router' {
     }
   }
 }
-
-interface AdminRouteChildren {
-  AdminAdminRoute: typeof AdminAdminRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminAdminRoute: AdminAdminRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
-
-interface DashboardRouteChildren {
-  DashboardDashboardRoute: typeof DashboardDashboardRoute
-}
-
-const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardDashboardRoute: DashboardDashboardRoute,
-}
-
-const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
-  DashboardRouteChildren,
-)
 
 interface RegistryRouteChildren {
   RegistryCliLoginRoute: typeof RegistryCliLoginRoute
@@ -398,14 +308,12 @@ const RegistryRouteWithChildren = RegistryRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  AdminRoute: AdminRouteWithChildren,
-  DashboardRoute: DashboardRouteWithChildren,
   RegistryRoute: RegistryRouteWithChildren,
-  LlmsFullDottxtRoute: LlmsFullDottxtRoute,
-  LlmsDottxtRoute: LlmsDottxtRoute,
-  OgDotpngRoute: OgDotpngRoute,
+  AdminRoute: AdminRoute,
+  DashboardRoute: DashboardRoute,
+  LlmLlmsFullDottxtRoute: LlmLlmsFullDottxtRoute,
+  LlmLlmsDottxtRoute: LlmLlmsDottxtRoute,
   ApiSplatRoute: ApiSplatRoute,
-  ApiOgSplatRoute: ApiOgSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

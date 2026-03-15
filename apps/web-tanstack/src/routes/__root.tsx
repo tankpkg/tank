@@ -7,9 +7,7 @@ import { NotFoundScreen } from '~/screens/not-found-screen';
 
 import '~/styles/global.css';
 
-export const Route = createRootRouteWithContext<{
-  queryClient: QueryClient;
-}>()({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -28,15 +26,18 @@ export const Route = createRootRouteWithContext<{
       { name: 'twitter:card', content: 'summary_large_image' },
       { property: 'og:site_name', content: 'Tank' },
       { property: 'og:type', content: 'website' },
-      { property: 'og:image', content: 'https://www.tankpkg.dev/og.png' }
+      { property: 'og:image', content: 'https://www.tankpkg.dev/api/og' }
     ],
     links: [
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32.png' },
       { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
-      { rel: 'manifest', href: '/manifest.json' },
+      { rel: 'manifest', href: '/manifest.json' }
     ],
     scripts: [
+      {
+        children: `(function(){try{var d=document.documentElement;var p=window.matchMedia('(prefers-color-scheme:light)').matches;if(p)d.classList.remove('dark');else d.classList.add('dark')}catch(e){}})()`
+      },
       {
         type: 'application/ld+json',
         children: JSON.stringify({
@@ -74,13 +75,10 @@ function RootLayout() {
   return <Outlet />;
 }
 
-const themeScript = `(function(){try{var d=document.documentElement;var p=window.matchMedia('(prefers-color-scheme:light)').matches;if(p)d.classList.remove('dark');else d.classList.add('dark')}catch(e){}})()`;
-
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark scroll-smooth" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <HeadContent />
       </head>
       <body>

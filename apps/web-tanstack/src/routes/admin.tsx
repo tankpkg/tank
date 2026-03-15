@@ -1,9 +1,10 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
 import { ErrorFallback } from '~/components/error-fallback';
-import { getAdminSession } from '~/server-fns/session';
+import { getAdminSession } from '~/lib/auth/session';
+import { AdminScreen } from '~/screens/admin-screen';
 
-export const Route = createFileRoute('/_admin')({
+export const Route = createFileRoute('/admin')({
   errorComponent: ErrorFallback,
   beforeLoad: async ({ location }) => {
     const session = await getAdminSession();
@@ -12,9 +13,5 @@ export const Route = createFileRoute('/_admin')({
     }
     return { session };
   },
-  component: AdminLayout
+  component: AdminScreen
 });
-
-function AdminLayout() {
-  return <Outlet />;
-}

@@ -1,17 +1,11 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet } from '@tanstack/react-router';
 
 import { CommandMenu } from '~/components/command-menu';
 import { HomeNavAuthCta } from '~/components/home-auth-cta';
 import { Navbar } from '~/components/navbar';
 import { SearchTrigger } from '~/components/search-trigger';
-import { getGitHubStars } from '~/server-fns/github';
-
-const githubStarsQueryOptions = queryOptions({
-  queryKey: ['github', 'stars'],
-  queryFn: () => getGitHubStars(),
-  staleTime: 3600000
-});
+import { githubStarsQueryOptions } from '~/query/github';
 
 export function RegistryLayout() {
   const { data: starCount } = useQuery(githubStarsQueryOptions);
@@ -53,7 +47,11 @@ export function RegistryLayout() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-1.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/80 hover:shadow-md dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:shadow-none dark:hover:bg-emerald-500/10 dark:hover:border-emerald-500/40 transition-all"
                 aria-label="Star Tank on GitHub">
-                <svg className="h-4 w-4 text-muted-foreground" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <svg
+                  className="h-4 w-4 text-muted-foreground"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true">
                   <title>GitHub</title>
                   <path
                     fillRule="evenodd"
@@ -62,7 +60,9 @@ export function RegistryLayout() {
                   />
                 </svg>
                 <span className="hidden sm:inline">Star</span>
-                {starCount != null && <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{starCount}</span>}
+                {starCount != null && (
+                  <span className="font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{starCount}</span>
+                )}
               </a>
               <HomeNavAuthCta />
             </div>
