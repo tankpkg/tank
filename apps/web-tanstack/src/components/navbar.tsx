@@ -184,6 +184,15 @@ export function Navbar() {
     };
   }, [mobileOpen]);
 
+  React.useEffect(() => {
+    if (!mobileOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [mobileOpen]);
+
   const toggleMobileSection = (text: string) => {
     setMobileSection((prev) => (prev === text ? null : text));
   };
