@@ -1,14 +1,16 @@
+import { detectPlatform } from '@tanstack/react-hotkeys';
 import { SearchIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { useCommandMenuStore } from '~/stores/command-menu';
 
 export function SearchTrigger() {
-  const [shortcut, setShortcut] = useState('');
   const toggle = useCommandMenuStore((s) => s.toggle);
+  const [shortcut, setShortcut] = useState('');
 
   useEffect(() => {
-    setShortcut(navigator.userAgent.includes('Windows') ? 'Ctrl ' : '⌘');
+    const platform = detectPlatform();
+    setShortcut(platform === 'mac' ? '⌘' : platform === 'windows' ? 'Win' : 'Ctrl');
   }, []);
 
   return (
@@ -19,9 +21,13 @@ export function SearchTrigger() {
       className="group flex w-full items-center gap-2 rounded-lg border border-input bg-muted/30 px-3 py-1.5 text-sm text-muted-foreground/70 transition-all hover:border-muted-foreground/25 hover:bg-muted/50 hover:text-muted-foreground">
       <SearchIcon className="size-4 shrink-0" />
       <span className="flex-1 text-left">Search skills, docs...</span>
-      <kbd className="pointer-events-none hidden select-none items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground/70 sm:inline-flex">
-        {shortcut && `${shortcut}K`}
-      </kbd>
+      {shortcut && (
+        <kbd
+          className="pointer-events-none hidden select-none items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground/70 sm:inline-flex"
+          suppressHydrationWarning>
+          {shortcut}K
+        </kbd>
+      )}
     </button>
   );
 }

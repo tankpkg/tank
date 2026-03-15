@@ -5,7 +5,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
 import { NotFoundScreen } from '~/screens/not-found-screen';
 
-import globalCss from '~/styles/global.css?url';
+import '~/styles/global.css';
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -17,7 +17,7 @@ export const Route = createRootRouteWithContext<{
       { title: 'Tank' },
       { content: 'Security-first package manager for AI agent skills.', name: 'description' }
     ],
-    links: [{ rel: 'stylesheet', href: globalCss }]
+    links: []
   }),
   component: RootLayout,
   shellComponent: RootDocument,
@@ -28,10 +28,13 @@ function RootLayout() {
   return <Outlet />;
 }
 
+const themeScript = `(function(){try{var d=document.documentElement;var p=window.matchMedia('(prefers-color-scheme:light)').matches;if(p)d.classList.remove('dark');else d.classList.add('dark')}catch(e){}})()`;
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark scroll-smooth" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <HeadContent />
       </head>
       <body>
