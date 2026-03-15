@@ -111,14 +111,14 @@ Then('the secondary CTA should link to {string}', async ({ bddState }, href: str
 // ── GA4 analytics ───────────────────────────────────────────
 
 Then('the HTML should include a Google Analytics script', async ({ bddState }) => {
-  test(!process.env.NEXT_PUBLIC_GA_ID, 'GA4 is not configured for the current test environment');
+  test.skip(!process.env.NEXT_PUBLIC_GA_ID, 'GA4 is not configured for the current test environment');
   const body = bddState.lastResponseBody?._text as string;
   expect(body).toContain('googletagmanager.com/gtag/js');
 });
 
 Then('the GA4 tracking ID should be {string}', async ({ bddState }, trackingId: string) => {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
-  test(!gaId, 'GA4 is not configured for the current test environment');
+  test.skip(!gaId, 'GA4 is not configured for the current test environment');
   const body = bddState.lastResponseBody?._text as string;
   expect(body).toContain(`id=${gaId ?? trackingId}`);
 });
