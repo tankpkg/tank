@@ -1,9 +1,8 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
-
+import { enabledProviders, env } from '~/consts/env';
 import { isAdmin as checkIsAdmin } from '~/lib/auth/authz';
 import { auth } from '~/lib/auth/core';
-import { enabledProviders, env } from '~/lib/env';
 
 export const getSession = createServerFn({ method: 'GET' }).handler(async () => {
   const headers = getRequestHeaders();

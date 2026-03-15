@@ -7,7 +7,7 @@ import { db } from '~/lib/db';
 import { account, member, organization, user } from '~/lib/db/auth-schema';
 import { skills, skillVersions } from '~/lib/db/schema';
 import { checkPermissionEscalation, type VersionPermissions } from '~/lib/skills/permission-escalation';
-import { getStorageProvider } from '~/lib/services/storage/provider';
+import { getStorageProvider } from '~/services/storage/provider';
 
 export const skillsPublishRoutes = new Hono().post('/', async (c) => {
   const verified = await verifyCliAuth(c.req.raw, ['skills:publish']);

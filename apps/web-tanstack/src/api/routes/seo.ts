@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import { env } from '~/lib/env';
+import { env } from '~/consts/env';
 
 export const seoRoutes = new Hono()
 

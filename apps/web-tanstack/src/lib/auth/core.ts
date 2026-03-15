@@ -3,46 +3,18 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { genericOAuth, organization } from 'better-auth/plugins';
 
-import { db } from '../db';
-import { checkEmailRateLimit, checkVerificationRateLimit } from '../services/email/rate-limiter';
-import { getFromAddress, getProvider, sendEmail } from '../services/email/service';
-
-const enabledProviders = new Set(
-  (process.env.AUTH_PROVIDERS || 'github,credentials')
-    .split(',')
-    .map((provider) => provider.trim().toLowerCase())
-    .filter(Boolean)
-);
-
-const githubEnabled =
-  enabledProviders.has('github') && Boolean(process.env.GITHUB_CLIENT_ID) && Boolean(process.env.GITHUB_CLIENT_SECRET);
-
-const oidcEnabled =
-  enabledProviders.has('oidc') &&
-  Boolean(process.env.OIDC_CLIENT_ID) &&
-  Boolean(process.env.OIDC_CLIENT_SECRET) &&
-  Boolean(
-    process.env.OIDC_DISCOVERY_URL ||
-      (process.env.OIDC_AUTHORIZATION_URL && process.env.OIDC_TOKEN_URL && process.env.OIDC_USER_INFO_URL)
-  );
-
-const oidcProviderId = process.env.OIDC_PROVIDER_ID || 'enterprise-oidc';
-
-function getRequiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} is required`);
-  }
-  return value;
-}
+import { enabledProviders, env, githubEnabled, oidcEnabled } from '~/consts/env';
+import { db } from '~/lib/db';
+import { checkEmailRateLimit, checkVerificationRateLimit } from '~/services/email/rate-limiter';
+import { getFromAddress, getProvider, sendEmail } from '~/services/email/service';
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg'
   }),
-  baseURL: process.env.BETTER_AUTH_URL || process.env.APP_URL || 'http://localhost:3000',
+  baseURL: env.BETTER_AUTH_URL || env.APP_URL,
   basePath: '/api/auth',
-  secret: process.env.BETTER_AUTH_SECRET,
+  secret: env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: enabledProviders.has('credentials'),
     requireEmailVerification: enabledProviders.has('credentials')
@@ -58,11 +30,10 @@ export const auth = betterAuth({
         );
       }
 
-      const appName = process.env.APP_NAME || 'Tank';
       const result = await sendEmail({
         from: getFromAddress(),
         to: user.email,
-        subject: `Verify your ${appName} account`,
+        subject: `Verify your ${env.APP_NAME} account`,
         html: `<p>Hello ${user.name || 'there'},</p><p>Please verify your email address by visiting <a href="${url}">${url}</a>.</p>`,
         text: `Hello ${user.name || 'there'},\n\nPlease verify your email address by visiting:\n${url}`
       });
@@ -80,8 +51,8 @@ export const auth = betterAuth({
   socialProviders: githubEnabled
     ? {
         github: {
-          clientId: getRequiredEnv('GITHUB_CLIENT_ID'),
-          clientSecret: getRequiredEnv('GITHUB_CLIENT_SECRET')
+          clientId: env.GITHUB_CLIENT_ID,
+          clientSecret: env.GITHUB_CLIENT_SECRET
         }
       }
     : {},
@@ -95,8 +66,7 @@ export const auth = betterAuth({
           throw new Error(`Too many emails sent. Please wait ${Math.ceil(rateLimit.resetIn / 60000)} minutes.`);
         }
 
-        const appUrl = process.env.APP_URL || 'http://localhost:3000';
-        const acceptUrl = `${appUrl}/orgs/accept-invitation?id=${data.id}`;
+        const acceptUrl = `${env.APP_URL}/orgs/accept-invitation?id=${data.id}`;
         const result = await sendEmail({
           from: getFromAddress(),
           to: data.email,
@@ -115,13 +85,13 @@ export const auth = betterAuth({
           genericOAuth({
             config: [
               {
-                providerId: oidcProviderId,
-                clientId: getRequiredEnv('OIDC_CLIENT_ID'),
-                clientSecret: getRequiredEnv('OIDC_CLIENT_SECRET'),
-                discoveryUrl: process.env.OIDC_DISCOVERY_URL,
-                authorizationUrl: process.env.OIDC_AUTHORIZATION_URL,
-                tokenUrl: process.env.OIDC_TOKEN_URL,
-                userInfoUrl: process.env.OIDC_USER_INFO_URL,
+                providerId: env.OIDC_PROVIDER_ID,
+                clientId: env.OIDC_CLIENT_ID,
+                clientSecret: env.OIDC_CLIENT_SECRET,
+                discoveryUrl: env.OIDC_DISCOVERY_URL || undefined,
+                authorizationUrl: env.OIDC_AUTHORIZATION_URL || undefined,
+                tokenUrl: env.OIDC_TOKEN_URL || undefined,
+                userInfoUrl: env.OIDC_USER_INFO_URL || undefined,
                 scopes: ['openid', 'profile', 'email']
               }
             ]

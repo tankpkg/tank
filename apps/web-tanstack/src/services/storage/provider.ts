@@ -8,8 +8,8 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-import { env } from '~/lib/env';
-import { supabaseAdmin } from '~/lib/services/supabase';
+import { env } from '~/consts/env';
+import { supabaseAdmin } from '~/services/supabase';
 
 export interface SignedUrlResult {
   signedUrl: string;
