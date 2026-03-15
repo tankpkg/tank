@@ -75,7 +75,7 @@ if [ "$TS_CHANGED" -eq 1 ]; then
   echo "▸ TypeScript packages changed — running JS/TS checks"
 
   echo "  ├─ lint check"
-  if ! bun run lint:check > /dev/null 2>&1; then
+  if ! bun run lint:readonly > /dev/null 2>&1; then
     echo "  │  ✗ lint failed (run: just lint)"
     FAILED=1
   else
@@ -83,7 +83,7 @@ if [ "$TS_CHANGED" -eq 1 ]; then
   fi
 
   echo "  ├─ format check"
-  if ! bun run format:check > /dev/null 2>&1; then
+  if ! bun run format:readonly > /dev/null 2>&1; then
     echo "  │  ✗ format check failed (run: just fmt)"
     FAILED=1
   else

@@ -82,7 +82,7 @@ jobs:
         run: bun run build
 
       - name: Lint & format check
-        run: bun run lint:check && bun run format:check
+        run: bun run lint:readonly && bun run format:readonly
 
       - name: Run JavaScript/TypeScript tests
         run: bun run test

@@ -87,13 +87,11 @@ build target='all':
 fmt target='all':
     #!/usr/bin/env bash
     set -euo pipefail
-    fmt_ts() {
-        bun run format
-    }
-    fmt_python() {
+    fmt_ts() (bun run format)
+    fmt_python() (
         UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv run ruff format apps/python-api
         UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv run ruff check --fix apps/python-api
-    }
+    )
     case "{{target}}" in
         ts)     fmt_ts ;;
         python) fmt_python ;;
@@ -108,13 +106,11 @@ fmt target='all':
 lint target='all':
     #!/usr/bin/env bash
     set -euo pipefail
-    lint_ts() {
-        bun run lint
-    }
-    lint_python() {
+    lint_ts() (bun run lint)
+    lint_python() (
         UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv run ruff check --fix apps/python-api
         UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv run ruff format apps/python-api
-    }
+    )
     case "{{target}}" in
         ts)     lint_ts ;;
         python) lint_python ;;
@@ -127,12 +123,41 @@ lint target='all':
 typecheck:
     bun run typecheck
 
-# Run the full verification pipeline without modifying files
+# Lint check without modifying files (TypeScript + Python)
 [group('verify')]
-verify:
-    bun run typecheck
-    bun run lint:check
-    bun run format:check
+lint-readonly target='all':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    lint_ts() (bun run lint:readonly)
+    lint_python() (UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv run ruff check apps/python-api)
+    case "{{target}}" in
+        ts)     lint_ts ;;
+        python) lint_python ;;
+        all)    lint_ts && lint_python ;;
+        *) echo "Unknown target: {{target}}. Use: ts, python, all" && exit 1 ;;
+    esac
+
+# Format check without modifying files (TypeScript + Python)
+[group('verify')]
+fmt-readonly target='all':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    fmt_ts() (bun run format:readonly)
+    fmt_python() (UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv run ruff format --check apps/python-api)
+    case "{{target}}" in
+        ts)     fmt_ts ;;
+        python) fmt_python ;;
+        all)    fmt_ts && fmt_python ;;
+        *) echo "Unknown target: {{target}}. Use: ts, python, all" && exit 1 ;;
+    esac
+
+# Full verification pipeline without modifying files
+[group('verify')]
+verify-readonly: (fmt-readonly "ts") (lint-readonly "ts") typecheck
+
+# Run the full verification pipeline (auto-fixes lint + format issues)
+[group('verify')]
+verify: (fmt "ts") (lint "ts") typecheck
 
 # Check that all package versions are synchronized
 [group('verify')]
@@ -144,13 +169,13 @@ check-versions:
 bump VERSION:
     #!/usr/bin/env bash
     set -euo pipefail
-    
+
     # Validate semver format (basic check)
     if ! [[ "{{VERSION}}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
       echo "Invalid version format: {{VERSION}} (expected X.Y.Z)"
       exit 1
     fi
-    
+
     # Update package.json files
     jq ".version = \"{{VERSION}}\"" packages/cli/package.json > packages/cli/package.json.tmp && mv packages/cli/package.json.tmp packages/cli/package.json
     jq ".version = \"{{VERSION}}\"" apps/web/package.json > apps/web/package.json.tmp && mv apps/web/package.json.tmp apps/web/package.json
@@ -159,13 +184,13 @@ bump VERSION:
     jq ".version = \"{{VERSION}}\"" packages/mcp-server/package.json > packages/mcp-server/package.json.tmp && mv packages/mcp-server/package.json.tmp packages/mcp-server/package.json
     jq ".version = \"{{VERSION}}\"" packages/internals-schemas/package.json > packages/internals-schemas/package.json.tmp && mv packages/internals-schemas/package.json.tmp packages/internals-schemas/package.json
     jq ".version = \"{{VERSION}}\"" packages/internals-helpers/package.json > packages/internals-helpers/package.json.tmp && mv packages/internals-helpers/package.json.tmp packages/internals-helpers/package.json
-    
+
     # Update Chart.yaml
     sed -i.bak "s/^appVersion: .*/appVersion: \"{{VERSION}}\"/" infra/helm/tank/Chart.yaml && rm -f infra/helm/tank/Chart.yaml.bak
-    
+
     # Verify all versions match
     bash scripts/check-versions.sh
-    
+
     echo "Bumped all versions to {{VERSION}}"
 
 # just test         - run all unit tests via turbo
