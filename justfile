@@ -23,6 +23,30 @@ doctor:
     echo "Python: $(python3 --version)"
     echo "uv: $(uv --version)"
 
+# One command to start everything: infra, schema, seed data, dev server
+[group('dev')]
+up:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "▸ Starting infra (Postgres, Redis, MinIO)..."
+    docker compose --env-file .env -f infra/docker-compose.yml up -d postgres redis minio
+    echo "▸ Waiting for Postgres..."
+    until docker compose --env-file .env -f infra/docker-compose.yml exec -T postgres pg_isready -U tank -d tank 2>/dev/null; do sleep 1; done
+    echo "▸ Pushing DB schema..."
+    bun scripts/ensure-pg-trgm.mjs && (cd apps/web-tanstack && bunx drizzle-kit push)
+    echo "▸ Seeding skills..."
+    if [ ! -d /tmp/tank-skills ]; then
+      git clone --depth 1 https://github.com/tankpkg/skills.git /tmp/tank-skills
+    fi
+    bun run scripts/seed-docker.ts
+    echo "▸ Starting TanStack dev server on :3001..."
+    bun run --filter @tankpkg/web-tanstack dev
+
+# Stop all infra containers
+[group('dev')]
+down:
+    docker compose --env-file .env -f infra/docker-compose.yml down
+
 # just dev         - start all dev servers in parallel via turbo
 # just dev web     - Next.js dev server on :3000
 # just dev web-astro - Astro dev server on :4321
@@ -202,9 +226,12 @@ bump VERSION:
 # just test internals-schemas - vitest for shared contract schemas
 # just test internals-helpers - vitest for shared helpers
 # just test scanner - pytest for Python scanner
-# just test e2e     - vitest integration tests against live API
-# just test e2e-new - e2e tests against Astro app on :4321
-# just test bdd     - Playwright + Gherkin browser scenarios
+# just test e2e         - vitest integration tests against live API (defaults to next; use TANK_APP_TARGET)
+# just test e2e-tanstack - vitest integration tests against TanStack app on :3001
+# just test e2e-all     - vitest integration tests against next and tanstack
+# just test bdd         - system BDD + browser BDD
+# just test bdd-system  - Vitest executable behavior specs
+# just test bdd-browser - Playwright browser behavior specs
 # just test perf    - load/performance tests
 [group('test')]
 test target='all':
@@ -219,12 +246,15 @@ test target='all':
         scanner) cd apps/python-api && PYTHONPATH=. UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv run pytest -v ;;
         web-astro) cd apps/web-astro && bun run test ;;
         web-tanstack) bun run --filter @tankpkg/web-tanstack test ;;
-        e2e)     bun vitest run --config .e2e/vitest.config.ts ;;
-        e2e-new) E2E_REGISTRY_URL=http://localhost:4321 bun vitest run --config .e2e/vitest.config.ts ;;
-        bdd)     bunx bddgen test -c .e2e/bdd/playwright.config.ts && bunx playwright test -c .e2e/bdd/playwright.config.ts ;;
+        e2e)     bun vitest run --config e2e/vitest.config.ts ;;
+        e2e-tanstack) TANK_APP_TARGET=tanstack bun vitest run --config e2e/vitest.config.ts ;;
+        e2e-all) TANK_APP_TARGET=next bun vitest run --config e2e/vitest.config.ts && TANK_APP_TARGET=tanstack bun vitest run --config e2e/vitest.config.ts ;;
+        bdd-system) bun vitest run --config bdd/vitest.config.ts ;;
+        bdd-browser) bunx bddgen test -c bdd/playwright.config.ts && bunx playwright test -c bdd/playwright.config.ts ;;
+        bdd)     bun vitest run --config bdd/vitest.config.ts && bunx bddgen test -c bdd/playwright.config.ts && bunx playwright test -c bdd/playwright.config.ts ;;
         perf)    bun run --filter @tankpkg/web perf:test ;;
         all)     bun turbo test ;;
-        *) echo "Unknown target: {{target}}. Use: web, web-astro, web-tanstack, cli, mcp, internals-schemas, internals-helpers, scanner, e2e, e2e-new, bdd, perf, all" && exit 1 ;;
+        *) echo "Unknown target: {{target}}. Use: web, web-astro, web-tanstack, cli, mcp, internals-schemas, internals-helpers, scanner, e2e, e2e-tanstack, e2e-all, bdd, bdd-system, bdd-browser, perf, all" && exit 1 ;;
     esac
 
 # just perf        - run performance tests (alias for just perf test)
@@ -260,7 +290,7 @@ db action:
     case "{{action}}" in
         generate)     cd apps/web && bunx drizzle-kit generate ;;
         generate-new) cd apps/web-astro && bunx drizzle-kit generate ;;
-        push)         bun scripts/ensure-pg-trgm.mjs && cd apps/web && bunx drizzle-kit push ;;
+        push)         bun scripts/ensure-pg-trgm.mjs && (cd apps/web-tanstack && bunx drizzle-kit push) ;;
         admin)        bun run --filter @tankpkg/web admin:bootstrap ;;
         list)         bun run --filter @tankpkg/web admin:list ;;
         seed)         bash scripts/seed-productivity-skills.sh ;;
@@ -268,18 +298,24 @@ db action:
     esac
 
 # just docker <action> - manage local infra via docker-compose
-# just docker up   - start Postgres, Redis, MinIO containers (detached)
-# just docker down - stop and remove all infra containers
-# just docker logs - follow combined log output from all services
+# just docker up             - start Postgres, Redis, MinIO containers (detached)
+# just docker down           - stop and remove all infra containers
+# just docker logs           - follow combined log output from all services
+# just docker build          - build all Docker images
+# just docker build-tanstack - build TanStack web image
+# just docker build-scanner  - build Python scanner image
 [group('infra')]
 docker action:
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{action}}" in
-        up)   docker compose --env-file .env -f infra/docker-compose.yml up -d ;;
-        down) docker compose --env-file .env -f infra/docker-compose.yml down ;;
-        logs) docker compose --env-file .env -f infra/docker-compose.yml logs -f ;;
-        *) echo "Unknown action: {{action}}. Use: up, down, logs" && exit 1 ;;
+        up)              docker compose --env-file .env -f infra/docker-compose.yml up -d ;;
+        down)            docker compose --env-file .env -f infra/docker-compose.yml down ;;
+        logs)            docker compose --env-file .env -f infra/docker-compose.yml logs -f ;;
+        build)           docker compose --env-file .env -f infra/docker-compose.yml build ;;
+        build-tanstack)  docker compose --env-file .env -f infra/docker-compose.yml build web-tanstack ;;
+        build-scanner)   docker compose --env-file .env -f infra/docker-compose.yml build scanner ;;
+        *) echo "Unknown action: {{action}}. Use: up, down, logs, build, build-tanstack, build-scanner" && exit 1 ;;
     esac
 
 # just onprem <action>   - on-prem deployment operations
