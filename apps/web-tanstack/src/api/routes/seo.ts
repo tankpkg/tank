@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 
+import { env } from '~/lib/env';
+
 export const seoRoutes = new Hono()
 
   .get('/robots.txt', (c) => {
-    const baseUrl = process.env.APP_URL || 'https://www.tankpkg.dev';
+    const baseUrl = env.APP_URL;
     return c.text(`User-agent: *
 Allow: /
 Disallow: /api/
@@ -15,7 +17,7 @@ Sitemap: ${baseUrl}/sitemap.xml
   })
 
   .get('/sitemap.xml', async (c) => {
-    const baseUrl = process.env.APP_URL || 'https://www.tankpkg.dev';
+    const baseUrl = env.APP_URL;
     const staticPages = ['/', '/skills', '/docs', '/login'];
 
     const urls = staticPages
