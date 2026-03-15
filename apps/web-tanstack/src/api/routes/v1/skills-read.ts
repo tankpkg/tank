@@ -4,40 +4,9 @@ import { Hono } from 'hono';
 import { resolveRequestUserId } from '~/lib/auth-helpers';
 import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
+import { visibilityClause } from '~/lib/db/visibility';
+import { apiLog } from '~/lib/logger';
 import { getStorageProvider } from '~/lib/storage/provider';
-
-function visibilityClause(requesterUserId: string | null) {
-  if (!requesterUserId) {
-    return sql`s.visibility = 'public'`;
-  }
-
-  return sql`(
-    s.visibility = 'public'
-    OR s.publisher_id = ${requesterUserId}
-    OR (
-      s.visibility = 'private'
-      AND (
-        (s.org_id IS NOT NULL AND EXISTS (SELECT 1 FROM "member" m WHERE m.organization_id = s.org_id AND m.user_id = ${requesterUserId}))
-        OR EXISTS (
-          SELECT 1
-          FROM skill_access sa
-          WHERE sa.skill_id = s.id
-            AND (
-              sa.granted_user_id = ${requesterUserId}
-              OR (
-                sa.granted_org_id IS NOT NULL
-                AND EXISTS (
-                  SELECT 1 FROM "member" m2
-                  WHERE m2.organization_id = sa.granted_org_id
-                    AND m2.user_id = ${requesterUserId}
-                )
-              )
-            )
-        )
-      )
-    )
-  )`;
-}
 
 async function recordDownload(skillId: string): Promise<void> {
   await db.execute(sql`
@@ -196,7 +165,7 @@ export const skillsReadRoutes = new Hono()
       }
 
       // Fire-and-forget download recording
-      recordDownload(skillId).catch(() => {});
+      recordDownload(skillId).catch((err) => apiLog.warn({ err, skillId }, 'download recording failed'));
 
       const metaRows = await db.execute(sql`
       SELECT

@@ -14,6 +14,7 @@
 import { sql } from 'drizzle-orm';
 
 import { db } from '~/lib/db';
+import { visibilityClause } from '~/lib/db/visibility';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -134,39 +135,6 @@ export interface SkillsSearchParams {
   popularity?: PopularityBucket;
   hasReadme?: boolean;
   requesterUserId?: string | null;
-}
-
-function visibilityClause(userId: string | null) {
-  if (!userId) {
-    return sql`s.visibility = 'public'`;
-  }
-
-  return sql`(
-    s.visibility = 'public'
-    OR s.publisher_id = ${userId}
-    OR (
-      s.visibility = 'private'
-      AND (
-        (s.org_id IS NOT NULL AND EXISTS (SELECT 1 FROM "member" m WHERE m.organization_id = s.org_id AND m.user_id = ${userId}))
-        OR EXISTS (
-          SELECT 1
-          FROM skill_access sa
-          WHERE sa.skill_id = s.id
-            AND (
-              sa.granted_user_id = ${userId}
-              OR (
-                sa.granted_org_id IS NOT NULL
-                AND EXISTS (
-                  SELECT 1 FROM "member" m2
-                  WHERE m2.organization_id = sa.granted_org_id
-                    AND m2.user_id = ${userId}
-                )
-              )
-            )
-        )
-      )
-    )
-  )`;
 }
 
 let skillStarsTableExists: boolean | null = null;
