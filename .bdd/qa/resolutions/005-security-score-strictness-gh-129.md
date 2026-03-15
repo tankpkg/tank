@@ -38,3 +38,24 @@
 - GREEN: `bun x vitest packages/web/lib/__tests__/audit-score.test.ts packages/web/lib/__tests__/audit-score-security-strict.test.ts`
 - Scanner suite: `just test-python` => 65 passed, 13 skipped
 - LSP diagnostics: clean on all changed TypeScript files
+
+## Follow-up (PR #188 review)
+
+1. **Details breakdown now reconstructs score truthfully**
+   - `details.maxPoints` now sums to exactly `10`.
+   - `details.points` now reconstructs `score` exactly.
+   - Quality checks remain visible but are informational (`maxPoints: 0`) so they do not inflate security scoring.
+
+2. **Null scan fallback decision (documented + implemented)**
+   - When scanner output is unavailable (`analysisResults: null`), scoring now supports `previousScore`.
+   - Confirm/rescan callers pass the persisted `version.auditScore` as `previousScore`.
+   - If no previous score exists, fallback remains `5.0`.
+   - This avoids silent score drops for existing published skills during scan outages.
+
+3. **Permission mismatch scoring branch removed**
+   - Permission extraction mismatch is kept as an informational detail only.
+   - It no longer subtracts points from security score until caller wiring + product decision are ready.
+
+4. **Assertions tightened to exact contract values**
+   - Severity mapping is now pinned with exact expectations: low=`8`, medium=`7`, high=`4`, critical=`0`.
+   - BDD strictness step now asserts exact medium-finding score (`7`).
