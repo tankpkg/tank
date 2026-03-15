@@ -1,11 +1,11 @@
-import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, type Permissions, type SkillsLock } from "@internal/shared";
-import type ora from "ora";
-import { extract } from "tar";
-import { buildSkillKey, type ResolvedNode } from "./dependency-resolver.js";
-import { logger } from "./logger.js";
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, type Permissions, type SkillsLock } from '@internal/shared';
+import type ora from 'ora';
+import { extract } from 'tar';
+import { buildSkillKey, type ResolvedNode } from './dependency-resolver.js';
+import { logger } from './logger.js';
 
 export interface DownloadedTarball {
   buffer: Buffer;
@@ -19,7 +19,7 @@ interface DownloadTarballWithCacheOptions {
 }
 
 function isVerboseMode(): boolean {
-  return process.env.TANK_DEBUG === "1" || process.env.TANK_DEBUG === "true";
+  return process.env.TANK_DEBUG === '1' || process.env.TANK_DEBUG === 'true';
 }
 
 function verboseCacheLog(message: string): void {
@@ -29,21 +29,21 @@ function verboseCacheLog(message: string): void {
 }
 
 function integrityToSha512Hex(integrity: string): string {
-  if (!integrity.startsWith("sha512-")) {
+  if (!integrity.startsWith('sha512-')) {
     throw new Error(`Invalid integrity format: ${integrity}`);
   }
 
-  const base64 = integrity.slice("sha512-".length);
-  return Buffer.from(base64, "base64").toString("hex");
+  const base64 = integrity.slice('sha512-'.length);
+  return Buffer.from(base64, 'base64').toString('hex');
 }
 
 function buildIntegrity(buffer: Buffer): string {
-  const hash = crypto.createHash("sha512").update(buffer).digest("base64");
+  const hash = crypto.createHash('sha512').update(buffer).digest('base64');
   return `sha512-${hash}`;
 }
 
 export function getGlobalCacheDir(homedir: string): string {
-  return path.join(homedir, ".tank", "cache");
+  return path.join(homedir, '.tank', 'cache');
 }
 
 function getTarballCachePath(cacheDir: string, integrity: string): string {
@@ -83,7 +83,7 @@ async function downloadTarball(url: string, skillLabel: string): Promise<Buffer>
     res = await fetch(url);
   } catch (err) {
     throw new Error(
-      `Network error downloading tarball for ${skillLabel}: ${err instanceof Error ? err.message : String(err)}`,
+      `Network error downloading tarball for ${skillLabel}: ${err instanceof Error ? err.message : String(err)}`
     );
   }
 
@@ -98,7 +98,7 @@ export async function downloadTarballWithCache(
   downloadUrl: string,
   expectedIntegrity: string,
   skillLabel: string,
-  options: DownloadTarballWithCacheOptions,
+  options: DownloadTarballWithCacheOptions
 ): Promise<DownloadedTarball> {
   const cachePath = getTarballCachePath(options.cacheDir, expectedIntegrity);
 
@@ -126,7 +126,7 @@ export async function downloadTarballWithCache(
 export async function downloadAllParallel(
   nodes: ResolvedNode[],
   spinner: ReturnType<typeof ora>,
-  options: { cacheDir: string },
+  options: { cacheDir: string }
 ): Promise<Map<string, DownloadedTarball>> {
   const results = new Map<string, DownloadedTarball>();
   const CONCURRENCY_LIMIT = 8;
@@ -140,8 +140,8 @@ export async function downloadAllParallel(
         node.meta.integrity,
         `${node.name}@${node.version}`,
         {
-          cacheDir: options.cacheDir,
-        },
+          cacheDir: options.cacheDir
+        }
       );
       return { name: node.name, downloaded };
     });
@@ -165,7 +165,7 @@ export function verifyExtractedDependencies(extractDir: string, node: ResolvedNo
   }
 
   try {
-    const raw = fs.readFileSync(extractedManifestPath, "utf-8");
+    const raw = fs.readFileSync(extractedManifestPath, 'utf-8');
     const manifest = JSON.parse(raw) as Record<string, unknown>;
     const extractedDeps = (manifest.skills ?? {}) as Record<string, string>;
     const apiDeps = node.meta.dependencies;
@@ -189,16 +189,16 @@ export function readExtractedDependencies(extractDir: string): Record<string, st
   }
 
   try {
-    const raw = fs.readFileSync(extractedManifestPath, "utf-8");
+    const raw = fs.readFileSync(extractedManifestPath, 'utf-8');
     const manifest = JSON.parse(raw) as Record<string, unknown>;
     const extractedDeps = manifest.skills;
-    if (!extractedDeps || typeof extractedDeps !== "object") {
+    if (!extractedDeps || typeof extractedDeps !== 'object') {
       return {};
     }
 
     const deps: Record<string, string> = {};
     for (const [depName, depRange] of Object.entries(extractedDeps as Record<string, unknown>)) {
-      if (typeof depRange === "string") {
+      if (typeof depRange === 'string') {
         deps[depName] = depRange;
       }
     }
@@ -211,7 +211,7 @@ export function readExtractedDependencies(extractDir: string): Record<string, st
 export function writeLockfileWithResolvedGraph(
   lock: SkillsLock,
   nodes: ResolvedNode[],
-  downloaded: Map<string, { buffer: Buffer; integrity: string }>,
+  downloaded: Map<string, { buffer: Buffer; integrity: string }>
 ): SkillsLock {
   for (const node of nodes) {
     const key = buildSkillKey(node.name, node.version);
@@ -227,7 +227,7 @@ export function writeLockfileWithResolvedGraph(
       integrity,
       permissions: node.meta.permissions as Permissions,
       audit_score: node.meta.auditScore ?? null,
-      dependencies: node.dependencies,
+      dependencies: node.dependencies
     };
   }
 
@@ -235,7 +235,7 @@ export function writeLockfileWithResolvedGraph(
   for (const key of Object.keys(lock.skills).sort()) {
     sortedSkills[key] = lock.skills[key];
   }
-  lock.skills = sortedSkills as SkillsLock["skills"];
+  lock.skills = sortedSkills as SkillsLock['skills'];
   return lock;
 }
 
@@ -244,7 +244,7 @@ export function writeLockfileWithResolvedGraph(
  * Rejects: absolute paths, path traversal (..), symlinks/hardlinks.
  */
 export async function extractSafely(tarball: Buffer, destDir: string): Promise<void> {
-  const tmpTarball = path.join(destDir, ".tmp-tarball.tgz");
+  const tmpTarball = path.join(destDir, '.tmp-tarball.tgz');
   fs.writeFileSync(tmpTarball, tarball);
 
   try {
@@ -255,16 +255,16 @@ export async function extractSafely(tarball: Buffer, destDir: string): Promise<v
         if (path.isAbsolute(entryPath)) {
           throw new Error(`Absolute path in tarball: ${entryPath}`);
         }
-        if (entryPath.split("/").includes("..") || entryPath.split(path.sep).includes("..")) {
+        if (entryPath.split('/').includes('..') || entryPath.split(path.sep).includes('..')) {
           throw new Error(`Path traversal in tarball: ${entryPath}`);
         }
         return true;
       },
       onReadEntry: (entry) => {
-        if (entry.type === "SymbolicLink" || entry.type === "Link") {
+        if (entry.type === 'SymbolicLink' || entry.type === 'Link') {
           throw new Error(`Symlink/hardlink in tarball: ${entry.path}`);
         }
-      },
+      }
     });
   } finally {
     if (fs.existsSync(tmpTarball)) {
@@ -274,24 +274,24 @@ export async function extractSafely(tarball: Buffer, destDir: string): Promise<v
 }
 
 export function getExtractDir(projectDir: string, skillName: string): string {
-  if (skillName.startsWith("@")) {
-    const [scope, name] = skillName.split("/");
-    return path.join(projectDir, ".tank", "skills", scope, name);
+  if (skillName.startsWith('@')) {
+    const [scope, name] = skillName.split('/');
+    return path.join(projectDir, '.tank', 'skills', scope, name);
   }
-  return path.join(projectDir, ".tank", "skills", skillName);
+  return path.join(projectDir, '.tank', 'skills', skillName);
 }
 
 export function getGlobalExtractDir(homedir: string, skillName: string): string {
-  const globalDir = path.join(homedir, ".tank", "skills");
-  if (skillName.startsWith("@")) {
-    const [scope, name] = skillName.split("/");
+  const globalDir = path.join(homedir, '.tank', 'skills');
+  if (skillName.startsWith('@')) {
+    const [scope, name] = skillName.split('/');
     return path.join(globalDir, scope, name);
   }
   return path.join(globalDir, skillName);
 }
 
 export function parseLockKey(key: string): string {
-  const lastAt = key.lastIndexOf("@");
+  const lastAt = key.lastIndexOf('@');
   if (lastAt <= 0) {
     throw new Error(`Invalid lockfile key: ${key}`);
   }
@@ -299,7 +299,7 @@ export function parseLockKey(key: string): string {
 }
 
 export function parseVersionFromLockKey(key: string): string {
-  const lastAt = key.lastIndexOf("@");
+  const lastAt = key.lastIndexOf('@');
   if (lastAt <= 0 || lastAt === key.length - 1) {
     throw new Error(`Invalid lockfile key: ${key}`);
   }

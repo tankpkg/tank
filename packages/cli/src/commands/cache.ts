@@ -1,7 +1,7 @@
-import fs from "node:fs";
-import os from "node:os";
-import { getGlobalCacheDir } from "../lib/install-pipeline.js";
-import { logger } from "../lib/logger.js";
+import fs from 'node:fs';
+import os from 'node:os';
+import { getGlobalCacheDir } from '../lib/install-pipeline.js';
+import { logger } from '../lib/logger.js';
 
 export interface CacheCleanOptions {
   homedir?: string;
@@ -12,10 +12,10 @@ export async function cacheCleanCommand(options: CacheCleanOptions = {}): Promis
   const cacheDir = getGlobalCacheDir(resolvedHome);
 
   if (!fs.existsSync(cacheDir)) {
-    logger.info("Cache is already clean");
+    logger.info('Cache is already clean');
     return;
   }
 
   fs.rmSync(cacheDir, { recursive: true, force: true });
-  logger.success("Cache cleaned");
+  logger.success('Cache cleaned');
 }
