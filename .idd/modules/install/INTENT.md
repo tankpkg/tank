@@ -75,15 +75,20 @@ web/app/api/v1/skills/
 
 ## Layer 2 Addendum: Interactive Permission Budget Expansion (Issue #169)
 
-| #   | Rule                                                                                                                              | Rationale                                                                      | Verified by |
-| --- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------- |
-| C12 | When a skill's permissions exceed the project budget in interactive mode, prompt the user to expand the budget instead of failing | Reduces friction — users shouldn't need to hand-edit tank.json for permissions | Unit test   |
-| C13 | All violations are collected before prompting — never prompt one-by-one per violation                                             | Single decision point; user sees the full security impact at once              | Unit test   |
-| C14 | If the user accepts, tank.json permissions are merged (additive) and the install continues                                        | Expanding budget is an explicit, auditable user decision                       | Unit test   |
-| C15 | If the user declines, install fails with the same error as today                                                                  | Declining = current behavior preserved                                         | Unit test   |
-| C16 | With `--yes` flag, violations are auto-accepted and tank.json is updated without prompting                                        | Enables scripted/automated installs that accept permission expansion           | Unit test   |
-| C17 | In non-interactive environments (CI, no TTY) without `--yes`, install fails as today — no prompt                                  | CI pipelines must not hang on stdin; explicit opt-in only                      | Unit test   |
-| C18 | The prompt displays which skill requests which permission type and value                                                          | User must understand what they're granting before accepting                    | Unit test   |
+| #   | Rule                                                                                                                              | Rationale                                                                      | Verified by  |
+| --- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------ |
+| C12 | When a skill's permissions exceed the project budget in interactive mode, prompt the user to expand the budget instead of failing | Reduces friction — users shouldn't need to hand-edit tank.json for permissions | Unit test    |
+| C13 | All violations are collected before prompting — never prompt one-by-one per violation                                             | Single decision point; user sees the full security impact at once              | Unit test    |
+| C14 | If the user accepts, tank.json permissions are merged (additive) and the install continues                                        | Expanding budget is an explicit, auditable user decision                       | Unit test    |
+| C15 | If the user declines, install fails with the same error as today                                                                  | Declining = current behavior preserved                                         | Unit test    |
+| C16 | With `--yes` flag, violations are auto-accepted and tank.json is updated without prompting                                        | Enables scripted/automated installs that accept permission expansion           | Unit test    |
+| C17 | In non-interactive environments (CI, no TTY) without `--yes`, install fails as today — no prompt                                  | CI pipelines must not hang on stdin; explicit opt-in only                      | Unit test    |
+| C18 | The prompt displays which skill requests which permission type and value                                                          | User must understand what they're granting before accepting                    | Unit test    |
+| C19 | Install uses a global tarball cache at `~/.tank/cache/` keyed by SHA-512 content hash (`{sha512-hex}.tgz`)                        | Avoid redundant downloads across projects and repeated installs                | BDD scenario |
+| C20 | On cache hit, install skips network tarball download and extracts from cached file                                                | Performance + reduced registry/storage traffic                                 | BDD scenario |
+| C21 | On cache miss, install downloads tarball, verifies integrity, writes cache entry, then extracts                                   | Preserves security guarantees while populating cache                           | BDD scenario |
+| C22 | If a cache entry is corrupted and extraction fails, install invalidates that entry and re-downloads once                          | Self-healing cache; no persistent bad state                                    | BDD scenario |
+| C23 | `tank cache clean` deletes `~/.tank/cache/` recursively                                                                           | Operational control for disk cleanup and recovery                              | BDD scenario |
 
 ## Layer 3 Addendum: Interactive Permission Budget Expansion
 
@@ -95,3 +100,7 @@ web/app/api/v1/skills/
 | E14 | Install skill requesting `network.outbound: ["api.example.com"]`, CI=true, no `--yes`    | Install fails with "Permission denied" — no prompt shown                                 |
 | E15 | Install skill requesting both `filesystem.read` and `network.outbound` outside budget    | Single prompt listing both violations; user accepts → both merged into tank.json         |
 | E16 | Install skill whose permissions are within budget                                        | No prompt shown; install proceeds normally (existing behavior unchanged)                 |
+| E17 | Install skill where tarball hash is already cached in `~/.tank/cache/`                   | Cache hit; no tarball download request; extraction succeeds from cache                   |
+| E18 | Install skill where cache file is missing                                                | Cache miss; tarball downloaded, verified, stored as `{sha512-hex}.tgz`, then extracted   |
+| E19 | Install skill where cached file exists but extraction fails                              | Cache entry removed; tarball re-downloaded and extracted successfully                    |
+| E20 | Run `tank cache clean`                                                                   | `~/.tank/cache/` is removed recursively                                                  |
