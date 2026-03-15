@@ -143,9 +143,6 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
-html {
-  color-scheme: dark;
-}
 
 /* Animated gradient mesh background */
 .tank-gradient-bg {
