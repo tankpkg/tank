@@ -52,7 +52,7 @@ export function SkillsListScreen({
     : `${data.total.toLocaleString()} skill${data.total !== 1 ? 's' : ''}`;
 
   return (
-    <div className="space-y-6" data-testid="skills-list-root">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" data-testid="skills-list-root">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Browse Skills</h1>
         <p className="mt-2 text-muted-foreground">Discover verified AI agent skills for your projects.</p>
