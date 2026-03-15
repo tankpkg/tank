@@ -1,11 +1,9 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-
+import { requireAdmin } from '~/api/middleware/require-admin';
+import { seoRoutes } from '~/api/routes/seo';
+import { v1Routes } from '~/api/routes/v1';
 import { auth } from '~/lib/auth/core';
-
-import { requireAdmin } from './middleware/require-admin';
-import { seoRoutes } from './routes/seo';
-import { v1Routes } from './routes/v1';
 
 const app = new Hono().basePath('/api');
 

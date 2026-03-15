@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
 
-import { createRateLimiter } from '../middleware/rate-limit';
-import { cliAuthRoutes } from './v1/cli-auth';
-import { searchRoutes } from './v1/search';
-import { skillsConfirmRoutes } from './v1/skills-confirm';
-import { skillsPublishRoutes } from './v1/skills-publish';
-import { skillsReadRoutes } from './v1/skills-read';
+import { createRateLimiter } from '~/api/middleware/rate-limit';
+import { cliAuthRoutes } from '~/api/routes/v1/cli-auth';
+import { searchRoutes } from '~/api/routes/v1/search';
+import { skillsConfirmRoutes } from '~/api/routes/v1/skills-confirm';
+import { skillsPublishRoutes } from '~/api/routes/v1/skills-publish';
+import { skillsReadRoutes } from '~/api/routes/v1/skills-read';
 
 export const v1Routes = new Hono()
   .use('*', createRateLimiter())

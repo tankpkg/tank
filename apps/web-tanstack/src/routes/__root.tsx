@@ -5,7 +5,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
 import { NotFoundScreen } from '~/screens/not-found-screen';
 
-import globalCss from '../styles/global.css?url';
+import globalCss from '~/styles/global.css?url';
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
