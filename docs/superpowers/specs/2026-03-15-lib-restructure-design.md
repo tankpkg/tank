@@ -61,24 +61,24 @@ src/
 
 ## File Moves
 
-| From | To | Rationale |
-|------|-----|-----------|
-| `lib/auth.ts` | `lib/auth/core.ts` | Auth config is the core — other auth files orbit it |
-| `lib/auth-client.ts` | `lib/auth/client.ts` | Groups browser auth with server auth |
-| `lib/auth-helpers.ts` | `lib/auth/authz.ts` | It's authorization policy, not "helpers" |
-| `lib/cli-auth-store.ts` | `lib/auth/cli-store.ts` | CLI OAuth belongs with auth |
-| `lib/db.ts` | `lib/db/index.ts` | db/ already exists; Drizzle instance becomes its entry |
-| `lib/data/skills.ts` | `lib/skills/data.ts` | Skill queries move to skills domain |
-| `lib/audit-score.ts` | `lib/skills/audit-score.ts` | Skill-specific scoring |
-| `lib/permission-escalation.ts` | `lib/skills/permission-escalation.ts` | Skill-specific security |
-| `lib/email/service.ts` | `lib/services/email/service.ts` | Infrastructure service |
-| `lib/email/rate-limiter.ts` | `lib/services/email/rate-limiter.ts` | Infrastructure service |
-| `lib/storage/provider.ts` | `lib/services/storage/provider.ts` | Infrastructure service |
-| `lib/redis.ts` | `lib/services/redis.ts` | Infrastructure service |
-| `lib/supabase.ts` | `lib/services/supabase.ts` | Infrastructure service |
-| `lib/logger.ts` | `lib/services/logger.ts` | Infrastructure service |
-| `lib/query/*` | `src/query/*` | TanStack glue, not a library |
-| `server-fns/auth.ts` | `server-fns/session.ts` | It's a session bridge, not auth core |
+| From                           | To                                    | Rationale                                              |
+| ------------------------------ | ------------------------------------- | ------------------------------------------------------ |
+| `lib/auth.ts`                  | `lib/auth/core.ts`                    | Auth config is the core — other auth files orbit it    |
+| `lib/auth-client.ts`           | `lib/auth/client.ts`                  | Groups browser auth with server auth                   |
+| `lib/auth-helpers.ts`          | `lib/auth/authz.ts`                   | It's authorization policy, not "helpers"               |
+| `lib/cli-auth-store.ts`        | `lib/auth/cli-store.ts`               | CLI OAuth belongs with auth                            |
+| `lib/db.ts`                    | `lib/db/index.ts`                     | db/ already exists; Drizzle instance becomes its entry |
+| `lib/data/skills.ts`           | `lib/skills/data.ts`                  | Skill queries move to skills domain                    |
+| `lib/audit-score.ts`           | `lib/skills/audit-score.ts`           | Skill-specific scoring                                 |
+| `lib/permission-escalation.ts` | `lib/skills/permission-escalation.ts` | Skill-specific security                                |
+| `lib/email/service.ts`         | `lib/services/email/service.ts`       | Infrastructure service                                 |
+| `lib/email/rate-limiter.ts`    | `lib/services/email/rate-limiter.ts`  | Infrastructure service                                 |
+| `lib/storage/provider.ts`      | `lib/services/storage/provider.ts`    | Infrastructure service                                 |
+| `lib/redis.ts`                 | `lib/services/redis.ts`               | Infrastructure service                                 |
+| `lib/supabase.ts`              | `lib/services/supabase.ts`            | Infrastructure service                                 |
+| `lib/logger.ts`                | `lib/services/logger.ts`              | Infrastructure service                                 |
+| `lib/query/*`                  | `src/query/*`                         | TanStack glue, not a library                           |
+| `server-fns/auth.ts`           | `server-fns/session.ts`               | It's a session bridge, not auth core                   |
 
 ## Import Rewrite Scope
 
