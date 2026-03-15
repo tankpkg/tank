@@ -25,7 +25,7 @@
     "@internals/schemas": "workspace:*",
     "@shikijs/rehype": "^4.0.2",
     "@supabase/supabase-js": "^2.99.1",
-    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/typography": "^0.0.0-insiders.3963dfe",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-devtools": "^0.8.2",
     "@tanstack/react-hotkeys": "^0.4.1",
