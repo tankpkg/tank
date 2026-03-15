@@ -41,6 +41,7 @@ export const auth = betterAuth({
     provider: 'pg'
   }),
   baseURL: process.env.BETTER_AUTH_URL || process.env.APP_URL || 'http://localhost:3000',
+  basePath: '/api/auth',
   secret: process.env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: enabledProviders.has('credentials'),

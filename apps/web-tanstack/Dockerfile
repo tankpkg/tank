@@ -28,7 +28,7 @@ COPY --from=deps /app/apps/web-tanstack/node_modules ./apps/web-tanstack/node_mo
 
 RUN bun run --filter=@internals/schemas build
 RUN bun run --filter=@internals/helpers build
-RUN bun run --filter=@tankpkg/web-tanstack build
+RUN rm -rf apps/web-tanstack/.output && bun run --filter=@tankpkg/web-tanstack build
 
 FROM oven/bun:1-alpine AS runner
 WORKDIR /app
