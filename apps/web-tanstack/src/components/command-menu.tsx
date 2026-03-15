@@ -29,24 +29,13 @@ import {
   CommandList,
   CommandSeparator
 } from '~/components/ui/command';
+import type { SkillSearchResponse } from '~/lib/data/skills';
 import { useCommandMenuStore } from '~/stores/command-menu';
 
 interface SkillResult {
   name: string;
   description?: string;
-  owner?: string;
-}
-
-interface SearchApiItem {
-  name: string;
-  description?: string | null;
-  owner?: string;
-  ownerName?: string;
-}
-
-interface SearchApiResponse {
-  skills?: SearchApiItem[];
-  results?: SearchApiItem[];
+  publisher?: string;
 }
 
 const DOC_PAGES = [
@@ -97,11 +86,11 @@ export function CommandMenu() {
           signal: controller.signal
         });
         if (res.ok) {
-          const data = (await res.json()) as SearchApiResponse;
-          const items: SkillResult[] = (data.skills ?? data.results ?? []).map((skill) => ({
+          const data = (await res.json()) as SkillSearchResponse;
+          const items: SkillResult[] = data.results.map((skill) => ({
             name: skill.name,
             description: skill.description ?? '',
-            owner: skill.owner ?? skill.ownerName ?? ''
+            publisher: skill.publisher ?? ''
           }));
           setSkills(items);
         }
