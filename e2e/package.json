@@ -8,7 +8,8 @@
     "test:all": "TANK_APP_TARGET=next vitest run && TANK_APP_TARGET=tanstack vitest run"
   },
   "devDependencies": {
-    "vitest": "^4.1.0",
-    "postgres": "^3.4.8"
+    "cipher-kit": "^3.0.0",
+    "postgres": "^3.4.8",
+    "vitest": "^4.1.0"
   }
 }

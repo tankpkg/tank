@@ -9,10 +9,11 @@
  * 4. Write CLI config to isolated temp HOME directory
  * 5. Clean up all test data after suite completes
  */
-import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
+import { generateUuid, hash } from 'cipher-kit/node';
 
 import postgres from 'postgres';
 
@@ -62,24 +63,14 @@ export interface E2EContext {
   sql: postgres.Sql;
 }
 
-// ---------------------------------------------------------------------------
-// API Key Hashing (matches better-auth's defaultKeyHasher)
-// ---------------------------------------------------------------------------
-
-/**
- * Hash an API key exactly as better-auth does:
- * SHA-256 → base64url (no padding)
- */
 function hashApiKey(plainKey: string): string {
-  const hash = createHash('sha256').update(plainKey).digest();
-  // Node.js Buffer.toString('base64url') produces base64url WITHOUT padding
-  return hash.toString('base64url');
+  return hash(plainKey);
 }
 
 function createApiKey(seed: string): string {
-  let key = `tank_e2e_${seed}_${randomUUID().replace(/-/g, '')}`;
+  let key = `tank_e2e_${seed}_${generateUuid().replace(/-/g, '')}`;
   while (key.length < 64) {
-    key += randomUUID().replace(/-/g, '');
+    key += generateUuid().replace(/-/g, '');
   }
   return key;
 }
@@ -88,13 +79,6 @@ function createApiKey(seed: string): string {
 // Setup
 // ---------------------------------------------------------------------------
 
-/**
- * Create all database records and config files needed for E2E tests.
- * Returns an E2EContext that test files use for CLI spawning.
- *
- * Note: Uses crypto.randomUUID() for generating test IDs and API keys.
- * This is cryptographically secure (not Math.random()).
- */
 export async function setupE2E(registry = getCurrentAppTarget().registryUrl): Promise<E2EContext> {
   const connectionString = process.env.DATABASE_URL || loadDatabaseUrlFromEnvFile();
   if (!connectionString) {
@@ -102,11 +86,8 @@ export async function setupE2E(registry = getCurrentAppTarget().registryUrl): Pr
   }
 
   const sql = postgres(connectionString);
-  // randomUUID() is cryptographically secure (uses crypto.randomUUID from Node.js)
-  // lgtm[js/insecure-randomness]
-  const runId = randomUUID().replace(/-/g, '').slice(0, 10);
+  const runId = generateUuid().replace(/-/g, '').slice(0, 10);
   const userId = `e2e-user-${runId}`;
-  // lgtm[js/insecure-randomness]
   const orgSlug = `e2etest-${runId}`;
   const orgId = `e2e-org-${runId}`;
   const memberId = `e2e-member-${runId}`;

@@ -1,7 +1,8 @@
-import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
+import { generateUuid, hash } from 'cipher-kit/node';
 
 import postgres from 'postgres';
 
@@ -18,14 +19,13 @@ export interface E2EContext {
 }
 
 function hashApiKey(plainKey: string): string {
-  const hash = createHash('sha256').update(plainKey).digest();
-  return hash.toString('base64url');
+  return hash(plainKey);
 }
 
 function createApiKey(seed: string): string {
-  let key = `tank_e2e_${seed}_${randomUUID().replace(/-/g, '')}`;
+  let key = `tank_e2e_${seed}_${generateUuid().replace(/-/g, '')}`;
   while (key.length < 64) {
-    key += randomUUID().replace(/-/g, '');
+    key += generateUuid().replace(/-/g, '');
   }
   return key;
 }
@@ -37,7 +37,7 @@ export async function setupE2E(registry = getCurrentAppTarget().registryUrl): Pr
   }
 
   const sql = postgres(connectionString);
-  const runId = randomUUID().replace(/-/g, '').slice(0, 10);
+  const runId = generateUuid().replace(/-/g, '').slice(0, 10);
   const userId = `e2e-user-${runId}`;
   const orgSlug = `e2etest-${runId}`;
   const orgId = `e2e-org-${runId}`;

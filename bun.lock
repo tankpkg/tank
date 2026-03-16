@@ -164,6 +164,7 @@
       },
       "devDependencies": {
         "@playwright/test": "^1.58.2",
+        "cipher-kit": "^3.0.0",
         "playwright-bdd": "^8.5.0",
         "vitest": "^4.1.0",
       },
@@ -172,6 +173,7 @@
       "name": "@internal/e2e",
       "version": "0.0.0",
       "devDependencies": {
+        "cipher-kit": "^3.0.0",
         "postgres": "^3.4.8",
         "vitest": "^4.1.0",
       },
@@ -1622,6 +1624,8 @@
     "chokidar": ["chokidar@3.6.0", "", { "dependencies": { "anymatch": "~3.1.2", "braces": "~3.0.2", "glob-parent": "~5.1.2", "is-binary-path": "~2.1.0", "is-glob": "~4.0.1", "normalize-path": "~3.0.0", "readdirp": "~3.6.0" }, "optionalDependencies": { "fsevents": "~2.3.2" } }, "sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw=="],
 
     "chownr": ["chownr@3.0.0", "", {}, "sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g=="],
+
+    "cipher-kit": ["cipher-kit@3.0.0", "", {}, "sha512-A+MkROCRctzXGWaW+Snyz1PavY8TZ/1eubSAkBhcJcwO5pstmM1BFft5qlXQuEO+wb11OjYzD8swsWjzfb08vg=="],
 
     "citty": ["citty@0.1.6", "", { "dependencies": { "consola": "^3.2.3" } }, "sha512-tskPPKEs8D2KPafUypv2gxwJP8h/OaJmC82QQGGDQcHvXX43xF2VDACcJVmZ0EuSxkpO9Kc4MlrA3q0+FG58AQ=="],
 

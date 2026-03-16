@@ -1,7 +1,8 @@
-import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+
+import { generateUuid, hash } from 'cipher-kit/node';
 
 import { test as base, createBdd } from 'playwright-bdd';
 
@@ -52,14 +53,13 @@ interface UserFixtureOptions {
 }
 
 function hashApiKey(plainKey: string): string {
-  const hash = createHash('sha256').update(plainKey).digest();
-  return hash.toString('base64url');
+  return hash(plainKey);
 }
 
 function createApiKey(seed: string): string {
-  let key = `tank_e2e_${seed}_${randomUUID().replace(/-/g, '')}`;
+  let key = `tank_e2e_${seed}_${generateUuid().replace(/-/g, '')}`;
   while (key.length < 64) {
-    key += randomUUID().replace(/-/g, '');
+    key += generateUuid().replace(/-/g, '');
   }
   return key;
 }
