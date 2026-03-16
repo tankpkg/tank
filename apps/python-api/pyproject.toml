@@ -10,13 +10,10 @@ dependencies = [
     "httpx>=0.27.0",
     "uvicorn>=0.30.0",
     "charset-normalizer>=3.0.0",
-    "psycopg[binary]>=3.2.0",
     "bandit>=1.8.0",
     "skill-scanner>=0.2.0",
     "detect-secrets>=1.5.0",
     "pip-audit>=2.7.0",
-    "sarif-om>=1.0.0",
-    "jschema-to-python>=1.2.0",
 ]
 
 [project.optional-dependencies]
