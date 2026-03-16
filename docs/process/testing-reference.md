@@ -74,7 +74,7 @@ Primary test setup helpers:
 ## Execution Notes
 
 - `bun run test:bdd:browser` requires `bunx bddgen` first (generates step wiring from .feature files)
-- Browser tests need a running dev server (`just dev web-tanstack` or `just dev web`)
+- Browser tests need a running dev server (`just dev registry` or `just dev registry-legacy`)
 - E2E tests need built CLI (`bun run build` in packages/cli first)
 - Admin E2E is opt-in: `RUN_ADMIN_E2E=1 bun run test:e2e`
 - Never reuse Next.js selectors in TanStack tests — verify actual DOM first

@@ -8,23 +8,23 @@
 
 **Single source of truth:**
 
-- `apps/web/app/api/v1/skills/[name]/route.ts` — single skill metadata
-- `apps/web/app/api/v1/skills/[name]/[version]/route.ts` — version detail with permissions
-- `apps/web/app/api/v1/skills/[name]/versions/route.ts` — list all versions
-- `apps/web/app/api/v1/skills/[name]/[version]/files/[...path]/route.ts` — file content
+- `apps/registry-legacy/app/api/v1/skills/[name]/route.ts` — single skill metadata
+- `apps/registry-legacy/app/api/v1/skills/[name]/[version]/route.ts` — version detail with permissions
+- `apps/registry-legacy/app/api/v1/skills/[name]/versions/route.ts` — list all versions
+- `apps/registry-legacy/app/api/v1/skills/[name]/[version]/files/[...path]/route.ts` — file content
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/web/app/api/v1/skills/
+apps/registry-legacy/app/api/v1/skills/
   [name]/route.ts               # GET — skill metadata + latestVersion
   [name]/[version]/route.ts     # GET — version detail: permissions, auditScore, downloadUrl
   [name]/versions/route.ts      # GET — list all versions for a skill
   [name]/[version]/files/       # GET — serve file content from tarball
   [name]/star/route.ts          # GET/POST/DELETE — star counts and toggle
-apps/web/app/api/v1/badge/[...name]/route.ts # GET — SVG badge for auditScore
+apps/registry-legacy/app/api/v1/badge/[...name]/route.ts # GET — SVG badge for auditScore
 ```
 
 ---

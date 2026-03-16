@@ -5,7 +5,7 @@
     { "path": "./packages/internals-helpers/tsconfig.json" },
     { "path": "./packages/cli/tsconfig.json" },
     { "path": "./packages/mcp-server/tsconfig.json" },
-    { "path": "./apps/web-tanstack/tsconfig.json" },
+    { "path": "./apps/registry/tsconfig.json" },
     { "path": "./e2e/tsconfig.json" },
     { "path": "./bdd/tsconfig.json" }
   ]

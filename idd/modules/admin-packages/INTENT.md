@@ -6,16 +6,16 @@
 
 **Consumers:** Admin dashboard. `GET /api/admin/packages`, `GET /api/admin/packages/[name]`, `PATCH /api/admin/packages/[name]/status`.
 
-**Single source of truth:** `apps/web/app/api/admin/packages/route.ts` and `apps/web/app/api/admin/packages/[...segments]/route.ts`.
+**Single source of truth:** `apps/registry-legacy/app/api/admin/packages/route.ts` and `apps/registry-legacy/app/api/admin/packages/[...segments]/route.ts`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/web/app/api/admin/packages/route.ts              # GET — list packages with filters
-apps/web/app/api/admin/packages/[...segments]/route.ts # GET/PATCH — package detail and status update
-apps/web/lib/admin-middleware.ts                      # withAdminAuth
+apps/registry-legacy/app/api/admin/packages/route.ts              # GET — list packages with filters
+apps/registry-legacy/app/api/admin/packages/[...segments]/route.ts # GET/PATCH — package detail and status update
+apps/registry-legacy/lib/admin-middleware.ts                      # withAdminAuth
 ```
 
 ---

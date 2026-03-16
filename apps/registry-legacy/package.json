@@ -1,5 +1,5 @@
 {
-  "name": "@tankpkg/web",
+  "name": "registry-legacy",
   "version": "0.8.1",
   "private": true,
   "scripts": {

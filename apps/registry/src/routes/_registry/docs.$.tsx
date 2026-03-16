@@ -82,7 +82,7 @@ function DocPage() {
         <div dangerouslySetInnerHTML={{ __html: doc.html }} />
         <div className="mt-12 pt-6 border-t border-border/50">
           <a
-            href={`https://github.com/tankpkg/tank/edit/main/apps/web-tanstack/content/docs/${slug || 'index'}.mdx`}
+            href={`https://github.com/tankpkg/tank/edit/main/apps/registry/content/docs/${slug || 'index'}.mdx`}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             target="_blank"
             rel="noopener noreferrer">

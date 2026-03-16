@@ -6,15 +6,15 @@
 
 **Consumers:** Admin dashboard, `POST /api/admin/rescan-skills`.
 
-**Single source of truth:** `apps/web/app/api/admin/rescan-skills/route.ts`. Calls the same scanner pipeline as the per-version rescan.
+**Single source of truth:** `apps/registry-legacy/app/api/admin/rescan-skills/route.ts`. Calls the same scanner pipeline as the per-version rescan.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/web/app/api/admin/rescan-skills/route.ts  # POST — bulk rescan trigger
-apps/web/app/api/admin/packages/[...segments]/route.ts # POST versions/[v]/rescan — per-version rescan
+apps/registry-legacy/app/api/admin/rescan-skills/route.ts  # POST — bulk rescan trigger
+apps/registry-legacy/app/api/admin/packages/[...segments]/route.ts # POST versions/[v]/rescan — per-version rescan
 ```
 
 ---

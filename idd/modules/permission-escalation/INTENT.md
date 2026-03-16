@@ -14,8 +14,8 @@
 
 ```
 packages/internals-helpers/src/permission-escalation.ts  # All logic: determineBump, checkPermissionEscalation
-apps/web-tanstack/src/lib/skills/permission-escalation.ts # Re-export from @internals/helpers
-apps/web-tanstack/src/api/routes/v1/skills-publish.ts    # Consumer: calls checkPermissionEscalation on publish
+apps/registry/src/lib/skills/permission-escalation.ts # Re-export from @internals/helpers
+apps/registry/src/api/routes/v1/skills-publish.ts    # Consumer: calls checkPermissionEscalation on publish
 ```
 
 ---

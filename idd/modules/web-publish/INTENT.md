@@ -8,8 +8,8 @@
 
 **Single source of truth:**
 
-- `apps/web/app/api/v1/skills/route.ts` — POST (step 1: initiate)
-- `apps/web/app/api/v1/skills/confirm/route.ts` — POST (step 3: confirm + trigger scan)
+- `apps/registry-legacy/app/api/v1/skills/route.ts` — POST (step 1: initiate)
+- `apps/registry-legacy/app/api/v1/skills/confirm/route.ts` — POST (step 3: confirm + trigger scan)
 
 See also: `idd/modules/publish/INTENT.md` (CLI-side perspective) and `idd/modules/permission-escalation/INTENT.md`.
 
@@ -18,11 +18,11 @@ See also: `idd/modules/publish/INTENT.md` (CLI-side perspective) and `idd/module
 ## Layer 1: Structure
 
 ```
-apps/web/app/api/v1/skills/route.ts         # POST — validate, escalation check, create record, signed URL
-apps/web/app/api/v1/skills/confirm/route.ts # POST — verify upload, trigger scan, compute audit score
-apps/web/lib/permission-escalation.ts        # Escalation logic
-apps/web/lib/audit-score.ts                  # Score computation
-apps/web/lib/storage/provider.ts             # Signed URL generation
+apps/registry-legacy/app/api/v1/skills/route.ts         # POST — validate, escalation check, create record, signed URL
+apps/registry-legacy/app/api/v1/skills/confirm/route.ts # POST — verify upload, trigger scan, compute audit score
+apps/registry-legacy/lib/permission-escalation.ts        # Escalation logic
+apps/registry-legacy/lib/audit-score.ts                  # Score computation
+apps/registry-legacy/lib/storage/provider.ts             # Signed URL generation
 ```
 
 ---

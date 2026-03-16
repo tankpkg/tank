@@ -12,9 +12,9 @@ endpoint enqueues a background re-scan and returns the updated status. Only admi
 
 **Single source of truth:**
 
-- `apps/web/app/api/admin/packages/[...segments]/route.ts` — handles
+- `apps/registry-legacy/app/api/admin/packages/[...segments]/route.ts` — handles
   `POST /api/admin/packages/{name}/versions/{version}/rescan`
-- `apps/web/lib/admin-middleware.ts` — `withAdminAuth()` — session-based admin auth
+- `apps/registry-legacy/lib/admin-middleware.ts` — `withAdminAuth()` — session-based admin auth
 - `bdd/interactions/admin-api-client.ts` — `postRescan()` helper
 
 ---

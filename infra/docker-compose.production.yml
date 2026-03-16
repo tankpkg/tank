@@ -100,7 +100,7 @@ services:
   # ===================
   # Tank Web Application (TanStack Start)
   # ===================
-  web-tanstack:
+  registry:
     image: ghcr.io/tankpkg/tank-web:${TANK_IMAGE_TAG:-latest}
     container_name: tank-web
     restart: unless-stopped

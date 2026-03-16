@@ -3,7 +3,7 @@
  * CI performance report: reads latest results, compares against budgets,
  * prints summary, exits non-zero on breaches.
  *
- * Usage: bun --filter=@tankpkg/web run perf:report
+ * Usage: bun --filter=registry-legacy run perf:report
  */
 
 import { readFileSync } from 'node:fs';

@@ -14,7 +14,7 @@
  * Strategy: delete all perf-prefixed rows, then insert fresh.
  *
  * Usage:
- *   bun --filter=@tankpkg/web run perf:seed
+ *   bun --filter=registry-legacy run perf:seed
  *   DATABASE_URL=... npx tsx scripts/perf-seed.ts
  */
 

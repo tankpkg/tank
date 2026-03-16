@@ -6,14 +6,14 @@
 
 **Consumers:** External tools, README badges (`![audit score](https://registry.tank.sh/api/v1/badge/@org/skill))`).
 
-**Single source of truth:** `apps/web/app/api/v1/badge/[...name]/route.ts`.
+**Single source of truth:** `apps/registry-legacy/app/api/v1/badge/[...name]/route.ts`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/web/app/api/v1/badge/[...name]/route.ts  # GET — returns SVG badge with auditScore
+apps/registry-legacy/app/api/v1/badge/[...name]/route.ts  # GET — returns SVG badge with auditScore
 ```
 
 ---

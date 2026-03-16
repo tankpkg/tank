@@ -104,8 +104,8 @@ services:
   web:
     build:
       context: ..
-      dockerfile: apps/web-tanstack/Dockerfile
-    container_name: tank-web-tanstack
+      dockerfile: apps/registry/Dockerfile
+    container_name: tank-registry
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"

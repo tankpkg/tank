@@ -31,7 +31,7 @@ packages/
     permission-checker.ts              # checkPermissionBudget()
     packer.ts                          # (used by publish, not install)
   mcp-server/src/tools/install-skill.ts  # MCP wrapper
-web/app/api/v1/skills/
+registry-legacy/app/api/v1/skills/
   [name]/versions/route.ts             # GET — list available versions for a skill
   [name]/[version]/route.ts            # GET — fetch metadata + downloadUrl for a version
 ```

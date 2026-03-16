@@ -6,7 +6,7 @@
 
 **Consumers:** CLI (`tank login` / `loginCommand()`), MCP server (`login` tool), web registry (browser login page).
 
-**Single source of truth:** `packages/cli/src/commands/login.ts` (polling loop), `apps/web/app/api/v1/cli-auth/` (start → authorize → exchange API routes), `apps/web/lib/cli-auth-store.ts` (Redis session store).
+**Single source of truth:** `packages/cli/src/commands/login.ts` (polling loop), `apps/registry-legacy/app/api/v1/cli-auth/` (start → authorize → exchange API routes), `apps/registry-legacy/lib/cli-auth-store.ts` (Redis session store).
 
 ---
 
@@ -14,10 +14,10 @@
 
 ```
 packages/cli/src/commands/login.ts             # CLI: POST start → open browser → poll exchange
-apps/web/app/api/v1/cli-auth/start/route.ts    # POST — create session, return authUrl + sessionCode
-apps/web/app/api/v1/cli-auth/authorize/route.ts # GET — browser auth callback, marks session as authorized
-apps/web/app/api/v1/cli-auth/exchange/route.ts  # POST — CLI polls; returns token when authorized
-apps/web/lib/cli-auth-store.ts             # Redis: session create/get/authorize/delete
+apps/registry-legacy/app/api/v1/cli-auth/start/route.ts    # POST — create session, return authUrl + sessionCode
+apps/registry-legacy/app/api/v1/cli-auth/authorize/route.ts # GET — browser auth callback, marks session as authorized
+apps/registry-legacy/app/api/v1/cli-auth/exchange/route.ts  # POST — CLI polls; returns token when authorized
+apps/registry-legacy/lib/cli-auth-store.ts             # Redis: session create/get/authorize/delete
 packages/cli/src/lib/config.ts                 # Reads/writes ~/.tank/config.json
 ```
 

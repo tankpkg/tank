@@ -14,8 +14,8 @@
 
 ```
 packages/cli/src/commands/info.ts               # CLI: fetch meta + version, format output
-apps/web/app/api/v1/skills/[name]/route.ts  # GET — skill metadata, latestVersion
-apps/web/app/api/v1/skills/[name]/[version]/route.ts # GET — version details, permissions, auditScore
+apps/registry-legacy/app/api/v1/skills/[name]/route.ts  # GET — skill metadata, latestVersion
+apps/registry-legacy/app/api/v1/skills/[name]/[version]/route.ts # GET — version details, permissions, auditScore
 ```
 
 ---

@@ -178,26 +178,26 @@ jobs:
           DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
 
       - name: Provision database schema
-        run: cd apps/web && bun x drizzle-kit push --force
+        run: cd apps/registry-legacy && bun x drizzle-kit push --force
         env:
           DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_perf
 
       - name: Seed deterministic perf data
-        run: cd apps/web && bun run perf:seed
+        run: cd apps/registry-legacy && bun run perf:seed
 
       - name: Run performance tests
         id: perf-test
-        run: cd apps/web && bun run perf:test
+        run: cd apps/registry-legacy && bun run perf:test
 
       - name: Generate performance report
         if: always() && steps.perf-test.outcome != 'skipped'
-        run: cd apps/web && bun run perf:report || true
+        run: cd apps/registry-legacy && bun run perf:report || true
 
       - name: Upload performance artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: perf-results
-          path: apps/web/perf/results/*.json
+          path: apps/registry-legacy/perf/results/*.json
           if-no-files-found: warn
           retention-days: 30

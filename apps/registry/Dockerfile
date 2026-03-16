@@ -8,8 +8,8 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY packages/internals-schemas/package.json ./packages/internals-schemas/
 COPY packages/internals-helpers/package.json ./packages/internals-helpers/
-COPY apps/web/package.json ./apps/web/
-COPY apps/web-tanstack/package.json ./apps/web-tanstack/
+COPY apps/registry-legacy/package.json ./apps/registry-legacy/
+COPY apps/registry/package.json ./apps/registry/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY bdd/package.json ./bdd/
@@ -23,17 +23,17 @@ WORKDIR /app
 COPY package.json bun.lock tsconfig.json ./
 COPY packages/internals-schemas ./packages/internals-schemas
 COPY packages/internals-helpers ./packages/internals-helpers
-COPY apps/web-tanstack ./apps/web-tanstack
+COPY apps/registry ./apps/registry
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/internals-schemas/node_modules ./packages/internals-schemas/node_modules
 COPY --from=deps /app/packages/internals-helpers/node_modules ./packages/internals-helpers/node_modules
-COPY --from=deps /app/apps/web-tanstack/node_modules ./apps/web-tanstack/node_modules
+COPY --from=deps /app/apps/registry/node_modules ./apps/registry/node_modules
 
 RUN bun run --filter=@internals/schemas build && \
     bun run --filter=@internals/helpers build && \
-    rm -rf apps/web-tanstack/.output && \
-    bun run --filter=@tankpkg/web-tanstack build
+    rm -rf apps/registry/.output && \
+    bun run --filter=registry build
 
 # Stage 3: Production
 FROM oven/bun:1-alpine AS runner
@@ -44,8 +44,8 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 bunjs && \
     adduser --system --uid 1001 tanstack
 
-COPY --from=builder --chown=tanstack:bunjs /app/apps/web-tanstack/.output ./.output
-COPY --from=builder --chown=tanstack:bunjs /app/apps/web-tanstack/content ./content
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/.output ./.output
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/content ./content
 
 USER tanstack
 

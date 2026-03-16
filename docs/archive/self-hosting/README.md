@@ -22,7 +22,7 @@ pnpm install
 ### 2. Configure Environment
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
+cp apps/registry-legacy/.env.example apps/registry-legacy/.env.local
 ```
 
 Edit `.env.local` with your settings:

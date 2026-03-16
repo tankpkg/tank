@@ -117,10 +117,10 @@ services:
   # ===================
   # Tank Web Application (TanStack Start)
   # ===================
-  web-tanstack:
+  registry:
     build:
       context: ..
-      dockerfile: apps/web-tanstack/Dockerfile
+      dockerfile: apps/registry/Dockerfile
     container_name: tank-web
     restart: unless-stopped
     ports:

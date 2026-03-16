@@ -14,7 +14,7 @@ including permissions breakdown.
 
 - `packages/cli/src/commands/audit.ts` — `auditCommand()`
 - `packages/mcp-server/src/tools/audit-skill.ts` — MCP wrapper
-- `apps/web/app/api/v1/skills/[name]/[version]/route.ts` — source of audit data
+- `apps/registry-legacy/app/api/v1/skills/[name]/[version]/route.ts` — source of audit data
 
 ---
 
@@ -24,7 +24,7 @@ including permissions breakdown.
 packages/
   cli/src/commands/audit.ts              # auditCommand() — reads lockfile, fetches /skills/name/version
   mcp-server/src/tools/audit-skill.ts   # MCP wrapper
-web/app/api/v1/skills/[name]/[version]/route.ts  # GET — returns auditScore, auditStatus, permissions
+registry-legacy/app/api/v1/skills/[name]/[version]/route.ts  # GET — returns auditScore, auditStatus, permissions
 ```
 
 ---

@@ -13,8 +13,8 @@ High-signal stack map. Use package references for package-specific detail.
 
 | Workspace                    | Role                       | Primary stack                                  |
 | ---------------------------- | -------------------------- | ---------------------------------------------- |
-| `apps/web-tanstack`          | active registry app target | TanStack Start, TanStack Router, Hono, Drizzle |
-| `apps/web`                   | maintained cutover app     | Next.js, React, Drizzle                        |
+| `apps/registry`              | active registry app target | TanStack Start, TanStack Router, Hono, Drizzle |
+| `apps/registry-legacy`       | maintained cutover app     | Next.js, React, Drizzle                        |
 | `apps/python-api`            | scanner API                | FastAPI, Pydantic                              |
 | `packages/cli`               | `tank` CLI                 | Commander, Zod                                 |
 | `packages/mcp-server`        | editor integration         | MCP SDK                                        |

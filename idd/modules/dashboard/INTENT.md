@@ -8,8 +8,8 @@
 
 **Single source of truth:**
 
-- `apps/web-tanstack/app/routes/dashboard/` — dashboard pages
-- `apps/web/app/dashboard/` — Next.js dashboard (during cutover)
+- `apps/registry/app/routes/dashboard/` — dashboard pages
+- `apps/registry-legacy/app/dashboard/` — Next.js dashboard (during cutover)
 - API routes for token CRUD
 
 ---
@@ -18,7 +18,7 @@
 
 ```
 apps/
-  web-tanstack/app/routes/dashboard/      # Dashboard pages — token list, create, revoke
+  registry/app/routes/dashboard/           # Dashboard pages — token list, create, revoke
   web/app/dashboard/                      # Next.js dashboard (maintained during cutover)
 ```
 

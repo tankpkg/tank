@@ -66,7 +66,7 @@ jobs:
           node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
 
       - name: Build shared package
-        run: bun run --filter '@tankpkg/shared' build
+        run: bun run --filter '@internals/schemas' build && bun run --filter '@internals/helpers' build
 
       - name: Build bundle and binary
         working-directory: packages/cli
@@ -286,7 +286,8 @@ jobs:
 
       - name: Build packages
         run: |
-          bun --filter @tankpkg/shared run build
+          bun --filter @internals/schemas run build
+          bun --filter @internals/helpers run build
           bun --filter @tankpkg/cli run build
           bun --filter @tankpkg/mcp-server run build
 

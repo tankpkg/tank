@@ -6,15 +6,15 @@
 
 **Consumers:** Web UI, authenticated users. `GET /api/v1/skills/[name]/star` (public read), `POST`/`DELETE` (authenticated write).
 
-**Single source of truth:** `apps/web/app/api/v1/skills/[name]/star/route.ts`.
+**Single source of truth:** `apps/registry-legacy/app/api/v1/skills/[name]/star/route.ts`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/web/app/api/v1/skills/[name]/star/route.ts  # GET (count + isStarred), POST (star), DELETE (unstar)
-apps/web/lib/db/schema.ts                         # skill_stars table: skillId, userId, unique constraint
+apps/registry-legacy/app/api/v1/skills/[name]/star/route.ts  # GET (count + isStarred), POST (star), DELETE (unstar)
+apps/registry-legacy/lib/db/schema.ts                         # skill_stars table: skillId, userId, unique constraint
 ```
 
 ---

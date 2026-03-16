@@ -50,13 +50,13 @@ Tank is in active product and platform iteration. Right now, the most valuable c
 4. **Push database schema** (requires DATABASE_URL in .env)
 
    ```bash
-   bun --filter @tankpkg/web exec drizzle-kit push
+   bun --filter registry-legacy exec drizzle-kit push
    ```
 
 5. **Start the dev server**
 
    ```bash
-   just dev web
+   just dev registry-legacy
    ```
 
 6. **Run tests**
@@ -72,8 +72,8 @@ Tank is in active product and platform iteration. Right now, the most valuable c
 
 This is a monorepo managed by [Turborepo](https://turbo.build/repo) with Bun workspaces:
 
-- `apps/web-tanstack` — active TanStack Start registry app and migration target
-- `apps/web` — Next.js 15 web app + API routes (deployed to Vercel)
+- `apps/registry` — active TanStack Start registry app and migration target
+- `apps/registry-legacy` — Next.js 15 web app + API routes (deployed to Vercel)
 - `packages/cli` — `tank` CLI tool (TypeScript, commander.js)
 - `apps/python-api` — Python security scanner (FastAPI, 6-stage pipeline)
 - `packages/internals-schemas` — Shared Zod schemas, TypeScript types, contract constants

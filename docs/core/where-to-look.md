@@ -4,14 +4,14 @@ Task-to-location map for the current repo layout.
 
 ## Product And Web
 
-- `TanStack public route / loader / head → apps/web-tanstack/src/routes/`
-- `TanStack API route → apps/web-tanstack/src/api/routes/`
-- `TanStack auth/session/data helpers → apps/web-tanstack/src/lib/`
-- `TanStack screen/layout/component → apps/web-tanstack/src/screens/ + src/components/`
-- `TanStack server functions / data loaders → apps/web-tanstack/src/query/`
-- `TanStack auth helpers → apps/web-tanstack/src/lib/auth/`
-- `Maintained Next route or API parity check → apps/web/app/`
-- `Shared docs source for TanStack docs pages → apps/web-tanstack/content/docs/`
+- `TanStack public route / loader / head → apps/registry/src/routes/`
+- `TanStack API route → apps/registry/src/api/routes/`
+- `TanStack auth/session/data helpers → apps/registry/src/lib/`
+- `TanStack screen/layout/component → apps/registry/src/screens/ + src/components/`
+- `TanStack server functions / data loaders → apps/registry/src/query/`
+- `TanStack auth helpers → apps/registry/src/lib/auth/`
+- `Maintained Next route or API parity check → apps/registry-legacy/app/`
+- `Shared docs source for TanStack docs pages → apps/registry/content/docs/`
 
 ## CLI / MCP / Shared
 
@@ -25,8 +25,8 @@ Task-to-location map for the current repo layout.
 
 - `scanner stages → apps/python-api/lib/scan/`
 - `scanner HTTP surface → apps/python-api/api/`
-- `storage backend logic → apps/web-tanstack/src/services/storage/`
-- `DB schema → apps/web-tanstack/src/lib/db/`
+- `storage backend logic → apps/registry/src/services/storage/`
+- `DB schema → apps/registry/src/lib/db/`
 
 ## Agent Infra
 

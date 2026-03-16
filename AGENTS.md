@@ -14,15 +14,15 @@ AGENTS.md and CLAUDE.md are symlinked. This file is your system prompt. Loads ev
 
 ## Current State
 
-- `apps/web-tanstack` = active migration target for registry UI + API.
-- `apps/web` = maintained during cutover. Do not assume TanStack parity or Next parity without checking code.
-- TanStack has: home, skills browse/detail, search, login, CLI auth, publish API, docs. Missing: admin CRUD, dashboard beyond tokens.
+- `apps/registry` = active TanStack Start registry app (migration target for UI + API).
+- `apps/registry-legacy` = maintained Next.js registry app during cutover. Do not assume parity without checking code.
+- Registry has: home, skills browse/detail, search, login, CLI auth, publish API, docs. Missing: admin CRUD, dashboard beyond tokens.
 - Browser behavior can diverge across Next and TanStack. Tests must encode the real contract, not copy selectors between apps.
 
 ## Context Recovery
 
 1. Read this file.
-2. Quick start: `just install && just docker up && just db push && just dev web-tanstack`
+2. Quick start: `just install && just docker up && just db push && just dev registry`
 3. `find docs -name "*.md" | sort` and open only the docs needed for the task.
 4. `find idd -name "*.md" | sort` if intent or active initiatives matter.
 5. `just --list` for commands.
@@ -54,9 +54,9 @@ Full catalog: `docs/core/roles.md`
 
 Apps (`apps/`):
 
-- `web-tanstack` — TanStack Start registry app, docs, API, dashboard/admin migration target
+- `registry` — TanStack Start registry app, docs, API, dashboard/admin migration target
   Routes: TanStack Router file-based. API: Hono handlers in `src/api/`. Server fns: `src/query/`. Auth: Better Auth in `src/lib/auth/`.
-- `web` — maintained Next.js registry app during cutover
+- `registry-legacy` — maintained Next.js registry app during cutover
 - `python-api` — Python 6-stage security scanner
 
 Packages (`packages/`):

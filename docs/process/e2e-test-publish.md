@@ -7,8 +7,8 @@ Manual end-to-end publish verification for local development.
 - local Postgres / storage / auth env configured
 - CLI built
 - one registry target running:
-  - Next: `just dev web` on `http://localhost:3000`
-  - TanStack: `just dev web-tanstack` on `http://localhost:3001`
+  - Next: `just dev registry-legacy` on `http://localhost:3000`
+  - TanStack: `just dev registry` on `http://localhost:3001`
 
 ## Target Selection
 

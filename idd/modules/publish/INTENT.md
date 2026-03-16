@@ -6,7 +6,7 @@
 
 **Consumers:** CLI (`tank publish` / `publishCommand()`), MCP server (`publish-skill` tool), both delegating to the same 3-step web API flow.
 
-**Single source of truth:** `packages/cli/src/commands/publish.ts` (CLI orchestration) → `apps/web/app/api/v1/skills/route.ts` (step 1: initiate) → `apps/web/app/api/v1/skills/confirm/route.ts` (step 3: confirm + scan trigger).
+**Single source of truth:** `packages/cli/src/commands/publish.ts` (CLI orchestration) → `apps/registry-legacy/app/api/v1/skills/route.ts` (step 1: initiate) → `apps/registry-legacy/app/api/v1/skills/confirm/route.ts` (step 3: confirm + scan trigger).
 
 ---
 
@@ -14,12 +14,12 @@
 
 ```
 packages/cli/src/commands/publish.ts          # CLI: pack → POST → PUT → confirm
-apps/web/app/api/v1/skills/route.ts       # POST /api/v1/skills — initiate publish
-apps/web/app/api/v1/skills/confirm/route.ts # POST /api/v1/skills/confirm — finalize
+apps/registry-legacy/app/api/v1/skills/route.ts       # POST /api/v1/skills — initiate publish
+apps/registry-legacy/app/api/v1/skills/confirm/route.ts # POST /api/v1/skills/confirm — finalize
 packages/cli/src/lib/packer.ts                # Tarball packing, integrity computation
-apps/web/lib/permission-escalation.ts     # Version permission-escalation check
-apps/web/lib/audit-score.ts               # Audit score computation on confirm
-apps/web/lib/storage/provider.ts          # Signed URL generation (Supabase / S3)
+apps/registry-legacy/lib/permission-escalation.ts     # Version permission-escalation check
+apps/registry-legacy/lib/audit-score.ts               # Audit score computation on confirm
+apps/registry-legacy/lib/storage/provider.ts          # Signed URL generation (Supabase / S3)
 ```
 
 ---

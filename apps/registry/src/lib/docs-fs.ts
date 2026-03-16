@@ -3,8 +3,8 @@ import { join } from 'node:path';
 
 const DOCS_DIR_CANDIDATES = [
   join(process.cwd(), 'content/docs'),
-  join(process.cwd(), '../../apps/web-tanstack/content/docs'),
-  join(process.cwd(), 'apps/web-tanstack/content/docs')
+  join(process.cwd(), '../../apps/registry/content/docs'),
+  join(process.cwd(), 'apps/registry/content/docs')
 ];
 
 export function getDocsDir(): string {

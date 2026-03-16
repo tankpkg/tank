@@ -1,5 +1,5 @@
 {
-  "projectName": "web-tanstack",
+  "projectName": "registry",
   "mode": "file-router",
   "typescript": true,
   "tailwind": true,
