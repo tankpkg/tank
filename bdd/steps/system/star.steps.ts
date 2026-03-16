@@ -11,7 +11,7 @@
  * Auth note: star POST/DELETE require a session cookie (browser auth), not an API key.
  * We obtain a session by POSTing to /api/auth/sign-in/email with a seeded user account.
  */
-import { createHash, randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID, scryptSync } from 'node:crypto';
 
 import postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -98,6 +98,17 @@ async function deleteJson(path: string, cookie?: string): Promise<{ status: numb
   return { status: res.status, body };
 }
 
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString('hex');
+  const key = scryptSync(password.normalize('NFKC'), salt, 64, {
+    N: 16384,
+    p: 1,
+    r: 16,
+    maxmem: 128 * 16384 * 16 * 2
+  });
+  return `${salt}:${key.toString('hex')}`;
+}
+
 async function seedUser(sql: postgres.Sql): Promise<void> {
   const now = new Date();
   world.userEmail = `star-bdd-${world.runId}@tank.test`;
@@ -108,7 +119,7 @@ async function seedUser(sql: postgres.Sql): Promise<void> {
     ON CONFLICT (id) DO NOTHING
   `;
 
-  const passwordHash = createHash('sha256').update(world.userPassword).digest('hex');
+  const passwordHash = hashPassword(world.userPassword);
 
   await sql`
     INSERT INTO "account" (id, user_id, account_id, provider_id, password, created_at, updated_at)

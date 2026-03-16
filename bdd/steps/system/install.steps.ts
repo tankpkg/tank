@@ -8,6 +8,10 @@ import { createSkillFixture, type SkillFixture } from '../../support/fixtures.js
 import { type McpBddWorld, registerMcpHooks } from '../../support/hooks.js';
 import { setupE2E } from '../../support/setup.js';
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 const hasRegistry = !!process.env.E2E_REGISTRY_URL;
 const hasDatabase = !!process.env.DATABASE_URL;
 
@@ -238,7 +242,7 @@ describe('Feature: Skill installation via MCP tool', () => {
 
       thenToolCompletesWithoutError();
       thenResponseContains(/installed/i);
-      thenResponseContains(new RegExp(version.replace(/\./g, '\\.')));
+      thenResponseContains(new RegExp(escapeRegex(version)));
       thenResponseContains(/SHA-512.*verified/i);
 
       const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
@@ -270,7 +274,7 @@ describe('Feature: Skill installation via MCP tool', () => {
       });
 
       thenToolCompletesWithoutError();
-      thenResponseContains(new RegExp(`${version.replace(/\./g, '\\.')}`));
+      thenResponseContains(new RegExp(escapeRegex(version)));
 
       const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, { integrity: string }> };
@@ -354,7 +358,7 @@ describe('Feature: Skill installation via MCP tool', () => {
       });
 
       thenToolCompletesWithoutError();
-      thenResponseContains(new RegExp(version.replace(/\./g, '\\.')));
+      thenResponseContains(new RegExp(escapeRegex(version)));
 
       const lockRaw = fs.readFileSync(path.join(projectDir(), 'tank.lock'), 'utf-8');
       const lock = JSON.parse(lockRaw) as { skills: Record<string, unknown> };
