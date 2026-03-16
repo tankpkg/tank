@@ -1,0 +1,159 @@
+{
+  "character": {
+    "name": "Tank Operator",
+    "age": "24-30",
+    "species": "Human",
+    "gender": "Male-presenting",
+    "role": "MASCOT",
+    "archetype": "SAGE",
+    "essence": "Calm operator who feeds skills into AI agents and keeps the system secure."
+  },
+  "physical": {
+    "height_cm": 178,
+    "build": "ATHLETIC",
+    "distinguishing_features": [
+      "Round glasses with green tint",
+      "Curly top hair with faded sides",
+      "Dark zip hoodie with green LED pin"
+    ],
+    "voice": "Calm, medium pitch, precise pace",
+    "mannerisms": [
+      "Slight head tilt while listening",
+      "Raises one eyebrow when validating",
+      "Relaxed half-smile in greetings"
+    ]
+  },
+  "backstory": {
+    "origin": "Visual embodiment of tankpkg.dev operator metaphor",
+    "wound": "Unsafe skill ecosystem without verification created trust failures",
+    "turning_point": "Commits to verify-first workflow before any skill is loaded",
+    "secrets": [
+      "Maintains hidden verification checklists",
+      "Monitors high-risk permission diffs obsessively"
+    ],
+    "key_past_relationships": [
+      {
+        "name": "Builder Community",
+        "role": "ALLY",
+        "influence": "Pushes him to keep workflows fast and practical"
+      }
+    ]
+  },
+  "psychology": {
+    "core_motivation": "Enable safe capability transfer to agents",
+    "core_need": "Trust that safety and speed can coexist",
+    "greatest_fear": "Silent compromise in supply chain",
+    "fatal_flaw": "Over-control when risk signals spike",
+    "moral_code": "Never ship unknown risk",
+    "contradictions": [
+      "Approachable tone with strict standards",
+      "Playful mascot form with serious operational mindset"
+    ]
+  },
+  "personality": {
+    "positive_traits": [
+      "Methodical",
+      "Reliable",
+      "Clear communicator",
+      "Quietly confident"
+    ],
+    "flaws": [
+      "Can over-validate",
+      "Sometimes under-delegates under pressure"
+    ],
+    "under_stress": "Compresses language and double-checks all assumptions",
+    "at_ease": "Friendly mentor energy",
+    "humor": "Dry technical humor",
+    "communication_style": "Short, direct, informative"
+  },
+  "relationships": {
+    "to_protagonist": "Guide and enabler",
+    "to_antagonist": "Counterforce to unsafe automation",
+    "allies": [
+      {
+        "name": "Developers",
+        "dynamic": "Mutual trust through transparency"
+      }
+    ],
+    "treats_higher_status": "Respectful but evidence-first",
+    "treats_lower_status": "Supportive and practical",
+    "treats_strangers": "Cautious but welcoming"
+  },
+  "visual_design": {
+    "palette": {
+      "dominant": {
+        "hex": "#0B0F14",
+        "role": "dominant",
+        "rationale": "Console environment base"
+      },
+      "secondary": {
+        "hex": "#1F2A37",
+        "role": "secondary",
+        "rationale": "Clothing and UI surfaces"
+      },
+      "accent": {
+        "hex": "#00FF41",
+        "role": "accent",
+        "rationale": "Verified active signal"
+      },
+      "shadow_dominant": "#070A0E",
+      "highlight_dominant": "#2A3544"
+    },
+    "shape_language": "SQUARE_CIRCLE",
+    "silhouette_notes": "Round glasses and hoodie over console silhouette",
+    "costume_rationale": "Modern operator attire balancing familiarity and technical identity",
+    "color_arc": "Stable palette; accent intensity increases in high-signal moments"
+  },
+  "voice": {
+    "sample_lines": [
+      {
+        "line": "Skill loaded. Verified.",
+        "context": "Successful install"
+      },
+      {
+        "line": "Permission budget exceeded. Let's inspect it first.",
+        "context": "Security gate"
+      },
+      {
+        "line": "You're good. Ship it.",
+        "context": "Final approval"
+      }
+    ],
+    "frequent_phrases": [
+      "verify",
+      "scan",
+      "budget",
+      "lock",
+      "signal",
+      "ready"
+    ],
+    "forbidden_phrases": [
+      "trust me",
+      "probably safe",
+      "good enough"
+    ],
+    "speech_patterns": "Concise declarative statements; imperative in ops contexts"
+  },
+  "story_function": {
+    "narrative_role": "Operational guide mascot",
+    "arc": "strict gatekeeper -> trusted enabler",
+    "key_scenes": [
+      "Hero greeting",
+      "Verification explanation",
+      "Ship confirmation"
+    ],
+    "thematic_function": "Security as empowerment"
+  },
+  "consistency_rules": {
+    "do": [
+      "Keep glasses and hoodie in canonical depictions",
+      "Preserve calm confident baseline expression",
+      "Use dark scenes with controlled green highlights"
+    ],
+    "do_not": [
+      "Drift into photorealism",
+      "Overcrowd with visual noise",
+      "Use warm bright palettes as primary"
+    ]
+  }
+}

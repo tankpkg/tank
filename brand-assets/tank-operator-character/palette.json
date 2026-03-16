@@ -1,0 +1,18 @@
+{
+  "character": "Tank Operator",
+  "dominant": {
+    "base": "#0B0F14",
+    "shadow": "#070A0E",
+    "highlight": "#2A3544"
+  },
+  "secondary": {
+    "base": "#1F2A37",
+    "shadow": "#161D28",
+    "highlight": "#2D3A4D"
+  },
+  "accent": {
+    "base": "#00FF41",
+    "shadow": "#00B82F",
+    "highlight": "#7DFF9E"
+  }
+}
