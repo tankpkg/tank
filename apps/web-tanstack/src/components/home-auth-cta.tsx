@@ -17,10 +17,7 @@ export function HomeNavAuthCta() {
       <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
         <Link to={destination}>{isLoggedIn ? 'Dashboard' : 'Sign In'}</Link>
       </Button>
-      <Button variant="ghost" size="sm" asChild className="max-lg:hidden">
-        <Link to="/docs">Docs</Link>
-      </Button>
-      <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-500 text-white">
+      <Button size="sm" asChild>
         <Link to={destination}>{isLoggedIn ? 'Open Dashboard' : 'Get Started'}</Link>
       </Button>
     </div>
@@ -37,7 +34,7 @@ export function HomePrimaryAuthCta({ size = 'lg', testId }: { size?: 'sm' | 'lg'
       variant="outline"
       size={size}
       asChild
-      className="border-emerald-600/30 text-foreground hover:bg-emerald-500/10 hover:border-emerald-500/50 dark:border-emerald-500/30 group">
+      className="group">
       <Link to={destination} data-testid={testId}>
         {isLoggedIn ? 'Open Dashboard' : 'Get Started'}
         <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
