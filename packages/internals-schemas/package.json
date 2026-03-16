@@ -16,6 +16,7 @@
     "lint:fix": "biome check --write ."
   },
   "devDependencies": {
+    "tsdown": "^0.21.3",
     "vitest": "^4"
   },
   "dependencies": {

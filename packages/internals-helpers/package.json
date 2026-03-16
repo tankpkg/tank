@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@types/semver": "^7.7.1",
+    "tsdown": "^0.21.3",
     "vitest": "^4"
   },
   "dependencies": {
