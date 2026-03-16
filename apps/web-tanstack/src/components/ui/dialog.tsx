@@ -1,9 +1,19 @@
+<<<<<<<< HEAD:apps/web-tanstack/src/components/ui/dialog.tsx
 import { XIcon } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import type * as React from 'react';
 
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
+========
+'use client';
+
+import { XIcon } from 'lucide-react';
+import { Dialog as DialogPrimitive } from 'radix-ui';
+import type * as React from 'react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+>>>>>>>> main:packages/web/components/ui/dialog.tsx
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;

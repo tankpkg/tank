@@ -1,6 +1,10 @@
 import type * as React from 'react';
 
+<<<<<<<< HEAD:apps/web-tanstack/src/components/ui/input.tsx
 import { cn } from '~/lib/utils';
+========
+import { cn } from '@/lib/utils';
+>>>>>>>> main:packages/web/components/ui/input.tsx
 
 function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
   return (

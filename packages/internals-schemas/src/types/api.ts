@@ -2,6 +2,8 @@ import type { Permissions } from '~/schemas/permissions.js';
 
 export type SkillVisibility = 'public' | 'private';
 
+export type SkillVisibility = 'public' | 'private';
+
 export interface PublishStartRequest {
   manifest: {
     name: string;
