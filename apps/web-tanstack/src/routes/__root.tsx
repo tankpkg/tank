@@ -1,8 +1,11 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
+import { createRootRouteWithContext, HeadContent, Outlet, Scripts, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { useEffect, useRef } from 'react';
 
+import { CookieConsentManager } from '~/components/cookie-consent-manager';
+import { capturePageview } from '~/lib/analytics';
 import { NotFoundScreen } from '~/screens/not-found-screen';
 
 import '~/styles/global.css';
@@ -36,7 +39,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     scripts: [
       {
-        children: `(function(){try{var d=document.documentElement;var p=window.matchMedia('(prefers-color-scheme:light)').matches;if(p)d.classList.remove('dark');else d.classList.add('dark')}catch(e){}})()`
+        children: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('tank-theme');if(t==='light'){d.classList.remove('dark');return}if(t==='dark'){d.classList.add('dark');return}var p=window.matchMedia('(prefers-color-scheme:light)').matches;if(p)d.classList.remove('dark');else d.classList.add('dark')}catch(e){}})()`
       },
       {
         type: 'application/ld+json',
@@ -72,6 +75,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootLayout() {
+  const { pathname } = useLocation();
+  const prev = useRef('');
+
+  useEffect(() => {
+    if (pathname !== prev.current) {
+      prev.current = pathname;
+      capturePageview();
+    }
+  }, [pathname]);
+
   return <Outlet />;
 }
 
@@ -83,6 +96,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <CookieConsentManager />
         <ReactQueryDevtools buttonPosition="bottom-left" />
         <TanStackRouterDevtools position="bottom-right" />
         <Scripts />
