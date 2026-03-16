@@ -3,30 +3,36 @@ import { motion } from 'motion/react';
 const PROBLEMS = [
   {
     title: 'No versioning',
-    description: 'Skills update silently. No lockfiles, no pinning, no rollback. What you installed yesterday might be different today.'
+    description:
+      'Skills update silently. No lockfiles, no pinning, no rollback. What you installed yesterday might be different today.'
   },
   {
     title: 'No permissions',
-    description: "Every skill runs with the agent's full access — files, API keys, shell commands. No sandboxing, no boundaries."
+    description:
+      "Every skill runs with the agent's full access — files, API keys, shell commands. No sandboxing, no boundaries."
   },
   {
     title: 'No scanning',
-    description: '341 malicious skills (12% of a major marketplace) went undetected. ClawHavoc shipped credential-stealing malware.'
+    description:
+      '341 malicious skills (12% of a major marketplace) went undetected. ClawHavoc shipped credential-stealing malware.'
   }
 ];
 
 const SOLUTIONS = [
   {
     title: 'Locked versions + integrity',
-    description: 'SHA-512 hashes pin every skill. Tampered content fails on install. Enforced semver with permission escalation detection.'
+    description:
+      'SHA-512 hashes pin every skill. Tampered content fails on install. Enforced semver with permission escalation detection.'
   },
   {
     title: 'Permission budgets',
-    description: 'Declare network, filesystem, and subprocess limits. Skills that exceed the budget are rejected before they run.'
+    description:
+      'Declare network, filesystem, and subprocess limits. Skills that exceed the budget are rejected before they run.'
   },
   {
     title: '6-stage security pipeline',
-    description: 'Every skill is scanned at publish time: ingestion, validation, static analysis, injection detection, secrets scanning, dependency audit.'
+    description:
+      'Every skill is scanned at publish time: ingestion, validation, static analysis, injection detection, secrets scanning, dependency audit.'
   }
 ];
 

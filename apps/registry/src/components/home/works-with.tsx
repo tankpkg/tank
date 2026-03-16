@@ -12,9 +12,7 @@ export function WorksWith() {
   return (
     <section className="relative z-[1] border-y border-border py-10" aria-label="Compatible AI coding tools">
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[3px] text-muted-foreground/40 mb-6">
-          Works with
-        </p>
+        <p className="text-[11px] font-semibold uppercase tracking-[3px] text-muted-foreground/40 mb-6">Works with</p>
         <div className="flex flex-wrap justify-center gap-8 sm:gap-10">
           {TOOLS.map((tool, i) => (
             <motion.div

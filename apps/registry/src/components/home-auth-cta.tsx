@@ -30,11 +30,7 @@ export function HomePrimaryAuthCta({ size = 'lg', testId }: { size?: 'sm' | 'lg'
   const destination = getDestination(isLoggedIn);
 
   return (
-    <Button
-      variant="outline"
-      size={size}
-      asChild
-      className="group">
+    <Button variant="outline" size={size} asChild className="group">
       <Link to={destination} data-testid={testId}>
         {isLoggedIn ? 'Open Dashboard' : 'Get Started'}
         <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />

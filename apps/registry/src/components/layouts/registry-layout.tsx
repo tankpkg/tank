@@ -67,7 +67,14 @@ export function RegistryLayout() {
                     d="M28 4L8 14v14c0 12.6 8.5 24.3 20 28 11.5-3.7 20-15.4 20-28V14L28 4z"
                     fill="rgba(0,255,65,0.04)"
                   />
-                  <text x="28" y="37" textAnchor="middle" fontFamily="system-ui" fontSize="21" fontWeight="800" fill="currentColor">
+                  <text
+                    x="28"
+                    y="37"
+                    textAnchor="middle"
+                    fontFamily="system-ui"
+                    fontSize="21"
+                    fontWeight="800"
+                    fill="currentColor">
                     T
                   </text>
                 </svg>
@@ -90,9 +97,7 @@ export function RegistryLayout() {
                   <path fillRule="evenodd" d={GITHUB_ICON_PATH} clipRule="evenodd" />
                 </svg>
                 <span className="hidden sm:inline">Star</span>
-                {starCount != null && (
-                  <span className="font-semibold tabular-nums text-tank">{starCount}</span>
-                )}
+                {starCount != null && <span className="font-semibold tabular-nums text-tank">{starCount}</span>}
               </a>
               <ThemeToggle />
               <HomeNavAuthCta />
@@ -109,15 +114,33 @@ export function RegistryLayout() {
         <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <Link to="/" className="flex items-center gap-2 font-semibold text-foreground/40 hover:text-foreground/60 transition-opacity">
+              <Link
+                to="/"
+                className="flex items-center gap-2 font-semibold text-foreground/40 hover:text-foreground/60 transition-opacity">
                 <svg width="18" height="18" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-                  <path d="M28 4L8 14v14c0 12.6 8.5 24.3 20 28 11.5-3.7 20-15.4 20-28V14L28 4z" fill="none" stroke="var(--tank-green-ui)" strokeWidth="2.5" />
-                  <text x="28" y="37" textAnchor="middle" fontFamily="system-ui" fontSize="21" fontWeight="800" fill="currentColor">T</text>
+                  <path
+                    d="M28 4L8 14v14c0 12.6 8.5 24.3 20 28 11.5-3.7 20-15.4 20-28V14L28 4z"
+                    fill="none"
+                    stroke="var(--tank-green-ui)"
+                    strokeWidth="2.5"
+                  />
+                  <text
+                    x="28"
+                    y="37"
+                    textAnchor="middle"
+                    fontFamily="system-ui"
+                    fontSize="21"
+                    fontWeight="800"
+                    fill="currentColor">
+                    T
+                  </text>
                 </svg>
                 <span className="text-[13px]">Tank</span>
               </Link>
               <span className="text-muted-foreground/20 hidden sm:inline">&bull;</span>
-              <span className="text-xs text-muted-foreground/50">Security-first package manager for AI agent skills</span>
+              <span className="text-xs text-muted-foreground/50">
+                Security-first package manager for AI agent skills
+              </span>
             </div>
             <div className="flex items-center gap-5 text-sm text-muted-foreground/60">
               <Link to="/skills" search={{} as never} className="hover:text-foreground transition-colors text-[13px]">

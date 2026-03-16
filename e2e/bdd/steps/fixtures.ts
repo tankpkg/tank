@@ -243,7 +243,7 @@ export const test = base.extend<{
 });
 
 export const { Given, When, Then } = createBdd(test);
-export { runTank, expectSuccess };
 export { expectFailure } from '../../helpers/cli';
 export { type ConsumerFixture, createConsumerFixture, createSkillFixture } from '../../helpers/fixtures';
 export type { SkillFixture };
+export { expectSuccess, runTank };

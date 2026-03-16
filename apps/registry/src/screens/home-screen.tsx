@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowRight, Star, Users } from 'lucide-react';
-import { useMemo } from 'react';
 import { motion } from 'motion/react';
+import { useMemo } from 'react';
 
 import { HeroSection } from '~/components/home/hero-section';
 import { HowItWorks } from '~/components/home/how-it-works';
@@ -96,7 +96,8 @@ function TankJsonExample() {
             Declare what your agent is <span className="text-tank">allowed to do</span>
           </h2>
           <p className="text-muted-foreground text-[15px]">
-            <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">tank.json</code> is like package.json — but with permissions.
+            <code className="text-sm bg-muted px-1.5 py-0.5 rounded font-mono">tank.json</code> is like package.json —
+            but with permissions.
           </p>
         </motion.div>
 
@@ -121,33 +122,61 @@ function TankJsonExample() {
             <code>
               <span className="text-muted-foreground/30">{'{'}</span>
               {'\n'}
-              {'  '}<span className="text-tank">"skills"</span><span className="text-muted-foreground/30">: {'{'}</span>
+              {'  '}
+              <span className="text-tank">"skills"</span>
+              <span className="text-muted-foreground/30">: {'{'}</span>
               {'\n'}
-              {'    '}<span className="text-tank">"@vercel/next-skill"</span><span className="text-muted-foreground/30">:</span> <span className="text-amber-400">"^2.1.0"</span><span className="text-muted-foreground/30">,</span>
+              {'    '}
+              <span className="text-tank">"@vercel/next-skill"</span>
+              <span className="text-muted-foreground/30">:</span> <span className="text-amber-400">"^2.1.0"</span>
+              <span className="text-muted-foreground/30">,</span>
               {'\n'}
-              {'    '}<span className="text-tank">"@community/seo-audit"</span><span className="text-muted-foreground/30">:</span> <span className="text-amber-400">"3.0.0"</span>
+              {'    '}
+              <span className="text-tank">"@community/seo-audit"</span>
+              <span className="text-muted-foreground/30">:</span> <span className="text-amber-400">"3.0.0"</span>
               {'\n'}
-              {'  '}<span className="text-muted-foreground/30">{'},'}</span>
+              {'  '}
+              <span className="text-muted-foreground/30">{'},'}</span>
               {'\n'}
-              {'  '}<span className="text-tank">"permissions"</span><span className="text-muted-foreground/30">: {'{'}</span>
+              {'  '}
+              <span className="text-tank">"permissions"</span>
+              <span className="text-muted-foreground/30">: {'{'}</span>
               {'\n'}
-              {'    '}<span className="text-tank">"network"</span><span className="text-muted-foreground/30">: {'{'}</span>
+              {'    '}
+              <span className="text-tank">"network"</span>
+              <span className="text-muted-foreground/30">: {'{'}</span>
               {'\n'}
-              {'      '}<span className="text-tank">"outbound"</span><span className="text-muted-foreground/30">:</span> <span className="text-amber-400">["*.anthropic.com"]</span>
+              {'      '}
+              <span className="text-tank">"outbound"</span>
+              <span className="text-muted-foreground/30">:</span>{' '}
+              <span className="text-amber-400">["*.anthropic.com"]</span>
               {'\n'}
-              {'    '}<span className="text-muted-foreground/30">{'},'}</span>
+              {'    '}
+              <span className="text-muted-foreground/30">{'},'}</span>
               {'\n'}
-              {'    '}<span className="text-tank">"filesystem"</span><span className="text-muted-foreground/30">: {'{'}</span>
+              {'    '}
+              <span className="text-tank">"filesystem"</span>
+              <span className="text-muted-foreground/30">: {'{'}</span>
               {'\n'}
-              {'      '}<span className="text-tank">"read"</span><span className="text-muted-foreground/30">:</span> <span className="text-amber-400">["./src/**"]</span><span className="text-muted-foreground/30">,</span>
+              {'      '}
+              <span className="text-tank">"read"</span>
+              <span className="text-muted-foreground/30">:</span> <span className="text-amber-400">["./src/**"]</span>
+              <span className="text-muted-foreground/30">,</span>
               {'\n'}
-              {'      '}<span className="text-tank">"write"</span><span className="text-muted-foreground/30">:</span> <span className="text-amber-400">["./output/**"]</span>
+              {'      '}
+              <span className="text-tank">"write"</span>
+              <span className="text-muted-foreground/30">:</span>{' '}
+              <span className="text-amber-400">["./output/**"]</span>
               {'\n'}
-              {'    '}<span className="text-muted-foreground/30">{'},'}</span>
+              {'    '}
+              <span className="text-muted-foreground/30">{'},'}</span>
               {'\n'}
-              {'    '}<span className="text-tank">"subprocess"</span><span className="text-muted-foreground/30">:</span> <span className="text-pink-400">false</span>
+              {'    '}
+              <span className="text-tank">"subprocess"</span>
+              <span className="text-muted-foreground/30">:</span> <span className="text-pink-400">false</span>
               {'\n'}
-              {'  '}<span className="text-muted-foreground/30">{'}'}</span>
+              {'  '}
+              <span className="text-muted-foreground/30">{'}'}</span>
               {'\n'}
               <span className="text-muted-foreground/30">{'}'}</span>
             </code>
@@ -170,9 +199,7 @@ function ContributorsSection() {
           <div className="inline-flex items-center justify-center w-10 h-10 rounded-sm bg-tank/10 border border-tank/12 mb-4">
             <Users className="w-5 h-5 text-tank" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight mb-2">
-            Built by the community
-          </h2>
+          <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight mb-2">Built by the community</h2>
           <p className="text-muted-foreground text-[15px] mb-8">Thank you to everyone who has contributed.</p>
         </motion.div>
 

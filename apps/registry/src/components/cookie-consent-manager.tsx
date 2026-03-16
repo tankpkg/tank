@@ -71,8 +71,7 @@ export function CookieConsentManager() {
                 },
                 {
                   title: 'Strictly necessary cookies',
-                  description:
-                    'These cookies are essential for the website to function and cannot be switched off.',
+                  description: 'These cookies are essential for the website to function and cannot be switched off.',
                   linkedCategory: 'necessary'
                 },
                 {

@@ -48,9 +48,7 @@ export function TableOfContents({ headings }: { headings: Heading[] }) {
                   'block text-sm leading-snug transition-colors',
                   heading.level === 3 && 'pl-3',
                   heading.level >= 4 && 'pl-6',
-                  activeId === heading.id
-                    ? 'text-tank font-medium'
-                    : 'text-muted-foreground hover:text-foreground'
+                  activeId === heading.id ? 'text-tank font-medium' : 'text-muted-foreground hover:text-foreground'
                 )}
                 aria-current={activeId === heading.id ? 'location' : undefined}>
                 {heading.text}

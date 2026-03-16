@@ -47,8 +47,8 @@ export function HeroSection({ starCount }: HeroSectionProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2, delay: 0.1 }}>
-          Integrity verification, permission budgets, and 6-stage security scanning.
-          What npm did for JavaScript, Tank does for agent skills.
+          Integrity verification, permission budgets, and 6-stage security scanning. What npm did for JavaScript, Tank
+          does for agent skills.
         </motion.p>
 
         {/* Install method selector — biggest CTA */}
@@ -66,9 +66,7 @@ export function HeroSection({ starCount }: HeroSectionProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.2, delay: 0.2 }}>
-          <Link
-            to="/docs"
-            className="text-muted-foreground/60 hover:text-foreground transition-colors">
+          <Link to="/docs" className="text-muted-foreground/60 hover:text-foreground transition-colors">
             View Docs
           </Link>
           <span className="text-muted-foreground/20">·</span>

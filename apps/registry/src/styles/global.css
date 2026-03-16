@@ -100,7 +100,7 @@
   --sidebar-border: oklch(0.922 0.004 155);
   --sidebar-ring: oklch(0.7 0.01 155);
 
-  --tank-green: #00FF41;
+  --tank-green: #00ff41;
   --tank-green-ui: #10b981;
   --tank-emerald: #10b981;
   --tank-emerald-bright: #34d399;
@@ -147,7 +147,7 @@
   --sidebar-border: oklch(0.16 0.012 155);
   --sidebar-ring: oklch(0.55 0.012 155);
 
-  --tank-green: #00FF41;
+  --tank-green: #00ff41;
   --tank-green-ui: #10b981;
   --tank-emerald: #10b981;
   --tank-emerald-bright: #34d399;
@@ -195,10 +195,20 @@
    MATRIX RAIN — vertical scrolling security text (pure CSS)
    ============================================================ */
 @keyframes matrix-rain {
-  0% { transform: translateY(-100vh); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(100vh); opacity: 0; }
+  0% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
 }
 
 .matrix-rain {
@@ -268,8 +278,13 @@
    VERIFIED DOT — pulse animation for terminal header
    ============================================================ */
 @keyframes verified-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .verified-dot {
@@ -301,8 +316,12 @@
   transition: opacity 0.2s ease;
 }
 
-.step-card:hover::before { opacity: 1; }
-.step-card:hover { border-color: rgba(0, 255, 65, 0.15); }
+.step-card:hover::before {
+  opacity: 1;
+}
+.step-card:hover {
+  border-color: rgba(0, 255, 65, 0.15);
+}
 
 /* ============================================================
    SCROLLBAR — green-tinted
