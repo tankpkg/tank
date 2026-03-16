@@ -1,5 +1,5 @@
 {
-  "name": "@tankpkg/web-tanstack",
+  "name": "registry",
   "version": "0.8.1",
   "private": true,
   "type": "module",
@@ -8,7 +8,6 @@
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
-    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
@@ -91,7 +90,6 @@
     "jsdom": "^28.1.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.1.0"
+    "vite-tsconfig-paths": "^5.1.4"
   }
 }

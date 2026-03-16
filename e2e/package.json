@@ -1,0 +1,14 @@
+{
+  "name": "@internal/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "test:run": "vitest run",
+    "test:tanstack": "TANK_APP_TARGET=tanstack vitest run",
+    "test:all": "TANK_APP_TARGET=next vitest run && TANK_APP_TARGET=tanstack vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0",
+    "postgres": "^3.4.8"
+  }
+}

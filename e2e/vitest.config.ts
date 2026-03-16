@@ -21,6 +21,6 @@ export default defineConfig({
     sequence: {
       concurrent: false
     },
-    include: ['e2e/**/*.e2e.test.ts']
+    include: ['**/*.e2e.test.ts']
   }
 });
