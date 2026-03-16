@@ -55,4 +55,4 @@ function getDb() {
 const sql = getPostgresClient();
 const db = getDb();
 
-export { sql, db };
+export { db, sql };
