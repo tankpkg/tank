@@ -1,7 +1,7 @@
-import { AnimatePresence, motion } from 'motion/react';
-import { useCallback, useState } from 'react';
+import { AnimatePresence, motion } from "motion/react";
+import { useCallback, useState } from "react";
 
-import { INSTALL_METHODS } from '~/consts/brand';
+import { INSTALL_METHODS } from "~/consts/brand";
 
 export function InstallSelector() {
   const [activeMethod, setActiveMethod] = useState(0);
@@ -14,7 +14,7 @@ export function InstallSelector() {
   }, [activeMethod]);
 
   return (
-    <div className="mx-auto w-full max-w-[520px] rounded border border-border bg-card/50 backdrop-blur-sm overflow-hidden">
+    <div className="w-full max-w-[520px] rounded border border-border bg-card/50 backdrop-blur-sm overflow-hidden">
       {/* Tab bar */}
       <div className="flex border-b border-border p-1 gap-0.5">
         {INSTALL_METHODS.map((method, i) => (
@@ -24,8 +24,8 @@ export function InstallSelector() {
             onClick={() => setActiveMethod(i)}
             className={`flex-1 rounded-sm px-3 py-2 text-[13px] font-medium transition-all duration-150 ${
               i === activeMethod
-                ? 'bg-tank/10 text-tank'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                ? "bg-tank/10 text-tank"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}>
             {method.label}
           </button>

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as RegistryRouteImport } from './routes/_registry'
@@ -22,7 +23,13 @@ import { Route as RegistrySkillsIndexRouteImport } from './routes/_registry/skil
 import { Route as RegistryDocsIndexRouteImport } from './routes/_registry/docs.index'
 import { Route as RegistrySkillsSplatRouteImport } from './routes/_registry/skills.$'
 import { Route as RegistryDocsSplatRouteImport } from './routes/_registry/docs.$'
+import { Route as RegistryDocsSlugLlmsDottxtRouteImport } from './routes/_registry/docs.$slug.llms[.]txt'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -87,11 +94,18 @@ const RegistryDocsSplatRoute = RegistryDocsSplatRouteImport.update({
   path: '/docs/$',
   getParentRoute: () => RegistryRoute,
 } as any)
+const RegistryDocsSlugLlmsDottxtRoute =
+  RegistryDocsSlugLlmsDottxtRouteImport.update({
+    id: '/docs/$slug/llms.txt',
+    path: '/docs/$slug/llms.txt',
+    getParentRoute: () => RegistryRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof RegistryIndexRoute
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/llms-full.txt': typeof LlmLlmsFullDottxtRoute
   '/llms.txt': typeof LlmLlmsDottxtRoute
   '/cli-login': typeof RegistryCliLoginRoute
@@ -101,10 +115,12 @@ export interface FileRoutesByFullPath {
   '/skills/$': typeof RegistrySkillsSplatRoute
   '/docs/': typeof RegistryDocsIndexRoute
   '/skills/': typeof RegistrySkillsIndexRoute
+  '/docs/$slug/llms.txt': typeof RegistryDocsSlugLlmsDottxtRoute
 }
 export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/llms-full.txt': typeof LlmLlmsFullDottxtRoute
   '/llms.txt': typeof LlmLlmsDottxtRoute
   '/cli-login': typeof RegistryCliLoginRoute
@@ -115,12 +131,14 @@ export interface FileRoutesByTo {
   '/skills/$': typeof RegistrySkillsSplatRoute
   '/docs': typeof RegistryDocsIndexRoute
   '/skills': typeof RegistrySkillsIndexRoute
+  '/docs/$slug/llms.txt': typeof RegistryDocsSlugLlmsDottxtRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_registry': typeof RegistryRouteWithChildren
   '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_llm/llms-full.txt': typeof LlmLlmsFullDottxtRoute
   '/_llm/llms.txt': typeof LlmLlmsDottxtRoute
   '/_registry/cli-login': typeof RegistryCliLoginRoute
@@ -131,6 +149,7 @@ export interface FileRoutesById {
   '/_registry/skills/$': typeof RegistrySkillsSplatRoute
   '/_registry/docs/': typeof RegistryDocsIndexRoute
   '/_registry/skills/': typeof RegistrySkillsIndexRoute
+  '/_registry/docs/$slug/llms.txt': typeof RegistryDocsSlugLlmsDottxtRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,6 +157,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/sitemap.xml'
     | '/llms-full.txt'
     | '/llms.txt'
     | '/cli-login'
@@ -147,10 +167,12 @@ export interface FileRouteTypes {
     | '/skills/$'
     | '/docs/'
     | '/skills/'
+    | '/docs/$slug/llms.txt'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/admin'
     | '/dashboard'
+    | '/sitemap.xml'
     | '/llms-full.txt'
     | '/llms.txt'
     | '/cli-login'
@@ -161,11 +183,13 @@ export interface FileRouteTypes {
     | '/skills/$'
     | '/docs'
     | '/skills'
+    | '/docs/$slug/llms.txt'
   id:
     | '__root__'
     | '/_registry'
     | '/admin'
     | '/dashboard'
+    | '/sitemap.xml'
     | '/_llm/llms-full.txt'
     | '/_llm/llms.txt'
     | '/_registry/cli-login'
@@ -176,12 +200,14 @@ export interface FileRouteTypes {
     | '/_registry/skills/$'
     | '/_registry/docs/'
     | '/_registry/skills/'
+    | '/_registry/docs/$slug/llms.txt'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   RegistryRoute: typeof RegistryRouteWithChildren
   AdminRoute: typeof AdminRoute
   DashboardRoute: typeof DashboardRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   LlmLlmsFullDottxtRoute: typeof LlmLlmsFullDottxtRoute
   LlmLlmsDottxtRoute: typeof LlmLlmsDottxtRoute
   ApiSplatRoute: typeof ApiSplatRoute
@@ -189,6 +215,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -280,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegistryDocsSplatRouteImport
       parentRoute: typeof RegistryRoute
     }
+    '/_registry/docs/$slug/llms.txt': {
+      id: '/_registry/docs/$slug/llms.txt'
+      path: '/docs/$slug/llms.txt'
+      fullPath: '/docs/$slug/llms.txt'
+      preLoaderRoute: typeof RegistryDocsSlugLlmsDottxtRouteImport
+      parentRoute: typeof RegistryRoute
+    }
   }
 }
 
@@ -291,6 +331,7 @@ interface RegistryRouteChildren {
   RegistrySkillsSplatRoute: typeof RegistrySkillsSplatRoute
   RegistryDocsIndexRoute: typeof RegistryDocsIndexRoute
   RegistrySkillsIndexRoute: typeof RegistrySkillsIndexRoute
+  RegistryDocsSlugLlmsDottxtRoute: typeof RegistryDocsSlugLlmsDottxtRoute
 }
 
 const RegistryRouteChildren: RegistryRouteChildren = {
@@ -301,6 +342,7 @@ const RegistryRouteChildren: RegistryRouteChildren = {
   RegistrySkillsSplatRoute: RegistrySkillsSplatRoute,
   RegistryDocsIndexRoute: RegistryDocsIndexRoute,
   RegistrySkillsIndexRoute: RegistrySkillsIndexRoute,
+  RegistryDocsSlugLlmsDottxtRoute: RegistryDocsSlugLlmsDottxtRoute,
 }
 
 const RegistryRouteWithChildren = RegistryRoute._addFileChildren(
@@ -311,6 +353,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegistryRoute: RegistryRouteWithChildren,
   AdminRoute: AdminRoute,
   DashboardRoute: DashboardRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   LlmLlmsFullDottxtRoute: LlmLlmsFullDottxtRoute,
   LlmLlmsDottxtRoute: LlmLlmsDottxtRoute,
   ApiSplatRoute: ApiSplatRoute,
