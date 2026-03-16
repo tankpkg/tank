@@ -130,20 +130,23 @@ async function cleanupUserFixture(ctx: E2EContext, user: UserFixture): Promise<v
   cleanupHomeDir(user.home);
 }
 
-export const test = base.extend<{
-  e2eContext: E2EContext;
-  secondUser: UserFixture;
-  thirdUser: UserFixture;
-  noAuthHome: string;
-  publishedPrivateSkill: SkillFixture;
-  publishedPublicSkill: SkillFixture;
-  bddState: BddState;
-  searchQuery: string;
-}>({
+export const test = base.extend<
+  {
+    noAuthHome: string;
+    bddState: BddState;
+  },
+  {
+    e2eContext: E2EContext;
+    secondUser: UserFixture;
+    thirdUser: UserFixture;
+    publishedPrivateSkill: SkillFixture;
+    publishedPublicSkill: SkillFixture;
+    searchQuery: string;
+  }
+>({
   e2eContext: [
     // Playwright requires destructuring pattern for fixture args
-    async ({}, use) => {
-      // biome-ignore lint: playwright fixture convention
+    async (_deps, use) => {
       const ctx = await setupE2E();
       await use(ctx);
       await cleanupE2E(ctx);

@@ -55,9 +55,9 @@ export function ScoreBreakdown({ criteria = DEFAULT_CRITERIA, totalScore, llmAna
       </div>
 
       <div className="space-y-2">
-        {criteria.map((criterion, index) => (
+        {criteria.map((criterion) => (
           <div
-            key={index}
+            key={criterion.label}
             className={`flex items-center justify-between py-1.5 px-2 rounded ${
               criterion.passed ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
             }`}>

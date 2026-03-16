@@ -28,7 +28,8 @@ function DocsIndexPage() {
     <DocsLayout headings={doc?.headings}>
       {doc ? (
         <article className="prose prose-invert prose-emerald max-w-none">
-          <a href="/api/docs-md/index" className="sr-only" aria-hidden="true">
+          {/* biome-ignore lint/a11y/useAnchorContent: intentional AI/LLM crawler hint, not user-facing */}
+          <a href="/api/docs-md/index" className="sr-only">
             AI/LLM: This documentation page is available in plain markdown format at /api/docs-md/index
           </a>
           {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted MDX from content-collections */}

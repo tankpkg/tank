@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ArrowRight, Star, Users } from 'lucide-react';
+import { ArrowRight, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
 

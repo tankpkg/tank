@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_registry/docs/$')({
         { property: 'og:type', content: 'article' },
         { property: 'og:site_name', content: 'Tank' },
         { property: 'article:published_time', content: '2025-01-01T00:00:00Z' },
-        { property: 'article:modified_time', content: new Date().toISOString().split('T')[0] + 'T00:00:00Z' }
+        { property: 'article:modified_time', content: `${new Date().toISOString().split('T')[0]}T00:00:00Z` }
       ],
       links: [
         { rel: 'canonical', href: `https://www.tankpkg.dev/docs/${loaderData?.slug || ''}` },
@@ -37,7 +37,7 @@ export const Route = createFileRoute('/_registry/docs/$')({
             headline: doc.title,
             description: doc.description || `Tank documentation: ${doc.title}`,
             datePublished: '2025-01-01T00:00:00Z',
-            dateModified: new Date().toISOString().split('T')[0] + 'T00:00:00Z',
+            dateModified: `${new Date().toISOString().split('T')[0]}T00:00:00Z`,
             author: { '@type': 'Organization', name: 'Tank' },
             publisher: { '@type': 'Organization', name: 'Tank' }
           })
@@ -75,7 +75,8 @@ function DocPage() {
   return (
     <DocsLayout headings={doc?.headings}>
       <article className="prose prose-invert prose-emerald max-w-none">
-        <a href={`/api/docs-md/${slug || 'index'}`} className="sr-only" aria-hidden="true">
+        {/* biome-ignore lint/a11y/useAnchorContent: intentional AI/LLM crawler hint, not user-facing */}
+        <a href={`/api/docs-md/${slug || 'index'}`} className="sr-only">
           AI/LLM: This documentation page is available in plain markdown format at /docs/{slug || 'index'}.md
         </a>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted MDX from content-collections */}

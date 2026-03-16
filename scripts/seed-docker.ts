@@ -145,8 +145,8 @@ async function main() {
         INSERT INTO skill_versions (id, skill_id, version, integrity, tarball_path, tarball_size, file_count, manifest, permissions, audit_score, audit_status, readme, published_by, created_at)
         VALUES (
           ${versionId}, ${skillId}, ${version},
-          ${'sha512-seed' + crypto.randomUUID().replace(/-/g, '')},
-          ${'skills/' + skillId + '/' + version + '.tgz'},
+          ${`sha512-seed${crypto.randomUUID().replace(/-/g, '')}`},
+          ${`skills/${skillId}/${version}.tgz`},
           ${tarballSize}, ${fileCount},
           ${sql.json(manifest)}, ${sql.json(permissions)},
           ${auditScore}, 'completed', ${readme}, ${PUBLISHER_ID},
@@ -182,7 +182,7 @@ async function main() {
           const starUserId = `star-user-${dirName}-${s}`;
           await sql`
             INSERT INTO "user" (id, name, email, email_verified, role, created_at, updated_at)
-            VALUES (${starUserId}, ${'User ' + s}, ${`user${s}.${dirName}@example.com`}, true, 'user', now(), now())
+            VALUES (${starUserId}, ${`User ${s}`}, ${`user${s}.${dirName}@example.com`}, true, 'user', now(), now())
             ON CONFLICT (id) DO NOTHING
           `;
           await sql`

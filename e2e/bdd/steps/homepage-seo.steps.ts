@@ -70,7 +70,7 @@ Then('the JSON-LD should include a type {string}', async ({ bddState }, typeName
   // Extract JSON-LD content from script tags
   const jsonLdMatch = body.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
   expect(jsonLdMatch).toBeTruthy();
-  const jsonLd = JSON.parse(jsonLdMatch?.[1]!);
+  const jsonLd = JSON.parse(jsonLdMatch![1]);
   // Check @graph array or top-level @type
   const types: string[] = [];
   if (jsonLd['@graph']) {
