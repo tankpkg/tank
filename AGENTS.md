@@ -16,7 +16,6 @@ AGENTS.md and CLAUDE.md are symlinked. This file is your system prompt. Loads ev
 
 - `apps/web-tanstack` = active migration target for registry UI + API.
 - `apps/web` = maintained during cutover. Do not assume TanStack parity or Next parity without checking code.
-- `apps/web-astro` exists in the repo but is not an active first-class path for new work unless the task says so.
 - TanStack has: home, skills browse/detail, search, login, CLI auth, publish API, docs. Missing: admin CRUD, dashboard beyond tokens.
 - Browser behavior can diverge across Next and TanStack. Tests must encode the real contract, not copy selectors between apps.
 

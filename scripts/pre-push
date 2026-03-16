@@ -55,7 +55,6 @@ fi
 TS_PACKAGES=(
   "packages/cli"
   "apps/web"
-  "apps/web-astro"
   "apps/web-tanstack"
   "packages/mcp-server"
   "packages/internals-schemas"

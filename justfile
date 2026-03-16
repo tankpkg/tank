@@ -49,7 +49,6 @@ down:
 
 # just dev         - start all dev servers in parallel via turbo
 # just dev web     - Next.js dev server on :3000
-# just dev web-astro - Astro dev server on :4321
 # just dev web-tanstack - TanStack Start dev server on :3001
 # just dev cli     - CLI in tsdown watch mode
 # just dev mcp     - MCP server in tsx watch mode
@@ -60,7 +59,6 @@ dev target='all':
     set -euo pipefail
     case "{{target}}" in
         web)     bun run --filter @tankpkg/web dev ;;
-        web-astro) cd apps/web-astro && bun run dev ;;
         web-tanstack) bun run --filter @tankpkg/web-tanstack dev ;;
         cli)     bun run --filter @tankpkg/cli dev ;;
         mcp)     bun run --filter @tankpkg/mcp-server dev ;;
@@ -70,7 +68,7 @@ dev target='all':
             bun turbo dev &
             wait
             ;;
-        *) echo "Unknown target: {{target}}. Use: web, web-astro, web-tanstack, cli, mcp, scanner, all" && exit 1 ;;
+        *) echo "Unknown target: {{target}}. Use: web, web-tanstack, cli, mcp, scanner, all" && exit 1 ;;
     esac
 
 # just scan - send a sample skill tarball to the Python scanner API for quick verification
@@ -80,7 +78,6 @@ scan:
 
 # just build         - build all packages via turbo
 # just build web     - Next.js production build
-# just build web-astro - Astro production build
 # just build web-tanstack - TanStack Start production build
 # just build cli     - CLI via tsdown
 # just build mcp     - MCP server via tsdown
@@ -93,7 +90,6 @@ build target='all':
     set -euo pipefail
     case "{{target}}" in
         web)     bun run --filter @tankpkg/web build ;;
-        web-astro) cd apps/web-astro && bun run build ;;
         web-tanstack) bun run --filter @tankpkg/web-tanstack build ;;
         cli)     bun run --filter @tankpkg/cli build ;;
         mcp)     bun run --filter @tankpkg/mcp-server build ;;
@@ -101,7 +97,7 @@ build target='all':
         internals-helpers) bun run --filter @internals/helpers build ;;
         binary) bun run --filter @tankpkg/cli build:binary ;;
         all)    bun turbo build ;;
-        *) echo "Unknown target: {{target}}. Use: web, web-astro, web-tanstack, cli, mcp, internals-schemas, internals-helpers, binary, all" && exit 1 ;;
+        *) echo "Unknown target: {{target}}. Use: web, web-tanstack, cli, mcp, internals-schemas, internals-helpers, binary, all" && exit 1 ;;
     esac
 
 # just fmt        - format all code (TypeScript + Python)
@@ -203,7 +199,6 @@ bump VERSION:
     # Update package.json files
     jq ".version = \"{{VERSION}}\"" packages/cli/package.json > packages/cli/package.json.tmp && mv packages/cli/package.json.tmp packages/cli/package.json
     jq ".version = \"{{VERSION}}\"" apps/web/package.json > apps/web/package.json.tmp && mv apps/web/package.json.tmp apps/web/package.json
-    jq ".version = \"{{VERSION}}\"" apps/web-astro/package.json > apps/web-astro/package.json.tmp && mv apps/web-astro/package.json.tmp apps/web-astro/package.json
     jq ".version = \"{{VERSION}}\"" apps/web-tanstack/package.json > apps/web-tanstack/package.json.tmp && mv apps/web-tanstack/package.json.tmp apps/web-tanstack/package.json
     jq ".version = \"{{VERSION}}\"" packages/mcp-server/package.json > packages/mcp-server/package.json.tmp && mv packages/mcp-server/package.json.tmp packages/mcp-server/package.json
     jq ".version = \"{{VERSION}}\"" packages/internals-schemas/package.json > packages/internals-schemas/package.json.tmp && mv packages/internals-schemas/package.json.tmp packages/internals-schemas/package.json
@@ -219,7 +214,6 @@ bump VERSION:
 
 # just test         - run all unit tests via turbo
 # just test web     - vitest for Next.js app
-# just test web-astro - vitest for Astro app
 # just test web-tanstack - vitest for TanStack Start app
 # just test cli     - vitest for CLI commands
 # just test mcp     - vitest for MCP server tools
@@ -244,7 +238,6 @@ test target='all':
         internals-schemas) bun run --filter @internals/schemas test ;;
         internals-helpers) bun run --filter @internals/helpers test ;;
         scanner) cd apps/python-api && PYTHONPATH=. UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv run pytest -v ;;
-        web-astro) cd apps/web-astro && bun run test ;;
         web-tanstack) bun run --filter @tankpkg/web-tanstack test ;;
         e2e)     bun vitest run --config e2e/vitest.config.ts ;;
         e2e-tanstack) TANK_APP_TARGET=tanstack bun vitest run --config e2e/vitest.config.ts ;;
@@ -254,7 +247,7 @@ test target='all':
         bdd)     bun vitest run --config bdd/vitest.config.ts && bunx bddgen test -c bdd/playwright.config.ts && bunx playwright test -c bdd/playwright.config.ts ;;
         perf)    bun run --filter @tankpkg/web perf:test ;;
         all)     bun turbo test ;;
-        *) echo "Unknown target: {{target}}. Use: web, web-astro, web-tanstack, cli, mcp, internals-schemas, internals-helpers, scanner, e2e, e2e-tanstack, e2e-all, bdd, bdd-system, bdd-browser, perf, all" && exit 1 ;;
+        *) echo "Unknown target: {{target}}. Use: web, web-tanstack, cli, mcp, internals-schemas, internals-helpers, scanner, e2e, e2e-tanstack, e2e-all, bdd, bdd-system, bdd-browser, perf, all" && exit 1 ;;
     esac
 
 # just perf        - run performance tests (alias for just perf test)
@@ -277,24 +270,24 @@ perf action='test':
     esac
 
 # just db <action> [app] - database and data operations
-# just db generate       - create a new Drizzle migration SQL file (web)
-# just db generate-new   - create a new Drizzle migration SQL file (web-astro)
-# just db push           - apply current schema directly to Postgres (no migration file)
-# just db admin          - bootstrap the first admin user
-# just db list           - list all registered users
-# just db seed           - populate registry with starter productivity skills
+# just db generate          - create a new Drizzle migration SQL file (web)
+# just db generate-tanstack - create a new Drizzle migration SQL file (web-tanstack)
+# just db push              - apply current schema directly to Postgres (no migration file)
+# just db admin             - bootstrap the first admin user
+# just db list              - list all registered users
+# just db seed              - populate registry with starter productivity skills
 [group('db')]
 db action:
     #!/usr/bin/env bash
     set -euo pipefail
     case "{{action}}" in
-        generate)     cd apps/web && bunx drizzle-kit generate ;;
-        generate-new) cd apps/web-astro && bunx drizzle-kit generate ;;
-        push)         bun scripts/ensure-pg-trgm.mjs && (cd apps/web-tanstack && bunx drizzle-kit push) ;;
-        admin)        bun run --filter @tankpkg/web admin:bootstrap ;;
-        list)         bun run --filter @tankpkg/web admin:list ;;
-        seed)         bash scripts/seed-productivity-skills.sh ;;
-        *) echo "Unknown action: {{action}}. Use: generate, generate-new, push, admin, list, seed" && exit 1 ;;
+        generate)          cd apps/web && bunx drizzle-kit generate ;;
+        generate-tanstack) cd apps/web-tanstack && bunx drizzle-kit generate ;;
+        push)              bun scripts/ensure-pg-trgm.mjs && (cd apps/web-tanstack && bunx drizzle-kit push) ;;
+        admin)             bun run --filter @tankpkg/web admin:bootstrap ;;
+        list)              bun run --filter @tankpkg/web admin:list ;;
+        seed)              bash scripts/seed-productivity-skills.sh ;;
+        *) echo "Unknown action: {{action}}. Use: generate, generate-tanstack, push, admin, list, seed" && exit 1 ;;
     esac
 
 # just docker <action> - manage local infra via docker-compose
@@ -354,7 +347,6 @@ docs action:
 # just update          - update all dependencies to latest
 # just update root     - root workspace only (bun update --latest)
 # just update web      - Next.js app deps
-# just update web-astro  - Astro app deps
 # just update web-tanstack - TanStack Start app deps
 # just update cli      - CLI package deps
 # just update mcp      - MCP server deps
@@ -367,7 +359,6 @@ update target='all':
         case "$1" in
             root)    echo "→ root" && bun update --latest && bun install ;;
             web)     echo "→ web" && (cd apps/web && bun update --latest && bun install) ;;
-            web-astro) echo "→ web-astro" && (cd apps/web-astro && bun update --latest && bun install) ;;
             web-tanstack) echo "→ web-tanstack" && (cd apps/web-tanstack && bun update --latest && bun install) ;;
             cli)     echo "→ cli" && (cd packages/cli && bun update --latest && bun install) ;;
             mcp)     echo "→ mcp-server" && (cd packages/mcp-server && bun update --latest && bun install) ;;
@@ -376,7 +367,7 @@ update target='all':
         esac
     }
     if [ "{{target}}" = "all" ]; then
-        for t in root web web-astro web-tanstack cli mcp scanner; do
+        for t in root web web-tanstack cli mcp scanner; do
             update_one "$t"
         done
     else

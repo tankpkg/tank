@@ -9,7 +9,6 @@ COPY package.json bun.lock ./
 COPY packages/internals-schemas/package.json ./packages/internals-schemas/
 COPY packages/internals-helpers/package.json ./packages/internals-helpers/
 COPY apps/web/package.json ./apps/web/
-COPY apps/web-astro/package.json ./apps/web-astro/
 COPY apps/web-tanstack/package.json ./apps/web-tanstack/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
