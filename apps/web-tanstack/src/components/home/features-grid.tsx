@@ -7,11 +7,11 @@ export function FeaturesGrid() {
   return (
     <section className="container mx-auto px-4 pb-16 md:pb-24">
       <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 mb-4">
-          <Shield className="w-6 h-6 text-emerald-400" />
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded bg-tank/10 border border-tank/20 mb-4">
+          <Shield className="w-6 h-6 text-tank" />
         </div>
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">
-          Security at <span className="text-emerald-400">every layer</span>
+          Security at <span className="text-tank">every layer</span>
         </h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
           From publish to install — every skill is scanned, scored, and verified.
@@ -22,8 +22,8 @@ export function FeaturesGrid() {
         {features.map((feature) => (
           <Card key={feature.title} className="tank-card bg-card/50 backdrop-blur-sm hover:bg-card/80 group">
             <CardHeader>
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 mb-3 group-hover:bg-emerald-500/20 transition-colors">
-                <feature.icon className="h-5 w-5 text-emerald-400" />
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded bg-tank/10 border border-tank/20 mb-3 group-hover:bg-tank/20 transition-colors">
+                <feature.icon className="h-5 w-5 text-tank" />
               </div>
               <CardTitle className="text-base">{feature.title}</CardTitle>
             </CardHeader>

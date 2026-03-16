@@ -132,7 +132,7 @@ export function TokenForm({ onTokenCreated, onError, onRefresh }: TokenFormProps
                         }}
                         className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                           selected
-                            ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                            ? 'border-tank/50 bg-tank/10 text-tank'
                             : 'border-border text-muted-foreground hover:border-foreground/30'
                         }`}>
                         {scope}
@@ -169,7 +169,7 @@ export function TokenForm({ onTokenCreated, onError, onRefresh }: TokenFormProps
 
           <form.Subscribe selector={(state) => state.values.name}>
             {(name) => (
-              <Button type="submit" disabled={!name.trim()} className="bg-emerald-600 hover:bg-emerald-500 text-white">
+              <Button type="submit" disabled={!name.trim()}>
                 Create Token
               </Button>
             )}

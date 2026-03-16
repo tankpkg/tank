@@ -153,10 +153,10 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
 
 function ScoreBadge({ score }: { score: number }) {
   if (score >= 7) {
-    return <Badge className="text-[10px] px-1.5 py-0 tank-badge-success border">Score: {score}</Badge>;
+    return <Badge className="text-[10px] px-1.5 py-0 border border-tank/30 bg-tank/10 text-tank">Score: {score}</Badge>;
   }
   if (score >= 4) {
-    return <Badge className="text-[10px] px-1.5 py-0 tank-badge-warning border">Score: {score}</Badge>;
+    return <Badge className="text-[10px] px-1.5 py-0 border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">Score: {score}</Badge>;
   }
   return (
     <Badge variant="destructive" className="text-[10px] px-1.5 py-0">

@@ -59,9 +59,9 @@ export function TokensScreen() {
       )}
 
       {newKey && (
-        <Card className="border-emerald-500/30 bg-emerald-500/5">
+        <Card className="border-tank/30 bg-tank/5">
           <CardHeader>
-            <CardTitle className="text-emerald-400">Token Created</CardTitle>
+            <CardTitle className="text-tank">Token Created</CardTitle>
             <CardDescription>Copy this key now — it won't be shown again.</CardDescription>
           </CardHeader>
           <CardContent>

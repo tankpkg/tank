@@ -10,7 +10,7 @@ interface StatusPageProps {
 export function StatusPage({ icon, title, description, children }: StatusPageProps) {
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="tank-gradient-bg tank-grid-overlay flex flex-1 items-center justify-center px-4">
+      <div className="flex flex-1 items-center justify-center px-4">
         <div className="mx-auto max-w-lg text-center">
           <div className="mb-6 inline-flex items-center justify-center rounded-full border border-border/50 bg-muted/30 p-4">
             {icon}

@@ -49,7 +49,7 @@ export function TableOfContents({ headings }: { headings: Heading[] }) {
                   heading.level === 3 && 'pl-3',
                   heading.level >= 4 && 'pl-6',
                   activeId === heading.id
-                    ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                    ? 'text-tank font-medium'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
                 aria-current={activeId === heading.id ? 'location' : undefined}>

@@ -144,7 +144,7 @@ export function CommandMenu() {
                 key={skill.name}
                 value={`skill-${skill.name}`}
                 onSelect={() => handleNavigate(`/skills/${skill.name}`)}>
-                <BoxIcon className="text-emerald-500" />
+                <BoxIcon className="text-tank" />
                 <div className="flex flex-col">
                   <span className="font-medium">{skill.name}</span>
                   {skill.description && (

@@ -57,8 +57,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <nav className="flex flex-col gap-1">
-      <div className="flex items-center gap-2 px-3 pb-4 mb-2 border-b border-emerald-500/10">
-        <BookOpen className="h-4 w-4 text-emerald-400" />
+      <div className="flex items-center gap-2 px-3 pb-4 mb-2 border-b border-tank/10">
+        <BookOpen className="h-4 w-4 text-tank" />
         <span className="text-sm font-semibold text-foreground">Documentation</span>
       </div>
       {SIDEBAR_ORDER.map((item, i) => {
@@ -82,8 +82,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={`group flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
               isActive
-                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium'
-                : 'text-muted-foreground hover:bg-emerald-500/5 hover:text-foreground'
+                ? 'bg-tank/10 text-tank font-medium'
+                : 'text-muted-foreground hover:bg-tank/5 hover:text-foreground'
             }`}>
             {isActive && <ChevronRight className="h-3 w-3 shrink-0" />}
             <span>{item.title}</span>
@@ -155,7 +155,7 @@ export function DocsLayout({ children, headings }: { children: React.ReactNode; 
         <button
           type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg lg:hidden"
+          className="fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-foreground text-background shadow-lg lg:hidden"
           aria-label="Toggle docs navigation">
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
@@ -166,7 +166,7 @@ export function DocsLayout({ children, headings }: { children: React.ReactNode; 
             {/* biome-ignore lint/a11y/noStaticElementInteractions: backdrop overlay dismiss */}
             {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop overlay dismiss */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-            <aside className="absolute left-0 top-0 h-full w-72 overflow-y-auto bg-background border-r border-emerald-500/10 p-6">
+            <aside className="absolute left-0 top-0 h-full w-72 overflow-y-auto bg-background border-r border-tank/10 p-6">
               <SidebarContent onNavigate={() => setMobileOpen(false)} />
             </aside>
           </div>
