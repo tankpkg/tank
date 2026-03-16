@@ -1,4 +1,4 @@
-import type { Permissions } from '@internal/shared';
+import type { Permissions } from '@internals/schemas';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@inquirer/prompts', () => ({

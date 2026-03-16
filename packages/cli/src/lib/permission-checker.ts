@@ -94,3 +94,45 @@ export function isPathAllowed(requestedPath: string, allowedPaths: string[]): bo
   }
   return false;
 }
+
+export function collectPermissionViolations(
+  budget: Permissions,
+  skillPerms: Permissions | undefined,
+  skillName: string
+): PermissionViolation[] {
+  const violations: PermissionViolation[] = [];
+  if (!skillPerms) return violations;
+
+  if (skillPerms.subprocess === true && budget.subprocess !== true) {
+    violations.push({ skillName, type: 'subprocess', requested: 'true' });
+  }
+
+  if (skillPerms.network?.outbound) {
+    const budgetDomains = budget.network?.outbound ?? [];
+    for (const domain of skillPerms.network.outbound) {
+      if (!isDomainAllowed(domain, budgetDomains)) {
+        violations.push({ skillName, type: 'network.outbound', requested: domain });
+      }
+    }
+  }
+
+  if (skillPerms.filesystem?.read) {
+    const budgetPaths = budget.filesystem?.read ?? [];
+    for (const p of skillPerms.filesystem.read) {
+      if (!isPathAllowed(p, budgetPaths)) {
+        violations.push({ skillName, type: 'filesystem.read', requested: p });
+      }
+    }
+  }
+
+  if (skillPerms.filesystem?.write) {
+    const budgetPaths = budget.filesystem?.write ?? [];
+    for (const p of skillPerms.filesystem.write) {
+      if (!isPathAllowed(p, budgetPaths)) {
+        violations.push({ skillName, type: 'filesystem.write', requested: p });
+      }
+    }
+  }
+
+  return violations;
+}
