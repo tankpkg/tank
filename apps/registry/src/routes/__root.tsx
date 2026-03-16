@@ -92,6 +92,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark scroll-smooth" suppressHydrationWarning>
       <head>
+        {import.meta.env.DEV && (
+          <script src="https://unpkg.com/react-scan/dist/auto.global.js" crossOrigin="anonymous" />
+        )}
         <HeadContent />
       </head>
       <body>
