@@ -8,9 +8,7 @@ export const Route = createFileRoute('/admin')({
   errorComponent: ErrorFallback,
   beforeLoad: async ({ location }) => {
     const session = await getAdminSession();
-    if (!session) {
-      throw redirect({ to: '/login', search: { redirect: location.href } });
-    }
+    if (!session) throw redirect({ to: '/login', search: { redirect: location.href } });
     return { session };
   },
   component: AdminScreen

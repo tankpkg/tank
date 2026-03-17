@@ -8,9 +8,7 @@ export const Route = createFileRoute('/dashboard')({
   errorComponent: ErrorFallback,
   beforeLoad: async ({ location }) => {
     const session = await getSession();
-    if (!session) {
-      throw redirect({ to: '/login', search: { redirect: location.href } });
-    }
+    if (!session) throw redirect({ to: '/login', search: { redirect: location.href } });
     return { session };
   },
   component: TokensScreen

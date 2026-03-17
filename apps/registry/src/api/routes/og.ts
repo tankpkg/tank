@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { ReactNode } from 'react';
 import satori from 'satori';
+
 import { getScoreColor } from '~/lib/score';
 import { getSkillDetail } from '~/lib/skills/data';
 

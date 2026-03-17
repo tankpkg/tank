@@ -8,13 +8,9 @@ export const Route = createFileRoute('/cli-login')({
   }),
   beforeLoad: async () => {
     const session = await getSession();
-    if (!session) {
-      throw redirect({ to: '/login' });
-    }
+    if (!session) throw redirect({ to: '/login' });
   },
-  head: () => ({
-    meta: [{ title: 'Authorize CLI | Tank' }]
-  }),
+  head: () => ({ meta: [{ title: 'Authorize CLI | Tank' }] }),
   component: CliLoginPage
 });
 
