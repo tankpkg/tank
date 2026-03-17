@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const DOCS_DIR = join(ROOT, 'apps/registry-legacy/content/docs');
-const PUBLIC_DIR = join(ROOT, 'apps/registry-legacy/public');
+const PUBLIC_DIR = join(ROOT, 'apps/registry/content');
 
 const BASE_URL = 'https://tankpkg.dev';
 
