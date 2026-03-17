@@ -27,7 +27,7 @@ function parseRoute(filePath) {
   const routePath = relativePath.replace(/\[([^\]]+)\]/g, ':$1').replace(/\[\.\.\.([^\]]+)\]/g, ':$1*');
 
   // Extract method handlers
-  METHODS.forEach((method) => {
+  for (const method of METHODS) {
     const methodRegex = new RegExp(`export\\s+async\\s+function\\s+${method}\\s*\\(`, 'i');
     if (methodRegex.test(source)) {
       endpoints.push({
@@ -35,7 +35,7 @@ function parseRoute(filePath) {
         path: `/api/v1${routePath}`
       });
     }
-  });
+  }
 
   return endpoints;
 }

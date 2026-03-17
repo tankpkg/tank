@@ -147,7 +147,10 @@ export function RegistryLayout() {
               <Link to="/skills" search={{} as never} className="hover:text-foreground transition-colors text-[13px]">
                 Skills
               </Link>
-              <Link to="/docs" className="hover:text-foreground transition-colors text-[13px]">
+              <Link
+                to="/docs/$"
+                params={{ _splat: '' }}
+                className="hover:text-foreground transition-colors text-[13px]">
                 Docs
               </Link>
               <a

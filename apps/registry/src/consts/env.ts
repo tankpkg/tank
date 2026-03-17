@@ -68,7 +68,7 @@ export const zEnv = z.object({
 const result = zEnv.safeParse(process.env);
 
 if (!result.success) {
-  console.error('❌ Environment validation failed:', z.prettifyError(result.error));
+  process.stderr.write(`Environment validation failed:\n${z.prettifyError(result.error)}\n`);
   process.exit(1);
 }
 

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/latest/schema.json",
   "files": {
     "ignoreUnknown": true,
     "includes": [
@@ -23,6 +23,7 @@
       "!**/.astro",
       "!**/.features-gen",
       "!**/test-results",
+      "!e2e/bdd/e2e/bdd/reports/report.html",
       "!**/next-env.d.ts",
       "!**/routeTree.gen.ts",
       "!**/.tanstack",

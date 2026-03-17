@@ -23,7 +23,7 @@ function parseFrontmatter(content) {
   if (!match) return {};
 
   const frontmatter = {};
-  match[1].split(/\r?\n/).forEach((line) => {
+  for (const line of match[1].split(/\r?\n/)) {
     const [key, ...valueParts] = line.split(':');
     if (key && valueParts.length) {
       frontmatter[key.trim()] = valueParts
@@ -31,7 +31,7 @@ function parseFrontmatter(content) {
         .trim()
         .replace(/^["']|["']$/g, '');
     }
-  });
+  }
 
   return frontmatter;
 }
@@ -81,14 +81,14 @@ Tank is a security-first package manager for AI agent skills. It provides versio
 
 `;
 
-  docs.forEach((doc) => {
+  for (const doc of docs) {
     const url = doc.slug ? `${BASE_URL}/docs/${doc.slug}` : `${BASE_URL}/docs`;
     output += `- [${doc.title}](${url})`;
     if (doc.description) {
       output += `: ${doc.description}`;
     }
     output += '\n';
-  });
+  }
 
   output += `
 ## Optional
@@ -121,7 +121,7 @@ This file contains the complete Tank documentation for LLM consumption.
 
 `;
 
-  docs.forEach((doc) => {
+  for (const doc of docs) {
     const url = doc.slug ? `${BASE_URL}/docs/${doc.slug}` : `${BASE_URL}/docs`;
     output += `# ${doc.title}\n\n`;
     output += `Source: ${url}\n\n`;
@@ -130,7 +130,7 @@ This file contains the complete Tank documentation for LLM consumption.
     }
     output += doc.content;
     output += '\n\n---\n\n';
-  });
+  }
 
   return output;
 }

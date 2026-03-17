@@ -7,13 +7,7 @@ import { InstallSelector } from '~/components/home/install-selector';
 import { GITHUB_ICON_PATH } from '~/consts/brand';
 
 const spring = { type: 'spring' as const, stiffness: 400, damping: 30 };
-
-const crtStyles = `
-@keyframes scanline-scroll {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 100%; }
-}
-`;
+const controlBars = ['left', 'center', 'right'] as const;
 
 interface HeroSectionProps {
   starCount: number | null;
@@ -27,8 +21,6 @@ export function HeroSection({ starCount }: HeroSectionProps) {
 
   return (
     <section className="relative z-[1] pt-20 pb-12 md:pt-28 md:pb-16" aria-label="Hero">
-      <style dangerouslySetInnerHTML={{ __html: crtStyles }} />
-
       {/* Subtle radial glow behind hero — shifted left to account for wider layout */}
       <div
         className="pointer-events-none absolute -top-40 left-1/3 -translate-x-1/2 w-[700px] h-[500px]"
@@ -84,7 +76,10 @@ export function HeroSection({ starCount }: HeroSectionProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2, delay: 0.2 }}>
-              <Link to="/docs" className="text-muted-foreground/60 hover:text-foreground transition-colors">
+              <Link
+                to="/docs/$"
+                params={{ _splat: '' }}
+                className="text-muted-foreground/60 hover:text-foreground transition-colors">
                 View Docs
               </Link>
               <span className="text-muted-foreground/20">·</span>
@@ -136,12 +131,11 @@ export function HeroSection({ starCount }: HeroSectionProps) {
                       />
                       {/* Scanlines — animated */}
                       <div
-                        className="absolute inset-0 pointer-events-none z-10 opacity-[0.035]"
+                        className="hero-crt-scanlines absolute inset-0 pointer-events-none z-10 opacity-[0.035]"
                         style={{
                           backgroundImage:
                             'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.8) 1px, rgba(0,0,0,0.8) 2px)',
-                          backgroundSize: '100% 3px',
-                          animation: 'scanline-scroll 8s linear infinite'
+                          backgroundSize: '100% 3px'
                         }}
                         aria-hidden="true"
                       />
@@ -179,8 +173,8 @@ export function HeroSection({ starCount }: HeroSectionProps) {
                       </span>
                     </div>
                     <div className="flex gap-[6px]">
-                      {[...Array(3)].map((_, i) => (
-                        <div key={i} className="w-[14px] h-[3px] rounded-full bg-[#2a2a2c] dark:bg-[#b8b4ae]" />
+                      {controlBars.map((bar) => (
+                        <div key={bar} className="w-[14px] h-[3px] rounded-full bg-[#2a2a2c] dark:bg-[#b8b4ae]" />
                       ))}
                     </div>
                   </div>

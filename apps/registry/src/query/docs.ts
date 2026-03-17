@@ -1,6 +1,6 @@
 import rehypeShiki from '@shikijs/rehype';
 import { createServerFn } from '@tanstack/react-start';
-import type { Root } from 'hast';
+import type { Element, Root, RootContent } from 'hast';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
@@ -19,6 +19,13 @@ const calloutStyles: Record<string, string> = {
   error: 'border-l-4 border-red-500 bg-red-500/10 p-4 rounded-r-lg my-4'
 };
 
+type Heading = { id: string; text: string; level: number };
+type HeadingFile = {
+  data?: Record<string, unknown> & {
+    headings?: Heading[];
+  };
+};
+
 function rehypeCallout() {
   return (tree: Root) => {
     visit(tree, 'element', (node, index, parent) => {
@@ -30,15 +37,15 @@ function rehypeCallout() {
   };
 }
 
-function extractText(node: any): string {
+function extractText(node: RootContent | Element): string {
   if (node.type === 'text') return node.value || '';
-  if (node.children) return node.children.map(extractText).join('');
+  if ('children' in node) return node.children.map(extractText).join('');
   return '';
 }
 
 function rehypeCollectHeadings() {
-  return (tree: Root, file: any) => {
-    const headings: Array<{ id: string; text: string; level: number }> = [];
+  return (tree: Root, file: HeadingFile) => {
+    const headings: Heading[] = [];
     visit(tree, 'element', (node) => {
       if (/^h[2-4]$/.test(node.tagName) && node.properties?.id) {
         headings.push({
@@ -58,7 +65,7 @@ export interface DocEntry {
   description?: string;
   slug: string;
   html: string;
-  headings: Array<{ id: string; text: string; level: number }>;
+  headings: Heading[];
 }
 
 let docsCache: DocEntry[] | null = null;
@@ -88,7 +95,7 @@ async function loadDocs(): Promise<DocEntry[]> {
   for (const file of files) {
     const { data, body } = parseFrontmatter(readDocFile(file));
     const result = await processor.process(body);
-    const headings = (result.data?.headings as Array<{ id: string; text: string; level: number }>) || [];
+    const headings = (result.data?.headings as Heading[]) || [];
     const slug = file.replace(/\.mdx$/, '');
     entries.push({
       title: data.title || slug,

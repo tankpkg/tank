@@ -204,11 +204,11 @@ function ContributorsSection() {
         </motion.div>
 
         <div className="mb-6">
-          <img
-            src="https://contrib.rocks/image?repo=tankpkg/tank"
-            loading="lazy"
-            alt="Tank contributors"
-            className="mx-auto max-w-sm w-full rounded"
+          <div
+            role="img"
+            aria-label="Tank contributors"
+            className="mx-auto max-w-sm w-full rounded aspect-[2/1] bg-center bg-contain bg-no-repeat"
+            style={{ backgroundImage: 'url("https://contrib.rocks/image?repo=tankpkg/tank")' }}
           />
         </div>
 
@@ -219,7 +219,9 @@ function ContributorsSection() {
             </a>
           </Button>
           <Button variant="outline" size="sm" asChild>
-            <Link to="/docs">Become a contributor</Link>
+            <Link to="/docs/$" params={{ _splat: '' }}>
+              Become a contributor
+            </Link>
           </Button>
         </div>
       </div>

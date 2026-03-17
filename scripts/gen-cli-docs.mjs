@@ -119,9 +119,9 @@ All commands support these options:
       section += `tank ${cmd.name}`;
 
       if (cmd.args.length > 0) {
-        cmd.args.forEach((arg) => {
+        for (const arg of cmd.args) {
           section += ` ${arg.name}`;
-        });
+        }
       }
 
       section += '\n```\n\n';
@@ -130,10 +130,10 @@ All commands support these options:
         section += '### Arguments\n\n';
         section += '| Name | Description | Required |\n';
         section += '|------|-------------|----------|\n';
-        cmd.args.forEach((arg) => {
+        for (const arg of cmd.args) {
           const name = arg.name.replace(/[[\]<>]/g, '');
           section += `| \`${name}\` | ${arg.description || '-'} | ${arg.optional ? 'No' : 'Yes'} |\n`;
-        });
+        }
         section += '\n';
       }
 
@@ -141,9 +141,9 @@ All commands support these options:
         section += '### Options\n\n';
         section += '| Flag | Description |\n';
         section += '|------|-------------|\n';
-        cmd.options.forEach((opt) => {
+        for (const opt of cmd.options) {
           section += `| \`${opt.flag}\` | ${opt.description} |\n`;
-        });
+        }
         section += '\n';
       }
 
