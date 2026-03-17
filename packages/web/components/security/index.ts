@@ -5,5 +5,6 @@ export { computeQualityChecks } from './quality-checks-utils';
 export { ScanningToolsStrip } from './ScanningToolsStrip';
 export { ScanPipeline } from './ScanPipeline';
 export { SecurityOverview } from './SecurityOverview';
+export { SecuritySidebarSummary } from './SecuritySidebarSummary';
 export { TrustBadge } from './TrustBadge';
 export { VerifiedPublisherBadge } from './VerifiedPublisherBadge';

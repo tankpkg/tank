@@ -9,6 +9,7 @@ import {
   ScanningToolsStrip,
   ScanPipeline,
   SecurityOverview,
+  SecuritySidebarSummary,
   TrustBadge,
   VerifiedPublisherBadge
 } from '@/components/security';
@@ -632,105 +633,24 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
               </dl>
             </div>
 
-            {data.latestVersion?.auditScore != null && (
+            {scanDetails && (
               <>
                 <Separator />
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     Security
                   </h3>
-                  {/* Score with progress bar */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`text-2xl font-bold ${
-                        data.latestVersion.auditScore >= 8
-                          ? 'text-green-600'
-                          : data.latestVersion.auditScore >= 6
-                            ? 'text-yellow-600'
-                            : data.latestVersion.auditScore >= 4
-                              ? 'text-orange-600'
-                              : 'text-red-600'
-                      }`}>
-                      {data.latestVersion.auditScore}
-                    </span>
-                    <span className="text-sm text-muted-foreground">/10</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden mb-3">
-                    <div
-                      className={`h-full transition-all ${
-                        data.latestVersion.auditScore >= 8
-                          ? 'bg-green-500'
-                          : data.latestVersion.auditScore >= 6
-                            ? 'bg-yellow-500'
-                            : data.latestVersion.auditScore >= 4
-                              ? 'bg-orange-500'
-                              : 'bg-red-500'
-                      }`}
-                      style={{ width: `${(data.latestVersion.auditScore / 10) * 100}%` }}
-                    />
-                  </div>
-
-                  {/* Verdict badge */}
-                  {scanDetails?.verdict && (
-                    <div
-                      className={`inline-flex px-2 py-1 rounded text-xs font-medium text-white mb-2 ${
-                        scanDetails.verdict === 'pass'
-                          ? 'bg-green-600'
-                          : scanDetails.verdict === 'pass_with_notes'
-                            ? 'bg-yellow-600'
-                            : scanDetails.verdict === 'flagged'
-                              ? 'bg-orange-600'
-                              : 'bg-red-600'
-                      }`}>
-                      {scanDetails.verdict.replace('_', ' ').toUpperCase()}
-                    </div>
-                  )}
-
-                  {/* Finding counts summary */}
-                  <div className="text-xs space-y-1 mb-3">
-                    {(scanDetails?.criticalCount ?? 0) > 0 && (
-                      <div className="flex items-center gap-2 text-red-600">
-                        <span>●</span>
-                        <span>
-                          {scanDetails?.criticalCount} critical finding
-                          {(scanDetails?.criticalCount ?? 0) !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-                    {(scanDetails?.highCount ?? 0) > 0 && (
-                      <div className="flex items-center gap-2 text-orange-600">
-                        <span>●</span>
-                        <span>
-                          {scanDetails?.highCount} high finding{(scanDetails?.highCount ?? 0) !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-                    {(scanDetails?.mediumCount ?? 0) > 0 && (
-                      <div className="flex items-center gap-2 text-yellow-600">
-                        <span>●</span>
-                        <span>
-                          {scanDetails?.mediumCount} medium finding{(scanDetails?.mediumCount ?? 0) !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-                    {(scanDetails?.lowCount ?? 0) > 0 && (
-                      <div className="flex items-center gap-2 text-blue-600">
-                        <span>●</span>
-                        <span>
-                          {scanDetails?.lowCount} low finding{(scanDetails?.lowCount ?? 0) !== 1 ? 's' : ''}
-                        </span>
-                      </div>
-                    )}
-                    {(scanDetails?.findings?.length ?? 0) === 0 && (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <span>✓</span>
-                        <span>No security issues</span>
-                      </div>
-                    )}
-                  </div>
-
+                  <SecuritySidebarSummary
+                    verdict={scanDetails.verdict}
+                    criticalCount={scanDetails.criticalCount}
+                    highCount={scanDetails.highCount}
+                    mediumCount={scanDetails.mediumCount}
+                    lowCount={scanDetails.lowCount}
+                  />
                   {hasSecurityData && (
-                    <p className="text-xs text-muted-foreground">Open the Security tab above for the full report.</p>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Open the Security tab above for the full report.
+                    </p>
                   )}
                 </div>
               </>
