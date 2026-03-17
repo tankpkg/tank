@@ -16,9 +16,6 @@ import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface ScanFinding {

@@ -61,7 +61,7 @@ async function triggerSecurityScan(
     // Generate signed download URL
     let signedUrl: string;
     try {
-      const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600, 'internal');
+      const urlData = await getStorageProvider().createSignedUrl(tarballPath, 3600);
       signedUrl = urlData.signedUrl;
     } catch (_error) {
       return null;
