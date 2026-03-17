@@ -91,7 +91,7 @@ describe('Init E2E — tank init creates tank.json', () => {
 
     const originalManifest = { name: '@test/original', version: '0.0.1' };
     const skillsPath = path.join(dir, 'tank.json');
-    fs.writeFileSync(skillsPath, JSON.stringify(originalManifest, null, 2) + '\n');
+    fs.writeFileSync(skillsPath, `${JSON.stringify(originalManifest, null, 2)}\n`);
 
     const result = await runTank(['init', '--yes', '--name', '@test/new-name'], { cwd: dir, home, timeoutMs: 15_000 });
 
@@ -111,7 +111,7 @@ describe('Init E2E — tank init creates tank.json', () => {
 
     const originalManifest = { name: '@test/old-name', version: '0.0.1' };
     const skillsPath = path.join(dir, 'tank.json');
-    fs.writeFileSync(skillsPath, JSON.stringify(originalManifest, null, 2) + '\n');
+    fs.writeFileSync(skillsPath, `${JSON.stringify(originalManifest, null, 2)}\n`);
 
     const result = await runTank(
       [

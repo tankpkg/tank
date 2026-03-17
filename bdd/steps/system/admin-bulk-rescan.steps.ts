@@ -39,6 +39,14 @@ const world: BulkRescanWorld = {
   client: null
 };
 
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for admin bulk rescan steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function adminPost(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
@@ -59,7 +67,7 @@ async function adminPost(path: string, cookieHeader?: string): Promise<{ status:
 describe('Feature: Admin bulk rescan of skill versions', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.client = createAdminApiClient(world.registry, world.sql);

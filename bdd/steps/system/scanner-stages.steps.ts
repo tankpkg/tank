@@ -15,7 +15,11 @@ import * as http from 'node:http';
 import { createGzip } from 'node:zlib';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { computeAuditScore, type AuditScoreInput, type AuditScoreResult } from '../../apps/registry-legacy/lib/audit-score.js';
+import {
+  type AuditScoreInput,
+  type AuditScoreResult,
+  computeAuditScore
+} from '../../../apps/registry-legacy/lib/audit-score.js';
 
 const hasScanner = !!process.env.SCANNER_URL;
 
@@ -40,13 +44,13 @@ const world: StagesWorld = {
 interface ScoreWorld {
   input: AuditScoreInput | null;
   result: AuditScoreResult | null;
-  inferredVerdict: "pass" | "pass_with_notes";
+  inferredVerdict: 'pass' | 'pass_with_notes';
 }
 
 const scoreWorld: ScoreWorld = {
   input: null,
   result: null,
-  inferredVerdict: "pass",
+  inferredVerdict: 'pass'
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -113,18 +117,18 @@ async function buildTarball(files: Record<string, string>): Promise<Buffer> {
 function baseScoreInput(): AuditScoreInput {
   return {
     manifest: {
-      name: "@bdd/stages-score",
-      version: "1.0.0",
-      description: "score test skill",
+      name: '@bdd/stages-score',
+      version: '1.0.0',
+      description: 'score test skill'
     },
-    permissions: { network: { outbound: ["*.example.com"] } },
+    permissions: { network: { outbound: ['*.example.com'] } },
     fileCount: 10,
     tarballSize: 100_000,
-    readme: "# docs",
+    readme: '# docs',
     analysisResults: {
       securityIssues: [],
-      extractedPermissions: { network: { outbound: ["*.example.com"] } },
-    },
+      extractedPermissions: { network: { outbound: ['*.example.com'] } }
+    }
   };
 }
 
@@ -138,9 +142,9 @@ function givenSkillTarballWithOnlyMediumSeverityFindings(): void {
   scoreWorld.input = {
     ...baseScoreInput(),
     analysisResults: {
-      securityIssues: [{ severity: "medium", description: "suspicious prompt marker" }],
-      extractedPermissions: { network: { outbound: ["*.example.com"] } },
-    },
+      securityIssues: [{ severity: 'medium', description: 'suspicious prompt marker' }],
+      extractedPermissions: { network: { outbound: ['*.example.com'] } }
+    }
   };
 }
 
@@ -152,28 +156,36 @@ function givenSkillTarballWithOnlyAnOversizedFileStage1Finding(): void {
     readme: null,
     manifest: {
       ...baseScoreInput().manifest,
-      description: "",
-    },
+      description: ''
+    }
   };
 }
 
 // ── When (scoring scenarios) ────────────────────────────────────────────────
 
 function whenTheScannerAnalyzesScoreInput(): void {
-  expect(scoreWorld.input).not.toBeNull();
-  scoreWorld.result = computeAuditScore(scoreWorld.input!);
-  scoreWorld.inferredVerdict = scoreWorld.result.score === 10 ? "pass" : "pass_with_notes";
+  const input = scoreWorld.input;
+  expect(input).not.toBeNull();
+  if (!input) {
+    throw new Error('Score input was not initialized');
+  }
+  scoreWorld.result = computeAuditScore(input);
+  scoreWorld.inferredVerdict = scoreWorld.result.score === 10 ? 'pass' : 'pass_with_notes';
 }
 
 // ── Then (scoring scenarios) ────────────────────────────────────────────────
 
-function thenScoreVerdictIs(expected: "pass" | "pass_with_notes"): void {
+function thenScoreVerdictIs(expected: 'pass' | 'pass_with_notes'): void {
   expect(scoreWorld.inferredVerdict).toBe(expected);
 }
 
 function thenAuditScoreIsExactly(expected: number): void {
-  expect(scoreWorld.result).not.toBeNull();
-  expect(scoreWorld.result!.score).toBe(expected);
+  const result = scoreWorld.result;
+  expect(result).not.toBeNull();
+  if (!result) {
+    throw new Error('Score result was not initialized');
+  }
+  expect(result.score).toBe(expected);
 }
 
 function startServeServer(tarballs: Map<string, Buffer>): Promise<number> {
@@ -362,29 +374,29 @@ describe('Feature: Security scanner 6-stage pipeline', () => {
 
   // ── Strict security scoring (#129) ───────────────────────────────────────
 
-  describe("Scenario: Clean skill receives pass verdict (E1) audit score is 10.0", () => {
-    it("runs Given/When/Then", () => {
+  describe('Scenario: Clean skill receives pass verdict (E1) audit score is 10.0', () => {
+    it('runs Given/When/Then', () => {
       givenSkillTarballWithNoSecurityIssues();
       whenTheScannerAnalyzesScoreInput();
-      thenScoreVerdictIs("pass");
+      thenScoreVerdictIs('pass');
       thenAuditScoreIsExactly(10);
     });
   });
 
-  describe("Scenario: Skill with only medium findings receives pass_with_notes verdict (E6)", () => {
-    it("runs Given/When/Then", () => {
+  describe('Scenario: Skill with only medium findings receives pass_with_notes verdict (E6)', () => {
+    it('runs Given/When/Then', () => {
       givenSkillTarballWithOnlyMediumSeverityFindings();
       whenTheScannerAnalyzesScoreInput();
-      thenScoreVerdictIs("pass_with_notes");
+      thenScoreVerdictIs('pass_with_notes');
       thenAuditScoreIsExactly(7);
     });
   });
 
-  describe("Scenario: Structural oversized file findings do not lower security score", () => {
-    it("runs Given/When/Then", () => {
+  describe('Scenario: Structural oversized file findings do not lower security score', () => {
+    it('runs Given/When/Then', () => {
       givenSkillTarballWithOnlyAnOversizedFileStage1Finding();
       whenTheScannerAnalyzesScoreInput();
-      thenScoreVerdictIs("pass");
+      thenScoreVerdictIs('pass');
       thenAuditScoreIsExactly(10);
     });
   });

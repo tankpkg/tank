@@ -78,7 +78,10 @@ export async function createAdminSession(client: AdminApiClient, runId: string):
   }
 
   // Parse just the cookie key=value part (before ;)
-  const cookieValue = sessionCookie.split(';')[0]!;
+  const cookieValue = sessionCookie.split(';')[0];
+  if (!cookieValue) {
+    throw new Error(`BDD admin sign-in returned an invalid session cookie: ${sessionCookie}`);
+  }
   const session: AdminSession = { userId, cookieHeader: cookieValue };
   client.session = session;
   return session;

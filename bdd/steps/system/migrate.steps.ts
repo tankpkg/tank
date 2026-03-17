@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { migrateCommand } from '../../../packages/cli/src/commands/migrate.js';
 
@@ -30,13 +30,12 @@ const world: MigrateWorld = {
 
 function captureLogger(): () => string[] {
   const lines: string[] = [];
-  const origLog = console.log;
-  const origInfo = console.info;
-  console.log = (...args: unknown[]) => lines.push(args.join(' '));
-  console.info = (...args: unknown[]) => lines.push(args.join(' '));
+  const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+    lines.push(String(chunk).trimEnd());
+    return true;
+  });
   return () => {
-    console.log = origLog;
-    console.info = origInfo;
+    writeSpy.mockRestore();
     return lines;
   };
 }

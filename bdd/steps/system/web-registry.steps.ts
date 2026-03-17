@@ -44,6 +44,21 @@ const world: RegistryWorld = {
   lastBody: null
 };
 
+function requireSql(): postgres.Sql {
+  if (!world.sql) {
+    throw new Error('Database connection not initialized');
+  }
+  return world.sql;
+}
+
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for web registry steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function getJson(path: string): Promise<{ status: number; body: unknown }> {
@@ -60,7 +75,7 @@ async function getJson(path: string): Promise<{ status: number; body: unknown }>
 // ── Given ──────────────────────────────────────────────────────────────────
 
 async function givenPublicSkillExists(name: string, version: string): Promise<void> {
-  const sql = world.sql!;
+  const sql = requireSql();
   const now = new Date();
   const publisherId = `reg-pub-${world.runId}`;
   const orgId = `reg-org-${world.runId}`;
@@ -116,7 +131,7 @@ async function givenPublicSkillExists(name: string, version: string): Promise<vo
 }
 
 async function givenPrivateSkillExists(name: string, version: string): Promise<void> {
-  const sql = world.sql!;
+  const sql = requireSql();
   const now = new Date();
   const publisherId = `reg-pub-${world.runId}`;
   const privateSkillId = randomUUID();
@@ -182,7 +197,7 @@ function thenBodyFieldEquals(field: string, value: unknown): void {
 describe('Feature: Registry read API for skill metadata', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.testOrg = `reg-bdd-${world.runId}`;
@@ -285,14 +300,14 @@ interface HomepageUxWorld {
 }
 
 const homepageWorld: HomepageUxWorld = {
-  source: "",
-  heroSection: "",
+  source: '',
+  heroSection: ''
 };
 
-const homepagePath = fileURLToPath(new URL("../../packages/web/app/page.tsx", import.meta.url));
+const homepagePath = fileURLToPath(new URL('../../packages/web/app/page.tsx', import.meta.url));
 
 function givenINavigateToTankHomepage(): void {
-  homepageWorld.source = fs.readFileSync(homepagePath, "utf-8");
+  homepageWorld.source = fs.readFileSync(homepagePath, 'utf-8');
 
   // Use regex to find section boundaries (tolerates whitespace/line breaks)
   const heroMatch = homepageWorld.source.match(/\{\s*\/\*\s*Hero\s+Section\s*\*\/\s*\}/);
@@ -301,8 +316,14 @@ function givenINavigateToTankHomepage(): void {
   expect(heroMatch).toBeTruthy();
   expect(problemMatch).toBeTruthy();
 
-  const heroStart = homepageWorld.source.indexOf(heroMatch![0]);
-  const problemStart = homepageWorld.source.indexOf(problemMatch![0]);
+  const heroMarker = heroMatch?.[0];
+  const problemMarker = problemMatch?.[0];
+  if (!heroMarker || !problemMarker) {
+    throw new Error('Expected homepage hero and problem markers');
+  }
+
+  const heroStart = homepageWorld.source.indexOf(heroMarker);
+  const problemStart = homepageWorld.source.indexOf(problemMarker);
 
   expect(heroStart).toBeGreaterThan(-1);
   expect(problemStart).toBeGreaterThan(heroStart);
@@ -327,13 +348,13 @@ function thenDefinitionDoesNotAssumePriorKnowledge(): void {
 
 function thenHeroIdentifiesAudience(): void {
   expect(homepageWorld.heroSection).toMatch(
-    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i,
+    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i
   );
 }
 
 function thenAudienceStatementIsVisibleWithoutScrollAt1280(): void {
   expect(homepageWorld.heroSection).toMatch(
-    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i,
+    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i
   );
 }
 
@@ -349,8 +370,14 @@ function thenRiskFramingIsWithinFirstTwoSections(): void {
   expect(riskMatch).toBeTruthy();
   expect(explainerMatch).toBeTruthy();
 
-  const riskPos = homepageWorld.source.indexOf(riskMatch![0]);
-  const explainerPos = homepageWorld.source.indexOf(explainerMatch![0]);
+  const riskMarker = riskMatch?.[0];
+  const explainerMarker = explainerMatch?.[0];
+  if (!riskMarker || !explainerMarker) {
+    throw new Error('Expected homepage risk and explainer markers');
+  }
+
+  const riskPos = homepageWorld.source.indexOf(riskMarker);
+  const explainerPos = homepageWorld.source.indexOf(explainerMarker);
 
   expect(riskPos).toBeGreaterThan(-1);
   expect(explainerPos).toBeGreaterThan(riskPos);
@@ -369,8 +396,14 @@ function thenExplainerAppearsBeforeFeatureCards(): void {
   expect(explainerMatch).toBeTruthy();
   expect(featureGridMatch).toBeTruthy();
 
-  const explainerPos = homepageWorld.source.indexOf(explainerMatch![0]);
-  const featureGridPos = homepageWorld.source.indexOf(featureGridMatch![0]);
+  const explainerMarker = explainerMatch?.[0];
+  const featureGridMarker = featureGridMatch?.[0];
+  if (!explainerMarker || !featureGridMarker) {
+    throw new Error('Expected homepage explainer and feature grid markers');
+  }
+
+  const explainerPos = homepageWorld.source.indexOf(explainerMarker);
+  const featureGridPos = homepageWorld.source.indexOf(featureGridMarker);
 
   expect(explainerPos).toBeGreaterThan(-1);
   expect(featureGridPos).toBeGreaterThan(explainerPos);
@@ -392,7 +425,7 @@ function thenICanAnswerWhatIsTankWithoutReadingFurther(): void {
 
 function thenICanAnswerWhoIsTankForWithoutReadingFurther(): void {
   expect(homepageWorld.heroSection).toMatch(
-    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i,
+    /For\s+developers\s+using\s+Claude\s+Code,?\s+Cursor,?\s+and\s+other\s+AI\s+coding\s+agents/i
   );
 }
 
@@ -401,25 +434,25 @@ function thenICanAnswerWhyTankExistsWithoutReadingFurther(): void {
   expect(homepageWorld.heroSection).toMatch(/attackers\s+are\s+already/i);
 }
 
-describe("Feature: Homepage first-time visitor UX", () => {
+describe('Feature: Homepage first-time visitor UX', () => {
   describe('Scenario: Hero section defines "agent skills" in plain language', () => {
-    it("runs Given/When/Then", () => {
+    it('runs Given/When/Then', () => {
       givenINavigateToTankHomepage();
       thenHeroDefinesAgentSkillsInPlainLanguage();
       thenDefinitionDoesNotAssumePriorKnowledge();
     });
   });
 
-  describe("Scenario: Hero section identifies the target audience", () => {
-    it("runs Given/When/Then", () => {
+  describe('Scenario: Hero section identifies the target audience', () => {
+    it('runs Given/When/Then', () => {
       givenINavigateToTankHomepage();
       thenHeroIdentifiesAudience();
       thenAudienceStatementIsVisibleWithoutScrollAt1280();
     });
   });
 
-  describe("Scenario: Security problem is visible above or immediately below the fold", () => {
-    it("runs Given/When/Then", () => {
+  describe('Scenario: Security problem is visible above or immediately below the fold', () => {
+    it('runs Given/When/Then', () => {
       givenINavigateToTankHomepage();
       thenSecurityRiskReferenceIsVisible();
       thenRiskFramingIsWithinFirstTwoSections();
@@ -427,23 +460,23 @@ describe("Feature: Homepage first-time visitor UX", () => {
   });
 
   describe('Scenario: Plain-language "What is Tank?" explanation appears before feature grid', () => {
-    it("runs Given/When/Then", () => {
+    it('runs Given/When/Then', () => {
       givenINavigateToTankHomepage();
       thenBeginnerFriendlyWhatIsTankAppears();
       thenExplainerAppearsBeforeFeatureCards();
     });
   });
 
-  describe("Scenario: Primary CTA is visible without scrolling on desktop", () => {
-    it("runs Given/When/Then", () => {
+  describe('Scenario: Primary CTA is visible without scrolling on desktop', () => {
+    it('runs Given/When/Then', () => {
       givenINavigateToTankHomepage();
       thenPrimaryCtaIsInHeroSection();
       thenPrimaryCtaVisibleWithoutScrollAt1280();
     });
   });
 
-  describe("Scenario: Value proposition is understandable in under 5 seconds", () => {
-    it("runs Given/When/Then", () => {
+  describe('Scenario: Value proposition is understandable in under 5 seconds', () => {
+    it('runs Given/When/Then', () => {
       givenINavigateToTankHomepage();
       givenIReadOnlyHeroHeadlineAndSubheadline();
       thenICanAnswerWhatIsTankWithoutReadingFurther();

@@ -38,6 +38,14 @@ const world: TrustBadgeWorld = {
   lastHtml: ''
 };
 
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for trust badge steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function fetchSkillPage(name: string): Promise<{ status: number; html: string }> {
@@ -65,7 +73,7 @@ async function seedSkillWithVerdict(
   name: string,
   version: string,
   verdict: string | null,
-  findings: { critical: number; high: number; medium: number; low: number },
+  findings: { critical: number; high: number; medium: number; low: number }
 ): Promise<void> {
   const now = new Date();
   const publisherId = `trust-pub-${world.runId}`;
@@ -172,7 +180,7 @@ async function cleanupTrustBadgeData(sql: postgres.Sql): Promise<void> {
 describe('Feature: Trust Badge Display', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
 
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
@@ -297,23 +305,23 @@ describe('Feature: Trust Badge Display', () => {
     });
   });
 
-  describe("Scenario: Skill cards show install count and last scan date", () => {
-    it.skipIf(!hasDatabase || !hasRegistry)("shows install count and scan recency on cards", async () => {
+  describe('Scenario: Skill cards show install count and last scan date', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('shows install count and scan recency on cards', async () => {
       const { html } = await fetchSkillsBrowsePage();
       expect(html).toContain(`@${world.testOrg}/signals-skill`);
-      expect(html.toLowerCase()).toContain("installs");
-      expect(html).toContain("Scanned");
+      expect(html.toLowerCase()).toContain('installs');
+      expect(html).toContain('Scanned');
     });
   });
 
-  describe("Scenario: Skill detail page shows verified publisher and install count", () => {
+  describe('Scenario: Skill detail page shows verified publisher and install count', () => {
     it.skipIf(!hasDatabase || !hasRegistry)(
-      "shows verified publisher badge and install count in metadata",
+      'shows verified publisher badge and install count in metadata',
       async () => {
         const { html } = await fetchSkillPage(`@${world.testOrg}/signals-skill`);
-        expect(html).toContain("Verified Publisher");
-        expect(html).toContain("Installs");
-      },
+        expect(html).toContain('Verified Publisher');
+        expect(html).toContain('Installs');
+      }
     );
   });
 });

@@ -41,6 +41,21 @@ const world: AuditLogsWorld = {
   seededEventId: ''
 };
 
+function requireSql(): postgres.Sql {
+  if (!world.sql) {
+    throw new Error('Database connection not initialized');
+  }
+  return world.sql;
+}
+
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for admin audit log steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function adminGet(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
@@ -59,7 +74,7 @@ async function adminGet(path: string, cookieHeader?: string): Promise<{ status: 
 // ── Given ──────────────────────────────────────────────────────────────────
 
 async function givenAuditEventExistsForAdmin(): Promise<void> {
-  const sql = world.sql!;
+  const sql = requireSql();
   const eventId = randomUUID();
   const adminUserId = `e2e-admin-${world.runId}`;
   const now = new Date();
@@ -76,7 +91,7 @@ async function givenAuditEventExistsForAdmin(): Promise<void> {
 describe('Feature: Admin audit log access', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.client = createAdminApiClient(world.registry, world.sql);

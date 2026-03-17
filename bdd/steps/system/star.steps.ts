@@ -51,6 +51,14 @@ const world: StarWorld = {
   lastBody: {}
 };
 
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for star steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function getJson(path: string, cookie?: string): Promise<{ status: number; body: Record<string, unknown> }> {
@@ -217,7 +225,7 @@ async function cleanupStarData(sql: postgres.Sql): Promise<void> {
 describe('Feature: Skill starring and unstarring', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
 
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);

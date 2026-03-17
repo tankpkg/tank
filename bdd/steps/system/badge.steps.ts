@@ -42,6 +42,14 @@ const world: BadgeWorld = {
   lastContentType: ''
 };
 
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for badge steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function getBadge(path: string): Promise<{ status: number; body: string; contentType: string }> {
@@ -122,7 +130,7 @@ async function cleanupBadgeData(sql: postgres.Sql): Promise<void> {
 describe('Feature: Audit score SVG badge', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
 
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);

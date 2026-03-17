@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { upgradeCommand } from '../../../packages/cli/src/commands/upgrade.js';
 import { VERSION } from '../../../packages/cli/src/version.js';
@@ -40,10 +40,12 @@ const world: UpgradeWorld = {
 
 function captureConsole(): () => string[] {
   const lines: string[] = [];
-  const origLog = console.log;
-  console.log = (...args: unknown[]) => lines.push(args.join(' '));
+  const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+    lines.push(String(chunk).trimEnd());
+    return true;
+  });
   return () => {
-    console.log = origLog;
+    writeSpy.mockRestore();
     return lines;
   };
 }
@@ -114,22 +116,22 @@ function givenCurrentBinaryInCellar(): void {
 }
 
 function givenCurrentBinaryInNodeModules(): void {
-  world.tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tank-upgrade-bdd-"));
-  const fakeBin = path.join(world.tmpDir, "node_modules", "@tankpkg", "cli", "dist", "bin", "tank.js");
+  world.tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-bdd-'));
+  const fakeBin = path.join(world.tmpDir, 'node_modules', '@tankpkg', 'cli', 'dist', 'bin', 'tank.js');
   fs.mkdirSync(path.dirname(fakeBin), { recursive: true });
-  fs.writeFileSync(fakeBin, "#!/usr/bin/env node\n");
+  fs.writeFileSync(fakeBin, '#!/usr/bin/env node\n');
   world.origArgv = [...process.argv];
-  process.argv = ["node", fakeBin, "upgrade"];
-  setMockFetch(makeFakeReleaseFetch("999.0.0"));
+  process.argv = ['node', fakeBin, 'upgrade'];
+  setMockFetch(makeFakeReleaseFetch('999.0.0'));
 }
 
 function givenCurrentBinaryIsJsFile(): void {
-  world.tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "tank-upgrade-bdd-"));
-  const fakeBin = path.join(world.tmpDir, "tank.js");
-  fs.writeFileSync(fakeBin, "#!/usr/bin/env node\n");
+  world.tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-bdd-'));
+  const fakeBin = path.join(world.tmpDir, 'tank.js');
+  fs.writeFileSync(fakeBin, '#!/usr/bin/env node\n');
   world.origArgv = [...process.argv];
-  process.argv = ["node", fakeBin, "upgrade"];
-  setMockFetch(makeFakeReleaseFetch("999.0.0"));
+  process.argv = ['node', fakeBin, 'upgrade'];
+  setMockFetch(makeFakeReleaseFetch('999.0.0'));
 }
 
 // ── When ───────────────────────────────────────────────────────────────────
@@ -184,10 +186,10 @@ describe('Feature: Self-upgrade Tank CLI binary', () => {
     // Default argv[1] to a native-binary-like path so scenarios bypass
     // the npm/Homebrew install guards. Scenarios that test those guards
     // override argv[1] in their own Given step.
-    defaultBinDir = fs.mkdtempSync(path.join(os.tmpdir(), "tank-upgrade-bdd-default-"));
-    const defaultBin = path.join(defaultBinDir, "tank");
-    fs.writeFileSync(defaultBin, "binary-placeholder");
-    process.argv = ["node", defaultBin, "upgrade"];
+    defaultBinDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-bdd-default-'));
+    const defaultBin = path.join(defaultBinDir, 'tank');
+    fs.writeFileSync(defaultBin, 'binary-placeholder');
+    process.argv = ['node', defaultBin, 'upgrade'];
   });
 
   afterEach(() => {
@@ -201,7 +203,7 @@ describe('Feature: Self-upgrade Tank CLI binary', () => {
     }
     world.tmpDir = '';
     world.capturedOutput = [];
-    defaultBinDir = "";
+    defaultBinDir = '';
   });
 
   // ── Already on latest (C2) ────────────────────────────────────────
@@ -250,24 +252,24 @@ describe('Feature: Self-upgrade Tank CLI binary', () => {
 
   // ── npm/npx detection (C9) ─────────────────────────────────────────
 
-  describe("Scenario: npm-installed CLI redirects to npm update (E6)", () => {
-    it("runs Given/When/Then", async () => {
+  describe('Scenario: npm-installed CLI redirects to npm update (E6)', () => {
+    it('runs Given/When/Then', async () => {
       givenCurrentBinaryInNodeModules();
       const stop = captureConsole();
       await upgradeCommand();
       world.capturedOutput = stop();
-      thenOutputContains("npm update -g @tankpkg/cli");
+      thenOutputContains('npm update -g @tankpkg/cli');
       thenNoBinaryDownloadOccurred();
     });
   });
 
-  describe("Scenario: JS entry point (.js) detected as npm install (E6)", () => {
-    it("runs Given/When/Then", async () => {
+  describe('Scenario: JS entry point (.js) detected as npm install (E6)', () => {
+    it('runs Given/When/Then', async () => {
       givenCurrentBinaryIsJsFile();
       const stop = captureConsole();
       await upgradeCommand();
       world.capturedOutput = stop();
-      thenOutputContains("npm update -g @tankpkg/cli");
+      thenOutputContains('npm update -g @tankpkg/cli');
       thenNoBinaryDownloadOccurred();
     });
   });

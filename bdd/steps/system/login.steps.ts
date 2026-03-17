@@ -84,8 +84,7 @@ async function whenIExchangeSessionCodeWithMismatchedState(): Promise<void> {
   });
   world.lastStatus = res.status;
   world.lastBody = await res.json().catch(async () => {
-    const text = await res.text().catch(() => '');
-    console.warn(`[login.steps] Non-JSON response (${res.status}): ${text.slice(0, 200)}`);
+    await res.text().catch(() => '');
     return {} as Record<string, unknown>;
   });
 }

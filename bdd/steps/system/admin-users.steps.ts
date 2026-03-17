@@ -38,6 +38,28 @@ const world: AdminUsersWorld = {
   client: null
 };
 
+function requireSql(): postgres.Sql {
+  if (!world.sql) {
+    throw new Error('Database connection not initialized');
+  }
+  return world.sql;
+}
+
+function requireClient(): AdminApiClient {
+  if (!world.client) {
+    throw new Error('Admin client not initialized');
+  }
+  return world.client;
+}
+
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for admin user steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function adminGet(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
@@ -56,11 +78,11 @@ async function adminGet(path: string, cookieHeader?: string): Promise<{ status: 
 // ── Given ──────────────────────────────────────────────────────────────────
 
 async function givenIAmAuthenticatedAsAdmin(): Promise<void> {
-  await createAdminSession(world.client!, world.runId);
+  await createAdminSession(requireClient(), world.runId);
 }
 
 async function givenTestUserExists(email: string): Promise<void> {
-  const sql = world.sql!;
+  const sql = requireSql();
   const userId = `reg-filter-${world.runId}`;
   const now = new Date();
   await sql`
@@ -71,7 +93,7 @@ async function givenTestUserExists(email: string): Promise<void> {
 }
 
 async function givenSuspendedUserExists(): Promise<void> {
-  const sql = world.sql!;
+  const sql = requireSql();
   const userId = `reg-suspended-${world.runId}`;
   const now = new Date();
   await sql`
@@ -104,7 +126,7 @@ function expectBodyContains(body: unknown, ...fields: string[]): void {
 describe('Feature: Admin user management', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.client = createAdminApiClient(world.registry, world.sql);

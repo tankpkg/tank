@@ -88,6 +88,7 @@ Then('only one download row exists for today', async ({ publishedPublicSkill, e2
 });
 
 Then('the response should include a downloads field of at least {int}', async ({ bddState }, minDownloads: number) => {
-  expect(bddState.lastResponseBody).toBeDefined();
-  expect(bddState.lastResponseBody!.downloads).toBeGreaterThanOrEqual(minDownloads);
+  const responseBody = bddState.lastResponseBody as { downloads?: number } | undefined;
+  expect(responseBody).toBeDefined();
+  expect(responseBody?.downloads).toBeGreaterThanOrEqual(minDownloads);
 });

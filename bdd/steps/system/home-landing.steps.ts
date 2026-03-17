@@ -14,7 +14,7 @@
  * for unit-level BDD. These tests prove the component renders correctly for each
  * session state, which is a prerequisite for hydration correctness.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type VNode =
   | string
@@ -41,46 +41,45 @@ interface SessionSnapshot {
 
 const mockedSession: SessionSnapshot = {
   data: undefined,
-  isPending: true,
+  isPending: true
 };
 
-const Fragment = Symbol("Fragment");
+const Fragment = Symbol('Fragment');
 
-vi.mock(
-  "react/jsx-runtime",
-  () => ({
-    Fragment,
-    jsx: (type: unknown, props: Record<string, unknown>) => ({ type, props }),
-    jsxs: (type: unknown, props: Record<string, unknown>) => ({ type, props }),
-  }),
-  { virtual: true },
-);
-
-vi.mock("next/link", () => ({
-  default: ({ children }: { children?: VNode | VNode[] }) => ({ type: "a", props: { children } }),
+vi.mock('react/jsx-runtime', () => ({
+  Fragment,
+  jsx: (type: unknown, props: Record<string, unknown>) => ({ type, props }),
+  jsxs: (type: unknown, props: Record<string, unknown>) => ({ type, props })
 }));
 
-vi.mock("lucide-react", () => ({
-  ArrowRight: () => ({ type: "svg", props: {} }),
+vi.mock('next/link', () => ({
+  default: ({ children }: { children?: VNode | VNode[] }) => ({ type: 'a', props: { children } })
 }));
 
-vi.mock("@/components/ui/button", () => ({
+vi.mock('lucide-react', () => ({
+  ArrowRight: () => ({ type: 'svg', props: {} })
+}));
+
+vi.mock('@/components/ui/button', () => ({
   Button: ({ asChild, children }: { asChild?: boolean; children?: VNode | VNode[] }) =>
-    asChild ? children : { type: "button", props: { children } },
+    asChild ? children : { type: 'button', props: { children } }
 }));
 
-vi.mock("@/lib/analytics", () => ({
-  trackCtaClick: vi.fn(),
+vi.mock('@/lib/analytics', () => ({
+  trackCtaClick: vi.fn()
 }));
 
-vi.mock("@/lib/auth-client", () => ({
+vi.mock('@/lib/auth-client', () => ({
   useSession: () => ({
     data: mockedSession.data,
-    isPending: mockedSession.isPending,
-  }),
+    isPending: mockedSession.isPending
+  })
 }));
 
-type HomeLandingModule = typeof import("../../packages/web/app/home-auth-cta");
+interface HomeLandingModule {
+  HomeNavAuthCta: () => VNode;
+  HomePrimaryAuthCta: (props: { size?: 'sm' | 'lg'; testId?: string }) => VNode;
+}
 
 interface RenderSnapshot {
   heroLabel: string;
@@ -88,21 +87,22 @@ interface RenderSnapshot {
 }
 
 interface HomeLandingWorld {
-  currentVisitor: "logged-out" | "logged-in" | "loading";
+  currentVisitor: 'logged-out' | 'logged-in' | 'loading';
   snapshots: RenderSnapshot[];
   hydrationWarnings: string[];
 }
 
 const world: HomeLandingWorld = {
-  currentVisitor: "loading",
+  currentVisitor: 'loading',
   snapshots: [],
-  hydrationWarnings: [],
+  hydrationWarnings: []
 };
 
 let homeLandingModulePromise: Promise<HomeLandingModule> | undefined;
+const homeLandingModulePath = '../../../apps/registry-legacy/app/home-auth-cta.tsx';
 
 function resetWorld(): void {
-  world.currentVisitor = "loading";
+  world.currentVisitor = 'loading';
   world.snapshots = [];
   world.hydrationWarnings = [];
   mockedSession.data = undefined;
@@ -111,7 +111,7 @@ function resetWorld(): void {
 
 async function getHomeLandingModule(): Promise<HomeLandingModule> {
   if (!homeLandingModulePromise) {
-    homeLandingModulePromise = import("../../packages/web/app/home-auth-cta");
+    homeLandingModulePromise = import(homeLandingModulePath) as Promise<HomeLandingModule>;
   }
   return homeLandingModulePromise;
 }
@@ -122,15 +122,15 @@ function setMockedSession(snapshot: SessionSnapshot): void {
 }
 
 function flattenText(node: VNode): string[] {
-  if (node == null || typeof node === "boolean") return [];
-  if (typeof node === "string" || typeof node === "number") return [String(node)];
+  if (node == null || typeof node === 'boolean') return [];
+  if (typeof node === 'string' || typeof node === 'number') return [String(node)];
   if (Array.isArray(node)) return node.flatMap(flattenText);
 
   const maybeNode = node as { type?: unknown; props?: { children?: VNode | VNode[] } };
   const { type, props } = maybeNode;
 
   if (type === Fragment) return flattenText(props?.children as VNode);
-  if (typeof type === "function") {
+  if (typeof type === 'function') {
     const rendered = (type as (input: Record<string, unknown>) => VNode)(props as Record<string, unknown>);
     return flattenText(rendered);
   }
@@ -139,18 +139,18 @@ function flattenText(node: VNode): string[] {
 }
 
 function extractLabel(node: VNode): string {
-  const text = flattenText(node).join(" ");
-  return text.includes("Open Dashboard") ? "Open Dashboard" : "Get Started";
+  const text = flattenText(node).join(' ');
+  return text.includes('Open Dashboard') ? 'Open Dashboard' : 'Get Started';
 }
 
 async function captureSnapshot(): Promise<RenderSnapshot> {
   const { HomeNavAuthCta, HomePrimaryAuthCta } = await getHomeLandingModule();
-  const heroNode = HomePrimaryAuthCta({ testId: "hero-cta" });
+  const heroNode = HomePrimaryAuthCta({ testId: 'hero-cta' });
   const navNode = HomeNavAuthCta();
 
   return {
     heroLabel: extractLabel(heroNode as VNode),
-    navLabel: extractLabel(navNode as VNode),
+    navLabel: extractLabel(navNode as VNode)
   };
 }
 
@@ -169,15 +169,15 @@ function givenLandingPageIsLoaded(): void {
 }
 
 function givenVisitorIsNotLoggedIn(): void {
-  world.currentVisitor = "logged-out";
+  world.currentVisitor = 'logged-out';
 }
 
 function givenVisitorIsLoggedIn(): void {
-  world.currentVisitor = "logged-in";
+  world.currentVisitor = 'logged-in';
 }
 
 function givenVisitorSessionIsLoading(): void {
-  world.currentVisitor = "loading";
+  world.currentVisitor = 'loading';
 }
 
 // ── When ───────────────────────────────────────────────────────────────────
@@ -189,18 +189,17 @@ async function whenPageRenders(): Promise<void> {
 
 async function whenPageHydrates(): Promise<void> {
   const capturedWarnings: string[] = [];
-  const originalConsoleError = console.error;
-  console.error = (...args: unknown[]) => {
-    capturedWarnings.push(args.map((part) => String(part)).join(" "));
-  };
+  const errorSpy = vi.spyOn(globalThis.console, 'error').mockImplementation((...args: unknown[]) => {
+    capturedWarnings.push(args.map((part) => String(part)).join(' '));
+  });
 
   try {
     setMockedSession({ data: undefined, isPending: true });
     const initial = await captureSnapshot();
 
-    if (world.currentVisitor === "logged-in") {
-      setMockedSession({ data: { user: { id: "user-79" } }, isPending: false });
-    } else if (world.currentVisitor === "logged-out") {
+    if (world.currentVisitor === 'logged-in') {
+      setMockedSession({ data: { user: { id: 'user-79' } }, isPending: false });
+    } else if (world.currentVisitor === 'logged-out') {
       setMockedSession({ data: null, isPending: false });
     } else {
       setMockedSession({ data: undefined, isPending: true });
@@ -209,7 +208,7 @@ async function whenPageHydrates(): Promise<void> {
     const hydrated = await captureSnapshot();
     world.snapshots = [initial, hydrated];
   } finally {
-    console.error = originalConsoleError;
+    errorSpy.mockRestore();
   }
 
   world.hydrationWarnings = capturedWarnings;
@@ -217,11 +216,11 @@ async function whenPageHydrates(): Promise<void> {
 
 // ── Then ───────────────────────────────────────────────────────────────────
 
-function thenHeroIs(expected: "Get Started" | "Open Dashboard", index = 0): void {
+function thenHeroIs(expected: 'Get Started' | 'Open Dashboard', index = 0): void {
   expect(world.snapshots[index]?.heroLabel).toBe(expected);
 }
 
-function thenNavIs(expected: "Get Started" | "Open Dashboard", index = 0): void {
+function thenNavIs(expected: 'Get Started' | 'Open Dashboard', index = 0): void {
   expect(world.snapshots[index]?.navLabel).toBe(expected);
 }
 
@@ -231,44 +230,44 @@ function thenNoIntermediateHeroFlash(): void {
 }
 
 function thenNoHydrationMismatchWarning(): void {
-  const combined = world.hydrationWarnings.join("\n");
+  const combined = world.hydrationWarnings.join('\n');
   expect(combined).not.toMatch(/hydration|did not match|text content does not match/i);
 }
 
 // ── Feature ────────────────────────────────────────────────────────────────
 
-describe("Feature: Landing page CTA buttons are stable after hydration", () => {
+describe('Feature: Landing page CTA buttons are stable after hydration', () => {
   beforeEach(() => {
     resetWorld();
   });
 
   describe('Scenario: Unauthenticated visitor state renders "Get Started" consistently', () => {
-    it("runs Given/When/Then", async () => {
+    it('runs Given/When/Then', async () => {
       givenLandingPageIsLoaded();
       givenVisitorIsNotLoggedIn();
       await whenPageHydrates();
 
-      thenHeroIs("Get Started", 0);
-      thenHeroIs("Get Started", 1);
-      thenNavIs("Get Started", 0);
-      thenNavIs("Get Started", 1);
+      thenHeroIs('Get Started', 0);
+      thenHeroIs('Get Started', 1);
+      thenNavIs('Get Started', 0);
+      thenNavIs('Get Started', 1);
     });
   });
 
   describe('Scenario: Authenticated user state renders "Open Dashboard" without intermediate flash', () => {
-    it("runs Given/When/Then", async () => {
+    it('runs Given/When/Then', async () => {
       givenLandingPageIsLoaded();
       givenVisitorIsLoggedIn();
       await whenPageHydrates();
 
-      thenHeroIs("Get Started", 0);
-      thenHeroIs("Open Dashboard", 1);
+      thenHeroIs('Get Started', 0);
+      thenHeroIs('Open Dashboard', 1);
       thenNoIntermediateHeroFlash();
     });
   });
 
-  describe("Scenario: Component state transitions do not emit console errors", () => {
-    it("runs Given/When/Then", async () => {
+  describe('Scenario: Component state transitions do not emit console errors', () => {
+    it('runs Given/When/Then', async () => {
       givenLandingPageIsLoaded();
       givenVisitorIsLoggedIn();
       await whenPageHydrates();
@@ -278,13 +277,13 @@ describe("Feature: Landing page CTA buttons are stable after hydration", () => {
   });
 
   describe('Scenario: Button shows "Get Started" while session is loading', () => {
-    it("runs Given/When/Then", async () => {
+    it('runs Given/When/Then', async () => {
       givenLandingPageIsLoaded();
       givenVisitorSessionIsLoading();
       await whenPageRenders();
 
-      thenHeroIs("Get Started");
-      thenNavIs("Get Started");
+      thenHeroIs('Get Started');
+      thenNavIs('Get Started');
     });
   });
 });

@@ -49,6 +49,14 @@ const world: SecurityTabWorld = {
   lastHtml: ''
 };
 
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for security tab steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function fetchSkillPage(name: string): Promise<{ status: number; html: string }> {
@@ -207,7 +215,7 @@ async function cleanupSecurityTabData(sql: postgres.Sql): Promise<void> {
 describe('Feature: Security Tab Simplification', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
 
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);

@@ -124,7 +124,7 @@ async function cleanupUserFixture(ctx: E2EContext, user: UserFixture): Promise<v
     await ctx.sql`DELETE FROM "session" WHERE user_id = ${user.id}`;
     await ctx.sql`DELETE FROM "user" WHERE id = ${user.id}`;
   } catch (err) {
-    console.warn(`BDD user cleanup warning (non-fatal): ${err}`);
+    void err;
   }
 
   cleanupHomeDir(user.home);

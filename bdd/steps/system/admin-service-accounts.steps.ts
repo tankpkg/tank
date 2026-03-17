@@ -43,6 +43,14 @@ const world: ServiceAccountsWorld = {
   createdKeyId: ''
 };
 
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for admin service account steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function adminFetch(
@@ -72,7 +80,7 @@ async function adminFetch(
 describe('Feature: Admin service account management', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.client = createAdminApiClient(world.registry, world.sql);

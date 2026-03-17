@@ -42,6 +42,21 @@ const world: AdminPackagesWorld = {
   testSkillName: ''
 };
 
+function requireSql(): postgres.Sql {
+  if (!world.sql) {
+    throw new Error('Database connection not initialized');
+  }
+  return world.sql;
+}
+
+function requireDatabaseUrl(): string {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is required for admin package steps');
+  }
+  return connectionString;
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function adminGet(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
@@ -60,7 +75,7 @@ async function adminGet(path: string, cookieHeader?: string): Promise<{ status: 
 // ── Given ──────────────────────────────────────────────────────────────────
 
 async function givenTestSkillExists(name: string): Promise<void> {
-  const sql = world.sql!;
+  const sql = requireSql();
   const now = new Date();
   const publisherId = `pkg-pub-${world.runId}`;
   const skillId = randomUUID();
@@ -87,7 +102,7 @@ async function givenTestSkillExists(name: string): Promise<void> {
 describe('Feature: Admin package catalog management', () => {
   beforeAll(async () => {
     if (!hasDatabase || !hasRegistry) return;
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = requireDatabaseUrl();
     world.sql = postgres(connectionString);
     world.runId = randomUUID().replace(/-/g, '').slice(0, 10);
     world.client = createAdminApiClient(world.registry, world.sql);
