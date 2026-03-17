@@ -403,9 +403,9 @@ export function Navbar() {
                         </ul>
                       )}
                     </>
-                  ) : (
+                  ) : item.href ? (
                     <Link
-                      href={item.href!}
+                      href={item.href}
                       onClick={() => setMobileOpen(false)}
                       style={{
                         display: 'block',
@@ -415,7 +415,7 @@ export function Navbar() {
                       className="text-muted-foreground hover:text-foreground transition-colors">
                       {item.text}
                     </Link>
-                  )}
+                  ) : null}
                 </div>
               ))}
             </nav>

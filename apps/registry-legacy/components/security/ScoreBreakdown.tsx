@@ -40,7 +40,11 @@ const DEFAULT_CRITERIA: ScoreCriterion[] = [
   { label: 'Package under 5MB', passed: true, points: 1, maxPoints: 1 }
 ];
 
-export function ScoreBreakdown({ criteria = DEFAULT_CRITERIA, totalScore, llmAnalysis }: ScoreBreakdownProps) {
+export function ScoreBreakdown({
+  criteria = DEFAULT_CRITERIA,
+  totalScore: _totalScore,
+  llmAnalysis
+}: ScoreBreakdownProps) {
   const earnedPoints = criteria.reduce((sum, c) => sum + c.points, 0);
   const maxPoints = criteria.reduce((sum, c) => sum + c.maxPoints, 0);
 

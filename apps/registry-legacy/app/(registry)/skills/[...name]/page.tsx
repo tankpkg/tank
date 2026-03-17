@@ -4,15 +4,12 @@ import type { Metadata } from 'next';
 import { unstable_noStore as noStore } from 'next/cache';
 
 import {
-  computeQualityChecks,
   FindingsList,
-  QualityChecks,
   ScanningToolsStrip,
   ScanPipeline,
   ScoreBreakdown,
   SecurityOverview,
   SecuritySidebarSummary,
-  TrustBadge,
   VerifiedPublisherBadge
 } from '@/components/security';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +17,6 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { SkillDetailResult, SkillVersionSummary } from '@/lib/data/skills';
 import { getSkillDetail } from '@/lib/data/skills';
-import { computeTrustLevel } from '@/lib/trust-level';
 import { formatInstallCount, formatLastScanLabel, isPublisherVerified } from '@/lib/trust-signals';
 import { DownloadButton } from './download-button';
 import { InstallCommand } from './install-command';
@@ -492,13 +488,6 @@ export default async function SkillDetailPage({ params }: SkillDetailPageProps) 
   };
 
   // Compute trust level for hero section
-  const heroTrustLevel = computeTrustLevel(
-    scanDetails?.verdict ?? null,
-    scanDetails?.criticalCount ?? 0,
-    scanDetails?.highCount ?? 0,
-    scanDetails?.mediumCount ?? 0,
-    scanDetails?.lowCount ?? 0
-  );
   const publisherVerified = isPublisherVerified({
     emailVerified: data.publisher.emailVerified,
     githubUsername: data.publisher.githubUsername

@@ -5,7 +5,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { TrustBadge, VerifiedPublisherBadge } from '@/components/security';
+import { VerifiedPublisherBadge } from '@/components/security';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,6 @@ import type {
   VisibilityFilter
 } from '@/lib/data/skills';
 import { searchSkills } from '@/lib/data/skills';
-import { computeTrustLevel } from '@/lib/trust-level';
 import { formatInstallCount, formatLastScanLabel } from '@/lib/trust-signals';
 import { SearchBar } from './search-bar';
 import { SkillsFilters } from './skills-filters';

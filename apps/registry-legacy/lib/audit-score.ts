@@ -146,8 +146,9 @@ export function computeAuditScore(input: AuditScoreInput): AuditScoreResult {
   const permissionsDeclared = Object.keys(permissions).length > 0;
 
   // 4. Scanner findings available + no findings present (security-only)
-  const hasFindingsData = Array.isArray(analysisResults?.securityIssues);
-  const issueCount = hasFindingsData ? analysisResults!.securityIssues!.length : 0;
+  const securityIssues = Array.isArray(analysisResults?.securityIssues) ? analysisResults.securityIssues : null;
+  const hasFindingsData = securityIssues !== null;
+  const issueCount = securityIssues?.length ?? 0;
   const noSecurityIssues = hasFindingsData && issueCount === 0;
 
   // 5. Permission extraction matches declared (informational only for now)
@@ -169,10 +170,7 @@ export function computeAuditScore(input: AuditScoreInput): AuditScoreResult {
   let score = 5;
 
   if (hasFindingsData) {
-    const penalty = analysisResults!.securityIssues!.reduce(
-      (sum, issue) => sum + getSeverityPenalty(issue.severity),
-      0
-    );
+    const penalty = securityIssues.reduce((sum, issue) => sum + getSeverityPenalty(issue.severity), 0);
     score = Math.max(0, 10 - penalty);
   } else if (typeof previousScore === 'number' && Number.isFinite(previousScore)) {
     // Preserve existing persisted score when scanner data is unavailable.

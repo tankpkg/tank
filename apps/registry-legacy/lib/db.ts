@@ -4,10 +4,6 @@ import * as schema from './db/schema';
 
 const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString && process.env.NODE_ENV !== 'production') {
-  console.warn('Missing DATABASE_URL environment variable');
-}
-
 // Declare global type for caching across hot reloads
 declare global {
   // eslint-disable-next-line no-var

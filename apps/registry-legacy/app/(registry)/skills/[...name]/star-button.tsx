@@ -15,9 +15,11 @@ export function StarButton({ skillName, initialStarCount, initialIsStarred }: St
   const [starCount, setStarCount] = useState(initialStarCount);
   const [isStarred, setIsStarred] = useState(initialIsStarred);
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   const handleToggle = () => {
     startTransition(async () => {
+      setError(null);
       try {
         const method = isStarred ? 'DELETE' : 'POST';
         const res = await fetch(`/api/v1/skills/${encodeURIComponent(skillName)}/star`, { method });
@@ -28,21 +30,24 @@ export function StarButton({ skillName, initialStarCount, initialIsStarred }: St
           setIsStarred(data.isStarred);
           trackSkillStar(skillName, data.isStarred);
         }
-      } catch (error) {
-        console.error('Failed to toggle star:', error);
+      } catch {
+        setError('Failed to update star');
       }
     });
   };
 
   return (
-    <Button
-      variant={isStarred ? 'default' : 'outline'}
-      size="sm"
-      onClick={handleToggle}
-      disabled={isPending}
-      className="gap-1.5">
-      <Star className={`h-4 w-4 ${isStarred ? 'fill-current' : ''}`} />
-      <span>{starCount.toLocaleString()}</span>
-    </Button>
+    <div className="space-y-1">
+      <Button
+        variant={isStarred ? 'default' : 'outline'}
+        size="sm"
+        onClick={handleToggle}
+        disabled={isPending}
+        className="gap-1.5">
+        <Star className={`h-4 w-4 ${isStarred ? 'fill-current' : ''}`} />
+        <span>{starCount.toLocaleString()}</span>
+      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
   );
 }

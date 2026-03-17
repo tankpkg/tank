@@ -35,6 +35,18 @@ interface SkillResult {
   owner?: string;
 }
 
+interface SkillSearchApiItem {
+  name?: string;
+  description?: string;
+  owner?: string;
+  ownerName?: string;
+}
+
+interface SkillSearchApiResponse {
+  skills?: SkillSearchApiItem[];
+  results?: SkillSearchApiItem[];
+}
+
 const DOC_PAGES = [
   { title: 'Getting Started', slug: 'getting-started', icon: RocketIcon },
   { title: 'Installing Skills', slug: 'installing', icon: PackageSearchIcon },
@@ -94,15 +106,14 @@ export function CommandMenu() {
           signal: controller.signal
         });
         if (res.ok) {
-          const data = await res.json();
-          const items: SkillResult[] = (data.skills ?? data.results ?? []).map(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (s: any) => ({
-              name: s.name,
-              description: s.description ?? '',
-              owner: s.owner ?? s.ownerName ?? ''
-            })
-          );
+          const data = (await res.json()) as SkillSearchApiResponse;
+          const items: SkillResult[] = (data.skills ?? data.results ?? [])
+            .filter((skill): skill is SkillSearchApiItem & { name: string } => typeof skill.name === 'string')
+            .map((skill) => ({
+              name: skill.name,
+              description: skill.description ?? '',
+              owner: skill.owner ?? skill.ownerName ?? ''
+            }));
           setSkills(items);
         }
       } catch {
