@@ -33,15 +33,15 @@ Good IDD output for this repo includes:
 
 ## BDD
 
-BDD lives in the root `.bdd/` tree.
+BDD lives in the root `bdd/` tree.
 
 BDD layout:
 
-- `features → .bdd/features/`
-- `step definitions → .bdd/steps/`
-- `support → .bdd/support/`
-- `interactions → .bdd/interactions/`
-- `QA findings loop → .bdd/qa/`
+- `features → bdd/features/`
+- `step definitions → bdd/steps/`
+- `support → bdd/support/`
+- `interactions → bdd/interactions/`
+- `QA findings loop → bdd/qa/`
 
 Current feature groups:
 
@@ -53,8 +53,8 @@ Current BDD conventions:
 
 - scenario language stays behavior-focused, not implementation-focused
 - step defs call real infrastructure helpers where possible
-- findings discovered by BDD are written to `.bdd/qa/findings/`
-- fixes are documented in `.bdd/qa/resolutions/`
+- findings discovered by BDD are written to `bdd/qa/findings/`
+- fixes are documented in `bdd/qa/resolutions/`
 
 There is a second BDD stack for browser flows in `e2e/bdd/`, driven by Playwright.
 
@@ -65,10 +65,12 @@ Unit tests are colocated.
 Unit-test layout:
 
 - `CLI → packages/cli/src/__tests__/`
-- `Web → packages/web/**/__tests__/ + packages/web/lib/__tests__/`
-- `Shared → packages/shared/src/__tests__/`
+- `Registry (TanStack) → apps/registry/src/__tests__/`
+- `Registry (Next.js) → apps/registry-legacy/**/__tests__/`
+- `Schemas → packages/internals-schemas/src/__tests__/`
+- `Helpers → packages/internals-helpers/src/__tests__/`
 - `MCP → packages/mcp-server/__tests__/`
-- `Scanner → packages/scanner/tests/ + scanner-local test_*.py`
+- `Scanner → apps/python-api/tests/ + test_*.py`
 
 Current repo rules:
 

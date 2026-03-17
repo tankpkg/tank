@@ -4,7 +4,7 @@ Current Python scanner service, stage layout, and API surface used by the web ap
 
 ## Service Shape
 
-Scanner lives in `packages/scanner`.
+Scanner lives in `apps/python-api`.
 
 - FastAPI entrypoint: `api/main.py`
 - stage implementations: `lib/scan/`

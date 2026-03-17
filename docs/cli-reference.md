@@ -29,7 +29,7 @@ The CLI currently exposes 18 commands from `packages/cli/src/bin/tank.ts`.
 
 ### Install
 
-1. resolve the requested range with `@internal/shared`
+1. resolve the requested range with `@internals/schemas`
 2. fetch metadata and tarball URL from the registry
 3. verify SHA-512 integrity
 4. enforce permission budget and optional audit threshold

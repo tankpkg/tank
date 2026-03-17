@@ -25,7 +25,7 @@ Non-tooling conventions that agents should follow in this repo.
 - register commands in `src/bin/tank.ts`
 - support `configDir`/homedir-style isolation for tests
 - keep user-facing output simple; debug detail goes through the logger path
-- use `@internal/shared` for shared schemas and constants
+- use `@internals/schemas` for shared schemas and constants
 
 ## MCP Server
 

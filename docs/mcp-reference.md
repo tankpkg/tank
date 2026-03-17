@@ -36,7 +36,7 @@ It shares auth with the CLI:
 
 - one file per tool
 - register from `src/index.ts`
-- use shared schemas/constants via `@internal/shared`
+- use shared schemas/constants via `@internals/schemas`
 - return markdown-friendly text payloads
 - represent failures as MCP error payloads, not process crashes
 

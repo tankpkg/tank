@@ -100,7 +100,7 @@ vercel deploy
 ### Docker
 
 ```bash
-docker build -t tank-registry ./apps/web
+docker build -t tank-registry ./apps/registry-legacy
 docker run -p 3000:3000 tank-registry
 ```
 

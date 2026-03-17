@@ -1,10 +1,10 @@
-# Shared Package Reference
+# Internals Package Reference
 
-`@internal/shared` is the pure TypeScript contract shared by CLI, MCP server, and web.
+`@internals/schemas` and `@internals/helpers` are the pure TypeScript contracts shared by CLI, MCP server, and registry apps.
 
 ## Public Surface
 
-Everything public should come from `packages/shared/src/index.ts`.
+Everything public should come from `packages/internals-schemas/src/index.ts` (schemas, types, constants) or `packages/internals-helpers/src/index.ts` (utilities).
 
 ### Schemas
 
