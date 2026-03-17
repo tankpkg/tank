@@ -23,12 +23,12 @@
 
 | #   | Task                                                          | File(s)                                              | Est. |
 | --- | ------------------------------------------------------------- | ---------------------------------------------------- | ---- |
-| 1.1 | Create `BrandConfig` types in `@tank/shared`                  | `packages/shared/src/brand.ts`                       | 20m  |
+| 1.1 | Create `BrandConfig` types in `@internals/schemas`            | `packages/internals-schemas/src/brand.ts`                       | 20m  |
 | 1.2 | Create `apps/registry-legacy/lib/branding.ts` config accessor | `apps/registry-legacy/lib/branding.ts`               | 30m  |
 | 1.3 | Add env vars to `.env.example`                                | `apps/registry-legacy/.env.example`                  | 10m  |
 | 1.4 | Add CSS custom properties for theme colors                    | `apps/registry-legacy/app/globals.css`               | 20m  |
 | 1.5 | Create `BrandProvider` client context                         | `apps/registry-legacy/components/brand-provider.tsx` | 30m  |
-| 1.6 | Export brand types from shared package                        | `packages/shared/src/index.ts`                       | 5m   |
+| 1.6 | Export brand types from shared package                        | `packages/internals-schemas/src/index.ts`                       | 5m   |
 
 **Deliverable:** `getBrandConfig()` function returning typed config with defaults
 
@@ -113,7 +113,7 @@ apps/registry-legacy/lib/branding.ts
 apps/registry-legacy/components/logo.tsx
 apps/registry-legacy/components/brand-provider.tsx
 apps/registry-legacy/app/manifest.ts (dynamic)
-packages/shared/src/brand.ts
+packages/internals-schemas/src/brand.ts
 docs/self-hosting/white-label.md
 ```
 

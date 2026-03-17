@@ -5,7 +5,7 @@
 ### 1. Create shared types
 
 ```typescript
-// packages/shared/src/brand.ts
+// packages/internals-schemas/src/brand.ts
 export interface BrandConfig {
   name: string;
   tagline: string;

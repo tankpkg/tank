@@ -2,12 +2,12 @@
 
 **Phase 1: Core Infrastructure**
 
-- [x] **1.1** Create `BrandConfig` types in `packages/shared/src/brand.ts`
+- [x] **1.1** Create `BrandConfig` types in `packages/internals-schemas/src/brand.ts`
 - [x] **1.2** Create `apps/registry-legacy/lib/branding.ts` with `getBrandConfig()` function
 - [x] **1.3** Add all `BRAND_*` env vars to `apps/registry-legacy/.env.example`
 - [x] **1.4** Add CSS custom properties `--brand-*` in `apps/registry-legacy/app/globals.css`
 - [x] **1.5** Create `BrandProvider` client component for color injection
-- [x] **1.6** Export brand types from `packages/shared/src/index.ts`
+- [x] **1.6** Export brand types from `packages/internals-schemas/src/index.ts`
 
 **Phase 2: Component Updates**
 
