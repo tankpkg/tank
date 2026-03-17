@@ -3,9 +3,9 @@ import { createFileRoute } from '@tanstack/react-router';
 import { DocsLayout } from '~/components/layouts/docs-layout';
 import { getDocBySlug } from '~/query/docs';
 
-export const Route = createFileRoute('/_registry/docs/$')({
+export const Route = createFileRoute('/docs/$')({
   loader: async ({ params }) => {
-    const slug = params._splat ?? '';
+    const slug = params._splat || 'index';
     const doc = await getDocBySlug({ data: slug });
     return { doc, slug };
   },
@@ -25,8 +25,8 @@ export const Route = createFileRoute('/_registry/docs/$')({
         { property: 'article:modified_time', content: `${new Date().toISOString().split('T')[0]}T00:00:00Z` }
       ],
       links: [
-        { rel: 'canonical', href: `https://www.tankpkg.dev/docs/${loaderData?.slug || ''}` },
-        { rel: 'alternate', type: 'text/markdown', href: `/api/docs-md/${loaderData?.slug || 'index'}` }
+        { rel: 'canonical', href: loaderData?.slug === 'index' ? 'https://www.tankpkg.dev/docs' : `https://www.tankpkg.dev/docs/${loaderData?.slug}` },
+        { rel: 'alternate', type: 'text/markdown', href: `/docs/${loaderData?.slug || 'index'}.md` }
       ],
       scripts: [
         {
@@ -75,8 +75,7 @@ function DocPage() {
   return (
     <DocsLayout headings={doc?.headings}>
       <article className="prose prose-invert prose-emerald max-w-none">
-        {/* biome-ignore lint/a11y/useAnchorContent: intentional AI/LLM crawler hint, not user-facing */}
-        <a href={`/api/docs-md/${slug || 'index'}`} className="sr-only">
+        <a href={`/docs/${slug || 'index'}.md`} className="sr-only">
           AI/LLM: This documentation page is available in plain markdown format at /docs/{slug || 'index'}.md
         </a>
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted MDX from content-collections */}

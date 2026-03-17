@@ -5,7 +5,7 @@ import { githubStarsQueryOptions } from '~/query/github';
 import { homepageStatsQueryOptions } from '~/query/homepage';
 import { HomeScreen } from '~/screens/home-screen';
 
-export const Route = createFileRoute('/_registry/')({
+export const Route = createFileRoute('/')({
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(homepageStatsQueryOptions()),

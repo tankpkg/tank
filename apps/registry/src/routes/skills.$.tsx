@@ -4,7 +4,7 @@ import { createFileRoute, notFound } from '@tanstack/react-router';
 import { skillDetailQueryOptions } from '~/query/skills';
 import { SkillDetailScreen } from '~/screens/skill-detail-screen';
 
-export const Route = createFileRoute('/_registry/skills/$')({
+export const Route = createFileRoute('/skills/$')({
   loader: async ({ context, params }) => {
     const rawPath = params._splat ?? '';
     const skillName = decodeURIComponent(rawPath);

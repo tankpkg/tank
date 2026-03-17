@@ -15,7 +15,7 @@ function parseEnum<T extends string>(raw: string | undefined, valid: T[], fallba
   return fallback;
 }
 
-export const Route = createFileRoute('/_registry/skills/')({
+export const Route = createFileRoute('/skills/')({
   validateSearch: (search: Record<string, unknown>) => ({
     q: ((search.q as string) || '') as string | undefined,
     page: Math.max(1, Number(search.page) || 1) as number | undefined,

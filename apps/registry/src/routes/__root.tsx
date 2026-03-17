@@ -1,10 +1,11 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { createRootRouteWithContext, HeadContent, Outlet, Scripts, useLocation } from '@tanstack/react-router';
+import { createRootRouteWithContext, HeadContent, Scripts, useLocation } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { useEffect, useRef } from 'react';
 
 import { CookieConsentManager } from '~/components/cookie-consent-manager';
+import { RegistryLayout } from '~/components/layouts/registry-layout';
 import { capturePageview } from '~/lib/analytics';
 import { NotFoundScreen } from '~/screens/not-found-screen';
 
@@ -85,7 +86,7 @@ function RootLayout() {
     }
   }, [pathname]);
 
-  return <Outlet />;
+  return <RegistryLayout />;
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {

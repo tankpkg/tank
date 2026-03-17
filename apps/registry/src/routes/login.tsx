@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { getAuthProviders } from '~/lib/auth/session';
 import { LoginScreen } from '~/screens/login-screen';
 
-export const Route = createFileRoute('/_registry/login')({
+export const Route = createFileRoute('/login')({
   loader: async () => {
     const { providers, oidcProviderId } = await getAuthProviders();
     return { providers, oidcProviderId };
