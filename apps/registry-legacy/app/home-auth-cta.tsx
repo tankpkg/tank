@@ -11,8 +11,10 @@ function getDestination(isLoggedIn: boolean): string {
 }
 
 export function HomeNavAuthCta() {
-  const { data: session } = useSession();
-  const isLoggedIn = Boolean(session?.user?.id);
+  const { data: session, isPending } = useSession();
+  // While session is loading, treat as unauthenticated — matches SSR output and
+  // prevents a hydration mismatch / button flash (issue #79).
+  const isLoggedIn = !isPending && Boolean(session?.user?.id);
   const destination = getDestination(isLoggedIn);
 
   return (
@@ -39,8 +41,10 @@ export function HomeNavAuthCta() {
 }
 
 export function HomePrimaryAuthCta({ size = 'lg', testId }: { size?: 'sm' | 'lg'; testId?: string }) {
-  const { data: session } = useSession();
-  const isLoggedIn = Boolean(session?.user?.id);
+  const { data: session, isPending } = useSession();
+  // While session is loading, treat as unauthenticated — matches SSR output and
+  // prevents a hydration mismatch / button flash (issue #79).
+  const isLoggedIn = !isPending && Boolean(session?.user?.id);
   const destination = getDestination(isLoggedIn);
 
   return (

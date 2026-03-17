@@ -1,5 +1,11 @@
 export { FindingsList } from './FindingsList';
+export { QualityChecks } from './QualityChecks';
+export type { QualityCategory, QualityCategoryName } from './quality-checks-utils';
+export { computeQualityChecks } from './quality-checks-utils';
 export { ScanningToolsStrip } from './ScanningToolsStrip';
 export { ScanPipeline } from './ScanPipeline';
 export { ScoreBreakdown } from './ScoreBreakdown';
 export { SecurityOverview } from './SecurityOverview';
+export { SecuritySidebarSummary } from './SecuritySidebarSummary';
+export { TrustBadge } from './TrustBadge';
+export { VerifiedPublisherBadge } from './VerifiedPublisherBadge';

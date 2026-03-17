@@ -13,6 +13,8 @@
 
 import { sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -88,7 +90,7 @@ export interface SkillDetailResult {
   repositoryUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
-  publisher: { name: string; githubUsername: string | null };
+  publisher: { name: string; githubUsername: string | null; emailVerified: boolean };
   downloadCount: number;
   starCount: number;
   isStarred: boolean;
@@ -103,8 +105,10 @@ export interface SkillSearchResult {
   latestVersion: string | null;
   auditScore: number | null;
   publisher: string;
+  publisherVerified: boolean;
   downloads: number;
   stars: number;
+  scannedAt: Date | null;
   updatedAt?: Date;
 }
 
@@ -228,7 +232,8 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
       s.updated_at AS "skillUpdatedAt",
       coalesce(u.name, '') AS "publisherName",
       u.github_username AS "publisherGithubUsername",
-      coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) AS "downloadCount",
+      u.email_verified AS "publisherEmailVerified",
+      coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id), 0) AS "downloadCount",
       ${starCountSql} AS "starCount",
       ${isStarredSql} AS "isStarred",
       s.repository_url AS "skillRepositoryUrl",
@@ -358,7 +363,11 @@ export async function getSkillDetail(name: string): Promise<SkillDetailResult | 
     repositoryUrl: first.skillRepositoryUrl as string | null,
     createdAt: new Date(first.skillCreatedAt as string),
     updatedAt: new Date(first.skillUpdatedAt as string),
-    publisher: { name: first.publisherName as string, githubUsername: first.publisherGithubUsername as string | null },
+    publisher: {
+      name: first.publisherName as string,
+      githubUsername: first.publisherGithubUsername as string | null,
+      emailVerified: Boolean(first.publisherEmailVerified)
+    },
     downloadCount: Number.isFinite(parsedDownloadCount) ? parsedDownloadCount : 0,
     starCount: Number(first.starCount) || 0,
     isStarred: Boolean(first.isStarred),
@@ -387,7 +396,7 @@ function escapeLike(input: string): string {
 function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
   switch (sort) {
     case 'downloads':
-      return sql`coalesce(dl.downloads_7d, 0) DESC`;
+      return sql`coalesce(dl.downloads_total, 0) DESC`;
     case 'stars':
       return starsAvailable ? sql`coalesce(st.stars_count, 0) DESC` : sql`s.updated_at DESC`;
     case 'score':
@@ -509,9 +518,8 @@ export async function searchSkills(
   // Pre-aggregated subquery JOINs (only included when needed for sort)
   const downloadJoin = needsDownloads
     ? sql`LEFT JOIN (
-        SELECT skill_id, SUM(count)::int AS downloads_7d
+        SELECT skill_id, SUM(count)::int AS downloads_total
         FROM skill_download_daily
-        WHERE date >= CURRENT_DATE - 7
         GROUP BY skill_id
       ) dl ON dl.skill_id = s.id`
     : sql``;
@@ -526,8 +534,8 @@ export async function searchSkills(
 
   // Inline downloads for display (when not using the aggregated join)
   const downloadsSql = needsDownloads
-    ? sql`coalesce(dl.downloads_7d, 0)`
-    : sql`coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0)`;
+    ? sql`coalesce(dl.downloads_total, 0)`
+    : sql`coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id), 0)`;
 
   const starsSql = starsTableAvailable ? sql`coalesce(st.stars_count, 0)` : sql`0`;
 
@@ -548,6 +556,9 @@ export async function searchSkills(
         sv.version AS "latestVersion",
         sv.audit_score AS "auditScore",
         coalesce(u.name, '') AS publisher,
+        u.github_username AS "publisherGithubUsername",
+        u.email_verified AS "publisherEmailVerified",
+        sr.created_at AS "scannedAt",
         ${downloadsSql} AS downloads,
         ${starsSql} AS stars,
         count(*) OVER() AS total
@@ -584,6 +595,9 @@ export async function searchSkills(
       sv.version AS "latestVersion",
       sv.audit_score AS "auditScore",
       coalesce(u.name, '') AS publisher,
+      u.github_username AS "publisherGithubUsername",
+      u.email_verified AS "publisherEmailVerified",
+      sr.created_at AS "scannedAt",
       ${downloadsSql} AS downloads,
       ${starsSql} AS stars,
       count(*) OVER() AS total
@@ -637,8 +651,10 @@ function mapSearchResults(rows: Record<string, unknown>[], page: number, limit: 
       latestVersion: (row.latestVersion as string) ?? null,
       auditScore: row.auditScore != null ? Number(row.auditScore) : null,
       publisher: (row.publisher as string) ?? '',
+      publisherVerified: Boolean(row.publisherEmailVerified) && Boolean(row.publisherGithubUsername),
       downloads: Number(row.downloads) || 0,
       stars: Number(row.stars) || 0,
+      scannedAt: row.scannedAt ? new Date(row.scannedAt as string) : null,
       updatedAt: row.updatedAt ? new Date(row.updatedAt as string) : undefined
     })),
     page,
