@@ -33,7 +33,14 @@ export {
   visibilityFilterSchema
 } from './schemas';
 
-import type { FreshnessBucket, PopularityBucket, ScoreBucket, SkillsSearchParams, SortOption, VisibilityFilter } from './schemas';
+import type {
+  FreshnessBucket,
+  PopularityBucket,
+  ScoreBucket,
+  SkillsSearchParams,
+  SortOption,
+  VisibilityFilter
+} from './schemas';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
