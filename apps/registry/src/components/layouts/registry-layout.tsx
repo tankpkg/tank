@@ -85,21 +85,22 @@ export function RegistryLayout() {
             <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-md pointer-events-auto max-lg:hidden">
               <SearchTrigger />
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-4 shrink-0">
               <a
                 href="https://github.com/tankpkg/tank"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded border border-border px-2.5 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-tank/20 transition-all"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Star Tank on GitHub">
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <title>GitHub</title>
                   <path fillRule="evenodd" d={GITHUB_ICON_PATH} clipRule="evenodd" />
                 </svg>
-                <span className="hidden sm:inline">Star</span>
                 {starCount != null && <span className="font-semibold tabular-nums text-tank">{starCount}</span>}
               </a>
+              <div className="h-4 w-px bg-border" aria-hidden="true" />
               <ThemeToggle />
+              <div className="h-4 w-px bg-border" aria-hidden="true" />
               <HomeNavAuthCta />
             </div>
           </div>
