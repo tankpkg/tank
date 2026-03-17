@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { zodValidator } from '@tanstack/zod-adapter';
 import { routeHead } from '~/consts/seo';
 import { getSession } from '~/lib/auth/session';
-import { skillsSearchSchema } from '~/lib/skills/data';
+import { skillsSearchSchema } from '~/lib/skills/schemas';
 import { skillsListQueryOptions } from '~/query/skills';
 import { SkillsListScreen } from '~/screens/skills-list-screen';
 
