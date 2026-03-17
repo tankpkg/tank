@@ -15,7 +15,8 @@
 ```
 packages/cli/tsdown.config.ts                # CLI build config (tsdown/rolldown)
 packages/mcp-server/tsdown.config.ts         # MCP server build config
-packages/shared/                             # @internal/shared — workspace-only, never published
+packages/internals-schemas/                  # @internals/schemas — workspace-only, never published
+packages/internals-helpers/                  # @internals/helpers — workspace-only, never published
 .github/workflows/release.yml               # Binary builds + npm publish
 .github/workflows/publish.yml               # Docker + Helm publish
 ```

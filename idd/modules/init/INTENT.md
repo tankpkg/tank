@@ -15,7 +15,7 @@ primary test target (uses `--yes` equivalent non-interactive mode).
 
 - `packages/cli/src/commands/init.ts` — `initCommand()`, `validateName()`, `validateVersion()`
 - `packages/mcp-server/src/tools/init-skill.ts` — MCP wrapper
-- `packages/shared/src/schemas/skills-json.ts` — `skillsJsonSchema` (Zod validation)
+- `packages/internals-schemas/src/schemas/skills-json.ts` — `skillsJsonSchema` (Zod validation)
 
 ---
 
@@ -25,7 +25,7 @@ primary test target (uses `--yes` equivalent non-interactive mode).
 packages/
   cli/src/commands/init.ts              # initCommand(), validateName(), validateVersion()
   mcp-server/src/tools/init-skill.ts   # MCP wrapper (non-interactive, yes-mode)
-shared/src/schemas/skills-json.ts      # skillsJsonSchema — Zod schema for tank.json
+internals-schemas/src/schemas/skills-json.ts  # skillsJsonSchema — Zod schema for tank.json
 ```
 
 ---

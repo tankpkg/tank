@@ -6,7 +6,7 @@
 
 **Consumers:** CLI (`tank migrate` / `migrateCommand()`).
 
-**Single source of truth:** `packages/cli/src/commands/migrate.ts`. Constants in `@internal/shared`: `LEGACY_MANIFEST_FILENAME`, `LEGACY_LOCKFILE_FILENAME`, `MANIFEST_FILENAME`, `LOCKFILE_FILENAME`.
+**Single source of truth:** `packages/cli/src/commands/migrate.ts`. Constants in `@internals/schemas`: `LEGACY_MANIFEST_FILENAME`, `LEGACY_LOCKFILE_FILENAME`, `MANIFEST_FILENAME`, `LOCKFILE_FILENAME`.
 
 ---
 
@@ -14,7 +14,7 @@
 
 ```
 packages/cli/src/commands/migrate.ts    # Migration logic: copy old → new files
-packages/shared/src/constants.ts        # LEGACY_MANIFEST_FILENAME = 'skills.json', MANIFEST_FILENAME = 'tank.json'
+packages/internals-schemas/src/constants/  # LEGACY_MANIFEST_FILENAME = 'skills.json', MANIFEST_FILENAME = 'tank.json'
 ```
 
 ---

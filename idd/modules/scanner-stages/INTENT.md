@@ -4,23 +4,23 @@
 
 **Why this module exists:** The security scanner uses a 6-stage pipeline where each stage detects a specific class of threats. Stages are independent, run sequentially, and aggregate findings into a final verdict. Each stage must be individually verifiable to prevent regressions when the pipeline is updated.
 
-**Consumers:** `packages/scanner/api/analyze/scan.py` orchestrates all 6 stages.
+**Consumers:** `apps/python-api/api/analyze/scan.py` orchestrates all 6 stages.
 
-**Single source of truth:** `packages/scanner/lib/scan/stage{0-5}_*.py` and `packages/scanner/lib/scan/verdict.py`.
+**Single source of truth:** `apps/python-api/lib/scan/stage{0-5}_*.py` and `apps/python-api/lib/scan/verdict.py`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-packages/scanner/lib/scan/stage0_ingest.py       # Download tarball, extract, hash files
-packages/scanner/lib/scan/stage1_structure.py    # Validate package structure, banned files
-packages/scanner/lib/scan/stage2_static.py       # Bandit static analysis for Python code
-packages/scanner/lib/scan/stage3_injection.py    # Prompt injection patterns in markdown/text
-packages/scanner/lib/scan/stage4_secrets.py      # detect-secrets for credentials/tokens
-packages/scanner/lib/scan/stage5_supply.py       # pip-audit + OSV for known CVEs
-packages/scanner/lib/scan/verdict.py             # Aggregate stage results → final verdict
-packages/scanner/lib/scan/permission_extractor.py # Extract declared permissions from manifest
+apps/python-api/lib/scan/stage0_ingest.py       # Download tarball, extract, hash files
+apps/python-api/lib/scan/stage1_structure.py    # Validate package structure, banned files
+apps/python-api/lib/scan/stage2_static.py       # Bandit static analysis for Python code
+apps/python-api/lib/scan/stage3_injection.py    # Prompt injection patterns in markdown/text
+apps/python-api/lib/scan/stage4_secrets.py      # detect-secrets for credentials/tokens
+apps/python-api/lib/scan/stage5_supply.py       # pip-audit + OSV for known CVEs
+apps/python-api/lib/scan/verdict.py             # Aggregate stage results → final verdict
+apps/python-api/lib/scan/permission_extractor.py # Extract declared permissions from manifest
 ```
 
 ---

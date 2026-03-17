@@ -6,17 +6,17 @@
 
 **Consumers:** `POST /api/v1/skills/confirm` calls `POST /api/analyze/scan`. Admin rescan calls `POST /api/analyze/rescan`.
 
-**Single source of truth:** `packages/scanner/api/analyze/scan.py`, `packages/scanner/api/analyze/rescan.py`, `packages/scanner/api/analyze/permissions.py`.
+**Single source of truth:** `apps/python-api/api/analyze/scan.py`, `apps/python-api/api/analyze/rescan.py`, `apps/python-api/api/analyze/permissions.py`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-packages/scanner/api/analyze/scan.py          # POST /api/analyze/scan — full 6-stage pipeline
-packages/scanner/api/analyze/permissions.py   # POST /api/analyze/permissions — permissions extraction only
-packages/scanner/api/analyze/rescan.py        # POST /api/analyze/rescan — rescan by versionId
-packages/scanner/lib/scan/                    # 6 stage implementations
+apps/python-api/api/analyze/scan.py          # POST /api/analyze/scan — full 6-stage pipeline
+apps/python-api/api/analyze/permissions.py   # POST /api/analyze/permissions — permissions extraction only
+apps/python-api/api/analyze/rescan.py        # POST /api/analyze/rescan — rescan by versionId
+apps/python-api/lib/scan/                    # 6 stage implementations
 ```
 
 ---
