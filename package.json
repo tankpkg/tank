@@ -2,12 +2,8 @@
   "name": "tank",
   "private": true,
   "workspaces": [
-    "apps/registry",
-    "apps/registry-legacy",
-    "packages/cli",
-    "packages/internals-helpers",
-    "packages/internals-schemas",
-    "packages/mcp-server",
+    "apps/*",
+    "packages/*",
     "bdd",
     "e2e"
   ],
