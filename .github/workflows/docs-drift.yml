@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - "packages/cli/src/**/*.ts"
+      - "apps/registry/src/api/**/*.ts"
+      - "apps/registry/content/**"
       - "apps/registry-legacy/app/api/**/*.ts"
       - "apps/registry-legacy/content/docs/**"
   push:
     branches: [main]
     paths:
       - "packages/cli/src/**/*.ts"
+      - "apps/registry/src/api/**/*.ts"
+      - "apps/registry/content/**"
       - "apps/registry-legacy/app/api/**/*.ts"
       - "apps/registry-legacy/content/docs/**"
 
@@ -45,6 +49,5 @@ jobs:
         run: |
           git diff --exit-code apps/registry-legacy/content/docs/cli.mdx || (echo "CLI docs are out of sync. Run: node scripts/gen-cli-docs.mjs" && exit 1)
           git diff --exit-code apps/registry-legacy/content/docs/api.mdx || (echo "API docs are out of sync. Run: node scripts/gen-api-docs.mjs" && exit 1)
-          git diff --exit-code apps/registry-legacy/public/llms.txt || (echo "llms.txt is out of sync. Run: node scripts/gen-llms-txt.mjs" && exit 1)
-          git diff --exit-code apps/registry-legacy/public/llms-full.txt || (echo "llms-full.txt is out of sync. Run: node scripts/gen-llms-txt.mjs" && exit 1)
+          git diff --exit-code apps/registry/content/llms.txt || (echo "llms.txt is out of sync. Run: node scripts/gen-llms-txt.mjs" && exit 1)
           echo "All generated docs are in sync"
