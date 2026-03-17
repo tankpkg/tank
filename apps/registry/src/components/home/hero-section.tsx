@@ -1,12 +1,12 @@
-import { Link } from "@tanstack/react-router";
-import { Shield } from "lucide-react";
-import { motion } from "motion/react";
-import { useCallback } from "react";
+import { Link } from '@tanstack/react-router';
+import { Shield } from 'lucide-react';
+import { motion } from 'motion/react';
+import { useCallback } from 'react';
 
-import { InstallSelector } from "~/components/home/install-selector";
-import { GITHUB_ICON_PATH } from "~/consts/brand";
+import { InstallSelector } from '~/components/home/install-selector';
+import { GITHUB_ICON_PATH } from '~/consts/brand';
 
-const spring = { type: "spring" as const, stiffness: 400, damping: 30 };
+const spring = { type: 'spring' as const, stiffness: 400, damping: 30 };
 
 const crtStyles = `
 @keyframes scanline-scroll {
@@ -32,7 +32,7 @@ export function HeroSection({ starCount }: HeroSectionProps) {
       {/* Subtle radial glow behind hero — shifted left to account for wider layout */}
       <div
         className="pointer-events-none absolute -top-40 left-1/3 -translate-x-1/2 w-[700px] h-[500px]"
-        style={{ background: "radial-gradient(circle, rgba(0,255,65,0.06) 0%, transparent 55%)" }}
+        style={{ background: 'radial-gradient(circle, rgba(0,255,65,0.06) 0%, transparent 55%)' }}
         aria-hidden="true"
       />
 
@@ -103,7 +103,7 @@ export function HeroSection({ starCount }: HeroSectionProps) {
                 <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path fillRule="evenodd" d={GITHUB_ICON_PATH} clipRule="evenodd" />
                 </svg>
-                Star on GitHub{starCount !== null ? ` (${starCount})` : ""}
+                Star on GitHub{starCount !== null ? ` (${starCount})` : ''}
               </a>
             </motion.div>
           </div>
@@ -114,17 +114,17 @@ export function HeroSection({ starCount }: HeroSectionProps) {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ ...spring, delay: 0.25 }}>
             <div className="relative w-full">
-              <div className="relative" style={{ perspective: "800px" }}>
+              <div className="relative" style={{ perspective: '800px' }}>
                 {/* CRT outer shell */}
                 <div
                   className="relative rounded-[12px] p-[14px] pb-0 bg-[#1c1c1e] dark:bg-[#e8e5e0]"
-                  style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5)" }}>
+                  style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.5)' }}>
                   {/* Inner bezel */}
                   <div
                     className="rounded-[6px] p-[6px] bg-[#111113] dark:bg-[#ccc8c0]"
-                    style={{ boxShadow: "inset 0 2px 8px rgba(0,0,0,0.3), inset 0 0 2px rgba(0,0,0,0.2)" }}>
+                    style={{ boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.3), inset 0 0 2px rgba(0,0,0,0.2)' }}>
                     {/* Screen */}
-                    <div className="relative overflow-hidden bg-black aspect-[4/3]" style={{ borderRadius: "8% / 2%" }}>
+                    <div className="relative overflow-hidden bg-black aspect-[4/3]" style={{ borderRadius: '8% / 2%' }}>
                       <video
                         ref={videoRef}
                         src="/tank-operator.webm"
@@ -139,9 +139,9 @@ export function HeroSection({ starCount }: HeroSectionProps) {
                         className="absolute inset-0 pointer-events-none z-10 opacity-[0.035]"
                         style={{
                           backgroundImage:
-                            "repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.8) 1px, rgba(0,0,0,0.8) 2px)",
-                          backgroundSize: "100% 3px",
-                          animation: "scanline-scroll 8s linear infinite",
+                            'repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,0.8) 1px, rgba(0,0,0,0.8) 2px)',
+                          backgroundSize: '100% 3px',
+                          animation: 'scanline-scroll 8s linear infinite'
                         }}
                         aria-hidden="true"
                       />
@@ -150,8 +150,8 @@ export function HeroSection({ starCount }: HeroSectionProps) {
                         className="absolute inset-0 pointer-events-none z-10 opacity-[0.03]"
                         style={{
                           backgroundImage:
-                            "repeating-linear-gradient(90deg, rgba(255,0,0,0.6) 0px, rgba(0,255,0,0.6) 1px, rgba(0,100,255,0.6) 2px, transparent 3px)",
-                          backgroundSize: "3px 100%",
+                            'repeating-linear-gradient(90deg, rgba(255,0,0,0.6) 0px, rgba(0,255,0,0.6) 1px, rgba(0,100,255,0.6) 2px, transparent 3px)',
+                          backgroundSize: '3px 100%'
                         }}
                         aria-hidden="true"
                       />
@@ -159,13 +159,13 @@ export function HeroSection({ starCount }: HeroSectionProps) {
                       {/* Vignette — heavy CRT barrel */}
                       <div
                         className="absolute inset-0 pointer-events-none z-10"
-                        style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.6), inset 0 0 160px rgba(0,0,0,0.3)" }}
+                        style={{ boxShadow: 'inset 0 0 80px rgba(0,0,0,0.6), inset 0 0 160px rgba(0,0,0,0.3)' }}
                         aria-hidden="true"
                       />
                       {/* Glass reflection */}
                       <div
                         className="absolute inset-0 pointer-events-none z-10 opacity-[0.05]"
-                        style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 35%)" }}
+                        style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 35%)' }}
                         aria-hidden="true"
                       />
                     </div>
@@ -188,12 +188,12 @@ export function HeroSection({ starCount }: HeroSectionProps) {
                 {/* Stand */}
                 <div
                   className="mx-auto w-[45%] h-[8px] bg-[#1c1c1e] dark:bg-[#e8e5e0] rounded-b-md"
-                  style={{ boxShadow: "0 4px 12px rgba(0,0,0,0.4)" }}
+                  style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
                   aria-hidden="true"
                 />
                 <div
                   className="mx-auto w-[65%] h-[5px] bg-[#18181a] dark:bg-[#d5d0c9] rounded-b-lg mt-[-1px]"
-                  style={{ boxShadow: "0 4px 8px rgba(0,0,0,0.3)" }}
+                  style={{ boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
                   aria-hidden="true"
                 />
               </div>

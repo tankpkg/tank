@@ -10,7 +10,7 @@ const data = routeHead({
   title: 'Tank — Security-first package manager for AI agent skills',
   description:
     'Every skill is scanned for credential theft, prompt injection, and supply chain attacks before installation.',
-  path: '/',
+  path: '/'
 });
 
 export const Route = createFileRoute('/')({

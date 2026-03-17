@@ -27,7 +27,7 @@ export const Route = createFileRoute('/skills/$')({
       title,
       description,
       path: `/skills/${encodedName}`,
-      image: `${BASE_URL}/api/og/${encodedName}`,
+      image: `${BASE_URL}/api/og/${encodedName}`
     });
 
     return {
@@ -44,10 +44,10 @@ export const Route = createFileRoute('/skills/$')({
             url: `${BASE_URL}/skills/${encodedName}`,
             author: { '@type': 'Person', name: data.publisher.name },
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-            ...(version ? { softwareVersion: version } : {}),
-          }),
-        },
-      ],
+            ...(version ? { softwareVersion: version } : {})
+          })
+        }
+      ]
     };
   },
   component: SkillDetailPage,

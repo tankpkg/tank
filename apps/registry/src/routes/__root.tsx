@@ -11,8 +11,8 @@ const TanStackRouterDevtools = import.meta.env.DEV
   : () => null;
 
 import { CookieConsentManager } from '~/components/cookie-consent-manager';
-import { BASE_URL, SITE_NAME } from '~/consts/seo';
 import { RegistryLayout } from '~/components/layouts/registry-layout';
+import { BASE_URL, SITE_NAME } from '~/consts/seo';
 import { capturePageview } from '~/lib/analytics';
 import { NotFoundScreen } from '~/screens/not-found-screen';
 

@@ -20,12 +20,12 @@ export function routeHead({ title, description, path, image }: RouteHeadOptions)
       ...(image
         ? [
             { property: 'og:image', content: image },
-            { name: 'twitter:image', content: image },
+            { name: 'twitter:image', content: image }
           ]
         : []),
       { name: 'twitter:title', content: title },
-      { name: 'twitter:description', content: description },
+      { name: 'twitter:description', content: description }
     ],
-    links: [{ rel: 'canonical', href: url }],
+    links: [{ rel: 'canonical', href: url }]
   };
 }

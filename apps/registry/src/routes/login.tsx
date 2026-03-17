@@ -6,7 +6,7 @@ import { LoginScreen } from '~/screens/login-screen';
 const settings = routeHead({
   title: 'Sign In | Tank',
   description: 'Sign in to Tank — security-first package manager for AI agent skills.',
-  path: '/login',
+  path: '/login'
 });
 
 export const Route = createFileRoute('/login')({

@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-
-import { routeHead } from '~/consts/seo';
 import { DocsLayout } from '~/components/layouts/docs-layout';
+import { routeHead } from '~/consts/seo';
 import { getDocBySlug } from '~/query/docs';
 
 export const Route = createFileRoute('/docs/$')({
@@ -19,7 +18,7 @@ export const Route = createFileRoute('/docs/$')({
     const head = routeHead({
       title: `${doc.title} | Tank Docs`,
       description,
-      path: slug === 'index' ? '/docs' : `/docs/${slug}`,
+      path: slug === 'index' ? '/docs' : `/docs/${slug}`
     });
 
     return {
@@ -28,12 +27,9 @@ export const Route = createFileRoute('/docs/$')({
         ...head.meta,
         { property: 'og:type', content: 'article' },
         { property: 'article:published_time', content: '2025-01-01T00:00:00Z' },
-        { property: 'article:modified_time', content: `${new Date().toISOString().split('T')[0]}T00:00:00Z` },
+        { property: 'article:modified_time', content: `${new Date().toISOString().split('T')[0]}T00:00:00Z` }
       ],
-      links: [
-        ...head.links,
-        { rel: 'alternate', type: 'text/markdown', href: `/docs/${slug}.md` },
-      ],
+      links: [...head.links, { rel: 'alternate', type: 'text/markdown', href: `/docs/${slug}.md` }],
       scripts: [
         {
           type: 'application/ld+json',
@@ -45,10 +41,10 @@ export const Route = createFileRoute('/docs/$')({
             datePublished: '2025-01-01T00:00:00Z',
             dateModified: `${new Date().toISOString().split('T')[0]}T00:00:00Z`,
             author: { '@type': 'Organization', name: 'Tank' },
-            publisher: { '@type': 'Organization', name: 'Tank' },
-          }),
-        },
-      ],
+            publisher: { '@type': 'Organization', name: 'Tank' }
+          })
+        }
+      ]
     };
   },
   component: DocPage,

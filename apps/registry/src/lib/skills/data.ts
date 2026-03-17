@@ -140,12 +140,15 @@ export const skillsSearchSchema = z
     score: scoreBucketSchema.catch('all').default('all'),
     freshness: freshnessBucketSchema.catch('all').default('all'),
     popularity: popularityBucketSchema.catch('all').default('all'),
-    docs: z.preprocess((v) => v === '1' || v === true, z.boolean()).catch(false).default(false),
+    docs: z
+      .preprocess((v) => v === '1' || v === true, z.boolean())
+      .catch(false)
+      .default(false)
   })
   .transform(({ score, docs, ...rest }) => ({
     ...rest,
     scoreBucket: score,
-    hasReadme: docs,
+    hasReadme: docs
   }));
 
 export interface SkillsSearchParams {
