@@ -260,7 +260,7 @@ The enforcer checks all skills against the budget before extracting any of them.
 
 Every new version of a skill is checked against its previous version's permissions when published. This prevents a malicious publisher from sneaking dangerous permission changes through as minor or patch releases.
 
-The escalation logic is implemented in `apps/web/lib/permission-escalation.ts` and runs server-side during `tank publish`.
+The escalation logic is implemented in `apps/registry-legacy/lib/permission-escalation.ts` and runs server-side during `tank publish`.
 
 ### Version Bump Rules
 
