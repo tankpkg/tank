@@ -47,3 +47,12 @@ export function readDocFiles(): string[] {
 export function readDocFile(filename: string): string {
   return readFileSync(join(getDocsDir(), filename), 'utf-8');
 }
+
+export function serveDocMarkdown(slug: string): { content: string; found: boolean } {
+  try {
+    const { body } = parseFrontmatter(readDocFile(`${slug}.mdx`));
+    return { content: body.trim(), found: true };
+  } catch {
+    return { content: '# Not Found\n\nThis documentation page does not exist.', found: false };
+  }
+}
