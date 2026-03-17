@@ -13,7 +13,7 @@ fi
 
 echo "Running Drizzle schema push..."
 DATABASE_URL="$DATABASE_URL" bun "$ROOT_DIR/scripts/ensure-pg-trgm.mjs"
-cd "$ROOT_DIR/apps/web"
+cd "$ROOT_DIR/apps/registry-legacy"
 bunx drizzle-kit push --force
 
 echo "Database initialization completed."

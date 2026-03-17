@@ -51,11 +51,11 @@ if echo "$CHANGED" | grep -q "^apps/python-api/"; then
   fi
 fi
 
-# ── TypeScript packages (cli, web, mcp-server, internals) ───────────
+# ── TypeScript packages (cli, registry, mcp-server, internals) ──────
 TS_PACKAGES=(
   "packages/cli"
-  "apps/web"
-  "apps/web-tanstack"
+  "apps/registry"
+  "apps/registry-legacy"
   "packages/mcp-server"
   "packages/internals-schemas"
   "packages/internals-helpers"
