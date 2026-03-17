@@ -112,10 +112,10 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
             }
         ) as settings:
             # Scan the temp directory
-            from detect_secrets.core.plugins.util import get_mapping_from_secret_type_to_plugin_class
+            from detect_secrets.core.plugins.util import get_mapping_from_secret_type_to_class
             from detect_secrets.core.scan import get_files_to_scan
 
-            plugin_map = get_mapping_from_secret_type_to_plugin_class()
+            plugin_map = get_mapping_from_secret_type_to_class()
 
             for file_path in get_files_to_scan([temp_dir], settings):
                 try:
