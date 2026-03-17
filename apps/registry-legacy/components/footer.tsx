@@ -16,15 +16,11 @@ export function Footer() {
           <Link href="/docs" className="text-sm text-muted-foreground hover:text-foreground">
             Docs
           </Link>
-          <Link
-            href="https://github.com/tankpkg/tank"
-            className="text-sm text-muted-foreground hover:text-foreground">
+          <Link href="https://github.com/tankpkg/tank" className="text-sm text-muted-foreground hover:text-foreground">
             GitHub
           </Link>
         </div>
-        <p className="text-center text-xs text-muted-foreground">
-          &copy; {year} Tank. All rights reserved.
-        </p>
+        <p className="text-center text-xs text-muted-foreground">&copy; {year} Tank. All rights reserved.</p>
       </div>
     </footer>
   );
