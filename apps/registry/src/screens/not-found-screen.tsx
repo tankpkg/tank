@@ -17,18 +17,7 @@ export function NotFoundScreen() {
         </Link>
       </Button>
       <Button asChild variant="outline" size="lg" className="gap-2">
-        <Link
-          to="/skills"
-          search={{
-            q: undefined,
-            page: undefined,
-            sort: undefined,
-            visibility: undefined,
-            score: undefined,
-            freshness: undefined,
-            popularity: undefined,
-            docs: undefined
-          }}>
+        <Link to="/skills" search={{}}>
           <Search className="size-4" />
           Browse Skills
         </Link>
