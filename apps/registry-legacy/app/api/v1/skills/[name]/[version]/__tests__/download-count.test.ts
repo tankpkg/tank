@@ -3,6 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
 const mockExecute = vi.fn();
+const mockResolveRequestUserId = vi.fn();
+const mockCreateSignedUrl = vi.fn();
+
+vi.mock('@/lib/auth-helpers', () => ({
+  resolveRequestUserId: mockResolveRequestUserId
+}));
 
 vi.mock('@/lib/db', () => ({
   db: {
@@ -67,13 +73,16 @@ vi.mock('drizzle-orm', () => ({
   )
 }));
 
-const mockCreateSignedUrl = vi.fn();
+vi.mock('@/lib/storage/provider', () => ({
+  getStorageProvider: vi.fn(() => ({
+    createSignedUrl: mockCreateSignedUrl
+  }))
+}));
+
 vi.mock('@/lib/supabase', () => ({
   supabaseAdmin: {
     storage: {
-      from: vi.fn(() => ({
-        createSignedUrl: mockCreateSignedUrl
-      }))
+      from: vi.fn()
     }
   }
 }));
@@ -119,8 +128,7 @@ function setupSuccessfulFetch(options?: { downloadCount?: number }) {
   mockExecute.mockResolvedValueOnce([{ ...defaultMetaRow, downloadCount }]);
 
   mockCreateSignedUrl.mockResolvedValue({
-    data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
-    error: null
+    signedUrl: 'https://storage.example.com/download?token=xyz'
   });
 }
 
@@ -137,6 +145,7 @@ async function callVersionEndpoint(headers?: Record<string, string>) {
 describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockResolveRequestUserId.mockResolvedValue(null);
   });
 
   it('records download on successful version fetch', async () => {
@@ -168,8 +177,7 @@ describe('Download counting - GET /api/v1/skills/[name]/[version]', () => {
     mockExecute.mockResolvedValueOnce([defaultMetaRow]);
 
     mockCreateSignedUrl.mockResolvedValue({
-      data: { signedUrl: 'https://storage.example.com/download?token=xyz' },
-      error: null
+      signedUrl: 'https://storage.example.com/download?token=xyz'
     });
 
     const response = await callVersionEndpoint({
