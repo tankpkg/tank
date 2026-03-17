@@ -1,6 +1,7 @@
 import { encodeSkillName } from '@internals/helpers';
 import { createFileRoute, notFound } from '@tanstack/react-router';
 
+import { BASE_URL, routeHead } from '~/consts/seo';
 import { skillDetailQueryOptions } from '~/query/skills';
 import { SkillDetailScreen } from '~/screens/skill-detail-screen';
 
@@ -19,26 +20,18 @@ export const Route = createFileRoute('/skills/$')({
     }
 
     const version = data.latestVersion?.version;
-    const title = version ? `${data.name}@${version}` : data.name;
+    const title = version ? `${data.name}@${version} | Tank` : `${data.name} | Tank`;
     const description = data.description ?? `AI agent skill published on Tank by ${data.publisher.name}.`;
-    const url = `https://tankpkg.dev/skills/${encodeSkillName(data.name)}`;
+    const encodedName = encodeSkillName(data.name);
+    const head = routeHead({
+      title,
+      description,
+      path: `/skills/${encodedName}`,
+      image: `${BASE_URL}/api/og/${encodedName}`,
+    });
 
     return {
-      meta: [
-        { title: `${title} | Tank` },
-        { name: 'description', content: description },
-        { property: 'og:title', content: `${title} — Tank` },
-        { property: 'og:description', content: description },
-        { property: 'og:url', content: url },
-        { property: 'og:type', content: 'website' },
-        { property: 'og:site_name', content: 'Tank' },
-        { property: 'og:image', content: `https://www.tankpkg.dev/api/og/${encodeSkillName(data.name)}` },
-        { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: `${title} — Tank` },
-        { name: 'twitter:description', content: description },
-        { name: 'twitter:image', content: `https://www.tankpkg.dev/api/og/${encodeSkillName(data.name)}` }
-      ],
-      links: [{ rel: 'canonical', href: `https://www.tankpkg.dev/skills/${encodeSkillName(data.name)}` }],
+      ...head,
       scripts: [
         {
           type: 'application/ld+json',
@@ -48,13 +41,13 @@ export const Route = createFileRoute('/skills/$')({
             name: data.name,
             description,
             applicationCategory: 'AI Agent Skill',
-            url,
+            url: `${BASE_URL}/skills/${encodedName}`,
             author: { '@type': 'Person', name: data.publisher.name },
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-            ...(version ? { softwareVersion: version } : {})
-          })
-        }
-      ]
+            ...(version ? { softwareVersion: version } : {}),
+          }),
+        },
+      ],
     };
   },
   component: SkillDetailPage,

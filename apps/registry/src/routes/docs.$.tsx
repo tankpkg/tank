@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
+import { routeHead } from '~/consts/seo';
 import { DocsLayout } from '~/components/layouts/docs-layout';
 import { getDocBySlug } from '~/query/docs';
 
@@ -13,20 +14,25 @@ export const Route = createFileRoute('/docs/$')({
     const doc = loaderData?.doc;
     if (!doc) return { meta: [{ title: 'Page not found | Tank Docs' }] };
 
+    const slug = loaderData?.slug || 'index';
+    const description = doc.description || `Tank documentation: ${doc.title}`;
+    const head = routeHead({
+      title: `${doc.title} | Tank Docs`,
+      description,
+      path: slug === 'index' ? '/docs' : `/docs/${slug}`,
+    });
+
     return {
+      ...head,
       meta: [
-        { title: `${doc.title} | Tank Docs` },
-        ...(doc.description ? [{ name: 'description', content: doc.description }] : []),
-        { property: 'og:title', content: `${doc.title} — Tank Docs` },
-        ...(doc.description ? [{ property: 'og:description', content: doc.description }] : []),
+        ...head.meta,
         { property: 'og:type', content: 'article' },
-        { property: 'og:site_name', content: 'Tank' },
         { property: 'article:published_time', content: '2025-01-01T00:00:00Z' },
-        { property: 'article:modified_time', content: `${new Date().toISOString().split('T')[0]}T00:00:00Z` }
+        { property: 'article:modified_time', content: `${new Date().toISOString().split('T')[0]}T00:00:00Z` },
       ],
       links: [
-        { rel: 'canonical', href: loaderData?.slug === 'index' ? 'https://www.tankpkg.dev/docs' : `https://www.tankpkg.dev/docs/${loaderData?.slug}` },
-        { rel: 'alternate', type: 'text/markdown', href: `/docs/${loaderData?.slug || 'index'}.md` }
+        ...head.links,
+        { rel: 'alternate', type: 'text/markdown', href: `/docs/${slug}.md` },
       ],
       scripts: [
         {
@@ -35,14 +41,14 @@ export const Route = createFileRoute('/docs/$')({
             '@context': 'https://schema.org',
             '@type': 'TechArticle',
             headline: doc.title,
-            description: doc.description || `Tank documentation: ${doc.title}`,
+            description,
             datePublished: '2025-01-01T00:00:00Z',
             dateModified: `${new Date().toISOString().split('T')[0]}T00:00:00Z`,
             author: { '@type': 'Organization', name: 'Tank' },
-            publisher: { '@type': 'Organization', name: 'Tank' }
-          })
-        }
-      ]
+            publisher: { '@type': 'Organization', name: 'Tank' },
+          }),
+        },
+      ],
     };
   },
   component: DocPage,
