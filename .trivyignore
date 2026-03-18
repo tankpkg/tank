@@ -1,0 +1,8 @@
+# CVE-2026-22184 — zlib contrib/untgz demo utility buffer overflow
+# DISPUTED by zlib maintainer: "the vulnerability is not in zlib"
+# https://github.com/madler/zlib/issues/1148
+# Affects standalone demo binary only, not the zlib library.
+# Not remotely exploitable in container workloads.
+# NVD score 9.8 CRITICAL; actual risk ~4.6 MEDIUM (CVSS 4.0)
+# Review date: 2026-03-18
+CVE-2026-22184

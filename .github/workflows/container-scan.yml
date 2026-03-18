@@ -1,0 +1,131 @@
+name: Container Security Scan
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Every Monday at 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      severity-threshold:
+        description: "Minimum severity to report"
+        required: false
+        default: "CRITICAL,HIGH"
+        type: choice
+        options:
+          - "CRITICAL"
+          - "CRITICAL,HIGH"
+          - "CRITICAL,HIGH,MEDIUM"
+
+permissions:
+  contents: read
+  packages: read
+  security-events: write
+
+env:
+  GHCR_REGISTRY: ghcr.io
+  IMAGE_OWNER: tankpkg
+
+jobs:
+  scan-own-images:
+    name: scan-${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: tank-web
+            full: ghcr.io/tankpkg/tank-web:latest
+          - image: tank-scanner
+            full: ghcr.io/tankpkg/tank-scanner:latest
+
+    steps:
+      - name: Checkout (for .trivyignore)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .trivyignore
+          sparse-checkout-cone-mode: false
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull image
+        run: docker pull ${{ matrix.full }}
+
+      - name: Scan with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "${{ matrix.full }}"
+          format: "sarif"
+          output: "trivy-${{ matrix.image }}.sarif"
+          severity: ${{ inputs.severity-threshold || 'CRITICAL,HIGH' }}
+          trivyignores: ".trivyignore"
+          ignore-unfixed: true
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-${{ matrix.image }}.sarif"
+          category: "weekly-${{ matrix.image }}"
+
+      - name: Scan (table output for summary)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "${{ matrix.full }}"
+          format: "table"
+          severity: ${{ inputs.severity-threshold || 'CRITICAL,HIGH' }}
+          trivyignores: ".trivyignore"
+          ignore-unfixed: true
+
+  scan-third-party:
+    name: scan-${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: postgres
+            image: postgres:17-alpine
+          - name: redis
+            image: redis:7-alpine
+          - name: minio
+            image: minio/minio:latest
+
+    steps:
+      - name: Checkout (for .trivyignore)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .trivyignore
+          sparse-checkout-cone-mode: false
+
+      - name: Pull image
+        run: docker pull ${{ matrix.image }}
+
+      - name: Scan with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "${{ matrix.image }}"
+          format: "sarif"
+          output: "trivy-${{ matrix.name }}.sarif"
+          severity: ${{ inputs.severity-threshold || 'CRITICAL,HIGH' }}
+          trivyignores: ".trivyignore"
+          ignore-unfixed: true
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-${{ matrix.name }}.sarif"
+          category: "weekly-${{ matrix.name }}"
+
+      - name: Scan (table output for summary)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "${{ matrix.image }}"
+          format: "table"
+          severity: ${{ inputs.severity-threshold || 'CRITICAL,HIGH' }}
+          trivyignores: ".trivyignore"
+          ignore-unfixed: true

@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 env:
   GHCR_REGISTRY: ghcr.io
@@ -83,7 +84,46 @@ jobs:
             org.opencontainers.image.vendor=tankpkg
             org.opencontainers.image.source=https://github.com/tankpkg/tank
 
-      - name: Build and push
+      # ---------------------------------------------------------------
+      # Step 1: Build single-arch for local scanning (amd64 only)
+      # ---------------------------------------------------------------
+      - name: Build image for scanning (amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          load: true
+          tags: ${{ matrix.image }}:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ---------------------------------------------------------------
+      # Step 2: Trivy vulnerability scan — blocks push on CRITICAL
+      # ---------------------------------------------------------------
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "${{ matrix.image }}:scan"
+          format: "sarif"
+          output: "trivy-${{ matrix.image }}.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+          limit-severities-for-exit-code: true
+          trivyignores: ".trivyignore"
+          ignore-unfixed: true
+
+      - name: Upload Trivy SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-${{ matrix.image }}.sarif"
+          category: "trivy-${{ matrix.image }}"
+
+      # ---------------------------------------------------------------
+      # Step 3: Multi-arch build + push (only runs if scan passed)
+      # ---------------------------------------------------------------
+      - name: Build and push (multi-arch)
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
