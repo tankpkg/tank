@@ -17,7 +17,7 @@ services:
   # PostgreSQL Database
   # ===================
   postgres:
-    image: postgres:17.9-alpine3.23
+    image: ghcr.io/tankpkg/tank-postgres:${TANK_IMAGE_TAG:-17.9}
     container_name: tank-postgres
     restart: unless-stopped
     environment:
@@ -38,7 +38,7 @@ services:
   # Redis (Session Store)
   # ===================
   redis:
-    image: redis:7.4.8-alpine3.21
+    image: ghcr.io/tankpkg/tank-redis:${TANK_IMAGE_TAG:-7.4.8}
     container_name: tank-redis
     restart: unless-stopped
     command: redis-server --appendonly yes

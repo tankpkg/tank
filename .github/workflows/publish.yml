@@ -32,6 +32,12 @@ jobs:
           - image: tank-scanner
             dockerfile: packages/scanner/Dockerfile
             context: .
+          - image: tank-postgres
+            dockerfile: infra/docker/postgres.Dockerfile
+            context: .
+          - image: tank-redis
+            dockerfile: infra/docker/redis.Dockerfile
+            context: .
 
     steps:
       - name: Checkout code
