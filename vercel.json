@@ -1,7 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bun turbo build --filter=registry-legacy...",
+  "framework": null,
+  "buildCommand": "bun turbo build --filter=registry...",
+  "outputDirectory": "apps/registry/.vercel/output",
   "installCommand": "bun install",
-  "devCommand": "bun --filter registry-legacy run dev",
+  "devCommand": "bun --filter registry run dev",
   "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"main\" ]; then exit 1; fi; exit 0"
 }
