@@ -363,7 +363,7 @@ ollama:
     # -- Ollama container image repository
     repository: ollama/ollama
     # -- Image tag
-    tag: latest
+    tag: "0.18.1"
     # -- Image pull policy
     pullPolicy: IfNotPresent
 
@@ -438,7 +438,7 @@ minioInit:
     # -- MinIO client image
     repository: minio/mc
     # -- Image tag
-    tag: latest
+    tag: "RELEASE.2025-08-13T08-35-41Z"
     # -- Image pull policy
     pullPolicy: IfNotPresent
   # -- Resource requests and limits

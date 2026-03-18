@@ -2,7 +2,7 @@
 # Multi-stage build for minimal production image
 
 # Stage 1: Install dependencies
-FROM oven/bun:1 AS deps
+FROM oven/bun:1.3.11 AS deps
 WORKDIR /app
 
 # Copy package files (all workspace package.json files needed for lockfile resolution)
@@ -17,7 +17,7 @@ COPY .bdd/package.json ./.bdd/
 RUN bun install --frozen-lockfile
 
 # Stage 2: Build the application
-FROM oven/bun:1 AS builder
+FROM oven/bun:1.3.11 AS builder
 WORKDIR /app
 
 COPY package.json bun.lock tsconfig.json turbo.json ./
@@ -39,7 +39,7 @@ ENV STANDALONE=true
 RUN bun run --filter=@internal/web build
 
 # Stage 3: Production image
-FROM node:24-alpine AS runner
+FROM node:24.14.0-alpine3.23 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

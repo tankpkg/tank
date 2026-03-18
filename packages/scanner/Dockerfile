@@ -2,9 +2,9 @@
 # FastAPI application for skill security analysis
 # Build context: repo root (for uv.lock access)
 
-FROM python:3.14-alpine AS builder
+FROM python:3.14.3-alpine3.23 AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10.11 /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ COPY packages/scanner/api ./api
 COPY packages/scanner/lib ./lib
 
 # Production image
-FROM python:3.14-alpine AS runner
+FROM python:3.14.3-alpine3.23 AS runner
 
 WORKDIR /app
 
