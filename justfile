@@ -28,8 +28,9 @@ doctor:
 up:
     #!/usr/bin/env bash
     set -euo pipefail
-    echo "▸ Starting infra (Postgres, Redis, MinIO)..."
-    docker compose --env-file .env -f infra/docker-compose.yml up -d postgres redis minio
+    set -a; source .env; set +a
+    echo "▸ Starting infra (Postgres, MinIO)..."
+    docker compose --env-file .env -f infra/docker-compose.yml up -d postgres minio
     echo "▸ Waiting for Postgres..."
     until docker compose --env-file .env -f infra/docker-compose.yml exec -T postgres pg_isready -U tank -d tank 2>/dev/null; do sleep 1; done
     echo "▸ Pushing DB schema..."
@@ -39,7 +40,7 @@ up:
       git clone --depth 1 https://github.com/tankpkg/skills.git /tmp/tank-skills
     fi
     bun run scripts/seed-docker.ts
-    echo "▸ Starting TanStack dev server on :3001..."
+    echo "▸ Starting TanStack dev server on :5555..."
     bun run --filter registry dev
 
 # Stop all infra containers
@@ -49,7 +50,7 @@ down:
 
 # just dev         - start all dev servers in parallel via turbo
 # just dev legacy  - Next.js dev server on :3000
-# just dev registry - TanStack Start dev server on :3001
+# just dev registry - TanStack Start dev server on :5555
 # just dev cli     - CLI in tsdown watch mode
 # just dev mcp     - MCP server in tsx watch mode
 # just dev scanner - Python scanner via uvicorn on :8000
@@ -221,7 +222,7 @@ bump VERSION:
 # just test internals-helpers - vitest for shared helpers
 # just test scanner - pytest for Python scanner
 # just test e2e         - vitest integration tests against live API (defaults to next; use TANK_APP_TARGET)
-# just test e2e-tanstack - vitest integration tests against TanStack app on :3001
+# just test e2e-tanstack - vitest integration tests against TanStack app on :5555
 # just test e2e-all     - vitest integration tests against next and tanstack
 # just test bdd         - system BDD + browser BDD
 # just test bdd-system  - Vitest executable behavior specs
@@ -291,7 +292,7 @@ db action:
     esac
 
 # just docker <action> - manage local infra via docker-compose
-# just docker up             - start Postgres, Redis, MinIO containers (detached)
+# just docker up             - start Postgres, MinIO containers (detached)
 # just docker down           - stop and remove all infra containers
 # just docker logs           - follow combined log output from all services
 # just docker build          - build all Docker images

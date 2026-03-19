@@ -21,8 +21,8 @@ Tank is a security-first package manager for AI agent skills. It provides versio
 - [Searching for Skills](https://tankpkg.dev/docs/search): Find AI agent skills in the Tank registry using hybrid fuzzy search with typo tolerance, full-text matching, and advanced filters for security score, popularity, and freshness.
 - [Secure AI Skills Checklist](https://tankpkg.dev/docs/security-checklist): Security best practices checklist for publishing safe AI agent skills — covering permissions, code security, prompt injection prevention, and dependency management.
 - [Security Model](https://tankpkg.dev/docs/security): How Tank's 6-stage security pipeline scans AI agent skills for vulnerabilities, prompt injection, credential theft, and supply chain attacks before they reach your agents.
-- [Self-Host in 15 Minutes](https://tankpkg.dev/docs/self-host-quickstart): Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, Redis, MinIO, and AI-powered security scanning.
-- [Self-Hosting Tank](https://tankpkg.dev/docs/self-hosting): Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, Redis, MinIO, and security scanning.
+- [Self-Host in 15 Minutes](https://tankpkg.dev/docs/self-host-quickstart): Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, MinIO, and AI-powered security scanning.
+- [Self-Hosting Tank](https://tankpkg.dev/docs/self-hosting): Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, MinIO, and security scanning.
 
 ## Optional
 

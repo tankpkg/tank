@@ -1,13 +1,17 @@
-import docsBundle from '~/generated/docs-bundle.json';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
-interface RawDoc {
-  slug: string;
-  title: string;
-  description: string;
-  body: string;
+function resolveDocsDir(): string {
+  const devPath = join(process.cwd(), 'public', 'docs');
+  if (existsSync(devPath)) return devPath;
+
+  const prodPath = join(process.cwd(), '.output', 'public', 'docs');
+  if (existsSync(prodPath)) return prodPath;
+
+  return devPath;
 }
 
-const docs: RawDoc[] = docsBundle as RawDoc[];
+const DOCS_DIR = resolveDocsDir();
 
 export function parseFrontmatter(content: string): { data: Record<string, string>; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -29,21 +33,19 @@ export function parseFrontmatter(content: string): { data: Record<string, string
 }
 
 export function readDocFiles(): string[] {
-  return docs.map((d) => (d.slug === '' ? 'index.mdx' : `${d.slug}.mdx`));
+  if (!existsSync(DOCS_DIR)) return [];
+  return readdirSync(DOCS_DIR).filter((f) => f.endsWith('.md'));
 }
 
 export function readDocFile(filename: string): string {
-  const slug = filename.replace(/\.mdx$/, '');
-  const normalized = slug === 'index' ? '' : slug;
-  const doc = docs.find((d) => d.slug === normalized);
-  if (!doc) throw new Error(`Doc not found: ${filename}`);
-  const fm = doc.title || doc.description ? `---\ntitle: ${doc.title}\ndescription: ${doc.description}\n---\n` : '';
-  return `${fm}${doc.body}`;
+  return readFileSync(join(DOCS_DIR, filename), 'utf-8');
 }
 
 export function serveDocMarkdown(slug: string): { content: string; found: boolean } {
-  const normalized = slug === 'index' ? '' : slug;
-  const doc = docs.find((d) => d.slug === normalized);
-  if (!doc) return { content: '# Not Found\n\nThis documentation page does not exist.', found: false };
-  return { content: doc.body, found: true };
+  const filename = `${slug}.md`;
+  const filepath = join(DOCS_DIR, filename);
+  if (!existsSync(filepath)) return { content: '# Not Found\n\nThis documentation page does not exist.', found: false };
+  const raw = readFileSync(filepath, 'utf-8');
+  const { body } = parseFrontmatter(raw);
+  return { content: body, found: true };
 }

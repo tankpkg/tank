@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CliLoginRouteImport } from './routes/cli-login'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -18,13 +20,20 @@ import { Route as SkillsIndexRouteImport } from './routes/skills.index'
 import { Route as SkillsSplatRouteImport } from './routes/skills.$'
 import { Route as DocsSplatRouteImport } from './routes/docs.$'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
-import { Route as LlmSitemapDotxmlRouteImport } from './routes/_llm/sitemap[.]xml'
-import { Route as LlmLlmsDottxtRouteImport } from './routes/_llm/llms[.]txt'
-import { Route as LlmLlmsFullDottxtRouteImport } from './routes/_llm/llms-full[.]txt'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
+  id: '/llms-full.txt',
+  path: '/llms-full.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -67,31 +76,15 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LlmSitemapDotxmlRoute = LlmSitemapDotxmlRouteImport.update({
-  id: '/_llm/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LlmLlmsDottxtRoute = LlmLlmsDottxtRouteImport.update({
-  id: '/_llm/llms.txt',
-  path: '/llms.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LlmLlmsFullDottxtRoute = LlmLlmsFullDottxtRouteImport.update({
-  id: '/_llm/llms-full.txt',
-  path: '/llms-full.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/cli-login': typeof CliLoginRoute
   '/dashboard': typeof DashboardRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/login': typeof LoginRoute
-  '/llms-full.txt': typeof LlmLlmsFullDottxtRoute
-  '/llms.txt': typeof LlmLlmsDottxtRoute
-  '/sitemap.xml': typeof LlmSitemapDotxmlRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/$': typeof ApiSplatRoute
   '/docs/$': typeof DocsSplatRoute
   '/skills/$': typeof SkillsSplatRoute
@@ -102,10 +95,9 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/cli-login': typeof CliLoginRoute
   '/dashboard': typeof DashboardRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/login': typeof LoginRoute
-  '/llms-full.txt': typeof LlmLlmsFullDottxtRoute
-  '/llms.txt': typeof LlmLlmsDottxtRoute
-  '/sitemap.xml': typeof LlmSitemapDotxmlRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/$': typeof ApiSplatRoute
   '/docs/$': typeof DocsSplatRoute
   '/skills/$': typeof SkillsSplatRoute
@@ -117,10 +109,9 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/cli-login': typeof CliLoginRoute
   '/dashboard': typeof DashboardRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/login': typeof LoginRoute
-  '/_llm/llms-full.txt': typeof LlmLlmsFullDottxtRoute
-  '/_llm/llms.txt': typeof LlmLlmsDottxtRoute
-  '/_llm/sitemap.xml': typeof LlmSitemapDotxmlRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/$': typeof ApiSplatRoute
   '/docs/$': typeof DocsSplatRoute
   '/skills/$': typeof SkillsSplatRoute
@@ -133,9 +124,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cli-login'
     | '/dashboard'
-    | '/login'
     | '/llms-full.txt'
-    | '/llms.txt'
+    | '/login'
     | '/sitemap.xml'
     | '/api/$'
     | '/docs/$'
@@ -147,9 +137,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cli-login'
     | '/dashboard'
-    | '/login'
     | '/llms-full.txt'
-    | '/llms.txt'
+    | '/login'
     | '/sitemap.xml'
     | '/api/$'
     | '/docs/$'
@@ -161,10 +150,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cli-login'
     | '/dashboard'
+    | '/llms-full.txt'
     | '/login'
-    | '/_llm/llms-full.txt'
-    | '/_llm/llms.txt'
-    | '/_llm/sitemap.xml'
+    | '/sitemap.xml'
     | '/api/$'
     | '/docs/$'
     | '/skills/$'
@@ -176,10 +164,9 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   CliLoginRoute: typeof CliLoginRoute
   DashboardRoute: typeof DashboardRoute
+  LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
   LoginRoute: typeof LoginRoute
-  LlmLlmsFullDottxtRoute: typeof LlmLlmsFullDottxtRoute
-  LlmLlmsDottxtRoute: typeof LlmLlmsDottxtRoute
-  LlmSitemapDotxmlRoute: typeof LlmSitemapDotxmlRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiSplatRoute: typeof ApiSplatRoute
   DocsSplatRoute: typeof DocsSplatRoute
   SkillsSplatRoute: typeof SkillsSplatRoute
@@ -188,11 +175,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/llms-full.txt': {
+      id: '/llms-full.txt'
+      path: '/llms-full.txt'
+      fullPath: '/llms-full.txt'
+      preLoaderRoute: typeof LlmsFullDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -251,27 +252,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_llm/sitemap.xml': {
-      id: '/_llm/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof LlmSitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_llm/llms.txt': {
-      id: '/_llm/llms.txt'
-      path: '/llms.txt'
-      fullPath: '/llms.txt'
-      preLoaderRoute: typeof LlmLlmsDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_llm/llms-full.txt': {
-      id: '/_llm/llms-full.txt'
-      path: '/llms-full.txt'
-      fullPath: '/llms-full.txt'
-      preLoaderRoute: typeof LlmLlmsFullDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -280,10 +260,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   CliLoginRoute: CliLoginRoute,
   DashboardRoute: DashboardRoute,
+  LlmsFullDottxtRoute: LlmsFullDottxtRoute,
   LoginRoute: LoginRoute,
-  LlmLlmsFullDottxtRoute: LlmLlmsFullDottxtRoute,
-  LlmLlmsDottxtRoute: LlmLlmsDottxtRoute,
-  LlmSitemapDotxmlRoute: LlmSitemapDotxmlRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiSplatRoute: ApiSplatRoute,
   DocsSplatRoute: DocsSplatRoute,
   SkillsSplatRoute: SkillsSplatRoute,

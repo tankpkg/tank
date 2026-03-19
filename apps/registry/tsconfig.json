@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.json",
   "include": ["**/*.ts", "**/*.tsx", "vite.config.ts"],
   "compilerOptions": {
     "jsx": "react-jsx",
@@ -7,13 +6,22 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "noUncheckedIndexedAccess": false,
     "paths": {
       "~/*": ["./src/*"]
     },
     "resolveJsonModule": true,
     "strict": true,
     "target": "ES2022",
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
   },
   "exclude": ["node_modules", "dist", ".output"]
 }

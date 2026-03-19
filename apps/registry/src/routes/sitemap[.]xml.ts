@@ -6,7 +6,7 @@ import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
 import { readDocFiles } from '~/lib/docs-fs';
 
-export const Route = createFileRoute('/_llm/sitemap.xml')({
+export const Route = createFileRoute('/sitemap.xml')({
   server: {
     handlers: {
       GET: async () => {
@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_llm/sitemap.xml')({
 
 async function generateSitemap(): Promise<string> {
   const staticPages = ['/', '/skills', '/docs', '/login', '/llms.txt', '/llms-full.txt'];
-  const docSlugs = readDocFiles().map((f) => f.replace(/\.mdx$/, ''));
+  const docSlugs = readDocFiles().map((f) => f.replace(/\.md$/, ''));
 
   let skillNames: string[] = [];
   try {

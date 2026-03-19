@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3001",
-    "build": "node build-scripts/build-docs.mjs && vite build",
+    "dev": "vite dev --port 5555",
+    "build": "vite build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -38,7 +38,6 @@
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.45.1",
     "hono": "^4.12.8",
-    "ioredis": "^5.10.0",
     "lucide-react": "^0.577.0",
     "motion": "^12.36.0",
     "nodemailer": "^8.0.2",

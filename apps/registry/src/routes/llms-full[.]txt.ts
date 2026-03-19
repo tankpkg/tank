@@ -3,7 +3,7 @@ import { setResponseHeader } from '@tanstack/react-start/server';
 
 import { parseFrontmatter, readDocFile, readDocFiles } from '~/lib/docs-fs';
 
-export const Route = createFileRoute('/_llm/llms-full.txt')({
+export const Route = createFileRoute('/llms-full.txt')({
   server: {
     handlers: {
       GET: async () => {
@@ -24,7 +24,7 @@ function generateLlmsFullTxt(): string {
 
   for (const file of files) {
     const { data, body } = parseFrontmatter(readDocFile(file));
-    const slug = file.replace(/\.mdx$/, '');
+    const slug = file.replace(/\.md$/, '');
     const url = slug === 'index' ? 'https://www.tankpkg.dev/docs' : `https://www.tankpkg.dev/docs/${slug}`;
 
     pages.push(`---

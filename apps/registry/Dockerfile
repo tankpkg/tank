@@ -45,7 +45,6 @@ RUN addgroup --system --gid 1001 bunjs && \
     adduser --system --uid 1001 tanstack
 
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/.output ./.output
-COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/content ./content
 
 USER tanstack
 

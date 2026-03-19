@@ -1,6 +1,6 @@
 ---
 title: Self-Hosting Tank
-description: Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, Redis, MinIO, and security scanning.
+description: Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, MinIO, and security scanning.
 ---
 
 # Self-Hosting Tank
@@ -9,7 +9,7 @@ Deploy your own Tank registry for complete control over AI agent skill distribut
 
 ## Architecture Overview
 
-A self-hosted Tank deployment runs five core services:
+A self-hosted Tank deployment runs four core services:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -27,21 +27,15 @@ A self-hosted Tank deployment runs five core services:
 │                     │   Scanner    │                            │
 │                     │  (port 8000) │                            │
 │                     └──────────────┘                            │
-│                                                                  │
-│  ┌──────────────┐                                               │
-│  │    Redis     │  (optional — session store + scan cache)      │
-│  │  (port 6379) │                                               │
-│  └──────────────┘                                               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 | Service              | Technology            | Purpose                             |
 | -------------------- | --------------------- | ----------------------------------- |
-| **Web app**          | Next.js App Router    | Registry UI, REST API, CLI backend  |
+| **Web app**          | TanStack Start        | Registry UI, REST API, CLI backend  |
 | **Security scanner** | FastAPI + Python 3.14 | 6-stage security scanning pipeline  |
 | **Database**         | PostgreSQL 17+        | Skills, versions, users, audit logs |
 | **Object storage**   | MinIO (S3-compatible) | Skill tarballs                      |
-| **Cache**            | Redis (optional)      | Session store, scan result caching  |
 
 ## Prerequisites
 
@@ -87,14 +81,11 @@ PYTHON_API_URL=http://scanner:8000
 # Admin bootstrap
 FIRST_ADMIN_EMAIL=admin@yourcompany.com
 
-# Redis (optional but recommended)
-REDIS_URL=redis://redis:6379
-SESSION_STORE=redis
 ```
 
 ### 2) Docker Compose Services
 
-The `docker-compose.yml` defines five services (plus optional Ollama for local LLM analysis):
+The `docker-compose.yml` defines four services (plus optional Ollama for local LLM analysis):
 
 ```yaml
 version: '3.9'
@@ -110,11 +101,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - '5432:5432'
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - '6379:6379'
 
   minio:
     image: minio/minio:latest
@@ -146,12 +132,10 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - PYTHON_API_URL=${PYTHON_API_URL}
-      - REDIS_URL=${REDIS_URL}
     ports:
       - '3000:3000'
     depends_on:
       - postgres
-      - redis
       - minio
       - scanner
 
@@ -241,7 +225,6 @@ The `infra/helm/tank/` chart includes:
 | Dependency | Version | Purpose                      |
 | ---------- | ------- | ---------------------------- |
 | PostgreSQL | 15.5.38 | Primary database             |
-| Redis      | 19.6.4  | Session store and caching    |
 | MinIO      | 5.4.0   | S3-compatible object storage |
 
 ### Quick Start
@@ -320,11 +303,6 @@ postgresql:
     username: tank
     password: '' # Set via --set or sealed secret
 
-redis:
-  enabled: true
-  auth:
-    enabled: false
-
 minio:
   enabled: true
   auth:
@@ -387,8 +365,6 @@ helm upgrade tank infra/helm/tank/ \
 
 | Variable             | Description                        | Default  |
 | -------------------- | ---------------------------------- | -------- |
-| `REDIS_URL`          | Redis connection string            | —        |
-| `SESSION_STORE`      | `memory` or `redis`                | `memory` |
 | `FIRST_ADMIN_EMAIL`  | Bootstraps admin role on first run | —        |
 | `OIDC_ISSUER`        | OIDC SSO issuer URL                | —        |
 | `OIDC_CLIENT_ID`     | OIDC client ID                     | —        |

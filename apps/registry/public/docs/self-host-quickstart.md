@@ -1,6 +1,6 @@
 ---
 title: Self-Host in 15 Minutes
-description: Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, Redis, MinIO, and AI-powered security scanning.
+description: Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, MinIO, and AI-powered security scanning.
 ---
 
 # Self-Host in 15 Minutes
@@ -21,7 +21,7 @@ Deploy Tank on your own infrastructure for complete control over your AI skill r
 │                     Your Infrastructure                       │
 │                                                              │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Next.js   │───▶│  PostgreSQL │    │    S3/MinIO │     │
+│  │  TanStack   │───▶│  PostgreSQL │    │    S3/MinIO │     │
 │  │   Web App   │    │   Database  │    │   Storage   │     │
 │  └─────────────┘    └─────────────┘    └─────────────┘     │
 │         │                                                   │
@@ -86,9 +86,8 @@ docker compose up -d
 
 This starts:
 
-- Next.js web application (port 3000)
+- TanStack Start web application (port 3000)
 - PostgreSQL database (port 5432)
-- Redis cache (port 6379)
 - MinIO S3-compatible storage (port 9000)
 - Python security scanner (port 8000)
 
@@ -148,7 +147,7 @@ curl http://localhost:8000/health
 For Kubernetes deployments, use the Helm chart at `helm/tank/`:
 
 ```bash
-# Update chart dependencies (PostgreSQL, Redis, MinIO)
+# Update chart dependencies (PostgreSQL, MinIO)
 helm dependency update helm/tank/
 
 # Install into the tank namespace

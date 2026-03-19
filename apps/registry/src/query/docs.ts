@@ -96,7 +96,7 @@ async function loadDocs(): Promise<DocEntry[]> {
     const { data, body } = parseFrontmatter(readDocFile(file));
     const result = await processor.process(body);
     const headings = (result.data?.headings as Heading[]) || [];
-    const slug = file.replace(/\.mdx$/, '');
+    const slug = file.replace(/\.md$/, '');
     entries.push({
       title: data.title || slug,
       description: data.description,

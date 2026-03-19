@@ -31,26 +31,6 @@ services:
       - tank-network
 
   # ===================
-  # Redis (Session Store)
-  # ===================
-  redis:
-    image: redis:8-alpine
-    container_name: tank-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - tank-network
-
-  # ===================
   # MinIO (S3-Compatible Storage)
   # ===================
   minio:
@@ -144,10 +124,6 @@ services:
       S3_BUCKET: ${S3_BUCKET:-packages}
       S3_REGION: ${S3_REGION:-us-east-1}
 
-      # Redis Session Store
-      REDIS_URL: redis://redis:6379
-      SESSION_STORE: ${SESSION_STORE:-redis}
-
       # Python Scanner
       PYTHON_API_URL: http://scanner:8000
 
@@ -162,8 +138,6 @@ services:
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -192,6 +166,5 @@ networks:
 
 volumes:
   postgres_data:
-  redis_data:
   minio_data:
   ollama_data:

@@ -8,7 +8,7 @@ export interface AppTargetConfig {
 
 function resolveRegistryUrl(target: AppTarget): string {
   if (target === 'tanstack') {
-    return process.env.TANSTACK_E2E_REGISTRY_URL ?? process.env.APP_URL ?? 'http://127.0.0.1:3001';
+    return process.env.TANSTACK_E2E_REGISTRY_URL ?? process.env.APP_URL ?? 'http://127.0.0.1:5555';
   }
 
   return process.env.NEXT_E2E_REGISTRY_URL ?? process.env.E2E_REGISTRY_URL ?? 'http://127.0.0.1:3000';

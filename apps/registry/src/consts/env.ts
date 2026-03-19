@@ -7,7 +7,7 @@ const zUrl = z.string().url();
 export const zEnv = z.object({
   // ── Core ──
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  APP_URL: zUrl.default('http://localhost:3000'),
+  APP_URL: zUrl.default('http://localhost:5555'),
   APP_NAME: zStr.default('Tank'),
 
   // ── Database ──
@@ -42,10 +42,6 @@ export const zEnv = z.object({
   SUPABASE_URL: zOptStr,
   SUPABASE_SERVICE_ROLE_KEY: zOptStr,
   STORAGE_BUCKET: zOptStr,
-
-  // ── Session ──
-  SESSION_STORE: z.enum(['memory', 'redis']).default('memory'),
-  REDIS_URL: zOptStr,
 
   // ── Email ──
   RESEND_API_KEY: zOptStr,
