@@ -1,10 +1,13 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DOCS_DIR_CANDIDATES = [
   join(process.cwd(), 'content/docs'),
   join(process.cwd(), '../../apps/registry/content/docs'),
-  join(process.cwd(), 'apps/registry/content/docs')
+  join(process.cwd(), 'apps/registry/content/docs'),
+  join(import.meta.dirname ?? __dirname, '../../content/docs'),
+  join(import.meta.dirname ?? __dirname, '../content/docs'),
+  join(import.meta.dirname ?? __dirname, 'content/docs')
 ];
 
 export function getDocsDir(): string {
