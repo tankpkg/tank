@@ -29,9 +29,6 @@ services:
     networks:
       - tank-network
 
-  # ===================
-  # Redis (Session Store)
-  # ===================
   redis:
     image: redis:8-alpine
     container_name: tank-redis
@@ -48,6 +45,8 @@ services:
       retries: 5
     networks:
       - tank-network
+    profiles:
+      - redis
 
   # ===================
   # MinIO (S3-Compatible Storage)
@@ -103,6 +102,7 @@ services:
       # Tuning
       LLM_SCAN_TIMEOUT_MS: ${LLM_SCAN_TIMEOUT_MS:-8000}
       S3_ENDPOINT: http://minio:9000
+      AUTHORIZED_STORAGE_DOMAINS: ${AUTHORIZED_STORAGE_DOMAINS:-}
 
       # Advanced: Custom model selection (rarely needed)
       # GROQ_8B_MODEL: ${GROQ_8B_MODEL:-}
@@ -132,7 +132,7 @@ services:
       AUTH_PROVIDERS: ${AUTH_PROVIDERS:-credentials}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-}
+      OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-enterprise-oidc}
       OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
@@ -151,8 +151,6 @@ services:
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -175,21 +173,26 @@ services:
     networks:
       - tank-network
     profiles:
-      - llm-local # Only starts with: docker compose --profile llm-local up
-    # Uncomment to expose Ollama API directly
-    # ports:
-    #   - "11434:11434"
+      - llm-local
 
-# ===================
-# Networks
-# ===================
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: tank-litellm
+    restart: unless-stopped
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
+    command: ["--config", "/app/config.yaml"]
+    networks:
+      - tank-network
+    profiles:
+      - litellm
+
 networks:
   tank-network:
     driver: bridge
 
-# ===================
-# Volumes
-# ===================
 volumes:
   postgres_data:
   redis_data:

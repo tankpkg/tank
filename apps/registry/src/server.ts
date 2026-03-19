@@ -1,14 +1,36 @@
 import handler, { createServerEntry } from '@tanstack/react-start/server-entry';
 
 import { serveDocMarkdown } from '~/lib/docs-fs';
+import { isSetupCompleted } from '~/lib/setup';
 
 const DOCS_RAW_PATTERN = /^\/docs\/([a-z0-9_-]+)\.(md|txt)$/;
+const SETUP_PASSTHROUGH = /^\/(setup|api\/health|api\/setup|api\/auth)/;
 
 export default createServerEntry({
-  fetch: (request, opts) => {
+  fetch: async (request, opts) => {
     const url = new URL(request.url);
-    const match = url.pathname.match(DOCS_RAW_PATTERN);
 
+    if (!SETUP_PASSTHROUGH.test(url.pathname)) {
+      const completed = await isSetupCompleted();
+      if (!completed) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: '/setup' }
+        });
+      }
+    }
+
+    if (url.pathname === '/setup') {
+      const completed = await isSetupCompleted();
+      if (completed) {
+        return new Response(null, {
+          status: 302,
+          headers: { Location: '/' }
+        });
+      }
+    }
+
+    const match = url.pathname.match(DOCS_RAW_PATTERN);
     if (match) {
       const { content, found } = serveDocMarkdown(match[1]);
       const contentType = match[2] === 'txt' ? 'text/plain' : 'text/markdown';

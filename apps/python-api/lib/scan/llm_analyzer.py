@@ -130,16 +130,89 @@ class LLMAnalyzer:
         "stage3_hidden",
     }
 
-    def __init__(self):
-        """Build provider chain from env vars (resolution priority order)."""
+    def __init__(self, llm_config: dict | None = None):
+        """Build provider chain from per-request config or env vars."""
         self.providers: list[LLMProviderConfig] = []
         self._enabled: bool | None = None
+        self._llm_config = llm_config
         self._build_provider_chain()
 
     def _build_provider_chain(self) -> None:
-        """Resolution: custom BYOLLM > Groq 8b > Groq 70b > OpenRouter Nemotron."""
+        """Resolution: per-request > LiteLLM > custom BYOLLM > Groq > OpenRouter."""
         timeout_ms = int(os.environ.get("LLM_SCAN_TIMEOUT_MS", DEFAULT_TIMEOUT_MS))
         timeout_sec = timeout_ms / 1000.0
+
+        # 0. Per-request config from system_config (injected by web app)
+        if self._llm_config:
+            cfg = self._llm_config
+            provider = cfg.get("provider", "disabled")
+            if provider == "disabled":
+                self._enabled = False
+                return
+            api_key = cfg.get("api_key")
+            base_url = cfg.get("base_url")
+            model = cfg.get("model")
+
+            if provider == "litellm" and base_url:
+                self.providers.append(
+                    LLMProviderConfig(
+                        name="litellm",
+                        base_url=f"{base_url.rstrip('/')}/v1",
+                        api_key=api_key or "sk-litellm",
+                        model=model or "gpt-4o-mini",
+                        timeout_seconds=timeout_sec,
+                    )
+                )
+                logger.info(f"LLM analyzer: LiteLLM configured via per-request config ({base_url})")
+                return
+            elif provider == "groq" and api_key:
+                self.providers.append(
+                    LLMProviderConfig(
+                        name="groq_8b",
+                        base_url="https://api.groq.com/openai/v1",
+                        api_key=api_key,
+                        model=model or DEFAULT_GROQ_8B_MODEL,
+                        timeout_seconds=min(5.0, timeout_sec),
+                    )
+                )
+                return
+            elif provider == "openrouter" and api_key:
+                self.providers.append(
+                    LLMProviderConfig(
+                        name="openrouter_nemotron",
+                        base_url="https://openrouter.ai/api/v1",
+                        api_key=api_key,
+                        model=model or DEFAULT_OPENROUTER_MODEL,
+                        timeout_seconds=timeout_sec,
+                    )
+                )
+                return
+            elif provider == "custom" and api_key and base_url:
+                self.providers.append(
+                    LLMProviderConfig(
+                        name="custom",
+                        base_url=base_url,
+                        api_key=api_key,
+                        model=model or "gpt-4o-mini",
+                        timeout_seconds=timeout_sec,
+                    )
+                )
+                return
+
+        # 0.5. LiteLLM env var (standalone Docker service)
+        litellm_url = os.environ.get("LITELLM_URL")
+        if litellm_url:
+            self.providers.append(
+                LLMProviderConfig(
+                    name="litellm",
+                    base_url=f"{litellm_url.rstrip('/')}/v1",
+                    api_key=os.environ.get("LITELLM_MASTER_KEY", "sk-litellm"),
+                    model=os.environ.get("LLM_MODEL", "gpt-4o-mini"),
+                    timeout_seconds=timeout_sec,
+                )
+            )
+            logger.info(f"LLM analyzer: LiteLLM configured ({litellm_url})")
+            return
 
         # 1. Custom BYOLLM provider (highest priority)
         api_key = os.environ.get("LLM_API_KEY")

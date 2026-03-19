@@ -13,6 +13,7 @@ COPY apps/registry/package.json ./apps/registry/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY bdd/package.json ./bdd/
+COPY e2e/package.json ./e2e/
 
 RUN bun install --frozen-lockfile
 
@@ -33,7 +34,19 @@ COPY --from=deps /app/apps/registry/node_modules ./apps/registry/node_modules
 RUN bun run --filter=@internals/schemas build && \
     bun run --filter=@internals/helpers build && \
     rm -rf apps/registry/.output && \
-    bun run --filter=registry build
+    bun run --filter=registry build && \
+    bun build apps/registry/src/lib/db/schema.ts \
+      --outdir apps/registry/dist-db --target=node --format=esm --external=drizzle-orm && \
+    cat > apps/registry/dist-db/drizzle.config.js << 'DRIZZLE_EOF'
+import { defineConfig } from "drizzle-kit";
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error("DATABASE_URL is required");
+export default defineConfig({
+  dialect: "postgresql",
+  schema: ["./src/lib/db/schema.js"],
+  dbCredentials: { url: databaseUrl },
+});
+DRIZZLE_EOF
 
 # Stage 3: Production
 FROM oven/bun:1-alpine AS runner
@@ -42,10 +55,18 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 bunjs && \
-    adduser --system --uid 1001 tanstack
+    adduser --system --uid 1001 tanstack && \
+    bun add esbuild esbuild-register @esbuild-kit/esm-loader @esbuild-kit/core-utils postgres && \
+    chown -R tanstack:bunjs /app/node_modules
 
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/.output ./.output
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/content ./content
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/scripts/entrypoint.sh ./entrypoint.sh
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/scripts/load-settings-from-db.ts ./scripts/load-settings-from-db.ts
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/drizzle.config.js ./drizzle.config.js
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/schema.js ./src/lib/db/schema.js
+COPY --from=deps --chown=tanstack:bunjs /app/apps/registry/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=deps --chown=tanstack:bunjs /app/apps/registry/node_modules/drizzle-kit ./node_modules/drizzle-kit
 
 USER tanstack
 
@@ -57,4 +78,4 @@ ENV HOST=0.0.0.0
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["bun", ".output/server/index.mjs"]
+ENTRYPOINT ["sh", "./entrypoint.sh"]

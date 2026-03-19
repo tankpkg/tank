@@ -32,9 +32,10 @@ export const zEnv = z.object({
   OIDC_USER_INFO_URL: zOptStr,
 
   // ── Storage ──
-  STORAGE_BACKEND: z.enum(['s3', 'supabase']).default('supabase'),
+  STORAGE_BACKEND: z.enum(['s3', 'supabase', 'filesystem']).default('supabase'),
   S3_ENDPOINT: zOptStr,
   S3_PUBLIC_ENDPOINT: zOptStr,
+  STORAGE_FS_PATH: zOptStr,
   S3_ACCESS_KEY: zOptStr,
   S3_SECRET_KEY: zOptStr,
   S3_BUCKET: zStr.default('packages'),

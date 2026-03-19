@@ -58,6 +58,15 @@ class LLMAnalysis(BaseModel):
     reason: str | None = Field(None, description="Reason if disabled")
 
 
+class LLMConfig(BaseModel):
+    """Per-request LLM configuration injected by the web app from system_config."""
+
+    provider: str = Field(..., description="Provider: groq, openrouter, litellm, custom, disabled")
+    api_key: str | None = Field(None, description="Decrypted API key")
+    base_url: str | None = Field(None, description="Base URL for custom/LiteLLM provider")
+    model: str | None = Field(None, description="Model name override")
+
+
 class ScanRequest(BaseModel):
     """Request to run a full security scan."""
 
@@ -65,6 +74,9 @@ class ScanRequest(BaseModel):
     version_id: str = Field(..., description="skill_versions.id UUID")
     manifest: dict[str, Any] = Field(..., description="Skill manifest from database")
     permissions: dict[str, Any] = Field(..., description="Declared permissions from database")
+    llm_config: LLMConfig | None = Field(
+        None, description="Per-request LLM config from system_config (overrides env vars)"
+    )
 
 
 class ScanResponse(BaseModel):

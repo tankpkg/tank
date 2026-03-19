@@ -117,7 +117,7 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
 
             plugin_map = get_mapping_from_secret_type_to_class()
 
-            for file_path in get_files_to_scan([temp_dir], settings):
+            for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True):
                 try:
                     with open(file_path, errors="replace") as f:
                         lines = f.readlines()

@@ -265,7 +265,8 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
         remaining_budget = MAX_SCAN_DURATION_MS - elapsed
         if remaining_budget > 5000:
             try:
-                result, llm_analysis = await stage3_detect_injection(ingest_result, llm_analysis)
+                llm_cfg = request.llm_config.model_dump() if request.llm_config else None
+                result, llm_analysis = await stage3_detect_injection(ingest_result, llm_analysis, llm_config=llm_cfg)
                 stage_results.append(result)
             except Exception as e:
                 stage_results.append(

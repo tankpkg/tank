@@ -334,6 +334,7 @@ def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:
 async def stage3_detect_injection(
     ingest_result: IngestResult,
     llm_analysis: LLMAnalysis | None = None,
+    llm_config: dict | None = None,
 ) -> tuple[StageResult, LLMAnalysis | None]:
     """Run Stage 3: Prompt Injection Detection.
 
@@ -393,7 +394,7 @@ async def stage3_detect_injection(
     # LLM CORROBORATION LAYER
     # Split findings into ambiguous (send to LLM) vs deterministic (keep as-is)
     # ========================================================================
-    llm_analyzer = LLMAnalyzer()
+    llm_analyzer = LLMAnalyzer(llm_config=llm_config)
     llm_result = None
 
     if llm_analyzer.is_enabled() and findings:

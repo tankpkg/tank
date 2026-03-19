@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { z } from 'zod';
 import { routeHead } from '~/consts/seo';
 import { getAuthProviders } from '~/lib/auth/session';
 import { LoginScreen } from '~/screens/login-screen';
@@ -15,15 +16,17 @@ export const Route = createFileRoute('/login')({
     return { providers, oidcProviderId };
   },
   head: () => settings,
+  validateSearch: z.object({ redirect: z.string().optional() }),
   component: LoginPage
 });
 
 function LoginPage() {
   const { providers, oidcProviderId } = Route.useLoaderData();
+  const { redirect } = Route.useSearch();
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <LoginScreen enabledProviders={new Set(providers)} oidcProviderId={oidcProviderId} />
+      <LoginScreen enabledProviders={new Set(providers)} oidcProviderId={oidcProviderId} redirect={redirect} />
     </div>
   );
 }

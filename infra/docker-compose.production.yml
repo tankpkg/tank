@@ -91,6 +91,7 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       LLM_SCAN_TIMEOUT_MS: ${LLM_SCAN_TIMEOUT_MS:-8000}
       S3_ENDPOINT: http://minio:9000
+      AUTHORIZED_STORAGE_DOMAINS: ${AUTHORIZED_STORAGE_DOMAINS:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -155,6 +156,20 @@ services:
       - tank-network
     profiles:
       - llm-local
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: tank-litellm
+    restart: unless-stopped
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
+    command: ["--config", "/app/config.yaml"]
+    networks:
+      - tank-network
+    profiles:
+      - litellm
 
 networks:
   tank-network:

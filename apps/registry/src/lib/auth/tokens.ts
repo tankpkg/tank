@@ -37,7 +37,7 @@ export const listTokensFn = createServerFn({ method: 'GET' }).handler(async () =
 export const createTokenFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { name: string; expiresInDays?: number; scopes?: string[] }) => input)
   .handler(async ({ data }) => {
-    const { session } = await requireSession();
+    const { session, headers } = await requireSession();
     const { name, expiresInDays, scopes } = data;
 
     const normalizedScopes = normalizeScopes(scopes);
@@ -53,7 +53,8 @@ export const createTokenFn = createServerFn({ method: 'POST' })
         expiresIn: normalizedExpiry * 24 * 60 * 60,
         rateLimitMax: 1000,
         permissions: { skills: normalizedScopes }
-      }
+      },
+      headers
     });
 
     await db.insert(auditEvents).values({

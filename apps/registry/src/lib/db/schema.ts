@@ -430,3 +430,41 @@ export const userStatusRelations = relations(userStatus, ({ one }) => ({
     references: [user.id]
   })
 }));
+
+// ---------------------------------------------------------------------------
+// System Config (singleton — on-prem setup wizard state + instance config)
+// ---------------------------------------------------------------------------
+
+export const systemConfig = pgTable('system_config', {
+  id: integer('id').primaryKey().default(1),
+  setupCompleted: boolean('setup_completed').notNull().default(false),
+
+  instanceUrl: text('instance_url'),
+
+  storageBackend: text('storage_backend').default('s3'),
+  storageEndpoint: text('storage_endpoint'),
+  storageRegion: text('storage_region'),
+  storageBucket: text('storage_bucket'),
+  storageAccessKey: text('storage_access_key'),
+  storageSecretKeyEnc: text('storage_secret_key_enc'),
+  supabaseUrl: text('supabase_url'),
+  supabaseServiceKeyEnc: text('supabase_service_key_enc'),
+
+  scannerProvider: text('scanner_provider').default('disabled'),
+  scannerApiKeyEnc: text('scanner_api_key_enc'),
+  scannerBaseUrl: text('scanner_base_url'),
+  scannerModel: text('scanner_model'),
+  scannerLitellmUrl: text('scanner_litellm_url'),
+
+  githubEnabled: boolean('github_enabled').notNull().default(false),
+  githubClientId: text('github_client_id'),
+  githubClientSecretEnc: text('github_client_secret_enc'),
+
+  oidcEnabled: boolean('oidc_enabled').notNull().default(false),
+  oidcDiscoveryUrl: text('oidc_discovery_url'),
+  oidcClientId: text('oidc_client_id'),
+  oidcClientSecretEnc: text('oidc_client_secret_enc'),
+  oidcProviderId: text('oidc_provider_id').default('enterprise-oidc'),
+
+  ...timestamps
+});
