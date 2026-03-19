@@ -1,24 +1,13 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import docsBundle from '~/generated/docs-bundle.json';
 
-const DOCS_DIR_CANDIDATES = [
-  join(process.cwd(), 'content/docs'),
-  join(process.cwd(), '../../apps/registry/content/docs'),
-  join(process.cwd(), 'apps/registry/content/docs'),
-  join(import.meta.dirname ?? __dirname, '../../content/docs'),
-  join(import.meta.dirname ?? __dirname, '../content/docs'),
-  join(import.meta.dirname ?? __dirname, 'content/docs')
-];
-
-export function getDocsDir(): string {
-  for (const dir of DOCS_DIR_CANDIDATES) {
-    try {
-      readdirSync(dir);
-      return dir;
-    } catch {}
-  }
-  return DOCS_DIR_CANDIDATES[0];
+interface RawDoc {
+  slug: string;
+  title: string;
+  description: string;
+  body: string;
 }
+
+const docs: RawDoc[] = docsBundle as RawDoc[];
 
 export function parseFrontmatter(content: string): { data: Record<string, string>; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -40,22 +29,21 @@ export function parseFrontmatter(content: string): { data: Record<string, string
 }
 
 export function readDocFiles(): string[] {
-  try {
-    return readdirSync(getDocsDir()).filter((f) => f.endsWith('.mdx'));
-  } catch {
-    return [];
-  }
+  return docs.map((d) => (d.slug === '' ? 'index.mdx' : `${d.slug}.mdx`));
 }
 
 export function readDocFile(filename: string): string {
-  return readFileSync(join(getDocsDir(), filename), 'utf-8');
+  const slug = filename.replace(/\.mdx$/, '');
+  const normalized = slug === 'index' ? '' : slug;
+  const doc = docs.find((d) => d.slug === normalized);
+  if (!doc) throw new Error(`Doc not found: ${filename}`);
+  const fm = doc.title || doc.description ? `---\ntitle: ${doc.title}\ndescription: ${doc.description}\n---\n` : '';
+  return `${fm}${doc.body}`;
 }
 
 export function serveDocMarkdown(slug: string): { content: string; found: boolean } {
-  try {
-    const { body } = parseFrontmatter(readDocFile(`${slug}.mdx`));
-    return { content: body.trim(), found: true };
-  } catch {
-    return { content: '# Not Found\n\nThis documentation page does not exist.', found: false };
-  }
+  const normalized = slug === 'index' ? '' : slug;
+  const doc = docs.find((d) => d.slug === normalized);
+  if (!doc) return { content: '# Not Found\n\nThis documentation page does not exist.', found: false };
+  return { content: doc.body, found: true };
 }
