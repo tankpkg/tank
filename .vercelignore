@@ -8,12 +8,11 @@
 .claude
 node_modules
 infra
-docs
+/docs
 idd
-scripts
+/scripts
 Formula
 action
-build
 apps/web
 apps/cli/build
 apps/registry-legacy
