@@ -10,6 +10,9 @@ const settings = routeHead({
 });
 
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: (search.redirect as string) || ''
+  }),
   loader: async () => {
     const { providers, oidcProviderId } = await getAuthProviders();
     return { providers, oidcProviderId };
@@ -20,10 +23,15 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const { providers, oidcProviderId } = Route.useLoaderData();
+  const { redirect } = Route.useSearch();
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <LoginScreen enabledProviders={new Set(providers)} oidcProviderId={oidcProviderId} />
+      <LoginScreen
+        enabledProviders={new Set(providers)}
+        oidcProviderId={oidcProviderId}
+        redirect={redirect || undefined}
+      />
     </div>
   );
 }

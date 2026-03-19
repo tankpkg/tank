@@ -10,9 +10,10 @@ import { authClient } from '~/lib/auth/client';
 interface LoginScreenProps {
   enabledProviders: Set<string>;
   oidcProviderId: string;
+  redirect?: string;
 }
 
-export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenProps) {
+export function LoginScreen({ enabledProviders, oidcProviderId, redirect }: LoginScreenProps) {
   const githubEnabled = enabledProviders.has('github');
   const oidcEnabled = enabledProviders.has('oidc');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -28,7 +29,7 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
         const result = await authClient.signIn.email({
           email: value.email,
           password: value.password,
-          callbackURL: '/dashboard'
+          callbackURL: redirect || '/dashboard'
         });
         if (result.error) {
           setError(result.error.message || 'Failed to sign in');
@@ -38,7 +39,7 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
           name: value.name || value.email.split('@')[0] || 'User',
           email: value.email,
           password: value.password,
-          callbackURL: '/dashboard'
+          callbackURL: redirect || '/dashboard'
         });
         if (result.error) {
           setError(result.error.message || 'Failed to create account');
@@ -57,7 +58,7 @@ export function LoginScreen({ enabledProviders, oidcProviderId }: LoginScreenPro
     setError(null);
     setIsLoading(true);
     try {
-      const result = await authClient.signIn.social({ provider: 'github', callbackURL: '/dashboard' });
+      const result = await authClient.signIn.social({ provider: 'github', callbackURL: redirect || '/dashboard' });
       if (result.error) setError(result.error.message || 'Failed to sign in with GitHub');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');

@@ -6,9 +6,9 @@ export const Route = createFileRoute('/cli-login')({
   validateSearch: (search: Record<string, unknown>) => ({
     session: (search.session as string) || ''
   }),
-  beforeLoad: async () => {
+  beforeLoad: async ({ search }) => {
     const session = await getSession();
-    if (!session) throw redirect({ to: '/login' });
+    if (!session) throw redirect({ to: '/login', search: { redirect: `/cli-login?session=${search.session}` } });
   },
   head: () => ({ meta: [{ title: 'Authorize CLI | Tank' }] }),
   component: CliLoginPage
