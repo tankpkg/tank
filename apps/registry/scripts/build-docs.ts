@@ -43,5 +43,4 @@ for (const file of files) {
 }
 
 mkdirSync(dirname(OUTPUT_FILE), { recursive: true });
-writeFileSync(OUTPUT_FILE, JSON.stringify(docs));
-console.log(`Built ${docs.length} docs → src/generated/docs-bundle.json`);
+writeFileSync(OUTPUT_FILE, `${JSON.stringify(docs, null, 2)}\n`);

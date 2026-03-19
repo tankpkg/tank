@@ -22,6 +22,7 @@
       "!**/.source",
       "!**/.astro",
       "!**/.features-gen",
+      "!**/generated",
       "!**/test-results",
       "!e2e/bdd/e2e/bdd/reports/report.html",
       "!**/next-env.d.ts",
