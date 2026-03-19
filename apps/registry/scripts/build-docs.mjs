@@ -1,20 +1,15 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const CONTENT_DIR = join(import.meta.dirname, '../content/docs');
-const OUTPUT_FILE = join(import.meta.dirname, '../src/generated/docs-bundle.json');
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CONTENT_DIR = join(__dirname, '../content/docs');
+const OUTPUT_FILE = join(__dirname, '../src/generated/docs-bundle.json');
 
-interface RawDoc {
-  slug: string;
-  title: string;
-  description: string;
-  body: string;
-}
-
-function parseFrontmatter(content: string): { data: Record<string, string>; body: string } {
+function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) return { data: {}, body: content };
-  const data: Record<string, string> = {};
+  const data = {};
   for (const line of match[1].split('\n')) {
     const sep = line.indexOf(':');
     if (sep > 0) {
@@ -28,7 +23,7 @@ function parseFrontmatter(content: string): { data: Record<string, string>; body
 }
 
 const files = readdirSync(CONTENT_DIR).filter((f) => f.endsWith('.mdx'));
-const docs: RawDoc[] = [];
+const docs = [];
 
 for (const file of files) {
   const raw = readFileSync(join(CONTENT_DIR, file), 'utf-8');
