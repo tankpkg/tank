@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev --port 5555",
-    "build": "vite build",
+    "build": "bun run scripts/build-docs.ts && vite build",
+    "build:docs": "bun run scripts/build-docs.ts",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
