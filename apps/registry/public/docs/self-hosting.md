@@ -37,6 +37,17 @@ A self-hosted Tank deployment runs four core services:
 | **Database**         | PostgreSQL 17+        | Skills, versions, users, audit logs |
 | **Object storage**   | MinIO (S3-compatible) | Skill tarballs                      |
 
+## Deployment Modes
+
+Tank uses `TANK_MODE` to separate cloud and self-hosted behavior:
+
+| Mode            | Value             | Description                                                            |
+| --------------- | ----------------- | ---------------------------------------------------------------------- |
+| **Cloud**       | `cloud` (default) | Used for tankpkg.dev. Setup wizard disabled, all config from env vars. |
+| **Self-Hosted** | `selfhosted`      | Enables setup wizard, automatic DB migrations, filesystem storage.     |
+
+Docker Compose sets `TANK_MODE=selfhosted` automatically. If you deploy to Vercel or another PaaS, leave it unset (defaults to `cloud`).
+
 ## Prerequisites
 
 - **Docker** and **Docker Compose** (for Docker deployment)
@@ -47,15 +58,16 @@ A self-hosted Tank deployment runs four core services:
 
 ## Docker Compose Deployment
 
-### 1) Clone and Configure
+### 1) Download and Configure
+
+You don't need to clone the repository. Download the production compose file:
 
 ```bash
-git clone https://github.com/tankpkg/tank.git
-cd tank
-cp .env.example .env
+mkdir tank && cd tank
+curl -fsSL https://raw.githubusercontent.com/tankpkg/tank/main/infra/docker-compose.production.yml -o docker-compose.yml
 ```
 
-Edit `.env` with your values:
+Create your `.env` file:
 
 ```bash
 # Database
@@ -129,6 +141,7 @@ services:
       context: .
       dockerfile: apps/registry/Dockerfile
     environment:
+      - TANK_MODE=selfhosted
       - DATABASE_URL=${DATABASE_URL}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - PYTHON_API_URL=${PYTHON_API_URL}
@@ -184,6 +197,16 @@ docker compose exec web bun --filter=@tankpkg/web admin:bootstrap
 ```
 
 This promotes `FIRST_ADMIN_EMAIL` to the admin role. The user must sign in with GitHub OAuth first (creating their account), then run bootstrap.
+
+### Setup Wizard (Recommended)
+
+Instead of manually configuring environment variables, the setup wizard provides a guided 7-step process:
+
+1. Visit `http://localhost:3000/setup`
+2. Configure database, URL, storage, admin account, auth providers, and scanner
+3. All settings are encrypted and stored in the database
+
+The wizard is only available when `TANK_MODE=selfhosted` and no setup has been completed yet. After initial setup, the wizard is permanently locked (returns 403).
 
 ### 6) Health Verification
 
@@ -350,16 +373,26 @@ helm upgrade tank infra/helm/tank/ \
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret        |
 | `PYTHON_API_URL`       | Security scanner base URL             |
 
+### Self-Hosted Mode
+
+| Variable               | Description                  | Default |
+| ---------------------- | ---------------------------- | ------- |
+| `TANK_MODE`            | `cloud` or `selfhosted`      | `cloud` |
+| `AUTO_MIGRATE`         | Run DB migrations on startup | `false` |
+| `FIRST_ADMIN_EMAIL`    | Create admin on first boot   | —       |
+| `FIRST_ADMIN_PASSWORD` | Admin password (min 8 chars) | —       |
+
 ### Storage
 
-| Variable                | Description              | Default     |
-| ----------------------- | ------------------------ | ----------- |
-| `STORAGE_BACKEND`       | `supabase` or `s3`       | `supabase`  |
-| `S3_BUCKET`             | Bucket name for tarballs | —           |
-| `S3_ENDPOINT`           | S3 endpoint (for MinIO)  | —           |
-| `AWS_ACCESS_KEY_ID`     | S3 access key            | —           |
-| `AWS_SECRET_ACCESS_KEY` | S3 secret key            | —           |
-| `AWS_REGION`            | S3 region                | `us-east-1` |
+| Variable                | Description                       | Default              |
+| ----------------------- | --------------------------------- | -------------------- |
+| `STORAGE_BACKEND`       | `supabase`, `s3`, or `filesystem` | `supabase`           |
+| `STORAGE_FS_PATH`       | Local path for filesystem storage | `/app/data/packages` |
+| `S3_BUCKET`             | Bucket name for tarballs          | —                    |
+| `S3_ENDPOINT`           | S3 endpoint (for MinIO)           | —                    |
+| `AWS_ACCESS_KEY_ID`     | S3 access key                     | —                    |
+| `AWS_SECRET_ACCESS_KEY` | S3 secret key                     | —                    |
+| `AWS_REGION`            | S3 region                         | `us-east-1`          |
 
 ### Optional
 

@@ -1,210 +1,98 @@
 ---
 title: Self-Host in 15 Minutes
-description: Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, MinIO, and AI-powered security scanning.
+description: Get Tank running on your own infrastructure with Docker Compose — automated setup wizard, no manual configuration needed.
 ---
 
 # Self-Host in 15 Minutes
 
-Deploy Tank on your own infrastructure for complete control over your AI skill registry and security scanning.
-
-## Why Self-Host?
-
-- **Data sovereignty** — Skills and metadata never leave your infrastructure
-- **Air-gapped support** — Deploy in environments without internet access
-- **Custom policies** — Implement organization-specific security rules
-- **Compliance** — Meet regulatory requirements (SOC2, HIPAA, etc.)
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Your Infrastructure                       │
-│                                                              │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │  TanStack   │───▶│  PostgreSQL │    │    S3/MinIO │     │
-│  │   Web App   │    │   Database  │    │   Storage   │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-│         │                                                   │
-│         ▼                                                   │
-│  ┌─────────────┐                                           │
-│  │   FastAPI   │                                           │
-│  │   Security  │                                           │
-│  │   Scanner   │                                           │
-│  └─────────────┘                                           │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+Get a fully functional Tank registry running on your infrastructure with a single `docker compose up`.
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- 4GB RAM minimum (8GB recommended)
-- PostgreSQL 17+ (or use provided Docker config)
-- S3-compatible storage (or MinIO)
+- Docker Engine 24+ and Docker Compose v2
+- 4 GB RAM, 20 GB disk
+- A domain pointing to your server (or use localhost for testing)
 
-## Step 1: Clone and Configure
+## Quick Start
+
+### 1. Create a directory and download the compose file
 
 ```bash
-git clone https://github.com/tankpkg/tank.git
-cd tank
-cp .env.example .env
+mkdir tank && cd tank
+curl -fsSL https://raw.githubusercontent.com/tankpkg/tank/main/infra/docker-compose.production.yml -o docker-compose.yml
 ```
 
-Edit `.env` with your values:
+### 2. Create your environment file
 
 ```bash
-# Database
-DATABASE_URL=postgresql://tank:password@localhost:5432/tank
-
-# Storage (choose one)
-STORAGE_BACKEND=s3
-S3_ENDPOINT=http://localhost:9000
-S3_ACCESS_KEY=minioadmin
-S3_SECRET_KEY=minioadmin
-S3_BUCKET=tank-skills
-
-# Auth
-APP_URL=https://tank.yourcompany.com
+cat > .env << 'EOF'
+# Required — generate a unique secret
 BETTER_AUTH_SECRET=$(openssl rand -base64 32)
-GITHUB_CLIENT_ID=your-github-oauth-id
-GITHUB_CLIENT_SECRET=your-github-oauth-secret
 
-# Admin bootstrap
-FIRST_ADMIN_EMAIL=admin@yourcompany.com
+# Database (uses bundled PostgreSQL)
+DATABASE_URL=postgresql://tank:tank@postgres:5432/tank
 
-# Security scanner
+# Your registry URL (change for production)
+APP_URL=http://localhost:3000
+
+# Scanner
 PYTHON_API_URL=http://scanner:8000
+
+# Headless admin bootstrap (optional — or use the web wizard)
+# FIRST_ADMIN_EMAIL=admin@yourcompany.com
+# FIRST_ADMIN_PASSWORD=changeme123
+EOF
 ```
 
-## Step 2: Start Services
+> **Tip**: For automated deployments without the web wizard, uncomment `FIRST_ADMIN_EMAIL` and `FIRST_ADMIN_PASSWORD`.
 
-Using Docker Compose:
+### 3. Start everything
 
 ```bash
 docker compose up -d
 ```
 
-This starts:
+This starts PostgreSQL, MinIO (storage), the security scanner, and the Tank web app. Database tables are created automatically on first boot.
 
-- TanStack Start web application (port 3000)
-- PostgreSQL database (port 5432)
-- MinIO S3-compatible storage (port 9000)
-- Python security scanner (port 8000)
+### 4. Open the Setup Wizard
 
-**Optional — Local LLM analysis:**
+Visit `http://localhost:3000/setup` in your browser. The wizard walks you through:
 
-```bash
-# Enable Ollama for local AI-powered security analysis
-docker compose --profile llm-local up -d
-```
+1. **Database** — connection is pre-configured from your `.env`
+2. **URL** — confirm your registry's public URL
+3. **Storage** — choose MinIO (default), S3, or local filesystem
+4. **Admin Account** — create your first admin user
+5. **Authentication** — optionally configure GitHub OAuth or OIDC SSO
+6. **Scanner** — configure LLM for enhanced security analysis (optional)
+7. **Complete** — save configuration and start using Tank
 
-## Step 3: Run Database Migrations
-
-```bash
-docker compose exec web bun --filter=@tankpkg/web drizzle-kit push
-```
-
-## Step 4: Create Admin User
+### 5. Verify
 
 ```bash
-docker compose exec web bun --filter=@tankpkg/web admin:bootstrap
-```
-
-Promotes `FIRST_ADMIN_EMAIL` to admin role. The user must sign in with GitHub OAuth first to create their account, then you run bootstrap.
-
-## Step 5: Configure OIDC SSO (Optional)
-
-For enterprise single sign-on, add to `.env`:
-
-```bash
-OIDC_ISSUER=https://sso.yourcompany.com
-OIDC_CLIENT_ID=tank-client
-OIDC_CLIENT_SECRET=your-oidc-secret
-```
-
-Then restart the web service:
-
-```bash
-docker compose restart web
-```
-
-## Step 6: Verify Installation
-
-```bash
-# Check all services are running
-docker compose ps
-
-# Test the API
+# Health check
 curl http://localhost:3000/api/health
-curl http://localhost:3000/api/v1/skills
+# → {"status":"ok"}
 
-# Test security scanner
-curl http://localhost:8000/health
+# Point your CLI to your instance
+tank login --registry http://localhost:3000
 ```
 
-## Kubernetes (Helm) Quick Start
+## What's Next
 
-For Kubernetes deployments, use the Helm chart at `helm/tank/`:
+- **Add GitHub OAuth**: Create a [GitHub OAuth App](https://github.com/settings/developers) with callback URL `https://your-domain/api/auth/callback/github`
+- **Add OIDC SSO**: Configure your identity provider in the setup wizard or via env vars
+- **Production hardening**: See the full [Self-Hosting Guide](/docs/self-hosting) for TLS, backups, monitoring, and Kubernetes deployment
+- **Local LLM**: Add `--profile llm-local` to use Ollama for security analysis without external API calls
 
-```bash
-# Update chart dependencies (PostgreSQL, MinIO)
-helm dependency update helm/tank/
+## Headless Mode (CI/CD)
 
-# Install into the tank namespace
-helm dependency update helm/tank/ && helm install tank helm/tank/ \
-  --namespace tank \
-  --create-namespace \
-  --set secrets.betterAuthSecret="$(openssl rand -base64 32)" \
-  --set dbMigration.force=true
-```
-
-After install, configure your ingress and DNS. See the [full self-hosting guide](/docs/self-hosting) for Helm values reference and production configuration.
-
-## Production Checklist
-
-- [ ] Change default MinIO credentials (`minioadmin`/`minioadmin`)
-- [ ] Set strong `BETTER_AUTH_SECRET` (min 32 characters, `openssl rand -base64 32`)
-- [ ] Configure TLS/SSL certificates
-- [ ] Set up database backups (daily minimum)
-- [ ] Configure log aggregation (Loki + Grafana included)
-- [ ] Review firewall rules — only expose port 3000 publicly
-- [ ] Set token expiry policies for API keys
-- [ ] Configure `FIRST_ADMIN_EMAIL` and bootstrap before going live
-
-## Monitoring
-
-Access the included observability stack:
-
-- **Grafana**: `http://localhost:3001` (admin/admin — change on first login)
-- **Loki**: Log aggregation (pre-configured)
-- **Prometheus**: Metrics collection
-
-Default dashboards:
-
-- Tank API performance
-- Security scan latency
-- Skill publish/download rates
-
-## Upgrading
+For fully automated deployments without the wizard:
 
 ```bash
-git pull origin main
-docker compose pull
+FIRST_ADMIN_EMAIL=admin@co.com \
+FIRST_ADMIN_PASSWORD=securepassword \
+AUTO_MIGRATE=true \
 docker compose up -d
 ```
 
-Migrations run automatically on startup.
-
-**For Helm upgrades:**
-
-```bash
-helm upgrade tank helm/tank/ \
-  --namespace tank \
-  --reuse-values
-```
-
-## Support
-
-- **Documentation**: [Full self-hosting guide](/docs/self-hosting)
-- **Community**: [GitHub Discussions](https://github.com/tankpkg/tank/discussions)
-- **Enterprise support**: enterprise@tankpkg.dev
+This creates the admin user and skips the setup wizard entirely.
