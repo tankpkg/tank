@@ -1,10 +1,9 @@
 name: Create Release
 
-# Manually trigger a release. This:
-# 1. Merges main → stable (updates production)
-# 2. Bumps version in package.json files
-# 3. Creates and pushes a version tag
-# 4. The tag push triggers release.yml (CLI binaries + npm) and publish.yml (Docker + Helm)
+# 1. Creates release/vX.Y.Z branch (permanent source snapshot)
+# 2. Merges main → stable (updates production Vercel)
+# 3. Bumps version in package.json files
+# 4. Creates vX.Y.Z tag → triggers release.yml (CLI/npm) + publish.yml (Docker/Helm)
 
 on:
   workflow_dispatch:
@@ -52,17 +51,18 @@ jobs:
             exit 1
           fi
 
-      - name: Merge main → stable
-        if: ${{ !inputs.skip_merge }}
+      - name: Create release branch (permanent snapshot)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin main:refs/heads/release/$TAG
 
+      - name: Merge main → stable
+        if: ${{ !inputs.skip_merge }}
+        run: |
           git checkout stable
           git merge main --no-edit -m "release: merge main → stable for $TAG"
           git push origin stable
-
-          # Switch back to main for tagging
           git checkout main
 
       - name: Bump version in package.json files
@@ -108,13 +108,14 @@ jobs:
           echo "- **publish.yml**: Docker images → ghcr.io → Helm chart" >> $GITHUB_SUMMARY
           echo "" >> $GITHUB_SUMMARY
           echo "### What happened:" >> $GITHUB_SUMMARY
+          echo "1. ✅ Created release/$TAG branch (permanent snapshot)" >> $GITHUB_SUMMARY
           if [ "${{ inputs.skip_merge }}" = "false" ]; then
-            echo "1. ✅ Merged main → stable" >> $GITHUB_SUMMARY
+            echo "2. ✅ Merged main → stable" >> $GITHUB_SUMMARY
           else
-            echo "1. ⏭️ Skipped main → stable merge" >> $GITHUB_SUMMARY
+            echo "2. ⏭️ Skipped main → stable merge" >> $GITHUB_SUMMARY
           fi
-          echo "2. ✅ Bumped version to $VERSION" >> $GITHUB_SUMMARY
-          echo "3. ✅ Created tag $TAG" >> $GITHUB_SUMMARY
+          echo "3. ✅ Bumped version to $VERSION" >> $GITHUB_SUMMARY
+          echo "4. ✅ Created tag $TAG" >> $GITHUB_SUMMARY
           echo "" >> $GITHUB_SUMMARY
           echo "### Monitor:" >> $GITHUB_SUMMARY
           echo "- [Release workflow](https://github.com/${{ github.repository }}/actions/workflows/release.yml)" >> $GITHUB_SUMMARY
