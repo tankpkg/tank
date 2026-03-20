@@ -152,7 +152,6 @@ export const cliAuthRoutes = new Hono()
       }
 
       const apiKeyResult = await auth.api.createApiKey({
-        headers: c.req.raw.headers,
         body: {
           name: 'CLI Token',
           userId: session.userId,

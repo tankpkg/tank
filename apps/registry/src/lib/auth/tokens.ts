@@ -37,7 +37,7 @@ export const listTokensFn = createServerFn({ method: 'GET' }).handler(async () =
 export const createTokenFn = createServerFn({ method: 'POST' })
   .inputValidator((input: { name: string; expiresInDays?: number; scopes?: string[] }) => input)
   .handler(async ({ data }) => {
-    const { session, headers } = await requireSession();
+    const { session } = await requireSession();
     const { name, expiresInDays, scopes } = data;
 
     const normalizedScopes = normalizeScopes(scopes);
@@ -47,7 +47,6 @@ export const createTokenFn = createServerFn({ method: 'POST' })
         : 90;
 
     const result = await auth.api.createApiKey({
-      headers,
       body: {
         name,
         userId: session.user.id,

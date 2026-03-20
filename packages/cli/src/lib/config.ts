@@ -9,7 +9,7 @@ export interface TankConfig {
 }
 
 const DEFAULT_CONFIG: TankConfig = {
-  registry: 'https://tankpkg.dev'
+  registry: 'https://www.tankpkg.dev'
 };
 
 /**

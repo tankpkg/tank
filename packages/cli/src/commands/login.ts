@@ -33,25 +33,37 @@ export async function loginCommand(options: LoginOptions = {}): Promise<void> {
   // Step 2: Start auth session
   logger.info('Starting login...');
 
-  const startRes = await fetch(`${baseUrl}/api/v1/cli-auth/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state })
-  });
+  let authUrl: string;
+  let sessionCode: string;
 
-  if (!startRes.ok) {
-    const body = (await startRes.json().catch(() => null)) as { error?: string } | null;
-    authFlowLog.error({ status: startRes.status, error: body?.error }, 'Start request failed');
-    throw new Error(`Failed to start auth session: ${body?.error ?? startRes.statusText}`);
+  try {
+    const startRes = await fetch(`${baseUrl}/api/v1/cli-auth/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state })
+    });
+
+    if (!startRes.ok) {
+      const body = (await startRes.json().catch(() => null)) as { error?: string } | null;
+      authFlowLog.error({ status: startRes.status, error: body?.error }, 'Start request failed');
+      throw new Error(`Failed to start auth session: ${body?.error ?? startRes.statusText}`);
+    }
+
+    authFlowLog.info({ ok: startRes.ok, status: startRes.status }, 'Start response received');
+
+    const startData = (await startRes.json()) as { authUrl: string; sessionCode: string };
+    authUrl = startData.authUrl;
+    sessionCode = startData.sessionCode;
+    authFlowLog.info({ authUrl, sessionCode: `${sessionCode.slice(0, 8)}...` }, 'Session created, opening browser');
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Failed to start auth session:')) {
+      throw err;
+    }
+    authFlowLog.error({ error: err instanceof Error ? err.message : String(err) }, 'Start request failed');
+    throw new Error(
+      `Could not reach registry at ${baseUrl}. Check your internet connection or registry URL.\n  Error: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
-
-  authFlowLog.info({ ok: startRes.ok, status: startRes.status }, 'Start response received');
-
-  const { authUrl, sessionCode } = (await startRes.json()) as {
-    authUrl: string;
-    sessionCode: string;
-  };
-  authFlowLog.info({ authUrl, sessionCode: `${sessionCode.slice(0, 8)}...` }, 'Session created, opening browser');
 
   // Step 3: Open browser
   try {

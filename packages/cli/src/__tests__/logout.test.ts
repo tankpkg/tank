@@ -36,7 +36,7 @@ describe('logout', () => {
     expect(config.token).toBeUndefined();
     expect(config.user).toBeUndefined();
     // Registry should still exist (default)
-    expect(config.registry).toBe('https://tankpkg.dev');
+    expect(config.registry).toBe('https://www.tankpkg.dev');
   });
 
   it('prints "Not logged in" when no token exists', async () => {

@@ -51,7 +51,7 @@ describe('config', () => {
     it('returns defaults when config file does not exist', () => {
       const config = getConfig(tmpDir);
       expect(config).toEqual({
-        registry: 'https://tankpkg.dev'
+        registry: 'https://www.tankpkg.dev'
       });
     });
 
@@ -86,7 +86,7 @@ describe('config', () => {
       fs.writeFileSync(path.join(tmpDir, 'config.json'), JSON.stringify({ token: 'abc123' }));
       const config = getConfig(tmpDir);
       expect(config.token).toBe('abc123');
-      expect(config.registry).toBe('https://tankpkg.dev');
+      expect(config.registry).toBe('https://www.tankpkg.dev');
     });
   });
 
@@ -98,7 +98,7 @@ describe('config', () => {
       expect(fs.existsSync(configDir)).toBe(true);
       const config = getConfig(configDir);
       expect(config.token).toBe('mytoken');
-      expect(config.registry).toBe('https://tankpkg.dev');
+      expect(config.registry).toBe('https://www.tankpkg.dev');
     });
 
     it('merges with existing config', () => {
