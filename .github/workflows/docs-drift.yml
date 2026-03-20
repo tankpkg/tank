@@ -41,6 +41,9 @@ jobs:
       - name: Generate llms.txt
         run: node scripts/gen-llms-txt.mjs
 
+      - name: Format generated docs
+        run: npx prettier --write apps/registry/public/docs/cli.md apps/registry/public/docs/api.md
+
       - name: Check for uncommitted changes
         run: |
           git diff --exit-code apps/registry/public/docs/cli.md || (echo "CLI docs are out of sync. Run: node scripts/gen-cli-docs.mjs" && exit 1)
