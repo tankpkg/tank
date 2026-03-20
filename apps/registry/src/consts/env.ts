@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const zStr = z.string().trim().min(1);
 const zOptStr = z.string().trim().optional().default('');
-const zUrl = z.string().url();
+const zUrl = z.url();
 
 export const zEnv = z.object({
   // ── Core ──
@@ -56,6 +56,9 @@ export const zEnv = z.object({
   // ── External Services ──
   PYTHON_API_URL: zOptStr,
   LOKI_URL: zUrl.default('http://localhost:3100'),
+
+  // ── KV Store (Redis) ──
+  REDIS_URL: zOptStr,
 
   // ── Admin ──
   FIRST_ADMIN_EMAIL: zOptStr
