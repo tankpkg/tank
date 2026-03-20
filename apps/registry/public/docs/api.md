@@ -43,8 +43,7 @@ All Tank API keys begin with `tank_`. Tokens without this prefix are rejected wi
 | `skills:admin`   | Administrative actions (moderation, user management) |
 
 <Callout type="info">
-  Tokens inherit the minimum scope needed. A token with only `skills:read` cannot publish; you will receive a `403` if
-  you try.
+  Tokens inherit the minimum scope needed. A token with only `skills:read` cannot publish; you will receive a `403` if you try.
 </Callout>
 
 ---
@@ -403,9 +402,7 @@ After uploading the tarball to the `uploadUrl` returned by `POST /api/v1/skills`
 ```
 
 <Callout type="info">
-  The security scan runs synchronously during confirmation. The `verdict` in the response reflects the result of the
-  6-stage pipeline. A `FAIL` verdict does not block publication but is prominently displayed on the skill page and in
-  `tank audit` output.
+  The security scan runs synchronously during confirmation. The `verdict` in the response reflects the result of the 6-stage pipeline. A `FAIL` verdict does not block publication but is prominently displayed on the skill page and in `tank audit` output.
 </Callout>
 
 **Example**
@@ -560,8 +557,7 @@ curl -X POST https://tankpkg.dev/api/v1/scan \
 | `stage5` | Supply chain | Dependency tree analysis, known-malicious package hashes                                                  |
 
 <Callout type="info">
-  Each stage is independent. A failure in one stage does not prevent subsequent stages from running. All findings are
-  aggregated into the final verdict.
+  Each stage is independent. A failure in one stage does not prevent subsequent stages from running. All findings are aggregated into the final verdict.
 </Callout>
 
 ---
@@ -652,8 +648,7 @@ Exchanges an authorized poll token for a permanent API key. The CLI polls this e
 ```
 
 <Callout type="info">
-  Poll tokens have a 5-minute TTL and are single-use. Once exchanged successfully, the token is invalidated. The CLI
-  (`tank login`) handles polling and backoff automatically.
+  Poll tokens have a 5-minute TTL and are single-use. Once exchanged successfully, the token is invalidated. The CLI (`tank login`) handles polling and backoff automatically.
 </Callout>
 
 **Example**

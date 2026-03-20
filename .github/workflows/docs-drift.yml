@@ -5,13 +5,13 @@ on:
     paths:
       - "packages/cli/src/**/*.ts"
       - "apps/registry/src/api/**/*.ts"
-      - "apps/registry/content/**"
+      - "apps/registry/public/docs/**"
   push:
     branches: [main]
     paths:
       - "packages/cli/src/**/*.ts"
       - "apps/registry/src/api/**/*.ts"
-      - "apps/registry/content/**"
+      - "apps/registry/public/docs/**"
 
 jobs:
   check-docs-sync:
@@ -45,5 +45,6 @@ jobs:
         run: |
           git diff --exit-code apps/registry/public/docs/cli.md || (echo "CLI docs are out of sync. Run: node scripts/gen-cli-docs.mjs" && exit 1)
           git diff --exit-code apps/registry/public/docs/api.md || (echo "API docs are out of sync. Run: node scripts/gen-api-docs.mjs" && exit 1)
-          git diff --exit-code apps/registry/content/llms.txt || (echo "llms.txt is out of sync. Run: node scripts/gen-llms-txt.mjs" && exit 1)
+          git diff --exit-code apps/registry/public/llms.txt || (echo "llms.txt is out of sync. Run: node scripts/gen-llms-txt.mjs" && exit 1)
+          git diff --exit-code apps/registry/public/llms-full.txt || (echo "llms-full.txt is out of sync. Run: node scripts/gen-llms-txt.mjs" && exit 1)
           echo "All generated docs are in sync"
