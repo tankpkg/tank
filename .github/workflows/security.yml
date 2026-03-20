@@ -123,12 +123,10 @@ jobs:
         run: |
           echo "Checking that all required env vars are documented..."
 
-          # Extract env vars from code
-          REQUIRED_VARS=$(grep -rh "process\.env\.[A-Z_]" apps/registry/src --include="*.ts" 2>/dev/null | \
-            grep -oE "process\.env\.[A-Z_]+" | \
-            sort -u | \
-            sed 's/process\.env\.//' | \
-            grep -v "NODE_ENV\|NEXT_PUBLIC_\|VERCEL\|CI")
+          # Extract env vars from Zod schema in env.ts (process.env is passed as object, not accessed individually)
+          REQUIRED_VARS=$(grep -E "^  [A-Z_]+:" apps/registry/src/consts/env.ts 2>/dev/null | \
+            grep -oE "[A-Z][A-Z_]+:" | sed 's/://' | sort -u | \
+            grep -v "NODE_ENV\|NEXT_PUBLIC_\|VERCEL\|CI" || true)
 
           # Check they're in .env.example.onprem
           for var in $REQUIRED_VARS; do
