@@ -1,0 +1,81 @@
+name: CLI Nightly
+
+on:
+  schedule:
+    - cron: "30 4 * * *" # 4:30am UTC daily (after Docker nightly)
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/cli/**"
+      - "packages/mcp-server/**"
+      - "packages/internals-schemas/**"
+      - "packages/internals-helpers/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-nightly:
+    name: publish-nightly
+    runs-on: ubuntu-22.04
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Set nightly version
+        run: |
+          # Use date-based version: 0.0.0-nightly.YYYYMMDD.SHA
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          NIGHTLY_VERSION="0.0.0-nightly.$(date -u +%Y%m%d).${SHORT_SHA}"
+          echo "NIGHTLY_VERSION=${NIGHTLY_VERSION}" >> $GITHUB_ENV
+          echo "Publishing nightly version: ${NIGHTLY_VERSION}"
+
+          # Inject nightly version into package.json files
+          node -e "
+            const fs = require('fs');
+            for (const pkg of ['packages/cli/package.json', 'packages/mcp-server/package.json']) {
+              const p = JSON.parse(fs.readFileSync(pkg, 'utf8'));
+              p.version = '${NIGHTLY_VERSION}';
+              fs.writeFileSync(pkg, JSON.stringify(p, null, 2) + '\n');
+            }
+          "
+
+      - name: Build packages
+        run: |
+          bun --filter @internals/schemas run build
+          bun --filter @internals/helpers run build
+          bun --filter @tankpkg/cli run build
+          bun --filter @tankpkg/mcp-server run build
+
+      - name: Publish CLI to npm (nightly tag)
+        if: ${{ env.NPM_TOKEN != '' }}
+        working-directory: packages/cli
+        run: npm publish --no-git-checks --access public --tag nightly
+        env:
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+
+      - name: Publish MCP server to npm (nightly tag)
+        if: ${{ env.NPM_TOKEN != '' }}
+        working-directory: packages/mcp-server
+        run: npm publish --no-git-checks --access public --tag nightly
+        env:
+          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
