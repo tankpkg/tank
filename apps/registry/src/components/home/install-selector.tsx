@@ -1,17 +1,12 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 import { INSTALL_METHODS } from '~/consts/brand';
+import { useCopyToClipboard } from '~/hooks/use-copy-to-clipboard';
 
 export function InstallSelector() {
   const [activeMethod, setActiveMethod] = useState(0);
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(INSTALL_METHODS[activeMethod].command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [activeMethod]);
+  const { copied, copy } = useCopyToClipboard();
 
   return (
     <div className="w-full max-w-[520px] rounded border border-border bg-card/50 backdrop-blur-sm overflow-hidden">
@@ -50,7 +45,7 @@ export function InstallSelector() {
         </div>
         <button
           type="button"
-          onClick={handleCopy}
+          onClick={() => copy(INSTALL_METHODS[activeMethod].command)}
           className="ml-3 shrink-0 text-muted-foreground/50 hover:text-tank transition-colors duration-150"
           title="Copy to clipboard">
           <AnimatePresence mode="wait">

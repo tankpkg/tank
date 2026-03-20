@@ -70,6 +70,10 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
           starCount={data.starCount}
           downloadCount={data.downloadCount}
           visibility={data.visibility}
+          isStarred={data.isStarred}
+          description={data.description}
+          hasReadme={!!readmeContent}
+          hasPermissionsDeclared={!!permissions}
           publisher={data.publisher}
           latestVersion={data.latestVersion}
           license={license}

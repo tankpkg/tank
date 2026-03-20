@@ -1,6 +1,11 @@
 import { Star } from 'lucide-react';
 
+import { DownloadButton } from '~/components/skills/download-button';
 import { InstallCommand } from '~/components/skills/install-command';
+import { QualityChecks } from '~/components/skills/quality-checks';
+import { StarButton } from '~/components/skills/star-button';
+import { TrustBadge } from '~/components/skills/trust-badge';
+import { VerifiedPublisherBadge } from '~/components/skills/verified-publisher-badge';
 import { Separator } from '~/components/ui/separator';
 import { formatSize, timeAgo } from '~/lib/format';
 import { getScoreTextClass } from '~/lib/score';
@@ -19,7 +24,11 @@ export interface SkillSidebarProps {
   starCount: number;
   downloadCount: number;
   visibility: string;
-  publisher: { name: string; githubUsername: string | null };
+  isStarred: boolean;
+  description: string | null;
+  hasReadme: boolean;
+  hasPermissionsDeclared: boolean;
+  publisher: { name: string; githubUsername: string | null; emailVerified?: boolean };
   latestVersion: {
     version: string;
     auditScore: number | null;
@@ -39,6 +48,10 @@ export function SkillSidebar({
   starCount,
   downloadCount,
   visibility,
+  isStarred,
+  description,
+  hasReadme,
+  hasPermissionsDeclared,
   publisher,
   latestVersion,
   license,
@@ -48,6 +61,29 @@ export function SkillSidebar({
 }: SkillSidebarProps) {
   return (
     <aside className="w-72 shrink-0 space-y-4 sticky top-4">
+      <div className="flex items-center gap-2">
+        <StarButton skillName={name} initialStarred={isStarred} initialCount={starCount} />
+        {latestVersion && <DownloadButton skillName={name} version={latestVersion.version} />}
+      </div>
+
+      {publisher && (
+        <VerifiedPublisherBadge
+          hasVerifiedEmail={publisher.emailVerified ?? false}
+          hasGithubUsername={!!publisher.githubUsername}
+        />
+      )}
+
+      {scanDetails && (
+        <TrustBadge
+          verdict={scanDetails.verdict}
+          criticalCount={scanDetails.criticalCount}
+          highCount={scanDetails.highCount}
+          mediumCount={scanDetails.mediumCount}
+        />
+      )}
+
+      <Separator />
+
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Install</h3>
         <InstallCommand name={name} />
@@ -221,6 +257,18 @@ export function SkillSidebar({
           </div>
         </>
       )}
+
+      <Separator />
+      <div>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Quality</h3>
+        <QualityChecks
+          hasReadme={hasReadme}
+          hasDescription={!!description}
+          hasRepository={!!repositoryUrl}
+          hasScanComplete={hasSecurityData}
+          hasPermissions={hasPermissionsDeclared}
+        />
+      </div>
     </aside>
   );
 }

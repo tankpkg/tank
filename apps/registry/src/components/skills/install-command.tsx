@@ -1,22 +1,12 @@
-import { useState } from 'react';
-
 import { Button } from '~/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
+import { useCopyToClipboard } from '~/hooks/use-copy-to-clipboard';
 
 export function InstallCommand({ name }: { name: string }) {
   const projectCommand = `tank install ${name}`;
   const globalCommand = `tank install -g ${name}`;
-  const [copied, setCopied] = useState<'project' | 'global' | null>(null);
-
-  const handleCopy = async (command: string, target: 'project' | 'global') => {
-    try {
-      await navigator.clipboard.writeText(command);
-      setCopied(target);
-      setTimeout(() => setCopied(null), 2000);
-    } catch {
-      // Clipboard API not available
-    }
-  };
+  const project = useCopyToClipboard();
+  const global = useCopyToClipboard();
 
   return (
     <Tabs defaultValue="project" className="w-full">
@@ -34,12 +24,8 @@ export function InstallCommand({ name }: { name: string }) {
             <code className="text-sm font-mono select-all text-foreground bg-background/50 px-2 py-1 rounded">
               {projectCommand}
             </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleCopy(projectCommand, 'project')}
-              className="shrink-0">
-              {copied === 'project' ? 'Copied!' : 'Copy'}
+            <Button variant="ghost" size="sm" onClick={() => project.copy(projectCommand)} className="shrink-0">
+              {project.copied ? 'Copied!' : 'Copy'}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">Installs to project and links to your AI agents</p>
@@ -51,8 +37,8 @@ export function InstallCommand({ name }: { name: string }) {
             <code className="text-sm font-mono select-all text-foreground bg-background/50 px-2 py-1 rounded">
               {globalCommand}
             </code>
-            <Button variant="ghost" size="sm" onClick={() => handleCopy(globalCommand, 'global')} className="shrink-0">
-              {copied === 'global' ? 'Copied!' : 'Copy'}
+            <Button variant="ghost" size="sm" onClick={() => global.copy(globalCommand)} className="shrink-0">
+              {global.copied ? 'Copied!' : 'Copy'}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">Installs globally — available to all projects and agents</p>
