@@ -200,6 +200,7 @@ bump VERSION:
 # just test bdd         - system BDD + browser BDD
 # just test bdd-system  - Vitest executable behavior specs
 # just test bdd-browser - Playwright browser behavior specs
+# just test e2e-onprem  - on-prem Docker Compose E2E (needs running stack)
 [group('test')]
 test target='all':
     #!/usr/bin/env bash
@@ -216,8 +217,9 @@ test target='all':
         bdd-system) bun run --filter @internal/bdd test:system ;;
         bdd-browser) bunx bddgen test -c bdd/playwright.config.ts && bunx playwright test -c bdd/playwright.config.ts ;;
         bdd)     bun run --filter @internal/bdd test:system && bunx bddgen test -c bdd/playwright.config.ts && bunx playwright test -c bdd/playwright.config.ts ;;
+        e2e-onprem) BASE="${BASE:-http://localhost:3000}" bash e2e/onprem-e2e.sh ;;
         all)     bun turbo test ;;
-        *) echo "Unknown target: {{target}}. Use: registry, registry-e2e, cli, mcp, internals-schemas, internals-helpers, scanner, e2e, bdd, bdd-system, bdd-browser, all" && exit 1 ;;
+        *) echo "Unknown target: {{target}}. Use: registry, registry-e2e, cli, mcp, internals-schemas, internals-helpers, scanner, e2e, e2e-onprem, bdd, bdd-system, bdd-browser, all" && exit 1 ;;
     esac
 
 # just db <action> - database and data operations
