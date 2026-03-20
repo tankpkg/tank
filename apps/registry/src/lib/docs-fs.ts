@@ -1,17 +1,8 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
-function resolveDocsDir(): string {
-  const devPath = join(process.cwd(), 'public', 'docs');
-  if (existsSync(devPath)) return devPath;
-
-  const prodPath = join(process.cwd(), '.output', 'public', 'docs');
-  if (existsSync(prodPath)) return prodPath;
-
-  return devPath;
-}
-
-const DOCS_DIR = resolveDocsDir();
+const rawDocs = import.meta.glob('/public/docs/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true
+}) as Record<string, string>;
 
 export function parseFrontmatter(content: string): { data: Record<string, string>; body: string } {
   const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -33,19 +24,21 @@ export function parseFrontmatter(content: string): { data: Record<string, string
 }
 
 export function readDocFiles(): string[] {
-  if (!existsSync(DOCS_DIR)) return [];
-  return readdirSync(DOCS_DIR).filter((f) => f.endsWith('.md'));
+  return Object.keys(rawDocs)
+    .map((path) => path.split('/').pop()!)
+    .filter((f) => f.endsWith('.md'));
 }
 
 export function readDocFile(filename: string): string {
-  return readFileSync(join(DOCS_DIR, filename), 'utf-8');
+  const key = Object.keys(rawDocs).find((k) => k.endsWith(`/${filename}`));
+  if (!key) return '';
+  return rawDocs[key];
 }
 
 export function serveDocMarkdown(slug: string): { content: string; found: boolean } {
   const filename = `${slug}.md`;
-  const filepath = join(DOCS_DIR, filename);
-  if (!existsSync(filepath)) return { content: '# Not Found\n\nThis documentation page does not exist.', found: false };
-  const raw = readFileSync(filepath, 'utf-8');
-  const { body } = parseFrontmatter(raw);
+  const content = readDocFile(filename);
+  if (!content) return { content: '# Not Found\n\nThis documentation page does not exist.', found: false };
+  const { body } = parseFrontmatter(content);
   return { content: body, found: true };
 }

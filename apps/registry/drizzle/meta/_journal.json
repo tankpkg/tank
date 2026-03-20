@@ -85,6 +85,13 @@
       "when": 1772500000000,
       "tag": "0011_add_llm_analysis",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1774000000000,
+      "tag": "0012_add_apikey_reference_config",
+      "breakpoints": true
     }
   ]
 }

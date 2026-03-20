@@ -7,6 +7,17 @@ import 'vanilla-cookieconsent/dist/cookieconsent.css';
 
 export function CookieConsentManager() {
   useEffect(() => {
+    const syncDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      document.documentElement.classList.toggle('cc--darkmode', isDark);
+    };
+    syncDarkMode();
+    const observer = new MutationObserver(syncDarkMode);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     initPostHog();
 
     CookieConsent.run({

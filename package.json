@@ -2,7 +2,7 @@
   "name": "tank",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/registry",
     "packages/*",
     "bdd",
     "e2e"
