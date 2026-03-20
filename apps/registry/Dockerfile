@@ -12,6 +12,7 @@ COPY apps/registry/package.json ./apps/registry/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY bdd/package.json ./bdd/
+COPY e2e/package.json ./e2e/
 
 RUN bun install --frozen-lockfile
 
