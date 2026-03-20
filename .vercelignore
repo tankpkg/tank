@@ -15,6 +15,6 @@ Formula
 action
 apps/web
 apps/cli/build
-apps/registry-legacy
+
 apps/python-api
 packages/web

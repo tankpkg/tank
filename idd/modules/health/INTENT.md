@@ -6,14 +6,14 @@
 
 **Consumers:** Load balancers, Kubernetes liveness probes, uptime monitoring (e.g., Better Uptime), ops dashboards.
 
-**Single source of truth:** `apps/registry-legacy/app/api/health/route.ts`.
+**Single source of truth:** `apps/registry/src/api/app.ts` (inline health route).
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/registry-legacy/app/api/health/route.ts   # GET — parallel dependency checks, aggregated status
+apps/registry/src/api/app.ts   # GET /api/health — inline health check route
 ```
 
 ---

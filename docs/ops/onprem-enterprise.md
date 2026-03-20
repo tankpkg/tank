@@ -75,8 +75,8 @@ Required:
 
 This repo does not auto-run DB migrations on app startup.
 
-- Generate migration during development: `cd apps/registry-legacy && bunx drizzle-kit generate`
-- Apply schema for deployment/init: `cd apps/registry-legacy && bunx drizzle-kit push --force`
+- Generate migration during development: `cd apps/registry && bunx drizzle-kit generate`
+- Apply schema for deployment/init: `cd apps/registry && bunx drizzle-kit push --force`
 
 ## Enterprise Security Checklist
 

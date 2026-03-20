@@ -29,7 +29,7 @@ Planned, not implemented here:
 
 ## Permission Escalation
 
-Publish-time escalation checks live in `apps/registry-legacy/lib/permission-escalation.ts` (and `packages/internals-helpers/src/permission-escalation.ts`).
+Publish-time escalation checks live in `apps/registry/src/lib/skills/permission-escalation.ts` (and `packages/internals-helpers/src/permission-escalation.ts`).
 
 - PATCH bump: reject any new permissions
 - MINOR bump: reject dangerous additions (`network.outbound`, `subprocess`)

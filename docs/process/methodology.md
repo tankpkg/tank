@@ -31,7 +31,6 @@ BDD lives in `bdd/`.
 
 - `bdd/features/system/` + `bdd/steps/system/` for CLI, API, MCP, scanner, and admin behavior
 - `bdd/features/browser/shared/` for cross-app browser behavior
-- `bdd/features/browser/next/` for Next-only browser behavior
 - `bdd/features/browser/tanstack/` for TanStack-only browser behavior
 - `bdd/support/`, `bdd/interactions/`, `bdd/qa/`
 
@@ -70,7 +69,7 @@ E2E lives in `e2e/`.
 - shared helpers in `e2e/helpers/`
 - target contract in `e2e/targets.ts`
 
-Execution stays sequential for order-dependent flows. Use `TANK_APP_TARGET=next|tanstack|all` when target selection matters.
+Execution stays sequential for order-dependent flows.
 
 ## Practical Rules
 

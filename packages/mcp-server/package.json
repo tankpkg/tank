@@ -16,6 +16,7 @@
     "build": "tsdown",
     "dev": "tsx --watch src/index.ts",
     "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."

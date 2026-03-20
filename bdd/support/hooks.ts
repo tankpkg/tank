@@ -2,7 +2,7 @@ import fs from 'node:fs';
 
 import { afterEach, beforeAll, beforeEach } from 'vitest';
 
-import { getCurrentAppTarget } from '../../e2e/targets.js';
+import { getRegistryUrl } from '../../e2e/targets.js';
 import { getMcpServerEntrypoint, McpTestClient } from '../interactions/mcp-client.js';
 import { createConfigDir } from './fixtures.js';
 import { cleanupE2E, type E2EContext } from './setup.js';
@@ -32,7 +32,7 @@ export function registerMcpHooks(world: McpBddWorld): void {
   });
 
   beforeEach(async () => {
-    const registry = getCurrentAppTarget().registryUrl;
+    const registry = getRegistryUrl();
     const configFixture = createConfigDir({
       registry
     });

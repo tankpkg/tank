@@ -23,7 +23,7 @@ what changed — either for a single named skill or all skills at once.
 packages/
   cli/src/commands/update.ts              # updateCommand() — check versions, delegate to installCommand()
   mcp-server/src/tools/update-skill.ts   # MCP wrapper
-registry-legacy/app/api/v1/skills/[name]/versions/route.ts  # GET — returns available versions for semver resolution
+apps/registry/src/api/routes/v1/skills-read.ts  # GET — returns available versions for semver resolution
 ```
 
 ---

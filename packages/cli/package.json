@@ -17,6 +17,7 @@
     "build:bundle": "esbuild dist/bin/tank.js --bundle --platform=node --format=esm --outfile=build/tank-bundle.mjs --external:fsevents",
     "build:sea": "bash scripts/build-binary.sh",
     "build:binary": "bun run build && bun run build:bundle && bun run build:sea",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."

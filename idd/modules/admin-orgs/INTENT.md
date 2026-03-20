@@ -6,17 +6,15 @@
 
 **Consumers:** Admin dashboard. `GET /api/admin/orgs`, `GET /api/admin/orgs/[orgId]`, `DELETE /api/admin/orgs/[orgId]/members/[memberId]`.
 
-**Single source of truth:** `apps/registry-legacy/app/api/admin/orgs/` routes. Requires `withAdminAuth`.
+**Single source of truth:** `TODO: port to apps/registry/src/api/routes/admin/orgs.ts`. Requires `requireAdmin` middleware.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/registry-legacy/app/api/admin/orgs/route.ts                         # GET — list orgs with pagination
-apps/registry-legacy/app/api/admin/orgs/[orgId]/route.ts                 # GET — org detail
-apps/registry-legacy/app/api/admin/orgs/[orgId]/members/[memberId]/route.ts # DELETE — remove member
-apps/registry-legacy/lib/admin-middleware.ts                             # withAdminAuth
+TODO: port to apps/registry/src/api/routes/admin/orgs.ts  # GET list, GET detail, DELETE member
+apps/registry/src/api/middleware/require-admin.ts          # requireAdmin
 ```
 
 ---

@@ -6,7 +6,7 @@ import { generateUuid, hash } from 'cipher-kit/node';
 
 import postgres from 'postgres';
 
-import { getCurrentAppTarget } from '../../e2e/targets.js';
+import { getRegistryUrl } from '../../e2e/targets.js';
 
 export interface E2EContext {
   runId: string;
@@ -30,7 +30,7 @@ function createApiKey(seed: string): string {
   return key;
 }
 
-export async function setupE2E(registry = getCurrentAppTarget().registryUrl): Promise<E2EContext> {
+export async function setupE2E(registry = getRegistryUrl()): Promise<E2EContext> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error('DATABASE_URL is required for BDD tests. Set it in .env');

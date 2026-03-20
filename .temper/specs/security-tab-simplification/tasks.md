@@ -12,7 +12,7 @@
 
 ## T1: Replace ScoreBadge with TrustBadge in skill list
 
-**File:** `apps/registry-legacy/app/(registry)/skills/page.tsx`
+**File:** `apps/registry/app/(registry)/skills/page.tsx`
 
 **Changes:**
 
@@ -30,7 +30,7 @@
 
 ## T2: Simplify SecurityOverview component
 
-**File:** `apps/registry-legacy/components/security/SecurityOverview.tsx`
+**File:** `apps/registry/components/security/SecurityOverview.tsx`
 
 **Changes:**
 
@@ -49,7 +49,7 @@
 
 ## T3: Use QualityChecks in security tab
 
-**File:** `apps/registry-legacy/app/(registry)/skills/[...name]/page.tsx`
+**File:** `apps/registry/app/(registry)/skills/[...name]/page.tsx`
 
 **Changes:**
 
@@ -68,7 +68,7 @@
 
 ## T4: Cleanup unused ScoreBreakdown
 
-**File:** `apps/registry-legacy/components/security/ScoreBreakdown.tsx`
+**File:** `apps/registry/components/security/ScoreBreakdown.tsx`
 
 **Changes:**
 
@@ -77,5 +77,5 @@
 
 **Verification:**
 
-- `grep -r "ScoreBreakdown" apps/registry-legacy` returns no imports
+- `grep -r "ScoreBreakdown" apps/registry` returns no imports
 - File removed or deprecated

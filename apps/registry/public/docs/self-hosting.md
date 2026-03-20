@@ -88,7 +88,7 @@ FIRST_ADMIN_EMAIL=admin@yourcompany.com
 The `docker-compose.yml` defines four services (plus optional Ollama for local LLM analysis):
 
 ```yaml
-version: '3.9'
+version: "3.9"
 
 services:
   postgres:
@@ -100,7 +100,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - '5432:5432'
+      - "5432:5432"
 
   minio:
     image: minio/minio:latest
@@ -111,8 +111,8 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - '9000:9000'
-      - '9001:9001'
+      - "9000:9000"
+      - "9001:9001"
 
   scanner:
     build:
@@ -120,20 +120,20 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
     ports:
-      - '8000:8000'
+      - "8000:8000"
     depends_on:
       - postgres
 
   web:
     build:
       context: .
-      dockerfile: apps/registry-legacy/Dockerfile
+      dockerfile: apps/registry/Dockerfile
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - PYTHON_API_URL=${PYTHON_API_URL}
     ports:
-      - '3000:3000'
+      - "3000:3000"
     depends_on:
       - postgres
       - minio
@@ -254,10 +254,10 @@ web:
     repository: ghcr.io/tankpkg/tank-web
     tag: latest
   env:
-    NEXT_PUBLIC_APP_URL: 'https://tank.yourcompany.com'
-    GITHUB_CLIENT_ID: ''
-    GITHUB_CLIENT_SECRET: ''
-    FIRST_ADMIN_EMAIL: ''
+    NEXT_PUBLIC_APP_URL: "https://tank.yourcompany.com"
+    GITHUB_CLIENT_ID: ""
+    GITHUB_CLIENT_SECRET: ""
+    FIRST_ADMIN_EMAIL: ""
 
 scanner:
   replicaCount: 1
@@ -266,20 +266,20 @@ scanner:
     tag: latest
   resources:
     requests:
-      memory: '512Mi'
-      cpu: '250m'
+      memory: "512Mi"
+      cpu: "250m"
     limits:
-      memory: '2Gi'
-      cpu: '1000m'
+      memory: "2Gi"
+      cpu: "1000m"
 
 secrets:
-  betterAuthSecret: '' # Required: openssl rand -base64 32
+  betterAuthSecret: "" # Required: openssl rand -base64 32
 
 ingress:
   enabled: true
-  className: 'nginx'
+  className: "nginx"
   annotations:
-    cert-manager.io/cluster-issuer: 'letsencrypt-prod'
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
     - host: tank.yourcompany.com
       paths:
@@ -301,13 +301,13 @@ postgresql:
   auth:
     database: tank
     username: tank
-    password: '' # Set via --set or sealed secret
+    password: "" # Set via --set or sealed secret
 
 minio:
   enabled: true
   auth:
     rootUser: minioadmin
-    rootPassword: '' # Set via --set or sealed secret
+    rootPassword: "" # Set via --set or sealed secret
 ```
 
 ### Run Migrations on Helm Install
@@ -363,13 +363,13 @@ helm upgrade tank infra/helm/tank/ \
 
 ### Optional
 
-| Variable             | Description                        | Default  |
-| -------------------- | ---------------------------------- | -------- |
-| `FIRST_ADMIN_EMAIL`  | Bootstraps admin role on first run | —        |
-| `OIDC_ISSUER`        | OIDC SSO issuer URL                | —        |
-| `OIDC_CLIENT_ID`     | OIDC client ID                     | —        |
-| `OIDC_CLIENT_SECRET` | OIDC client secret                 | —        |
-| `RESEND_API_KEY`     | Resend email service key           | —        |
+| Variable             | Description                        | Default |
+| -------------------- | ---------------------------------- | ------- |
+| `FIRST_ADMIN_EMAIL`  | Bootstraps admin role on first run | —       |
+| `OIDC_ISSUER`        | OIDC SSO issuer URL                | —       |
+| `OIDC_CLIENT_ID`     | OIDC client ID                     | —       |
+| `OIDC_CLIENT_SECRET` | OIDC client secret                 | —       |
+| `RESEND_API_KEY`     | Resend email service key           | —       |
 
 ## Operational Notes
 

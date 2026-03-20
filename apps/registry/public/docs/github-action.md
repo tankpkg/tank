@@ -79,7 +79,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: "24"
 
       - name: Publish to Tank
         id: tank
@@ -121,7 +121,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: "24"
 
       - name: Dry-run validation
         id: tank
@@ -193,16 +193,16 @@ jobs:
       matrix:
         skill:
           - path: skills/browser-automation
-            name: '@acme/browser-automation'
+            name: "@acme/browser-automation"
           - path: skills/code-review
-            name: '@acme/code-review'
+            name: "@acme/code-review"
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: "24"
 
       - name: Publish ${{ matrix.skill.name }}
         uses: tankpkg/tank@v1

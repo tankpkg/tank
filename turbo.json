@@ -4,12 +4,14 @@
     "build": {
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", ".output/**", ".vercel/output/**", "build/**"]
+      "outputs": ["dist/**", ".next/**", ".output/**", ".tanstack", ".vercel/output/**", "build/**"]
     },
     "format": {},
     "lint": {},
     "check": {},
-    "typecheck": {},
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
     "test": {},
     "dev": {
       "dependsOn": ["^build"],

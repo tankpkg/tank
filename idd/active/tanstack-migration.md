@@ -1,6 +1,6 @@
 # TanStack Start Migration Plan
 
-Next.js 16 (`apps/registry-legacy`) → TanStack Start (`apps/registry`). Foundation complete, feature migration pending.
+Next.js (`apps/registry-legacy`, removed) → TanStack Start (`apps/registry`). Foundation complete, feature migration pending.
 
 ## What's Done
 
@@ -135,7 +135,7 @@ src/
 
 ### Step 4: Port v1 API Routes (P0 — CLI depends on this)
 
-Port from `apps/registry-legacy/app/api/v1/` to `apps/registry/src/api/routes/v1/`:
+Port to `apps/registry/src/api/routes/v1/` (legacy Next.js routes removed):
 
 | Next.js Route                                      | Hono Route          | Methods                      |
 | -------------------------------------------------- | ------------------- | ---------------------------- |
@@ -154,13 +154,13 @@ Port from `apps/registry-legacy/app/api/v1/` to `apps/registry/src/api/routes/v1
 | `cli-auth/exchange/route.ts`                       | `v1/cli-auth.ts`    | POST exchange code for token |
 | `auth/whoami/route.ts`                             | `v1/whoami.ts`      | GET current user             |
 
-**Key dependency**: `apps/registry-legacy/lib/data/skills.ts` — largest data-access file. Must be ported to `lib/data/skills.ts` with Next.js deps removed (`next/headers`, `next/cache` → accept `Request` param).
+**Key dependency**: `apps/registry/src/lib/skills/data.ts` — ported data-access file (no Next.js deps).
 
-Also port: `cli-auth-store.ts`, `permission-escalation.ts`, `audit-score.ts` (all pure logic, no Next.js deps).
+Also ported: `apps/registry/src/lib/auth/cli-store.ts`, `apps/registry/src/lib/skills/permission-escalation.ts`, `apps/registry/src/lib/skills/audit-score.ts` (all pure logic).
 
 ### Step 4.3: Port Admin API Routes
 
-Port from `apps/registry-legacy/app/api/admin/` to `api/routes/admin/`:
+Port to `apps/registry/src/api/routes/admin/` (legacy Next.js admin routes removed):
 
 - users (list, detail, status moderation)
 - orgs (list, detail, member management)
@@ -173,15 +173,15 @@ All use `requireAdmin` middleware.
 
 ### Step 5: Auth UI
 
-- Port login page from `apps/registry-legacy/app/(auth)/login/page.tsx` → `screens/auth/login-screen.tsx`
-- Port CLI device flow authorization UI → `screens/auth/cli-login-screen.tsx`
+- Port login page to `screens/auth/login-screen.tsx` (legacy Next.js login removed)
+- Port CLI device flow authorization UI to `screens/auth/cli-login-screen.tsx`
 - Use `better-auth/react` client hooks: `signIn`, `signOut`, `useSession`
 
 ### Step 6: Registry UI
 
 - Skills listing: server function + query options + `screens/skills/skills-list-screen.tsx`
 - Skill detail: server function + `screens/skill-detail/skill-detail-screen.tsx`
-- Security components: port from `apps/registry-legacy/components/security/` (5 components)
+- Security components: port to `apps/registry/src/components/security/` (legacy Next.js components removed)
 - Scoped package names (`@scope/name`): test TanStack Router splat route with `@` character
 
 ### Step 7: Dashboard & Admin UI
@@ -194,7 +194,7 @@ All use `requireAdmin` middleware.
 
 Use `content-collections` with `@content-collections/vinxi` adapter (NOT `@content-collections/vite`):
 
-- Port 18 MDX files from `apps/registry-legacy/content/docs/`
+- Port MDX/docs content (legacy Next.js content removed)
 - Unified pipeline: `remarkParse → remarkGfm → remarkRehype → rehypeRaw → rehypeSlug → rehypeStringify`
 - Shiki for syntax highlighting
 - Custom docs layout with sidebar + TOC

@@ -43,9 +43,9 @@ Controls which domains the skill is allowed to make outbound HTTP/HTTPS connecti
 permissions:
   network:
     outbound:
-      - 'api.anthropic.com'
-      - '*.openai.com'
-      - 'cdn.jsdelivr.net'
+      - "api.anthropic.com"
+      - "*.openai.com"
+      - "cdn.jsdelivr.net"
 ```
 
 **Wildcard support:** A leading `*.` prefix matches any subdomain of the specified domain.
@@ -71,9 +71,9 @@ Controls which paths the skill is allowed to read. Values are glob patterns eval
 permissions:
   filesystem:
     read:
-      - './src/**'
-      - './package.json'
-      - './tsconfig.json'
+      - "./src/**"
+      - "./package.json"
+      - "./tsconfig.json"
 ```
 
 **Pattern semantics:**
@@ -95,8 +95,8 @@ Controls which paths the skill is allowed to create, modify, or delete. Same glo
 permissions:
   filesystem:
     write:
-      - './output/**'
-      - './.tank/cache/**'
+      - "./output/**"
+      - "./.tank/cache/**"
 ```
 
 Write permissions are evaluated separately from read permissions. A skill that declares `filesystem.read: ["./src/**"]` does **not** implicitly gain write access to `./src/**`.
@@ -143,9 +143,9 @@ A list of specific environment variable names the skill is allowed to read. Skil
 ```yaml
 permissions:
   environment:
-    - 'ANTHROPIC_API_KEY'
-    - 'OPENAI_API_KEY'
-    - 'DATABASE_URL'
+    - "ANTHROPIC_API_KEY"
+    - "OPENAI_API_KEY"
+    - "DATABASE_URL"
 ```
 
 This permission is validated against actual `process.env` access found in the skill's code during Stage 2 static analysis. If the code reads `process.env.HOME` but `HOME` is not declared in permissions, the audit score drops and the finding is flagged.
@@ -260,7 +260,7 @@ The enforcer checks all skills against the budget before extracting any of them.
 
 Every new version of a skill is checked against its previous version's permissions when published. This prevents a malicious publisher from sneaking dangerous permission changes through as minor or patch releases.
 
-The escalation logic is implemented in `apps/registry-legacy/lib/permission-escalation.ts` and runs server-side during `tank publish`.
+The escalation logic is implemented in `apps/registry/src/lib/skills/permission-escalation.ts` and runs server-side during `tank publish`.
 
 ### Version Bump Rules
 
@@ -295,7 +295,7 @@ A skill at version `2.3.4` currently declares:
 ```yaml
 permissions:
   network:
-    outbound: ['api.anthropic.com']
+    outbound: ["api.anthropic.com"]
   subprocess: false
 ```
 
@@ -304,7 +304,7 @@ The publisher attempts to publish `2.3.5` (patch bump) with:
 ```yaml
 permissions:
   network:
-    outbound: ['api.anthropic.com', 'data.analytics.io'] # new domain
+    outbound: ["api.anthropic.com", "data.analytics.io"] # new domain
   subprocess: false
 ```
 

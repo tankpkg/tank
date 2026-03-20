@@ -3,9 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "test:run": "vitest run",
-    "test:tanstack": "TANK_APP_TARGET=tanstack vitest run",
-    "test:all": "TANK_APP_TARGET=next vitest run && TANK_APP_TARGET=tanstack vitest run"
+    "typecheck": "tsc --noEmit",
+    "test:run": "vitest run"
   },
   "devDependencies": {
     "cipher-kit": "^3.0.0",

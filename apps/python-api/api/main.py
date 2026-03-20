@@ -45,10 +45,10 @@ For production, add API key authentication between your Next.js app and this sca
     redoc_url="/redoc",
 )
 
-# CORS configuration for Next.js integration
+# CORS configuration for registry integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.tankpkg\.dev$|http://localhost:3000",
+    allow_origin_regex=r"https://.*\.tankpkg\.dev$|http://localhost:3000|http://localhost:5555",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

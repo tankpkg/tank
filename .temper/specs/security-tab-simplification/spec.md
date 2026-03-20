@@ -121,12 +121,12 @@ Replace numeric scoring with pass/fail indicators.
 
 ## Files to Modify
 
-| File                                                            | Change                                    |
-| --------------------------------------------------------------- | ----------------------------------------- |
-| `apps/registry-legacy/app/(registry)/skills/page.tsx`           | Replace `ScoreBadge` with `TrustBadge`    |
-| `apps/registry-legacy/components/security/SecurityOverview.tsx` | Remove score, show TrustBadge prominently |
-| `apps/registry-legacy/components/security/ScoreBreakdown.tsx`   | → `QualityChecks.tsx`, remove points      |
-| `apps/registry-legacy/app/(registry)/skills/[...name]/page.tsx` | Use new QualityChecks component           |
+| File                                                     | Change                                    |
+| -------------------------------------------------------- | ----------------------------------------- |
+| `apps/registry/app/(registry)/skills/page.tsx`           | Replace `ScoreBadge` with `TrustBadge`    |
+| `apps/registry/components/security/SecurityOverview.tsx` | Remove score, show TrustBadge prominently |
+| `apps/registry/components/security/ScoreBreakdown.tsx`   | → `QualityChecks.tsx`, remove points      |
+| `apps/registry/app/(registry)/skills/[...name]/page.tsx` | Use new QualityChecks component           |
 
 ## Files to Remove
 

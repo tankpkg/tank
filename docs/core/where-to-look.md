@@ -10,8 +10,7 @@ Task-to-location map for the current repo layout.
 - `TanStack screen/layout/component → apps/registry/src/screens/ + src/components/`
 - `TanStack server functions / data loaders → apps/registry/src/query/`
 - `TanStack auth helpers → apps/registry/src/lib/auth/`
-- `Maintained Next route or API parity check → apps/registry-legacy/app/`
-- `Shared docs source for TanStack docs pages → apps/registry/content/docs/`
+- `Shared docs source for docs pages → apps/registry/content/docs/`
 
 ## CLI / MCP / Shared
 

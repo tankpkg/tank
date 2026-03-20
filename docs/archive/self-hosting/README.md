@@ -22,7 +22,7 @@ pnpm install
 ### 2. Configure Environment
 
 ```bash
-cp apps/registry-legacy/.env.example apps/registry-legacy/.env.local
+cp apps/registry/.env.example apps/registry/.env.local
 ```
 
 Edit `.env.local` with your settings:
@@ -78,7 +78,7 @@ BRAND_COLOR_PRIMARY="3b82f6"
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │   CLI (tank)     │────▶│   Web Registry   │────▶│   MCP Server     │
-│   TypeScript     │     │   Next.js 15     │     │   TypeScript     │
+│   TypeScript     │     │   TanStack Start │     │   TypeScript     │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                 │
                                 ▼
@@ -100,7 +100,7 @@ vercel deploy
 ### Docker
 
 ```bash
-docker build -t tank-registry ./apps/registry-legacy
+docker build -t tank-registry ./apps/registry
 docker run -p 3000:3000 tank-registry
 ```
 

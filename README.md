@@ -136,8 +136,7 @@ just --list                 # See all available commands
 ```
 tank/
 ├── apps/
-│   ├── registry-legacy/ # Maintained Next.js registry during cutover
-│   ├── registry/        # Active TanStack Start registry target
+│   ├── registry/        # TanStack Start registry app
 │   └── python-api/   # Python security scanner (FastAPI)
 ├── packages/
 │   ├── cli/          # Tank CLI (TypeScript)

@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitest/config';
 
-import { getCurrentAppTarget } from '../e2e/targets.js';
+import { getRegistryUrl } from '../e2e/targets.js';
 
-process.env.E2E_REGISTRY_URL ??= getCurrentAppTarget().registryUrl;
+process.env.E2E_REGISTRY_URL ??= getRegistryUrl();
 
 export default defineConfig({
   resolve: {
@@ -11,7 +11,7 @@ export default defineConfig({
     }
   },
   test: {
-    include: ['bdd/steps/system/**/*.steps.ts'],
+    include: ['steps/system/**/*.steps.ts'],
     fileParallelism: false,
     testTimeout: 60000,
     hookTimeout: 120000

@@ -51,7 +51,7 @@ BRAND_SUPPORT_EMAIL="support@acme.com"
 Create a `public/brand/` directory and add your assets:
 
 ```
-apps/registry-legacy/public/brand/
+apps/registry/public/brand/
 ├── logo.png          # 120×40px recommended
 ├── logo-tight.png    # 32×32px icon-only
 ├── favicon.ico       # 32×32px
@@ -142,7 +142,7 @@ BRAND_SUPPORT_EMAIL="support@acme.com"
 ### Logo not showing
 
 - Check file path starts with `/brand/`
-- Verify file exists in `apps/registry-legacy/public/brand/`
+- Verify file exists in `apps/registry/public/brand/`
 - Check image dimensions
 
 ### Dark mode colors not applying

@@ -6,17 +6,14 @@
 
 **Consumers:** Admin dashboard. `GET/POST /api/admin/service-accounts`, `GET/PATCH/DELETE /api/admin/service-accounts/[id]`, `POST /api/admin/service-accounts/[id]/keys`, `DELETE /api/admin/service-accounts/[id]/keys/[keyId]`.
 
-**Single source of truth:** `apps/registry-legacy/app/api/admin/service-accounts/` routes.
+**Single source of truth:** `TODO: port to apps/registry/src/api/routes/admin/service-accounts.ts`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/registry-legacy/app/api/admin/service-accounts/route.ts               # GET/POST — list/create service accounts
-apps/registry-legacy/app/api/admin/service-accounts/[id]/route.ts          # GET/PATCH/DELETE — manage single account
-apps/registry-legacy/app/api/admin/service-accounts/[id]/keys/route.ts     # POST — create API key
-apps/registry-legacy/app/api/admin/service-accounts/[id]/keys/[keyId]/route.ts # DELETE — revoke API key
+TODO: port to apps/registry/src/api/routes/admin/service-accounts.ts  # GET/POST list/create, GET/PATCH/DELETE single, POST keys, DELETE keys
 ```
 
 ---

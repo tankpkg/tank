@@ -5,5 +5,5 @@
     "noEmit": true
   },
   "include": ["./**/*.ts", "./**/*.tsx"],
-  "exclude": ["./bdd/.features-gen/**", "./bdd/reports/**", "node_modules"]
+  "exclude": ["./bdd/**", "node_modules"]
 }

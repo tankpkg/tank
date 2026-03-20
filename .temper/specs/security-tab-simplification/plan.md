@@ -21,7 +21,7 @@
 
 ### Phase 1: Fix Skill List Badge
 
-- [ ] **T1**: Update `apps/registry-legacy/app/(registry)/skills/page.tsx`
+- [ ] **T1**: Update `apps/registry/app/(registry)/skills/page.tsx`
   - Import `TrustBadge` from `@/components/security`
   - Import `computeTrustLevel` from `@/lib/trust-level`
   - Replace `<ScoreBadge score={skill.auditScore} />` with `<TrustBadge trustLevel={...} findings={...} size="sm" />`
@@ -29,7 +29,7 @@
 
 ### Phase 2: Simplify Security Overview
 
-- [ ] **T2**: Update `apps/registry-legacy/components/security/SecurityOverview.tsx`
+- [ ] **T2**: Update `apps/registry/components/security/SecurityOverview.tsx`
   - Remove score display (`text-5xl` number)
   - Remove progress bar
   - Add `TrustBadge` component prominently at top
@@ -37,7 +37,7 @@
 
 ### Phase 3: Use QualityChecks in Security Tab
 
-- [ ] **T3**: Update `apps/registry-legacy/app/(registry)/skills/[...name]/page.tsx`
+- [ ] **T3**: Update `apps/registry/app/(registry)/skills/[...name]/page.tsx`
   - Import `QualityChecks`, `computeQualityChecks` from `@/components/security`
   - Replace `ScoreBreakdown` with `QualityChecks`
   - Build checks data from existing skill data

@@ -56,7 +56,7 @@ name: Publish Skill
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   publish:
@@ -148,7 +148,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: "24"
 
       - name: Install Tank CLI
         run: npm i -g @tankpkg/cli

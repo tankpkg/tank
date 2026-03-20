@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const CLI_ENTRY = join(ROOT, 'packages/cli/src/bin/tank.ts');
-const DOCS_OUTPUT = join(ROOT, 'apps/registry-legacy/content/docs/cli.mdx');
+const DOCS_OUTPUT = join(ROOT, 'apps/registry/public/docs/cli.md');
 
 // Parse CLI entry point and extract commands
 function parseCommands(source) {

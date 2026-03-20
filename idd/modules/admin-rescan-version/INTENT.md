@@ -12,9 +12,9 @@ endpoint enqueues a background re-scan and returns the updated status. Only admi
 
 **Single source of truth:**
 
-- `apps/registry-legacy/app/api/admin/packages/[...segments]/route.ts` — handles
+- `TODO: port to apps/registry/src/api/routes/admin/packages.ts` — handles
   `POST /api/admin/packages/{name}/versions/{version}/rescan`
-- `apps/registry-legacy/lib/admin-middleware.ts` — `withAdminAuth()` — session-based admin auth
+- `apps/registry/src/api/middleware/require-admin.ts` — `requireAdmin()` — session-based admin auth
 - `bdd/interactions/admin-api-client.ts` — `postRescan()` helper
 
 ---
@@ -23,8 +23,8 @@ endpoint enqueues a background re-scan and returns the updated status. Only admi
 
 ```
 apps/
-  web/app/api/admin/packages/[...segments]/route.ts  # POST .../rescan — admin-auth, enqueue rescan
-  web/lib/admin-middleware.ts                        # withAdminAuth() — session cookie validation
+  TODO: port to registry/src/api/routes/admin/packages.ts  # POST .../rescan — admin-auth, enqueue rescan
+  registry/src/api/middleware/require-admin.ts              # requireAdmin() — session cookie validation
 bdd/
   interactions/admin-api-client.ts                   # postRescan(), createAdminSession(), createTestPackageVersion()
   steps/system/admin-rescan.steps.ts                 # BDD step definitions

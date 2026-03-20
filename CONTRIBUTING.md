@@ -10,7 +10,7 @@ Tank is in active product and platform iteration. Right now, the most valuable c
 2. **Opening issues** for bugs, edge cases, or missing features
 3. **Improving documentation** — clarity, examples, diagrams
 4. **Contributing security analysis rules** for the audit system
-5. **Improving the TanStack migration** without assuming parity with the maintained Next app
+5. **Improving the registry app** — UI, API, docs, admin features
 
 ## Getting Started
 
@@ -50,13 +50,13 @@ Tank is in active product and platform iteration. Right now, the most valuable c
 4. **Push database schema** (requires DATABASE_URL in .env)
 
    ```bash
-   bun --filter registry-legacy exec drizzle-kit push
+   bun --filter registry exec drizzle-kit push
    ```
 
 5. **Start the dev server**
 
    ```bash
-   just dev registry-legacy
+   just dev registry
    ```
 
 6. **Run tests**
@@ -72,8 +72,7 @@ Tank is in active product and platform iteration. Right now, the most valuable c
 
 This is a monorepo managed by [Turborepo](https://turbo.build/repo) with Bun workspaces:
 
-- `apps/registry` — active TanStack Start registry app and migration target
-- `apps/registry-legacy` — Next.js 15 web app + API routes (deployed to Vercel)
+- `apps/registry` — TanStack Start registry app + API routes
 - `packages/cli` — `tank` CLI tool (TypeScript, commander.js)
 - `apps/python-api` — Python security scanner (FastAPI, 6-stage pipeline)
 - `packages/internals-schemas` — Shared Zod schemas, TypeScript types, contract constants

@@ -66,7 +66,7 @@ BRAND_SHOW_POWERED_BY="true"                # Always true for compliance
 ### Runtime Config API
 
 ```typescript
-// apps/registry-legacy/lib/branding.ts
+// apps/registry/lib/branding.ts
 interface BrandConfig {
   name: string;
   tagline: string;
@@ -99,15 +99,15 @@ interface BrandConfig {
 
 ### Files Modified (Est. 35-45 files)
 
-| Category       | Files                                                          | Impact                    |
-| -------------- | -------------------------------------------------------------- | ------------------------- |
-| **Layouts**    | `apps/registry-legacy/app/layout.tsx`, all route group layouts | Meta tags, title template |
-| **Components** | `Header.tsx`, `Footer.tsx`, `Logo.tsx`, `ThemeProvider.tsx`    | Dynamic branding          |
-| **Pages**      | Landing, auth pages, dashboard                                 | Static text → config refs |
-| **API Routes** | OG image generation, manifest, sitemap                         | Dynamic brand data        |
-| **Emails**     | Email templates (if any)                                       | Brand colors/logo         |
-| **Config**     | `lib/branding.ts` (new)                                        | Central config accessor   |
-| **Types**      | `@tank/shared`                                                 | Shared brand types        |
+| Category       | Files                                                       | Impact                    |
+| -------------- | ----------------------------------------------------------- | ------------------------- |
+| **Layouts**    | `apps/registry/app/layout.tsx`, all route group layouts     | Meta tags, title template |
+| **Components** | `Header.tsx`, `Footer.tsx`, `Logo.tsx`, `ThemeProvider.tsx` | Dynamic branding          |
+| **Pages**      | Landing, auth pages, dashboard                              | Static text → config refs |
+| **API Routes** | OG image generation, manifest, sitemap                      | Dynamic brand data        |
+| **Emails**     | Email templates (if any)                                    | Brand colors/logo         |
+| **Config**     | `lib/branding.ts` (new)                                     | Central config accessor   |
+| **Types**      | `@tank/shared`                                              | Shared brand types        |
 
 ### Consumers Affected
 
@@ -137,7 +137,7 @@ interface BrandConfig {
 
 ### Phase 1: Core Infrastructure (Est. 4-6 hours)
 
-1. Create `apps/registry-legacy/lib/branding.ts` with config accessor
+1. Create `apps/registry/lib/branding.ts` with config accessor
 2. Add brand-related env vars to `.env.example`
 3. Create TypeScript types in `@tank/shared`
 4. Add CSS custom properties for theme colors

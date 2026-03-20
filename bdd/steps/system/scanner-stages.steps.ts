@@ -15,11 +15,7 @@ import * as http from 'node:http';
 import { createGzip } from 'node:zlib';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import {
-  type AuditScoreInput,
-  type AuditScoreResult,
-  computeAuditScore
-} from '../../../apps/registry-legacy/lib/audit-score.js';
+import { type AuditScoreInput, computeAuditScore } from '../../../apps/registry/src/lib/skills/audit-score.js';
 
 const hasScanner = !!process.env.SCANNER_URL;
 
@@ -43,7 +39,7 @@ const world: StagesWorld = {
 
 interface ScoreWorld {
   input: AuditScoreInput | null;
-  result: AuditScoreResult | null;
+  result: { score: number } | null;
   inferredVerdict: 'pass' | 'pass_with_notes';
 }
 
@@ -142,7 +138,7 @@ function givenSkillTarballWithOnlyMediumSeverityFindings(): void {
   scoreWorld.input = {
     ...baseScoreInput(),
     analysisResults: {
-      securityIssues: [{ severity: 'medium', description: 'suspicious prompt marker' }],
+      securityIssues: [{ severity: 'medium' }],
       extractedPermissions: { network: { outbound: ['*.example.com'] } }
     }
   };

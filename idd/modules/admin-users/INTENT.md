@@ -6,17 +6,15 @@
 
 **Consumers:** Admin web dashboard, `GET /api/admin/users` and `PATCH /api/admin/users/[userId]/status`.
 
-**Single source of truth:** `apps/registry-legacy/app/api/admin/users/route.ts` and `apps/registry-legacy/app/api/admin/users/[userId]/status/route.ts`. Requires `withAdminAuth` middleware (admin session cookie).
+**Single source of truth:** `TODO: port to apps/registry/src/api/routes/admin/users.ts`. Requires `requireAdmin` middleware (admin session cookie).
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/registry-legacy/app/api/admin/users/route.ts               # GET — list with pagination, search, role/status filters
-apps/registry-legacy/app/api/admin/users/[userId]/route.ts      # GET — single user detail
-apps/registry-legacy/app/api/admin/users/[userId]/status/route.ts # PATCH — suspend/ban/activate user
-apps/registry-legacy/lib/admin-middleware.ts                    # withAdminAuth — enforces admin session
+TODO: port to apps/registry/src/api/routes/admin/users.ts  # GET list, GET detail, PATCH status
+apps/registry/src/api/middleware/require-admin.ts           # requireAdmin — enforces admin session
 ```
 
 ---

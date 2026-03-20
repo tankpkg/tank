@@ -99,7 +99,7 @@ const world: HomeLandingWorld = {
 };
 
 let homeLandingModulePromise: Promise<HomeLandingModule> | undefined;
-const homeLandingModulePath = '../../../apps/registry-legacy/app/home-auth-cta.tsx';
+const homeLandingModulePath = '../../../apps/registry/src/components/home-auth-cta.tsx';
 
 function resetWorld(): void {
   world.currentVisitor = 'loading';

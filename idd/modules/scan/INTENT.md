@@ -14,7 +14,7 @@ This is the primary pre-publish security gate.
 
 - `packages/cli/src/commands/scan.ts` — `scanCommand()`
 - `packages/mcp-server/src/tools/scan-skill.ts` — MCP wrapper
-- `apps/registry-legacy/app/api/v1/scan/route.ts` — proxy to Python scanner
+- `TODO: port to apps/registry/src/api/routes/v1/scan.ts` — proxy to Python scanner
 - `apps/python-api/` — 6-stage Python FastAPI scanner
 
 ---
@@ -25,7 +25,7 @@ This is the primary pre-publish security gate.
 packages/
   cli/src/commands/scan.ts              # scanCommand() — pack, POST /api/v1/scan, display report
   mcp-server/src/tools/scan-skill.ts   # MCP wrapper
-registry-legacy/app/api/v1/scan/route.ts           # POST — receives tarball, delegates to scanner service
+TODO: port to apps/registry/src/api/routes/v1/scan.ts  # POST — receives tarball, delegates to scanner service
 scanner/api/analyze/scan.py            # Python FastAPI endpoint, runs all 6 stages
 scanner/lib/scan/
   stage0_ingest.py                     # Extract and inventory the tarball

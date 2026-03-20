@@ -7,13 +7,13 @@ Lookup:
 - `add CLI command → packages/cli/src/commands/ → register in packages/cli/src/bin/tank.ts`
 - `add MCP tool → packages/mcp-server/src/tools/ → register in packages/mcp-server/src/index.ts`
 - `modify CLI install/publish internals → packages/cli/src/lib/ → packer, lockfile, resolver, config`
-- `add public API route → apps/registry/src/api/routes/ (TanStack) or apps/registry-legacy/app/api/v1/ (Next.js)`
-- `change auth behavior → apps/registry-legacy/lib/auth.ts → session, API key, org, OIDC`
-- `change API key validation → apps/registry-legacy/lib/auth-helpers.ts → CLI/session auth helpers`
-- `change domain DB schema → apps/registry-legacy/lib/db/schema.ts → Drizzle schema`
-- `inspect generated auth schema → apps/registry-legacy/lib/db/auth-schema.ts → generated; never edit by hand`
-- `change storage backend logic → apps/registry-legacy/lib/storage/ → Supabase vs S3`
-- `change browse/search data access → apps/registry/src/lib/skills/ (TanStack) or apps/registry-legacy/lib/data/ (Next.js)`
+- `add public API route → apps/registry/src/api/routes/`
+- `change auth behavior → apps/registry/src/lib/auth/core.ts → session, API key, org, OIDC`
+- `change API key validation → apps/registry/src/lib/auth/tokens.ts → CLI/session auth helpers`
+- `change domain DB schema → apps/registry/src/lib/db/schema.ts → Drizzle schema`
+- `inspect generated auth schema → apps/registry/src/lib/db/auth-schema.ts → generated; never edit by hand`
+- `change storage backend logic → apps/registry/src/services/storage/ → Supabase vs S3`
+- `change browse/search data access → apps/registry/src/lib/skills/`
 - `add shared schema/type/constant → packages/internals-schemas/src/ → export via packages/internals-schemas/src/index.ts`
 - `change permission schema → packages/internals-schemas/src/schemas/permissions.ts → shared Zod contract`
 - `change lockfile schema → packages/internals-schemas/src/schemas/skills-lock.ts → v1/v2 support`

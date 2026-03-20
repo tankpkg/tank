@@ -4,7 +4,7 @@ import path from 'node:path';
 import { defineConfig } from '@playwright/test';
 import { cucumberReporter, defineBddConfig } from 'playwright-bdd';
 
-import { getRequestedAppTargets } from '../e2e/targets.js';
+import { getRegistryUrl } from '../e2e/targets.js';
 
 const envDir = path.resolve(__dirname, '..');
 const envPath = path.join(envDir, '.env');
@@ -31,16 +31,10 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-const nextTestDir = defineBddConfig({
-  features: 'features/browser/{shared,next}/**/*.feature',
-  steps: 'steps/browser/*.ts',
-  outputDir: '../test-results/bdd-browser/generated-next'
-});
-
-const tanstackTestDir = defineBddConfig({
+const testDir = defineBddConfig({
   features: 'features/browser/{shared,tanstack}/**/*.feature',
   steps: 'steps/browser/*.ts',
-  outputDir: '../test-results/bdd-browser/generated-tanstack'
+  outputDir: '../test-results/bdd-browser/generated'
 });
 
 export default defineConfig({
@@ -56,11 +50,13 @@ export default defineConfig({
   use: {
     testIdAttribute: 'data-testid'
   },
-  projects: getRequestedAppTargets().map((target) => ({
-    name: target.id,
-    testDir: target.id === 'tanstack' ? tanstackTestDir : nextTestDir,
-    use: {
-      baseURL: target.registryUrl
+  projects: [
+    {
+      name: 'registry',
+      testDir,
+      use: {
+        baseURL: getRegistryUrl()
+      }
     }
-  }))
+  ]
 });

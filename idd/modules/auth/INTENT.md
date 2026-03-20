@@ -15,7 +15,7 @@ The MCP tools are the primary test target.
 - `packages/cli/src/commands/whoami.ts` — `whoamiCommand()`
 - `packages/cli/src/commands/logout.ts` — `logoutCommand()`
 - `packages/mcp-server/src/tools/whoami.ts`, `logout.ts` — MCP wrappers
-- `apps/registry-legacy/app/api/v1/auth/whoami/route.ts` — server-side identity endpoint
+- `TODO: port to apps/registry/src/api/routes/v1/whoami.ts` — server-side identity endpoint
 
 ---
 
@@ -27,7 +27,7 @@ packages/
   cli/src/commands/logout.ts             # logoutCommand() — deletes token + user from config
   mcp-server/src/tools/whoami.ts         # MCP wrapper
   mcp-server/src/tools/logout.ts         # MCP wrapper
-registry-legacy/app/api/v1/auth/whoami/route.ts      # GET — returns user info for valid token
+TODO: port to apps/registry/src/api/routes/v1/whoami.ts  # GET — returns user info for valid token
 ```
 
 ---

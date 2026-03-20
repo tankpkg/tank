@@ -8,13 +8,13 @@ Tank uses a custom performance harness that executes repeated runs against a pro
 
 ### Core Components
 
-- **Harness**: Vitest-based tests located in `apps/registry-legacy/tests/perf/`.
-- **Budgets**: Defined in `apps/registry-legacy/perf/budgets.json`.
+- **Harness**: Vitest-based tests located in `apps/registry/tests/perf/`.
+- **Budgets**: Defined in `apps/registry/perf/budgets.json`.
 - **Scripts**:
   - `bun run perf:test`: Builds, starts the server, and runs measurements.
   - `bun run perf:report`: Compares latest results against budgets and exits with non-zero on failure.
   - `bun run perf:seed`: Seeds a deterministic database state for stable measurements.
-- **Artifacts**: Results are saved to `apps/registry-legacy/perf/results/*.json`. `latest.json` always points to the most recent run.
+- **Artifacts**: Results are saved to `apps/registry/perf/results/*.json`. `latest.json` always points to the most recent run.
 
 ---
 
@@ -71,7 +71,7 @@ Run `bun run perf:report` (or check the CI log for the "Generate performance rep
 
 ### 2. Compare with `latest.json`
 
-Look at `apps/registry-legacy/perf/results/latest.json`. Compare the `aggregated` values with previous runs (available in CI artifacts or your local history).
+Look at `apps/registry/perf/results/latest.json`. Compare the `aggregated` values with previous runs (available in CI artifacts or your local history).
 
 - Is it a slight drift (e.g., 5-10ms) or a major spike?
 - Check the `runs` array to see if a single outlier skewed the median/p95.

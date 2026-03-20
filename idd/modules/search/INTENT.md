@@ -12,24 +12,19 @@ partial typing, org browsing, typo tolerance, and keyword relevance.
 **Consumers:** Web UI (Server Component `searchSkills()`), CLI (`tank search`
 via `GET /api/v1/search`), MCP server (`search-skills` tool via same API).
 
-**Single source of truth:** `apps/registry-legacy/lib/data/skills.ts` — the `searchSkills()`
-function. The API route at `apps/registry-legacy/app/api/v1/search/route.ts` is a thin
-delegation layer (15 lines).
+**Single source of truth:** `apps/registry/src/lib/skills/data.ts` — the `searchSkills()`
+function. The API route at `apps/registry/src/api/routes/v1/search.ts` is a thin
+delegation layer.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/registry-legacy/
-  lib/data/skills.ts            # searchSkills(), escapeLike(), mapSearchResults()
-  app/api/v1/search/route.ts    # GET handler — delegates to searchSkills()
-  app/(registry)/skills/
-    page.tsx                    # Server Component, calls searchSkills() directly
-    search-bar.tsx              # Client-side search input
-  drizzle/
-    0010_fuzzy_search_trgm.sql  # Migration: pg_trgm + GIN trigram index
-  lib/db/schema.ts              # skills_name_trgm_idx index definition
+apps/registry/
+  src/lib/skills/data.ts             # searchSkills(), escapeLike(), mapSearchResults()
+  src/api/routes/v1/search.ts        # GET handler — delegates to searchSkills()
+  src/lib/db/schema.ts               # skills_name_trgm_idx index definition
 ```
 
 No new tables. Extends the existing `skills` table with a GIN trigram index.

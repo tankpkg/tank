@@ -2,9 +2,9 @@ import path from 'node:path';
 
 import { defineConfig } from 'vitest/config';
 
-import { getCurrentAppTarget } from './targets.js';
+import { getRegistryUrl } from './targets.js';
 
-process.env.E2E_REGISTRY_URL ??= getCurrentAppTarget().registryUrl;
+process.env.E2E_REGISTRY_URL ??= getRegistryUrl();
 
 export default defineConfig({
   // Load .env from project root

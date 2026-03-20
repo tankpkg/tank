@@ -6,8 +6,7 @@ Tank is a Bun workspace monorepo with a TypeScript control plane and a separate 
 
 - `packages/cli` is the user entrypoint for install, publish, verify, scan, and discovery.
 - `packages/mcp-server` exposes the same core capabilities to editor clients over MCP.
-- `apps/registry` is the active registry target for public UI, docs, API, and dashboard/admin migration.
-- `apps/registry-legacy` remains live during cutover and is still a real behavior surface.
+- `apps/registry` is the registry app for public UI, docs, API, and dashboard/admin.
 - `apps/python-api` performs multi-stage security scanning.
 - `packages/internals-schemas` and `packages/internals-helpers` are the only shared TS layers.
 
@@ -39,4 +38,4 @@ Tank is a Bun workspace monorepo with a TypeScript control plane and a separate 
 - `bdd/` = executable behavior
 - `e2e/` = full-stack regression
 
-Browser behavior is split into shared, Next-specific, and TanStack-specific lanes. Do not collapse that split unless the product behavior converges first.
+Browser behavior specs live in `bdd/features/browser/`.

@@ -26,7 +26,7 @@ jobs:
       matrix:
         include:
           - image: tank-web
-            dockerfile: apps/registry-legacy/Dockerfile
+            dockerfile: apps/registry/Dockerfile
             context: .
           - image: tank-scanner
             dockerfile: apps/python-api/Dockerfile

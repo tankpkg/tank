@@ -6,7 +6,7 @@
  * This suite publishes its own skill, then tests all consumer flows against it.
  *
  * Prerequisites:
- * - Registry target running (Next on :3000 or TanStack on :3001)
+ * - Registry running on :5555
  * - DATABASE_URL set in .env
  * - CLI built: bun run build --filter=@tankpkg/cli
  */

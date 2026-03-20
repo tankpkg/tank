@@ -11,15 +11,14 @@ High-signal stack map. Use package references for package-specific detail.
 
 ## Active Surfaces
 
-| Workspace                    | Role                       | Primary stack                                  |
-| ---------------------------- | -------------------------- | ---------------------------------------------- |
-| `apps/registry`              | active registry app target | TanStack Start, TanStack Router, Hono, Drizzle |
-| `apps/registry-legacy`       | maintained cutover app     | Next.js, React, Drizzle                        |
-| `apps/python-api`            | scanner API                | FastAPI, Pydantic                              |
-| `packages/cli`               | `tank` CLI                 | Commander, Zod                                 |
-| `packages/mcp-server`        | editor integration         | MCP SDK                                        |
-| `packages/internals-schemas` | shared contracts           | Zod                                            |
-| `packages/internals-helpers` | shared pure helpers        | TypeScript                                     |
+| Workspace                    | Role                | Primary stack                                  |
+| ---------------------------- | ------------------- | ---------------------------------------------- |
+| `apps/registry`              | registry app        | TanStack Start, TanStack Router, Hono, Drizzle |
+| `apps/python-api`            | scanner API         | FastAPI, Pydantic                              |
+| `packages/cli`               | `tank` CLI          | Commander, Zod                                 |
+| `packages/mcp-server`        | editor integration  | MCP SDK                                        |
+| `packages/internals-schemas` | shared contracts    | Zod                                            |
+| `packages/internals-helpers` | shared pure helpers | TypeScript                                     |
 
 ## Infra Notes
 
@@ -27,4 +26,4 @@ High-signal stack map. Use package references for package-specific detail.
 - PostgreSQL + Drizzle = database layer.
 - Better Auth = auth/session/API key layer.
 - Browser tests use Playwright; behavior tests also use Vitest.
-- TanStack and Next coexist. Verify the target before changing browser or HTTP behavior.
+- TanStack Start is the sole web surface.

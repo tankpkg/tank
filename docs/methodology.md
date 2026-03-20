@@ -65,8 +65,7 @@ Unit tests are colocated.
 Unit-test layout:
 
 - `CLI → packages/cli/src/__tests__/`
-- `Registry (TanStack) → apps/registry/src/__tests__/`
-- `Registry (Next.js) → apps/registry-legacy/**/__tests__/`
+- `Registry → apps/registry/src/__tests__/`
 - `Schemas → packages/internals-schemas/src/__tests__/`
 - `Helpers → packages/internals-helpers/src/__tests__/`
 - `MCP → packages/mcp-server/__tests__/`

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { getCurrentAppTarget } from '../../e2e/targets.js';
+import { getRegistryUrl } from '../../e2e/targets.js';
 
 interface CleanupHandle {
   cleanup: () => Promise<void>;
@@ -78,7 +78,7 @@ export function createConfigDir(
     token?: string;
     user?: { name: string; email: string };
   } = {
-    registry: options.registry ?? getCurrentAppTarget().registryUrl
+    registry: options.registry ?? getRegistryUrl()
   };
 
   if (options.token) {

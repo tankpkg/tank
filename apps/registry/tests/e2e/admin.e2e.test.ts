@@ -10,7 +10,8 @@
 
 import type postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { cleanupE2E, type E2EContext, setupE2E } from './helpers/setup';
+
+import { cleanupE2E, type E2EContext, setupE2E } from '../../../../e2e/helpers/setup';
 
 const runAdminE2E = process.env.RUN_ADMIN_E2E === '1';
 

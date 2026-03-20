@@ -3,7 +3,7 @@
  * ZERO mocks: real CLI binary, real HTTP, real Python security scanner.
  *
  * Prerequisites:
- * - Registry target running (Next on :3000 or TanStack on :3001)
+ * - Registry running on :5555
  * - Python FastAPI server running (security scanner)
  * - DATABASE_URL set in .env
  * - CLI built: bun run build --filter=@tankpkg/cli

@@ -124,7 +124,7 @@ jobs:
           echo "Checking that all required env vars are documented..."
 
           # Extract env vars from code
-          REQUIRED_VARS=$(grep -rh "process\.env\.[A-Z_]" apps/registry-legacy/lib/*.ts apps/registry-legacy/app --include="*.ts" 2>/dev/null | \
+          REQUIRED_VARS=$(grep -rh "process\.env\.[A-Z_]" apps/registry/src --include="*.ts" 2>/dev/null | \
             grep -oE "process\.env\.[A-Z_]+" | \
             sort -u | \
             sed 's/process\.env\.//' | \

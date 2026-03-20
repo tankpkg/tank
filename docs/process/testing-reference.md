@@ -12,7 +12,6 @@ Current testing layers, helper entrypoints, and repo-specific constraints.
 
 - system behavior → `bdd/features/system/` + `bdd/steps/system/`
 - browser shared behavior → `bdd/features/browser/shared/`
-- browser Next-only behavior → `bdd/features/browser/next/`
 - browser TanStack-only behavior → `bdd/features/browser/tanstack/`
 - Playwright browser config → `bdd/playwright.config.ts`
 - Vitest system behavior config → `bdd/vitest.config.ts`
@@ -47,20 +46,12 @@ Primary test setup helpers:
 - `bdd/support/setup.ts`
 - `bdd/support/hooks.ts`
 
-## Targeting
-
-- `TANK_APP_TARGET=next` → run against the maintained Next app
-- `TANK_APP_TARGET=tanstack` → run against TanStack
-- `TANK_APP_TARGET=all` → run both target lanes when supported by the command
-
 ## Commands
 
 - `bun run test:bdd:system`
 - `bun run test:bdd:browser`
 - `bun run test:bdd`
 - `bun run test:e2e`
-- `bun run test:e2e:tanstack`
-- `bun run test:e2e:all`
 - `just test bdd`
 - `just test e2e`
 
@@ -68,13 +59,13 @@ Primary test setup helpers:
 
 - touching the real `~/.tank/`
 - parallelizing order-dependent E2E files
-- reusing Next selectors in TanStack coverage without verifying the real UI
+- reusing selectors without verifying the real UI
 - documenting a helper signature that no longer matches the file
 
 ## Execution Notes
 
 - `bun run test:bdd:browser` requires `bunx bddgen` first (generates step wiring from .feature files)
-- Browser tests need a running dev server (`just dev registry` or `just dev registry-legacy`)
+- Browser tests need a running dev server (`just dev registry`)
 - E2E tests need built CLI (`bun run build` in packages/cli first)
 - Admin E2E is opt-in: `RUN_ADMIN_E2E=1 bun run test:e2e`
-- Never reuse Next.js selectors in TanStack tests — verify actual DOM first
+- Verify actual DOM before reusing selectors across test suites

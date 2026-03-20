@@ -34,7 +34,7 @@ export SUPABASE_URL="https://your-project.supabase.co"
 
 2. **GitHub OAuth App**
    - Create a GitHub OAuth app at https://github.com/settings/developers
-   - Set Authorization callback URL to: `http://localhost:3000/api/auth/callback/github`
+   - Set Authorization callback URL to: `http://localhost:5555/api/auth/callback/github`
    - Copy Client ID and Client Secret to environment variables
 
 3. **Database**
@@ -47,7 +47,7 @@ export SUPABASE_URL="https://your-project.supabase.co"
      ```bash
      just dev-web
      ```
-   - Verify it's running at `http://localhost:3000`
+   - Verify it's running at `http://localhost:5555`
    - Check that `/api/v1/cli-auth/start` and `/api/v1/cli-auth/exchange` endpoints are accessible
 
 ### CLI Configuration
@@ -58,7 +58,7 @@ The CLI reads from `~/.tank/config.json`. By default, it uses the production reg
 mkdir -p ~/.tank
 cat > ~/.tank/config.json << 'EOF'
 {
-  "registry": "http://localhost:3000"
+  "registry": "http://localhost:5555"
 }
 EOF
 ```
@@ -73,7 +73,7 @@ EOF
 
 1. Open a terminal in the project root
 2. Run: `bunx tank login`
-3. A browser window should open automatically to `http://localhost:3000/api/auth/callback/github?...`
+3. A browser window should open automatically to `http://localhost:5555/api/auth/callback/github?...`
 4. If the browser doesn't open, the CLI will print a URL — copy and paste it manually
 5. Click "Sign in with GitHub" and authorize the application
 6. Return to the terminal
@@ -94,7 +94,7 @@ Logged in as {Your GitHub Name}
 - Example:
   ```json
   {
-    "registry": "http://localhost:3000",
+    "registry": "http://localhost:5555",
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "user": {
       "name": "Your Name",
@@ -472,7 +472,7 @@ Logged out.
 
 - **Symptom**: Login redirects to GitHub but fails with "Invalid client_id"
 - **Fix**: Create a GitHub OAuth app and set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
-- **Check**: Verify callback URL is `http://localhost:3000/api/auth/callback/github`
+- **Check**: Verify callback URL is `http://localhost:5555/api/auth/callback/github`
 
 ### Database Connection Failed
 
@@ -484,7 +484,7 @@ Logged out.
 
 - **Symptom**: CLI commands fail with "ECONNREFUSED" or "Connection refused"
 - **Fix**: Start the web app: `just dev-web`
-- **Check**: `curl http://localhost:3000/api/health` should return 200
+- **Check**: `curl http://localhost:5555/api/health` should return 200
 
 ### Token Expired or Invalid
 

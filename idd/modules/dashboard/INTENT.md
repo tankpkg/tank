@@ -8,8 +8,7 @@
 
 **Single source of truth:**
 
-- `apps/registry/app/routes/dashboard/` — dashboard pages
-- `apps/registry-legacy/app/dashboard/` — Next.js dashboard (during cutover)
+- `TODO: port to apps/registry/src/routes/dashboard/` — dashboard pages
 - API routes for token CRUD
 
 ---
@@ -18,8 +17,7 @@
 
 ```
 apps/
-  registry/app/routes/dashboard/           # Dashboard pages — token list, create, revoke
-  web/app/dashboard/                      # Next.js dashboard (maintained during cutover)
+  TODO: port to registry/src/routes/dashboard/  # Dashboard pages — token list, create, revoke
 ```
 
 ---

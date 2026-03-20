@@ -11,6 +11,7 @@
   },
   "scripts": {
     "build": "tsdown",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."

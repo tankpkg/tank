@@ -55,7 +55,6 @@ fi
 TS_PACKAGES=(
   "packages/cli"
   "apps/registry"
-  "apps/registry-legacy"
   "packages/mcp-server"
   "packages/internals-schemas"
   "packages/internals-helpers"

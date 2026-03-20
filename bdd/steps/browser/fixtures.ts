@@ -9,7 +9,7 @@ import { test as base, createBdd } from 'playwright-bdd';
 import { type CliResult, expectSuccess, runTank } from '../../../e2e/helpers/cli';
 import { cleanupFixture, createSkillFixture, type SkillFixture } from '../../../e2e/helpers/fixtures';
 import { cleanupE2E, type E2EContext, setupE2E } from '../../../e2e/helpers/setup';
-import { getCurrentAppTarget } from '../../../e2e/targets.js';
+import { getRegistryUrl } from '../../../e2e/targets.js';
 
 export interface UserFixture {
   id: string;
@@ -158,7 +158,7 @@ export const test = base.extend<BddTestFixtures, BddWorkerFixtures>({
     // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture API requires destructuring
     async ({}, use) => {
       const baseURL = test.info().project.use.baseURL;
-      const ctx = await setupE2E(typeof baseURL === 'string' ? baseURL : getCurrentAppTarget().registryUrl);
+      const ctx = await setupE2E(typeof baseURL === 'string' ? baseURL : getRegistryUrl());
       await use(ctx);
       await cleanupE2E(ctx);
     },

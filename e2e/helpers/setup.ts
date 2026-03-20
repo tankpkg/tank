@@ -17,7 +17,7 @@ import { generateUuid, hash } from 'cipher-kit/node';
 
 import postgres from 'postgres';
 
-import { getCurrentAppTarget } from '../targets.js';
+import { getRegistryUrl } from '../targets.js';
 
 function loadDatabaseUrlFromEnvFile(): string | undefined {
   const envPath = path.resolve(process.cwd(), '.env');
@@ -79,7 +79,7 @@ function createApiKey(seed: string): string {
 // Setup
 // ---------------------------------------------------------------------------
 
-export async function setupE2E(registry = getCurrentAppTarget().registryUrl): Promise<E2EContext> {
+export async function setupE2E(registry = getRegistryUrl()): Promise<E2EContext> {
   const connectionString = process.env.DATABASE_URL || loadDatabaseUrlFromEnvFile();
   if (!connectionString) {
     throw new Error('DATABASE_URL is required for E2E tests. Set it in .env');

@@ -7,31 +7,31 @@ Use this checklist when preparing your white-label brand assets.
 - [ ] **Main Logo** (`logo.png`)
   - Size: 120×40px (or proportional)
   - Format: PNG with transparency or SVG
-  - Path: `apps/registry-legacy/public/brand/logo.png`
+  - Path: `apps/registry/public/brand/logo.png`
 
 - [ ] **Compact Logo** (`logo-tight.png`)
   - Size: 32×32px
   - Format: PNG with transparency or SVG
-  - Path: `apps/registry-legacy/public/brand/logo-tight.png`
+  - Path: `apps/registry/public/brand/logo-tight.png`
 
 ## Favicon
 
 - [ ] **Favicon** (`favicon.ico`)
   - Size: 32×32px (include 16×16px variant)
   - Format: ICO or PNG
-  - Path: `apps/registry-legacy/public/brand/favicon.ico`
+  - Path: `apps/registry/public/brand/favicon.ico`
 
 - [ ] **Apple Touch Icon** (optional)
   - Size: 180×180px
   - Format: PNG
-  - Path: `apps/registry-legacy/public/apple-touch-icon.png`
+  - Path: `apps/registry/public/apple-touch-icon.png`
 
 ## Social Media
 
 - [ ] **OpenGraph Image** (`og-default.png`)
   - Size: 1200×630px
   - Format: PNG
-  - Path: `apps/registry-legacy/public/brand/og-default.png`
+  - Path: `apps/registry/public/brand/og-default.png`
 
 ## Environment Variables
 

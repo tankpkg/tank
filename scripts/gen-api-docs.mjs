@@ -11,8 +11,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const API_DIR = join(ROOT, 'apps/registry-legacy/app/api/v1');
-const DOCS_OUTPUT = join(ROOT, 'apps/registry-legacy/content/docs/api.mdx');
+const API_DIR = join(ROOT, 'apps/registry/src/api/routes/v1');
+const DOCS_OUTPUT = join(ROOT, 'apps/registry/public/docs/api.md');
 
 // HTTP methods to document
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];

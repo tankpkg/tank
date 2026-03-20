@@ -49,7 +49,7 @@ export const DEFAULT_BRAND: BrandConfig = {
 ### 2. Create config accessor
 
 ```typescript
-// apps/registry-legacy/lib/branding.ts
+// apps/registry/lib/branding.ts
 import { BrandConfig, DEFAULT_BRAND } from "@tank/shared";
 
 export function getBrandConfig(): BrandConfig {
@@ -81,7 +81,7 @@ export function getBrandConfig(): BrandConfig {
 ### 3. Add CSS variables
 
 ```css
-/* apps/registry-legacy/app/globals.css */
+/* apps/registry/app/globals.css */
 :root {
   --brand-primary: var(--color-emerald-400);
   --brand-secondary: var(--color-blue-500);
@@ -93,7 +93,7 @@ export function getBrandConfig(): BrandConfig {
 ### 4. Update components
 
 ```tsx
-// apps/registry-legacy/components/logo.tsx
+// apps/registry/components/logo.tsx
 import { getBrandConfig } from "@/lib/branding";
 import Image from "next/image";
 
@@ -108,7 +108,7 @@ export function Logo({ tight = false }: { tight?: boolean }) {
 ### 5. Powered by footer
 
 ```tsx
-// apps/registry-legacy/components/footer.tsx
+// apps/registry/components/footer.tsx
 export function Footer() {
   const brand = getBrandConfig();
 
@@ -155,7 +155,7 @@ BRAND_COLOR_PRIMARY="3b82f6"  # Blue instead of green
 | Favicon    | 32×32px    | ICO/PNG | Browser tab icon       |
 | OG image   | 1200×630px | PNG     | Social media preview   |
 
-Place assets in `apps/registry-legacy/public/brand/` directory.
+Place assets in `apps/registry/public/brand/` directory.
 
 ### Brand Guidelines
 

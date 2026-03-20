@@ -8,23 +8,16 @@
 
 **Single source of truth:**
 
-- `apps/registry-legacy/app/api/v1/skills/[name]/route.ts` — single skill metadata
-- `apps/registry-legacy/app/api/v1/skills/[name]/[version]/route.ts` — version detail with permissions
-- `apps/registry-legacy/app/api/v1/skills/[name]/versions/route.ts` — list all versions
-- `apps/registry-legacy/app/api/v1/skills/[name]/[version]/files/[...path]/route.ts` — file content
+- `apps/registry/src/api/routes/v1/skills-read.ts` — skill metadata, version detail, versions list, file content (all in one Hono route file)
 
 ---
 
 ## Layer 1: Structure
 
 ```
-apps/registry-legacy/app/api/v1/skills/
-  [name]/route.ts               # GET — skill metadata + latestVersion
-  [name]/[version]/route.ts     # GET — version detail: permissions, auditScore, downloadUrl
-  [name]/versions/route.ts      # GET — list all versions for a skill
-  [name]/[version]/files/       # GET — serve file content from tarball
-  [name]/star/route.ts          # GET/POST/DELETE — star counts and toggle
-apps/registry-legacy/app/api/v1/badge/[...name]/route.ts # GET — SVG badge for auditScore
+apps/registry/src/api/routes/v1/skills-read.ts   # GET — skill metadata, version detail, versions list, file content
+TODO: port star to apps/registry/src/api/routes/v1/star.ts  # GET/POST/DELETE — star counts and toggle
+TODO: port badge to apps/registry/src/api/routes/v1/badge.ts  # GET — SVG badge for auditScore
 ```
 
 ---

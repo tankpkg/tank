@@ -8,7 +8,6 @@ set -euo pipefail
 declare -a FILES=(
   "packages/cli/package.json"
   "apps/registry/package.json"
-  "apps/registry-legacy/package.json"
   "packages/mcp-server/package.json"
   "packages/internals-schemas/package.json"
   "packages/internals-helpers/package.json"

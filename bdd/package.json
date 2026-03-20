@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "test:system": "vitest run",
     "test:browser": "bunx bddgen test && bunx playwright test"
   },

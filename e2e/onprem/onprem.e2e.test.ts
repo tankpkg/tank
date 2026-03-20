@@ -4,9 +4,9 @@ import { join } from 'node:path';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runTank } from '../helpers/cli';
-import { getCurrentAppTarget } from '../targets.js';
+import { getRegistryUrl } from '../targets.js';
 
-const registry = getCurrentAppTarget().registryUrl;
+const registry = getRegistryUrl();
 
 async function createSkillFixture(dir: string, name: string): Promise<string> {
   const skillDir = join(dir, name);

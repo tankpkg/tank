@@ -6,9 +6,7 @@ Manual end-to-end publish verification for local development.
 
 - local Postgres / storage / auth env configured
 - CLI built
-- one registry target running:
-  - Next: `just dev registry-legacy` on `http://localhost:3000`
-  - TanStack: `just dev registry` on `http://localhost:3001`
+- registry running: `just dev registry` on `http://localhost:3001`
 
 ## Target Selection
 
@@ -22,8 +20,6 @@ cat > ~/.tank/config.json <<'EOF'
 }
 EOF
 ```
-
-Switch to `http://localhost:3000` when verifying the Next app.
 
 ## Flow
 

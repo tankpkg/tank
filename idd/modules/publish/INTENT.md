@@ -6,20 +6,20 @@
 
 **Consumers:** CLI (`tank publish` / `publishCommand()`), MCP server (`publish-skill` tool), both delegating to the same 3-step web API flow.
 
-**Single source of truth:** `packages/cli/src/commands/publish.ts` (CLI orchestration) → `apps/registry-legacy/app/api/v1/skills/route.ts` (step 1: initiate) → `apps/registry-legacy/app/api/v1/skills/confirm/route.ts` (step 3: confirm + scan trigger).
+**Single source of truth:** `packages/cli/src/commands/publish.ts` (CLI orchestration) → `apps/registry/src/api/routes/v1/skills-publish.ts` (step 1: initiate) → `apps/registry/src/api/routes/v1/skills-confirm.ts` (step 3: confirm + scan trigger).
 
 ---
 
 ## Layer 1: Structure
 
 ```
-packages/cli/src/commands/publish.ts          # CLI: pack → POST → PUT → confirm
-apps/registry-legacy/app/api/v1/skills/route.ts       # POST /api/v1/skills — initiate publish
-apps/registry-legacy/app/api/v1/skills/confirm/route.ts # POST /api/v1/skills/confirm — finalize
-packages/cli/src/lib/packer.ts                # Tarball packing, integrity computation
-apps/registry-legacy/lib/permission-escalation.ts     # Version permission-escalation check
-apps/registry-legacy/lib/audit-score.ts               # Audit score computation on confirm
-apps/registry-legacy/lib/storage/provider.ts          # Signed URL generation (Supabase / S3)
+packages/cli/src/commands/publish.ts                     # CLI: pack → POST → PUT → confirm
+apps/registry/src/api/routes/v1/skills-publish.ts        # POST /api/v1/skills — initiate publish
+apps/registry/src/api/routes/v1/skills-confirm.ts        # POST /api/v1/skills/confirm — finalize
+packages/cli/src/lib/packer.ts                           # Tarball packing, integrity computation
+apps/registry/src/lib/skills/permission-escalation.ts    # Version permission-escalation check
+apps/registry/src/lib/skills/audit-score.ts              # Audit score computation on confirm
+TODO: port storage provider to apps/registry/src/lib/storage/provider.ts  # Signed URL generation (Supabase / S3)
 ```
 
 ---
