@@ -41,6 +41,9 @@ PYTHON_API_URL=http://scanner:8000
 # Headless admin bootstrap (optional — or use the web wizard)
 # FIRST_ADMIN_EMAIL=admin@yourcompany.com
 # FIRST_ADMIN_PASSWORD=changeme123
+
+# Override default registry URL (for CLI pointing to this instance)
+# TANK_REGISTRY_URL=http://localhost:3000
 EOF
 ```
 
@@ -52,7 +55,11 @@ EOF
 docker compose up -d
 ```
 
+> **Image tags**: The compose file builds from source by default (no internet needed). For pre-built images, edit `docker-compose.production.yml` and use `:latest` (stable) or `:nightly` (bleeding edge).
+
 This starts PostgreSQL, MinIO (storage), the security scanner, and the Tank web app. Database tables are created automatically on first boot.
+
+> **Note on Images**: By default, `docker compose up` uses the `:nightly` image tags to ensure you have the latest features. For production environments, we strongly recommend pinning to a specific version tag (e.g., `:v0.8.1`) or the `:latest` stable tag.
 
 ### 4. Open the Setup Wizard
 

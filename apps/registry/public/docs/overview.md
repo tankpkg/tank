@@ -9,6 +9,24 @@ Tank is a **security-first package manager for AI agent skills** — the `npm` f
 
 Agent skills execute with the agent's full authority — reading files, making API calls, running shell commands. Tank treats that seriously.
 
+## Deployment Options
+
+| Option              | URL                                                | Best For                                    |
+| ------------------- | -------------------------------------------------- | ------------------------------------------- |
+| **Public Registry** | [www.tankpkg.dev](https://www.tankpkg.dev)         | Individual developers, open-source projects |
+| **Nightly**         | [nightly.tankpkg.dev](https://nightly.tankpkg.dev) | Early access to upcoming features           |
+| **Self-Hosted**     | Your own infrastructure                            | Enterprise, air-gapped, compliance          |
+
+### CLI Channels
+
+```bash
+# Stable (default)
+npm install -g @tankpkg/cli
+
+# Nightly (latest from main)
+npm install -g @tankpkg/cli@nightly
+```
+
 ## Product Guarantees
 
 Every skill installed through Tank is subject to:

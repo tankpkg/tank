@@ -37,6 +37,20 @@ A self-hosted Tank deployment runs four core services:
 | **Database**         | PostgreSQL 17+        | Skills, versions, users, audit logs |
 | **Object storage**   | MinIO (S3-compatible) | Skill tarballs                      |
 
+## Docker Image Tags
+
+| Tag           | Source               | Stability | Use Case                   |
+| ------------- | -------------------- | --------- | -------------------------- |
+| `latest`      | Latest `v*` tag      | Stable    | Production self-hosted     |
+| `v0.8.1`      | Specific version     | Pinned    | Version-locked deployments |
+| `nightly`     | Latest `main` branch | Unstable  | Testing upcoming features  |
+| `sha-abc1234` | Specific commit      | Pinned    | Debugging specific builds  |
+
+Images are published to `ghcr.io/tankpkg/`:
+
+- `ghcr.io/tankpkg/tank-web` — Registry web app + API
+- `ghcr.io/tankpkg/tank-scanner` — Security scanner (FastAPI)
+
 ## Deployment Modes
 
 Tank uses `TANK_MODE` to separate cloud and self-hosted behavior:
@@ -59,6 +73,8 @@ Docker Compose sets `TANK_MODE=selfhosted` automatically. If you deploy to Verce
 ## Docker Compose Deployment
 
 ### 1) Download and Configure
+
+> **Quick install**: Run `bash scripts/onprem-install.sh` for an interactive guided setup that handles everything below automatically.
 
 You don't need to clone the repository. Download the production compose file:
 
@@ -127,8 +143,7 @@ services:
       - "9001:9001"
 
   scanner:
-    build:
-      context: ./apps/python-api
+    image: ghcr.io/tankpkg/tank-scanner:latest
     environment:
       - DATABASE_URL=${DATABASE_URL}
     ports:
@@ -137,9 +152,7 @@ services:
       - postgres
 
   web:
-    build:
-      context: .
-      dockerfile: apps/registry/Dockerfile
+    image: ghcr.io/tankpkg/tank-web:latest
     environment:
       - TANK_MODE=selfhosted
       - DATABASE_URL=${DATABASE_URL}
@@ -192,11 +205,33 @@ docker compose run --rm web bun --filter=@tankpkg/web drizzle-kit push
 
 ### 5) Bootstrap the Admin User
 
+**Option A: Setup Wizard (recommended for first-time setup)**
+
+Visit your registry URL — you'll be redirected to `/setup` automatically. The wizard walks through database verification, URL configuration, storage, admin account creation, auth providers, and scanner setup.
+
+> The wizard is only available when `TANK_MODE=selfhosted`. After initial setup completes, the wizard is permanently locked (returns 403).
+
+**Option B: Headless Bootstrap (for automated deployments)**
+
+Set environment variables before starting:
+
 ```bash
-docker compose exec web bun --filter=@tankpkg/web admin:bootstrap
+FIRST_ADMIN_EMAIL=admin@yourcompany.com \
+FIRST_ADMIN_PASSWORD=securepassword123 \
+docker compose -f infra/docker-compose.yml up -d
 ```
 
-This promotes `FIRST_ADMIN_EMAIL` to the admin role. The user must sign in with GitHub OAuth first (creating their account), then run bootstrap.
+Or bootstrap after startup:
+
+```bash
+docker compose exec registry bun run scripts/bootstrap-headless.ts
+```
+
+The bootstrap script:
+
+- Creates the admin user with `emailVerified=true` and `role=admin`
+- Idempotent — promotes existing user to admin if they already exist
+- Uses bcrypt password hashing (compatible with Better Auth credential login)
 
 ### Setup Wizard (Recommended)
 
@@ -277,7 +312,7 @@ web:
     repository: ghcr.io/tankpkg/tank-web
     tag: latest
   env:
-    NEXT_PUBLIC_APP_URL: "https://tank.yourcompany.com"
+    APP_URL: "https://tank.yourcompany.com"
     GITHUB_CLIENT_ID: ""
     GITHUB_CLIENT_SECRET: ""
     FIRST_ADMIN_EMAIL: ""
@@ -375,24 +410,26 @@ helm upgrade tank infra/helm/tank/ \
 
 ### Self-Hosted Mode
 
-| Variable               | Description                  | Default |
-| ---------------------- | ---------------------------- | ------- |
-| `TANK_MODE`            | `cloud` or `selfhosted`      | `cloud` |
-| `AUTO_MIGRATE`         | Run DB migrations on startup | `false` |
-| `FIRST_ADMIN_EMAIL`    | Create admin on first boot   | —       |
-| `FIRST_ADMIN_PASSWORD` | Admin password (min 8 chars) | —       |
+| Variable               | Description                       | Default                   |
+| ---------------------- | --------------------------------- | ------------------------- |
+| `TANK_MODE`            | `cloud` or `selfhosted`           | `cloud`                   |
+| `AUTO_MIGRATE`         | Run DB migrations on Docker start | `false`                   |
+| `FIRST_ADMIN_EMAIL`    | Bootstrap admin on first boot     | —                         |
+| `FIRST_ADMIN_PASSWORD` | Admin password (min 8 chars)      | —                         |
+| `TANK_REGISTRY_URL`    | Override default registry URL     | `https://www.tankpkg.dev` |
+| `SESSION_STORE`        | `memory` or `redis`               | `memory`                  |
 
 ### Storage
 
-| Variable                | Description                       | Default              |
-| ----------------------- | --------------------------------- | -------------------- |
-| `STORAGE_BACKEND`       | `supabase`, `s3`, or `filesystem` | `supabase`           |
-| `STORAGE_FS_PATH`       | Local path for filesystem storage | `/app/data/packages` |
-| `S3_BUCKET`             | Bucket name for tarballs          | —                    |
-| `S3_ENDPOINT`           | S3 endpoint (for MinIO)           | —                    |
-| `AWS_ACCESS_KEY_ID`     | S3 access key                     | —                    |
-| `AWS_SECRET_ACCESS_KEY` | S3 secret key                     | —                    |
-| `AWS_REGION`            | S3 region                         | `us-east-1`          |
+| Variable          | Description                       | Default              |
+| ----------------- | --------------------------------- | -------------------- |
+| `STORAGE_BACKEND` | `s3`, `supabase`, or `filesystem` | `supabase`           |
+| `S3_BUCKET`       | Bucket name for tarballs          | —                    |
+| `S3_ENDPOINT`     | S3 endpoint (for MinIO)           | —                    |
+| `S3_ACCESS_KEY`   | S3 access key                     | —                    |
+| `S3_SECRET_KEY`   | S3 secret key                     | —                    |
+| `S3_REGION`       | S3 region                         | `us-east-1`          |
+| `STORAGE_FS_PATH` | Local path for filesystem storage | `/app/data/packages` |
 
 ### Optional
 

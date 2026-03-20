@@ -19,10 +19,16 @@ Before installing Tank, confirm you have:
 
 ## Step 1 — Install the CLI
 
-Install with npm:
+Install the stable version with npm:
 
 ```bash
 npm install -g @tankpkg/cli
+```
+
+For nightly builds (latest features, may be unstable):
+
+```bash
+npm install -g @tankpkg/cli@nightly
 ```
 
 ### Homebrew (macOS)
@@ -41,10 +47,28 @@ You should see a version string like `tank/0.x.y`. If you get a "command not fou
 
 ## Step 2 — Authenticate
 
-Tank uses GitHub OAuth for authentication. Your token is stored locally in `~/.tank/config.json` — it never leaves your machine unless you're making authenticated API calls.
+Tank uses GitHub OAuth for authentication. By default, the CLI connects to the public registry at `https://www.tankpkg.dev`. Your token is stored locally in `~/.tank/config.json` — it never leaves your machine unless you're making authenticated API calls.
 
 ```bash
 tank login
+```
+
+### Connecting to a Different Registry
+
+By default, the CLI connects to `www.tankpkg.dev`. To use a self-hosted or nightly registry:
+
+```bash
+# Self-hosted
+tank login --registry https://tank.yourcompany.com
+
+# Nightly
+TANK_REGISTRY_URL=https://nightly.tankpkg.dev tank search hello
+```
+
+If you are using a self-hosted instance, specify your registry URL:
+
+```bash
+tank login --registry https://tank.yourcompany.com
 ```
 
 This opens your browser for the GitHub OAuth flow. After authorizing, the CLI polls for the token exchange and confirms authentication.

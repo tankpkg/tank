@@ -1,0 +1,116 @@
+# Tank On-Premises — Pull-only deployment (no git clone needed)
+#
+# Prerequisites:
+#   1. Whitelist ghcr.io/tankpkg/tank-web and ghcr.io/tankpkg/tank-scanner
+#   2. Copy this file and create a .env file
+#   3. Run: docker compose -f docker-compose.onprem.yml up -d
+#   4. Open http://localhost:3000/setup to configure
+#
+# Image tags:
+#   :latest  — stable release (recommended)
+#   :nightly — latest from main (may break)
+#   :v0.8.1  — pinned version
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tank-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tank}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-tank}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tank}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tank
+
+  minio:
+    image: minio/minio:latest
+    container_name: tank-storage
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-tank}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme123456}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - tank
+
+  scanner:
+    image: ghcr.io/tankpkg/tank-scanner:${TANK_IMAGE_TAG:-latest}
+    container_name: tank-scanner
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-tank}
+      S3_ENDPOINT: http://minio:9000
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - tank
+
+  web:
+    image: ghcr.io/tankpkg/tank-web:${TANK_IMAGE_TAG:-latest}
+    container_name: tank-web
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-tank}
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?Run: openssl rand -base64 32}"
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      BETTER_AUTH_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_PROVIDERS: ${AUTH_PROVIDERS:-credentials}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-tank}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme123456}
+      S3_BUCKET: ${S3_BUCKET:-packages}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      PYTHON_API_URL: http://scanner:8000
+      TANK_MODE: selfhosted
+      FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-}
+      OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      scanner:
+        condition: service_started
+    networks:
+      - tank
+
+volumes:
+  pgdata:
+  miniodata:
+
+networks:
+  tank:
+    driver: bridge

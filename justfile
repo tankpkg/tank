@@ -7,6 +7,11 @@ install:
     bun install
     cd apps/python-api && UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/tank-uv-cache}" uv sync
 
+# On-premises installation — builds from source, generates .env, starts Docker stack
+[group('setup')]
+onprem-install:
+    bash scripts/onprem-install.sh
+
 # Install git pre-push hook — auto-runs lint, typecheck, and tests on changed packages before push
 [group('setup')]
 hooks:

@@ -23,11 +23,15 @@ COPY package.json bun.lock tsconfig.json ./
 COPY packages/internals-schemas ./packages/internals-schemas
 COPY packages/internals-helpers ./packages/internals-helpers
 COPY apps/registry ./apps/registry
+COPY packages/cli ./packages/cli
+COPY packages/mcp-server ./packages/mcp-server
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/internals-schemas/node_modules ./packages/internals-schemas/node_modules
 COPY --from=deps /app/packages/internals-helpers/node_modules ./packages/internals-helpers/node_modules
 COPY --from=deps /app/apps/registry/node_modules ./apps/registry/node_modules
+COPY --from=deps /app/packages/cli/node_modules ./packages/cli/node_modules
+COPY --from=deps /app/packages/mcp-server/node_modules ./packages/mcp-server/node_modules
 
 RUN bun run --filter=@internals/schemas build && \
     bun run --filter=@internals/helpers build && \
@@ -45,6 +49,14 @@ export default defineConfig({
   dbCredentials: { url: databaseUrl },
 });
 DRIZZLE_EOF
+
+# Build CLI binaries for on-prem distribution
+RUN bun run --filter=@tankpkg/cli build && \
+    bun run --filter=@tankpkg/cli build:bundle && \
+    mkdir -p /app/cli-binaries && \
+    bun build --compile packages/cli/build/tank-bundle.mjs --target bun-linux-x64 --outfile /app/cli-binaries/tank-linux-x64 && \
+    bun build --compile packages/cli/build/tank-bundle.mjs --target bun-linux-arm64 --outfile /app/cli-binaries/tank-linux-arm64 && \
+    chmod +x /app/cli-binaries/*
 
 # Stage 3: Production
 FROM oven/bun:1-alpine AS runner
@@ -64,6 +76,8 @@ COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/drizzle.co
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/schema.js ./src/lib/db/schema.js
 COPY --from=deps --chown=tanstack:bunjs /app/apps/registry/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=deps --chown=tanstack:bunjs /app/apps/registry/node_modules/drizzle-kit ./node_modules/drizzle-kit
+
+COPY --from=builder --chown=tanstack:bunjs /app/cli-binaries /app/cli-binaries
 
 RUN chmod +x entrypoint.sh
 
