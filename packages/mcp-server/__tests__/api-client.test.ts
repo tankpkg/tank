@@ -27,7 +27,7 @@ describe('TankApiClient', () => {
 
   describe('properties', () => {
     it('returns base URL from config', () => {
-      expect(client.baseUrl).toBe('https://tankpkg.dev');
+      expect(client.baseUrl).toBe('https://www.tankpkg.dev');
     });
 
     it('returns token when set', () => {
@@ -60,7 +60,7 @@ describe('TankApiClient', () => {
       const result = await client.fetch<{ data: string }>('/api/test');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://tankpkg.dev/api/test',
+        'https://www.tankpkg.dev/api/test',
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: 'Bearer test-token'

@@ -11,9 +11,9 @@ inputs:
     description: "Tank API token (from tank login or dashboard)"
     required: true
   registry:
-    description: "Registry URL (default: https://tankpkg.dev)"
+    description: "Registry URL (default: https://www.tankpkg.dev)"
     required: false
-    default: "https://tankpkg.dev"
+    default: "https://www.tankpkg.dev"
   directory:
     description: "Skill directory containing SKILL.md (default: .)"
     required: false

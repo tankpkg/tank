@@ -20,7 +20,7 @@ describe('config', () => {
   describe('getConfig', () => {
     it('returns default config when file does not exist', () => {
       const config = getConfig(tempDir);
-      expect(config.registry).toBe('https://tankpkg.dev');
+      expect(config.registry).toBe('https://www.tankpkg.dev');
       expect(config.token).toBeUndefined();
     });
 
