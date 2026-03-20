@@ -1,4 +1,4 @@
-export const REGISTRY_URL = 'https://tankpkg.dev';
+export const REGISTRY_URL = process.env.TANK_REGISTRY_URL || 'https://www.tankpkg.dev';
 export const REGISTRY_API_VERSION = 'v1';
 export const MAX_PACKAGE_SIZE = 50 * 1024 * 1024; // 50MB
 export const MAX_FILE_COUNT = 1000;

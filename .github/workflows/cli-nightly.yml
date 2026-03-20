@@ -59,7 +59,9 @@ jobs:
             }
           "
 
-      - name: Build packages
+      - name: Build packages (with nightly URLs baked in)
+        env:
+          TANK_REGISTRY_URL: https://nightly.tankpkg.dev
         run: |
           bun --filter @internals/schemas run build
           bun --filter @internals/helpers run build
