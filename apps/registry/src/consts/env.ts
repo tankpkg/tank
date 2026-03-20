@@ -9,6 +9,7 @@ export const zEnv = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   APP_URL: zUrl.default('http://localhost:5555'),
   APP_NAME: zStr.default('Tank'),
+  TANK_MODE: z.enum(['cloud', 'selfhosted']).default('cloud'),
 
   // ── Database ──
   DATABASE_URL: zStr,
@@ -32,7 +33,8 @@ export const zEnv = z.object({
   OIDC_USER_INFO_URL: zOptStr,
 
   // ── Storage ──
-  STORAGE_BACKEND: z.enum(['s3', 'supabase']).default('supabase'),
+  STORAGE_BACKEND: z.enum(['s3', 'supabase', 'filesystem']).default('supabase'),
+  STORAGE_FS_PATH: zOptStr,
   S3_ENDPOINT: zOptStr,
   S3_PUBLIC_ENDPOINT: zOptStr,
   S3_ACCESS_KEY: zOptStr,
@@ -87,3 +89,5 @@ export const oidcEnabled =
   !!env.OIDC_CLIENT_ID &&
   !!env.OIDC_CLIENT_SECRET &&
   !!(env.OIDC_DISCOVERY_URL || (env.OIDC_AUTHORIZATION_URL && env.OIDC_TOKEN_URL && env.OIDC_USER_INFO_URL));
+
+export const isSelfHosted = env.TANK_MODE === 'selfhosted';

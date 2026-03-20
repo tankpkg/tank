@@ -1,3 +1,6 @@
+import { createHmac } from 'node:crypto';
+import * as fs from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import {
   CreateBucketCommand,
   GetObjectCommand,
@@ -189,6 +192,74 @@ class S3StorageProvider implements StorageProvider {
   }
 }
 
+class FilesystemStorageProvider implements StorageProvider {
+  private readonly baseDir: string;
+  private readonly publicUrl: string;
+
+  constructor(baseDir: string, publicUrl: string) {
+    this.baseDir = baseDir;
+    this.publicUrl = publicUrl.replace(/\/$/, '');
+  }
+
+  private resolvePath(path: string): string {
+    const resolved = resolve(join(this.baseDir, path));
+    if (!resolved.startsWith(resolve(this.baseDir))) {
+      throw new Error('Path traversal detected');
+    }
+    return resolved;
+  }
+
+  private generateToken(path: string, expiresAt: number): string {
+    const secret = process.env.BETTER_AUTH_SECRET || 'tank-fs-secret';
+    return createHmac('sha256', secret).update(`${path}:${expiresAt}`).digest('hex');
+  }
+
+  async createSignedUploadUrl(path: string, expiresInSeconds = 3600): Promise<SignedUrlResult> {
+    const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
+    const token = this.generateToken(path, expiresAt);
+    return {
+      signedUrl: `${this.publicUrl}/api/storage/upload?path=${encodeURIComponent(path)}&expires=${expiresAt}&token=${token}`
+    };
+  }
+
+  async createSignedUrl(path: string, expiresInSeconds = 3600): Promise<SignedUrlResult> {
+    const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
+    const token = this.generateToken(path, expiresAt);
+    return {
+      signedUrl: `${this.publicUrl}/api/storage/download?path=${encodeURIComponent(path)}&expires=${expiresAt}&token=${token}`
+    };
+  }
+
+  async putObject(path: string, body: Uint8Array): Promise<void> {
+    const fullPath = this.resolvePath(path);
+    fs.mkdirSync(dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, body);
+  }
+
+  async listObjects(_bucket: string, prefix: string, limit: number): Promise<unknown> {
+    const dir = this.resolvePath(prefix || '');
+    if (!fs.existsSync(dir)) return { Contents: [] };
+    const files = fs
+      .readdirSync(dir)
+      .slice(0, limit)
+      .map((name: string) => ({
+        Key: join(prefix || '', name),
+        Size: fs.statSync(join(dir, name)).size
+      }));
+    return { Contents: files };
+  }
+
+  verifyToken(path: string, expires: string, token: string): boolean {
+    const expiresAt = Number.parseInt(expires, 10);
+    if (isNaN(expiresAt) || Date.now() / 1000 > expiresAt) return false;
+    return this.generateToken(path, expiresAt) === token;
+  }
+
+  getFilePath(path: string): string {
+    return this.resolvePath(path);
+  }
+}
+
 let providerInstance: StorageProvider | null = null;
 
 export function getStorageProvider(): StorageProvider {
@@ -197,6 +268,13 @@ export function getStorageProvider(): StorageProvider {
   const backend = env.STORAGE_BACKEND;
   const bucket = env.STORAGE_BUCKET || env.S3_BUCKET;
 
+  if (backend === 'filesystem') {
+    const baseDir = env.STORAGE_FS_PATH || '/app/data/packages';
+    const publicUrl = env.BETTER_AUTH_URL || env.APP_URL || 'http://localhost:3000';
+    providerInstance = new FilesystemStorageProvider(baseDir, publicUrl);
+    return providerInstance;
+  }
+
   if (backend === 's3') {
     providerInstance = new S3StorageProvider(bucket);
     return providerInstance;
@@ -204,4 +282,9 @@ export function getStorageProvider(): StorageProvider {
 
   providerInstance = new SupabaseStorageProvider(bucket);
   return providerInstance;
+}
+
+export function getFilesystemProvider(): FilesystemStorageProvider | null {
+  const provider = getStorageProvider();
+  return provider instanceof FilesystemStorageProvider ? provider : null;
 }

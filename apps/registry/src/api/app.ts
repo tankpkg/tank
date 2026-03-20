@@ -5,6 +5,8 @@ import { auth } from '~/lib/auth/core';
 import { requireAdmin } from './middleware/require-admin';
 import { adminRoutes } from './routes/admin';
 import { ogRoutes } from './routes/og';
+import { setupRoutes } from './routes/setup';
+import { storageRoutes } from './routes/storage';
 import { v1Routes } from './routes/v1';
 
 export const app = new Hono()
@@ -12,6 +14,14 @@ export const app = new Hono()
   .use('*', cors({ origin: (origin) => origin, credentials: true }))
   .all('/auth/*', (c) => auth.handler(c.req.raw))
   .get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
+  .use('/setup/*', async (c, next) => {
+    if (process.env.TANK_MODE !== 'selfhosted') {
+      return c.json({ error: 'Not found' }, 404);
+    }
+    return next();
+  })
+  .route('/setup', setupRoutes)
+  .route('/storage', storageRoutes)
   .route('/og', ogRoutes)
   .route('/v1', v1Routes)
   .use('/admin/*', requireAdmin())

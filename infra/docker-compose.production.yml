@@ -110,6 +110,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@tank.local}
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
+      TANK_MODE: selfhosted
     depends_on:
       postgres:
         condition: service_healthy
