@@ -16,5 +16,4 @@ action
 apps/web
 apps/cli/build
 
-apps/python-api
 packages/web
