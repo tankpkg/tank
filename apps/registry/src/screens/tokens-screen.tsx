@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { TokenForm } from '~/components/dashboard/token-form';
 import type { ApiKey } from '~/components/dashboard/token-table';
 import { TokenTable } from '~/components/dashboard/token-table';
@@ -20,17 +20,17 @@ export function TokensScreen() {
       const result = await listTokensFn();
       const keys = (result as { apiKeys?: unknown[] })?.apiKeys ?? [];
       setTokens(keys as ApiKey[]);
-      setLoaded(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load tokens');
     } finally {
       setLoading(false);
+      setLoaded(true);
     }
   }, []);
 
-  if (!loaded && !loading) {
+  useEffect(() => {
     fetchTokens();
-  }
+  }, [fetchTokens]);
 
   const handleRevoke = async (keyId: string) => {
     setRevokingId(keyId);
