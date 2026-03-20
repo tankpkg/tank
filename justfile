@@ -324,6 +324,79 @@ update target='all':
         update_one "{{target}}"
     fi
 
+# ── CI/CD recipes (used by GitHub Actions, testable locally) ──
+
+[group('ci')]
+ci-test:
+    bun turbo test
+
+[group('ci')]
+ci-lint:
+    just verify-readonly
+
+[group('ci')]
+ci-build-cli VERSION:
+    just bump {{VERSION}}
+    just build internals-schemas
+    just build internals-helpers
+    just build cli
+    just build mcp
+
+[group('ci')]
+ci-build-cli-binary VERSION PLATFORM:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just ci-build-cli {{VERSION}}
+    cd packages/cli && bun run build:bundle
+    TARGET="bun-{{PLATFORM}}" OUTPUT_NAME="tank-{{PLATFORM}}" bun run build:sea
+
+[group('ci')]
+ci-publish-npm-nightly:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    SHORT_SHA=$(git rev-parse --short HEAD)
+    NIGHTLY_VERSION="0.0.0-nightly.$(date -u +%Y%m%d).${SHORT_SHA}"
+    just bump "${NIGHTLY_VERSION}"
+    TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build internals-schemas
+    TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build internals-helpers
+    TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build cli
+    TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build mcp
+    cd packages/cli && npm publish --no-git-checks --access public --tag nightly
+    cd packages/mcp-server && npm publish --no-git-checks --access public --tag nightly
+
+[group('ci')]
+ci-publish-npm VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just ci-build-cli {{VERSION}}
+    cd packages/cli && npm publish --no-git-checks --access public
+    cd packages/mcp-server && npm publish --no-git-checks --access public
+
+[group('ci')]
+ci-release-tag VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TAG="v{{VERSION}}"
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git push origin HEAD:refs/heads/release/${TAG}
+    just bump {{VERSION}}
+    git add -A && git diff --cached --quiet || git commit -m "chore: bump version to {{VERSION}}"
+    git tag -a "${TAG}" -m "Release ${TAG}"
+    git push origin "${TAG}"
+    git push origin HEAD
+
+[group('ci')]
+ci-merge-stable:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git checkout stable
+    git merge main --no-edit
+    git push origin stable
+    git checkout main
+
 # Remove build artifacts (.next, dist, build, coverage) and turbo cache
 [group('clean')]
 clean:

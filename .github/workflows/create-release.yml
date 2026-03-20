@@ -1,20 +1,14 @@
 name: Create Release
 
-# 1. Creates release/vX.Y.Z branch (permanent source snapshot)
-# 2. Merges main → stable (updates production Vercel)
-# 3. Bumps version in package.json files
-# 4. Creates vX.Y.Z tag → triggers release.yml (CLI/npm) + publish.yml (Docker/Helm)
-
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (e.g., 0.9.0 — without the v prefix)"
+        description: "Version (e.g. 0.10.0, without v prefix)"
         required: true
         type: string
       skip_merge:
-        description: "Skip merging main → stable (use if stable is already up to date)"
-        required: false
+        description: "Skip main → stable merge"
         type: boolean
         default: false
 
@@ -22,101 +16,22 @@ permissions:
   contents: write
 
 jobs:
-  create-release:
-    name: Create Release v${{ inputs.version }}
+  release:
     runs-on: ubuntu-22.04
-
     steps:
-      - name: Validate version format
-        run: |
-          VERSION="${{ inputs.version }}"
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-            echo "::error::Invalid version format: $VERSION. Expected: X.Y.Z or X.Y.Z-beta.1"
-            exit 1
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "TAG=v$VERSION" >> $GITHUB_ENV
-
-      - name: Checkout main
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check tag doesn't already exist
-        run: |
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "::error::Tag $TAG already exists"
-            exit 1
-          fi
+      - uses: oven-sh/setup-bun@v2
 
-      - name: Create release branch (permanent snapshot)
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git push origin main:refs/heads/release/$TAG
+      - run: bun install --frozen-lockfile
+
+      - name: Create release branch + tag
+        run: just ci-release-tag ${{ inputs.version }}
 
       - name: Merge main → stable
         if: ${{ !inputs.skip_merge }}
-        run: |
-          git checkout stable
-          git merge main --no-edit -m "release: merge main → stable for $TAG"
-          git push origin stable
-          git checkout main
-
-      - name: Bump version in package.json files
-        run: |
-          node -e "
-            const fs = require('fs');
-            const files = [
-              'packages/cli/package.json',
-              'packages/mcp-server/package.json'
-            ];
-            for (const file of files) {
-              const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
-              pkg.version = '${{ inputs.version }}';
-              fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
-              console.log('Updated', file, 'to', pkg.version);
-            }
-          "
-
-      - name: Commit version bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add packages/cli/package.json packages/mcp-server/package.json
-          if git diff --cached --quiet; then
-            echo "No version changes to commit"
-          else
-            git commit -m "chore: bump version to $VERSION"
-            git push origin main
-          fi
-
-      - name: Create and push tag
-        run: |
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-
-      - name: Summary
-        run: |
-          echo "## Release $TAG created! 🚀" >> $GITHUB_SUMMARY
-          echo "" >> $GITHUB_SUMMARY
-          echo "The tag push will now trigger:" >> $GITHUB_SUMMARY
-          echo "- **release.yml**: CLI binaries → GitHub Release → npm publish" >> $GITHUB_SUMMARY
-          echo "- **publish.yml**: Docker images → ghcr.io → Helm chart" >> $GITHUB_SUMMARY
-          echo "" >> $GITHUB_SUMMARY
-          echo "### What happened:" >> $GITHUB_SUMMARY
-          echo "1. ✅ Created release/$TAG branch (permanent snapshot)" >> $GITHUB_SUMMARY
-          if [ "${{ inputs.skip_merge }}" = "false" ]; then
-            echo "2. ✅ Merged main → stable" >> $GITHUB_SUMMARY
-          else
-            echo "2. ⏭️ Skipped main → stable merge" >> $GITHUB_SUMMARY
-          fi
-          echo "3. ✅ Bumped version to $VERSION" >> $GITHUB_SUMMARY
-          echo "4. ✅ Created tag $TAG" >> $GITHUB_SUMMARY
-          echo "" >> $GITHUB_SUMMARY
-          echo "### Monitor:" >> $GITHUB_SUMMARY
-          echo "- [Release workflow](https://github.com/${{ github.repository }}/actions/workflows/release.yml)" >> $GITHUB_SUMMARY
-          echo "- [Publish workflow](https://github.com/${{ github.repository }}/actions/workflows/publish.yml)" >> $GITHUB_SUMMARY
+        run: just ci-merge-stable

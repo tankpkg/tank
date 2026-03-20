@@ -2,8 +2,7 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
 
 permissions:
   contents: write
@@ -20,12 +19,10 @@ jobs:
             platform: linux-x64
             target: bun-linux-x64
             output: tank-linux-x64
-            deb_arch: amd64
           - runner: ubuntu-22.04
             platform: linux-arm64
             target: bun-linux-arm64
             output: tank-linux-arm64
-            deb_arch: arm64
           - runner: macos-14
             platform: darwin-arm64
             target: bun-darwin-arm64
@@ -44,265 +41,119 @@ jobs:
         shell: bash
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - uses: oven-sh/setup-bun@v2
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      - run: bun install --frozen-lockfile
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Inject version from git tag
+      - name: Build binary
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
+          just ci-build-cli "${VERSION}"
+          cd packages/cli && bun run build:bundle
+          TARGET=${{ matrix.target }} OUTPUT_NAME=${{ matrix.output }} bun run build:sea
 
-      - name: Build shared package
-        run: bun run --filter '@internals/schemas' build && bun run --filter '@internals/helpers' build
-
-      - name: Build bundle and binary
-        working-directory: packages/cli
-        env:
-          TARGET: ${{ matrix.target }}
-          OUTPUT_NAME: ${{ matrix.output }}
-        run: |
-          bun run build
-          bun run build:bundle
-          bun run build:sea
-
-      - name: Package tarball (unix)
+      - name: Package (unix)
         if: runner.os != 'Windows'
-        working-directory: packages/cli/build
-        run: tar -czf ${{ matrix.output }}.tar.gz ${{ matrix.output }}
+        run: tar -czf packages/cli/build/${{ matrix.output }}.tar.gz -C packages/cli/build ${{ matrix.output }}
 
-      - name: Package zip (windows)
+      - name: Package (windows)
         if: runner.os == 'Windows'
-        working-directory: packages/cli/build
         shell: pwsh
-        run: Compress-Archive -Path ${{ matrix.output }} -DestinationPath tank-windows-x64.zip
+        run: Compress-Archive -Path packages/cli/build/${{ matrix.output }} -DestinationPath packages/cli/build/tank-windows-x64.zip
 
-      - name: Build Windows installer
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          if (!(Test-Path "installer/windows/create-icon.ps1")) {
-            Write-Host "Installer scripts not found, skipping .exe installer build"
-            exit 0
-          }
-          powershell -ExecutionPolicy Bypass -File installer/windows/create-icon.ps1
-          choco install innosetup -y --no-progress
-          $version = "${{ github.ref_name }}".TrimStart("v")
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DVERSION=$version installer\windows\tank-installer.iss
-
-      - name: Upload binary artifact
-        if: runner.os != 'Windows'
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.output }}
-          path: |
-            packages/cli/build/${{ matrix.output }}
-            packages/cli/build/${{ matrix.output }}.tar.gz
-          if-no-files-found: error
-
-      - name: Upload Windows artifacts
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.output }}
-          path: |
-            packages/cli/build/${{ matrix.output }}
-            packages/cli/build/tank-windows-x64.zip
-            packages/cli/build/tank-windows-x64-setup.exe
+          path: packages/cli/build/${{ matrix.output }}*
           if-no-files-found: error
 
   release:
-    name: create-release
     runs-on: ubuntu-22.04
     needs: build
-    env:
-      VERSION: ${{ github.ref_name }}
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           path: dist
 
-      - name: Flatten artifacts
+      - name: Flatten + package
         run: |
           mkdir -p release
           find dist -type f -exec mv {} release/ \;
-          ls -lah release
+          sudo gem install --no-document fpm
+          VERSION="${GITHUB_REF_NAME#v}"
+          fpm -s dir -t deb -n tank -v "$VERSION" --architecture amd64 --package release/tank_${VERSION}_amd64.deb release/tank-linux-x64=/usr/local/bin/tank
+          fpm -s dir -t deb -n tank -v "$VERSION" --architecture arm64 --package release/tank_${VERSION}_arm64.deb release/tank-linux-arm64=/usr/local/bin/tank
+          cd release && sha256sum tank-* *.deb 2>/dev/null | sort > SHA256SUMS || true
 
-      - name: Install fpm
-        run: sudo gem install --no-document fpm
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release/*
 
-      - name: Build .deb packages
+  publish-npm:
+    runs-on: ubuntu-22.04
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: bun install --frozen-lockfile
+      - run: just ci-publish-npm "${GITHUB_REF_NAME#v}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  update-homebrew:
+    runs-on: ubuntu-22.04
+    needs: release
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Update Homebrew formula
         run: |
-          VERSION_NO_V="${VERSION#v}"
-          fpm -s dir -t deb \
-            -n tank \
-            -v "$VERSION_NO_V" \
-            --description "Security-first package manager for AI agent skills" \
-            --url "https://tankpkg.dev" \
-            --maintainer "Tank Team <team@tankpkg.dev>" \
-            --license "MIT" \
-            --architecture amd64 \
-            --package release/tank_${VERSION_NO_V}_amd64.deb \
-            release/tank-linux-x64=/usr/local/bin/tank
-
-          fpm -s dir -t deb \
-            -n tank \
-            -v "$VERSION_NO_V" \
-            --description "Security-first package manager for AI agent skills" \
-            --url "https://tankpkg.dev" \
-            --maintainer "Tank Team <team@tankpkg.dev>" \
-            --license "MIT" \
-            --architecture arm64 \
-            --package release/tank_${VERSION_NO_V}_arm64.deb \
-            release/tank-linux-arm64=/usr/local/bin/tank
-
-      - name: Generate checksums
-        working-directory: release
-        run: sha256sum tank-* *.deb *.exe 2>/dev/null | sort > SHA256SUMS || true
-
-      - name: Update in-repo Homebrew formula
-        continue-on-error: true
-        run: |
-          VERSION_NO_V="${VERSION#v}"
-
-          SHA_DARWIN_ARM64="$(sha256sum release/tank-darwin-arm64.tar.gz | awk '{print $1}')"
-          SHA_DARWIN_X64="$(sha256sum release/tank-darwin-x64.tar.gz | awk '{print $1}')"
-          SHA_LINUX_ARM64="$(sha256sum release/tank-linux-arm64.tar.gz | awk '{print $1}')"
-          SHA_LINUX_X64="$(sha256sum release/tank-linux-x64.tar.gz | awk '{print $1}')"
-
-          git fetch origin main
-          git checkout main
-          git pull --ff-only origin main
-
+          VERSION="${GITHUB_REF_NAME#v}"
+          SHA_DARWIN_ARM64="$(curl -sfL "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/tank-darwin-arm64.tar.gz" | sha256sum | awk '{print $1}')"
+          SHA_DARWIN_X64="$(curl -sfL "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/tank-darwin-x64.tar.gz" | sha256sum | awk '{print $1}')"
+          SHA_LINUX_ARM64="$(curl -sfL "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/tank-linux-arm64.tar.gz" | sha256sum | awk '{print $1}')"
+          SHA_LINUX_X64="$(curl -sfL "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/tank-linux-x64.tar.gz" | sha256sum | awk '{print $1}')"
           mkdir -p Formula
-          cat > Formula/tank.rb <<EOF
+          cat > Formula/tank.rb << EOF
           class Tank < Formula
             desc "Security-first package manager for AI agent skills"
             homepage "https://tankpkg.dev"
-            version "${VERSION_NO_V}"
-
+            version "${VERSION}"
             if OS.mac? && Hardware::CPU.arm?
-              url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-darwin-arm64.tar.gz"
+              url "https://github.com/${{ github.repository }}/releases/download/v#{version}/tank-darwin-arm64.tar.gz"
               sha256 "${SHA_DARWIN_ARM64}"
             elsif OS.mac?
-              url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-darwin-x64.tar.gz"
+              url "https://github.com/${{ github.repository }}/releases/download/v#{version}/tank-darwin-x64.tar.gz"
               sha256 "${SHA_DARWIN_X64}"
             elsif OS.linux? && Hardware::CPU.arm?
-              url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-linux-arm64.tar.gz"
+              url "https://github.com/${{ github.repository }}/releases/download/v#{version}/tank-linux-arm64.tar.gz"
               sha256 "${SHA_LINUX_ARM64}"
             else
-              url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-linux-x64.tar.gz"
+              url "https://github.com/${{ github.repository }}/releases/download/v#{version}/tank-linux-x64.tar.gz"
               sha256 "${SHA_LINUX_X64}"
             end
-
             def install
-              bin.install "tank-#{OS.mac? ? \"darwin\" : \"linux\"}-#{Hardware::CPU.arm? ? \"arm64\" : \"x64\"}" => "tank"
+              bin.install Dir["tank-*"].first => "tank"
             end
-
             test do
               system "#{bin}/tank", "--version"
             end
           end
           EOF
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/tank.rb
-          if git diff --cached --quiet; then
-            echo "No formula changes"
-          else
-            git commit -m "chore: update formula for ${VERSION}"
-            git push origin main
-          fi
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          files: |
-            release/tank-linux-x64
-            release/tank-linux-arm64
-            release/tank-darwin-x64
-            release/tank-darwin-arm64
-            release/tank-windows-x64.exe
-            release/tank-linux-x64.tar.gz
-            release/tank-linux-arm64.tar.gz
-            release/tank-darwin-x64.tar.gz
-            release/tank-darwin-arm64.tar.gz
-            release/tank-windows-x64.zip
-            release/tank-windows-x64-setup.exe
-            release/tank_*.deb
-            release/SHA256SUMS
-
-  publish-npm:
-    name: publish-npm
-    runs-on: ubuntu-22.04
-    needs: build
-    continue-on-error: true
-    env:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Inject version from git tag
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          node -e "const p=require('./packages/cli/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/cli/package.json', JSON.stringify(p, null, 2)+'\n')"
-          node -e "const p=require('./packages/mcp-server/package.json'); p.version='${VERSION}'; require('fs').writeFileSync('./packages/mcp-server/package.json', JSON.stringify(p, null, 2)+'\n')"
-
-      - name: Build packages
-        run: |
-          bun --filter @internals/schemas run build
-          bun --filter @internals/helpers run build
-          bun --filter @tankpkg/cli run build
-          bun --filter @tankpkg/mcp-server run build
-
-      - name: Publish CLI to npm
-        continue-on-error: true
-        if: ${{ env.NPM_TOKEN != '' }}
-        working-directory: packages/cli
-        run: npm publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
-
-      - name: Publish MCP server to npm
-        continue-on-error: true
-        if: ${{ env.NPM_TOKEN != '' }}
-        working-directory: packages/mcp-server
-        run: npm publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ env.NPM_TOKEN }}
+          git diff --cached --quiet || (git commit -m "chore: update formula for v${VERSION}" && git push origin main)
