@@ -11,7 +11,7 @@ interface Heading {
 }
 
 const SIDEBAR_ORDER: Array<DocMeta | { separator: string }> = [
-  { slug: 'index', title: 'Overview' },
+  { slug: 'overview', title: 'Overview' },
   { slug: 'getting-started', title: 'Getting Started' },
   { separator: 'Guides' },
   { slug: 'publishing', title: 'Publishing' },
@@ -48,7 +48,7 @@ function useActiveSlug(): string | null {
   const splat = (last.params as Record<string, string>)._splat;
   if (splat) return splat;
 
-  if (last.fullPath.endsWith('/docs') || last.fullPath.endsWith('/docs/')) return 'index';
+  if (last.fullPath.endsWith('/docs') || last.fullPath.endsWith('/docs/')) return 'overview';
   return null;
 }
 
@@ -73,7 +73,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         }
 
         const isActive = activeSlug === item.slug;
-        const to = item.slug === 'index' ? '/docs' : `/docs/${item.slug}`;
+        const to = `/docs/${item.slug}`;
 
         return (
           <Link

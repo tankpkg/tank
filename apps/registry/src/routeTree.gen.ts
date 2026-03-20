@@ -9,44 +9,36 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CliLoginRouteImport } from './routes/cli-login'
-import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SkillsIndexRouteImport } from './routes/skills.index'
-import { Route as SkillsSplatRouteImport } from './routes/skills.$'
-import { Route as DocsSplatRouteImport } from './routes/docs.$'
+import { Route as SkillsIndexRouteImport } from './routes/skills/index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as SkillsSplatRouteImport } from './routes/skills/$'
+import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as DashboardTokensRouteImport } from './routes/dashboard/tokens'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminServiceAccountsRouteImport } from './routes/admin/service-accounts'
+import { Route as AdminPackagesRouteImport } from './routes/admin/packages'
+import { Route as AdminOrgsRouteImport } from './routes/admin/orgs'
+import { Route as AdminAuditLogsRouteImport } from './routes/admin/audit-logs'
+import { Route as SeoSitemapDotxmlRouteImport } from './routes/_seo/sitemap[.]xml'
+import { Route as SeoLlmsFullDottxtRouteImport } from './routes/_seo/llms-full[.]txt'
+import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AuthCliLoginRouteImport } from './routes/_auth/cli-login'
+import { Route as DashboardOrgsIndexRouteImport } from './routes/dashboard/orgs.index'
+import { Route as DashboardOrgsSlugRouteImport } from './routes/dashboard/orgs.$slug'
+import { Route as AuthOrgsAcceptInvitationRouteImport } from './routes/_auth/orgs.accept-invitation'
 
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
-  id: '/llms-full.txt',
-  path: '/llms-full.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CliLoginRoute = CliLoginRouteImport.update({
-  id: '/cli-login',
-  path: '/cli-login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
+const AdminRouteRoute = AdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => rootRouteImport,
@@ -61,6 +53,21 @@ const SkillsIndexRoute = SkillsIndexRouteImport.update({
   path: '/skills/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/docs/',
+  path: '/docs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const SkillsSplatRoute = SkillsSplatRouteImport.update({
   id: '/skills/$',
   path: '/skills/$',
@@ -71,150 +78,258 @@ const DocsSplatRoute = DocsSplatRouteImport.update({
   path: '/docs/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardTokensRoute = DashboardTokensRouteImport.update({
+  id: '/tokens',
+  path: '/tokens',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminServiceAccountsRoute = AdminServiceAccountsRouteImport.update({
+  id: '/service-accounts',
+  path: '/service-accounts',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPackagesRoute = AdminPackagesRouteImport.update({
+  id: '/packages',
+  path: '/packages',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminOrgsRoute = AdminOrgsRouteImport.update({
+  id: '/orgs',
+  path: '/orgs',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAuditLogsRoute = AdminAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const SeoSitemapDotxmlRoute = SeoSitemapDotxmlRouteImport.update({
+  id: '/_seo/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SeoLlmsFullDottxtRoute = SeoLlmsFullDottxtRouteImport.update({
+  id: '/_seo/llms-full.txt',
+  path: '/llms-full.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/_auth/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCliLoginRoute = AuthCliLoginRouteImport.update({
+  id: '/_auth/cli-login',
+  path: '/cli-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardOrgsIndexRoute = DashboardOrgsIndexRouteImport.update({
+  id: '/orgs/',
+  path: '/orgs/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardOrgsSlugRoute = DashboardOrgsSlugRouteImport.update({
+  id: '/orgs/$slug',
+  path: '/orgs/$slug',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const AuthOrgsAcceptInvitationRoute =
+  AuthOrgsAcceptInvitationRouteImport.update({
+    id: '/_auth/orgs/accept-invitation',
+    path: '/orgs/accept-invitation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/cli-login': typeof CliLoginRoute
-  '/dashboard': typeof DashboardRoute
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/login': typeof LoginRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/cli-login': typeof AuthCliLoginRoute
+  '/login': typeof AuthLoginRoute
+  '/llms-full.txt': typeof SeoLlmsFullDottxtRoute
+  '/sitemap.xml': typeof SeoSitemapDotxmlRoute
+  '/admin/audit-logs': typeof AdminAuditLogsRoute
+  '/admin/orgs': typeof AdminOrgsRoute
+  '/admin/packages': typeof AdminPackagesRoute
+  '/admin/service-accounts': typeof AdminServiceAccountsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/$': typeof ApiSplatRoute
+  '/dashboard/tokens': typeof DashboardTokensRoute
   '/docs/$': typeof DocsSplatRoute
   '/skills/$': typeof SkillsSplatRoute
+  '/admin/': typeof AdminIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/skills/': typeof SkillsIndexRoute
+  '/orgs/accept-invitation': typeof AuthOrgsAcceptInvitationRoute
+  '/dashboard/orgs/$slug': typeof DashboardOrgsSlugRoute
+  '/dashboard/orgs/': typeof DashboardOrgsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/cli-login': typeof CliLoginRoute
-  '/dashboard': typeof DashboardRoute
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/login': typeof LoginRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/cli-login': typeof AuthCliLoginRoute
+  '/login': typeof AuthLoginRoute
+  '/llms-full.txt': typeof SeoLlmsFullDottxtRoute
+  '/sitemap.xml': typeof SeoSitemapDotxmlRoute
+  '/admin/audit-logs': typeof AdminAuditLogsRoute
+  '/admin/orgs': typeof AdminOrgsRoute
+  '/admin/packages': typeof AdminPackagesRoute
+  '/admin/service-accounts': typeof AdminServiceAccountsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/$': typeof ApiSplatRoute
+  '/dashboard/tokens': typeof DashboardTokensRoute
   '/docs/$': typeof DocsSplatRoute
   '/skills/$': typeof SkillsSplatRoute
+  '/admin': typeof AdminIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/docs': typeof DocsIndexRoute
   '/skills': typeof SkillsIndexRoute
+  '/orgs/accept-invitation': typeof AuthOrgsAcceptInvitationRoute
+  '/dashboard/orgs/$slug': typeof DashboardOrgsSlugRoute
+  '/dashboard/orgs': typeof DashboardOrgsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/cli-login': typeof CliLoginRoute
-  '/dashboard': typeof DashboardRoute
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/login': typeof LoginRoute
-  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/_auth/cli-login': typeof AuthCliLoginRoute
+  '/_auth/login': typeof AuthLoginRoute
+  '/_seo/llms-full.txt': typeof SeoLlmsFullDottxtRoute
+  '/_seo/sitemap.xml': typeof SeoSitemapDotxmlRoute
+  '/admin/audit-logs': typeof AdminAuditLogsRoute
+  '/admin/orgs': typeof AdminOrgsRoute
+  '/admin/packages': typeof AdminPackagesRoute
+  '/admin/service-accounts': typeof AdminServiceAccountsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/api/$': typeof ApiSplatRoute
+  '/dashboard/tokens': typeof DashboardTokensRoute
   '/docs/$': typeof DocsSplatRoute
   '/skills/$': typeof SkillsSplatRoute
+  '/admin/': typeof AdminIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/docs/': typeof DocsIndexRoute
   '/skills/': typeof SkillsIndexRoute
+  '/_auth/orgs/accept-invitation': typeof AuthOrgsAcceptInvitationRoute
+  '/dashboard/orgs/$slug': typeof DashboardOrgsSlugRoute
+  '/dashboard/orgs/': typeof DashboardOrgsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
-    | '/cli-login'
     | '/dashboard'
-    | '/llms-full.txt'
+    | '/cli-login'
     | '/login'
+    | '/llms-full.txt'
     | '/sitemap.xml'
+    | '/admin/audit-logs'
+    | '/admin/orgs'
+    | '/admin/packages'
+    | '/admin/service-accounts'
+    | '/admin/users'
     | '/api/$'
+    | '/dashboard/tokens'
     | '/docs/$'
     | '/skills/$'
+    | '/admin/'
+    | '/dashboard/'
+    | '/docs/'
     | '/skills/'
+    | '/orgs/accept-invitation'
+    | '/dashboard/orgs/$slug'
+    | '/dashboard/orgs/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/cli-login'
-    | '/dashboard'
-    | '/llms-full.txt'
     | '/login'
+    | '/llms-full.txt'
     | '/sitemap.xml'
+    | '/admin/audit-logs'
+    | '/admin/orgs'
+    | '/admin/packages'
+    | '/admin/service-accounts'
+    | '/admin/users'
     | '/api/$'
+    | '/dashboard/tokens'
     | '/docs/$'
     | '/skills/$'
+    | '/admin'
+    | '/dashboard'
+    | '/docs'
     | '/skills'
+    | '/orgs/accept-invitation'
+    | '/dashboard/orgs/$slug'
+    | '/dashboard/orgs'
   id:
     | '__root__'
     | '/'
     | '/admin'
-    | '/cli-login'
     | '/dashboard'
-    | '/llms-full.txt'
-    | '/login'
-    | '/sitemap.xml'
+    | '/_auth/cli-login'
+    | '/_auth/login'
+    | '/_seo/llms-full.txt'
+    | '/_seo/sitemap.xml'
+    | '/admin/audit-logs'
+    | '/admin/orgs'
+    | '/admin/packages'
+    | '/admin/service-accounts'
+    | '/admin/users'
     | '/api/$'
+    | '/dashboard/tokens'
     | '/docs/$'
     | '/skills/$'
+    | '/admin/'
+    | '/dashboard/'
+    | '/docs/'
     | '/skills/'
+    | '/_auth/orgs/accept-invitation'
+    | '/dashboard/orgs/$slug'
+    | '/dashboard/orgs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
-  CliLoginRoute: typeof CliLoginRoute
-  DashboardRoute: typeof DashboardRoute
-  LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
-  LoginRoute: typeof LoginRoute
-  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  AuthCliLoginRoute: typeof AuthCliLoginRoute
+  AuthLoginRoute: typeof AuthLoginRoute
+  SeoLlmsFullDottxtRoute: typeof SeoLlmsFullDottxtRoute
+  SeoSitemapDotxmlRoute: typeof SeoSitemapDotxmlRoute
   ApiSplatRoute: typeof ApiSplatRoute
   DocsSplatRoute: typeof DocsSplatRoute
   SkillsSplatRoute: typeof SkillsSplatRoute
+  DocsIndexRoute: typeof DocsIndexRoute
   SkillsIndexRoute: typeof SkillsIndexRoute
+  AuthOrgsAcceptInvitationRoute: typeof AuthOrgsAcceptInvitationRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/llms-full.txt': {
-      id: '/llms-full.txt'
-      path: '/llms-full.txt'
-      fullPath: '/llms-full.txt'
-      preLoaderRoute: typeof LlmsFullDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cli-login': {
-      id: '/cli-login'
-      path: '/cli-login'
-      fullPath: '/cli-login'
-      preLoaderRoute: typeof CliLoginRouteImport
+      preLoaderRoute: typeof DashboardRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
       id: '/admin'
       path: '/admin'
       fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+      preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -231,6 +346,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SkillsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/skills/$': {
       id: '/skills/$'
       path: '/skills/$'
@@ -245,6 +381,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/tokens': {
+      id: '/dashboard/tokens'
+      path: '/tokens'
+      fullPath: '/dashboard/tokens'
+      preLoaderRoute: typeof DashboardTokensRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/api/$': {
       id: '/api/$'
       path: '/api/$'
@@ -252,21 +395,147 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/service-accounts': {
+      id: '/admin/service-accounts'
+      path: '/service-accounts'
+      fullPath: '/admin/service-accounts'
+      preLoaderRoute: typeof AdminServiceAccountsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/packages': {
+      id: '/admin/packages'
+      path: '/packages'
+      fullPath: '/admin/packages'
+      preLoaderRoute: typeof AdminPackagesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/orgs': {
+      id: '/admin/orgs'
+      path: '/orgs'
+      fullPath: '/admin/orgs'
+      preLoaderRoute: typeof AdminOrgsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/audit-logs': {
+      id: '/admin/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/admin/audit-logs'
+      preLoaderRoute: typeof AdminAuditLogsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/_seo/sitemap.xml': {
+      id: '/_seo/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SeoSitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_seo/llms-full.txt': {
+      id: '/_seo/llms-full.txt'
+      path: '/llms-full.txt'
+      fullPath: '/llms-full.txt'
+      preLoaderRoute: typeof SeoLlmsFullDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/login': {
+      id: '/_auth/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/cli-login': {
+      id: '/_auth/cli-login'
+      path: '/cli-login'
+      fullPath: '/cli-login'
+      preLoaderRoute: typeof AuthCliLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/orgs/': {
+      id: '/dashboard/orgs/'
+      path: '/orgs'
+      fullPath: '/dashboard/orgs/'
+      preLoaderRoute: typeof DashboardOrgsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/orgs/$slug': {
+      id: '/dashboard/orgs/$slug'
+      path: '/orgs/$slug'
+      fullPath: '/dashboard/orgs/$slug'
+      preLoaderRoute: typeof DashboardOrgsSlugRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/_auth/orgs/accept-invitation': {
+      id: '/_auth/orgs/accept-invitation'
+      path: '/orgs/accept-invitation'
+      fullPath: '/orgs/accept-invitation'
+      preLoaderRoute: typeof AuthOrgsAcceptInvitationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AdminRouteRouteChildren {
+  AdminAuditLogsRoute: typeof AdminAuditLogsRoute
+  AdminOrgsRoute: typeof AdminOrgsRoute
+  AdminPackagesRoute: typeof AdminPackagesRoute
+  AdminServiceAccountsRoute: typeof AdminServiceAccountsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAuditLogsRoute: AdminAuditLogsRoute,
+  AdminOrgsRoute: AdminOrgsRoute,
+  AdminPackagesRoute: AdminPackagesRoute,
+  AdminServiceAccountsRoute: AdminServiceAccountsRoute,
+  AdminUsersRoute: AdminUsersRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
+interface DashboardRouteRouteChildren {
+  DashboardTokensRoute: typeof DashboardTokensRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardOrgsSlugRoute: typeof DashboardOrgsSlugRoute
+  DashboardOrgsIndexRoute: typeof DashboardOrgsIndexRoute
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardTokensRoute: DashboardTokensRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+  DashboardOrgsSlugRoute: DashboardOrgsSlugRoute,
+  DashboardOrgsIndexRoute: DashboardOrgsIndexRoute,
+}
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
-  CliLoginRoute: CliLoginRoute,
-  DashboardRoute: DashboardRoute,
-  LlmsFullDottxtRoute: LlmsFullDottxtRoute,
-  LoginRoute: LoginRoute,
-  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  AuthCliLoginRoute: AuthCliLoginRoute,
+  AuthLoginRoute: AuthLoginRoute,
+  SeoLlmsFullDottxtRoute: SeoLlmsFullDottxtRoute,
+  SeoSitemapDotxmlRoute: SeoSitemapDotxmlRoute,
   ApiSplatRoute: ApiSplatRoute,
   DocsSplatRoute: DocsSplatRoute,
   SkillsSplatRoute: SkillsSplatRoute,
+  DocsIndexRoute: DocsIndexRoute,
   SkillsIndexRoute: SkillsIndexRoute,
+  AuthOrgsAcceptInvitationRoute: AuthOrgsAcceptInvitationRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

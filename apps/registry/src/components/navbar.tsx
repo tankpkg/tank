@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 const NAV_ITEMS = [
   { text: 'Skills', href: '/skills' },
-  { text: 'Docs', href: '/docs' }
+  { text: 'Docs', href: '/docs/overview' }
 ];
 
 export function Navbar() {

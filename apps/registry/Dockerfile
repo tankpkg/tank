@@ -8,7 +8,6 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY packages/internals-schemas/package.json ./packages/internals-schemas/
 COPY packages/internals-helpers/package.json ./packages/internals-helpers/
-COPY apps/registry-legacy/package.json ./apps/registry-legacy/
 COPY apps/registry/package.json ./apps/registry/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/

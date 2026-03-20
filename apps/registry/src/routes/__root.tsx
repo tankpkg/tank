@@ -12,13 +12,19 @@ const TanStackRouterDevtools = import.meta.env.DEV
 
 import { CookieConsentManager } from '~/components/cookie-consent-manager';
 import { RegistryLayout } from '~/components/layouts/registry-layout';
-import { BASE_URL, SITE_NAME } from '~/consts/seo';
+import { BASE_URL, routeHead, SITE_NAME } from '~/consts/seo';
+import { useDevTools } from '~/hooks/use-dev-tools';
 import { capturePageview } from '~/lib/analytics';
 import { NotFoundScreen } from '~/screens/not-found-screen';
 
 import '~/styles/global.css';
 
-const settings = {
+const headSettings = {
+  ...routeHead({
+    title: SITE_NAME,
+    description: 'Security-first package manager for AI agent skills.',
+    path: '/'
+  }),
   meta: [
     { charSet: 'utf-8' },
     { content: 'width=device-width, initial-scale=1', name: 'viewport' },
@@ -46,7 +52,7 @@ const settings = {
   ],
   scripts: [
     {
-      children: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('tank-theme');if(t==='light'){d.classList.remove('dark');return}if(t==='dark'){d.classList.add('dark');return}var p=window.matchMedia('(prefers-color-scheme:light)').matches;if(p)d.classList.remove('dark');else d.classList.add('dark')}catch(e){}})()`
+      children: `(function(){try{var t=localStorage.getItem('tank-theme');if(t==='light')document.documentElement.classList.remove('dark')}catch(e){}})()`
     },
     {
       type: 'application/ld+json',
@@ -78,7 +84,7 @@ const settings = {
 };
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => settings,
+  head: () => headSettings,
   component: RootLayout,
   shellComponent: RootDocument,
   notFoundComponent: NotFoundScreen
@@ -99,6 +105,8 @@ function RootLayout() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const devToolsVisible = useDevTools();
+
   return (
     <html lang="en" className="dark scroll-smooth" suppressHydrationWarning>
       <head>
@@ -110,8 +118,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         {children}
         <CookieConsentManager />
-        {import.meta.env.DEV && <ReactQueryDevtools buttonPosition="bottom-left" />}
-        {import.meta.env.DEV && <TanStackRouterDevtools position="bottom-right" />}
+        {devToolsVisible && (
+          <>
+            <ReactQueryDevtools buttonPosition="bottom-left" />
+            <TanStackRouterDevtools position="bottom-right" />
+          </>
+        )}
         <Scripts />
       </body>
     </html>

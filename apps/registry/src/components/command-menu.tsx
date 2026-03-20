@@ -56,7 +56,7 @@ const DOC_PAGES = [
 const QUICK_LINKS = [
   { title: 'Browse Skills', href: '/skills', icon: PackageSearchIcon },
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
-  { title: 'Documentation', href: '/docs', icon: BookOpenIcon },
+  { title: 'Documentation', href: '/docs/overview', icon: BookOpenIcon },
   { title: 'Sign In', href: '/login', icon: LogInIcon },
   { title: 'GitHub', href: 'https://github.com/tankpkg/tank', icon: GithubIcon, external: true }
 ] as const;
