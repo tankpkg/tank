@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const DOCS_DIR = join(ROOT, 'apps/registry/public/docs');
-const PUBLIC_DIR = join(ROOT, 'apps/registry/content');
+const PUBLIC_DIR = join(ROOT, 'apps/registry/public');
 
 const BASE_URL = 'https://tankpkg.dev';
 
@@ -49,10 +49,10 @@ function readDocs() {
 
       if (stat.isDirectory()) {
         scanDir(fullPath, `${slugPrefix}${entry}/`);
-      } else if (entry.endsWith('.mdx')) {
+      } else if (entry.endsWith('.md') || entry.endsWith('.mdx')) {
         const content = readFileSync(fullPath, 'utf-8');
         const frontmatter = parseFrontmatter(content);
-        const slug = entry.replace('.mdx', '');
+        const slug = entry.replace(/\.mdx?$/, '');
         const bodyContent = content.replace(/^---[\s\S]*?---\r?\n/, '');
 
         docs.push({
