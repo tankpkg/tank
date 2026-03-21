@@ -63,7 +63,8 @@ export const zEnv = z.object({
   REDIS_URL: zOptStr,
 
   // ── Admin ──
-  FIRST_ADMIN_EMAIL: zOptStr
+  FIRST_ADMIN_EMAIL: zOptStr,
+  FIRST_ADMIN_PASSWORD: zOptStr
 });
 
 const result = zEnv.safeParse(process.env);

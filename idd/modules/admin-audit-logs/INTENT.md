@@ -6,14 +6,14 @@
 
 **Consumers:** Admin dashboard. `GET /api/admin/audit-logs`.
 
-**Single source of truth:** `TODO: port to apps/registry/src/api/routes/admin/audit-logs.ts`. Writes to `audit_events` table via `logAuditEvent()`.
+**Single source of truth:** `Implemented: apps/registry/src/api/routes/admin/audit-logs.ts`. Writes to `audit_events` table via `logAuditEvent()`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-TODO: port to apps/registry/src/api/routes/admin/audit-logs.ts  # GET — paginated audit events with filters
+# Implemented: apps/registry/src/api/routes/admin/audit-logs.ts  # GET — paginated audit events with filters
 apps/registry/src/lib/db/schema.ts                              # audit_events table: action, actorId, targetType, targetId, metadata
 ```
 

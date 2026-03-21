@@ -19,7 +19,7 @@ apps/registry/src/api/routes/v1/skills-confirm.ts        # POST /api/v1/skills/c
 packages/cli/src/lib/packer.ts                           # Tarball packing, integrity computation
 apps/registry/src/lib/skills/permission-escalation.ts    # Version permission-escalation check
 apps/registry/src/lib/skills/audit-score.ts              # Audit score computation on confirm
-TODO: port storage provider to apps/registry/src/lib/storage/provider.ts  # Signed URL generation (Supabase / S3)
+# Implemented: apps/registry/src/lib/storage/provider.ts  # Signed URL generation (Supabase / S3)
 ```
 
 ---

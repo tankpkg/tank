@@ -6,14 +6,14 @@
 
 **Consumers:** Admin web dashboard, `GET /api/admin/users` and `PATCH /api/admin/users/[userId]/status`.
 
-**Single source of truth:** `TODO: port to apps/registry/src/api/routes/admin/users.ts`. Requires `requireAdmin` middleware (admin session cookie).
+**Single source of truth:** `Implemented: apps/registry/src/api/routes/admin/users.ts`. Requires `requireAdmin` middleware (admin session cookie).
 
 ---
 
 ## Layer 1: Structure
 
 ```
-TODO: port to apps/registry/src/api/routes/admin/users.ts  # GET list, GET detail, PATCH status
+# Implemented: apps/registry/src/api/routes/admin/users.ts  # GET list, GET detail, PATCH status
 apps/registry/src/api/middleware/require-admin.ts           # requireAdmin — enforces admin session
 ```
 

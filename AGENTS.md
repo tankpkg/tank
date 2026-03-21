@@ -142,6 +142,18 @@ Or via GitHub Actions UI: Actions → Create Release → enter version.
 8. TanStack Router generated-types errors for new routes resolve at build time. Not real errors.
 9. `auth-schema.ts` is auto-generated. Never edit.
 10. `ci-merge-stable` may fail if branch protection rulesets block bot pushes. Merge manually: `git checkout stable && git merge main && git push origin stable`.
+11. Admin role is NOT cached — every `isAdmin()` check queries the DB. Consider Redis caching for high-traffic.
+12. Legacy API keys (pre-scope enforcement) have empty scopes → treated as unrestricted. Intentional backward-compat.
+13. Moderation status is append-only. To change status, insert new row. Queries always fetch latest by `createdAt`.
+14. S3 provider creates TWO clients: `internalClient` (MinIO endpoint) and `publicClient` (CDN/public). Signed URLs use public, uploads use internal.
+15. Hono middleware order matters. Routes mounted BEFORE `requireAdmin()` are unprotected. Always `.use('/admin/*', ...)` before `.route('/admin', ...)`.
+16. Non-blocking side effects (GitHub API, email sends) fail silently. Client sees success even if side effect failed.
+17. Env vars are validated at startup via Zod. If validation fails, process exits. No partial startup.
+18. `TANK_MODE` is checked as raw `process.env` string, not via the parsed `env` object. Runtime changes work.
+19. Filesystem storage is single-instance only. Not suitable for multi-replica deployments.
+20. S3 bucket auto-creation silently ignores "BucketAlreadyOwnedByYou" errors. Can mask permission issues.
+21. TanStack Router `redirect()` must be thrown, not returned. Returning it does nothing.
+22. Docs are pre-rendered — changes to `public/docs/*.md` require `bun run scripts/build-docs.ts` (auto-runs in `bun run build`).
 
 ## Code Standards
 

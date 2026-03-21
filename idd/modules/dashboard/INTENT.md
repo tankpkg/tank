@@ -8,7 +8,7 @@
 
 **Single source of truth:**
 
-- `TODO: port to apps/registry/src/routes/dashboard/` — dashboard pages
+- `Implemented: apps/registry/src/routes/dashboard/` — dashboard pages
 - API routes for token CRUD
 
 ---
@@ -17,7 +17,7 @@
 
 ```
 apps/
-  TODO: port to registry/src/routes/dashboard/  # Dashboard pages — token list, create, revoke
+  # Implemented: registry/src/routes/dashboard/  # Dashboard pages — token list, create, revoke
 ```
 
 ---

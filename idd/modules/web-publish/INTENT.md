@@ -22,7 +22,7 @@ apps/registry/src/api/routes/v1/skills-publish.ts        # POST — validate, es
 apps/registry/src/api/routes/v1/skills-confirm.ts        # POST — verify upload, trigger scan, compute audit score
 apps/registry/src/lib/skills/permission-escalation.ts    # Escalation logic
 apps/registry/src/lib/skills/audit-score.ts              # Score computation
-TODO: port storage provider to apps/registry/src/lib/storage/provider.ts  # Signed URL generation
+# Implemented: apps/registry/src/lib/storage/provider.ts  # Signed URL generation
 ```
 
 ---

@@ -6,14 +6,14 @@
 
 **Consumers:** Admin dashboard. `GET /api/admin/packages`, `GET /api/admin/packages/[name]`, `PATCH /api/admin/packages/[name]/status`.
 
-**Single source of truth:** `TODO: port to apps/registry/src/api/routes/admin/packages.ts`.
+**Single source of truth:** `Implemented: apps/registry/src/api/routes/admin/packages.ts`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-TODO: port to apps/registry/src/api/routes/admin/packages.ts  # GET list, GET/PATCH detail and status
+# Implemented: apps/registry/src/api/routes/admin/packages.ts  # GET list, GET/PATCH detail and status
 apps/registry/src/api/middleware/require-admin.ts              # requireAdmin
 ```
 

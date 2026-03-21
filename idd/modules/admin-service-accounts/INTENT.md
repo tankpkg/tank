@@ -6,14 +6,14 @@
 
 **Consumers:** Admin dashboard. `GET/POST /api/admin/service-accounts`, `GET/PATCH/DELETE /api/admin/service-accounts/[id]`, `POST /api/admin/service-accounts/[id]/keys`, `DELETE /api/admin/service-accounts/[id]/keys/[keyId]`.
 
-**Single source of truth:** `TODO: port to apps/registry/src/api/routes/admin/service-accounts.ts`.
+**Single source of truth:** `Implemented: apps/registry/src/api/routes/admin/service-accounts.ts`.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-TODO: port to apps/registry/src/api/routes/admin/service-accounts.ts  # GET/POST list/create, GET/PATCH/DELETE single, POST keys, DELETE keys
+# Implemented: apps/registry/src/api/routes/admin/service-accounts.ts  # GET/POST list/create, GET/PATCH/DELETE single, POST keys, DELETE keys
 ```
 
 ---

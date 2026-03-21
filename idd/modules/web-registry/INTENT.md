@@ -16,8 +16,8 @@
 
 ```
 apps/registry/src/api/routes/v1/skills-read.ts   # GET — skill metadata, version detail, versions list, file content
-TODO: port star to apps/registry/src/api/routes/v1/star.ts  # GET/POST/DELETE — star counts and toggle
-TODO: port badge to apps/registry/src/api/routes/v1/badge.ts  # GET — SVG badge for auditScore
+# Implemented: apps/registry/src/api/routes/v1/star.ts  # GET/POST/DELETE — star counts and toggle
+# Implemented: apps/registry/src/api/routes/v1/badge.ts  # GET — SVG badge for auditScore
 ```
 
 ---

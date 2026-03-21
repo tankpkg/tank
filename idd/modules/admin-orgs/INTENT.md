@@ -6,14 +6,14 @@
 
 **Consumers:** Admin dashboard. `GET /api/admin/orgs`, `GET /api/admin/orgs/[orgId]`, `DELETE /api/admin/orgs/[orgId]/members/[memberId]`.
 
-**Single source of truth:** `TODO: port to apps/registry/src/api/routes/admin/orgs.ts`. Requires `requireAdmin` middleware.
+**Single source of truth:** `Implemented: apps/registry/src/api/routes/admin/orgs.ts`. Requires `requireAdmin` middleware.
 
 ---
 
 ## Layer 1: Structure
 
 ```
-TODO: port to apps/registry/src/api/routes/admin/orgs.ts  # GET list, GET detail, DELETE member
+# Implemented: apps/registry/src/api/routes/admin/orgs.ts  # GET list, GET detail, DELETE member
 apps/registry/src/api/middleware/require-admin.ts          # requireAdmin
 ```
 
