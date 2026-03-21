@@ -6,6 +6,8 @@ export const MAX_NAME_LENGTH = 214;
 export const MAX_DESCRIPTION_LENGTH = 500;
 export const LOCKFILE_VERSION = 2;
 
+export const SCHEMA_BASE_URL = 'https://www.tankpkg.dev/api/v1/schemas';
+
 export const MANIFEST_FILENAME = 'tank.json';
 export const LEGACY_MANIFEST_FILENAME = 'skills.json';
 export const LOCKFILE_FILENAME = 'tank.lock';

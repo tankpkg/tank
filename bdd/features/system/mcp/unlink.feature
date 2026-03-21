@@ -1,5 +1,4 @@
 Feature: Unlink Skill (MCP)
-
   As a developer using an AI editor
   I want to unlink a locally-linked skill
   So that my project uses the published version instead

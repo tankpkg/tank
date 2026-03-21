@@ -662,6 +662,61 @@ curl -X POST https://tankpkg.dev/api/v1/cli-auth/exchange \
 
 ---
 
+## JSON Schemas
+
+Tank serves versioned JSON Schemas for manifest and lockfile validation. Editors that support `$schema` (VS Code, JetBrains, Zed, Neovim with LSP) will provide autocomplete, inline validation, and hover docs automatically.
+
+### `GET /api/v1/schemas/tank.json` — Manifest schema
+
+Returns the JSON Schema for `tank.json` (skill package manifest).
+
+**Authentication:** Not required.
+
+**Response:** `application/schema+json` with `Cache-Control: public, max-age=86400`.
+
+**Editor setup**
+
+Add `$schema` to your `tank.json`:
+
+```json
+{
+  "$schema": "https://www.tankpkg.dev/api/v1/schemas/tank.json",
+  "name": "@acme/my-skill",
+  "version": "1.0.0"
+}
+```
+
+**Legacy alias:** `GET /api/v1/schemas/skills.json` serves the same schema for backward compatibility.
+
+### `GET /api/v1/schemas/tank.lock` — Lockfile schema
+
+Returns the JSON Schema for `tank.lock` (lockfile).
+
+**Authentication:** Not required.
+
+**Legacy alias:** `GET /api/v1/schemas/skills.lock`
+
+### VS Code workspace settings
+
+For project-wide schema association without adding `$schema` to every file:
+
+```json
+{
+  "json.schemas": [
+    {
+      "url": "https://www.tankpkg.dev/api/v1/schemas/tank.json",
+      "fileMatch": ["tank.json", "skills.json"]
+    },
+    {
+      "url": "https://www.tankpkg.dev/api/v1/schemas/tank.lock",
+      "fileMatch": ["tank.lock", "skills.lock"]
+    }
+  ]
+}
+```
+
+---
+
 ## Badge
 
 ### `GET /api/v1/badge/:name` — Audit score badge

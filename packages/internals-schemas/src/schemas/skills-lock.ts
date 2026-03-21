@@ -23,6 +23,7 @@ export const lockedSkillSchema = z.object({
 });
 
 export const skillsLockSchema = z.object({
+  $schema: z.string().url().optional(),
   lockfileVersion: z.union([z.literal(1), z.literal(2)]),
   skills: z.record(z.string(), lockedSkillSchema)
 });

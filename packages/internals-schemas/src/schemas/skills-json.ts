@@ -9,6 +9,7 @@ const SEMVER_PATTERN = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
 
 export const skillsJsonSchema = z
   .object({
+    $schema: z.string().url().optional(),
     name: z
       .string()
       .min(1, 'Name must not be empty')

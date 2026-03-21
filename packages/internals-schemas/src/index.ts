@@ -10,7 +10,8 @@ export {
   MAX_NAME_LENGTH,
   MAX_PACKAGE_SIZE,
   REGISTRY_API_VERSION,
-  REGISTRY_URL
+  REGISTRY_URL,
+  SCHEMA_BASE_URL
 } from '~/constants/registry.js';
 export {
   type AdminAction,
