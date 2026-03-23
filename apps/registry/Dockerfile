@@ -54,10 +54,13 @@ DRIZZLE_EOF
 # Build CLI binaries for on-prem distribution
 RUN bun run --filter=@tankpkg/cli build && \
     bun run --filter=@tankpkg/cli build:bundle && \
-    mkdir -p /app/cli-binaries && \
-    bun build --compile packages/cli/build/tank-bundle.mjs --target bun-linux-x64 --outfile /app/cli-binaries/tank-linux-x64 && \
-    bun build --compile packages/cli/build/tank-bundle.mjs --target bun-linux-arm64 --outfile /app/cli-binaries/tank-linux-arm64 && \
-    chmod +x /app/cli-binaries/*
+mkdir -p /app/cli-binaries && \
+bun build --compile packages/cli/build/tank-bundle.mjs --target bun-linux-x64 --outfile /app/cli-binaries/tank-linux-x64 && \
+bun build --compile packages/cli/build/tank-bundle.mjs --target bun-linux-arm64 --outfile /app/cli-binaries/tank-linux-arm64 && \
+bun build --compile packages/cli/build/tank-bundle.mjs --target bun-darwin-x64 --outfile /app/cli-binaries/tank-darwin-x64 && \
+bun build --compile packages/cli/build/tank-bundle.mjs --target bun-darwin-arm64 --outfile /app/cli-binaries/tank-darwin-arm64 && \
+bun build --compile packages/cli/build/tank-bundle.mjs --target bun-windows-x64 --outfile /app/cli-binaries/tank-win-x64.exe && \
+chmod +x /app/cli-binaries/*
 
 # Stage 3: Production
 FROM oven/bun:1-alpine AS runner
@@ -75,12 +78,13 @@ COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/scripts/entrypoint
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/scripts/load-settings-from-db.ts ./scripts/load-settings-from-db.ts
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/drizzle.config.js ./drizzle.config.js
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/schema.js ./src/lib/db/schema.js
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/src/lib/crypto.ts ./src/lib/crypto.ts
 COPY --from=deps --chown=tanstack:bunjs /app/apps/registry/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=deps --chown=tanstack:bunjs /app/apps/registry/node_modules/drizzle-kit ./node_modules/drizzle-kit
 
 COPY --from=builder --chown=tanstack:bunjs /app/cli-binaries /app/cli-binaries
 
-RUN chmod +x entrypoint.sh
+RUN chmod +x entrypoint.sh && mkdir -p /app/data && chown tanstack:bunjs /app/data
 
 USER tanstack
 

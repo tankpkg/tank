@@ -11,9 +11,10 @@ const controlBars = ['left', 'center', 'right'] as const;
 
 interface HeroSectionProps {
   starCount: number | null;
+  selfhostedAppUrl?: string;
 }
 
-export function HeroSection({ starCount }: HeroSectionProps) {
+export function HeroSection({ starCount, selfhostedAppUrl }: HeroSectionProps) {
   const videoRef = useCallback((el: HTMLVideoElement | null) => {
     if (!el) return;
     el.playbackRate = 0.9;
@@ -67,7 +68,7 @@ export function HeroSection({ starCount }: HeroSectionProps) {
               initial={{ opacity: 0, y: 10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ ...spring, delay: 0.15 }}>
-              <InstallSelector />
+              <InstallSelector appUrl={selfhostedAppUrl} />
             </motion.div>
 
             {/* Secondary links */}

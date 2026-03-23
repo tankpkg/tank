@@ -14,6 +14,7 @@ import { faqItems } from '~/consts/homepage';
 interface HomeScreenProps {
   publicSkillCount: number;
   starCount: number | null;
+  selfhostedAppUrl?: string;
 }
 
 function buildHomepageJsonLd(_skillCount: number) {
@@ -58,14 +59,14 @@ function JsonLdScript({ data }: { data: ReturnType<typeof buildHomepageJsonLd> }
   return <script type="application/ld+json">{JSON.stringify(data)}</script>;
 }
 
-export function HomeScreen({ publicSkillCount, starCount }: HomeScreenProps) {
+export function HomeScreen({ publicSkillCount, starCount, selfhostedAppUrl }: HomeScreenProps) {
   const jsonLd = useMemo(() => buildHomepageJsonLd(publicSkillCount), [publicSkillCount]);
 
   return (
     <>
       <JsonLdScript data={jsonLd} />
 
-      <HeroSection starCount={starCount} />
+      <HeroSection starCount={starCount} selfhostedAppUrl={selfhostedAppUrl} />
 
       <WorksWith />
 

@@ -440,6 +440,7 @@ export const systemConfig = pgTable('system_config', {
   setupCompleted: boolean('setup_completed').notNull().default(false),
 
   instanceUrl: text('instance_url'),
+  authSecret: text('auth_secret'),
 
   storageBackend: text('storage_backend').default('s3'),
   storageEndpoint: text('storage_endpoint'),
@@ -447,6 +448,7 @@ export const systemConfig = pgTable('system_config', {
   storageBucket: text('storage_bucket'),
   storageAccessKey: text('storage_access_key'),
   storageSecretKeyEnc: text('storage_secret_key_enc'),
+  storagePublicEndpoint: text('storage_public_endpoint'),
   supabaseUrl: text('supabase_url'),
   supabaseServiceKeyEnc: text('supabase_service_key_enc'),
 

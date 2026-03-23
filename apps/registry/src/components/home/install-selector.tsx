@@ -1,18 +1,18 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 
-import { INSTALL_METHODS } from '~/consts/brand';
+import { getSelfhostedInstallMethods, INSTALL_METHODS } from '~/consts/brand';
 import { useCopyToClipboard } from '~/hooks/use-copy-to-clipboard';
 
-export function InstallSelector() {
+export function InstallSelector({ appUrl }: { appUrl?: string }) {
+  const methods = appUrl ? getSelfhostedInstallMethods(appUrl) : [...INSTALL_METHODS];
   const [activeMethod, setActiveMethod] = useState(0);
   const { copied, copy } = useCopyToClipboard();
 
   return (
     <div className="w-full max-w-[520px] rounded border border-border bg-card/50 backdrop-blur-sm overflow-hidden">
-      {/* Tab bar */}
       <div className="flex border-b border-border p-1 gap-0.5">
-        {INSTALL_METHODS.map((method, i) => (
+        {methods.map((method, i) => (
           <button
             key={method.id}
             type="button"
@@ -39,13 +39,13 @@ export function InstallSelector() {
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
               className="text-muted-foreground whitespace-nowrap">
-              {INSTALL_METHODS[activeMethod].command}
+              {methods[activeMethod].command}
             </motion.span>
           </AnimatePresence>
         </div>
         <button
           type="button"
-          onClick={() => copy(INSTALL_METHODS[activeMethod].command)}
+          onClick={() => copy(methods[activeMethod].command)}
           className="ml-3 shrink-0 text-muted-foreground/50 hover:text-tank transition-colors duration-150"
           title="Copy to clipboard">
           <AnimatePresence mode="wait">

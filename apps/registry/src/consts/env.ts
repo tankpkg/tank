@@ -12,10 +12,10 @@ export const zEnv = z.object({
   TANK_MODE: z.enum(['cloud', 'selfhosted']).default('cloud'),
 
   // ── Database ──
-  DATABASE_URL: zStr,
+  DATABASE_URL: zOptStr,
 
   // ── Auth ──
-  BETTER_AUTH_SECRET: zStr,
+  BETTER_AUTH_SECRET: zOptStr,
   BETTER_AUTH_URL: zUrl.optional(),
   AUTH_PROVIDERS: zStr.default('credentials'),
 

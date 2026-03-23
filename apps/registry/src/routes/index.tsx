@@ -14,17 +14,27 @@ const data = routeHead({
 });
 
 export const Route = createFileRoute('/')({
-  loader: ({ context }) =>
-    Promise.all([
+  loader: ({ context }) => {
+    const selfhostedAppUrl =
+      process.env.TANK_MODE === 'selfhosted' ? process.env.APP_URL || process.env.BETTER_AUTH_URL || '' : '';
+    return Promise.all([
       context.queryClient.ensureQueryData(homepageStatsQueryOptions()),
       context.queryClient.ensureQueryData(githubStarsQueryOptions)
-    ]),
+    ]).then(([_stats, _stars]) => ({ selfhostedAppUrl }));
+  },
   head: () => data,
   component: HomePage
 });
 
 function HomePage() {
+  const { selfhostedAppUrl } = Route.useLoaderData();
   const { data: stats } = useSuspenseQuery(homepageStatsQueryOptions());
   const { data: starCount } = useSuspenseQuery(githubStarsQueryOptions);
-  return <HomeScreen publicSkillCount={stats.publicSkillCount} starCount={starCount} />;
+  return (
+    <HomeScreen
+      publicSkillCount={stats.publicSkillCount}
+      starCount={starCount}
+      selfhostedAppUrl={selfhostedAppUrl || undefined}
+    />
+  );
 }

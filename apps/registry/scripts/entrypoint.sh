@@ -1,6 +1,18 @@
 #!/bin/sh
 set -e
 
+TANK_CONFIG="/app/data/.tank-bootstrap"
+
+if [ -z "$DATABASE_URL" ] && [ -f "$TANK_CONFIG" ]; then
+  . "$TANK_CONFIG"
+  echo "[Tank] Loaded DATABASE_URL from $TANK_CONFIG"
+fi
+
+if [ -z "$BETTER_AUTH_SECRET" ]; then
+  export BETTER_AUTH_SECRET=$(head -c 32 /dev/urandom | base64)
+  echo "[Tank] Auto-generated BETTER_AUTH_SECRET (sessions reset on restart — set explicitly for persistence)"
+fi
+
 if [ "$AUTO_MIGRATE" = "true" ]; then
   echo "[Tank] AUTO_MIGRATE=true — running headless setup..."
 

@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupRouteImport } from './routes/setup'
+import { Route as InstallCliRouteImport } from './routes/install-cli'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -21,6 +23,7 @@ import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardTokensRouteImport } from './routes/dashboard/tokens'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminServiceAccountsRouteImport } from './routes/admin/service-accounts'
 import { Route as AdminPackagesRouteImport } from './routes/admin/packages'
 import { Route as AdminOrgsRouteImport } from './routes/admin/orgs'
@@ -33,6 +36,16 @@ import { Route as DashboardOrgsIndexRouteImport } from './routes/dashboard/orgs.
 import { Route as DashboardOrgsSlugRouteImport } from './routes/dashboard/orgs.$slug'
 import { Route as AuthOrgsAcceptInvitationRouteImport } from './routes/_auth/orgs.accept-invitation'
 
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstallCliRoute = InstallCliRouteImport.update({
+  id: '/install-cli',
+  path: '/install-cli',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -91,6 +104,11 @@ const ApiSplatRoute = ApiSplatRouteImport.update({
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminServiceAccountsRoute = AdminServiceAccountsRouteImport.update({
@@ -154,6 +172,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/install-cli': typeof InstallCliRoute
+  '/setup': typeof SetupRoute
   '/cli-login': typeof AuthCliLoginRoute
   '/login': typeof AuthLoginRoute
   '/llms-full.txt': typeof SeoLlmsFullDottxtRoute
@@ -162,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/admin/orgs': typeof AdminOrgsRoute
   '/admin/packages': typeof AdminPackagesRoute
   '/admin/service-accounts': typeof AdminServiceAccountsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/$': typeof ApiSplatRoute
   '/dashboard/tokens': typeof DashboardTokensRoute
@@ -177,6 +198,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/install-cli': typeof InstallCliRoute
+  '/setup': typeof SetupRoute
   '/cli-login': typeof AuthCliLoginRoute
   '/login': typeof AuthLoginRoute
   '/llms-full.txt': typeof SeoLlmsFullDottxtRoute
@@ -185,6 +208,7 @@ export interface FileRoutesByTo {
   '/admin/orgs': typeof AdminOrgsRoute
   '/admin/packages': typeof AdminPackagesRoute
   '/admin/service-accounts': typeof AdminServiceAccountsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/$': typeof ApiSplatRoute
   '/dashboard/tokens': typeof DashboardTokensRoute
@@ -203,6 +227,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/install-cli': typeof InstallCliRoute
+  '/setup': typeof SetupRoute
   '/_auth/cli-login': typeof AuthCliLoginRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_seo/llms-full.txt': typeof SeoLlmsFullDottxtRoute
@@ -211,6 +237,7 @@ export interface FileRoutesById {
   '/admin/orgs': typeof AdminOrgsRoute
   '/admin/packages': typeof AdminPackagesRoute
   '/admin/service-accounts': typeof AdminServiceAccountsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/api/$': typeof ApiSplatRoute
   '/dashboard/tokens': typeof DashboardTokensRoute
@@ -230,6 +257,8 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/install-cli'
+    | '/setup'
     | '/cli-login'
     | '/login'
     | '/llms-full.txt'
@@ -238,6 +267,7 @@ export interface FileRouteTypes {
     | '/admin/orgs'
     | '/admin/packages'
     | '/admin/service-accounts'
+    | '/admin/settings'
     | '/admin/users'
     | '/api/$'
     | '/dashboard/tokens'
@@ -253,6 +283,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/install-cli'
+    | '/setup'
     | '/cli-login'
     | '/login'
     | '/llms-full.txt'
@@ -261,6 +293,7 @@ export interface FileRouteTypes {
     | '/admin/orgs'
     | '/admin/packages'
     | '/admin/service-accounts'
+    | '/admin/settings'
     | '/admin/users'
     | '/api/$'
     | '/dashboard/tokens'
@@ -278,6 +311,8 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/dashboard'
+    | '/install-cli'
+    | '/setup'
     | '/_auth/cli-login'
     | '/_auth/login'
     | '/_seo/llms-full.txt'
@@ -286,6 +321,7 @@ export interface FileRouteTypes {
     | '/admin/orgs'
     | '/admin/packages'
     | '/admin/service-accounts'
+    | '/admin/settings'
     | '/admin/users'
     | '/api/$'
     | '/dashboard/tokens'
@@ -304,6 +340,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
+  InstallCliRoute: typeof InstallCliRoute
+  SetupRoute: typeof SetupRoute
   AuthCliLoginRoute: typeof AuthCliLoginRoute
   AuthLoginRoute: typeof AuthLoginRoute
   SeoLlmsFullDottxtRoute: typeof SeoLlmsFullDottxtRoute
@@ -318,6 +356,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/install-cli': {
+      id: '/install-cli'
+      path: '/install-cli'
+      fullPath: '/install-cli'
+      preLoaderRoute: typeof InstallCliRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -400,6 +452,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/service-accounts': {
@@ -487,6 +546,7 @@ interface AdminRouteRouteChildren {
   AdminOrgsRoute: typeof AdminOrgsRoute
   AdminPackagesRoute: typeof AdminPackagesRoute
   AdminServiceAccountsRoute: typeof AdminServiceAccountsRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -496,6 +556,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminOrgsRoute: AdminOrgsRoute,
   AdminPackagesRoute: AdminPackagesRoute,
   AdminServiceAccountsRoute: AdminServiceAccountsRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -526,6 +587,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
+  InstallCliRoute: InstallCliRoute,
+  SetupRoute: SetupRoute,
   AuthCliLoginRoute: AuthCliLoginRoute,
   AuthLoginRoute: AuthLoginRoute,
   SeoLlmsFullDottxtRoute: SeoLlmsFullDottxtRoute,

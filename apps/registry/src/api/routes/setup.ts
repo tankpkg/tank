@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { auth } from '~/lib/auth/core';
 import { db } from '~/lib/db';
 import { systemConfig, user } from '~/lib/db/schema';
-import { encryptSecret, getSystemConfig, isSetupCompleted, upsertSystemConfig } from '~/lib/setup';
+import { decryptSecret, encryptSecret, getSystemConfig, isSetupCompleted, upsertSystemConfig } from '~/lib/setup';
 
 export const setupRoutes = new Hono()
   .use('*', async (c, next) => {
@@ -39,12 +39,30 @@ export const setupRoutes = new Hono()
   .get('/status', async (c) => {
     const completed = await isSetupCompleted();
     const dbUrl = process.env.DATABASE_URL || '';
+
+    let dbConfig: Awaited<ReturnType<typeof getSystemConfig>> | null = null;
+    try {
+      dbConfig = await getSystemConfig();
+    } catch {
+      // DB not initialized yet
+    }
+
     return c.json({
       completed,
       currentStep: completed ? null : await detectCurrentStep(),
       defaults: {
         databaseUrl: dbUrl ? dbUrl.replace(/:[^:@/]+@/, ':***@') : '',
-        hasDatabaseUrl: !!dbUrl
+        hasDatabaseUrl: !!dbUrl,
+        storage: {
+          backend: dbConfig?.storageBackend || process.env.STORAGE_BACKEND || '',
+          endpoint: dbConfig?.storageEndpoint || process.env.S3_ENDPOINT || '',
+          region: dbConfig?.storageRegion || process.env.S3_REGION || '',
+          bucket: dbConfig?.storageBucket || process.env.S3_BUCKET || process.env.STORAGE_BUCKET || '',
+          accessKey: dbConfig?.storageAccessKey || process.env.S3_ACCESS_KEY || '',
+          hasSecretKey: !!dbConfig?.storageSecretKeyEnc || !!process.env.S3_SECRET_KEY,
+          supabaseUrl: dbConfig?.supabaseUrl || process.env.SUPABASE_URL || '',
+          hasSupabaseServiceKey: !!dbConfig?.supabaseServiceKeyEnc || !!process.env.SUPABASE_SERVICE_ROLE_KEY
+        }
       }
     });
   })
@@ -57,6 +75,16 @@ export const setupRoutes = new Hono()
       const testClient = (await import('postgres')).default(databaseUrl);
       await testClient`SELECT 1`;
       await testClient.end();
+      if (!body.useEnv) {
+        process.env.DATABASE_URL = databaseUrl;
+        try {
+          const fs = await import('node:fs');
+          fs.mkdirSync('/app/data', { recursive: true });
+          fs.writeFileSync('/app/data/.tank-bootstrap', `export DATABASE_URL="${databaseUrl}"\n`, { mode: 0o600 });
+        } catch {
+          // Volume may not be mounted — works without persistence
+        }
+      }
       return c.json({ ok: true });
     } catch (e) {
       return c.json({ ok: false, error: e instanceof Error ? e.message : 'Connection failed' }, 400);
@@ -101,7 +129,16 @@ export const setupRoutes = new Hono()
         cwd: '/app',
         timeout: 60_000
       });
+      const { reinitializeDb } = await import('~/lib/db');
+      reinitializeDb(process.env.DATABASE_URL!);
+
       await db.insert(systemConfig).values({ id: 1 }).onConflictDoNothing();
+
+      const secret = process.env.BETTER_AUTH_SECRET;
+      if (secret) {
+        await upsertSystemConfig({ authSecret: secret });
+      }
+
       return c.json({ ok: true });
     } catch (e: unknown) {
       const err = e as { stdout?: Buffer; message?: string };
@@ -114,6 +151,10 @@ export const setupRoutes = new Hono()
     const { instanceUrl } = await c.req.json<{ instanceUrl: string }>();
     if (!instanceUrl) return c.json({ error: 'Instance URL is required' }, 400);
     await upsertSystemConfig({ instanceUrl });
+    process.env.APP_URL = instanceUrl;
+    process.env.BETTER_AUTH_URL = instanceUrl;
+    const { resetAuth } = await import('~/lib/auth/core');
+    resetAuth();
     return c.json({ ok: true });
   })
 
@@ -129,8 +170,10 @@ export const setupRoutes = new Hono()
       supabaseServiceKey?: string;
     }>();
 
+    const normalizedBackend = ['minio', 's3', 's3-compatible'].includes(body.backend) ? 's3' : body.backend;
+
     const update: Record<string, unknown> = {
-      storageBackend: body.backend,
+      storageBackend: normalizedBackend,
       storageEndpoint: body.endpoint || null,
       storageRegion: body.region || null,
       storageBucket: body.bucket || null,
@@ -142,22 +185,119 @@ export const setupRoutes = new Hono()
     if (body.supabaseServiceKey) update.supabaseServiceKeyEnc = encryptSecret(body.supabaseServiceKey);
 
     await upsertSystemConfig(update as Partial<typeof systemConfig.$inferInsert>);
+
+    const existing = await getSystemConfig();
+    const decryptedSecretKey =
+      body.secretKey || (existing?.storageSecretKeyEnc ? decryptSecret(existing.storageSecretKeyEnc) : undefined);
+    const decryptedSupabaseKey =
+      body.supabaseServiceKey ||
+      (existing?.supabaseServiceKeyEnc ? decryptSecret(existing.supabaseServiceKeyEnc) : undefined);
+
+    const { setStorageOverride } = await import('~/services/storage/provider');
+    setStorageOverride({
+      backend: normalizedBackend,
+      bucket: body.bucket || existing?.storageBucket || undefined,
+      endpoint: body.endpoint || existing?.storageEndpoint || undefined,
+      region: body.region || existing?.storageRegion || undefined,
+      accessKey: body.accessKey || existing?.storageAccessKey || undefined,
+      secretKey: decryptedSecretKey,
+      supabaseUrl: body.supabaseUrl || existing?.supabaseUrl || undefined,
+      supabaseServiceKey: decryptedSupabaseKey
+    });
+
     return c.json({ ok: true });
   })
 
   .post('/test-storage', async (c) => {
     try {
-      const { getStorageProvider } = await import('~/services/storage/provider');
-      const storage = getStorageProvider();
-      const testPath = `_setup_test_${Date.now()}.txt`;
+      type StorageTestBody = {
+        backend?: string;
+        endpoint?: string;
+        region?: string;
+        bucket?: string;
+        accessKey?: string;
+        secretKey?: string;
+        supabaseUrl?: string;
+        supabaseServiceKey?: string;
+      };
+      const body: StorageTestBody = await c.req.json<StorageTestBody>().catch(() => ({}));
 
-      if (storage.putObject) {
-        await storage.putObject(testPath, new TextEncoder().encode('test'));
-      } else {
-        const { signedUrl } = await storage.createSignedUploadUrl(testPath, 60);
-        if (!signedUrl) throw new Error('Failed to create signed URL');
+      const testPath = `_setup_test_${Date.now()}.txt`;
+      const testBody = new TextEncoder().encode('tank-storage-test');
+
+      if (!body.backend) {
+        const { getStorageProvider } = await import('~/services/storage/provider');
+        const storage = getStorageProvider();
+        if (storage.putObject) {
+          await storage.putObject(testPath, testBody);
+        } else {
+          const { signedUrl } = await storage.createSignedUploadUrl(testPath, 60);
+          if (!signedUrl) throw new Error('Failed to create signed URL');
+        }
+        return c.json({ ok: true });
       }
-      return c.json({ ok: true });
+
+      const backend = body.backend;
+
+      if (backend === 'filesystem') {
+        const fs = await import('node:fs');
+        const path = await import('node:path');
+        const baseDir = process.env.STORAGE_FS_PATH || '/app/data/packages';
+        const fullPath = path.join(baseDir, testPath);
+        fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+        fs.writeFileSync(fullPath, testBody);
+        fs.unlinkSync(fullPath);
+        return c.json({ ok: true });
+      }
+
+      if (['s3', 'minio', 's3-compatible'].includes(backend)) {
+        if (!body.accessKey || !body.secretKey) {
+          return c.json({ ok: false, error: 'S3 access key and secret key are required' }, 400);
+        }
+        const { S3Client, PutObjectCommand, HeadBucketCommand, CreateBucketCommand } = await import(
+          '@aws-sdk/client-s3'
+        );
+        const bucket = body.bucket || 'packages';
+        const client = new S3Client({
+          region: body.region || 'us-east-1',
+          endpoint: body.endpoint || undefined,
+          forcePathStyle: !!body.endpoint,
+          credentials: { accessKeyId: body.accessKey, secretAccessKey: body.secretKey },
+          requestHandler: { requestTimeout: 10_000, httpsAgent: undefined }
+        });
+
+        try {
+          await client.send(new HeadBucketCommand({ Bucket: bucket }));
+        } catch {
+          try {
+            await client.send(new CreateBucketCommand({ Bucket: bucket }));
+          } catch (createErr: unknown) {
+            const name = (createErr as { name?: string })?.name;
+            if (name !== 'BucketAlreadyOwnedByYou' && name !== 'BucketAlreadyExists') throw createErr;
+          }
+        }
+
+        await client.send(
+          new PutObjectCommand({ Bucket: bucket, Key: testPath, Body: testBody, ContentType: 'text/plain' })
+        );
+        return c.json({ ok: true });
+      }
+
+      if (backend === 'supabase') {
+        if (!body.supabaseUrl || !body.supabaseServiceKey) {
+          return c.json({ ok: false, error: 'Supabase URL and Service Role Key are required' }, 400);
+        }
+        const { createClient } = await import('@supabase/supabase-js');
+        const client = createClient(body.supabaseUrl, body.supabaseServiceKey, {
+          auth: { autoRefreshToken: false, persistSession: false }
+        });
+        const bucket = body.bucket || 'packages';
+        const { error } = await client.storage.from(bucket).upload(testPath, testBody);
+        if (error) throw error;
+        return c.json({ ok: true });
+      }
+
+      return c.json({ ok: false, error: `Unknown storage backend: ${backend}` }, 400);
     } catch (e) {
       return c.json({ ok: false, error: e instanceof Error ? e.message : 'Storage test failed' }, 400);
     }

@@ -1,5 +1,15 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate } from '@tanstack/react-router';
-import { Bot, Building2, FileText, LayoutDashboard, LogOut, type LucideIcon, Package, Users } from 'lucide-react';
+import {
+  Bot,
+  Building2,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  type LucideIcon,
+  Package,
+  Settings,
+  Users
+} from 'lucide-react';
 
 import { ErrorFallback } from '~/components/error-fallback';
 import { Button } from '~/components/ui/button';
@@ -13,6 +23,7 @@ export const Route = createFileRoute('/admin')({
     if (!session) throw redirect({ to: '/login', search: { redirect: location.href } });
     return { session };
   },
+  loader: async () => ({}),
   component: AdminLayout
 });
 
@@ -23,7 +34,7 @@ interface SidebarItem {
   exact?: boolean;
 }
 
-const sidebarItems: SidebarItem[] = [
+const baseSidebarItems: SidebarItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/packages', label: 'Packages', icon: Package },
@@ -34,6 +45,8 @@ const sidebarItems: SidebarItem[] = [
 
 function AdminLayout() {
   const { session } = Route.useRouteContext();
+
+  const sidebarItems = [...baseSidebarItems, { to: '/admin/settings', label: 'Settings', icon: Settings }];
   const navigate = useNavigate();
 
   const handleSignOut = async () => {

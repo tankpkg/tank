@@ -26,15 +26,29 @@ echo ""
 echo "▸ Setup Wizard"
 assert "/ redirects to /setup" "302" "$(curl -sI -o /dev/null -w '%{http_code}' $BASE/)"
 assert_contains "Not completed" '"completed":false' "$(get /api/setup/status)"
+
+# Storage defaults from env vars should be surfaced so the wizard can pre-fill
+STATUS=$(get /api/setup/status)
+assert_contains "Status has storage defaults" '"storage"' "$STATUS"
+assert_contains "Storage default has backend" '"backend"' "$STATUS"
+
 assert_contains "Test DB" '"ok":true' "$(post /api/setup/test-db '{"useEnv":true}')"
 assert_contains "Init DB" '"ok":true' "$(post /api/setup/init-db '')"
 assert_contains "System config exists" '"hasSystemConfig":true' "$(post /api/setup/check-db '{"useEnv":true}')"
 assert_contains "Instance URL" '"ok":true' "$(post /api/setup/instance-url "{\"instanceUrl\":\"$BASE\"}")"
-assert_contains "Test storage" '"ok":true' "$(post /api/setup/test-storage '')"
-assert_contains "Save storage" '"ok":true' "$(post /api/setup/storage '{"backend":"s3"}')"
+
+# test-storage must accept config from body (not read from env only)
+assert_contains "Test storage (body config)" '"ok":true' "$(post /api/setup/test-storage '{"backend":"s3","endpoint":"http://minio:9000","accessKey":"tank","secretKey":"changeme123456","bucket":"packages","region":"us-east-1"}')"
+
+# s3-compatible must be accepted and treated as s3
+assert_contains "Test s3-compatible" '"ok":true' "$(post /api/setup/test-storage '{"backend":"s3-compatible","endpoint":"http://minio:9000","accessKey":"tank","secretKey":"changeme123456","bucket":"packages","region":"us-east-1"}')"
+assert_contains "Save s3-compatible as s3" '"ok":true' "$(post /api/setup/storage '{"backend":"s3-compatible","endpoint":"http://minio:9000","accessKey":"tank","secretKey":"changeme123456","bucket":"packages","region":"us-east-1"}')"
 assert_contains "Create admin" '"ok":true' "$(post /api/setup/admin '{"email":"admin@e2e.test","password":"e2epass12345"}')"
 assert_contains "Weak pw rejected" '"error"' "$(post /api/setup/admin '{"email":"x@x.com","password":"short"}')"
 assert_contains "Scanner disabled" '"ok":true' "$(post /api/setup/scanner-llm '{"provider":"disabled"}')"
+# Runtime provider must use wizard-saved DB config (no restart needed)
+assert_contains "Runtime storage uses DB config" '"ok":true' "$(post /api/setup/test-storage '{}')"
+
 assert_contains "Complete" '"ok":true' "$(post /api/setup/complete '')"
 assert "/ serves app" "200" "$(curl -sI -o /dev/null -w '%{http_code}' $BASE/)"
 assert "/setup blocked" "302" "$(curl -sI -o /dev/null -w '%{http_code}' $BASE/setup)"

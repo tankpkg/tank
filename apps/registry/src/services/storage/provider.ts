@@ -11,8 +11,9 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js';
+
 import { env } from '~/consts/env';
-import { supabaseAdmin } from '~/services/supabase';
 
 export interface SignedUrlResult {
   signedUrl: string;
@@ -29,13 +30,24 @@ export interface StorageProvider {
 
 class SupabaseStorageProvider implements StorageProvider {
   private readonly bucket: string;
+  private readonly client: SupabaseClient;
 
-  constructor(bucket: string) {
+  constructor(bucket: string, overrides?: { url?: string; serviceKey?: string }) {
+    const url = overrides?.url || env.SUPABASE_URL;
+    const serviceKey = overrides?.serviceKey || env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !serviceKey) {
+      throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    }
+
     this.bucket = bucket;
+    this.client = createSupabaseClient(url, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
   }
 
   async createSignedUploadUrl(path: string): Promise<SignedUrlResult> {
-    const { data, error } = await supabaseAdmin.storage.from(this.bucket).createSignedUploadUrl(path);
+    const { data, error } = await this.client.storage.from(this.bucket).createSignedUploadUrl(path);
 
     if (error || !data?.signedUrl) {
       throw new Error(`Failed to create Supabase signed upload URL: ${error?.message ?? 'Unknown error'}`);
@@ -45,7 +57,7 @@ class SupabaseStorageProvider implements StorageProvider {
   }
 
   async createSignedUrl(path: string, expiresInSeconds = 3600): Promise<SignedUrlResult> {
-    const { data, error } = await supabaseAdmin.storage.from(this.bucket).createSignedUrl(path, expiresInSeconds);
+    const { data, error } = await this.client.storage.from(this.bucket).createSignedUrl(path, expiresInSeconds);
 
     if (error || !data?.signedUrl) {
       throw new Error(`Failed to create Supabase signed download URL: ${error?.message ?? 'Unknown error'}`);
@@ -61,12 +73,16 @@ class S3StorageProvider implements StorageProvider {
   private readonly publicClient: S3Client;
   private bucketReady: Promise<void> | null = null;
 
-  constructor(bucket: string) {
-    const region = env.S3_REGION;
-    const internalEndpoint = env.S3_ENDPOINT;
-    const publicEndpoint = env.S3_PUBLIC_ENDPOINT || internalEndpoint;
-    const accessKeyId = env.S3_ACCESS_KEY;
-    const secretAccessKey = env.S3_SECRET_KEY;
+  constructor(
+    bucket: string,
+    overrides?: { endpoint?: string; publicEndpoint?: string; region?: string; accessKey?: string; secretKey?: string }
+  ) {
+    const region = overrides?.region || env.S3_REGION;
+    const internalEndpoint = overrides?.endpoint || env.S3_ENDPOINT;
+    const publicEndpoint =
+      overrides?.publicEndpoint || process.env.S3_PUBLIC_ENDPOINT || env.S3_PUBLIC_ENDPOINT || internalEndpoint;
+    const accessKeyId = overrides?.accessKey || env.S3_ACCESS_KEY;
+    const secretAccessKey = overrides?.secretKey || env.S3_SECRET_KEY;
 
     if (!accessKeyId || !secretAccessKey) {
       throw new Error('Missing S3_ACCESS_KEY or S3_SECRET_KEY environment variable');
@@ -82,10 +98,8 @@ class S3StorageProvider implements StorageProvider {
       region,
       endpoint: endpoint || undefined,
       forcePathStyle: !!endpoint,
-      credentials: {
-        accessKeyId,
-        secretAccessKey
-      }
+      credentials: { accessKeyId, secretAccessKey },
+      requestHandler: { requestTimeout: 30_000 }
     });
   }
 
@@ -262,25 +276,63 @@ class FilesystemStorageProvider implements StorageProvider {
 
 let providerInstance: StorageProvider | null = null;
 
+interface StorageOverride {
+  backend: string;
+  bucket?: string;
+  endpoint?: string;
+  publicEndpoint?: string;
+  region?: string;
+  accessKey?: string;
+  secretKey?: string;
+  fsPath?: string;
+  supabaseUrl?: string;
+  supabaseServiceKey?: string;
+}
+
+let storageOverride: StorageOverride | null = null;
+
+export function setStorageOverride(config: StorageOverride): void {
+  storageOverride = config;
+  providerInstance = null;
+}
+
+export function resetStorageProvider(): void {
+  providerInstance = null;
+}
+
 export function getStorageProvider(): StorageProvider {
   if (providerInstance) return providerInstance;
 
-  const backend = env.STORAGE_BACKEND;
-  const bucket = env.STORAGE_BUCKET || env.S3_BUCKET;
+  const backend = storageOverride?.backend || env.STORAGE_BACKEND;
+  const bucket = storageOverride?.bucket || env.STORAGE_BUCKET || env.S3_BUCKET;
 
   if (backend === 'filesystem') {
-    const baseDir = env.STORAGE_FS_PATH || '/app/data/packages';
+    const baseDir = storageOverride?.fsPath || env.STORAGE_FS_PATH || '/app/data/packages';
     const publicUrl = env.BETTER_AUTH_URL || env.APP_URL || 'http://localhost:3000';
     providerInstance = new FilesystemStorageProvider(baseDir, publicUrl);
     return providerInstance;
   }
 
   if (backend === 's3') {
-    providerInstance = new S3StorageProvider(bucket);
+    providerInstance = new S3StorageProvider(
+      bucket,
+      storageOverride
+        ? {
+            endpoint: storageOverride.endpoint,
+            publicEndpoint: storageOverride.publicEndpoint,
+            region: storageOverride.region,
+            accessKey: storageOverride.accessKey,
+            secretKey: storageOverride.secretKey
+          }
+        : undefined
+    );
     return providerInstance;
   }
 
-  providerInstance = new SupabaseStorageProvider(bucket);
+  providerInstance = new SupabaseStorageProvider(
+    bucket,
+    storageOverride ? { url: storageOverride.supabaseUrl, serviceKey: storageOverride.supabaseServiceKey } : undefined
+  );
   return providerInstance;
 }
 

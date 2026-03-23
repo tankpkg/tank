@@ -12,7 +12,7 @@ function sanitize(value: string): string {
 const dbUrl = process.env.DATABASE_URL;
 if (!dbUrl) process.exit(0);
 
-const masterKey = process.env.BETTER_AUTH_SECRET;
+let masterKey = process.env.BETTER_AUTH_SECRET;
 if (!masterKey) process.exit(0);
 
 try {
@@ -26,7 +26,13 @@ try {
 
   const exports: string[] = [];
 
+  if (config.authSecret) {
+    masterKey = config.authSecret;
+    exports.push(`BETTER_AUTH_SECRET=${sanitize(config.authSecret)}`);
+  }
+
   if (config.instanceUrl) {
+    exports.push(`APP_URL=${sanitize(config.instanceUrl)}`);
     exports.push(`BETTER_AUTH_URL=${sanitize(config.instanceUrl)}`);
     exports.push(`VITE_PUBLIC_APP_URL=${sanitize(config.instanceUrl)}`);
   }
@@ -75,6 +81,7 @@ try {
   if (config.storageBackend) {
     exports.push(`STORAGE_BACKEND=${sanitize(config.storageBackend)}`);
     if (config.storageEndpoint) exports.push(`S3_ENDPOINT=${sanitize(config.storageEndpoint)}`);
+    if (config.storagePublicEndpoint) exports.push(`S3_PUBLIC_ENDPOINT=${sanitize(config.storagePublicEndpoint)}`);
     if (config.storageRegion) exports.push(`S3_REGION=${sanitize(config.storageRegion)}`);
     if (config.storageBucket) exports.push(`S3_BUCKET=${sanitize(config.storageBucket)}`);
     if (config.storageAccessKey) exports.push(`S3_ACCESS_KEY=${sanitize(config.storageAccessKey)}`);

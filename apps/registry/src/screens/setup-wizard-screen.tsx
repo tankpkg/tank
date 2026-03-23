@@ -263,6 +263,29 @@ export function SetupWizardScreen() {
           }));
           setEnvDbDetected(true);
         }
+        const sd = data.defaults?.storage;
+        if (sd?.backend) {
+          setState((s) => {
+            let uiBackend: StepState['storage']['backend'] = s.storage.backend;
+            if (sd.backend === 'filesystem') uiBackend = 'filesystem';
+            else if (sd.backend === 'supabase') uiBackend = 'supabase';
+            else if (sd.backend === 's3' && sd.endpoint) uiBackend = 'minio';
+            else if (sd.backend === 's3') uiBackend = 's3';
+
+            return {
+              ...s,
+              storage: {
+                ...s.storage,
+                backend: uiBackend,
+                endpoint: sd.endpoint || s.storage.endpoint,
+                region: sd.region || s.storage.region,
+                bucket: sd.bucket || s.storage.bucket,
+                accessKey: sd.accessKey || s.storage.accessKey,
+                supabaseUrl: sd.supabaseUrl || s.storage.supabaseUrl
+              }
+            };
+          });
+        }
       })
       .catch(() => {});
   }, []);
@@ -779,8 +802,18 @@ export function SetupWizardScreen() {
                   disabled={loading}
                   onClick={() =>
                     run(async () => {
-                      await post('/api/setup/test-storage');
-                      setState((s) => ({ ...s, storage: { ...s.storage, tested: true } }));
+                      const s = state.storage;
+                      await post('/api/setup/test-storage', {
+                        backend: s.backend,
+                        endpoint: s.endpoint || undefined,
+                        region: s.region || undefined,
+                        bucket: s.bucket || undefined,
+                        accessKey: s.accessKey || undefined,
+                        secretKey: s.secretKey || undefined,
+                        supabaseUrl: s.supabaseUrl || undefined,
+                        supabaseServiceKey: s.supabaseServiceKey || undefined
+                      });
+                      setState((prev) => ({ ...prev, storage: { ...prev.storage, tested: true } }));
                     })
                   }>
                   {loading ? 'Testing…' : 'Test Storage'}
