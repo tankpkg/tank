@@ -2,7 +2,11 @@ export const GITHUB_REPO = 'tankpkg/tank';
 export const SITE_URL = 'https://tankpkg.dev';
 export const INSTALL_COMMAND = 'curl -fsSL https://raw.githubusercontent.com/tankpkg/tank/main/install.sh | sh';
 export const INSTALL_METHODS = [
-  { id: 'curl', label: 'curl', command: 'curl -fsSL https://tankpkg.dev/install | sh' },
+  {
+    id: 'curl',
+    label: 'curl',
+    command: 'curl -fsSL https://raw.githubusercontent.com/tankpkg/tank/main/install.sh | sh'
+  },
   { id: 'brew', label: 'Homebrew', command: 'brew install tankpkg/tap/tank' },
   { id: 'npm', label: 'npm', command: 'npm install -g @tankpkg/cli' },
   { id: 'bun', label: 'Bun', command: 'bun install -g @tankpkg/cli' }
