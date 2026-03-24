@@ -46,6 +46,7 @@ jobs:
         with:
           node-version: 24
       - uses: oven-sh/setup-bun@v2
+      - uses: extractions/setup-just@v2
 
       - run: bun install --frozen-lockfile
 
@@ -105,6 +106,7 @@ jobs:
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
+      - uses: extractions/setup-just@v2
       - run: bun install --frozen-lockfile
       - run: just ci-publish-npm "${GITHUB_REF_NAME#v}"
         env:

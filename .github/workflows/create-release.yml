@@ -26,6 +26,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: oven-sh/setup-bun@v2
+      - uses: extractions/setup-just@v2
 
       - run: bun install --frozen-lockfile
 
