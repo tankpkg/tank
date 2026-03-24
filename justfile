@@ -361,16 +361,16 @@ ci-publish-npm-nightly:
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build internals-helpers
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build cli
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build mcp
-    cd packages/cli && npm publish --no-git-checks --access public --tag nightly
-    cd packages/mcp-server && npm publish --no-git-checks --access public --tag nightly
+    (cd packages/cli && npm publish --no-git-checks --access public --tag nightly)
+    (cd packages/mcp-server && npm publish --no-git-checks --access public --tag nightly)
 
 [group('ci')]
 ci-publish-npm VERSION:
     #!/usr/bin/env bash
     set -euo pipefail
     just ci-build-cli {{VERSION}}
-    cd packages/cli && npm publish --no-git-checks --access public
-    cd packages/mcp-server && npm publish --no-git-checks --access public
+    (cd packages/cli && npm publish --no-git-checks --access public)
+    (cd packages/mcp-server && npm publish --no-git-checks --access public)
 
 [group('ci')]
 ci-release-tag VERSION:
