@@ -116,6 +116,9 @@ jobs:
     runs-on: ubuntu-22.04
     needs: release
     continue-on-error: true
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
