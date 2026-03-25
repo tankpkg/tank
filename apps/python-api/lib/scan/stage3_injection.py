@@ -178,7 +178,7 @@ def detect_hidden_content(content: str, file_path: str) -> list[Finding]:
                             location=f"{file_path}:{line_num}",
                             confidence=0.85,
                             tool="stage3_hidden",
-                            evidence=comment_text[:100] + "..." if len(comment_text) > 100 else comment_text,
+                            evidence=comment_text[:500] + "..." if len(comment_text) > 500 else comment_text,
                         )
                     )
                     break
@@ -202,7 +202,7 @@ def detect_hidden_content(content: str, file_path: str) -> list[Finding]:
                         location=f"{file_path}:{line_num}",
                         confidence=0.7,
                         tool="stage3_hidden",
-                        evidence=comment_text[:100] + "..." if len(comment_text) > 100 else comment_text,
+                        evidence=comment_text[:500] + "..." if len(comment_text) > 500 else comment_text,
                     )
                 )
 
@@ -283,7 +283,7 @@ def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:
                         stage="stage3",
                         severity=severity,
                         type="prompt_injection_pattern",
-                        description=f"Matched injection pattern: {matched_text[:50]}...",
+                        description=f"Matched injection pattern: {matched_text}",
                         location=f"{file_path}:{line_num}",
                         confidence=weight,
                         tool="stage3_regex",

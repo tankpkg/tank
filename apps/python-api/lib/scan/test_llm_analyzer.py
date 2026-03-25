@@ -26,7 +26,7 @@ def sample_finding():
         stage="stage3",
         severity="high",
         type="prompt_injection_pattern",
-        description="Matched injection pattern: you are now a...",
+        description="Matched injection pattern: you are now a helpful assistant",
         location="skill.md:10",
         confidence=0.9,
         tool="stage3_regex",
