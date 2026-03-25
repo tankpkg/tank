@@ -14,20 +14,30 @@ const severityColor: Record<string, string> = {
 
 const TRUNCATE_LENGTH = 100;
 
+export function resolveExpandable(description: string, evidence: string | null) {
+  const hasLongerEvidence = !!evidence && evidence.length > description.length;
+  const isLongDescription = description.length > TRUNCATE_LENGTH;
+  const expandable = hasLongerEvidence || isLongDescription;
+  const collapsedText =
+    isLongDescription && !hasLongerEvidence ? `${description.slice(0, TRUNCATE_LENGTH)}…` : description;
+  const expandedText = hasLongerEvidence ? evidence : description;
+
+  return { expandable, collapsedText, expandedText };
+}
+
 function ExpandableDescription({ description, evidence }: { description: string; evidence: string | null }) {
   const [expanded, setExpanded] = useState(false);
-  const hasEvidence = !!evidence && evidence !== description;
-  const descriptionTruncated = description.endsWith('...');
-  const hasMore = hasEvidence || descriptionTruncated || description.length > TRUNCATE_LENGTH;
-  const fullText = hasEvidence ? evidence : description;
+  const { expandable, collapsedText, expandedText } = resolveExpandable(description, evidence);
 
-  if (!hasMore) {
+  if (!expandable) {
     return <span>{description}</span>;
   }
 
   return (
     <div className="inline">
-      <span className={expanded ? 'whitespace-pre-wrap break-words' : ''}>{expanded ? fullText : description}</span>
+      <span className={expanded ? 'whitespace-pre-wrap break-words' : ''}>
+        {expanded ? expandedText : collapsedText}
+      </span>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
