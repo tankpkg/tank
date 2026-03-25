@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ScanFinding } from '~/lib/skills/data';
 
 export interface FindingsTableProps {
@@ -10,6 +11,29 @@ const severityColor: Record<string, string> = {
   medium: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-950',
   low: 'text-blue-600 bg-blue-50 dark:bg-blue-950'
 };
+
+const TRUNCATE_LENGTH = 100;
+
+function ExpandableDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const needsTruncation = text.length > TRUNCATE_LENGTH;
+
+  if (!needsTruncation) {
+    return <span>{text}</span>;
+  }
+
+  return (
+    <div className="inline">
+      <span>{expanded ? text : `${text.slice(0, TRUNCATE_LENGTH)}…`}</span>
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="ml-1 text-xs text-blue-500 hover:text-blue-400 hover:underline cursor-pointer whitespace-nowrap">
+        {expanded ? 'Show less' : 'Show more'}
+      </button>
+    </div>
+  );
+}
 
 export function FindingsTable({ findings }: FindingsTableProps) {
   if (findings.length === 0) {
@@ -31,7 +55,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
         <tbody>
           {findings.map((f, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: findings can have duplicate stage+type
-            <tr key={`${f.stage}-${f.type}-${i}`} className="border-b last:border-0">
+            <tr key={`${f.stage}-${f.type}-${i}`} className="border-b last:border-0 align-top">
               <td className="px-3 py-2">
                 <span
                   className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${severityColor[f.severity] ?? ''}`}>
@@ -39,7 +63,9 @@ export function FindingsTable({ findings }: FindingsTableProps) {
                 </span>
               </td>
               <td className="px-3 py-2 font-mono text-xs">{f.type}</td>
-              <td className="px-3 py-2 max-w-xs truncate">{f.description}</td>
+              <td className="px-3 py-2 max-w-xs">
+                <ExpandableDescription text={f.description} />
+              </td>
               <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{f.location ?? '\u2014'}</td>
               <td className="px-3 py-2 text-xs text-muted-foreground">{f.tool ?? f.stage}</td>
             </tr>
