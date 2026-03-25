@@ -14,17 +14,18 @@ const severityColor: Record<string, string> = {
 
 const TRUNCATE_LENGTH = 100;
 
-function ExpandableDescription({ text }: { text: string }) {
+function ExpandableDescription({ description, evidence }: { description: string; evidence: string | null }) {
   const [expanded, setExpanded] = useState(false);
-  const needsTruncation = text.length > TRUNCATE_LENGTH;
+  const fullText = evidence && evidence.length > description.length ? evidence : description;
+  const hasMore = fullText.length > description.length || description.length > TRUNCATE_LENGTH;
 
-  if (!needsTruncation) {
-    return <span>{text}</span>;
+  if (!hasMore) {
+    return <span>{description}</span>;
   }
 
   return (
     <div className="inline">
-      <span>{expanded ? text : `${text.slice(0, TRUNCATE_LENGTH)}…`}</span>
+      <span className={expanded ? 'whitespace-pre-wrap break-words' : ''}>{expanded ? fullText : description}</span>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
@@ -64,7 +65,7 @@ export function FindingsTable({ findings }: FindingsTableProps) {
               </td>
               <td className="px-3 py-2 font-mono text-xs">{f.type}</td>
               <td className="px-3 py-2 max-w-xs">
-                <ExpandableDescription text={f.description} />
+                <ExpandableDescription description={f.description} evidence={f.evidence ?? null} />
               </td>
               <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{f.location ?? '\u2014'}</td>
               <td className="px-3 py-2 text-xs text-muted-foreground">{f.tool ?? f.stage}</td>
