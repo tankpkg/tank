@@ -191,10 +191,13 @@ export const packagesRoutes = new Hono()
 
     let signedUrl: string;
     try {
-      const urlData = await getStorageProvider().createSignedUrl(row.tarballPath, 3600, 'internal');
+      const urlData = await getStorageProvider().createSignedUrl(row.tarballPath, 3600, 'public');
       signedUrl = urlData.signedUrl;
-    } catch {
-      return c.json({ error: 'Failed to generate download URL for rescan' }, 500);
+    } catch (err) {
+      return c.json(
+        { error: 'Failed to generate download URL for rescan', detail: String(err), tarballPath: row.tarballPath },
+        500
+      );
     }
 
     const scanResponse = await fetch(`${scanApiUrl}/api/analyze/scan`, {
