@@ -16,8 +16,10 @@ const TRUNCATE_LENGTH = 100;
 
 function ExpandableDescription({ description, evidence }: { description: string; evidence: string | null }) {
   const [expanded, setExpanded] = useState(false);
-  const fullText = evidence && evidence.length > description.length ? evidence : description;
-  const hasMore = fullText.length > description.length || description.length > TRUNCATE_LENGTH;
+  const hasEvidence = !!evidence && evidence !== description;
+  const descriptionTruncated = description.endsWith('...');
+  const hasMore = hasEvidence || descriptionTruncated || description.length > TRUNCATE_LENGTH;
+  const fullText = hasEvidence ? evidence : description;
 
   if (!hasMore) {
     return <span>{description}</span>;
