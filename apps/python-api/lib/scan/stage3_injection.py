@@ -277,6 +277,11 @@ def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:
             for match in pattern.finditer(content):
                 line_num = content[: match.start()].count("\n") + 1
                 matched_text = match.group(0)
+                line_start = content.rfind("\n", 0, match.start()) + 1
+                line_end = content.find("\n", match.end())
+                if line_end == -1:
+                    line_end = len(content)
+                full_line = content[line_start:line_end].strip()
 
                 findings.append(
                     Finding(
@@ -287,7 +292,7 @@ def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:
                         location=f"{file_path}:{line_num}",
                         confidence=weight,
                         tool="stage3_regex",
-                        evidence=matched_text,
+                        evidence=full_line,
                     )
                 )
                 matched_patterns.append((severity, weight))
