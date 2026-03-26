@@ -2,8 +2,8 @@ import { apiKey } from '@better-auth/api-key';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { genericOAuth, organization } from 'better-auth/plugins';
-
 import { enabledProviders, env, githubEnabled, oidcEnabled } from '~/consts/env';
+import { getAppUrl } from '~/lib/app-url';
 import { db } from '~/lib/db';
 import { checkEmailRateLimit, checkVerificationRateLimit } from '~/services/email/rate-limiter';
 import { getFromAddress, getProvider, sendEmail } from '~/services/email/service';
@@ -13,7 +13,7 @@ function createAuth() {
     database: drizzleAdapter(db, {
       provider: 'pg'
     }),
-    baseURL: process.env.BETTER_AUTH_URL || process.env.APP_URL || env.APP_URL,
+    baseURL: getAppUrl(),
     basePath: '/api/auth',
     secret: process.env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET,
     emailAndPassword: {
@@ -67,7 +67,7 @@ function createAuth() {
             throw new Error(`Too many emails sent. Please wait ${Math.ceil(rateLimit.resetIn / 60000)} minutes.`);
           }
 
-          const acceptUrl = `${env.APP_URL}/orgs/accept-invitation?id=${data.id}`;
+          const acceptUrl = `${getAppUrl()}/orgs/accept-invitation?id=${data.id}`;
           const result = await sendEmail({
             from: getFromAddress(),
             to: data.email,
