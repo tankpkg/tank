@@ -212,8 +212,15 @@ export const packagesRoutes = new Hono()
     });
 
     if (!scanResponse.ok) {
-      return c.json({ error: 'Scanner returned an error', status: scanResponse.status }, 502);
+      const body = await scanResponse.text().catch(() => 'unreadable');
+      return c.json({ error: 'Scanner returned an error', status: scanResponse.status, body }, 502);
     }
+
+    const scanResult = (await scanResponse.json().catch(() => null)) as {
+      scan_id?: string | null;
+      verdict?: string;
+      findings?: unknown[];
+    } | null;
 
     const adminUser = c.get('adminUser' as never) as { id: string };
     await db.insert(auditEvents).values({
@@ -224,5 +231,12 @@ export const packagesRoutes = new Hono()
       metadata: { name, version: row.version, versionId: row.versionId }
     });
 
-    return c.json({ queued: true, version: row.version });
+    return c.json({
+      success: !!scanResult?.scan_id,
+      scan_id: scanResult?.scan_id ?? null,
+      verdict: scanResult?.verdict ?? null,
+      findings_count: scanResult?.findings?.length ?? 0,
+      version: row.version,
+      stored: !!scanResult?.scan_id
+    });
   });
