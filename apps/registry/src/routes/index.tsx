@@ -14,9 +14,9 @@ const data = routeHead({
 });
 
 export const Route = createFileRoute('/')({
-  loader: ({ context }) => {
-    const selfhostedAppUrl =
-      process.env.TANK_MODE === 'selfhosted' ? process.env.APP_URL || process.env.BETTER_AUTH_URL || '' : '';
+  loader: async ({ context }) => {
+    const { getAppUrl } = await import('~/lib/app-url');
+    const selfhostedAppUrl = process.env.TANK_MODE === 'selfhosted' ? getAppUrl() : '';
     return Promise.all([
       context.queryClient.ensureQueryData(homepageStatsQueryOptions()),
       context.queryClient.ensureQueryData(githubStarsQueryOptions)

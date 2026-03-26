@@ -2,8 +2,9 @@ import { createFileRoute } from '@tanstack/react-router';
 import { createServerFn } from '@tanstack/react-start';
 
 const getCliInfo = createServerFn({ method: 'GET' }).handler(async () => {
+  const { getAppUrl } = await import('~/lib/app-url');
   const isSelfHosted = process.env.TANK_MODE === 'selfhosted';
-  const appUrl = process.env.APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
+  const appUrl = getAppUrl();
   return { isSelfHosted, appUrl };
 });
 

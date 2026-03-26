@@ -12,8 +12,8 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js';
-
 import { env } from '~/consts/env';
+import { getAppUrl } from '~/lib/app-url';
 
 export interface SignedUrlResult {
   signedUrl: string;
@@ -308,7 +308,7 @@ export function getStorageProvider(): StorageProvider {
 
   if (backend === 'filesystem') {
     const baseDir = storageOverride?.fsPath || env.STORAGE_FS_PATH || '/app/data/packages';
-    const publicUrl = env.BETTER_AUTH_URL || env.APP_URL || 'http://localhost:3000';
+    const publicUrl = getAppUrl();
     providerInstance = new FilesystemStorageProvider(baseDir, publicUrl);
     return providerInstance;
   }

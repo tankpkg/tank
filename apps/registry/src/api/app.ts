@@ -22,6 +22,19 @@ const storageReady = (async () => {
       process.env.APP_URL = config.instanceUrl;
       process.env.BETTER_AUTH_URL = config.instanceUrl;
     }
+
+    if (process.env.TANK_MODE === 'selfhosted') {
+      const url = process.env.APP_URL || '';
+      if (!url || url.includes('localhost') || url.includes('127.0.0.1')) {
+        // biome-ignore lint/suspicious/noConsole: intentional — startup diagnostic for on-prem admins
+        console.warn(
+          '[tank] WARNING: APP_URL is localhost in selfhosted mode. ' +
+            'CLI auth and email links will point to localhost. ' +
+            'Complete the setup wizard or set APP_URL in your .env file.'
+        );
+      }
+    }
+
     if (!config?.storageBackend) return;
 
     const { setStorageOverride } = await import('~/services/storage/provider');
