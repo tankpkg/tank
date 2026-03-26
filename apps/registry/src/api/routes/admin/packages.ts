@@ -4,7 +4,7 @@ import { Hono } from 'hono';
 import { env } from '~/consts/env';
 import { db } from '~/lib/db';
 import { user } from '~/lib/db/auth-schema';
-import { auditEvents, skills, skillVersions } from '~/lib/db/schema';
+import { auditEvents, scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
 import { getStorageProvider } from '~/services/storage/provider';
 
 export const packagesRoutes = new Hono()
@@ -219,8 +219,70 @@ export const packagesRoutes = new Hono()
     const scanResult = (await scanResponse.json().catch(() => null)) as {
       scan_id?: string | null;
       verdict?: string;
-      findings?: unknown[];
+      findings?: Array<{
+        stage: string;
+        severity: string;
+        type: string;
+        description: string;
+        location?: string | null;
+        confidence?: number | null;
+        tool?: string | null;
+        evidence?: string | null;
+        llm_verdict?: string | null;
+        llm_reviewed?: boolean;
+      }>;
+      stage_results?: Array<{ stage: string }>;
+      duration_ms?: number;
+      file_hashes?: Record<string, string>;
+      llm_analysis?: Record<string, unknown>;
     } | null;
+
+    if (!scanResult?.verdict || !scanResult.findings) {
+      return c.json({ error: 'Scanner returned invalid result', result: scanResult }, 502);
+    }
+
+    const findings = scanResult.findings;
+    const counts = {
+      critical: findings.filter((f) => f.severity === 'critical').length,
+      high: findings.filter((f) => f.severity === 'high').length,
+      medium: findings.filter((f) => f.severity === 'medium').length,
+      low: findings.filter((f) => f.severity === 'low').length
+    };
+
+    const [inserted] = await db
+      .insert(scanResults)
+      .values({
+        versionId: row.versionId,
+        verdict: scanResult.verdict,
+        totalFindings: findings.length,
+        criticalCount: counts.critical,
+        highCount: counts.high,
+        mediumCount: counts.medium,
+        lowCount: counts.low,
+        stagesRun: scanResult.stage_results?.map((s) => s.stage) ?? [],
+        durationMs: scanResult.duration_ms ?? 0,
+        fileHashes: scanResult.file_hashes ?? {},
+        llmAnalysis: scanResult.llm_analysis as typeof scanResults.$inferInsert.llmAnalysis
+      })
+      .returning({ id: scanResults.id });
+
+    if (inserted && findings.length > 0) {
+      await db.insert(scanFindings).values(
+        findings.map((f) => ({
+          scanId: inserted.id,
+          stage: f.stage,
+          severity: f.severity,
+          type: f.type,
+          description: f.description,
+          location: f.location ?? null,
+          confidence: f.confidence ?? null,
+          tool: f.tool ?? null,
+          evidence: f.evidence ?? null,
+          llmVerdict: f.llm_verdict ?? null,
+          llmReviewed: f.llm_reviewed ?? false
+        }))
+      );
+    }
 
     const adminUser = c.get('adminUser' as never) as { id: string };
     await db.insert(auditEvents).values({
@@ -232,11 +294,10 @@ export const packagesRoutes = new Hono()
     });
 
     return c.json({
-      success: !!scanResult?.scan_id,
-      scan_id: scanResult?.scan_id ?? null,
-      verdict: scanResult?.verdict ?? null,
-      findings_count: scanResult?.findings?.length ?? 0,
-      version: row.version,
-      stored: !!scanResult?.scan_id
+      success: true,
+      scan_id: inserted.id,
+      verdict: scanResult.verdict,
+      findings_count: findings.length,
+      version: row.version
     });
   });
