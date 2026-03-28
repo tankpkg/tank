@@ -2,6 +2,7 @@ import { encodeSkillName } from '@internals/helpers';
 import { Link } from '@tanstack/react-router';
 import { Download, Lock, Star } from 'lucide-react';
 
+import { MobileSkillsFilters } from '~/components/skills/mobile-skills-filters';
 import { SearchBar } from '~/components/skills/search-bar';
 import { SkillsFilters } from '~/components/skills/skills-filters';
 import { SkillsSort } from '~/components/skills/skills-sort';
@@ -60,15 +61,26 @@ export function SkillsListScreen({
 
       <SearchBar defaultValue={query} />
 
+      <MobileSkillsFilters
+        currentVisibility={visibility}
+        currentScoreBucket={scoreBucket}
+        currentFreshness={freshness}
+        currentPopularity={popularity}
+        currentHasReadme={hasReadme}
+        isLoggedIn={isLoggedIn}
+      />
+
       <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <SkillsFilters
-          currentVisibility={visibility}
-          currentScoreBucket={scoreBucket}
-          currentFreshness={freshness}
-          currentPopularity={popularity}
-          currentHasReadme={hasReadme}
-          isLoggedIn={isLoggedIn}
-        />
+        <div className="hidden lg:block">
+          <SkillsFilters
+            currentVisibility={visibility}
+            currentScoreBucket={scoreBucket}
+            currentFreshness={freshness}
+            currentPopularity={popularity}
+            currentHasReadme={hasReadme}
+            isLoggedIn={isLoggedIn}
+          />
+        </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
