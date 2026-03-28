@@ -10,7 +10,9 @@ import {
   FileText,
   FileType,
   Folder,
-  FolderOpen
+  FolderOpen,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
@@ -226,10 +228,16 @@ export function FileExplorer({ files, skillName, version, readme, manifest }: Fi
   const [fileContent, setFileContent] = useState<string | null>(readme ?? null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [treeOpen, setTreeOpen] = useState(false);
   const { copied, copy } = useCopyToClipboard();
   const isDark = useIsDark();
 
   const tree = useMemo(() => buildTree(files), [files]);
+
+  const handleSelectFile = useCallback((path: string) => {
+    setSelectedFile(path);
+    setTreeOpen(false);
+  }, []);
 
   const getFileContent = useCallback(
     async (path: string): Promise<string | null> => {
@@ -282,15 +290,32 @@ export function FileExplorer({ files, skillName, version, readme, manifest }: Fi
 
   const lang = selectedFile ? getLang(selectedFile) : 'plaintext';
 
+  const treePanel = (
+    <div className="overflow-y-auto bg-background/50 py-1" style={{ maxHeight: '600px' }}>
+      {tree.map((node) => (
+        <TreeItem key={node.path} node={node} selectedFile={selectedFile} onSelect={handleSelectFile} />
+      ))}
+    </div>
+  );
+
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-background">
-      <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-2">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">{files.length} files</span>
+      {/* Header bar */}
+      <div className="flex items-center justify-between border-b border-border bg-muted/30 px-3 py-2 gap-2">
+        <div className="flex items-center gap-2 text-sm min-w-0">
+          {/* Mobile tree toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 lg:hidden shrink-0"
+            onClick={() => setTreeOpen(!treeOpen)}>
+            {treeOpen ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
+          </Button>
+          <span className="text-muted-foreground shrink-0">{files.length} files</span>
           {selectedFile && (
             <>
-              <span className="text-muted-foreground/40">/</span>
-              <span className="font-mono text-[13px] text-foreground">{selectedFile}</span>
+              <span className="text-muted-foreground/40 shrink-0">/</span>
+              <span className="font-mono text-[13px] text-foreground truncate">{selectedFile}</span>
             </>
           )}
         </div>
@@ -298,17 +323,21 @@ export function FileExplorer({ files, skillName, version, readme, manifest }: Fi
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
             onClick={() => copy(fileContent)}>
             {copied ? <Check className="size-3.5 text-emerald-400" /> : <Copy className="size-3.5" />}
-            {copied ? 'Copied!' : 'Copy'}
+            <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
           </Button>
         )}
       </div>
 
+      {/* Mobile: collapsible tree panel */}
+      {treeOpen && <div className="border-b border-border lg:hidden">{treePanel}</div>}
+
+      {/* Desktop: side-by-side layout */}
       <div className="flex">
         <div
-          className="w-[260px] shrink-0 overflow-y-auto border-r border-border bg-background/50 py-1"
+          className="hidden lg:block w-[260px] shrink-0 overflow-y-auto border-r border-border bg-background/50 py-1"
           style={{ height: '600px' }}>
           {tree.map((node) => (
             <TreeItem key={node.path} node={node} selectedFile={selectedFile} onSelect={setSelectedFile} />
@@ -317,29 +346,30 @@ export function FileExplorer({ files, skillName, version, readme, manifest }: Fi
 
         <div className="flex-1 min-w-0">
           {!selectedFile && (
-            <div className="flex h-[600px] items-center justify-center text-sm text-muted-foreground/50">
-              Select a file to preview
+            <div className="flex h-[400px] lg:h-[600px] items-center justify-center text-sm text-muted-foreground/50">
+              <span className="hidden lg:inline">Select a file to preview</span>
+              <span className="lg:hidden">Tap the panel icon to browse files</span>
             </div>
           )}
 
           {selectedFile && isLoading && <EditorSkeleton />}
 
           {selectedFile && error && (
-            <div className="flex h-[600px] items-center justify-center">
+            <div className="flex h-[400px] lg:h-[600px] items-center justify-center">
               <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 
           {selectedFile && !isLoading && !error && fileContent !== null && (
             <Editor
-              height="600px"
+              height={typeof window !== 'undefined' && window.innerWidth < 1024 ? '400px' : '600px'}
               language={lang}
               value={fileContent}
               theme={isDark ? 'vs-dark' : 'light'}
               loading={<EditorSkeleton />}
               options={{
                 readOnly: true,
-                minimap: { enabled: true },
+                minimap: { enabled: typeof window !== 'undefined' && window.innerWidth >= 1024 },
                 fontSize: 13,
                 lineHeight: 20,
                 fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace",

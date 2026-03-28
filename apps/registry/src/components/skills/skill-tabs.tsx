@@ -102,8 +102,8 @@ export function SkillTabs({
       </TabsList>
 
       <TabsContent value="readme" className="mt-6">
-        <div className="flex gap-8 items-start">
-          <div className="flex-1 min-w-0">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+          <div className="flex-1 min-w-0 w-full">
             {readmeContent ? (
               <div data-testid="readme-root">
                 <SkillReadme content={readmeContent} />
@@ -122,7 +122,9 @@ export function SkillTabs({
       </TabsContent>
 
       <TabsContent value="versions" className="mt-6">
-        <VersionHistory versions={versions} />
+        <div className="overflow-x-auto">
+          <VersionHistory versions={versions} />
+        </div>
       </TabsContent>
 
       <TabsContent value="files" className="mt-6">
@@ -133,8 +135,8 @@ export function SkillTabs({
 
       {hasSecurityData && securityTab && (
         <TabsContent value="security" className="mt-6">
-          <div className="flex gap-8 items-start">
-            <div className="flex-1 min-w-0">{securityTab}</div>
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+            <div className="flex-1 min-w-0 w-full">{securityTab}</div>
             {sidebar}
           </div>
         </TabsContent>

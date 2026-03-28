@@ -3,9 +3,12 @@ import { useMemo, useState } from 'react';
 import { SkillSidebar } from '~/components/skills/skill-sidebar';
 import { SkillTabs } from '~/components/skills/skill-tabs';
 import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
 import { safeParseJson, safeParsePermissions } from '~/lib/format';
 import type { SkillDetailResult } from '~/lib/skills/data';
 import { buildSecurityTab } from '~/screens/skill-detail-helpers';
+
+const MOBILE_TRIGGER_LIMIT = 6;
 
 function parseDescription(raw: string | null): { summary: string; triggers: string[] } {
   if (!raw) return { summary: '', triggers: [] };
@@ -35,6 +38,7 @@ interface SkillDetailScreenProps {
 
 export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
   const [activeTab, setActiveTab] = useState('readme');
+  const [triggersExpanded, setTriggersExpanded] = useState(false);
   const latestManifest = safeParseJson(data.latestVersion?.manifest);
   const fileList: string[] = Array.isArray(latestManifest?.files) ? (latestManifest.files as string[]) : [];
   const license = typeof latestManifest?.license === 'string' ? latestManifest.license : null;
@@ -56,8 +60,10 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="skill-detail-root">
       <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold tracking-tight font-mono">{data.name}</h1>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight font-mono break-all sm:break-normal">
+            {data.name}
+          </h1>
           {data.latestVersion && (
             <Badge variant="secondary" className="font-mono text-xs">
               {data.latestVersion.version}
@@ -79,11 +85,29 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
           <div className="mt-4">
             <h3 className="text-xs font-semibold text-muted-foreground mb-2">Triggered by</h3>
             <div className="flex flex-wrap gap-1.5">
-              {desc.triggers.map((trigger) => (
+              {(triggersExpanded ? desc.triggers : desc.triggers.slice(0, MOBILE_TRIGGER_LIMIT)).map((trigger) => (
                 <Badge key={trigger} variant="outline" className="text-xs font-normal">
                   {trigger}
                 </Badge>
               ))}
+              {!triggersExpanded && desc.triggers.length > MOBILE_TRIGGER_LIMIT && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-muted-foreground"
+                  onClick={() => setTriggersExpanded(true)}>
+                  +{desc.triggers.length - MOBILE_TRIGGER_LIMIT} more
+                </Button>
+              )}
+              {triggersExpanded && desc.triggers.length > MOBILE_TRIGGER_LIMIT && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-muted-foreground"
+                  onClick={() => setTriggersExpanded(false)}>
+                  show less
+                </Button>
+              )}
             </div>
           </div>
         )}
