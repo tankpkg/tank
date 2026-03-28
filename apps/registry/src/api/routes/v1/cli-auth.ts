@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { env } from '~/consts/env';
+import { getAppUrl } from '~/lib/app-url';
 import { isUserBlocked } from '~/lib/auth/authz';
 import { authorizeSession, consumeSession, createSession, getSession } from '~/lib/auth/cli-store';
 import { auth } from '~/lib/auth/core';
@@ -28,7 +28,7 @@ export const cliAuthRoutes = new Hono()
 
       const sessionCode = await createSession(state);
 
-      const baseUrl = env.APP_URL;
+      const baseUrl = getAppUrl(c);
       const authUrl = `${baseUrl}/cli-login?session=${sessionCode}`;
 
       authLog.info(

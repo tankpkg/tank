@@ -1,6 +1,7 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { Hono } from 'hono';
 import { stream } from 'hono/streaming';
+import { getAppUrl } from '~/lib/app-url';
 
 const cliRoutes = new Hono();
 
@@ -68,7 +69,7 @@ cliRoutes.get('/install.sh', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
-  const appUrl = process.env.APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
+  const appUrl = getAppUrl(c);
 
   const script = `#!/usr/bin/env bash
 # Tank CLI Installer
@@ -128,7 +129,7 @@ cliRoutes.get('/platforms', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
-  const appUrl = process.env.APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
+  const appUrl = getAppUrl(c);
   const available = Object.entries(PLATFORMS)
     .filter(([_, filename]) => existsSync(`${BINARY_DIR}/${filename}`))
     .map(([platform, filename]) => ({
