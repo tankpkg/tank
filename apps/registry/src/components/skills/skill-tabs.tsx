@@ -19,6 +19,9 @@ interface SkillTabsProps {
   manifest?: Record<string, unknown>;
   securityTab?: ReactNode;
   hasSecurityData?: boolean;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+  sidebar?: ReactNode;
 }
 
 function formatAuditScore(score: number | null): string {
@@ -66,10 +69,13 @@ export function SkillTabs({
   readme,
   manifest,
   securityTab,
-  hasSecurityData = false
+  hasSecurityData = false,
+  activeTab = 'readme',
+  onTabChange,
+  sidebar
 }: SkillTabsProps) {
   return (
-    <Tabs defaultValue="readme" className="w-full">
+    <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
         <TabsTrigger
           value="readme"
@@ -94,31 +100,45 @@ export function SkillTabs({
           </TabsTrigger>
         )}
       </TabsList>
+
       <TabsContent value="readme" className="mt-6">
-        {readmeContent ? (
-          <div data-testid="readme-root">
-            <SkillReadme content={readmeContent} />
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+          <div className="flex-1 min-w-0 w-full">
+            {readmeContent ? (
+              <div data-testid="readme-root">
+                <SkillReadme content={readmeContent} />
+              </div>
+            ) : (
+              <div className="py-12 text-center text-muted-foreground" data-testid="readme-root">
+                <p className="text-lg font-medium mb-1">No README</p>
+                <p className="text-sm">
+                  This skill doesn&apos;t have a README yet. Add a SKILL.md to your package and re-publish.
+                </p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="py-12 text-center text-muted-foreground" data-testid="readme-root">
-            <p className="text-lg font-medium mb-1">No README</p>
-            <p className="text-sm">
-              This skill doesn&apos;t have a README yet. Add a SKILL.md to your package and re-publish.
-            </p>
-          </div>
-        )}
+          <div className="hidden lg:block">{sidebar}</div>
+        </div>
       </TabsContent>
+
       <TabsContent value="versions" className="mt-6">
-        <VersionHistory versions={versions} />
+        <div className="overflow-x-auto" data-testid="versions-scroll-container">
+          <VersionHistory versions={versions} />
+        </div>
       </TabsContent>
+
       <TabsContent value="files" className="mt-6">
         <div data-testid="file-explorer-root">
           <FileExplorer files={files} skillName={skillName} version={version} readme={readme} manifest={manifest} />
         </div>
       </TabsContent>
+
       {hasSecurityData && securityTab && (
         <TabsContent value="security" className="mt-6">
-          {securityTab}
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+            <div className="flex-1 min-w-0 w-full">{securityTab}</div>
+            <div className="hidden lg:block">{sidebar}</div>
+          </div>
         </TabsContent>
       )}
     </Tabs>

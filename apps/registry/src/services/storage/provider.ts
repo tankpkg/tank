@@ -26,6 +26,7 @@ export interface StorageProvider {
   createSignedUrl(path: string, expiresInSeconds?: number, target?: SignedUrlTarget): Promise<SignedUrlResult>;
   putObject?(path: string, body: Uint8Array, contentType?: string): Promise<void>;
   listObjects?(bucket: string, prefix: string, limit: number): Promise<unknown>;
+  getObject(path: string): Promise<Uint8Array>;
 }
 
 class SupabaseStorageProvider implements StorageProvider {
@@ -64,6 +65,14 @@ class SupabaseStorageProvider implements StorageProvider {
     }
 
     return { signedUrl: data.signedUrl };
+  }
+
+  async getObject(path: string): Promise<Uint8Array> {
+    const { data, error } = await this.client.storage.from(this.bucket).download(path);
+    if (error || !data) {
+      throw new Error(`Failed to download from Supabase: ${error?.message ?? 'Unknown error'}`);
+    }
+    return new Uint8Array(await data.arrayBuffer());
   }
 }
 
@@ -204,6 +213,13 @@ class S3StorageProvider implements StorageProvider {
       })
     );
   }
+
+  async getObject(path: string): Promise<Uint8Array> {
+    await this.ensureBucketExists();
+    const response = await this.internalClient.send(new GetObjectCommand({ Bucket: this.bucket, Key: path }));
+    if (!response.Body) throw new Error(`Empty response for ${path}`);
+    return new Uint8Array(await response.Body.transformToByteArray());
+  }
 }
 
 class FilesystemStorageProvider implements StorageProvider {
@@ -271,6 +287,11 @@ class FilesystemStorageProvider implements StorageProvider {
 
   getFilePath(path: string): string {
     return this.resolvePath(path);
+  }
+
+  async getObject(path: string): Promise<Uint8Array> {
+    const fullPath = this.resolvePath(path);
+    return new Uint8Array(fs.readFileSync(fullPath));
   }
 }
 

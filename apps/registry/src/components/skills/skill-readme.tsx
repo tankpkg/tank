@@ -6,7 +6,15 @@ interface SkillReadmeProps {
   content: string;
 }
 
+const FRONTMATTER_RE = /^---\s*\n[\s\S]*?\n---\s*\n?/;
+
+function stripFrontmatter(md: string): string {
+  return md.replace(FRONTMATTER_RE, '').trimStart();
+}
+
 export function SkillReadme({ content }: SkillReadmeProps) {
+  const body = stripFrontmatter(content);
+
   return (
     <div className="prose prose-neutral max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-a:text-primary">
       <ReactMarkdown
@@ -17,9 +25,7 @@ export function SkillReadme({ content }: SkillReadmeProps) {
             const isInline = !className;
             if (isInline) {
               return (
-                <code
-                  className="rounded bg-muted px-1.5 py-0.5 text-sm text-foreground before:content-none after:content-none"
-                  {...rest}>
+                <code className="before:content-none after:content-none" {...rest}>
                   {children}
                 </code>
               );
@@ -29,12 +35,9 @@ export function SkillReadme({ content }: SkillReadmeProps) {
                 {children}
               </code>
             );
-          },
-          pre: ({ children }) => (
-            <pre className="bg-muted border rounded-lg p-4 overflow-x-auto text-foreground text-sm">{children}</pre>
-          )
+          }
         }}>
-        {content}
+        {body}
       </ReactMarkdown>
     </div>
   );
