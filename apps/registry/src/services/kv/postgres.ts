@@ -3,7 +3,7 @@ import postgres from 'postgres';
 import type { KVStore } from './store';
 
 export function createPostgresStore(connectionString: string): KVStore {
-  const sql = postgres(connectionString);
+  const sql = postgres(connectionString, { max: 1 });
   let initialized = false;
 
   async function ensureTable() {
