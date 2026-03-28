@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { FindingsTable, type FindingsTableProps, resolveExpandable } from './findings-table';
+import { FindingsTable, resolveExpandable } from './findings-table';
 
 afterEach(cleanup);
 
