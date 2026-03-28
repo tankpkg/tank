@@ -182,13 +182,472 @@ All automation lives in the `justfile`. CI workflows are thin YAML wrappers arou
 - Every PR: typecheck clean (`tsc --noEmit`), lint clean, tests pass.
 - Security-sensitive changes (auth, crypto, setup API) → Oracle review mandatory.
 
-### Visual Consistency
+### Design System
 
-- Follow existing component patterns in `src/screens/` and `src/components/`.
-- Use existing UI primitives from `src/components/ui/` (Card, Button, etc.).
-- Dark mode is default. Test all UI in dark mode.
-- `tank-shell` class for page-level max-width containers.
-- Existing patterns: `text-ink-soft` for muted text, `bg-muted` for card backgrounds.
+#### UI Component Stack
+
+Two layers — **shadcn/ui** for core app primitives, **MagicUI** for animated/marketing components.
+
+| Layer         | What                                                                                                             | Import path         | Use for                                                                |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------- |
+| **shadcn/ui** | Button, Card, Input, Label, Table, Tabs, Badge, Dialog, Separator, Command                                       | `~/components/ui/*` | All app UI: admin, dashboard, forms, CRUD, data tables                 |
+| **MagicUI**   | Marquee, Bento Grid, Number Ticker, Terminal, Shimmer Button, Animated List, Border Beam, Particles, Globe, etc. | `~/components/ui/*` | Public-facing pages: home, landing, skill showcase, marketing sections |
+
+Both layers share the same `~/components/ui/` directory. MagicUI uses the shadcn CLI registry — components are added per-component, not as a monolithic install. The distinction is **usage convention**, not directory structure.
+
+**Rules:**
+
+- Reuse existing shadcn primitives before creating custom components.
+- Use MagicUI components only for public/marketing surfaces — never in admin panels or forms.
+- Check MagicUI catalogue at https://magicui.design/docs/components before building custom animations.
+- Only fall back to custom HTML/CSS when the component genuinely does not exist in either library.
+- Do not introduce a third component system unless explicitly requested.
+
+#### Fonts
+
+| Token            | Font                    | Tailwind       | Usage                                      |
+| ---------------- | ----------------------- | -------------- | ------------------------------------------ |
+| Body             | Inter Variable          | `font-sans`    | Body text, labels, buttons, form controls  |
+| Display/Headings | Space Grotesk Variable  | `font-display` | Page headings, hero text, section titles   |
+| Monospace        | JetBrains Mono Variable | `font-mono`    | Code blocks, terminal output, CLI commands |
+
+#### Section Labels
+
+The standard section label (e.g. "API Tokens", "Settings", "Packages") uses this exact pattern everywhere:
+
+```tsx
+<h2 className="font-display text-xl font-semibold tracking-tight">Section Title</h2>
+<p className="mt-1 text-muted-foreground">Description text.</p>
+```
+
+- Always `font-display` + `text-xl` + `font-semibold tracking-tight` for primary section headings.
+- Always `mt-1 text-muted-foreground` on the description line below.
+- No `font-display` in body text — only headings.
+
+**Sub-labels** (smaller metadata labels like field hints, column headers):
+
+```tsx
+<span className="text-xs font-medium uppercase tracking-tight text-muted-foreground">Field Hint</span>
+```
+
+#### Card Containers
+
+Every tool/screen section is wrapped in a shadcn `<Card>` + `<CardContent>`. Never use raw bordered `<div>` elements to recreate card-like containers.
+
+**Standard CardContent layout:**
+
+```tsx
+<Card>
+  <CardHeader>
+    <CardTitle>Section</CardTitle>
+    <CardDescription>Description text.</CardDescription>
+  </CardHeader>
+  <CardContent className="space-y-4">{/* content */}</CardContent>
+</Card>
+```
+
+- Use `space-y-4` as default inside `<CardContent>`.
+- Use `space-y-6` when the card has denser content or multiple sub-sections.
+- Default padding comes from shadcn Card (`py-6` on Card, `px-6` on CardContent).
+
+#### Borders and Shadows
+
+All major containers use the shadcn/Tailwind border system. Do not invent custom border/shadow combos.
+
+| Element                  | Border                                            | Shadow      |
+| ------------------------ | ------------------------------------------------- | ----------- |
+| Card                     | `border` (via shadcn default)                     | `shadow-sm` |
+| Button                   | `border border-transparent` (via CVA)             | none        |
+| Badge                    | `border` (via shadcn default)                     | none        |
+| Input                    | `border border-input`                             | none        |
+| Dialog                   | `border`                                          | `shadow-lg` |
+| Internal dividers        | `border-border`                                   | none        |
+| Empty state placeholders | `border border-dashed border-muted-foreground/25` | none        |
+
+Never use hard pixel shadows like `shadow-[4px_4px_0_#000]`. Use Tailwind's shadow scale (`shadow-sm`, `shadow-md`, `shadow-lg`).
+
+#### Color Palette
+
+Tank uses oklch-based CSS variables with a green hue channel (155). Dark mode is default.
+
+| Token                | Light                 | Dark                           | Usage                                    |
+| -------------------- | --------------------- | ------------------------------ | ---------------------------------------- |
+| `--background`       | Near-white green tint | Void black `oklch(0.05)`       | Page background                          |
+| `--card`             | Pure white            | Dark green tint `oklch(0.08)`  | Card surfaces                            |
+| `--foreground`       | Near-black            | Light green tint `oklch(0.93)` | Primary text                             |
+| `--muted-foreground` | Mid gray              | Mid gray                       | Secondary text (`text-muted-foreground`) |
+| `--primary`          | Near-black            | Near-white                     | Buttons, links, emphasis                 |
+| `--border`           | Light green tint      | Dark green tint                | All borders                              |
+| `--destructive`      | Red                   | Red                            | Error states                             |
+
+**Brand colors:**
+
+| Token             | Value                        | Usage                                        |
+| ----------------- | ---------------------------- | -------------------------------------------- |
+| `--tank-green`    | `#00ff41`                    | Matrix green — glow effects (dark mode only) |
+| `--tank-green-ui` | `#10b981`                    | Emerald — UI accents, badges, success states |
+| `text-ink-soft`   | maps to `--muted-foreground` | Muted text shorthand                         |
+| `bg-muted`        | maps to `--muted`            | Card/section backgrounds                     |
+
+Do not introduce new background colors. Use `bg-card`, `bg-muted`, or `bg-background`.
+
+#### Dark Mode
+
+Dark mode is **default**. Test all UI in dark mode first.
+
+- Glow effects (`--glow-sm/md/lg/text`) only active in dark mode.
+- `matrix-grid` background visible in both modes (stronger in dark).
+
+#### Buttons
+
+Use shadcn `<Button>` for all interactive controls. Available variants: `default`, `outline`, `secondary`, `ghost`, `destructive`, `link`. Sizes: `xs`, `sm`, `default`, `lg`, `icon`, `icon-xs`, `icon-sm`, `icon-lg`.
+
+```tsx
+import { Button } from "~/components/ui/button";
+<Button variant="outline" size="sm">
+  Action
+</Button>;
+```
+
+Use MagicUI buttons (`ShimmerButton`, `RainbowButton`) only in hero/CTA sections on public pages.
+
+#### Inline Action Buttons
+
+For small action buttons that sit next to section labels (e.g. "Import JSON", "Expand All", "Import CSV"), use `<Button size="sm" variant="secondary">`:
+
+```tsx
+<Button size="sm" variant="secondary" onClick={handleAction}>
+  Import JSON
+</Button>
+```
+
+Do not use raw `<button>` elements. Always use the shadcn `<Button>` component.
+
+#### Copy Output Buttons
+
+Use the `useClipboard` hook from `~/lib/useClipboard` — never roll your own clipboard logic.
+
+**Pattern:**
+
+```tsx
+import { useClipboard } from "~/lib/useClipboard";
+
+const { copiedLabel, copy } = useClipboard();
+
+<div className="flex items-center gap-2">
+  <h2 className="font-display text-xl font-semibold tracking-tight">Output</h2>
+  <Button size="sm" variant="secondary" onClick={() => copy("Output", outputValue)}>
+    {copiedLabel === "Output" ? "Copied!" : "Copy"}
+  </Button>
+</div>;
+```
+
+When a tool has multiple copyable outputs, add a copy button next to each value using distinct labels:
+
+```tsx
+<Button size="sm" variant="secondary" onClick={() => copy("HEX", hexValue)}>
+  {copiedLabel === "HEX" ? "Copied!" : "Copy"}
+</Button>
+```
+
+#### Mode / Tab Selectors
+
+Two distinct patterns — **mode selectors** and **content tabs**. Do not mix them.
+
+**Mode selectors** (Light/Dark, format pickers, encode/decode) — use Button toggles:
+
+```tsx
+<div className="flex flex-wrap gap-2">
+  <Button variant={isSelected ? "default" : "secondary"} size="sm" onClick={() => setMode(value)}>
+    Light
+  </Button>
+</div>
+```
+
+**Content tabs** (switching between entirely different content panels) — use the shadcn `Tabs` component:
+
+```tsx
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "~/components/ui/tabs";
+
+<Tabs defaultValue="encode" className="w-full">
+  <TabsList>
+    <TabsTrigger value="encode">Encode</TabsTrigger>
+    <TabsTrigger value="decode">Decode</TabsTrigger>
+  </TabsList>
+  <TabsContent value="encode">{/* encode content */}</TabsContent>
+  <TabsContent value="decode">{/* decode content */}</TabsContent>
+</Tabs>;
+```
+
+#### Spacing
+
+| Context                        | Pattern                                          |
+| ------------------------------ | ------------------------------------------------ |
+| Page max-width container       | `tank-shell`                                     |
+| Page vertical spacing          | `py-10`                                          |
+| Between top-level cards        | `space-y-8` or `gap-6` in grid                   |
+| Inside CardContent             | `space-y-4` (standard)                           |
+| Section label to content below | `mt-1` on description, content follows naturally |
+| Controls row below content     | `mt-3` on the wrapper div                        |
+| Multi-column layout gap        | `gap-6`                                          |
+| Inline button / control gap    | `gap-2`                                          |
+
+#### Cards
+
+Use shadcn `<Card>` for all content containers. Never use raw bordered `<div>` elements.
+
+```tsx
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+<Card>
+  <CardHeader>
+    <CardTitle>Title</CardTitle>
+    <CardDescription>Subtitle</CardDescription>
+  </CardHeader>
+  <CardContent>{/* content */}</CardContent>
+</Card>;
+```
+
+#### Input / Output Card Layout
+
+The standard two-card layout for tools:
+
+```tsx
+{
+  /* Input Card */
+}
+<Card>
+  <CardHeader>
+    <CardTitle>Input</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <Textarea placeholder="Paste content here..." />
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      <Button>Convert</Button>
+    </div>
+  </CardContent>
+</Card>;
+
+{
+  /* Output Card */
+}
+<Card>
+  <CardHeader>
+    <CardTitle>Output</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">{/* results or empty state */}</CardContent>
+</Card>;
+```
+
+#### Read-Only Output Areas
+
+For text/code output displayed in a textarea:
+
+```tsx
+<Textarea value={result} readOnly className="min-h-[200px] font-mono" />
+```
+
+For pre-formatted output inside an HTML container:
+
+```tsx
+<div className="rounded-lg border bg-muted/50 p-4 font-mono text-sm">{content}</div>
+```
+
+#### Data Tables
+
+Use shadcn `<Table>` for all tabular data. Never use raw `<table>` elements.
+
+```tsx
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
+
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead className="text-xs font-medium uppercase tracking-wide">Year</TableHead>
+      <TableHead className="text-right text-xs font-medium uppercase tracking-wide">Amount</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {rows.map((row) => (
+      <TableRow key={row.id}>
+        <TableCell className="font-medium">{row.year}</TableCell>
+        <TableCell className="text-right">{row.amount}</TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>;
+```
+
+Key rules:
+
+- Header text: `text-xs font-medium uppercase tracking-wide text-muted-foreground`.
+- Body row hover: default shadcn hover styling.
+- First column bold: use `font-medium` on key identifier columns.
+- Wrap the table inside a `<Card>` with a section label above it.
+
+#### Error and Status Display
+
+**Errors** — always use `font-medium` and `role="alert"`:
+
+```tsx
+<p role="alert" className="mt-2 text-sm font-medium text-destructive">
+  {error}
+</p>
+```
+
+**Warnings** (upload rejections, validation):
+
+```tsx
+<p className="mt-2 text-sm font-medium text-amber-600 dark:text-amber-400">{warning}</p>
+```
+
+**Empty state messages:**
+
+```tsx
+<p className="text-sm text-muted-foreground">No output yet.</p>
+```
+
+**Progress** — use the shared `<ProgressBar>` component or MagicUI's `Animated Circular Progress Bar` for public pages.
+
+#### Contextual Help Tooltips
+
+```tsx
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
+
+<div className="flex items-center gap-1.5">
+  <Label htmlFor="some-field">Field Label</Label>
+  <TooltipProvider delayDuration={200}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="More info"
+          className="flex h-4 w-4 items-center justify-center rounded-full border text-[10px] font-medium leading-none text-muted-foreground">
+          ?
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="max-w-56 text-xs leading-relaxed">
+        Short explanation of what this field means and why it matters.
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+</div>;
+```
+
+Install if missing: `npx shadcn@latest add tooltip`.
+
+#### shadcn/ui Primitives (installed)
+
+`Button`, `Card` (+Header/Title/Description/Content/Footer/Action), `Input`, `Label`, `Table` (+Header/Body/Row/Head/Cell), `Tabs` (+List/Trigger/Content), `Badge`, `Dialog` (+Content/Header/Title/Description/Footer/Trigger), `Separator`, `Command` (+Dialog/Input/List/Empty/Group/Item)
+
+Import from `~/components/ui/*`.
+
+#### shadcn/ui Primitives (install as needed)
+
+`Checkbox`, `Select` (+Trigger/Content/Item/Value), `Slider`, `Tooltip` (+Provider/Trigger/Content), `Breadcrumb` (+List/Item/Link/Separator), `Textarea`, `Switch`, `Popover`, `DropdownMenu`, `ScrollArea`, `Progress`
+
+Install via `npx shadcn@latest add <component>`. Import from `~/components/ui/*`.
+
+#### MagicUI Components (use for public pages)
+
+**Layout & Showcase:** Bento Grid, Marquee, Dock, Animated List, File Tree, Terminal
+**Text animations:** Text Animate, Typing Animation, Number Ticker, Aurora Text, Hyper Text, Morphing Text, Sparkles Text, Animated Gradient Text, Animated Shiny Text
+**Effects:** Border Beam, Shine Border, Magic Card, Particles, Confetti, Meteors, Animated Beam, Blur Fade
+**Backgrounds:** Animated Grid Pattern, Flickering Grid, Retro Grid, Dot Pattern, Ripple, Light Rays
+**Buttons:** Shimmer Button, Rainbow Button, Ripple Button, Pulsating Button, Shiny Button, Interactive Hover Button
+**Device mocks:** Safari, iPhone, Android
+**Other:** Globe, Icon Cloud, Orbiting Circles, Avatar Circles, Scroll Progress, Code Comparison, Neon Gradient Card
+
+Import from `~/components/ui/*`. Install via `npx shadcn@latest add @magicui/<component>`.
+
+#### Mobile Responsiveness
+
+Every new component must be mobile-first.
+
+**Rule 1: Always add `min-w-0` to grid and flex children**
+
+```tsx
+// WRONG
+<div className="grid grid-cols-2 gap-4">
+  <div>...</div>
+</div>
+
+// CORRECT
+<div className="grid grid-cols-2 gap-4">
+  <div className="min-w-0">...</div>
+</div>
+```
+
+**Rule 2: Always use responsive breakpoints on multi-column grids**
+
+```tsx
+// WRONG
+<div className="grid grid-cols-2 gap-4">
+
+// CORRECT
+<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+```
+
+**Rule 3: Guard fixed-width containers with `max-w-full`**
+
+```tsx
+// WRONG
+<div className="w-80 border bg-card">
+
+// CORRECT
+<div className="w-80 max-w-[calc(100vw-2rem)] border bg-card">
+```
+
+**Rule 4: Horizontal tab bars and button rows must wrap or scroll**
+
+```tsx
+// WRONG
+<div className="flex gap-2">
+
+// CORRECT (wrap)
+<div className="flex flex-wrap gap-2">
+
+// CORRECT (scroll)
+<div className="flex gap-2 overflow-x-auto">
+```
+
+#### Article Visual Design Rules
+
+- **Article page title (`h1`)**: Use `font-display font-semibold tracking-tight`. Never use `font-sans` for article titles.
+- **Section headings (`H2`, `H3`)**: Also `font-display font-semibold tracking-tight`. Keep sizes big (`text-2xl`/`text-3xl` for H2, `text-xl` for H3).
+- **Inline code**: Light style only — `rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-sm`.
+- **Code blocks**: Full treatment — `rounded-lg border bg-card p-4 font-mono text-sm shadow-sm`.
+
+#### Inline SVG Diagram Rules
+
+- Always wrap SVG diagrams in `<div className="my-6 flex justify-center overflow-x-auto">`.
+- SVG content must be visually centered within its own viewBox — mirror padding on both sides.
+- Compute height dynamically — never hardcode `H`.
+- Ensure `padding >= radius` for edge elements.
+- Add `className="max-w-full"` to every `<svg>`.
+- Use `fontFamily="'Space Grotesk', sans-serif"` and `fontWeight="600"` for all SVG text.
+- Standard SVG color palette: `#10b981` for highlights/brand, `currentColor` for primary, `#64748b` for secondary, `#16a34a` for success, `#dc2626` for errors.
+- Center glyph clusters with `textAnchor="middle"` and computed positions.
+
+#### Design Checklist
+
+Before completing any UI task:
+
+- [ ] Dark mode tested (it's the default)
+- [ ] All containers use shadcn `<Card>`, not raw bordered divs
+- [ ] All buttons use shadcn `<Button>`, not raw `<button>`
+- [ ] All tables use shadcn `<Table>`, not raw `<table>`
+- [ ] All selects use shadcn `<Select>`, not raw `<select>`
+- [ ] All checkboxes use shadcn `<Checkbox>`, not raw `<input type="checkbox">`
+- [ ] MagicUI components only on public-facing pages, not admin/dashboard
+- [ ] No custom background colors — use `bg-card`, `bg-muted`, `bg-background`
+- [ ] `tank-shell` used for page-level max-width containers
+- [ ] Muted text uses `text-muted-foreground` or `text-ink-soft`
+- [ ] No `font-display` in body text — only headings
+- [ ] Responsive: no bare `grid-cols-N` without mobile breakpoint
+- [ ] Errors use `text-destructive` with `role="alert"`
+- [ ] Copy buttons use `useClipboard` hook — no custom clipboard logic
+- [ ] Mode selectors use Button toggles; content tabs use shadcn `Tabs`
+- [ ] Progress bars use the shared `<ProgressBar>` component or MagicUI equivalent
 
 ## Agent Infra
 
