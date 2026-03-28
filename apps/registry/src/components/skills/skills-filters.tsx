@@ -56,27 +56,27 @@ function FilterGroup<T extends string>({ label, options, current, paramKey, defa
   );
 }
 
-const VISIBILITY_OPTIONS = [
+export const VISIBILITY_OPTIONS = [
   { value: 'all' as const, label: 'All' },
   { value: 'public' as const, label: 'Public' },
   { value: 'private' as const, label: 'Private' }
 ] as const;
 
-const SCORE_OPTIONS = [
+export const SCORE_OPTIONS = [
   { value: 'all' as const, label: 'All scores' },
   { value: 'high' as const, label: 'High (7+)' },
   { value: 'medium' as const, label: 'Medium (4-6)' },
   { value: 'low' as const, label: 'Low (<4)' }
 ] as const;
 
-const FRESHNESS_OPTIONS = [
+export const FRESHNESS_OPTIONS = [
   { value: 'all' as const, label: 'Any time' },
   { value: 'week' as const, label: 'Past week' },
   { value: 'month' as const, label: 'Past month' },
   { value: 'year' as const, label: 'Past year' }
 ] as const;
 
-const POPULARITY_OPTIONS = [
+export const POPULARITY_OPTIONS = [
   { value: 'all' as const, label: 'All' },
   { value: 'popular' as const, label: 'Popular' },
   { value: 'growing' as const, label: 'Growing' },
@@ -105,7 +105,7 @@ export function SkillsFilters({
   }
 
   return (
-    <aside>
+    <aside data-testid="desktop-filter-sidebar">
       <div className="rounded-lg border border-border/60 bg-card/50 p-4 space-y-5">
         {isLoggedIn && (
           <FilterGroup
