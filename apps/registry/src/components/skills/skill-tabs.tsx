@@ -122,7 +122,7 @@ export function SkillTabs({
       </TabsContent>
 
       <TabsContent value="versions" className="mt-6">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" data-testid="versions-scroll-container">
           <VersionHistory versions={versions} />
         </div>
       </TabsContent>

@@ -308,7 +308,8 @@ export function FileExplorer({ files, skillName, version, readme, manifest }: Fi
             variant="ghost"
             size="sm"
             className="h-7 w-7 p-0 lg:hidden shrink-0"
-            onClick={() => setTreeOpen(!treeOpen)}>
+            onClick={() => setTreeOpen(!treeOpen)}
+            data-testid="file-tree-toggle">
             {treeOpen ? <PanelLeftClose className="size-4" /> : <PanelLeftOpen className="size-4" />}
           </Button>
           <span className="text-muted-foreground shrink-0">{files.length} files</span>
@@ -332,19 +333,24 @@ export function FileExplorer({ files, skillName, version, readme, manifest }: Fi
       </div>
 
       {/* Mobile: collapsible tree panel */}
-      {treeOpen && <div className="border-b border-border lg:hidden">{treePanel}</div>}
+      {treeOpen && (
+        <div className="border-b border-border lg:hidden" data-testid="mobile-file-tree">
+          {treePanel}
+        </div>
+      )}
 
       {/* Desktop: side-by-side layout */}
       <div className="flex">
         <div
           className="hidden lg:block w-[260px] shrink-0 overflow-y-auto border-r border-border bg-background/50 py-1"
-          style={{ height: '600px' }}>
+          style={{ height: '600px' }}
+          data-testid="desktop-file-tree">
           {tree.map((node) => (
             <TreeItem key={node.path} node={node} selectedFile={selectedFile} onSelect={setSelectedFile} />
           ))}
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0" data-testid="file-editor-area">
           {!selectedFile && (
             <div className="flex h-[400px] lg:h-[600px] items-center justify-center text-sm text-muted-foreground/50">
               <span className="hidden lg:inline">Select a file to preview</span>

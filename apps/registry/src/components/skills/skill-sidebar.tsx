@@ -60,7 +60,7 @@ export function SkillSidebar({
   permItems
 }: SkillSidebarProps) {
   return (
-    <aside className="w-full lg:w-72 shrink-0 space-y-4 lg:sticky lg:top-4">
+    <aside className="w-full lg:w-72 shrink-0 space-y-4 lg:sticky lg:top-4" data-testid="desktop-sidebar">
       <div className="flex items-center gap-2">
         <StarButton skillName={name} initialStarred={isStarred} initialCount={starCount} />
         {latestVersion && <DownloadButton skillName={name} version={latestVersion.version} />}

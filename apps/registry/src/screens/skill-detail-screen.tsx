@@ -48,7 +48,9 @@ function MobileActionBar({ data, scanDetails }: { data: SkillDetailResult; scanD
   const { copied, copy } = useCopyToClipboard();
 
   return (
-    <div className="lg:hidden mb-4 space-y-3 rounded-lg border border-border bg-card p-3">
+    <div
+      className="lg:hidden mb-4 space-y-3 rounded-lg border border-border bg-card p-3"
+      data-testid="mobile-action-bar">
       <div className="flex items-center gap-2 flex-wrap">
         <StarButton skillName={data.name} initialStarred={data.isStarred} initialCount={data.starCount} />
         {data.latestVersion && <DownloadButton skillName={data.name} version={data.latestVersion.version} />}
@@ -128,9 +130,9 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
         {desc.triggers.length > 0 && (
           <div className="mt-4">
             <h3 className="text-xs font-semibold text-muted-foreground mb-2">Triggered by</h3>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5" data-testid="trigger-badges">
               {(triggersExpanded ? desc.triggers : desc.triggers.slice(0, MOBILE_TRIGGER_LIMIT)).map((trigger) => (
-                <Badge key={trigger} variant="outline" className="text-xs font-normal">
+                <Badge key={trigger} variant="outline" className="text-xs font-normal" data-testid="trigger-badge">
                   {trigger}
                 </Badge>
               ))}
@@ -139,7 +141,8 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2 text-xs text-muted-foreground"
-                  onClick={() => setTriggersExpanded(true)}>
+                  onClick={() => setTriggersExpanded(true)}
+                  data-testid="triggers-show-more">
                   +{desc.triggers.length - MOBILE_TRIGGER_LIMIT} more
                 </Button>
               )}
@@ -148,7 +151,8 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2 text-xs text-muted-foreground"
-                  onClick={() => setTriggersExpanded(false)}>
+                  onClick={() => setTriggersExpanded(false)}
+                  data-testid="triggers-show-less">
                   show less
                 </Button>
               )}
