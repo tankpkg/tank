@@ -10,7 +10,7 @@ function ensureInitialized() {
   if (_db) return;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not configured. Complete the setup wizard first.');
-  _sql = postgres(url);
+  _sql = postgres(url, { max: 1 });
   _db = drizzle(_sql, { schema });
 }
 
