@@ -264,7 +264,9 @@ export const skillsReadRoutes = new Hono()
     try {
       const name = decodeURIComponent(c.req.param('name'));
       const version = c.req.param('version');
-      const filePath = c.req.path.replace(`/api/v1/skills/${c.req.param('name')}/${version}/files/`, '');
+      const rawUrl = new URL(c.req.url);
+      const pathParts = rawUrl.pathname.split('/files/');
+      const filePath = pathParts.length > 1 ? decodeURIComponent(pathParts[pathParts.length - 1]) : '';
 
       if (!filePath || filePath.includes('..')) {
         return c.json({ error: 'Invalid file path' }, 400);
