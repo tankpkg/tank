@@ -46,7 +46,8 @@ Feature: CLI OAuth login flow via browser handshake
     Then the response is 400 or 404
 
   # ── On-prem authUrl resolution (C9, C10) ─────────────────────────────
-  @high @selfhosted
+  @high
+  @selfhosted
   Scenario: authUrl uses configured instance URL, not frozen default (E10)
     Given APP_URL is configured as "https://tank.acme.corp" in the database
     And process.env.APP_URL has been hydrated from the database
@@ -55,7 +56,8 @@ Feature: CLI OAuth login flow via browser handshake
     And the "authUrl" starts with "https://tank.acme.corp"
     And the "authUrl" does not contain "localhost"
 
-  @high @selfhosted
+  @high
+  @selfhosted
   Scenario: authUrl derived from request headers when APP_URL is localhost (E11)
     Given APP_URL defaults to "http://localhost:5555"
     And the request includes header "Host" with value "tank.acme.corp"
