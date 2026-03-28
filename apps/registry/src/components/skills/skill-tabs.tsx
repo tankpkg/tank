@@ -117,7 +117,7 @@ export function SkillTabs({
               </div>
             )}
           </div>
-          {sidebar}
+          <div className="hidden lg:block">{sidebar}</div>
         </div>
       </TabsContent>
 
@@ -137,7 +137,7 @@ export function SkillTabs({
         <TabsContent value="security" className="mt-6">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             <div className="flex-1 min-w-0 w-full">{securityTab}</div>
-            {sidebar}
+            <div className="hidden lg:block">{sidebar}</div>
           </div>
         </TabsContent>
       )}

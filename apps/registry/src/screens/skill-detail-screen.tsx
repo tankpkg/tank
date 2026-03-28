@@ -1,11 +1,18 @@
+import { Check, Copy } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import { DownloadButton } from '~/components/skills/download-button';
 import { SkillSidebar } from '~/components/skills/skill-sidebar';
 import { SkillTabs } from '~/components/skills/skill-tabs';
+import { StarButton } from '~/components/skills/star-button';
+import { TrustBadge } from '~/components/skills/trust-badge';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
+import { Separator } from '~/components/ui/separator';
+import { useCopyToClipboard } from '~/hooks/use-copy-to-clipboard';
 import { safeParseJson, safeParsePermissions } from '~/lib/format';
-import type { SkillDetailResult } from '~/lib/skills/data';
+import { getScoreTextClass } from '~/lib/score';
+import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
 import { buildSecurityTab } from '~/screens/skill-detail-helpers';
 
 const MOBILE_TRIGGER_LIMIT = 6;
@@ -34,6 +41,43 @@ function parseDescription(raw: string | null): { summary: string; triggers: stri
 
 interface SkillDetailScreenProps {
   data: SkillDetailResult;
+}
+
+function MobileActionBar({ data, scanDetails }: { data: SkillDetailResult; scanDetails: ScanDetails | null }) {
+  const installCmd = `tank install ${data.name}`;
+  const { copied, copy } = useCopyToClipboard();
+
+  return (
+    <div className="lg:hidden mb-4 space-y-3 rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <StarButton skillName={data.name} initialStarred={data.isStarred} initialCount={data.starCount} />
+        {data.latestVersion && <DownloadButton skillName={data.name} version={data.latestVersion.version} />}
+        {scanDetails && (
+          <TrustBadge
+            verdict={scanDetails.verdict}
+            criticalCount={scanDetails.criticalCount}
+            highCount={scanDetails.highCount}
+            mediumCount={scanDetails.mediumCount}
+          />
+        )}
+        {data.latestVersion?.auditScore != null && (
+          <span className={`text-sm font-bold ${getScoreTextClass(data.latestVersion.auditScore)}`}>
+            {data.latestVersion.auditScore}/10
+          </span>
+        )}
+      </div>
+      <Separator />
+      <div className="flex items-center gap-2">
+        <code className="flex-1 min-w-0 truncate rounded border bg-muted/50 px-2 py-1.5 font-mono text-xs">
+          {installCmd}
+        </code>
+        <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1 text-xs" onClick={() => copy(installCmd)}>
+          {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
+          {copied ? 'Copied' : 'Copy'}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
@@ -112,6 +156,8 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
           </div>
         )}
       </div>
+
+      <MobileActionBar data={data} scanDetails={scanDetails ?? null} />
 
       <SkillTabs
         readmeContent={readmeContent ?? null}
