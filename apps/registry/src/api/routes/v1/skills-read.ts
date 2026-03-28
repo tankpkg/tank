@@ -17,8 +17,9 @@ function extractFileFromTarball(tarball: Uint8Array, targetPath: string): Promis
     let found = false;
 
     extractor.on('entry', (header, stream, next) => {
-      const entryPath = header.name.replace(/^[^/]+\//, '');
-      if (entryPath === targetPath) {
+      const raw = header.name;
+      const stripped = raw.replace(/^[^/]+\//, '');
+      if (raw === targetPath || stripped === targetPath) {
         const chunks: Buffer[] = [];
         stream.on('data', (chunk: Buffer) => chunks.push(chunk));
         stream.on('end', () => {
