@@ -1,5 +1,7 @@
+import { createGunzip } from 'node:zlib';
 import { sql } from 'drizzle-orm';
 import { Hono } from 'hono';
+import { extract } from 'tar-stream';
 
 import { resolveRequestUserId } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
@@ -7,6 +9,39 @@ import { skills } from '~/lib/db/schema';
 import { visibilityClause } from '~/lib/db/visibility';
 import { apiLog } from '~/services/logger';
 import { getStorageProvider } from '~/services/storage/provider';
+
+function extractFileFromTarball(tarball: Uint8Array, targetPath: string): Promise<string | null> {
+  return new Promise((resolve, reject) => {
+    const extractor = extract();
+    const gunzip = createGunzip();
+    let found = false;
+
+    extractor.on('entry', (header, stream, next) => {
+      const entryPath = header.name.replace(/^[^/]+\//, '');
+      if (entryPath === targetPath) {
+        const chunks: Buffer[] = [];
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        stream.on('end', () => {
+          found = true;
+          resolve(Buffer.concat(chunks).toString('utf-8'));
+        });
+      } else {
+        stream.resume();
+      }
+      stream.on('end', next);
+    });
+
+    extractor.on('finish', () => {
+      if (!found) resolve(null);
+    });
+
+    extractor.on('error', reject);
+    gunzip.on('error', reject);
+
+    gunzip.pipe(extractor);
+    gunzip.end(Buffer.from(tarball));
+  });
+}
 
 async function recordDownload(skillId: string): Promise<void> {
   await db.execute(sql`
@@ -222,5 +257,49 @@ export const skillsReadRoutes = new Hono()
         { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
         500
       );
+    }
+  })
+
+  .get('/:name/:version/files/*', async (c) => {
+    try {
+      const name = decodeURIComponent(c.req.param('name'));
+      const version = c.req.param('version');
+      const filePath = c.req.path.replace(`/api/v1/skills/${c.req.param('name')}/${version}/files/`, '');
+
+      if (!filePath || filePath.includes('..')) {
+        return c.json({ error: 'Invalid file path' }, 400);
+      }
+
+      const rows = await db.execute(sql`
+        SELECT sv.tarball_path AS "tarballPath"
+        FROM skills s
+        INNER JOIN skill_versions sv ON sv.skill_id = s.id AND sv.version = ${version}
+        WHERE s.name = ${name}
+        LIMIT 1
+      `);
+
+      if (rows.length === 0) {
+        return c.json({ error: 'Skill version not found' }, 404);
+      }
+
+      const tarballPath = (rows[0] as Record<string, unknown>).tarballPath as string;
+
+      let tarballBytes: Uint8Array;
+      try {
+        tarballBytes = await getStorageProvider().getObject(tarballPath);
+      } catch (err) {
+        apiLog.warn({ err, tarballPath }, 'failed to download tarball for file extraction');
+        return c.json({ error: 'Not found' }, 404);
+      }
+
+      const fileContent = await extractFileFromTarball(tarballBytes, filePath);
+      if (fileContent === null) {
+        return c.json({ error: 'File not found in package' }, 404);
+      }
+
+      return c.text(fileContent);
+    } catch (error) {
+      apiLog.error({ error }, 'file extraction failed');
+      return c.json({ error: 'Internal server error' }, 500);
     }
   });
