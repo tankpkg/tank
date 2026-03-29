@@ -9,6 +9,8 @@ import { checkEmailRateLimit, checkVerificationRateLimit } from '~/services/emai
 import { getFromAddress, getProvider, sendEmail } from '~/services/email/service';
 
 function createAuth() {
+  const isSelfHosted = process.env.TANK_MODE === 'selfhosted';
+
   return betterAuth({
     database: drizzleAdapter(db, {
       provider: 'pg'
@@ -18,10 +20,10 @@ function createAuth() {
     secret: process.env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET,
     emailAndPassword: {
       enabled: enabledProviders.has('credentials'),
-      requireEmailVerification: enabledProviders.has('credentials')
+      requireEmailVerification: enabledProviders.has('credentials') && !isSelfHosted
     },
     emailVerification: {
-      sendOnSignUp: enabledProviders.has('credentials'),
+      sendOnSignUp: enabledProviders.has('credentials') && !isSelfHosted,
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, url }) => {
         const rateLimit = await checkVerificationRateLimit(user.email);

@@ -1,0 +1,28 @@
+{
+  "name": "@tankpkg/vault",
+  "version": "0.1.0",
+  "description": "Credential vault proxy — format-preserving tokenization for AI agent traffic",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/runner/agents": "./src/runner/agents.ts",
+    "./src/runner/run": "./src/runner/run.ts",
+    "./src/proxy/server": "./src/proxy/server.ts",
+    "./src/proxy/bootstrap.cjs": "./src/proxy/bootstrap.cjs",
+    "./src/tokenizer/vault": "./src/tokenizer/vault.ts"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "vitest": "^4.1.0"
+  },
+  "dependencies": {}
+}

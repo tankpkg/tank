@@ -11,9 +11,10 @@ interface LoginScreenProps {
   enabledProviders: Set<string>;
   oidcProviderId: string;
   redirect?: string;
+  selfHosted?: boolean;
 }
 
-export function LoginScreen({ enabledProviders, oidcProviderId, redirect }: LoginScreenProps) {
+export function LoginScreen({ enabledProviders, oidcProviderId, redirect, selfHosted }: LoginScreenProps) {
   const githubEnabled = enabledProviders.has('github');
   const oidcEnabled = enabledProviders.has('oidc');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -43,9 +44,10 @@ export function LoginScreen({ enabledProviders, oidcProviderId, redirect }: Logi
         });
         if (result.error) {
           setError(result.error.message || 'Failed to create account');
-        } else {
+        } else if (!selfHosted) {
           setVerificationEmail(value.email);
         }
+        // selfHosted: Better Auth auto-signs in, callbackURL handles redirect
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.');

@@ -150,6 +150,7 @@
       "devDependencies": {
         "@internals/helpers": "workspace:*",
         "@internals/schemas": "workspace:*",
+        "@tankpkg/vault": "workspace:*",
         "@types/node": "^25.5.0",
         "@types/tar": "^7.0.87",
         "esbuild": "^0.27.4",
@@ -199,6 +200,14 @@
         "@types/node": "^25.5.0",
         "tsdown": "^0.21.3",
         "tsx": "^4.21.0",
+        "vitest": "^4.1.0",
+      },
+    },
+    "packages/vault": {
+      "name": "@tankpkg/vault",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/node": "^25.5.0",
         "vitest": "^4.1.0",
       },
     },
@@ -1188,6 +1197,8 @@
     "@tankpkg/cli": ["@tankpkg/cli@workspace:packages/cli"],
 
     "@tankpkg/mcp-server": ["@tankpkg/mcp-server@workspace:packages/mcp-server"],
+
+    "@tankpkg/vault": ["@tankpkg/vault@workspace:packages/vault"],
 
     "@tanstack/devtools-event-client": ["@tanstack/devtools-event-client@0.4.3", "", { "bin": { "intent": "bin/intent.js" } }, "sha512-OZI6QyULw0FI0wjgmeYzCIfbgPsOEzwJtCpa69XrfLMtNXLGnz3d/dIabk7frg0TmHo+Ah49w5I4KC7Tufwsvw=="],
 
