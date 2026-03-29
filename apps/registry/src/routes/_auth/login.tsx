@@ -14,15 +14,15 @@ export const Route = createFileRoute('/_auth/login')({
     redirect: (search.redirect as string) || ''
   }),
   loader: async () => {
-    const { providers, oidcProviderId } = await getAuthProviders();
-    return { providers, oidcProviderId };
+    const { providers, oidcProviderId, selfHosted } = await getAuthProviders();
+    return { providers, oidcProviderId, selfHosted };
   },
   head: () => settings,
   component: LoginPage
 });
 
 function LoginPage() {
-  const { providers, oidcProviderId } = Route.useLoaderData();
+  const { providers, oidcProviderId, selfHosted } = Route.useLoaderData();
   const { redirect } = Route.useSearch();
 
   return (
@@ -31,6 +31,7 @@ function LoginPage() {
         enabledProviders={new Set(providers)}
         oidcProviderId={oidcProviderId}
         redirect={redirect || undefined}
+        selfHosted={selfHosted}
       />
     </div>
   );
