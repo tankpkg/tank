@@ -20,6 +20,27 @@ const DEFAULT_UPSTREAMS: Record<string, string> = {
   openai: 'https://api.openai.com'
 };
 
+const SKIP_REQUEST_HEADERS = new Set([
+  'host',
+  'content-length',
+  'x-target-url',
+  'connection',
+  'keep-alive',
+  'transfer-encoding',
+  'accept-encoding',
+  'proxy-authorization',
+  'proxy-connection',
+  'upgrade'
+]);
+
+const SKIP_RESPONSE_HEADERS = new Set([
+  'content-length',
+  'content-encoding',
+  'transfer-encoding',
+  'connection',
+  'keep-alive'
+]);
+
 function readBody(req: import('node:http').IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -31,27 +52,38 @@ function readBody(req: import('node:http').IncomingMessage): Promise<string> {
   });
 }
 
+function buildForwardHeaders(incomingHeaders: import('node:http').IncomingHttpHeaders): Headers {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(incomingHeaders)) {
+    if (!value || SKIP_REQUEST_HEADERS.has(key.toLowerCase())) continue;
+    headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+  }
+  return headers;
+}
+
+function buildResponseHeaders(upstreamHeaders: Headers): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of upstreamHeaders.entries()) {
+    if (SKIP_RESPONSE_HEADERS.has(key.toLowerCase())) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
 function redactBody(vault: VaultStore, body: string): string {
   const matches = scan(body);
-  if (matches.length === 0) {
-    return body;
-  }
+  if (matches.length === 0) return body;
 
   const reals = new Map<string, string>();
-
   for (const match of matches) {
-    const pattern = CREDENTIAL_PATTERNS.find((candidate) => candidate.id === match.patternId);
-    if (!pattern) {
-      continue;
-    }
+    const pattern = CREDENTIAL_PATTERNS.find((c) => c.id === match.patternId);
+    if (!pattern) continue;
     const flags = pattern.regex.flags.includes('g') ? pattern.regex.flags : `${pattern.regex.flags}g`;
     const regex = new RegExp(pattern.regex.source, flags);
     let result: RegExpExecArray | null = regex.exec(body);
     while (result) {
       const real = result[0] ?? '';
-      if (real.length > 0 && !reals.has(real)) {
-        reals.set(real, pattern.id);
-      }
+      if (real.length > 0 && !reals.has(real)) reals.set(real, pattern.id);
       result = regex.exec(body);
     }
   }
@@ -73,14 +105,37 @@ function redactBody(vault: VaultStore, body: string): string {
 }
 
 function detectUpstream(req: import('node:http').IncomingMessage, upstreams: Record<string, string>): string | null {
-  if (req.headers['x-api-key']) {
-    return upstreams.anthropic ?? DEFAULT_UPSTREAMS.anthropic!;
-  }
+  if (req.headers['x-api-key']) return upstreams.anthropic ?? DEFAULT_UPSTREAMS.anthropic!;
   const auth = req.headers.authorization;
-  if (auth?.startsWith('Bearer ')) {
-    return upstreams.openai ?? DEFAULT_UPSTREAMS.openai!;
-  }
+  if (auth?.startsWith('Bearer ')) return upstreams.openai ?? DEFAULT_UPSTREAMS.openai!;
   return upstreams.anthropic ?? upstreams.openai ?? null;
+}
+
+async function forwardRequest(
+  method: string,
+  targetUrl: string,
+  incomingHeaders: import('node:http').IncomingHttpHeaders,
+  body: string | undefined,
+  vault: VaultStore,
+  res: import('node:http').ServerResponse
+): Promise<void> {
+  const targetPath = new URL(targetUrl).pathname;
+  const aiRequest = body ? isAiGenerationRequest(method, targetPath, body) : false;
+  const outgoingBody = aiRequest && body ? redactBody(vault, body) : body;
+  const headers = buildForwardHeaders(incomingHeaders);
+
+  const fetchOpts: RequestInit = { method, headers };
+  if (outgoingBody && method !== 'GET' && method !== 'HEAD') {
+    fetchOpts.body = outgoingBody;
+  }
+
+  const upstream = await fetch(targetUrl, fetchOpts);
+  const responseText = await upstream.text();
+  const finalResponse = aiRequest ? vault.restore(responseText) : responseText;
+  const responseHeaders = buildResponseHeaders(upstream.headers);
+
+  res.writeHead(upstream.status, responseHeaders);
+  res.end(finalResponse);
 }
 
 export async function startProxy(
@@ -88,11 +143,7 @@ export async function startProxy(
   preferredPort?: number,
   config?: ProxyConfig
 ): Promise<ProxyServer> {
-  const upstreams = {
-    ...DEFAULT_UPSTREAMS,
-    ...(config?.upstreams ?? {})
-  };
-
+  const upstreams = { ...DEFAULT_UPSTREAMS, ...(config?.upstreams ?? {}) };
   const envAnthropicUpstream = process.env.TANK_VAULT_UPSTREAM_ANTHROPIC;
   const envOpenaiUpstream = process.env.TANK_VAULT_UPSTREAM_OPENAI;
   if (envAnthropicUpstream) upstreams.anthropic = envAnthropicUpstream;
@@ -106,110 +157,30 @@ export async function startProxy(
         return;
       }
 
-      if (req.method !== 'POST') {
-        const explicitTarget = req.headers['x-target-url'];
-        if (explicitTarget && !Array.isArray(explicitTarget)) {
-          const headers = new Headers();
-          for (const [key, value] of Object.entries(req.headers)) {
-            if (!value) continue;
-            const lower = key.toLowerCase();
-            if (lower === 'host' || lower === 'content-length' || lower === 'x-target-url') continue;
-            headers.set(key, Array.isArray(value) ? value.join(', ') : value);
-          }
-          const upstream = await fetch(explicitTarget, { method: req.method!, headers });
-          const responseBody = Buffer.from(await upstream.arrayBuffer());
-          const responseHeaders: Record<string, string> = {};
-          for (const [key, value] of upstream.headers.entries()) {
-            if (key.toLowerCase() === 'content-encoding') continue;
-            responseHeaders[key] = value;
-          }
-          responseHeaders['content-length'] = String(responseBody.length);
-          res.writeHead(upstream.status, responseHeaders);
-          res.end(responseBody);
-          return;
-        }
-        const upstreamUrl = detectUpstream(req, upstreams);
-        if (upstreamUrl) {
-          const targetUrl = upstreamUrl + (req.url ?? '/');
-          const headers = new Headers();
-          for (const [key, value] of Object.entries(req.headers)) {
-            if (!value) continue;
-            const lower = key.toLowerCase();
-            if (lower === 'host' || lower === 'content-length') continue;
-            headers.set(key, Array.isArray(value) ? value.join(', ') : value);
-          }
-          const upstream = await fetch(targetUrl, { method: req.method!, headers });
-          const responseBody = Buffer.from(await upstream.arrayBuffer());
-          const responseHeaders: Record<string, string> = {};
-          for (const [key, value] of upstream.headers.entries()) {
-            if (key.toLowerCase() === 'content-encoding') continue;
-            responseHeaders[key] = value;
-          }
-          responseHeaders['content-length'] = String(responseBody.length);
-          res.writeHead(upstream.status, responseHeaders);
-          res.end(responseBody);
-          return;
-        }
-        res.writeHead(405, { 'Content-Type': 'text/plain' });
-        res.end('Method Not Allowed');
+      const explicitTarget = req.headers['x-target-url'];
+      if (explicitTarget && !Array.isArray(explicitTarget)) {
+        const body =
+          req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' ? await readBody(req) : undefined;
+        await forwardRequest(req.method!, explicitTarget, req.headers, body, vault, res);
         return;
       }
 
-      const explicitTarget = req.headers['x-target-url'];
-      let targetUrl: string;
-
-      if (explicitTarget && !Array.isArray(explicitTarget)) {
-        targetUrl = explicitTarget;
-      } else {
-        const upstream = detectUpstream(req, upstreams);
-        if (!upstream) {
-          res.writeHead(502, { 'Content-Type': 'text/plain' });
-          res.end('No upstream configured');
-          return;
-        }
-        targetUrl = upstream + (req.url ?? '/');
+      const upstreamBase = detectUpstream(req, upstreams);
+      if (upstreamBase) {
+        const targetUrl = upstreamBase + (req.url ?? '/');
+        const body =
+          req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' ? await readBody(req) : undefined;
+        await forwardRequest(req.method!, targetUrl, req.headers, body, vault, res);
+        return;
       }
 
-      const body = await readBody(req);
-      const targetPath = new URL(targetUrl).pathname;
-      const aiRequest = isAiGenerationRequest(req.method, targetPath, body);
-      const outgoingBody = aiRequest ? redactBody(vault, body) : body;
-
-      const headers = new Headers();
-      for (const [key, value] of Object.entries(req.headers)) {
-        if (!value) {
-          continue;
-        }
-        const lower = key.toLowerCase();
-        if (lower === 'host' || lower === 'content-length' || lower === 'x-target-url') {
-          continue;
-        }
-        headers.set(key, Array.isArray(value) ? value.join(', ') : value);
-      }
-
-      const upstream = await fetch(targetUrl, {
-        method: req.method,
-        headers,
-        body: outgoingBody
-      });
-
-      const responseText = await upstream.text();
-      const finalResponse = aiRequest ? vault.restore(responseText) : responseText;
-
-      const responseHeaders: Record<string, string> = {};
-      for (const [key, value] of upstream.headers.entries()) {
-        const lower = key.toLowerCase();
-        if (lower === 'content-length' || lower === 'content-encoding') {
-          continue;
-        }
-        responseHeaders[key] = value;
-      }
-
-      res.writeHead(upstream.status, responseHeaders);
-      res.end(finalResponse);
+      res.writeHead(502, { 'Content-Type': 'text/plain' });
+      res.end('No upstream configured');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      res.writeHead(502, { 'Content-Type': 'text/plain' });
+      if (!res.headersSent) {
+        res.writeHead(502, { 'Content-Type': 'text/plain' });
+      }
       res.end(`Vault proxy error: ${msg}`);
     }
   });
@@ -230,13 +201,7 @@ export async function startProxy(
     url: `http://127.0.0.1:${port}`,
     close: () =>
       new Promise<void>((resolve, reject) => {
-        server.close((err) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-          resolve();
-        });
+        server.close((err) => (err ? reject(err) : resolve()));
       })
   };
 }
