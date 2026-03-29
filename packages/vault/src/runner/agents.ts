@@ -13,7 +13,7 @@ export const AGENT_CONFIGS: AgentRunConfig[] = [
     id: 'claude',
     name: 'Claude',
     runtime: 'node',
-    strategy: 'node-options',
+    strategy: 'base-url-overrides',
     command: 'claude'
   },
   {

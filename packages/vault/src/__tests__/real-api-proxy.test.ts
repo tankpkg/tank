@@ -13,7 +13,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
   beforeAll(async () => {
     vault = new VaultStore();
     proxy = await startProxy(vault);
-    anthropicBase = proxy.url + encodeUpstreamUrl('https://api.anthropic.com/v1');
+    anthropicBase = proxy.url + encodeUpstreamUrl('https://api.anthropic.com');
   });
 
   afterAll(async () => {
@@ -21,7 +21,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
   });
 
   it('forwards POST /messages to Anthropic and gets 200 response', async () => {
-    const res = await fetch(`${anthropicBase}/messages`, {
+    const res = await fetch(`${anthropicBase}/v1/messages`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -45,7 +45,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
     const TEST_STRIPE = 'sk_live_TestRedactionKey1234567';
     const vaultBefore = vault.size;
 
-    const res = await fetch(`${anthropicBase}/messages`, {
+    const res = await fetch(`${anthropicBase}/v1/messages`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -75,7 +75,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
   });
 
   it('does not strip the Anthropic API key from auth header (provider own key)', async () => {
-    const res = await fetch(`${anthropicBase}/messages`, {
+    const res = await fetch(`${anthropicBase}/v1/messages`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',

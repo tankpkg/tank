@@ -14,11 +14,11 @@ describe('agent configs', () => {
     expect(ids).toHaveLength(6);
   });
 
-  it('claude is configured as Node.js with node-options strategy', () => {
+  it('claude is configured as Node.js with base-url-overrides strategy', () => {
     const config = getAgentConfig('claude');
     expect(config).toBeDefined();
     expect(config!.runtime).toBe('node');
-    expect(config!.strategy).toBe('node-options');
+    expect(config!.strategy).toBe('base-url-overrides');
   });
 
   it('opencode is configured as Bun with base-url-overrides strategy', () => {
@@ -120,7 +120,7 @@ describe('buildAgentEnv()', () => {
       const anthropicUrl = env.ANTHROPIC_BASE_URL!;
       const encoded = anthropicUrl.split('/_/')[1]!;
       const decoded = Buffer.from(encoded, 'base64url').toString('utf-8');
-      expect(decoded).toBe('https://api.anthropic.com/v1');
+      expect(decoded).toBe('https://api.anthropic.com');
     });
 
     it('does not set HTTPS_PROXY', () => {

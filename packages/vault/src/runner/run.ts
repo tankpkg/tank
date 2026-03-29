@@ -21,10 +21,10 @@ export async function run(_options: RunOptions): Promise<RunResult> {
 }
 
 const KNOWN_BASE_URL_VARS = [
-  { envVar: 'ANTHROPIC_BASE_URL', defaultUrl: 'https://api.anthropic.com/v1' },
-  { envVar: 'OPENAI_BASE_URL', defaultUrl: 'https://api.openai.com/v1' },
-  { envVar: 'MISTRAL_BASE_URL', defaultUrl: 'https://api.mistral.ai/v1' },
-  { envVar: 'GROQ_BASE_URL', defaultUrl: 'https://api.groq.com/openai/v1' }
+  { envVar: 'ANTHROPIC_BASE_URL', defaultUrl: 'https://api.anthropic.com' },
+  { envVar: 'OPENAI_BASE_URL', defaultUrl: 'https://api.openai.com' },
+  { envVar: 'MISTRAL_BASE_URL', defaultUrl: 'https://api.mistral.ai' },
+  { envVar: 'GROQ_BASE_URL', defaultUrl: 'https://api.groq.com/openai' }
 ];
 
 export function buildAgentEnv(
