@@ -46,13 +46,18 @@ export function buildAgentEnv(
       break;
     }
     case 'base-url-overrides': {
+      env.TANK_VAULT_UPSTREAM_ANTHROPIC = env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
+      env.TANK_VAULT_UPSTREAM_OPENAI = env.OPENAI_BASE_URL || 'https://api.openai.com';
       env.ANTHROPIC_BASE_URL = proxyUrl;
       env.OPENAI_BASE_URL = proxyUrl;
       env.HTTPS_PROXY = proxyUrl;
+      env.TANK_VAULT_PROXY_URL = proxyUrl;
       break;
     }
     case 'best-effort': {
       setNodeOptions();
+      env.TANK_VAULT_UPSTREAM_ANTHROPIC = env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
+      env.TANK_VAULT_UPSTREAM_OPENAI = env.OPENAI_BASE_URL || 'https://api.openai.com';
       env.HTTPS_PROXY = proxyUrl;
       env.HTTP_PROXY = proxyUrl;
       env.ANTHROPIC_BASE_URL = proxyUrl;

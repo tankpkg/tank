@@ -11,6 +11,15 @@ export interface ProxyServer {
   close: () => Promise<void>;
 }
 
+export interface ProxyConfig {
+  upstreams?: Record<string, string>;
+}
+
+const DEFAULT_UPSTREAMS: Record<string, string> = {
+  anthropic: 'https://api.anthropic.com',
+  openai: 'https://api.openai.com'
+};
+
 function readBody(req: import('node:http').IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -63,7 +72,32 @@ function redactBody(vault: VaultStore, body: string): string {
   return vault.redact(body);
 }
 
-export async function startProxy(vault: VaultStore, preferredPort?: number): Promise<ProxyServer> {
+function detectUpstream(req: import('node:http').IncomingMessage, upstreams: Record<string, string>): string | null {
+  if (req.headers['x-api-key']) {
+    return upstreams.anthropic ?? DEFAULT_UPSTREAMS.anthropic!;
+  }
+  const auth = req.headers.authorization;
+  if (auth?.startsWith('Bearer ')) {
+    return upstreams.openai ?? DEFAULT_UPSTREAMS.openai!;
+  }
+  return upstreams.anthropic ?? upstreams.openai ?? null;
+}
+
+export async function startProxy(
+  vault: VaultStore,
+  preferredPort?: number,
+  config?: ProxyConfig
+): Promise<ProxyServer> {
+  const upstreams = {
+    ...DEFAULT_UPSTREAMS,
+    ...(config?.upstreams ?? {})
+  };
+
+  const envAnthropicUpstream = process.env.TANK_VAULT_UPSTREAM_ANTHROPIC;
+  const envOpenaiUpstream = process.env.TANK_VAULT_UPSTREAM_OPENAI;
+  if (envAnthropicUpstream) upstreams.anthropic = envAnthropicUpstream;
+  if (envOpenaiUpstream) upstreams.openai = envOpenaiUpstream;
+
   const server = createServer(async (req, res) => {
     try {
       if (req.method === 'GET' && req.url === '/health') {
@@ -72,17 +106,25 @@ export async function startProxy(vault: VaultStore, preferredPort?: number): Pro
         return;
       }
 
-      if (req.method !== 'POST' || req.url !== '/proxy') {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Not Found');
+      if (req.method !== 'POST') {
+        res.writeHead(405, { 'Content-Type': 'text/plain' });
+        res.end('Method Not Allowed');
         return;
       }
 
-      const targetUrl = req.headers['x-target-url'];
-      if (!targetUrl || Array.isArray(targetUrl)) {
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end('Missing X-Target-URL');
-        return;
+      const explicitTarget = req.headers['x-target-url'];
+      let targetUrl: string;
+
+      if (explicitTarget && !Array.isArray(explicitTarget)) {
+        targetUrl = explicitTarget;
+      } else {
+        const upstream = detectUpstream(req, upstreams);
+        if (!upstream) {
+          res.writeHead(502, { 'Content-Type': 'text/plain' });
+          res.end('No upstream configured');
+          return;
+        }
+        targetUrl = upstream + (req.url ?? '/');
       }
 
       const body = await readBody(req);
@@ -123,10 +165,9 @@ export async function startProxy(vault: VaultStore, preferredPort?: number): Pro
       res.writeHead(upstream.status, responseHeaders);
       res.end(finalResponse);
     } catch (err) {
-      const msg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
-      const cause = err instanceof Error && 'cause' in err ? String((err as { cause: unknown }).cause) : '';
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end(`Vault proxy error: ${msg}\ncause: ${cause}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      res.writeHead(502, { 'Content-Type': 'text/plain' });
+      res.end(`Vault proxy error: ${msg}`);
     }
   });
 
