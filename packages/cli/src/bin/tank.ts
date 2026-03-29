@@ -13,6 +13,7 @@ import { migrateCommand } from '~/commands/migrate.js';
 import { permissionsCommand } from '~/commands/permissions.js';
 import { publishCommand } from '~/commands/publish.js';
 import { removeCommand } from '~/commands/remove.js';
+import { runCommand } from '~/commands/run.js';
 import { scanCommand } from '~/commands/scan.js';
 import { searchCommand } from '~/commands/search.js';
 import { unlinkCommand } from '~/commands/unlink.js';
@@ -245,6 +246,21 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Audit failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('run')
+  .description('Launch an agent with credential protection (vault proxy)')
+  .argument('<agent>', 'Agent ID to launch')
+  .option('--verbose', 'Print verbose vault proxy details')
+  .action(async (agent: string, opts: { verbose?: boolean }) => {
+    try {
+      await runCommand({ agent, verbose: opts.verbose });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Run failed: ${msg}`);
       process.exit(1);
     }
   });

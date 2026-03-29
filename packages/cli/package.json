@@ -25,6 +25,7 @@
   "devDependencies": {
     "@internals/helpers": "workspace:*",
     "@internals/schemas": "workspace:*",
+    "@tankpkg/vault": "workspace:*",
     "@types/node": "^25.5.0",
     "@types/tar": "^7.0.87",
     "esbuild": "^0.27.4",
