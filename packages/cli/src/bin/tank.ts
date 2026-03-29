@@ -254,10 +254,13 @@ program
   .command('run')
   .description('Launch an agent with credential protection (vault proxy)')
   .argument('<agent>', 'Agent ID to launch')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
   .option('--verbose', 'Print verbose vault proxy details')
-  .action(async (agent: string, opts: { verbose?: boolean }) => {
+  .action(async (agent: string, opts: { verbose?: boolean }, cmd: Command) => {
     try {
-      await runCommand({ agent, verbose: opts.verbose });
+      const agentArgs = cmd.args.slice(1);
+      await runCommand({ agent, verbose: opts.verbose, agentArgs });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Run failed: ${msg}`);

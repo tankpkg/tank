@@ -7,6 +7,7 @@ import chalk from 'chalk';
 export interface RunOptions {
   agent: string;
   verbose?: boolean;
+  agentArgs?: string[];
 }
 
 interface AgentConfig {
@@ -89,7 +90,7 @@ export async function runCommand(options: RunOptions): Promise<void> {
     console.log(`Proxy URL: ${proxy.url}`);
   }
 
-  const child = spawn(config.command, [], {
+  const child = spawn(config.command, options.agentArgs ?? [], {
     env,
     stdio: 'inherit'
   });

@@ -107,6 +107,49 @@ export async function startProxy(
       }
 
       if (req.method !== 'POST') {
+        const explicitTarget = req.headers['x-target-url'];
+        if (explicitTarget && !Array.isArray(explicitTarget)) {
+          const headers = new Headers();
+          for (const [key, value] of Object.entries(req.headers)) {
+            if (!value) continue;
+            const lower = key.toLowerCase();
+            if (lower === 'host' || lower === 'content-length' || lower === 'x-target-url') continue;
+            headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+          }
+          const upstream = await fetch(explicitTarget, { method: req.method!, headers });
+          const responseBody = Buffer.from(await upstream.arrayBuffer());
+          const responseHeaders: Record<string, string> = {};
+          for (const [key, value] of upstream.headers.entries()) {
+            if (key.toLowerCase() === 'content-encoding') continue;
+            responseHeaders[key] = value;
+          }
+          responseHeaders['content-length'] = String(responseBody.length);
+          res.writeHead(upstream.status, responseHeaders);
+          res.end(responseBody);
+          return;
+        }
+        const upstreamUrl = detectUpstream(req, upstreams);
+        if (upstreamUrl) {
+          const targetUrl = upstreamUrl + (req.url ?? '/');
+          const headers = new Headers();
+          for (const [key, value] of Object.entries(req.headers)) {
+            if (!value) continue;
+            const lower = key.toLowerCase();
+            if (lower === 'host' || lower === 'content-length') continue;
+            headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+          }
+          const upstream = await fetch(targetUrl, { method: req.method!, headers });
+          const responseBody = Buffer.from(await upstream.arrayBuffer());
+          const responseHeaders: Record<string, string> = {};
+          for (const [key, value] of upstream.headers.entries()) {
+            if (key.toLowerCase() === 'content-encoding') continue;
+            responseHeaders[key] = value;
+          }
+          responseHeaders['content-length'] = String(responseBody.length);
+          res.writeHead(upstream.status, responseHeaders);
+          res.end(responseBody);
+          return;
+        }
         res.writeHead(405, { 'Content-Type': 'text/plain' });
         res.end('Method Not Allowed');
         return;
