@@ -20,5 +20,9 @@ export const getAdminSession = createServerFn({ method: 'GET' }).handler(async (
 });
 
 export const getAuthProviders = createServerFn({ method: 'GET' }).handler(async () => {
-  return { providers: [...enabledProviders], oidcProviderId: env.OIDC_PROVIDER_ID };
+  return {
+    providers: [...enabledProviders],
+    oidcProviderId: env.OIDC_PROVIDER_ID,
+    selfHosted: process.env.TANK_MODE === 'selfhosted'
+  };
 });
