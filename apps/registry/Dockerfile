@@ -11,6 +11,7 @@ COPY packages/internals-helpers/package.json ./packages/internals-helpers/
 COPY apps/registry/package.json ./apps/registry/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
+COPY packages/vault/package.json ./packages/vault/
 COPY bdd/package.json ./bdd/
 COPY e2e/package.json ./e2e/
 
