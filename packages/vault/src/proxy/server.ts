@@ -11,14 +11,7 @@ export interface ProxyServer {
   close: () => Promise<void>;
 }
 
-export interface ProxyConfig {
-  upstreams?: Record<string, string>;
-}
-
-const DEFAULT_UPSTREAMS: Record<string, string> = {
-  anthropic: 'https://api.anthropic.com',
-  openai: 'https://api.openai.com'
-};
+const UPSTREAM_PREFIX = '/_/';
 
 const SKIP_REQUEST_HEADERS = new Set([
   'host',
@@ -104,11 +97,25 @@ function redactBody(vault: VaultStore, body: string): string {
   return vault.redact(body);
 }
 
-function detectUpstream(req: import('node:http').IncomingMessage, upstreams: Record<string, string>): string | null {
-  if (req.headers['x-api-key']) return upstreams.anthropic ?? DEFAULT_UPSTREAMS.anthropic!;
-  const auth = req.headers.authorization;
-  if (auth?.startsWith('Bearer ')) return upstreams.openai ?? DEFAULT_UPSTREAMS.openai!;
-  return upstreams.anthropic ?? upstreams.openai ?? null;
+function resolveTargetUrl(req: import('node:http').IncomingMessage): string | null {
+  const explicitTarget = req.headers['x-target-url'];
+  if (explicitTarget && !Array.isArray(explicitTarget)) return explicitTarget;
+
+  const url = req.url ?? '/';
+  if (url.startsWith(UPSTREAM_PREFIX)) {
+    const withoutPrefix = url.slice(UPSTREAM_PREFIX.length);
+    const slashIdx = withoutPrefix.indexOf('/');
+    const encodedBase = slashIdx === -1 ? withoutPrefix : withoutPrefix.slice(0, slashIdx);
+    const remainingPath = slashIdx === -1 ? '' : withoutPrefix.slice(slashIdx);
+    const decodedBase = Buffer.from(encodedBase, 'base64url').toString('utf-8');
+    return decodedBase + remainingPath;
+  }
+
+  return null;
+}
+
+export function encodeUpstreamUrl(originalBaseUrl: string): string {
+  return UPSTREAM_PREFIX + Buffer.from(originalBaseUrl, 'utf-8').toString('base64url');
 }
 
 async function forwardRequest(
@@ -132,23 +139,12 @@ async function forwardRequest(
   const upstream = await fetch(targetUrl, fetchOpts);
   const responseText = await upstream.text();
   const finalResponse = aiRequest ? vault.restore(responseText) : responseText;
-  const responseHeaders = buildResponseHeaders(upstream.headers);
 
-  res.writeHead(upstream.status, responseHeaders);
+  res.writeHead(upstream.status, buildResponseHeaders(upstream.headers));
   res.end(finalResponse);
 }
 
-export async function startProxy(
-  vault: VaultStore,
-  preferredPort?: number,
-  config?: ProxyConfig
-): Promise<ProxyServer> {
-  const upstreams = { ...DEFAULT_UPSTREAMS, ...(config?.upstreams ?? {}) };
-  const envAnthropicUpstream = process.env.TANK_VAULT_UPSTREAM_ANTHROPIC;
-  const envOpenaiUpstream = process.env.TANK_VAULT_UPSTREAM_OPENAI;
-  if (envAnthropicUpstream) upstreams.anthropic = envAnthropicUpstream;
-  if (envOpenaiUpstream) upstreams.openai = envOpenaiUpstream;
-
+export async function startProxy(vault: VaultStore, preferredPort?: number): Promise<ProxyServer> {
   const server = createServer(async (req, res) => {
     try {
       if (req.method === 'GET' && req.url === '/health') {
@@ -157,25 +153,17 @@ export async function startProxy(
         return;
       }
 
-      const explicitTarget = req.headers['x-target-url'];
-      if (explicitTarget && !Array.isArray(explicitTarget)) {
-        const body =
-          req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' ? await readBody(req) : undefined;
-        await forwardRequest(req.method!, explicitTarget, req.headers, body, vault, res);
+      const targetUrl = resolveTargetUrl(req);
+      if (!targetUrl) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('No target URL — use x-target-url header or /_/<base64url>/path');
         return;
       }
 
-      const upstreamBase = detectUpstream(req, upstreams);
-      if (upstreamBase) {
-        const targetUrl = upstreamBase + (req.url ?? '/');
-        const body =
-          req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' ? await readBody(req) : undefined;
-        await forwardRequest(req.method!, targetUrl, req.headers, body, vault, res);
-        return;
-      }
+      const body =
+        req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' ? await readBody(req) : undefined;
 
-      res.writeHead(502, { 'Content-Type': 'text/plain' });
-      res.end('No upstream configured');
+      await forwardRequest(req.method!, targetUrl, req.headers, body, vault, res);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!res.headersSent) {

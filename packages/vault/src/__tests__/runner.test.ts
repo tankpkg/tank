@@ -107,27 +107,37 @@ describe('buildAgentEnv()', () => {
   });
 
   describe('base-url-overrides strategy (OpenCode/Bun)', () => {
-    it('sets provider-specific base URLs', () => {
+    it('sets provider base URLs to proxy with encoded upstream path', () => {
       const env = buildAgentEnv('base-url-overrides', proxyUrl, baseEnv);
-      expect(env.ANTHROPIC_BASE_URL).toBe(proxyUrl);
-      expect(env.OPENAI_BASE_URL).toBe(proxyUrl);
+      expect(env.ANTHROPIC_BASE_URL).toContain(proxyUrl);
+      expect(env.ANTHROPIC_BASE_URL).toContain('/_/');
+      expect(env.OPENAI_BASE_URL).toContain(proxyUrl);
+      expect(env.OPENAI_BASE_URL).toContain('/_/');
     });
 
-    it('also sets HTTPS_PROXY as fallback', () => {
+    it('encoded upstream decodes back to original URL', () => {
       const env = buildAgentEnv('base-url-overrides', proxyUrl, baseEnv);
-      expect(env.HTTPS_PROXY).toBe(proxyUrl);
+      const anthropicUrl = env.ANTHROPIC_BASE_URL!;
+      const encoded = anthropicUrl.split('/_/')[1]!;
+      const decoded = Buffer.from(encoded, 'base64url').toString('utf-8');
+      expect(decoded).toBe('https://api.anthropic.com/v1');
+    });
+
+    it('does not set HTTPS_PROXY', () => {
+      const env = buildAgentEnv('base-url-overrides', proxyUrl, baseEnv);
+      expect(env.HTTPS_PROXY).toBeUndefined();
     });
   });
 
   describe('best-effort strategy (OpenClaw, Universal)', () => {
-    it('sets everything: NODE_OPTIONS + HTTPS_PROXY + base URLs', () => {
+    it('sets everything: NODE_OPTIONS + HTTPS_PROXY + encoded base URLs', () => {
       const env = buildAgentEnv('best-effort', proxyUrl, baseEnv);
       expect(env.NODE_OPTIONS).toBeDefined();
       expect(env.NODE_OPTIONS).toContain('--require');
       expect(env.HTTPS_PROXY).toBe(proxyUrl);
       expect(env.HTTP_PROXY).toBe(proxyUrl);
-      expect(env.ANTHROPIC_BASE_URL).toBe(proxyUrl);
-      expect(env.OPENAI_BASE_URL).toBe(proxyUrl);
+      expect(env.ANTHROPIC_BASE_URL).toContain('/_/');
+      expect(env.OPENAI_BASE_URL).toContain('/_/');
     });
   });
 

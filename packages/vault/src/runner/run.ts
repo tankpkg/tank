@@ -1,4 +1,5 @@
 import type { ProxyServer } from '../proxy/server.ts';
+import { encodeUpstreamUrl } from '../proxy/server.ts';
 import type { VaultStore } from '../tokenizer/vault.ts';
 
 export interface RunResult {
@@ -19,6 +20,13 @@ export async function run(_options: RunOptions): Promise<RunResult> {
   throw new Error('Not implemented');
 }
 
+const KNOWN_BASE_URL_VARS = [
+  { envVar: 'ANTHROPIC_BASE_URL', defaultUrl: 'https://api.anthropic.com/v1' },
+  { envVar: 'OPENAI_BASE_URL', defaultUrl: 'https://api.openai.com/v1' },
+  { envVar: 'MISTRAL_BASE_URL', defaultUrl: 'https://api.mistral.ai/v1' },
+  { envVar: 'GROQ_BASE_URL', defaultUrl: 'https://api.groq.com/openai/v1' }
+];
+
 export function buildAgentEnv(
   strategy: string,
   proxyUrl: string,
@@ -28,8 +36,15 @@ export function buildAgentEnv(
   const bootstrapRequire = '--require tank-vault-proxy-bootstrap.js';
 
   const setNodeOptions = () => {
-    const existingNodeOptions = env.NODE_OPTIONS?.trim();
-    env.NODE_OPTIONS = existingNodeOptions ? `${existingNodeOptions} ${bootstrapRequire}` : bootstrapRequire;
+    const existing = env.NODE_OPTIONS?.trim();
+    env.NODE_OPTIONS = existing ? `${existing} ${bootstrapRequire}` : bootstrapRequire;
+  };
+
+  const overrideBaseUrls = () => {
+    for (const { envVar, defaultUrl } of KNOWN_BASE_URL_VARS) {
+      const originalUrl = env[envVar] || defaultUrl;
+      env[envVar] = proxyUrl + encodeUpstreamUrl(originalUrl);
+    }
   };
 
   switch (strategy) {
@@ -46,22 +61,15 @@ export function buildAgentEnv(
       break;
     }
     case 'base-url-overrides': {
-      env.TANK_VAULT_UPSTREAM_ANTHROPIC = env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
-      env.TANK_VAULT_UPSTREAM_OPENAI = env.OPENAI_BASE_URL || 'https://api.openai.com';
-      env.ANTHROPIC_BASE_URL = proxyUrl;
-      env.OPENAI_BASE_URL = proxyUrl;
-      env.HTTPS_PROXY = proxyUrl;
+      overrideBaseUrls();
       env.TANK_VAULT_PROXY_URL = proxyUrl;
       break;
     }
     case 'best-effort': {
       setNodeOptions();
-      env.TANK_VAULT_UPSTREAM_ANTHROPIC = env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
-      env.TANK_VAULT_UPSTREAM_OPENAI = env.OPENAI_BASE_URL || 'https://api.openai.com';
+      overrideBaseUrls();
       env.HTTPS_PROXY = proxyUrl;
       env.HTTP_PROXY = proxyUrl;
-      env.ANTHROPIC_BASE_URL = proxyUrl;
-      env.OPENAI_BASE_URL = proxyUrl;
       env.TANK_VAULT_PROXY_URL = proxyUrl;
       break;
     }
