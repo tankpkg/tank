@@ -326,14 +326,122 @@ def compute_file_hashes(base_dir: str, files: list[str]) -> dict[str, str]:
     return hashes
 
 
-async def stage0_ingest(tarball_url: str) -> IngestResult:
+def narrow_to_sub_path(
+    temp_dir: str,
+    sub_path: str,
+    extracted_files: list[str],
+) -> tuple[str, list[str], int, list[Finding]]:
+    """Narrow extracted contents to a specific subdirectory.
+
+    Used for monorepo support where a tarball contains multiple skills
+    but only one should be scanned.
+
+    GitHub tarballs extract with a prefix directory (e.g., "owner-repo-sha/"),
+    so we look for sub_path inside that prefix.
+
+    Args:
+        temp_dir: Path to the full extraction directory
+        sub_path: Subdirectory to narrow to (e.g., "my-skill")
+        extracted_files: List of relative file paths from extraction
+
+    Returns:
+        (new_temp_dir, filtered_files, total_size, findings)
+    """
+    findings: list[Finding] = []
+
+    # Sanitize sub_path to prevent path traversal
+    clean_sub_path = Path(sub_path).as_posix()
+    if ".." in clean_sub_path or clean_sub_path.startswith("/"):
+        findings.append(
+            Finding(
+                stage="stage0",
+                severity="critical",
+                type="invalid_sub_path",
+                description=f"Invalid sub_path contains path traversal: {sub_path}",
+                confidence=1.0,
+                tool="stage0_ingest",
+            )
+        )
+        return temp_dir, extracted_files, 0, findings
+
+    # GitHub tarballs have a single top-level directory (e.g., "owner-repo-sha/")
+    top_entries = [
+        e for e in os.listdir(temp_dir)
+        if os.path.isdir(os.path.join(temp_dir, e))
+    ]
+
+    if len(top_entries) == 1:
+        repo_root = os.path.join(temp_dir, top_entries[0])
+    else:
+        repo_root = temp_dir
+
+    target_dir = os.path.join(repo_root, clean_sub_path)
+
+    # Verify target stays within temp_dir (defense in depth)
+    try:
+        Path(target_dir).resolve().relative_to(Path(temp_dir).resolve())
+    except ValueError:
+        findings.append(
+            Finding(
+                stage="stage0",
+                severity="critical",
+                type="sub_path_escape",
+                description=f"sub_path resolves outside extraction directory: {sub_path}",
+                confidence=1.0,
+                tool="stage0_ingest",
+            )
+        )
+        return temp_dir, extracted_files, 0, findings
+
+    if not os.path.isdir(target_dir):
+        findings.append(
+            Finding(
+                stage="stage0",
+                severity="medium",
+                type="sub_path_not_found",
+                description=f"Requested sub_path '{sub_path}' not found in archive",
+                confidence=1.0,
+                tool="stage0_ingest",
+            )
+        )
+        return temp_dir, extracted_files, 0, findings
+
+    # Create new temp directory with only the sub_path contents
+    new_temp_dir = tempfile.mkdtemp(prefix="tank_scan_sub_")
+    for item in os.listdir(target_dir):
+        src = os.path.join(target_dir, item)
+        dst = os.path.join(new_temp_dir, item)
+        if os.path.isdir(src):
+            shutil.copytree(src, dst)
+        else:
+            shutil.copy2(src, dst)
+
+    # Clean up original temp dir
+    shutil.rmtree(temp_dir, ignore_errors=True)
+
+    # Build new file list and compute total size
+    new_files: list[str] = []
+    total_size = 0
+    for root, _dirs, files in os.walk(new_temp_dir):
+        for f in files:
+            full = os.path.join(root, f)
+            rel = os.path.relpath(full, new_temp_dir)
+            new_files.append(rel)
+            total_size += os.path.getsize(full)
+
+    return new_temp_dir, new_files, total_size, findings
+
+
+async def stage0_ingest(tarball_url: str, sub_path: str | None = None) -> IngestResult:
     """Run Stage 0: Ingestion & Quarantine.
 
     Downloads tarball, safely extracts to temp directory, validates contents,
-    and computes file hashes.
+    and computes file hashes. Optionally narrows to a subdirectory for
+    monorepo support.
 
     Args:
         tarball_url: Signed URL to download the skill tarball
+        sub_path: Optional subdirectory to narrow the scan to
 
     Returns:
         IngestResult with temp directory path, file hashes, and any findings
@@ -421,6 +529,13 @@ async def stage0_ingest(tarball_url: str) -> IngestResult:
 
     # Remove the tarball (we don't need it anymore)
     os.remove(tar_path)
+
+    # Narrow to sub_path if specified (monorepo support)
+    if sub_path:
+        temp_dir, extracted_files, total_size, sub_path_findings = narrow_to_sub_path(
+            temp_dir, sub_path, extracted_files
+        )
+        findings.extend(sub_path_findings)
 
     # Compute file hashes
     file_hashes = compute_file_hashes(temp_dir, extracted_files)

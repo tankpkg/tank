@@ -149,7 +149,7 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
 
     # Stage 0: Ingestion & Quarantine (REQUIRED - provides temp dir)
     try:
-        ingest_result = await stage0_ingest(request.tarball_url)
+        ingest_result = await stage0_ingest(request.tarball_url, request.sub_path)
         stage_results.append(ingest_result.stage_result)
         file_hashes = ingest_result.file_hashes
 
