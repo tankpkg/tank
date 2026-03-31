@@ -429,11 +429,11 @@ Classify each finding and respond with ONLY a JSON array."""
                 elif finding.severity in ("high", "medium"):
                     finding.severity = "low"
                 elif finding.severity == "low":
-                    finding.severity = "info"
                     logger.info(
-                        f"Finding {i} downgraded to info by LLM: {finding.type} "
+                        f"Finding {i} removed by LLM downgrade: {finding.type} "
                         f"(confidence={verdict.confidence:.2f}, reason={verdict.reasoning[:50]}...)"
                     )
+                    continue
 
                 if finding.confidence:
                     finding.confidence = finding.confidence * 0.5
