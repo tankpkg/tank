@@ -1,11 +1,11 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { Label } from '~/components/ui/label';
-import type { FreshnessBucket, PopularityBucket, ScoreBucket, VisibilityFilter } from '~/lib/skills/data';
+import type { FreshnessBucket, PopularityBucket, SecurityVerdict, VisibilityFilter } from '~/lib/skills/data';
 
 interface SkillsFiltersProps {
   currentVisibility: VisibilityFilter;
-  currentScoreBucket: ScoreBucket;
+  currentSecurityVerdict: SecurityVerdict;
   currentFreshness: FreshnessBucket;
   currentPopularity: PopularityBucket;
   currentHasReadme: boolean;
@@ -62,11 +62,12 @@ export const VISIBILITY_OPTIONS = [
   { value: 'private' as const, label: 'Private' }
 ] as const;
 
-export const SCORE_OPTIONS = [
-  { value: 'all' as const, label: 'All scores' },
-  { value: 'high' as const, label: 'High (7+)' },
-  { value: 'medium' as const, label: 'Medium (4-6)' },
-  { value: 'low' as const, label: 'Low (<4)' }
+export const SECURITY_VERDICT_OPTIONS = [
+  { value: 'all' as const, label: 'All verdicts' },
+  { value: 'pass' as const, label: 'Pass' },
+  { value: 'pass_with_notes' as const, label: 'Pass with notes' },
+  { value: 'flagged' as const, label: 'Flagged' },
+  { value: 'fail' as const, label: 'Fail' }
 ] as const;
 
 export const FRESHNESS_OPTIONS = [
@@ -85,7 +86,7 @@ export const POPULARITY_OPTIONS = [
 
 export function SkillsFilters({
   currentVisibility,
-  currentScoreBucket,
+  currentSecurityVerdict,
   currentFreshness,
   currentPopularity,
   currentHasReadme,
@@ -118,10 +119,10 @@ export function SkillsFilters({
         )}
 
         <FilterGroup
-          label="Score"
-          options={SCORE_OPTIONS}
-          current={currentScoreBucket}
-          paramKey="score"
+          label="Security"
+          options={SECURITY_VERDICT_OPTIONS}
+          current={currentSecurityVerdict}
+          paramKey="security"
           defaultValue="all"
         />
 

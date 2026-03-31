@@ -3,13 +3,13 @@ import { FileText } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import type { FreshnessBucket, PopularityBucket, ScoreBucket, VisibilityFilter } from '~/lib/skills/data';
+import type { FreshnessBucket, PopularityBucket, SecurityVerdict, VisibilityFilter } from '~/lib/skills/data';
 
-import { FRESHNESS_OPTIONS, POPULARITY_OPTIONS, SCORE_OPTIONS, VISIBILITY_OPTIONS } from './skills-filters';
+import { FRESHNESS_OPTIONS, POPULARITY_OPTIONS, SECURITY_VERDICT_OPTIONS, VISIBILITY_OPTIONS } from './skills-filters';
 
 interface MobileSkillsFiltersProps {
   currentVisibility: VisibilityFilter;
-  currentScoreBucket: ScoreBucket;
+  currentSecurityVerdict: SecurityVerdict;
   currentFreshness: FreshnessBucket;
   currentPopularity: PopularityBucket;
   currentHasReadme: boolean;
@@ -32,7 +32,7 @@ function useFilterNavigate() {
 
 export function MobileSkillsFilters({
   currentVisibility,
-  currentScoreBucket,
+  currentSecurityVerdict,
   currentFreshness,
   currentPopularity,
   currentHasReadme,
@@ -58,12 +58,12 @@ export function MobileSkillsFilters({
         </Select>
       )}
 
-      <Select value={currentScoreBucket} onValueChange={(v) => filterNav('score', v, 'all')}>
-        <SelectTrigger className="h-8 min-w-[110px] shrink-0 text-xs" data-testid="mobile-filter-score">
-          <SelectValue placeholder="Score" />
+      <Select value={currentSecurityVerdict} onValueChange={(v) => filterNav('security', v, 'all')}>
+        <SelectTrigger className="h-8 min-w-[110px] shrink-0 text-xs" data-testid="mobile-filter-security">
+          <SelectValue placeholder="Security" />
         </SelectTrigger>
         <SelectContent>
-          {SCORE_OPTIONS.map((opt) => (
+          {SECURITY_VERDICT_OPTIONS.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               {opt.label}
             </SelectItem>

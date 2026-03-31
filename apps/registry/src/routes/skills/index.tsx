@@ -36,7 +36,7 @@ function SkillsPage() {
       page={search.page}
       sort={search.sort}
       visibility={search.visibility}
-      scoreBucket={search.scoreBucket}
+      securityVerdict={search.securityVerdict}
       freshness={search.freshness}
       popularity={search.popularity}
       hasReadme={search.hasReadme}

@@ -6,11 +6,13 @@ LLM corroboration for ambiguous findings, and the Cisco skill-scanner for
 behavioral analysis.
 """
 
+import re
 import time
 from pathlib import Path
 
 from lib.scan.cisco_scanner import run_skill_scanner
 from lib.scan.llm_analyzer import LLMAnalyzer
+from lib.scan.markdown_utils import is_inside_code_block
 from lib.scan.models import Finding, IngestResult, LLMAnalysis, StageResult
 from lib.scan.snyk_scanner import run_snyk_scanner
 from lib.scan.stage3_patterns import (
@@ -19,6 +21,43 @@ from lib.scan.stage3_patterns import (
     detect_base64_in_comments,
     detect_hidden_content,
 )
+
+# Patterns with low confidence that should be suppressed in prose/documentation context
+# These catch legitimate English phrases like "you must change directory" or "official source"
+LOW_CONFIDENCE_TYPES = {"prompt_injection_pattern"}
+LOW_CONFIDENCE_THRESHOLD = 0.6  # Patterns with weight <= this are prone to false positives
+
+
+# Prose indicators: sentence patterns that suggest documentation, not instructions
+_PROSE_INDICATORS = re.compile(
+    r"(\.\s|[,—;]\s|does not|does NOT|can (not|only)|will (not|only)|"
+    r"should (not|only)|the\s|this\s|that\s|a\s|an\s|is\s|are\s|was\s|"
+    r"note\s|warning\s|important\s|see\s|refer\s|check\s|ensure\s|"
+    r"creating|using|running|building|installing|configuring|setting)",
+    re.IGNORECASE,
+)
+
+
+def _is_prose_context(preceding_text: str, full_line: str) -> bool:
+    """Determine if a low-confidence match occurs in prose/documentation context.
+
+    Returns True if the surrounding text looks like explanatory documentation
+    rather than a direct instruction to an AI agent.
+    """
+    # Check preceding context for prose indicators
+    if _PROSE_INDICATORS.search(preceding_text):
+        return True
+
+    # Check if the full line reads like a sentence (> 40 chars = likely prose)
+    if len(full_line) > 60:
+        return True
+
+    # Check for markdown list/table context (documentation structure)
+    stripped = full_line.lstrip()
+    if stripped.startswith(("- ", "* ", "1. ", "2. ", "| ")):
+        return True
+
+    return False
 
 
 def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:
@@ -43,6 +82,19 @@ def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:
                 if line_end == -1:
                     line_end = len(content)
                 full_line = content[line_start:line_end].strip()
+
+                # Skip matches inside code blocks (triple-backtick sections)
+                if is_inside_code_block(content, match.start()):
+                    continue
+
+                # Suppress low-confidence matches in prose context
+                # (e.g. "you must" in documentation, "official source" in prose)
+                if weight <= LOW_CONFIDENCE_THRESHOLD:
+                    # Check if the match is part of a longer sentence (prose context)
+                    # rather than a standalone instruction
+                    preceding = content[max(0, match.start() - 40) : match.start()]
+                    if _is_prose_context(preceding, full_line):
+                        continue
 
                 findings.append(
                     Finding(

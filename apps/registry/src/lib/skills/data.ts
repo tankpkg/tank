@@ -19,7 +19,7 @@ import { visibilityClause } from '~/lib/db/visibility';
 export type {
   FreshnessBucket,
   PopularityBucket,
-  ScoreBucket,
+  SecurityVerdict,
   SkillsSearchParams,
   SortOption,
   VisibilityFilter
@@ -27,7 +27,7 @@ export type {
 export {
   freshnessBucketSchema,
   popularityBucketSchema,
-  scoreBucketSchema,
+  securityVerdictSchema,
   skillsSearchSchema,
   sortOptionSchema,
   visibilityFilterSchema
@@ -36,7 +36,7 @@ export {
 import type {
   FreshnessBucket,
   PopularityBucket,
-  ScoreBucket,
+  SecurityVerdict,
   SkillsSearchParams,
   SortOption,
   VisibilityFilter
@@ -131,7 +131,7 @@ export interface SkillSearchResult {
   description: string | null;
   visibility: 'public' | 'private';
   latestVersion: string | null;
-  auditScore: number | null;
+  scanVerdict: string | null;
   publisher: string;
   downloads: number;
   stars: number;
@@ -375,16 +375,18 @@ function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
 }
 
 /**
- * Build score bucket WHERE fragment.
+ * Build security verdict WHERE fragment.
  */
-function buildScoreBucketClause(scoreBucket: ScoreBucket) {
-  switch (scoreBucket) {
-    case 'high':
-      return sql`AND coalesce(sv.audit_score, 0) >= 7`;
-    case 'medium':
-      return sql`AND coalesce(sv.audit_score, 0) >= 4 AND coalesce(sv.audit_score, 0) < 7`;
-    case 'low':
-      return sql`AND sv.audit_score IS NOT NULL AND sv.audit_score < 4`;
+function buildSecurityVerdictClause(verdict: SecurityVerdict) {
+  switch (verdict) {
+    case 'pass':
+      return sql`AND sr.verdict = 'pass'`;
+    case 'pass_with_notes':
+      return sql`AND sr.verdict = 'pass_with_notes'`;
+    case 'flagged':
+      return sql`AND sr.verdict = 'flagged'`;
+    case 'fail':
+      return sql`AND sr.verdict = 'fail'`;
     default:
       return sql``;
   }
@@ -462,14 +464,14 @@ export async function searchSkills(
       limit: limit ?? 20,
       sort: 'updated',
       visibility: 'all',
-      scoreBucket: 'all',
+      securityVerdict: 'all',
       requesterUserId
     };
   } else {
     params = paramsOrQ;
   }
 
-  const { q, sort, visibility, scoreBucket, freshness, popularity, hasReadme } = params;
+  const { q, sort, visibility, securityVerdict, freshness, popularity, hasReadme } = params;
   const resolvedPage = params.page;
   const resolvedLimit = params.limit;
 
@@ -506,7 +508,7 @@ export async function searchSkills(
   const starsSql = starsTableAvailable ? sql`coalesce(st.stars_count, 0)` : sql`0`;
 
   const primarySort = buildPrimarySort(sort, starsTableAvailable);
-  const scoreBucketClause = buildScoreBucketClause(scoreBucket);
+  const securityVerdictClause = buildSecurityVerdictClause(securityVerdict);
   const visibilityFilterClause = buildVisibilityFilterClause(visibility);
   const freshnessClause = buildFreshnessClause(freshness);
   const popularityClause = buildPopularityClause(popularity);
@@ -520,7 +522,7 @@ export async function searchSkills(
         s.visibility,
         s.updated_at AS "updatedAt",
         sv.version AS "latestVersion",
-        sv.audit_score AS "auditScore",
+        sr.verdict AS "scanVerdict",
         coalesce(u.name, '') AS publisher,
         ${downloadsSql} AS downloads,
         ${starsSql} AS stars,
@@ -531,11 +533,15 @@ export async function searchSkills(
         AND sv.created_at = (
           SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
         )
+      LEFT JOIN scan_results sr ON sr.version_id = sv.id
+        AND sr.created_at = (
+          SELECT MAX(sr2.created_at) FROM scan_results sr2 WHERE sr2.version_id = sv.id
+        )
       ${downloadJoin}
       ${starsJoin}
       WHERE ${visClause}
       ${visibilityFilterClause}
-      ${scoreBucketClause}
+      ${securityVerdictClause}
       ${freshnessClause}
       ${popularityClause}
       ${readmeClause}
@@ -556,7 +562,7 @@ export async function searchSkills(
       s.visibility,
       s.updated_at AS "updatedAt",
       sv.version AS "latestVersion",
-      sv.audit_score AS "auditScore",
+      sr.verdict AS "scanVerdict",
       coalesce(u.name, '') AS publisher,
       ${downloadsSql} AS downloads,
       ${starsSql} AS stars,
@@ -566,6 +572,10 @@ export async function searchSkills(
     LEFT JOIN skill_versions sv ON sv.skill_id = s.id
       AND sv.created_at = (
         SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
+      )
+    LEFT JOIN scan_results sr ON sr.version_id = sv.id
+      AND sr.created_at = (
+        SELECT MAX(sr2.created_at) FROM scan_results sr2 WHERE sr2.version_id = sv.id
       )
     ${downloadJoin}
     ${starsJoin}
@@ -578,7 +588,7 @@ export async function searchSkills(
     )
     AND ${visClause}
     ${visibilityFilterClause}
-    ${scoreBucketClause}
+    ${securityVerdictClause}
     ${freshnessClause}
     ${popularityClause}
     ${readmeClause}
@@ -609,7 +619,7 @@ function mapSearchResults(rows: Record<string, unknown>[], page: number, limit: 
       description: row.description as string | null,
       visibility: (row.visibility as 'public' | 'private') ?? 'public',
       latestVersion: (row.latestVersion as string) ?? null,
-      auditScore: row.auditScore != null ? Number(row.auditScore) : null,
+      scanVerdict: (row.scanVerdict as string) ?? null,
       publisher: (row.publisher as string) ?? '',
       downloads: Number(row.downloads) || 0,
       stars: Number(row.stars) || 0,
