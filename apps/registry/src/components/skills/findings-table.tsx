@@ -81,7 +81,9 @@ export function FindingsTable({ findings }: FindingsTableProps) {
               <TableCell className="min-w-0">
                 <ExpandableDescription description={f.description} evidence={f.evidence ?? null} />
               </TableCell>
-              <TableCell className="min-w-0 font-mono text-xs text-muted-foreground truncate max-w-[160px]" title={f.location ?? undefined}>
+              <TableCell
+                className="min-w-0 font-mono text-xs text-muted-foreground truncate max-w-[160px]"
+                title={f.location ?? undefined}>
                 {f.location ?? '\u2014'}
               </TableCell>
               <TableCell className="min-w-0 text-xs text-muted-foreground">{f.tool ?? f.stage}</TableCell>

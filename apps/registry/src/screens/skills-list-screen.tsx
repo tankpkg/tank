@@ -150,9 +150,7 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
                   {verdict.label}
                 </span>
               )}
-              {isLoggedIn && skill.visibility === 'private' && (
-                <Lock className="size-3.5 text-muted-foreground" />
-              )}
+              {isLoggedIn && skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground" />}
             </div>
           </div>
           {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
