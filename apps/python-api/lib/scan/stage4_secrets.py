@@ -77,6 +77,7 @@ def _is_placeholder_value(matched_text: str) -> bool:
     # Check if the match contains obvious placeholder words
     return any(p.search(lower) for p in PLACEHOLDER_PATTERNS)
 
+
 # Files to skip (binary, images, etc.)
 SKIP_EXTENSIONS = {
     ".png",
