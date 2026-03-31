@@ -4,8 +4,6 @@ import type { PipelineStage } from '~/components/skills/scan-pipeline';
 import { ScanPipeline } from '~/components/skills/scan-pipeline';
 import type { ScanningTool } from '~/components/skills/scanning-tools-strip';
 import { ScanningToolsStrip } from '~/components/skills/scanning-tools-strip';
-import type { ScoreCriterion } from '~/components/skills/score-breakdown';
-import { ScoreBreakdown } from '~/components/skills/score-breakdown';
 import { SecurityOverview } from '~/components/skills/security-overview';
 import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
 
@@ -122,63 +120,11 @@ function buildPipelineStages(scanDetails: ScanDetails): PipelineStage[] {
   ];
 }
 
-function buildScoreCriteria(data: SkillDetailResult, scanDetails: ScanDetails): ScoreCriterion[] {
-  return [
-    {
-      label: 'SKILL.md present',
-      passed: !!data.latestVersion?.readme,
-      points: data.latestVersion?.readme ? 1 : 0,
-      maxPoints: 1
-    },
-    {
-      label: 'Description provided',
-      passed: !!data.description,
-      points: data.description ? 1 : 0,
-      maxPoints: 1
-    },
-    {
-      label: 'Permissions declared',
-      passed: !!data.latestVersion?.permissions && Object.keys(data.latestVersion.permissions).length > 0,
-      points: data.latestVersion?.permissions && Object.keys(data.latestVersion.permissions).length > 0 ? 1 : 0,
-      maxPoints: 1
-    },
-    {
-      label: 'No critical/high security issues',
-      passed:
-        (scanDetails.findings?.filter((f) => f.severity === 'critical' || f.severity === 'high').length ?? 0) === 0,
-      points:
-        (scanDetails.findings?.filter((f) => f.severity === 'critical' || f.severity === 'high').length ?? 0) === 0
-          ? 2
-          : 0,
-      maxPoints: 2
-    },
-    { label: 'Permissions match detected usage', passed: true, points: 2, maxPoints: 2 },
-    {
-      label: 'File count under 100',
-      passed: (data.latestVersion?.fileCount ?? 0) < 100,
-      points: (data.latestVersion?.fileCount ?? 0) < 100 ? 1 : 0,
-      maxPoints: 1
-    },
-    {
-      label: 'README documentation',
-      passed: !!data.latestVersion?.readme,
-      points: data.latestVersion?.readme ? 1 : 0,
-      maxPoints: 1
-    },
-    {
-      label: 'Package under 5MB',
-      passed: (data.latestVersion?.tarballSize ?? 0) < 5 * 1024 * 1024,
-      points: (data.latestVersion?.tarballSize ?? 0) < 5 * 1024 * 1024 ? 1 : 0,
-      maxPoints: 1
-    }
-  ];
-}
-
 export function buildSecurityTab({ data, scanDetails }: { data: SkillDetailResult; scanDetails: ScanDetails }) {
   return (
     <div className="space-y-6" data-testid="security-root">
       <SecurityOverview
-        score={data.latestVersion?.auditScore ?? null}
+        score={null}
         verdict={scanDetails.verdict ?? null}
         durationMs={scanDetails.durationMs ?? null}
         scannedAt={scanDetails.scannedAt ? String(scanDetails.scannedAt) : null}
@@ -204,14 +150,7 @@ export function buildSecurityTab({ data, scanDetails }: { data: SkillDetailResul
         <FindingsTable findings={scanDetails.findings ?? []} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ScanPipeline stages={buildPipelineStages(scanDetails)} />
-        <ScoreBreakdown
-          criteria={buildScoreCriteria(data, scanDetails)}
-          totalScore={data.latestVersion?.auditScore ?? 0}
-          llmAnalysis={scanDetails.llm_analysis}
-        />
-      </div>
+      <ScanPipeline stages={buildPipelineStages(scanDetails)} />
     </div>
   );
 }

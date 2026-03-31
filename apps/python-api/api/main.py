@@ -10,8 +10,12 @@ Endpoints:
 - GET /health/llm - LLM provider health status
 """
 
-from fastapi import FastAPI
+import hmac
+import os
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from api.analyze.index import app as analyze_index_app
 from api.analyze.permissions import app as permissions_app
@@ -20,7 +24,7 @@ from api.analyze.rescan import app as rescan_app
 # Import individual API apps
 from api.analyze.scan import app as scan_app
 from api.analyze.security import app as security_app
-from lib.scan.llm_analyzer import check_llm_health
+from lib.scan.llm_health import check_llm_health
 
 # Create main app
 app = FastAPI(
@@ -53,6 +57,44 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Scanner service authentication middleware
+# When SCANNER_AUTH_ENABLED=true, requires X-Scanner-Key header matching SCANNER_SERVICE_KEY
+@app.middleware("http")
+async def scanner_auth_middleware(request: Request, call_next):
+    auth_enabled = os.environ.get("SCANNER_AUTH_ENABLED", "false").lower() == "true"
+    if not auth_enabled:
+        return await call_next(request)
+
+    # Health endpoints are always accessible
+    if request.url.path in ("/health", "/health/llm", "/api/analyze/scan/health", "/"):
+        return await call_next(request)
+
+    expected_key = os.environ.get("SCANNER_SERVICE_KEY", "")
+    provided_key = request.headers.get("X-Scanner-Key", "")
+
+    if not expected_key:
+        # Key not configured with auth enabled — refuse all requests
+        import logging
+
+        logging.getLogger(__name__).error(
+            "SCANNER_AUTH_ENABLED=true but SCANNER_SERVICE_KEY is empty. "
+            "All requests are rejected. Set SCANNER_SERVICE_KEY to enable authentication."
+        )
+        return JSONResponse(
+            status_code=503,
+            content={"error": "Scanner auth misconfigured: service key not set"},
+        )
+
+    if not hmac.compare_digest(provided_key, expected_key):
+        return JSONResponse(
+            status_code=403,
+            content={"error": "Invalid scanner service key"},
+        )
+
+    return await call_next(request)
+
 
 # Mount sub-apps
 app.include_router(analyze_index_app.router, prefix="/api/analyze", tags=["analyze"])

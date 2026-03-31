@@ -4,11 +4,18 @@ import { Hono } from 'hono';
 import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
 
-function scoreColor(score: number): string {
-  if (score >= 8) return '#4c1';
-  if (score >= 6) return '#dfb317';
-  if (score >= 4) return '#fe7d37';
-  return '#e05d44';
+function verdictColor(verdict: string | null): string {
+  if (!verdict) return '#999';
+  if (verdict === 'pass') return '#4c1';
+  if (verdict === 'pass_with_notes') return '#dfb317';
+  if (verdict === 'flagged') return '#fe7d37';
+  if (verdict === 'fail') return '#e05d44';
+  return '#999';
+}
+
+function verdictLabel(verdict: string | null): string {
+  if (!verdict) return 'pending';
+  return verdict.replace(/_/g, ' ').toUpperCase();
 }
 
 function renderBadge(label: string, value: string, color: string): string {
@@ -42,23 +49,28 @@ export const badgeRoutes = new Hono().get('/:name{.+}', async (c) => {
   const rawName = c.req.param('name');
   const name = decodeURIComponent(rawName);
 
-  const rows = await db.execute(sql`
-    SELECT sv.audit_score AS "auditScore"
-    FROM ${skills} s
-    INNER JOIN skill_versions sv ON sv.skill_id = s.id
-    WHERE s.name = ${name}
-    ORDER BY sv.created_at DESC
-    LIMIT 1
-  `);
-
   c.header('Cache-Control', 'public, max-age=300');
   c.header('Content-Type', 'image/svg+xml');
 
-  if (rows.length === 0 || (rows[0] as Record<string, unknown>).auditScore == null) {
-    return c.body(renderBadge('tank', 'not found', '#999'));
-  }
+  try {
+    const rows = await db.execute(sql`
+      SELECT sr.verdict
+      FROM ${skills} s
+      INNER JOIN skill_versions sv ON sv.skill_id = s.id
+      LEFT JOIN scan_results sr ON sr.version_id = sv.id
+      WHERE s.name = ${name}
+      ORDER BY sv.created_at DESC, sr.created_at DESC
+      LIMIT 1
+    `);
 
-  const score = Number((rows[0] as Record<string, unknown>).auditScore);
-  const color = scoreColor(score);
-  return c.body(renderBadge('tank', `${score.toFixed(1)}/10`, color));
+    if (rows.length === 0) {
+      return c.body(renderBadge('tank', 'not found', '#999'));
+    }
+
+    const verdict = (rows[0] as Record<string, unknown>).verdict as string | null;
+    const color = verdictColor(verdict);
+    return c.body(renderBadge('tank', verdictLabel(verdict), color));
+  } catch {
+    return c.body(renderBadge('tank', 'error', '#999'));
+  }
 });

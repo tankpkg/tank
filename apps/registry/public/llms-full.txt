@@ -1081,10 +1081,10 @@ Ensure the action is referenced as `tankpkg/tank@v1` (not `tank/tank`). See the 
 
 Source: https://tankpkg.dev/docs/cli
 
-> Complete reference for all 19 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+> Complete reference for all 20 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 
 
-The Tank CLI provides 19 commands for publishing, installing, and managing AI agent skills with security-first design.
+The Tank CLI provides 20 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
@@ -1306,6 +1306,27 @@ tank audit [name]
 | `name` | Skill name to audit (omit to audit all) | No |
 
 
+## tank run
+
+Launch an agent with credential protection (vault proxy)
+
+```bash
+tank run <agent>
+```
+
+### Arguments
+
+| Name | Description | Required |
+|------|-------------|----------|
+| `agent` | Agent ID to launch | Yes |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--verbose` | Print verbose vault proxy details |
+
+
 ## tank scan
 
 Scan a local skill for security issues without publishing
@@ -1398,6 +1419,7 @@ tank upgrade [version]
 | `tank search` | `s` | Search for skills in the Tank registry |
 | `tank info` | `show` | Show detailed information about a skill |
 | `tank audit` | — | Display security audit results for installed skills |
+| `tank run` | — | Launch an agent with credential protection (vault proxy) |
 | `tank scan` | — | Scan a local skill for security issues without publishing |
 | `tank link` | `ln` | Link current skill directory to AI agent directories (for development) |
 | `tank unlink` | — | Remove skill symlinks from AI agent directories |
@@ -1482,10 +1504,16 @@ Before installing Tank, confirm you have:
 
 ## Step 1 — Install the CLI
 
-Install with npm:
+Install the stable version with npm:
 
 ```bash
 npm install -g @tankpkg/cli
+```
+
+For nightly builds (latest features, may be unstable):
+
+```bash
+npm install -g @tankpkg/cli@nightly
 ```
 
 ### Homebrew (macOS)
@@ -1504,10 +1532,28 @@ You should see a version string like `tank/0.x.y`. If you get a "command not fou
 
 ## Step 2 — Authenticate
 
-Tank uses GitHub OAuth for authentication. Your token is stored locally in `~/.tank/config.json` — it never leaves your machine unless you're making authenticated API calls.
+Tank uses GitHub OAuth for authentication. By default, the CLI connects to the public registry at `https://www.tankpkg.dev`. Your token is stored locally in `~/.tank/config.json` — it never leaves your machine unless you're making authenticated API calls.
 
 ```bash
 tank login
+```
+
+### Connecting to a Different Registry
+
+By default, the CLI connects to `www.tankpkg.dev`. To use a self-hosted or nightly registry:
+
+```bash
+# Self-hosted
+tank login --registry https://tank.yourcompany.com
+
+# Nightly
+TANK_REGISTRY_URL=https://nightly.tankpkg.dev tank search hello
+```
+
+If you are using a self-hosted instance, specify your registry URL:
+
+```bash
+tank login --registry https://tank.yourcompany.com
 ```
 
 This opens your browser for the GitHub OAuth flow. After authorizing, the CLI polls for the token exchange and confirms authentication.
@@ -3102,6 +3148,24 @@ Tank is a **security-first package manager for AI agent skills** — the `npm` f
 
 Agent skills execute with the agent's full authority — reading files, making API calls, running shell commands. Tank treats that seriously.
 
+## Deployment Options
+
+| Option              | URL                                                | Best For                                    |
+| ------------------- | -------------------------------------------------- | ------------------------------------------- |
+| **Public Registry** | [www.tankpkg.dev](https://www.tankpkg.dev)         | Individual developers, open-source projects |
+| **Nightly**         | [nightly.tankpkg.dev](https://nightly.tankpkg.dev) | Early access to upcoming features           |
+| **Self-Hosted**     | Your own infrastructure                            | Enterprise, air-gapped, compliance          |
+
+### CLI Channels
+
+```bash
+# Stable (default)
+npm install -g @tankpkg/cli
+
+# Nightly (latest from main)
+npm install -g @tankpkg/cli@nightly
+```
+
 ## Product Guarantees
 
 Every skill installed through Tank is subject to:
@@ -4138,6 +4202,136 @@ Note: changing visibility for an already-published version requires an admin act
 
 ---
 
+# Releases & Nightly Builds
+
+Source: https://tankpkg.dev/docs/releases
+
+> Tank's release channels — stable releases, nightly builds, Docker images, npm packages, and environment wiring.
+
+
+# Releases & Nightly Builds
+
+Tank uses two release channels: **stable** for production use and **nightly** for early access to upcoming features.
+
+## Release Channels
+
+| Channel     | Web Registry                                       | Scanner                                                            | CLI                             | Docker Images                      |
+| ----------- | -------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------- | ---------------------------------- |
+| **Stable**  | [www.tankpkg.dev](https://www.tankpkg.dev)         | [scanner.tankpkg.dev](https://scanner.tankpkg.dev)                 | `npm i -g @tankpkg/cli`         | `ghcr.io/tankpkg/tank-web:latest`  |
+| **Nightly** | [nightly.tankpkg.dev](https://nightly.tankpkg.dev) | [nightly-scanner.tankpkg.dev](https://nightly-scanner.tankpkg.dev) | `npm i -g @tankpkg/cli@nightly` | `ghcr.io/tankpkg/tank-web:nightly` |
+
+## Stable Releases
+
+Stable releases are triggered by pushing a `v*` tag (e.g., `v0.9.0`). This publishes:
+
+- **npm**: `@tankpkg/cli` and `@tankpkg/mcp-server` with the `latest` tag
+- **Docker**: `ghcr.io/tankpkg/tank-web:latest` and `tank-scanner:latest`, plus the version tag
+- **GitHub Release**: Binaries for Linux (x64, arm64), macOS (x64, arm64), Windows (x64), plus `.deb` packages
+- **Homebrew**: Formula updated automatically
+- **Vercel**: www.tankpkg.dev and scanner.tankpkg.dev deployed from `stable` branch
+
+## Nightly Builds
+
+Nightly builds are published automatically from the `main` branch:
+
+- **Schedule**: Daily at 4:00 AM UTC (Docker images) and 4:30 AM UTC (CLI/npm)
+- **Trigger**: Also on every push to `main` that changes relevant paths
+- **Version format**: `0.0.0-nightly.20260320.abc1234` (date + short SHA)
+
+### What's Different in Nightly
+
+| Aspect               | Stable              | Nightly                      |
+| -------------------- | ------------------- | ---------------------------- |
+| CLI default registry | www.tankpkg.dev     | nightly.tankpkg.dev          |
+| Docker tag           | `:latest`           | `:nightly`                   |
+| Scanner URL          | scanner.tankpkg.dev | nightly-scanner.tankpkg.dev  |
+| Stability            | Production-ready    | May contain breaking changes |
+
+### Using Nightly
+
+```bash
+# CLI
+npm install -g @tankpkg/cli@nightly
+tank search hello  # searches nightly.tankpkg.dev
+
+# Docker
+docker pull ghcr.io/tankpkg/tank-web:nightly
+docker pull ghcr.io/tankpkg/tank-scanner:nightly
+```
+
+## Self-Hosted Releases
+
+Self-hosted deployments build from source (no registry dependency):
+
+```bash
+git clone https://github.com/tankpkg/tank.git
+cd tank
+bash scripts/onprem-install.sh
+```
+
+To update a self-hosted instance:
+
+```bash
+git pull
+docker compose -f infra/docker-compose.yml build
+docker compose -f infra/docker-compose.yml up -d
+```
+
+See [Self-Hosting Tank](/docs/self-hosting) for the full deployment guide.
+
+## Environment Variables for Service Wiring
+
+Each deployment needs to know where its services are:
+
+| Variable            | Stable                        | Nightly                               | Self-Hosted           |
+| ------------------- | ----------------------------- | ------------------------------------- | --------------------- |
+| `APP_URL`           | `https://www.tankpkg.dev`     | `https://nightly.tankpkg.dev`         | Your domain           |
+| `PYTHON_API_URL`    | `https://scanner.tankpkg.dev` | `https://nightly-scanner.tankpkg.dev` | `http://scanner:8000` |
+| `TANK_REGISTRY_URL` | `https://www.tankpkg.dev`     | `https://nightly.tankpkg.dev`         | Your domain           |
+
+The `TANK_REGISTRY_URL` variable overrides the CLI's default registry:
+
+```bash
+# Point any CLI to your self-hosted instance
+export TANK_REGISTRY_URL=https://tank.yourcompany.com
+tank search hello
+```
+
+## CI/CD Integration
+
+Use specific tags for reproducible builds:
+
+```yaml
+# Pinned version (recommended for production)
+image: ghcr.io/tankpkg/tank-web:v0.9.0
+
+# Pinned commit (most reproducible)
+image: ghcr.io/tankpkg/tank-web:sha-abc1234
+
+# Rolling nightly (for test pipelines)
+image: ghcr.io/tankpkg/tank-web:nightly
+```
+
+See [CI/CD Integration](/docs/cicd) for full pipeline examples.
+
+## Verifying Your Installation
+
+```bash
+# CLI version
+tank --version
+
+# Registry health
+curl https://www.tankpkg.dev/api/health
+curl https://nightly.tankpkg.dev/api/health
+
+# Scanner health
+curl https://scanner.tankpkg.dev/health
+curl https://nightly-scanner.tankpkg.dev/health
+```
+
+
+---
+
 # Searching for Skills
 
 Source: https://tankpkg.dev/docs/search
@@ -4945,214 +5139,109 @@ POST /api/admin/rescan-skills
 
 Source: https://tankpkg.dev/docs/self-host-quickstart
 
-> Deploy your own Tank registry and security scanner on-premise with Docker Compose or Kubernetes Helm charts — complete with PostgreSQL, MinIO, and AI-powered security scanning.
+> Get Tank running on your own infrastructure with Docker Compose — automated setup wizard, no manual configuration needed.
 
 
 # Self-Host in 15 Minutes
 
-Deploy Tank on your own infrastructure for complete control over your AI skill registry and security scanning.
-
-## Why Self-Host?
-
-- **Data sovereignty** — Skills and metadata never leave your infrastructure
-- **Air-gapped support** — Deploy in environments without internet access
-- **Custom policies** — Implement organization-specific security rules
-- **Compliance** — Meet regulatory requirements (SOC2, HIPAA, etc.)
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Your Infrastructure                       │
-│                                                              │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │  TanStack   │───▶│  PostgreSQL │    │    S3/MinIO │     │
-│  │   Web App   │    │   Database  │    │   Storage   │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-│         │                                                   │
-│         ▼                                                   │
-│  ┌─────────────┐                                           │
-│  │   FastAPI   │                                           │
-│  │   Security  │                                           │
-│  │   Scanner   │                                           │
-│  └─────────────┘                                           │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-```
+Get a fully functional Tank registry running on your infrastructure with a single `docker compose up`.
 
 ## Prerequisites
 
-- Docker and Docker Compose
-- 4GB RAM minimum (8GB recommended)
-- PostgreSQL 17+ (or use provided Docker config)
-- S3-compatible storage (or MinIO)
+- Docker Engine 24+ and Docker Compose v2
+- 4 GB RAM, 20 GB disk
+- A domain pointing to your server (or use localhost for testing)
 
-## Step 1: Clone and Configure
+## Quick Start
+
+### 1. Create a directory and download the compose file
 
 ```bash
-git clone https://github.com/tankpkg/tank.git
-cd tank
-cp .env.example .env
+mkdir tank && cd tank
+curl -fsSL https://raw.githubusercontent.com/tankpkg/tank/main/infra/docker-compose.production.yml -o docker-compose.yml
 ```
 
-Edit `.env` with your values:
+### 2. Create your environment file
 
 ```bash
-# Database
-DATABASE_URL=postgresql://tank:password@localhost:5432/tank
-
-# Storage (choose one)
-STORAGE_BACKEND=s3
-S3_ENDPOINT=http://localhost:9000
-S3_ACCESS_KEY=minioadmin
-S3_SECRET_KEY=minioadmin
-S3_BUCKET=tank-skills
-
-# Auth
-APP_URL=https://tank.yourcompany.com
+cat > .env << 'EOF'
+# Required — generate a unique secret
 BETTER_AUTH_SECRET=$(openssl rand -base64 32)
-GITHUB_CLIENT_ID=your-github-oauth-id
-GITHUB_CLIENT_SECRET=your-github-oauth-secret
 
-# Admin bootstrap
-FIRST_ADMIN_EMAIL=admin@yourcompany.com
+# Database (uses bundled PostgreSQL)
+DATABASE_URL=postgresql://tank:tank@postgres:5432/tank
 
-# Security scanner
+# Your registry URL (change for production)
+APP_URL=http://localhost:3000
+
+# Scanner
 PYTHON_API_URL=http://scanner:8000
+
+# Headless admin bootstrap (optional — or use the web wizard)
+# FIRST_ADMIN_EMAIL=admin@yourcompany.com
+# FIRST_ADMIN_PASSWORD=changeme123
+
+# Override default registry URL (for CLI pointing to this instance)
+# TANK_REGISTRY_URL=http://localhost:3000
+EOF
 ```
 
-## Step 2: Start Services
+> **Tip**: For automated deployments without the web wizard, uncomment `FIRST_ADMIN_EMAIL` and `FIRST_ADMIN_PASSWORD`.
 
-Using Docker Compose:
+### 3. Start everything
 
 ```bash
 docker compose up -d
 ```
 
-This starts:
+> **Image tags**: The compose file builds from source by default (no internet needed). For pre-built images, edit `docker-compose.production.yml` and use `:latest` (stable) or `:nightly` (bleeding edge).
 
-- TanStack Start web application (port 3000)
-- PostgreSQL database (port 5432)
-- MinIO S3-compatible storage (port 9000)
-- Python security scanner (port 8000)
+This starts PostgreSQL, MinIO (storage), the security scanner, and the Tank web app. Database tables are created automatically on first boot.
 
-**Optional — Local LLM analysis:**
+> **Note on Images**: By default, `docker compose up` uses the `:nightly` image tags to ensure you have the latest features. For production environments, we strongly recommend pinning to a specific version tag (e.g., `:v0.8.1`) or the `:latest` stable tag.
 
-```bash
-# Enable Ollama for local AI-powered security analysis
-docker compose --profile llm-local up -d
-```
+### 4. Open the Setup Wizard
 
-## Step 3: Run Database Migrations
+Visit `http://localhost:3000/setup` in your browser. The wizard walks you through:
 
-```bash
-docker compose exec web bun --filter=@tankpkg/web drizzle-kit push
-```
+1. **Database** — connection is pre-configured from your `.env`
+2. **URL** — confirm your registry's public URL
+3. **Storage** — choose MinIO (default), S3, or local filesystem
+4. **Admin Account** — create your first admin user
+5. **Authentication** — optionally configure GitHub OAuth or OIDC SSO
+6. **Scanner** — configure LLM for enhanced security analysis (optional)
+7. **Complete** — save configuration and start using Tank
 
-## Step 4: Create Admin User
+### 5. Verify
 
 ```bash
-docker compose exec web bun --filter=@tankpkg/web admin:bootstrap
-```
-
-Promotes `FIRST_ADMIN_EMAIL` to admin role. The user must sign in with GitHub OAuth first to create their account, then you run bootstrap.
-
-## Step 5: Configure OIDC SSO (Optional)
-
-For enterprise single sign-on, add to `.env`:
-
-```bash
-OIDC_ISSUER=https://sso.yourcompany.com
-OIDC_CLIENT_ID=tank-client
-OIDC_CLIENT_SECRET=your-oidc-secret
-```
-
-Then restart the web service:
-
-```bash
-docker compose restart web
-```
-
-## Step 6: Verify Installation
-
-```bash
-# Check all services are running
-docker compose ps
-
-# Test the API
+# Health check
 curl http://localhost:3000/api/health
-curl http://localhost:3000/api/v1/skills
+# → {"status":"ok"}
 
-# Test security scanner
-curl http://localhost:8000/health
+# Point your CLI to your instance
+tank login --registry http://localhost:3000
 ```
 
-## Kubernetes (Helm) Quick Start
+## What's Next
 
-For Kubernetes deployments, use the Helm chart at `helm/tank/`:
+- **Add GitHub OAuth**: Create a [GitHub OAuth App](https://github.com/settings/developers) with callback URL `https://your-domain/api/auth/callback/github`
+- **Add OIDC SSO**: Configure your identity provider in the setup wizard or via env vars
+- **Production hardening**: See the full [Self-Hosting Guide](/docs/self-hosting) for TLS, backups, monitoring, and Kubernetes deployment
+- **Local LLM**: Add `--profile llm-local` to use Ollama for security analysis without external API calls
 
-```bash
-# Update chart dependencies (PostgreSQL, MinIO)
-helm dependency update helm/tank/
+## Headless Mode (CI/CD)
 
-# Install into the tank namespace
-helm dependency update helm/tank/ && helm install tank helm/tank/ \
-  --namespace tank \
-  --create-namespace \
-  --set secrets.betterAuthSecret="$(openssl rand -base64 32)" \
-  --set dbMigration.force=true
-```
-
-After install, configure your ingress and DNS. See the [full self-hosting guide](/docs/self-hosting) for Helm values reference and production configuration.
-
-## Production Checklist
-
-- [ ] Change default MinIO credentials (`minioadmin`/`minioadmin`)
-- [ ] Set strong `BETTER_AUTH_SECRET` (min 32 characters, `openssl rand -base64 32`)
-- [ ] Configure TLS/SSL certificates
-- [ ] Set up database backups (daily minimum)
-- [ ] Configure log aggregation (Loki + Grafana included)
-- [ ] Review firewall rules — only expose port 3000 publicly
-- [ ] Set token expiry policies for API keys
-- [ ] Configure `FIRST_ADMIN_EMAIL` and bootstrap before going live
-
-## Monitoring
-
-Access the included observability stack:
-
-- **Grafana**: `http://localhost:3001` (admin/admin — change on first login)
-- **Loki**: Log aggregation (pre-configured)
-- **Prometheus**: Metrics collection
-
-Default dashboards:
-
-- Tank API performance
-- Security scan latency
-- Skill publish/download rates
-
-## Upgrading
+For fully automated deployments without the wizard:
 
 ```bash
-git pull origin main
-docker compose pull
+FIRST_ADMIN_EMAIL=admin@co.com \
+FIRST_ADMIN_PASSWORD=securepassword \
+AUTO_MIGRATE=true \
 docker compose up -d
 ```
 
-Migrations run automatically on startup.
-
-**For Helm upgrades:**
-
-```bash
-helm upgrade tank helm/tank/ \
-  --namespace tank \
-  --reuse-values
-```
-
-## Support
-
-- **Documentation**: [Full self-hosting guide](/docs/self-hosting)
-- **Community**: [GitHub Discussions](https://github.com/tankpkg/tank/discussions)
-- **Enterprise support**: enterprise@tankpkg.dev
+This creates the admin user and skips the setup wizard entirely.
 
 
 ---
@@ -5198,6 +5287,31 @@ A self-hosted Tank deployment runs four core services:
 | **Database**         | PostgreSQL 17+        | Skills, versions, users, audit logs |
 | **Object storage**   | MinIO (S3-compatible) | Skill tarballs                      |
 
+## Docker Image Tags
+
+| Tag           | Source               | Stability | Use Case                   |
+| ------------- | -------------------- | --------- | -------------------------- |
+| `latest`      | Latest `v*` tag      | Stable    | Production self-hosted     |
+| `v0.8.1`      | Specific version     | Pinned    | Version-locked deployments |
+| `nightly`     | Latest `main` branch | Unstable  | Testing upcoming features  |
+| `sha-abc1234` | Specific commit      | Pinned    | Debugging specific builds  |
+
+Images are published to `ghcr.io/tankpkg/`:
+
+- `ghcr.io/tankpkg/tank-web` — Registry web app + API
+- `ghcr.io/tankpkg/tank-scanner` — Security scanner (FastAPI)
+
+## Deployment Modes
+
+Tank uses `TANK_MODE` to separate cloud and self-hosted behavior:
+
+| Mode            | Value             | Description                                                            |
+| --------------- | ----------------- | ---------------------------------------------------------------------- |
+| **Cloud**       | `cloud` (default) | Used for tankpkg.dev. Setup wizard disabled, all config from env vars. |
+| **Self-Hosted** | `selfhosted`      | Enables setup wizard, automatic DB migrations, filesystem storage.     |
+
+Docker Compose sets `TANK_MODE=selfhosted` automatically. If you deploy to Vercel or another PaaS, leave it unset (defaults to `cloud`).
+
 ## Prerequisites
 
 - **Docker** and **Docker Compose** (for Docker deployment)
@@ -5208,15 +5322,18 @@ A self-hosted Tank deployment runs four core services:
 
 ## Docker Compose Deployment
 
-### 1) Clone and Configure
+### 1) Download and Configure
+
+> **Quick install**: Run `bash scripts/onprem-install.sh` for an interactive guided setup that handles everything below automatically.
+
+You don't need to clone the repository. Download the production compose file:
 
 ```bash
-git clone https://github.com/tankpkg/tank.git
-cd tank
-cp .env.example .env
+mkdir tank && cd tank
+curl -fsSL https://raw.githubusercontent.com/tankpkg/tank/main/infra/docker-compose.production.yml -o docker-compose.yml
 ```
 
-Edit `.env` with your values:
+Create your `.env` file:
 
 ```bash
 # Database
@@ -5276,8 +5393,7 @@ services:
       - "9001:9001"
 
   scanner:
-    build:
-      context: ./apps/python-api
+    image: ghcr.io/tankpkg/tank-scanner:latest
     environment:
       - DATABASE_URL=${DATABASE_URL}
     ports:
@@ -5286,10 +5402,9 @@ services:
       - postgres
 
   web:
-    build:
-      context: .
-      dockerfile: apps/registry/Dockerfile
+    image: ghcr.io/tankpkg/tank-web:latest
     environment:
+      - TANK_MODE=selfhosted
       - DATABASE_URL=${DATABASE_URL}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - PYTHON_API_URL=${PYTHON_API_URL}
@@ -5340,11 +5455,43 @@ docker compose run --rm web bun --filter=@tankpkg/web drizzle-kit push
 
 ### 5) Bootstrap the Admin User
 
+**Option A: Setup Wizard (recommended for first-time setup)**
+
+Visit your registry URL — you'll be redirected to `/setup` automatically. The wizard walks through database verification, URL configuration, storage, admin account creation, auth providers, and scanner setup.
+
+> The wizard is only available when `TANK_MODE=selfhosted`. After initial setup completes, the wizard is permanently locked (returns 403).
+
+**Option B: Headless Bootstrap (for automated deployments)**
+
+Set environment variables before starting:
+
 ```bash
-docker compose exec web bun --filter=@tankpkg/web admin:bootstrap
+FIRST_ADMIN_EMAIL=admin@yourcompany.com \
+FIRST_ADMIN_PASSWORD=securepassword123 \
+docker compose -f infra/docker-compose.yml up -d
 ```
 
-This promotes `FIRST_ADMIN_EMAIL` to the admin role. The user must sign in with GitHub OAuth first (creating their account), then run bootstrap.
+Or bootstrap after startup:
+
+```bash
+docker compose exec registry bun run scripts/bootstrap-headless.ts
+```
+
+The bootstrap script:
+
+- Creates the admin user with `emailVerified=true` and `role=admin`
+- Idempotent — promotes existing user to admin if they already exist
+- Uses bcrypt password hashing (compatible with Better Auth credential login)
+
+### Setup Wizard (Recommended)
+
+Instead of manually configuring environment variables, the setup wizard provides a guided 7-step process:
+
+1. Visit `http://localhost:3000/setup`
+2. Configure database, URL, storage, admin account, auth providers, and scanner
+3. All settings are encrypted and stored in the database
+
+The wizard is only available when `TANK_MODE=selfhosted` and no setup has been completed yet. After initial setup, the wizard is permanently locked (returns 403).
 
 ### 6) Health Verification
 
@@ -5415,7 +5562,7 @@ web:
     repository: ghcr.io/tankpkg/tank-web
     tag: latest
   env:
-    NEXT_PUBLIC_APP_URL: "https://tank.yourcompany.com"
+    APP_URL: "https://tank.yourcompany.com"
     GITHUB_CLIENT_ID: ""
     GITHUB_CLIENT_SECRET: ""
     FIRST_ADMIN_EMAIL: ""
@@ -5511,16 +5658,28 @@ helm upgrade tank infra/helm/tank/ \
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret        |
 | `PYTHON_API_URL`       | Security scanner base URL             |
 
+### Self-Hosted Mode
+
+| Variable               | Description                       | Default                   |
+| ---------------------- | --------------------------------- | ------------------------- |
+| `TANK_MODE`            | `cloud` or `selfhosted`           | `cloud`                   |
+| `AUTO_MIGRATE`         | Run DB migrations on Docker start | `false`                   |
+| `FIRST_ADMIN_EMAIL`    | Bootstrap admin on first boot     | —                         |
+| `FIRST_ADMIN_PASSWORD` | Admin password (min 8 chars)      | —                         |
+| `TANK_REGISTRY_URL`    | Override default registry URL     | `https://www.tankpkg.dev` |
+| `SESSION_STORE`        | `memory` or `redis`               | `memory`                  |
+
 ### Storage
 
-| Variable                | Description              | Default     |
-| ----------------------- | ------------------------ | ----------- |
-| `STORAGE_BACKEND`       | `supabase` or `s3`       | `supabase`  |
-| `S3_BUCKET`             | Bucket name for tarballs | —           |
-| `S3_ENDPOINT`           | S3 endpoint (for MinIO)  | —           |
-| `AWS_ACCESS_KEY_ID`     | S3 access key            | —           |
-| `AWS_SECRET_ACCESS_KEY` | S3 secret key            | —           |
-| `AWS_REGION`            | S3 region                | `us-east-1` |
+| Variable          | Description                       | Default              |
+| ----------------- | --------------------------------- | -------------------- |
+| `STORAGE_BACKEND` | `s3`, `supabase`, or `filesystem` | `supabase`           |
+| `S3_BUCKET`       | Bucket name for tarballs          | —                    |
+| `S3_ENDPOINT`     | S3 endpoint (for MinIO)           | —                    |
+| `S3_ACCESS_KEY`   | S3 access key                     | —                    |
+| `S3_SECRET_KEY`   | S3 secret key                     | —                    |
+| `S3_REGION`       | S3 region                         | `us-east-1`          |
+| `STORAGE_FS_PATH` | Local path for filesystem storage | `/app/data/packages` |
 
 ### Optional
 

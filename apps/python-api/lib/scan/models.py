@@ -19,7 +19,7 @@ class Finding(BaseModel):
     """A single security finding from any stage."""
 
     stage: str = Field(..., description="Stage that produced this finding (stage0-stage5)")
-    severity: Literal["critical", "high", "medium", "low"] = Field(..., description="Severity level")
+    severity: Literal["critical", "high", "medium", "low", "info"] = Field(..., description="Severity level")
     type: str = Field(..., description="Finding type e.g. 'prompt_injection', 'shell_injection'")
     description: str = Field(..., description="Human-readable description")
     location: str | None = Field(None, description="File:line or path reference")
@@ -30,6 +30,8 @@ class Finding(BaseModel):
         None, description="LLM classification: 'confirmed_threat', 'likely_benign', or 'uncertain'"
     )
     llm_reviewed: bool = Field(False, description="True if LLM analyzed this finding")
+    remediation: str | None = Field(None, description="Remediation guidance for this finding")
+    cwe_id: str | None = Field(None, description="CWE identifier e.g. 'CWE-78'")
 
 
 class StageResult(BaseModel):

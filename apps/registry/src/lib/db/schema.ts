@@ -266,6 +266,7 @@ export const scanResults = pgTable(
     highCount: integer('high_count').notNull().default(0),
     mediumCount: integer('medium_count').notNull().default(0),
     lowCount: integer('low_count').notNull().default(0),
+    infoCount: integer('info_count').notNull().default(0),
     stagesRun: jsonb('stages_run').notNull().$type<string[]>(),
     durationMs: integer('duration_ms'),
     fileHashes: jsonb('file_hashes').$type<Record<string, string>>(),
@@ -310,6 +311,8 @@ export const scanFindings = pgTable(
     evidence: text('evidence'), // raw snippet or pattern matched
     llmVerdict: text('llm_verdict'), // LLM classification: 'confirmed_threat', 'likely_benign', 'uncertain'
     llmReviewed: boolean('llm_reviewed').default(false), // whether LLM analyzed this finding
+    remediation: text('remediation'),
+    cweId: text('cwe_id'),
     createdAt
   },
   (table) => [

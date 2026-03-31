@@ -24,11 +24,6 @@ interface SkillTabsProps {
   sidebar?: ReactNode;
 }
 
-function formatAuditScore(score: number | null): string {
-  if (score === null || score === undefined) return '-';
-  return `${score}/10`;
-}
-
 function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
   if (versions.length === 0) return null;
 
@@ -38,7 +33,6 @@ function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
         <TableRow>
           <TableHead>Version</TableHead>
           <TableHead>Published</TableHead>
-          <TableHead>Audit Score</TableHead>
           <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>
@@ -47,7 +41,6 @@ function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
           <TableRow key={v.version}>
             <TableCell className="font-mono font-medium">{v.version}</TableCell>
             <TableCell className="text-muted-foreground">{formatDate(v.publishedAt)}</TableCell>
-            <TableCell>{formatAuditScore(v.auditScore)}</TableCell>
             <TableCell>
               <Badge variant={v.auditStatus === 'published' || v.auditStatus === 'completed' ? 'secondary' : 'outline'}>
                 {v.auditStatus}

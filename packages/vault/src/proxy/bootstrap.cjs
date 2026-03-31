@@ -27,7 +27,7 @@ if (PROXY_URL) {
       body = merged;
     }
 
-    return originalFetch(PROXY_URL + '/proxy', {
+    return originalFetch(`${PROXY_URL}/proxy`, {
       method,
       headers,
       body: method === 'GET' || method === 'HEAD' ? undefined : body

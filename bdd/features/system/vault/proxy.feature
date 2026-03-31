@@ -14,7 +14,6 @@ Feature: Credential proxy — intercept, redact, restore
     And the vault session is empty (no pre-registered credentials)
 
   # ── Full happy flow ──────────────────────────────────────────────────────
-
   @high
   @happy-flow
   Scenario: End-to-end — proxy discovers credentials in traffic, redacts, restores
@@ -36,7 +35,6 @@ Feature: Credential proxy — intercept, redact, restore
     And the agent receives working code with real credentials
 
   # ── Traffic-based discovery (C13, C14) ───────────────────────────────────
-
   @high
   Scenario: First-seen credential is tokenized on the fly from traffic
     When the agent sends a chat completion request to the proxy
@@ -63,7 +61,6 @@ Feature: Credential proxy — intercept, redact, restore
     And both are replaced in the forwarded request
 
   # ── Provider's own key passes through (C15) ──────────────────────────────
-
   @high
   Scenario: Provider API key in auth header is not redacted
     When the agent sends a request to the proxy targeting "api.anthropic.com"
@@ -72,7 +69,6 @@ Feature: Credential proxy — intercept, redact, restore
     And only the message body is scanned for credential patterns
 
   # ── No-credential passthrough (E15) ──────────────────────────────────────
-
   @high
   Scenario: Message without credentials passes through unmodified
     When the agent sends a chat completion request to the proxy
@@ -81,7 +77,6 @@ Feature: Credential proxy — intercept, redact, restore
     And no modifications are made to the request body
 
   # ── Incoming response restoration (C17) ──────────────────────────────────
-
   @high
   Scenario: Fake credential in response is restored to real value
     Given the proxy previously tokenized "sk_live_4eC39HqLyjWDarjtT1zdp7dc" to a fake
@@ -96,7 +91,6 @@ Feature: Credential proxy — intercept, redact, restore
     Then the agent receives the response unmodified
 
   # ── SSE streaming support (C16) ──────────────────────────────────────────
-
   @high
   Scenario: Streaming response with fake token in a single chunk is restored
     Given the proxy previously tokenized "sk_live_4eC39HqLyjWDarjtT1zdp7dc" to a fake
@@ -115,7 +109,6 @@ Feature: Credential proxy — intercept, redact, restore
     And no partial fake token is emitted to the agent
 
   # ── Fail closed (C18) ───────────────────────────────────────────────────
-
   @high
   Scenario: Proxy crash causes agent request to fail, not bypass
     Given the vault proxy encounters a fatal error during request processing
@@ -124,7 +117,6 @@ Feature: Credential proxy — intercept, redact, restore
     And the request is NOT forwarded to the AI provider unsanitized
 
   # ── Edge cases ──────────────────────────────────────────────────────────
-
   @medium
   @edge-case
   Scenario: Credential in system message is also redacted

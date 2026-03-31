@@ -11,7 +11,6 @@ import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { useCopyToClipboard } from '~/hooks/use-copy-to-clipboard';
 import { safeParseJson, safeParsePermissions } from '~/lib/format';
-import { getScoreTextClass } from '~/lib/score';
 import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
 import { buildSecurityTab } from '~/screens/skill-detail-helpers';
 
@@ -62,11 +61,6 @@ function MobileActionBar({ data, scanDetails }: { data: SkillDetailResult; scanD
             mediumCount={scanDetails.mediumCount}
           />
         )}
-        {data.latestVersion?.auditScore != null && (
-          <span className={`text-sm font-bold ${getScoreTextClass(data.latestVersion.auditScore)}`}>
-            {data.latestVersion.auditScore}/10
-          </span>
-        )}
       </div>
       <Separator />
       <div className="flex items-center gap-2">
@@ -98,7 +92,7 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
 
   const readmeContent = data.latestVersion?.readme;
   const scanDetails = data.latestVersion?.scanDetails;
-  const hasSecurityData = data.latestVersion?.auditScore != null && scanDetails != null;
+  const hasSecurityData = scanDetails != null;
 
   const securityTab = hasSecurityData && scanDetails ? buildSecurityTab({ data, scanDetails }) : null;
   const desc = useMemo(() => parseDescription(data.description), [data.description]);
