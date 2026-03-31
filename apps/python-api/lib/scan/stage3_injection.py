@@ -54,10 +54,7 @@ def _is_prose_context(preceding_text: str, full_line: str) -> bool:
 
     # Check for markdown list/table context (documentation structure)
     stripped = full_line.lstrip()
-    if stripped.startswith(("- ", "* ", "1. ", "2. ", "| ")):
-        return True
-
-    return False
+    return bool(stripped.startswith(("- ", "* ", "1. ", "2. ", "| ")))
 
 
 def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:
