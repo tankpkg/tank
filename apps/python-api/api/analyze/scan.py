@@ -280,8 +280,6 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                 result, llm_analysis = await stage3_detect_injection(
                     ingest_result,
                     llm_analysis,
-                    permissions=request.permissions,
-                    manifest=request.manifest,
                     extra_ambiguous=stage2_ambiguous,
                 )
                 stage_results.append(result)

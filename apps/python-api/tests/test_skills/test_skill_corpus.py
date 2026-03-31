@@ -42,7 +42,7 @@ def get_findings_for_skill(skill_dir: str) -> dict[str, list[Finding]]:
     findings = {}
 
     # Stage 2: Static Analysis
-    result = stage2_analyze(ingest, {}, {})
+    result, _ambiguous = stage2_analyze(ingest, {}, {})
     findings["stage2"] = result.findings
 
     # Stage 3: Injection Detection (async, returns tuple)
