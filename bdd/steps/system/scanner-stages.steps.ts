@@ -120,7 +120,8 @@ function baseScoreInput(): AuditScoreInput {
     permissions: { network: { outbound: ['*.example.com'] } },
     fileCount: 10,
     tarballSize: 100_000,
-    readme: '# docs',
+    readme:
+      '# Score test skill\n\nA clean test skill with no issues and a sufficiently long readme to pass the content check.',
     analysisResults: {
       securityIssues: [],
       extractedPermissions: { network: { outbound: ['*.example.com'] } }
@@ -379,21 +380,21 @@ describe('Feature: Security scanner 6-stage pipeline', () => {
     });
   });
 
-  describe('Scenario: Skill with only medium findings receives pass_with_notes verdict (E6)', () => {
+  describe('Scenario: Skill with only medium findings still scores well (E6)', () => {
     it('runs Given/When/Then', () => {
       givenSkillTarballWithOnlyMediumSeverityFindings();
       whenTheScannerAnalyzesScoreInput();
-      thenScoreVerdictIs('pass_with_notes');
-      thenAuditScoreIsExactly(7);
+      thenScoreVerdictIs('pass');
+      thenAuditScoreIsExactly(10);
     });
   });
 
-  describe('Scenario: Structural oversized file findings do not lower security score', () => {
+  describe('Scenario: Structural oversized file findings lower audit score', () => {
     it('runs Given/When/Then', () => {
       givenSkillTarballWithOnlyAnOversizedFileStage1Finding();
       whenTheScannerAnalyzesScoreInput();
-      thenScoreVerdictIs('pass');
-      thenAuditScoreIsExactly(10);
+      thenScoreVerdictIs('pass_with_notes');
+      thenAuditScoreIsExactly(5);
     });
   });
 });

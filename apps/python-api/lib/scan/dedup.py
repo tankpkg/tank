@@ -18,7 +18,7 @@ def deduplicate_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]
     if len(findings) <= 1:
         return findings
 
-    severity_rank = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    severity_rank = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
     # Sort by severity (critical first), then by confidence (high first)
     sorted_findings = sorted(
@@ -32,6 +32,18 @@ def deduplicate_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]
     for i, primary in enumerate(sorted_findings):
         if i in consumed:
             continue
+
+        # Skip INFO findings that duplicate a higher-severity finding already merged
+        if primary.get("severity") == "info":
+            # Check if there's already a non-info finding at the same location
+            primary_loc = str(primary.get("location", ""))
+            for existing in merged:
+                existing_loc = str(existing.get("location", ""))
+                if primary_loc and existing_loc and primary_loc == existing_loc and existing.get("severity") != "info":
+                    consumed.add(i)
+                    break
+            if i in consumed:
+                continue
 
         duplicates: list[int] = []
         for j in range(i + 1, len(sorted_findings)):

@@ -8,7 +8,6 @@ import { TrustBadge } from '~/components/skills/trust-badge';
 import { VerifiedPublisherBadge } from '~/components/skills/verified-publisher-badge';
 import { Separator } from '~/components/ui/separator';
 import { formatSize, timeAgo } from '~/lib/format';
-import { getScoreTextClass } from '~/lib/score';
 import type { ScanDetails } from '~/lib/skills/data';
 
 const findings = [
@@ -173,60 +172,25 @@ export function SkillSidebar({
         </dl>
       </div>
 
-      {latestVersion?.auditScore != null && (
+      {hasSecurityData && scanDetails && (
         <>
           <Separator />
           <div>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Security</h3>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`text-2xl font-bold ${getScoreTextClass(latestVersion.auditScore)}`}>
-                {latestVersion.auditScore}
-              </span>
-              <span className="text-sm text-muted-foreground">/10</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden mb-3">
-              <div
-                className={`h-full transition-all ${
-                  latestVersion.auditScore >= 8
-                    ? 'bg-green-500'
-                    : latestVersion.auditScore >= 6
-                      ? 'bg-yellow-500'
-                      : latestVersion.auditScore >= 4
-                        ? 'bg-orange-500'
-                        : 'bg-red-500'
-                }`}
-                style={{ width: `${(latestVersion.auditScore / 10) * 100}%` }}
-              />
-            </div>
-
-            {scanDetails?.verdict && (
-              <div
-                className={`inline-flex px-2 py-1 rounded text-xs font-medium text-white mb-2 ${
-                  scanDetails.verdict === 'pass'
-                    ? 'bg-green-600'
-                    : scanDetails.verdict === 'pass_with_notes'
-                      ? 'bg-yellow-600'
-                      : scanDetails.verdict === 'flagged'
-                        ? 'bg-orange-600'
-                        : 'bg-red-600'
-                }`}>
-                {scanDetails.verdict.replace('_', ' ').toUpperCase()}
-              </div>
-            )}
 
             <div className="text-xs space-y-1 mb-3 [&>div]:flex [&>div]:items-center [&>div]:gap-2">
               {findings
-                .filter(({ key }) => (scanDetails?.[key] ?? 0) > 0)
+                .filter(({ key }) => (scanDetails[key] ?? 0) > 0)
                 .map(({ key, label, color }) => (
                   <div key={key} className={color}>
                     <span>&#9679;</span>
                     <span>
-                      {scanDetails?.[key]} {label} finding
-                      {(scanDetails?.[key] ?? 0) !== 1 ? 's' : ''}
+                      {scanDetails[key]} {label} finding
+                      {(scanDetails[key] ?? 0) !== 1 ? 's' : ''}
                     </span>
                   </div>
                 ))}
-              {(scanDetails?.findings?.length ?? 0) === 0 && (
+              {(scanDetails.findings?.length ?? 0) === 0 && (
                 <div className="text-green-600">
                   <span>&#10003;</span>
                   <span>No security issues</span>
@@ -234,9 +198,7 @@ export function SkillSidebar({
               )}
             </div>
 
-            {hasSecurityData && (
-              <p className="text-xs text-muted-foreground">Open the Security tab above for the full report.</p>
-            )}
+            <p className="text-xs text-muted-foreground">Open the Security tab above for the full report.</p>
           </div>
         </>
       )}

@@ -8,7 +8,6 @@ Feature: Bidirectional credential vault store
   So that outgoing requests get redacted and incoming responses get restored
 
   # ── Full happy flow ──────────────────────────────────────────────────────
-
   @high
   @happy-flow
   Scenario: End-to-end — store multiple credentials, lookup both directions, clear on session end
@@ -27,7 +26,6 @@ Feature: Bidirectional credential vault store
     And looking up fake "sk_live_FAKE_XXX" returns null
 
   # ── Bidirectional mapping (C9) ──────────────────────────────────────────
-
   @high
   Scenario: Store a mapping and retrieve in both directions
     Given an empty vault store
@@ -51,7 +49,6 @@ Feature: Bidirectional credential vault store
     Then the result is null
 
   # ── Session scoping (C11) ────────────────────────────────────────────────
-
   @high
   Scenario: Vault is cleared when session ends
     Given a vault store with 3 credential mappings
@@ -59,7 +56,6 @@ Feature: Bidirectional credential vault store
     Then the vault contains 0 mappings
 
   # ── Logging safety (C12) ─────────────────────────────────────────────────
-
   @high
   Scenario: Vault operations never log real credential values
     Given a vault store with logging enabled
@@ -70,7 +66,6 @@ Feature: Bidirectional credential vault store
     And the log output may contain the pattern ID
 
   # ── Edge cases ──────────────────────────────────────────────────────────
-
   @medium
   @edge-case
   Scenario: Storing the same real credential twice is idempotent
@@ -112,9 +107,9 @@ Feature: Bidirectional credential vault store
   @edge-case
   Scenario: Bulk replacement — replace all real values in a string with fakes
     Given a vault store with:
-      | real                    | fake                    |
-      | sk_live_REAL1           | sk_live_FAKE1           |
-      | AKIAEXAMPLE             | AKIAFAKEFAKE            |
+      | real          | fake          |
+      | sk_live_REAL1 | sk_live_FAKE1 |
+      | AKIAEXAMPLE   | AKIAFAKEFAKE  |
     When I call bulk replace on text "Use sk_live_REAL1 and AKIAEXAMPLE"
     Then the result is "Use sk_live_FAKE1 and AKIAFAKEFAKE"
 
@@ -122,9 +117,9 @@ Feature: Bidirectional credential vault store
   @edge-case
   Scenario: Bulk restore — replace all fake values in a string with reals
     Given a vault store with:
-      | real                    | fake                    |
-      | sk_live_REAL1           | sk_live_FAKE1           |
-      | AKIAEXAMPLE             | AKIAFAKEFAKE            |
+      | real          | fake          |
+      | sk_live_REAL1 | sk_live_FAKE1 |
+      | AKIAEXAMPLE   | AKIAFAKEFAKE  |
     When I call bulk restore on text "curl -H 'Bearer sk_live_FAKE1' --key AKIAFAKEFAKE"
     Then the result is "curl -H 'Bearer sk_live_REAL1' --key AKIAEXAMPLE"
 
@@ -132,7 +127,7 @@ Feature: Bidirectional credential vault store
   @edge-case
   Scenario: Bulk replace on text with no matching credentials returns unchanged text
     Given a vault store with:
-      | real                    | fake                    |
-      | sk_live_REAL1           | sk_live_FAKE1           |
+      | real          | fake          |
+      | sk_live_REAL1 | sk_live_FAKE1 |
     When I call bulk replace on text "No credentials in this text"
     Then the result is "No credentials in this text"

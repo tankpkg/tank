@@ -57,6 +57,7 @@ export const zEnv = z.object({
 
   // ── External Services ──
   PYTHON_API_URL: zOptStr,
+  SCANNER_SERVICE_KEY: zOptStr,
   LOKI_URL: zUrl.default('http://localhost:3100'),
 
   // ── KV Store (Redis) ──

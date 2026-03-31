@@ -1,3 +1,8 @@
+/**
+ * @deprecated Score system removed. No longer used for new publishes.
+ * Kept for backward compatibility with existing DB rows that have scores.
+ */
+
 export interface AuditScoreInput {
   manifest: Record<string, unknown>;
   permissions: Record<string, unknown>;

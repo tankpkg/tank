@@ -6,7 +6,6 @@ import { env } from '~/consts/env';
 import { verifyCliAuth } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
-import { type AuditScoreInput, computeAuditScore } from '~/lib/skills/audit-score';
 import type { ScanFinding } from '~/lib/skills/data';
 import { getStorageProvider } from '~/services/storage/provider';
 
@@ -120,8 +119,7 @@ export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json'
   const existingSkills = await db.select().from(skills).where(eq(skills.id, version.skillId)).limit(1);
   const skill = existingSkills[0];
 
-  let auditScore: number | null = null;
-  const manifest = version.manifest as AuditScoreInput['manifest'];
+  const manifest = version.manifest as Record<string, unknown>;
   const permissions = (version.permissions ?? {}) as Record<string, unknown>;
 
   await db
@@ -142,24 +140,6 @@ export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json'
     if (scanResult) {
       scanVerdict = scanResult.verdict;
 
-      const criticalHighFindings = scanResult.findings.filter(
-        (f) => f.severity === 'critical' || f.severity === 'high'
-      );
-
-      const result = computeAuditScore({
-        manifest,
-        permissions,
-        fileCount: fileCount ?? 0,
-        tarballSize: tarballSize ?? 0,
-        readme: typeof readme === 'string' ? readme : (version.readme ?? null),
-        analysisResults: {
-          securityIssues: criticalHighFindings,
-          extractedPermissions: undefined
-        }
-      });
-
-      auditScore = result.score;
-
       try {
         const [scanResultRecord] = await db
           .insert(scanResults)
@@ -171,6 +151,7 @@ export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json'
             highCount: scanResult.findings.filter((f) => f.severity === 'high').length,
             mediumCount: scanResult.findings.filter((f) => f.severity === 'medium').length,
             lowCount: scanResult.findings.filter((f) => f.severity === 'low').length,
+            infoCount: scanResult.findings.filter((f) => f.severity === 'info').length,
             stagesRun: scanResult.stage_results?.map((s) => s.stage) || [],
             durationMs: scanResult.duration_ms || null,
             fileHashes: scanResult.file_hashes || null,
@@ -202,7 +183,9 @@ export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json'
               tool: f.tool || null,
               evidence: f.evidence || null,
               llmVerdict: (f as { llm_verdict?: string }).llm_verdict || null,
-              llmReviewed: (f as { llm_reviewed?: boolean }).llm_reviewed || false
+              llmReviewed: (f as { llm_reviewed?: boolean }).llm_reviewed || false,
+              remediation: f.remediation || null,
+              cweId: f.cwe_id || null
             }))
           );
         }
@@ -220,46 +203,24 @@ export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json'
       await db
         .update(skillVersions)
         .set({
-          auditScore: result.score,
+          auditScore: null,
           auditStatus: auditStatusMap[scanResult.verdict] ?? 'completed'
         })
         .where(eq(skillVersions.id, versionId));
     } else {
-      const result = computeAuditScore({
-        manifest,
-        permissions,
-        fileCount: fileCount ?? 0,
-        tarballSize: tarballSize ?? 0,
-        readme: typeof readme === 'string' ? readme : (version.readme ?? null),
-        analysisResults: null
-      });
-
-      auditScore = result.score;
-
       await db
         .update(skillVersions)
         .set({
-          auditScore: result.score,
+          auditScore: null,
           auditStatus: 'scan-failed'
         })
         .where(eq(skillVersions.id, versionId));
     }
   } catch {
-    const result = computeAuditScore({
-      manifest,
-      permissions,
-      fileCount: fileCount ?? 0,
-      tarballSize: tarballSize ?? 0,
-      readme: typeof readme === 'string' ? readme : (version.readme ?? null),
-      analysisResults: null
-    });
-
-    auditScore = result.score;
-
     await db
       .update(skillVersions)
       .set({
-        auditScore: result.score,
+        auditScore: null,
         auditStatus: 'scan-failed'
       })
       .where(eq(skillVersions.id, versionId));
@@ -269,7 +230,6 @@ export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json'
     success: true,
     name: skill?.name ?? 'unknown',
     version: version.version,
-    auditScore,
     scanVerdict
   });
 });

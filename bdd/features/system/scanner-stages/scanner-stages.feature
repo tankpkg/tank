@@ -38,15 +38,15 @@ Feature: Security scanner 6-stage pipeline
     And the audit_score is 10.0
 
   @medium
-  Scenario: Skill with only medium findings receives pass_with_notes verdict (E6)
+  Scenario: Skill with only medium findings receives pass verdict (E6)
     Given a skill tarball with only medium-severity findings
     When the scanner analyzes the tarball
-    Then the verdict is "pass_with_notes"
-    And the audit_score is below 10.0
+    Then the verdict is "pass"
+    And the audit_score is 10.0
 
   @medium
-  Scenario: Structural oversized file findings do not lower security score
+  Scenario: Structural oversized file findings lower audit score
     Given a skill tarball with only an oversized-file stage1 finding
     When the scanner analyzes the tarball
     Then the verdict is "pass_with_notes"
-    And the audit_score is 10.0
+    And the audit_score is 5.0

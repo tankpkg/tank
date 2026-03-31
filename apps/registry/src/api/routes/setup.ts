@@ -130,7 +130,7 @@ export const setupRoutes = new Hono()
         timeout: 60_000
       });
       const { reinitializeDb } = await import('~/lib/db');
-      reinitializeDb(process.env.DATABASE_URL!);
+      reinitializeDb(process.env.DATABASE_URL ?? '');
 
       await db.insert(systemConfig).values({ id: 1 }).onConflictDoNothing();
 

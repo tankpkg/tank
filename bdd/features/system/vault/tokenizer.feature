@@ -9,7 +9,6 @@ Feature: Format-preserving fake credential generation
   while the real value never leaves the local machine
 
   # ── Full happy flow ──────────────────────────────────────────────────────
-
   @high
   @happy-flow
   Scenario: End-to-end — tokenize a Stripe key, verify format, confirm consistency and uniqueness
@@ -26,7 +25,6 @@ Feature: Format-preserving fake credential generation
     Then it returns the same fake as fake 1
 
   # ── Format preservation (C5) ─────────────────────────────────────────────
-
   @high
   Scenario: Fake Stripe key preserves prefix and length
     Given a real credential "sk_live_4eC39HqLyjWDarjtT1zdp7dc"
@@ -80,7 +78,6 @@ Feature: Format-preserving fake credential generation
     And the fake has the same total length as the original
 
   # ── Session consistency (C6) ─────────────────────────────────────────────
-
   @high
   Scenario: Same real token always produces the same fake within a session
     Given a vault session is active
@@ -90,7 +87,6 @@ Feature: Format-preserving fake credential generation
     Then both fakes are identical
 
   # ── Uniqueness (C7) ──────────────────────────────────────────────────────
-
   @high
   Scenario: Different real tokens produce different fakes
     Given a vault session is active
@@ -101,7 +97,6 @@ Feature: Format-preserving fake credential generation
     And both fakes start with "sk_live_"
 
   # ── Cryptographic randomness (C8) ────────────────────────────────────────
-
   @medium
   Scenario: Fake token is not derivable from the real token without vault state
     Given a real credential "sk_live_4eC39HqLyjWDarjtT1zdp7dc"
@@ -109,7 +104,6 @@ Feature: Format-preserving fake credential generation
     Then the fake suffix has no substring overlap longer than 4 characters with the original suffix
 
   # ── Edge cases ──────────────────────────────────────────────────────────
-
   @medium
   @edge-case
   Scenario: Generating 500 unique fakes for the same pattern — no collisions

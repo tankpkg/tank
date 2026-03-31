@@ -1,9 +1,9 @@
 ---
 title: CLI Reference
-description: Complete reference for all 19 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+description: Complete reference for all 20 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 ---
 
-The Tank CLI provides 19 commands for publishing, installing, and managing AI agent skills with security-first design.
+The Tank CLI provides 20 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
@@ -212,6 +212,26 @@ tank audit [name]
 | ------ | --------------------------------------- | -------- |
 | `name` | Skill name to audit (omit to audit all) | No       |
 
+## tank run
+
+Launch an agent with credential protection (vault proxy)
+
+```bash
+tank run <agent>
+```
+
+### Arguments
+
+| Name    | Description        | Required |
+| ------- | ------------------ | -------- |
+| `agent` | Agent ID to launch | Yes      |
+
+### Options
+
+| Flag        | Description                       |
+| ----------- | --------------------------------- |
+| `--verbose` | Print verbose vault proxy details |
+
 ## tank scan
 
 Scan a local skill for security issues without publishing
@@ -298,6 +318,7 @@ tank upgrade [version]
 | `tank search`      | `s`       | Search for skills in the Tank registry                                 |
 | `tank info`        | `show`    | Show detailed information about a skill                                |
 | `tank audit`       | —         | Display security audit results for installed skills                    |
+| `tank run`         | —         | Launch an agent with credential protection (vault proxy)               |
 | `tank scan`        | —         | Scan a local skill for security issues without publishing              |
 | `tank link`        | `ln`      | Link current skill directory to AI agent directories (for development) |
 | `tank unlink`      | —         | Remove skill symlinks from AI agent directories                        |
