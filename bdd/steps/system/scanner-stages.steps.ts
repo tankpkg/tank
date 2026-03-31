@@ -120,7 +120,8 @@ function baseScoreInput(): AuditScoreInput {
     permissions: { network: { outbound: ['*.example.com'] } },
     fileCount: 10,
     tarballSize: 100_000,
-    readme: '# Score test skill\n\nA clean test skill with no issues and a sufficiently long readme to pass the content check.',
+    readme:
+      '# Score test skill\n\nA clean test skill with no issues and a sufficiently long readme to pass the content check.',
     analysisResults: {
       securityIssues: [],
       extractedPermissions: { network: { outbound: ['*.example.com'] } }
