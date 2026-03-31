@@ -180,9 +180,17 @@ class LLMAnalyzer:
         if finding.evidence:
             evidence_lower = finding.evidence.lower()
             bypass_patterns = [
-                "ignore all previous", "ignore all instructions", "disregard all",
-                "override system", "forget everything", "this is the real system",
-                "<tool_use>", "<function_call", "<system>", "<antml:", "</antml:",
+                "ignore all previous",
+                "ignore all instructions",
+                "disregard all",
+                "override system",
+                "forget everything",
+                "this is the real system",
+                "<tool_use>",
+                "<function_call",
+                "<system>",
+                "<antml:",
+                "</antml:",
             ]
             if any(p in evidence_lower for p in bypass_patterns):
                 return False
@@ -308,7 +316,7 @@ Classify each finding and respond with ONLY a JSON array."""
             if content.startswith("```"):
                 first_newline = content.find("\n")
                 if first_newline != -1:
-                    content = content[first_newline + 1:]
+                    content = content[first_newline + 1 :]
                 if content.endswith("```"):
                     content = content[:-3]
                 content = content.strip()
@@ -328,12 +336,14 @@ Classify each finding and respond with ONLY a JSON array."""
                 if classification not in ["confirmed_threat", "likely_benign", "uncertain"]:
                     classification = "uncertain"
 
-                verdicts.append(LLMVerdict(
-                    finding_index=item.get("index", 0),
-                    classification=classification,
-                    confidence=max(0.0, min(1.0, float(item.get("confidence", 0.5)))),
-                    reasoning=item.get("reasoning", ""),
-                ))
+                verdicts.append(
+                    LLMVerdict(
+                        finding_index=item.get("index", 0),
+                        classification=classification,
+                        confidence=max(0.0, min(1.0, float(item.get("confidence", 0.5)))),
+                        reasoning=item.get("reasoning", ""),
+                    )
+                )
 
             return verdicts
 

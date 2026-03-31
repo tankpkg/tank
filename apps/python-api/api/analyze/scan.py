@@ -102,9 +102,11 @@ async def store_scan_results(
                     return None
 
                 # Insert scan_findings — use enriched findings if available
-                findings_to_store = enriched_findings if enriched_findings is not None else [
-                    f for stage in stage_results for f in stage.findings
-                ]
+                findings_to_store = (
+                    enriched_findings
+                    if enriched_findings is not None
+                    else [f for stage in stage_results for f in stage.findings]
+                )
 
                 if findings_to_store:
                     finding_values = [
@@ -422,6 +424,7 @@ async def scan_handler(request: ScanRequest) -> ScanResponse:
     except Exception as e:
         # Catch-all for unexpected errors — return 500 so caller can distinguish crash from result
         import logging
+
         logging.getLogger(__name__).error(f"Scan pipeline crashed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,

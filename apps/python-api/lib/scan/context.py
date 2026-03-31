@@ -93,9 +93,7 @@ class ContextEvaluator:
 
         return finding, False
 
-    def _check_downgrade(
-        self, finding: Finding, source: str | None, file_path: str
-    ) -> tuple[Finding, bool]:
+    def _check_downgrade(self, finding: Finding, source: str | None, file_path: str) -> tuple[Finding, bool]:
         """Check if finding should be downgraded based on context.
 
         Conservative: requires ALL applicable factors to agree.
@@ -178,7 +176,7 @@ class ContextEvaluator:
 
         # Pattern: subprocess.call(["git", "status"]) or subprocess.run(["npm", "install"])
         safe_call_match = re.search(
-            r'(?:subprocess\.\w+|child_process\.\w+)\s*\(\s*\[([^\]]+)\]',
+            r"(?:subprocess\.\w+|child_process\.\w+)\s*\(\s*\[([^\]]+)\]",
             evidence,
         )
         if safe_call_match:

@@ -77,6 +77,7 @@ async def scanner_auth_middleware(request: Request, call_next):
     if not expected_key:
         # Key not configured with auth enabled — refuse all requests
         import logging
+
         logging.getLogger(__name__).error(
             "SCANNER_AUTH_ENABLED=true but SCANNER_SERVICE_KEY is empty. "
             "All requests are rejected. Set SCANNER_SERVICE_KEY to enable authentication."
@@ -93,6 +94,7 @@ async def scanner_auth_middleware(request: Request, call_next):
         )
 
     return await call_next(request)
+
 
 # Mount sub-apps
 app.include_router(analyze_index_app.router, prefix="/api/analyze", tags=["analyze"])

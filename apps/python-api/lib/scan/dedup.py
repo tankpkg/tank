@@ -39,12 +39,7 @@ def deduplicate_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]
             primary_loc = str(primary.get("location", ""))
             for existing in merged:
                 existing_loc = str(existing.get("location", ""))
-                if (
-                    primary_loc
-                    and existing_loc
-                    and primary_loc == existing_loc
-                    and existing.get("severity") != "info"
-                ):
+                if primary_loc and existing_loc and primary_loc == existing_loc and existing.get("severity") != "info":
                     consumed.add(i)
                     break
             if i in consumed:
