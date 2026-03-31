@@ -103,7 +103,7 @@ describe('transparent proxy — real fetch() interception via bootstrap', () => 
       );
     }
 
-    const lastTargetBody = targetLog[targetLog.length - 1]!;
+    const lastTargetBody = targetLog[targetLog.length - 1] as string;
     expect(lastTargetBody).not.toContain(REAL_STRIPE);
 
     const parsed = JSON.parse(lastTargetBody);
