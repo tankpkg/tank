@@ -12,20 +12,20 @@ The scanner flags legitimate patterns as threats because it lacks context awaren
 
 This skill is pure markdown — security reference documentation with code examples. Zero executable code. Yet the current scanner flags it for:
 
-| Content in the skill | Why it matches | Current severity | Reality |
-|---|---|---|---|
-| "you must follow these steps" | `IMPERATIVE_PATTERNS` regex | MEDIUM | Normal instructional text |
-| "act as" / "role-play" | `ROLE_HIJACKING` regex | CRITICAL | Security education examples |
-| `<system>` | `CLAUDE_FORMAT` regex | HIGH | HTML/markdown code examples |
-| "send to" / "post to" | `EXFILTRATION` regex | HIGH | HTTP documentation |
-| `process.env.NODE_ENV` in code blocks | `stage2` JS/TS patterns | MEDIUM | Standard Node.js example |
-| `subprocess.call()` in code blocks | `stage2` Python patterns | CRITICAL | Security remediation examples |
+| Content in the skill                  | Why it matches              | Current severity | Reality                       |
+| ------------------------------------- | --------------------------- | ---------------- | ----------------------------- |
+| "you must follow these steps"         | `IMPERATIVE_PATTERNS` regex | MEDIUM           | Normal instructional text     |
+| "act as" / "role-play"                | `ROLE_HIJACKING` regex      | CRITICAL         | Security education examples   |
+| `<system>`                            | `CLAUDE_FORMAT` regex       | HIGH             | HTML/markdown code examples   |
+| "send to" / "post to"                 | `EXFILTRATION` regex        | HIGH             | HTTP documentation            |
+| `process.env.NODE_ENV` in code blocks | `stage2` JS/TS patterns     | MEDIUM           | Standard Node.js example      |
+| `subprocess.call()` in code blocks    | `stage2` Python patterns    | CRITICAL         | Security remediation examples |
 
 If a skill that **teaches security best practices** gets flagged as dangerous, the scanner has a precision problem, not a sensitivity problem.
 
 **Root causes:**
 
-- **Stage 2** (`stage2_static.py`): Matches code patterns inside markdown code blocks. `subprocess.call(["git", "status"])` in a ```` ```python ```` block is CRITICAL. No permission cross-check — `fetch()` with declared `network.outbound` still flagged HIGH.
+- **Stage 2** (`stage2_static.py`): Matches code patterns inside markdown code blocks. `subprocess.call(["git", "status"])` in a ` ```python ` block is CRITICAL. No permission cross-check — `fetch()` with declared `network.outbound` still flagged HIGH.
 - **Stage 3** (`stage3_injection.py`): Regex matches instructional documentation text. "you must" / "always do" / "act as" match when explaining security concepts. No markdown structure awareness.
 - **LLM only covers Stage 3**: The existing `llm_analyzer.py` (673 lines) only reviews ambiguous injection findings. Stage 2 false positives — the bulk of the problem — never get LLM review.
 - **No deduplication**: Bandit + custom AST + permission check all flag the same `subprocess.call()` → 3 findings instead of 1.
@@ -50,7 +50,7 @@ The 0-10 audit score conflates security + docs + hygiene into one number. A skil
 
 Replace the current single-pass regex approach with a two-layer pipeline:
 
-```
+````
 Raw Finding
     │
     ▼
@@ -73,15 +73,17 @@ Downgrade to INFO         Keep severity,
         ┌───────┴───────┐
    likely_benign    confirmed_threat/
    (downgrade)      uncertain (keep)
-```
+````
 
 **Layer 1 — Hardcoded rules** (`context.py` + `safe_patterns.py`):
+
 - Instant, zero cost, zero latency
 - Catches obvious cases: declared permissions, safe subprocess args, standard env vars, markdown structure
 - Conservative: only downgrades when ALL applicable factors agree
 - Returns `is_resolved=True` for findings that need no further review
 
 **Layer 2 — LLM corroboration** (expanding existing `llm_analyzer.py`):
+
 - Only processes findings that survive Layer 1 as ambiguous
 - **Expanded from Stage 3 only → Stage 2 + Stage 3 combined in a single batched call**
 - Uses existing Groq free tier: `llama-3.1-8b-instant` (primary), `llama-3.3-70b-versatile` (fallback)
@@ -91,19 +93,21 @@ Downgrade to INFO         Keep severity,
 
 **Groq free tier capacity (confirmed 2026-03):**
 
-| Metric | Limit | Per-scan usage | Capacity |
-|--------|-------|---------------|----------|
-| `llama-3.1-8b-instant` RPD | 14,400 | 1 req | **14,400 scans/day** |
-| `llama-3.1-8b-instant` TPM | 6,000 | ~1,500 tokens | 4 scans/min |
-| Cost | **$0** | **$0** | — |
+| Metric                     | Limit  | Per-scan usage | Capacity             |
+| -------------------------- | ------ | -------------- | -------------------- |
+| `llama-3.1-8b-instant` RPD | 14,400 | 1 req          | **14,400 scans/day** |
+| `llama-3.1-8b-instant` TPM | 6,000  | ~1,500 tokens  | 4 scans/min          |
+| Cost                       | **$0** | **$0**         | —                    |
 
 ### Workstream B: Remove Score System
+
 - Stop computing `auditScore` on new publishes (set `null`)
 - Delete `score-breakdown.tsx`, `lib/score.ts`
 - Remove score from all UI components, replace with trust badge + security status filter
 - Badge API returns trust level text, not numeric score
 
 ### Workstream C: Online Scanning Service (v1 — Synchronous)
+
 - `POST /api/v1/scan` — submit tarball URL, get full scan report synchronously
 - SSRF protection on URL input
 - Rate limiting (3/hr anonymous, 20/hr auth)
@@ -111,12 +115,14 @@ Downgrade to INFO         Keep severity,
 - Scanner service authentication via `SCANNER_SERVICE_KEY`
 
 ### Workstream D: Proprietary Protection
+
 - Detection patterns externalized to `lib/scan/patterns/*.json` (not inline Python)
 - Scanner API requires service-to-service auth
 
 ## Success Criteria
 
 ### SC1: Context-Aware Classification
+
 - [ ] `@tank/security-review` produces zero CRITICAL/HIGH findings (validation anchor)
 - [ ] Findings with matching declared permissions are downgraded to INFO (Layer 1)
 - [ ] Code inside markdown code blocks produces INFO, not CRITICAL/HIGH (Layer 1)
@@ -128,22 +134,26 @@ Downgrade to INFO         Keep severity,
 - [ ] LLM failure is non-blocking — scanner degrades to Layer 1 only
 
 ### SC2: Score Removal
+
 - [ ] No numeric score visible anywhere in the UI
 - [ ] Trust badge is the primary security indicator on all pages
 - [ ] Badge API returns trust level text, not numeric score
 - [ ] Score filter replaced with security status filter
 
 ### SC3: Online Scanning Service
+
 - [ ] Users can submit a tarball URL and receive a scan report
 - [ ] Scan reports are shareable via permalink (scanId UUID)
 - [ ] Rate limiting enforced (3/hr anonymous, 20/hr auth)
 - [ ] Report page shows findings grouped by category with remediation
 
 ### SC4: Proprietary Protection
+
 - [ ] Scanner API requires service-to-service authentication
 - [ ] Detection patterns externalized to data files
 
 ## Constraints
+
 - C1: Existing scan results in DB must not be modified — new scans use new logic
 - C2: INFO severity must not affect verdict computation
 - C3: Context evaluator is conservative — only downgrade when ALL context factors agree
@@ -154,4 +164,5 @@ Downgrade to INFO         Keep severity,
 - C8: LLM failure degrades gracefully — findings keep original severity from Layer 1
 
 ## Spec
+
 `.temper/specs/security-overhaul/spec.md`

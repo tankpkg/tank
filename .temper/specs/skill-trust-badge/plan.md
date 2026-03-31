@@ -14,12 +14,12 @@ Replace the misleading 0-10 score with a security-first trust badge system. Keep
 
 ## Blast Radius
 
-| Area | Impact | Risk |
-|------|--------|------|
-| UI Components | High - 5+ files | Low - Pure display |
-| Data Types | Low - Add computed field | None |
-| Backend | None | None |
-| Tests | Medium - Update snapshots | Low |
+| Area          | Impact                    | Risk               |
+| ------------- | ------------------------- | ------------------ |
+| UI Components | High - 5+ files           | Low - Pure display |
+| Data Types    | Low - Add computed field  | None               |
+| Backend       | None                      | None               |
+| Tests         | Medium - Update snapshots | Low                |
 
 ## Tasks
 
@@ -114,12 +114,12 @@ Replace the misleading 0-10 score with a security-first trust badge system. Keep
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| **Sort option** | Replace with "Most Secure" | Remove "Highest Score", add "Most Secure" sorting by trust level |
-| **Score visibility** | Security tab only | Hidden from cards/list; shown in detailed breakdown |
-| **Badge sizing** | `sm`, `md` only | `sm` for cards, `md` for detail pages; no `lg` needed |
-| **LLM indicator** | Keep alongside TrustBadge | Brain icon + badge remains unchanged, shows alongside |
-| **Pending state** | Gray "pending" badge | Unscanned ≠ verified; only PASS+0 findings = verified |
-| **Methodology** | `@tank/bulletproof` | INTENT.md first, then Gherkin scenarios, then implementation |
-| **Quality display** | Option B checklist | Security badge primary, quality as separate checklist |
+| Decision             | Choice                     | Rationale                                                        |
+| -------------------- | -------------------------- | ---------------------------------------------------------------- |
+| **Sort option**      | Replace with "Most Secure" | Remove "Highest Score", add "Most Secure" sorting by trust level |
+| **Score visibility** | Security tab only          | Hidden from cards/list; shown in detailed breakdown              |
+| **Badge sizing**     | `sm`, `md` only            | `sm` for cards, `md` for detail pages; no `lg` needed            |
+| **LLM indicator**    | Keep alongside TrustBadge  | Brain icon + badge remains unchanged, shows alongside            |
+| **Pending state**    | Gray "pending" badge       | Unscanned ≠ verified; only PASS+0 findings = verified            |
+| **Methodology**      | `@tank/bulletproof`        | INTENT.md first, then Gherkin scenarios, then implementation     |
+| **Quality display**  | Option B checklist         | Security badge primary, quality as separate checklist            |

@@ -33,6 +33,7 @@ Start with `size="sm"` for cards, then add `md` and `lg`.
 ### Step 3: Update Card Display (30 min)
 
 Edit `packages/web/app/(registry)/skills/skills-results.tsx`:
+
 1. Import `TrustBadge`
 2. Replace `ScoreBadge` with `TrustBadge`
 3. Add `verdict` to `SkillSearchResult` type
@@ -40,18 +41,21 @@ Edit `packages/web/app/(registry)/skills/skills-results.tsx`:
 ### Step 4: Update Detail Page (30 min)
 
 Edit `packages/web/app/(registry)/skills/[...name]/page.tsx`:
+
 1. Add `TrustBadge` to hero section
 2. Import `computeTrustLevel`
 
 ### Step 5: Update Security Tab (30 min)
 
 Edit `packages/web/components/security/SecurityOverview.tsx`:
+
 1. Add `TrustBadge` as primary indicator
 2. Move score to secondary position
 
 ### Step 6: Version History (15 min)
 
 Edit `packages/web/app/(registry)/skills/[...name]/skill-tabs.tsx`:
+
 1. Replace score column with security status
 
 ### Step 7: Tests (30 min)

@@ -163,7 +163,8 @@ export async function startProxy(vault: VaultStore, preferredPort?: number): Pro
       const body =
         req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' ? await readBody(req) : undefined;
 
-      await forwardRequest(req.method!, targetUrl, req.headers, body, vault, res);
+      const method = req.method ?? 'GET';
+      await forwardRequest(method, targetUrl, req.headers, body, vault, res);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!res.headersSent) {

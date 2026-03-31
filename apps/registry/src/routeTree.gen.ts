@@ -15,6 +15,7 @@ import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SkillsIndexRouteImport } from './routes/skills/index'
+import { Route as ScanIndexRouteImport } from './routes/scan/index'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -64,6 +65,11 @@ const IndexRoute = IndexRouteImport.update({
 const SkillsIndexRoute = SkillsIndexRouteImport.update({
   id: '/skills/',
   path: '/skills/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanIndexRoute = ScanIndexRouteImport.update({
+  id: '/scan/',
+  path: '/scan/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/scan/': typeof ScanIndexRoute
   '/skills/': typeof SkillsIndexRoute
   '/orgs/accept-invitation': typeof AuthOrgsAcceptInvitationRoute
   '/dashboard/orgs/$slug': typeof DashboardOrgsSlugRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/docs': typeof DocsIndexRoute
+  '/scan': typeof ScanIndexRoute
   '/skills': typeof SkillsIndexRoute
   '/orgs/accept-invitation': typeof AuthOrgsAcceptInvitationRoute
   '/dashboard/orgs/$slug': typeof DashboardOrgsSlugRoute
@@ -246,6 +254,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/docs/': typeof DocsIndexRoute
+  '/scan/': typeof ScanIndexRoute
   '/skills/': typeof SkillsIndexRoute
   '/_auth/orgs/accept-invitation': typeof AuthOrgsAcceptInvitationRoute
   '/dashboard/orgs/$slug': typeof DashboardOrgsSlugRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/dashboard/'
     | '/docs/'
+    | '/scan/'
     | '/skills/'
     | '/orgs/accept-invitation'
     | '/dashboard/orgs/$slug'
@@ -302,6 +312,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/docs'
+    | '/scan'
     | '/skills'
     | '/orgs/accept-invitation'
     | '/dashboard/orgs/$slug'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/dashboard/'
     | '/docs/'
+    | '/scan/'
     | '/skills/'
     | '/_auth/orgs/accept-invitation'
     | '/dashboard/orgs/$slug'
@@ -350,6 +362,7 @@ export interface RootRouteChildren {
   DocsSplatRoute: typeof DocsSplatRoute
   SkillsSplatRoute: typeof SkillsSplatRoute
   DocsIndexRoute: typeof DocsIndexRoute
+  ScanIndexRoute: typeof ScanIndexRoute
   SkillsIndexRoute: typeof SkillsIndexRoute
   AuthOrgsAcceptInvitationRoute: typeof AuthOrgsAcceptInvitationRoute
 }
@@ -396,6 +409,13 @@ declare module '@tanstack/react-router' {
       path: '/skills'
       fullPath: '/skills/'
       preLoaderRoute: typeof SkillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan/': {
+      id: '/scan/'
+      path: '/scan'
+      fullPath: '/scan/'
+      preLoaderRoute: typeof ScanIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/': {
@@ -597,6 +617,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsSplatRoute: DocsSplatRoute,
   SkillsSplatRoute: SkillsSplatRoute,
   DocsIndexRoute: DocsIndexRoute,
+  ScanIndexRoute: ScanIndexRoute,
   SkillsIndexRoute: SkillsIndexRoute,
   AuthOrgsAcceptInvitationRoute: AuthOrgsAcceptInvitationRoute,
 }

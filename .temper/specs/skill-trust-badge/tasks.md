@@ -15,32 +15,32 @@ Replace misleading 0-10 score with security-first trust indicators.
 
 ## Trust Levels
 
-| Level | Display | Verdict | Findings |
-|-------|---------|---------|----------|
-| `verified` | 🛡️ Verified | pass | 0 |
-| `review_recommended` | ⚠️ Review Recommended | pass_with_notes | any |
-| `concerns` | 🚨 Concerns | flagged | any |
-| `unsafe` | ✗ Unsafe | fail | any |
-| `pending` | ○ Pending | null | - |
+| Level                | Display               | Verdict         | Findings |
+| -------------------- | --------------------- | --------------- | -------- |
+| `verified`           | 🛡️ Verified           | pass            | 0        |
+| `review_recommended` | ⚠️ Review Recommended | pass_with_notes | any      |
+| `concerns`           | 🚨 Concerns           | flagged         | any      |
+| `unsafe`             | ✗ Unsafe              | fail            | any      |
+| `pending`            | ○ Pending             | null            | -        |
 
 ## Constraints
 
-| ID | Rule | Rationale |
-|----|------|-----------|
-| C1 | Only PASS+0 = verified | Unscanned is not verified |
-| C2 | Badge shows trust level, not score | Score is misleading |
-| C3 | Quality checks are secondary | Security is primary signal |
-| C4 | "Most Secure" sort replaces "Highest Score" | Aligns with new system |
+| ID  | Rule                                        | Rationale                  |
+| --- | ------------------------------------------- | -------------------------- |
+| C1  | Only PASS+0 = verified                      | Unscanned is not verified  |
+| C2  | Badge shows trust level, not score          | Score is misleading        |
+| C3  | Quality checks are secondary                | Security is primary signal |
+| C4  | "Most Secure" sort replaces "Highest Score" | Aligns with new system     |
 
 ## Examples
 
-| Scenario | Expected Badge |
-|----------|---------------|
-| Skill with PASS verdict, 0 findings | 🛡️ Verified (green) |
+| Scenario                             | Expected Badge                 |
+| ------------------------------------ | ------------------------------ |
+| Skill with PASS verdict, 0 findings  | 🛡️ Verified (green)            |
 | Skill with PASS_WITH_NOTES, 2 medium | ⚠️ Review Recommended (yellow) |
-| Skill with FLAGGED verdict | 🚨 Concerns (orange) |
-| Skill with FAIL verdict | ✗ Unsafe (red) |
-| Skill not yet scanned | ○ Pending (gray) |
+| Skill with FLAGGED verdict           | 🚨 Concerns (orange)           |
+| Skill with FAIL verdict              | ✗ Unsafe (red)                 |
+| Skill not yet scanned                | ○ Pending (gray)               |
 ```
 
 ### T0.1: Gherkin Feature
@@ -125,24 +125,21 @@ Feature: Trust Badge Display
 **File:** `.bdd/steps/trust-badge.steps.ts`
 
 ```typescript
-import { Given, When, Then } from '@cucumber/cucumber';
-import { expect } from 'vitest';
+import { Given, When, Then } from "@cucumber/cucumber";
+import { expect } from "vitest";
 
 Given(
-  'a public skill {string} exists with verdict {string} and {int} findings',
+  "a public skill {string} exists with verdict {string} and {int} findings",
   async function (name: string, verdict: string, findingCount: number) {
     // Create skill with specific verdict and findings
-  }
+  },
 );
 
-Given(
-  'a public skill {string} exists with no scan results',
-  async function (name: string) {
-    // Create skill without scan results
-  }
-);
+Given("a public skill {string} exists with no scan results", async function (name: string) {
+  // Create skill without scan results
+});
 
-Then('I see a {string} {string} badge for {string}', async function (color: string, label: string, skillName: string) {
+Then("I see a {string} {string} badge for {string}", async function (color: string, label: string, skillName: string) {
   // Verify badge color and label
 });
 ```
@@ -154,7 +151,7 @@ Then('I see a {string} {string} badge for {string}', async function (color: stri
 **File:** `packages/web/lib/trust-level.ts`
 
 ```typescript
-export type TrustLevel = 'pending' | 'verified' | 'review_recommended' | 'concerns' | 'unsafe';
+export type TrustLevel = "pending" | "verified" | "review_recommended" | "concerns" | "unsafe";
 
 export interface TrustBadgeConfig {
   level: TrustLevel;
@@ -170,60 +167,60 @@ export function computeTrustLevel(
   criticalCount: number,
   highCount: number,
   mediumCount: number,
-  lowCount: number
+  lowCount: number,
 ): TrustLevel {
-  if (!verdict) return 'pending';
-  if (verdict === 'fail') return 'unsafe';
-  if (verdict === 'flagged') return 'concerns';
-  if (verdict === 'pass_with_notes') return 'review_recommended';
+  if (!verdict) return "pending";
+  if (verdict === "fail") return "unsafe";
+  if (verdict === "flagged") return "concerns";
+  if (verdict === "pass_with_notes") return "review_recommended";
   // PASS with 0 findings = truly verified
   const totalFindings = criticalCount + highCount + mediumCount + lowCount;
-  if (verdict === 'pass' && totalFindings === 0) return 'verified';
-  return 'review_recommended'; // PASS with findings
+  if (verdict === "pass" && totalFindings === 0) return "verified";
+  return "review_recommended"; // PASS with findings
 }
 
 export function getTrustBadgeConfig(level: TrustLevel): TrustBadgeConfig {
   const configs: Record<TrustLevel, TrustBadgeConfig> = {
     verified: {
-      level: 'verified',
-      icon: 'shield-check',
-      label: 'Verified',
-      bgClass: 'bg-green-100 dark:bg-green-900/30',
-      textClass: 'text-green-700 dark:text-green-400',
-      color: '#4c1'
+      level: "verified",
+      icon: "shield-check",
+      label: "Verified",
+      bgClass: "bg-green-100 dark:bg-green-900/30",
+      textClass: "text-green-700 dark:text-green-400",
+      color: "#4c1",
     },
     review_recommended: {
-      level: 'review_recommended',
-      icon: 'alert-triangle',
-      label: 'Review Recommended',
-      bgClass: 'bg-yellow-100 dark:bg-yellow-900/30',
-      textClass: 'text-yellow-700 dark:text-yellow-400',
-      color: '#dfb317'
+      level: "review_recommended",
+      icon: "alert-triangle",
+      label: "Review Recommended",
+      bgClass: "bg-yellow-100 dark:bg-yellow-900/30",
+      textClass: "text-yellow-700 dark:text-yellow-400",
+      color: "#dfb317",
     },
     concerns: {
-      level: 'concerns',
-      icon: 'alert-octagon',
-      label: 'Concerns',
-      bgClass: 'bg-orange-100 dark:bg-orange-900/30',
-      textClass: 'text-orange-700 dark:text-orange-400',
-      color: '#e05d44'
+      level: "concerns",
+      icon: "alert-octagon",
+      label: "Concerns",
+      bgClass: "bg-orange-100 dark:bg-orange-900/30",
+      textClass: "text-orange-700 dark:text-orange-400",
+      color: "#e05d44",
     },
     unsafe: {
-      level: 'unsafe',
-      icon: 'x-circle',
-      label: 'Unsafe',
-      bgClass: 'bg-red-100 dark:bg-red-900/30',
-      textClass: 'text-red-700 dark:text-red-400',
-      color: '#e05d44'
+      level: "unsafe",
+      icon: "x-circle",
+      label: "Unsafe",
+      bgClass: "bg-red-100 dark:bg-red-900/30",
+      textClass: "text-red-700 dark:text-red-400",
+      color: "#e05d44",
     },
     pending: {
-      level: 'pending',
-      icon: 'clock',
-      label: 'Pending',
-      bgClass: 'bg-gray-100 dark:bg-gray-900/30',
-      textClass: 'text-gray-600 dark:text-gray-400',
-      color: '#9f9f9f'
-    }
+      level: "pending",
+      icon: "clock",
+      label: "Pending",
+      bgClass: "bg-gray-100 dark:bg-gray-900/30",
+      textClass: "text-gray-600 dark:text-gray-400",
+      color: "#9f9f9f",
+    },
   };
   return configs[level];
 }
@@ -231,18 +228,18 @@ export function getTrustBadgeConfig(level: TrustLevel): TrustBadgeConfig {
 // Badge API helper (no React dependency)
 export function getTrustBadgeApiConfig(
   verdict: string | null,
-  totalFindings: number
+  totalFindings: number,
 ): { label: string; color: string; value: string } {
   const level = computeTrustLevel(verdict, 0, 0, 0, 0);
   const config = getTrustBadgeConfig(level);
 
-  if (level === 'verified') {
-    return { label: 'tank', color: config.color, value: 'verified' };
+  if (level === "verified") {
+    return { label: "tank", color: config.color, value: "verified" };
   }
-  if (level === 'review_recommended') {
-    return { label: 'tank', color: config.color, value: `${totalFindings} notes` };
+  if (level === "review_recommended") {
+    return { label: "tank", color: config.color, value: `${totalFindings} notes` };
   }
-  return { label: 'tank', color: config.color, value: config.label.toLowerCase() };
+  return { label: "tank", color: config.color, value: config.label.toLowerCase() };
 }
 ```
 
@@ -403,7 +400,7 @@ export interface SkillSearchResult {
 **File:** `packages/web/app/api/v1/badge/[...name]/route.ts`
 
 ```typescript
-import { getTrustBadgeApiConfig } from '@/lib/trust-level';
+import { getTrustBadgeApiConfig } from "@/lib/trust-level";
 
 // Query verdict and finding counts
 const results = await db.execute(sql`
@@ -424,8 +421,11 @@ const results = await db.execute(sql`
 
 const row = results[0] as Record<string, unknown>;
 const verdict = row.verdict as string | null;
-const totalFindings = (Number(row.criticalCount) || 0) + (Number(row.highCount) || 0) +
-                      (Number(row.mediumCount) || 0) + (Number(row.lowCount) || 0);
+const totalFindings =
+  (Number(row.criticalCount) || 0) +
+  (Number(row.highCount) || 0) +
+  (Number(row.mediumCount) || 0) +
+  (Number(row.lowCount) || 0);
 
 const badgeConfig = getTrustBadgeApiConfig(verdict, totalFindings);
 const svg = renderBadge(badgeConfig.label, badgeConfig.value, badgeConfig.color);

@@ -21,21 +21,21 @@ None.
 
 ### Auto-Fixed (1)
 
-| # | File:Line | Description | Fix Applied |
-|---|-----------|-------------|-------------|
-| 1 | `SecuritySidebarSummary.tsx:26` | Unused variable `config` | Removed unused variable and import |
+| #   | File:Line                       | Description              | Fix Applied                        |
+| --- | ------------------------------- | ------------------------ | ---------------------------------- |
+| 1   | `SecuritySidebarSummary.tsx:26` | Unused variable `config` | Removed unused variable and import |
 
 ## Intent Validation
 
 Per `.temper/specs/remove-sidebar-security-score/intent.md`:
 
-| Scenario | Status | Notes |
-|----------|--------|-------|
-| S1: Verified (PASS, 0 findings) | ✅ | Shows "Verified" badge + "Clean security scan" |
-| S2: Review Recommended | ✅ | Shows "Review Recommended" + findings count |
-| S3: Concerns (FLAGGED) | ✅ | Shows "Concerns" + findings count |
-| S4: Unsafe (FAIL) | ✅ | Shows "Unsafe" + findings count |
-| S5: Pending scan | ✅ | Shows "Pending" + "Awaiting security scan" |
+| Scenario                        | Status | Notes                                          |
+| ------------------------------- | ------ | ---------------------------------------------- |
+| S1: Verified (PASS, 0 findings) | ✅     | Shows "Verified" badge + "Clean security scan" |
+| S2: Review Recommended          | ✅     | Shows "Review Recommended" + findings count    |
+| S3: Concerns (FLAGGED)          | ✅     | Shows "Concerns" + findings count              |
+| S4: Unsafe (FAIL)               | ✅     | Shows "Unsafe" + findings count                |
+| S5: Pending scan                | ✅     | Shows "Pending" + "Awaiting security scan"     |
 
 ## Standards Compliance
 

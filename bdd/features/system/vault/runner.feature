@@ -8,7 +8,6 @@ Feature: Agent runner — tank run <agent>
   So that I don't have to manually configure proxies or env vars
 
   # ── Full happy flow ──────────────────────────────────────────────────────
-
   @high
   @happy-flow
   Scenario: End-to-end — tank run starts proxy with per-agent strategy, agent runs, proxy catches credentials in traffic, agent exits clean
@@ -27,7 +26,6 @@ Feature: Agent runner — tank run <agent>
     And "tank run" exits with code 0
 
   # ── Per-agent launch strategies (C21, C22) ────────────────────────────────
-
   @high
   Scenario: tank run claude — Node.js agent uses NODE_OPTIONS injection
     When the user runs "tank run claude"
@@ -77,7 +75,6 @@ Feature: Agent runner — tank run <agent>
     And the "universal" process is launched as a child process
 
   # ── Bonus: Env pre-seeding (C23) ─────────────────────────────────────────
-
   @medium
   @bonus
   Scenario: tank run with --prescan flag pre-seeds vault from environment
@@ -89,7 +86,6 @@ Feature: Agent runner — tank run <agent>
     And the agent is launched normally
 
   # ── Clean shutdown (C21) ─────────────────────────────────────────────────
-
   @high
   Scenario: Agent exit triggers proxy shutdown and vault cleanup
     Given "tank run claude" is running with an active proxy and vault session
@@ -107,7 +103,6 @@ Feature: Agent runner — tank run <agent>
     And the session vault is cleared
 
   # ── Unknown agent (C22, E19) ─────────────────────────────────────────────
-
   @high
   Scenario: Unknown agent name produces helpful error
     When the user runs "tank run nonexistent-agent"
@@ -117,7 +112,6 @@ Feature: Agent runner — tank run <agent>
     And no proxy is started
 
   # ── Edge cases ──────────────────────────────────────────────────────────
-
   @medium
   @edge-case
   Scenario: Agent crashes with non-zero exit code — proxy still cleans up

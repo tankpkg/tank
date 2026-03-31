@@ -9,7 +9,6 @@ Feature: Credential detection by format pattern
   without needing to know the actual credential values in advance
 
   # ── Full happy flow ──────────────────────────────────────────────────────
-
   @high
   @happy-flow
   Scenario: End-to-end — detect credentials in a realistic agent prompt
@@ -32,7 +31,6 @@ Feature: Credential detection by format pattern
     And all matches contain "start", "end", and "pattern_id" fields
 
   # ── Pattern-based detection (C1, C2) ────────────────────────────────────
-
   @high
   Scenario: Detects Stripe secret key by prefix and structure
     Given text containing "Use this key: sk_live_4eC39HqLyjWDarjtT1zdp7dc"
@@ -102,7 +100,6 @@ Feature: Credential detection by format pattern
     Then it returns a match with pattern "slack_webhook"
 
   # ── No false positives (C1) ─────────────────────────────────────────────
-
   @high
   Scenario: Does not match regular text without credentials
     Given text containing "No credentials here, just regular text"
@@ -122,7 +119,6 @@ Feature: Credential detection by format pattern
     Then it returns no matches
 
   # ── Multiple credentials (C1) ───────────────────────────────────────────
-
   @high
   Scenario: Detects multiple credentials in the same text
     Given text containing "Two keys: sk_live_abc123def456ghi789 and elvn_xyz789uvw456rst123"
@@ -132,7 +128,6 @@ Feature: Credential detection by format pattern
     And match 2 has pattern "elevenlabs_key"
 
   # ── Safety: never logs real values (C3) ──────────────────────────────────
-
   @high
   Scenario: Detector returns spans but never includes the matched value in output metadata
     Given text containing "Secret: sk_live_4eC39HqLyjWDarjtT1zdp7dc"
@@ -142,7 +137,6 @@ Feature: Credential detection by format pattern
     And the match result does not contain the original credential value as a field
 
   # ── Edge cases ──────────────────────────────────────────────────────────
-
   @medium
   @edge-case
   Scenario: Credential embedded in JSON string with escaped quotes

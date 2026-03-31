@@ -5,18 +5,19 @@
 **`@tank/security-review` is the primary regression test.** It's a published Tank skill that is pure markdown — security reference documentation. If the improved scanner flags it as CRITICAL or HIGH, the fix has failed.
 
 Expected scan result for `@tank/security-review`:
+
 - Verdict: `PASS` or `PASS_WITH_NOTES`
 - CRITICAL findings: 0
 - HIGH findings: 0
 - MEDIUM findings: 0 (instructional text is documentation, not injection)
 - INFO findings: some (code examples detected, permission references noted)
-- Key change: code inside ```` ```python ```` blocks → INFO, not CRITICAL
+- Key change: code inside ` ```python ` blocks → INFO, not CRITICAL
 
 ---
 
 ## Architecture: Two-Layer False Positive Reduction
 
-```
+````
                     Raw Finding
                         │
                         ▼
@@ -38,14 +39,16 @@ Expected scan result for `@tank/security-review`:
               ┌───────┴───────┐
          likely_benign    confirmed_threat/
          (downgrade)      uncertain (keep)
-```
+````
 
 **Layer 1: Hardcoded rules** (`context.py` + `safe_patterns.py`)
+
 - Instant, zero cost, zero latency
 - Catches the obvious cases: declared permissions, safe subprocess args, standard env vars, markdown structure
 - Conservative: only downgrades when ALL applicable factors agree
 
 **Layer 2: LLM corroboration** (`llm_analyzer.py` — already exists, 673 lines)
+
 - Only processes findings that survive Layer 1 as ambiguous
 - Uses existing Groq free tier: `llama-3.1-8b-instant` (primary), `llama-3.3-70b-versatile` (fallback)
 - One call per scan, ~1,500 tokens, ~500ms latency
@@ -53,20 +56,22 @@ Expected scan result for `@tank/security-review`:
 
 **Groq free tier capacity (confirmed 2026-03):**
 
-| Metric | Limit | Per-scan usage | Capacity |
-|--------|-------|---------------|----------|
-| `llama-3.1-8b-instant` RPM | 30 | 1 req | 30 scans/min |
-| `llama-3.1-8b-instant` RPD | 14,400 | 1 req | **14,400 scans/day** |
-| `llama-3.1-8b-instant` TPM | 6,000 | ~1,500 tokens | 4 scans/min |
-| `llama-3.3-70b-versatile` RPD | 1,000 | fallback only | plenty |
-| Cost | **$0** | **$0** | — |
+| Metric                        | Limit  | Per-scan usage | Capacity             |
+| ----------------------------- | ------ | -------------- | -------------------- |
+| `llama-3.1-8b-instant` RPM    | 30     | 1 req          | 30 scans/min         |
+| `llama-3.1-8b-instant` RPD    | 14,400 | 1 req          | **14,400 scans/day** |
+| `llama-3.1-8b-instant` TPM    | 6,000  | ~1,500 tokens  | 4 scans/min          |
+| `llama-3.3-70b-versatile` RPD | 1,000  | fallback only  | plenty               |
+| Cost                          | **$0** | **$0**         | —                    |
 
 ---
 
 ## Phase 1: Fix Over-Classification (Scanner Intelligence)
 
 ### Task 1.1: Add INFO severity level
+
 **Files:**
+
 - `apps/python-api/lib/scan/models.py` — add `info` to severity enum
 - `apps/python-api/lib/scan/verdict.py` — exclude `info` from verdict counting
 - `apps/registry/src/components/skills/findings-table.tsx` — add INFO rendering (gray badge, collapsed "Notes" section)
@@ -75,6 +80,7 @@ Expected scan result for `@tank/security-review`:
 **No DB migration needed** — severity is a text field.
 
 ### Task 1.2: Build hardcoded fast-path (ContextEvaluator)
+
 **New file:** `apps/python-api/lib/scan/context.py`
 
 ```python
@@ -90,40 +96,43 @@ class ContextEvaluator:
 
 **Downgrade rules** (instant, zero-cost — only when ALL applicable factors agree):
 
-| Factor | Condition | Adjustment | Resolved? |
-|--------|-----------|------------|-----------|
-| Permission declared | `fetch()` + `network.outbound` in manifest | HIGH → INFO | Yes (skip LLM) |
-| Safe literal args | `subprocess.call(["git", "status"])` | CRITICAL → LOW | Yes (skip LLM) |
-| Standard env vars | `process.env.NODE_ENV`, `PATH`, `HOME`, `CI` | MEDIUM → INFO | Yes (skip LLM) |
-| Inside code block | Match is between ```` ``` ```` fences | CRITICAL/HIGH → INFO | Yes (skip LLM) |
-| Inside heading | Match is on a `# heading` line | Skip entirely | Yes (skip LLM) |
-| Test/example file | Path matches `test_*`, `*_test.*`, `examples/` | → INFO | Yes (skip LLM) |
-| Build/config script | `setup.py`, `Makefile`, `justfile` | Context-dependent | No (send to LLM) |
+| Factor              | Condition                                      | Adjustment           | Resolved?        |
+| ------------------- | ---------------------------------------------- | -------------------- | ---------------- |
+| Permission declared | `fetch()` + `network.outbound` in manifest     | HIGH → INFO          | Yes (skip LLM)   |
+| Safe literal args   | `subprocess.call(["git", "status"])`           | CRITICAL → LOW       | Yes (skip LLM)   |
+| Standard env vars   | `process.env.NODE_ENV`, `PATH`, `HOME`, `CI`   | MEDIUM → INFO        | Yes (skip LLM)   |
+| Inside code block   | Match is between ` ``` ` fences                | CRITICAL/HIGH → INFO | Yes (skip LLM)   |
+| Inside heading      | Match is on a `# heading` line                 | Skip entirely        | Yes (skip LLM)   |
+| Test/example file   | Path matches `test_*`, `*_test.*`, `examples/` | → INFO               | Yes (skip LLM)   |
+| Build/config script | `setup.py`, `Makefile`, `justfile`             | Context-dependent    | No (send to LLM) |
 
 **Escalation rules** (keep severity, skip LLM):
 
-| Factor | Condition | Adjustment | Resolved? |
-|--------|-----------|------------|-----------|
-| Undeclared capability | `fetch()` with no `network.outbound` | HIGH → CRITICAL | Yes (skip LLM) |
-| Shell injection with user input | `os.system(f"cmd {var}")` | CRITICAL stays | Yes (skip LLM) |
-| Obfuscation + execution | `base64.b64decode() + exec()` | HIGH → CRITICAL | Yes (skip LLM) |
+| Factor                          | Condition                            | Adjustment      | Resolved?      |
+| ------------------------------- | ------------------------------------ | --------------- | -------------- |
+| Undeclared capability           | `fetch()` with no `network.outbound` | HIGH → CRITICAL | Yes (skip LLM) |
+| Shell injection with user input | `os.system(f"cmd {var}")`            | CRITICAL stays  | Yes (skip LLM) |
+| Obfuscation + execution         | `base64.b64decode() + exec()`        | HIGH → CRITICAL | Yes (skip LLM) |
 
 **New file:** `apps/python-api/lib/scan/safe_patterns.py`
+
 - Allowlist: safe subprocess args (`git`, `npm`, `pip`, `bun`, `node`, `python`, `echo`)
 - Allowlist: standard env vars (`NODE_ENV`, `PATH`, `HOME`, `CI`, `PORT`, `HOST`)
 - Allowlist: safe chmod targets (own scripts, not `/etc`, `/usr`, system paths)
 
 **Integration:**
+
 - `stage2_static.py` — call `ContextEvaluator.evaluate()` on each raw finding
 - `stage3_injection.py` — call on each regex match finding
 - Return `(finding, is_resolved)` — resolved findings skip LLM, unresolved ones go to Layer 2
 
 ### Task 1.3: Markdown structure awareness (Stage 3 fix)
+
 **File:** `apps/python-api/lib/scan/stage3_injection.py`
 
 This is the biggest false positive source. Changes:
 
-1. **Code block detection**: Before evaluating a match, check if the match position is inside a fenced code block (between ```` ``` ```` delimiters). If so → INFO or skip entirely.
+1. **Code block detection**: Before evaluating a match, check if the match position is inside a fenced code block (between ` ``` ` delimiters). If so → INFO or skip entirely.
 
 2. **Heading detection**: If match is on a line starting with `#` → skip (it's a heading, not an instruction).
 
@@ -135,6 +144,7 @@ This is the biggest false positive source. Changes:
 4. **Context window**: Read ±3 lines around match. If surrounding context is clearly instructional documentation (list items, headings, explanations) → downgrade to INFO.
 
 **Add helper:** `apps/python-api/lib/scan/markdown_utils.py`
+
 - `is_inside_code_block(content: str, position: int) -> bool`
 - `is_inside_heading(content: str, position: int) -> bool`
 - `get_surrounding_context(content: str, position: int, lines: int = 3) -> str`
@@ -166,7 +176,7 @@ AMBIGUOUS_TYPES = {
 
 2. **Add Stage 2 system prompt** for LLM context:
 
-```python
+````python
 STAGE2_LLM_PROMPT = """You are reviewing static analysis findings from a Tank skill package.
 Skills can contain Python, JS/TS, shell scripts, and markdown.
 
@@ -188,7 +198,7 @@ Context matters:
 
 Declared permissions for this skill: {permissions}
 """
-```
+````
 
 3. **Combine prompts for batched call** — use a single LLM call that includes both the injection-focused and static-analysis-focused system prompt:
 
@@ -214,6 +224,7 @@ if all_ambiguous and llm_analyzer.is_enabled():
 ```
 
 **Key constraint:** `MAX_FINDINGS_PER_CALL` stays at 12 (existing budget). If ambiguous findings exceed 12, prioritize:
+
 1. CRITICAL ambiguous (most value from LLM review)
 2. HIGH ambiguous
 3. MEDIUM ambiguous
@@ -221,16 +232,19 @@ if all_ambiguous and llm_analyzer.is_enabled():
 **Impact:** One LLM call per scan instead of one per stage. Same cost ($0 on Groq free tier), better coverage.
 
 ### Task 1.5: Finding deduplication
+
 **New file:** `apps/python-api/lib/scan/dedup.py`
 
 Post-processing step in scan orchestrator (`api/analyze/scan.py`), after all stages complete AND after LLM review, before verdict computation.
 
 Rules:
+
 - Same `file:line` from multiple tools → merge into one, keep highest severity, boost confidence to `max(a.confidence, b.confidence) * 1.1`
 - Same pattern type repeated in same file → consolidate with count ("3 occurrences of X in this file")
 - INFO findings that duplicate a higher-severity finding → drop the INFO
 
 ### Task 1.6: Remediation guidance + CWE references
+
 **New file:** `apps/python-api/lib/scan/remediation.py`
 
 Map of `finding_type` → `(remediation_text, cwe_id)`.
@@ -249,7 +263,9 @@ REMEDIATION_MAP = {
 **File:** `apps/python-api/lib/scan/models.py` — add `remediation: str | None` and `cwe_id: str | None` to Finding model.
 
 ### Task 1.7: Regression test suite
+
 **New files:**
+
 - `apps/python-api/tests/test_context.py` — ContextEvaluator unit tests (fast-path rules)
 - `apps/python-api/tests/test_dedup.py` — deduplication unit tests
 - `apps/python-api/tests/test_remediation.py` — remediation mapping tests
@@ -259,6 +275,7 @@ REMEDIATION_MAP = {
 - `apps/python-api/tests/test_llm_stage2.py` — LLM Stage 2 prompt integration
 
 **Validation anchor test:**
+
 ```python
 # test_stage3_regression.py
 def test_security_review_skill_no_critical_findings():
@@ -268,6 +285,7 @@ def test_security_review_skill_no_critical_findings():
 ```
 
 **Test fixtures** (in `apps/python-api/tests/fixtures/`):
+
 1. `security-review-skill/` — actual content from `@tank/security-review` (markdown-only)
 2. `declared-permission-skill/` — skill with `network.outbound` + `fetch()` → expect INFO (fast-path resolves)
 3. `undeclared-network-skill/` — skill with `fetch()` but no permissions → expect CRITICAL (fast-path resolves)
@@ -281,19 +299,25 @@ def test_security_review_skill_no_critical_findings():
 ## Phase 2: Remove Score System
 
 ### Task 2.1: Backend — stop computing score
+
 **File:** `apps/registry/src/api/routes/v1/skills-confirm.ts`
+
 - Remove `computeAuditScore()` call
 - Set `auditScore: null` on new skill versions
 
 **File:** `apps/registry/src/lib/skills/audit-score.ts`
+
 - Keep file (existing DB rows have scores), mark as `@deprecated`
 
 ### Task 2.2: UI — remove all score displays
+
 **Delete:**
+
 - `apps/registry/src/components/skills/score-breakdown.tsx`
 - `apps/registry/src/lib/score.ts`
 
 **Modify:**
+
 - `apps/registry/src/components/skills/security-overview.tsx` — remove score circle/number
 - `apps/registry/src/components/skills/skill-sidebar.tsx` — remove score section, keep trust badge
 - `apps/registry/src/screens/skills-list-screen.tsx` — remove ScoreBadge, use TrustBadge
@@ -301,7 +325,9 @@ def test_security_review_skill_no_critical_findings():
 - `apps/registry/src/components/skills/skills-filters.tsx` — replace score filter with security status filter (Verified / Review Recommended / Concerns / Unsafe)
 
 ### Task 2.3: Badge API
+
 **File:** `apps/registry/src/api/routes/v1/badge.ts` (or equivalent)
+
 - SVG shows trust level text instead of numeric score
 - Color based on verdict: `pass` → green, `pass_with_notes` → yellow, `flagged` → orange, `fail` → red, `pending` → gray
 
@@ -314,6 +340,7 @@ def test_security_review_skill_no_critical_findings():
 Async scanning (job queue, polling, webhooks) is Phase 4 — only if 55s proves insufficient.
 
 ### Task 3.1: Public scan API endpoint
+
 **New file:** `apps/registry/src/api/routes/v1/scan.ts`
 
 ```
@@ -323,42 +350,48 @@ POST /api/v1/scan
 ```
 
 **Flow:**
+
 1. Validate URL (SSRF protection — reject internal IPs, require HTTPS for non-local)
 2. Rate limit check (IP-based for anonymous, user-based for auth)
 3. Proxy to Python scanner: `POST ${PYTHON_API_URL}/api/analyze/scan` with `tarball_url`
 4. Return scanner response directly (synchronous, ~5-30s)
 
 **SSRF protection** (`apps/registry/src/lib/scan/url-validator.ts`):
-- Reject private IPs: 10.x, 172.16-31.x, 192.168.x, 127.x, ::1, fd*
+
+- Reject private IPs: 10.x, 172.16-31.x, 192.168.x, 127.x, ::1, fd\*
 - Reject non-HTTPS for production
 - Allowlist localhost only in development
 - URL must end in `.tar.gz`, `.tgz`, or be a known registry URL pattern
 
 ### Task 3.2: Rate limiting
+
 **New file:** `apps/registry/src/api/middleware/rate-limit.ts`
 
 Simple in-memory rate limiter (Map of IP/user → count + window reset).
 
-| Tier | Limit | Window |
-|------|-------|--------|
-| Anonymous (IP-based) | 3 scans | 1 hour |
-| Authenticated free | 20 scans | 1 hour |
-| Authenticated pro | 200 scans | 1 hour |
+| Tier                 | Limit     | Window |
+| -------------------- | --------- | ------ |
+| Anonymous (IP-based) | 3 scans   | 1 hour |
+| Authenticated free   | 20 scans  | 1 hour |
+| Authenticated pro    | 200 scans | 1 hour |
 
 For on-prem: unlimited (single-tenant).
 
 **Note:** In-memory works for single-instance. For multi-replica, use Redis-backed store (Phase 4).
 
 ### Task 3.3: Scan report page
+
 **New route:** `apps/registry/src/routes/scan/index.tsx`
 
 Public-facing scanner tool page:
+
 - URL input with "Scan Now" button
 - Inline loading state (stage-by-stage progress)
 - Result renders on same page
 - "Share" button generates permalink (stores result client-side or in URL hash for v1)
 
 **Report sections:**
+
 1. Trust badge + verdict + one-line summary
 2. Findings grouped by category (code execution, injection, secrets, supply chain)
 3. Each finding: severity, location, evidence, remediation, CWE
@@ -366,6 +399,7 @@ Public-facing scanner tool page:
 5. Permission analysis (declared vs detected)
 
 ### Task 3.4: Scanner service authentication
+
 **File:** `apps/python-api/api/` — add auth middleware
 
 - New env var: `SCANNER_SERVICE_KEY`
@@ -374,9 +408,11 @@ Public-facing scanner tool page:
 - Feature flag: `SCANNER_AUTH_ENABLED` (default false, enable after scanner deploy)
 
 ### Task 3.5: Pattern database externalization
+
 **New directory:** `apps/python-api/lib/scan/patterns/`
 
 Move hardcoded regex patterns from Python source to YAML/JSON data files:
+
 - `patterns/injection.json` — Stage 3 regex patterns
 - `patterns/static.json` — Stage 2 detection rules
 - `patterns/safe_patterns.json` — allowlists for ContextEvaluator
@@ -449,14 +485,15 @@ Phase 4 = future RFCs, not in scope.
 
 ## Effort Estimate
 
-| Phase | Tasks | Estimated Effort |
-|-------|-------|-----------------|
-| Phase 1 | 1.1–1.7 | 2–3 weeks (core scanner work + LLM integration) |
-| Phase 2 | 2.1–2.3 | 1 week (mostly deletion) |
-| Phase 3 | 3.1–3.5 | 1–2 weeks (synchronous scan proxy + simple UI) |
-| **Total** | | **4–6 weeks** |
+| Phase     | Tasks   | Estimated Effort                                |
+| --------- | ------- | ----------------------------------------------- |
+| Phase 1   | 1.1–1.7 | 2–3 weeks (core scanner work + LLM integration) |
+| Phase 2   | 2.1–2.3 | 1 week (mostly deletion)                        |
+| Phase 3   | 3.1–3.5 | 1–2 weeks (synchronous scan proxy + simple UI)  |
+| **Total** |         | **4–6 weeks**                                   |
 
 LLM expansion (Task 1.4) adds minimal effort because:
+
 - `llm_analyzer.py` already handles provider fallback, 429 errors, timeout budgets
 - New work = expand `AMBIGUOUS_TYPES`, add Stage 2 system prompt, batch findings in orchestrator
 - Groq free tier covers all expected volume ($0 cost)

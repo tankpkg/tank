@@ -15,6 +15,7 @@ The sidebar on skill pages displayed a numeric security score (e.g., "8/10") wit
 Replaced the numeric score display with a **trust-level-based description** using the existing `computeTrustLevel` function.
 
 ### Before (sidebar)
+
 ```
 Security
 ─────────
@@ -24,6 +25,7 @@ PASS WITH NOTES
 ```
 
 ### After (sidebar)
+
 ```
 Security
 ─────────
@@ -33,11 +35,11 @@ Security
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `packages/web/components/security/SecuritySidebarSummary.tsx` | **NEW** - Compact trust badge display |
-| `packages/web/components/security/index.ts` | Added export |
-| `packages/web/app/(registry)/skills/[...name]/page.tsx` | Replaced score display with SecuritySidebarSummary |
+| File                                                          | Change                                             |
+| ------------------------------------------------------------- | -------------------------------------------------- |
+| `packages/web/components/security/SecuritySidebarSummary.tsx` | **NEW** - Compact trust badge display              |
+| `packages/web/components/security/index.ts`                   | Added export                                       |
+| `packages/web/app/(registry)/skills/[...name]/page.tsx`       | Replaced score display with SecuritySidebarSummary |
 
 ## Verification
 
