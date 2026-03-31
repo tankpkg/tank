@@ -11,10 +11,10 @@ import { z } from 'zod';
 import { env } from '~/consts/env';
 import { resolveRequestUserId } from '~/lib/auth/authz';
 import { validateScanUrl } from '~/lib/scan/url-validator';
+import { log as baseLog } from '~/services/logger';
 import { anonymousLimiter, authFreeLimiter } from '../../middleware/rate-limit';
 
-import { getLog } from '~/lib/log';
-const log = getLog('scan:public');
+const log = baseLog.child({ module: 'scan:public' });
 
 const scanSchema = z.object({
   url: z.string().url().max(2048)
@@ -50,7 +50,7 @@ export const scanRoutes = new Hono().post('/', zValidator('json', scanSchema), a
 
   try {
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     };
 
     if (env.SCANNER_SERVICE_KEY) {
