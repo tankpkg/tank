@@ -27,11 +27,12 @@ def compute_verdict(stage_results: list[StageResult]) -> ScanVerdict:
     for stage in stage_results:
         all_findings.extend(stage.findings)
 
-    # Count by severity
+    # Count by severity (info excluded — not actionable)
     critical_count = sum(1 for f in all_findings if f.severity == "critical")
     high_count = sum(1 for f in all_findings if f.severity == "high")
     medium_count = sum(1 for f in all_findings if f.severity == "medium")
     low_count = sum(1 for f in all_findings if f.severity == "low")
+    info_count = sum(1 for f in all_findings if f.severity == "info")
 
     # Apply verdict rules
     if critical_count > 0:
@@ -68,6 +69,7 @@ def get_verdict_counts(stage_results: list[StageResult]) -> dict:
         "high": sum(1 for f in all_findings if f.severity == "high"),
         "medium": sum(1 for f in all_findings if f.severity == "medium"),
         "low": sum(1 for f in all_findings if f.severity == "low"),
+        "info": sum(1 for f in all_findings if f.severity == "info"),
     }
 
 

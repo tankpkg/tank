@@ -1,0 +1,50 @@
+{
+  "_comment": "Stage 3 injection detection patterns. Severity weights: 1.0=deterministic, <0.5=ambiguous.",
+  "direct_override": [
+    { "pattern": "ignore\\s+(all|any)?\\s*(previous|prior|above|earlier)\\s*(instructions?|prompts?|rules?|guidelines?)", "severity": "critical", "weight": 1.0 },
+    { "pattern": "disregard\\s+(above|previous|prior|all|everything)", "severity": "critical", "weight": 1.0 },
+    { "pattern": "override\\s+(system|safety|security)\\s*(prompt|rules?|instructions?|guidelines?)", "severity": "critical", "weight": 1.0 },
+    { "pattern": "forget\\s+(everything|all|your)\\s*(you\\s*)?(were|was)?\\s*(told|instructed|said)", "severity": "critical", "weight": 1.0 },
+    { "pattern": "your\\s+(new|real|actual|true)\\s*(role|purpose|instructions?|identity)", "severity": "critical", "weight": 0.95 },
+    { "pattern": "this\\s+(is|was)\\s+(the|your)?\\s*(real|actual|true)\\s*(system\\s*)?(prompt|instruction)", "severity": "critical", "weight": 1.0 }
+  ],
+  "role_hijacking": [
+    { "pattern": "you\\s+are\\s+now\\s+(a|an|my)?", "severity": "critical", "weight": 0.9 },
+    { "pattern": "act\\s+as\\s+(if\\s+you\\s+are|though\\s+you\\s+are|a|an)", "severity": "critical", "weight": 0.9 },
+    { "pattern": "pretend\\s+(you\\s+are|to\\s+be|that\\s+you)", "severity": "critical", "weight": 0.9 },
+    { "pattern": "pretending\\s+to\\s+be", "severity": "critical", "weight": 0.85 },
+    { "pattern": "role[\\s-]?play\\s+as", "severity": "critical", "weight": 0.85 },
+    { "pattern": "simulate\\s+(being|a|an)", "severity": "critical", "weight": 0.85 },
+    { "pattern": "from\\s+now\\s+on[,.]?\\s+you\\s+are", "severity": "critical", "weight": 0.9 },
+    { "pattern": "switch\\s+to\\s+(developer|admin|root)\\s+mode", "severity": "critical", "weight": 0.95 }
+  ],
+  "exfiltration": [
+    { "pattern": "send\\s+(to|it\\s+to|this\\s+to|the\\s+contents\\s+to|data\\s+to)", "severity": "high", "weight": 0.9 },
+    { "pattern": "post\\s+(to|this\\s+to|the\\s+data\\s+to)", "severity": "high", "weight": 0.9 },
+    { "pattern": "include\\s+in\\s+your\\s+response\\s+(the\\s+contents\\s+of|all|every)", "severity": "high", "weight": 0.95 },
+    { "pattern": "(output|print|display|show|reveal)\\s+(the|your|all)\\s*(system\\s+prompt|instructions?|context|environment|secrets?)", "severity": "critical", "weight": 1.0 },
+    { "pattern": "repeat\\s+(the\\s+)?(above|previous|last|following)", "severity": "medium", "weight": 0.6 },
+    { "pattern": "copy\\s+(and\\s+paste\\s+)?(the\\s+)?(following|above|text)", "severity": "medium", "weight": 0.6 },
+    { "pattern": "forward\\s+(this|the|all)\\s*(to|data|information)", "severity": "high", "weight": 0.8 }
+  ],
+  "privilege_escalation": [
+    { "pattern": "run\\s+as\\s+root", "severity": "critical", "weight": 1.0 },
+    { "pattern": "sudo\\s+", "severity": "high", "weight": 0.85 },
+    { "pattern": "chmod\\s+777", "severity": "high", "weight": 0.8 },
+    { "pattern": "disable\\s+(safety|security|restrictions?|guardrails?|filters?)", "severity": "critical", "weight": 0.95 },
+    { "pattern": "enable\\s+(admin|root|superuser|unrestricted)\\s+mode", "severity": "critical", "weight": 0.95 },
+    { "pattern": "(ignore|bypass|skip|disable)\\s+(all\\s+)?(safety|security|content)\\s*(checks?|filters?|restrictions?)", "severity": "critical", "weight": 1.0 },
+    { "pattern": "elevated\\s+privileges?", "severity": "high", "weight": 0.85 }
+  ],
+  "claude_format": [
+    { "pattern": "<tool_use>", "severity": "critical", "weight": 1.0 },
+    { "pattern": "<function_calls?>", "severity": "critical", "weight": 1.0 },
+    { "pattern": "<system>", "severity": "critical", "weight": 0.95 },
+    { "pattern": "<human>", "severity": "critical", "weight": 0.9 },
+    { "pattern": "<assistant>", "severity": "critical", "weight": 0.9 },
+    { "pattern": "</?antml?:", "severity": "critical", "weight": 1.0 },
+    { "pattern": "\\[SYSTEM\\]", "severity": "critical", "weight": 0.85 },
+    { "pattern": "\\[HUMAN\\]", "severity": "high", "weight": 0.8 },
+    { "pattern": "\\[ASSISTANT\\]", "severity": "high", "weight": 0.8 }
+  ]
+}

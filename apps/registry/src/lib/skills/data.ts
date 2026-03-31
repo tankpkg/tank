@@ -46,7 +46,7 @@ import type {
 
 export interface ScanFinding {
   stage: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
   type: string;
   description: string;
   location: string | null;
@@ -55,6 +55,8 @@ export interface ScanFinding {
   evidence: string | null;
   llm_verdict?: string | null;
   llm_reviewed?: boolean;
+  remediation?: string | null;
+  cwe_id?: string | null;
 }
 
 export interface LLMAnalysisInfo {
@@ -81,6 +83,7 @@ export interface ScanDetails {
   highCount: number;
   mediumCount: number;
   lowCount: number;
+  infoCount: number;
   llm_analysis?: LLMAnalysisInfo | null;
 }
 
@@ -216,6 +219,7 @@ export async function getSkillDetail(
         SELECT sr.verdict, sr.stages_run AS "stagesRun", sr.duration_ms AS "durationMs",
                sr.critical_count AS "criticalCount", sr.high_count AS "highCount",
                sr.medium_count AS "mediumCount", sr.low_count AS "lowCount",
+               sr.info_count AS "infoCount",
                sr.created_at AS "scannedAt", sr.llm_analysis AS "llm_analysis"
         FROM scan_results sr WHERE sr.version_id = sv.id
         ORDER BY sr.created_at DESC LIMIT 1
@@ -284,6 +288,7 @@ export async function getSkillDetail(
         highCount: Number(scanResultJson.highCount) || 0,
         mediumCount: Number(scanResultJson.mediumCount) || 0,
         lowCount: Number(scanResultJson.lowCount) || 0,
+        infoCount: Number(scanResultJson.infoCount) || 0,
         llm_analysis:
           scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === 'object'
             ? (scanResultJson.llm_analysis as LLMAnalysisInfo)
@@ -299,6 +304,7 @@ export async function getSkillDetail(
         highCount: 0,
         mediumCount: 0,
         lowCount: 0,
+        infoCount: 0,
         llm_analysis: null
       };
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import type { ScanFinding } from '~/lib/skills/data';
 
 export interface FindingsTableProps {
@@ -9,7 +10,8 @@ const severityColor: Record<string, string> = {
   critical: 'text-red-600 bg-red-50 dark:bg-red-950',
   high: 'text-orange-600 bg-orange-50 dark:bg-orange-950',
   medium: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-950',
-  low: 'text-blue-600 bg-blue-50 dark:bg-blue-950'
+  low: 'text-blue-600 bg-blue-50 dark:bg-blue-950',
+  info: 'text-muted-foreground bg-muted'
 };
 
 const TRUNCATE_LENGTH = 100;
@@ -55,36 +57,36 @@ export function FindingsTable({ findings }: FindingsTableProps) {
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-muted/50">
-            <th className="text-left px-3 py-2 font-medium">Severity</th>
-            <th className="text-left px-3 py-2 font-medium">Type</th>
-            <th className="text-left px-3 py-2 font-medium">Description</th>
-            <th className="text-left px-3 py-2 font-medium">Location</th>
-            <th className="text-left px-3 py-2 font-medium">Tool</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="text-xs font-medium uppercase tracking-wide">Severity</TableHead>
+            <TableHead className="text-xs font-medium uppercase tracking-wide">Type</TableHead>
+            <TableHead className="text-xs font-medium uppercase tracking-wide">Description</TableHead>
+            <TableHead className="text-xs font-medium uppercase tracking-wide">Location</TableHead>
+            <TableHead className="text-xs font-medium uppercase tracking-wide">Tool</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {findings.map((f, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: findings can have duplicate stage+type
-            <tr key={`${f.stage}-${f.type}-${i}`} className="border-b last:border-0 align-top">
-              <td className="px-3 py-2">
+            <TableRow key={`${f.stage}-${f.type}-${i}`} className="align-top">
+              <TableCell>
                 <span
                   className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${severityColor[f.severity] ?? ''}`}>
                   {f.severity}
                 </span>
-              </td>
-              <td className="px-3 py-2 font-mono text-xs">{f.type}</td>
-              <td className="px-3 py-2 max-w-xs">
+              </TableCell>
+              <TableCell className="font-mono text-xs">{f.type}</TableCell>
+              <TableCell className="max-w-xs">
                 <ExpandableDescription description={f.description} evidence={f.evidence ?? null} />
-              </td>
-              <td className="px-3 py-2 font-mono text-xs text-muted-foreground">{f.location ?? '\u2014'}</td>
-              <td className="px-3 py-2 text-xs text-muted-foreground">{f.tool ?? f.stage}</td>
-            </tr>
+              </TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">{f.location ?? '\u2014'}</TableCell>
+              <TableCell className="text-xs text-muted-foreground">{f.tool ?? f.stage}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

@@ -27,6 +27,7 @@ from lib.scan.models import (
     ScanVerdict,
     StageResult,
 )
+from lib.scan.remediation import enrich_findings
 from lib.scan.stage0_ingest import cleanup_ingest, stage0_ingest
 from lib.scan.stage1_structure import stage1_validate
 from lib.scan.stage2_static import stage2_analyze
@@ -48,6 +49,7 @@ async def store_scan_results(
     duration_ms: int,
     file_hashes: dict[str, str],
     llm_analysis: LLMAnalysis | None = None,
+    enriched_findings: list[Finding] | None = None,
 ) -> str | None:
     """Store scan results in PostgreSQL.
 
@@ -58,8 +60,11 @@ async def store_scan_results(
         return None
 
     try:
+        import logging
         import psycopg
         from psycopg.rows import dict_row
+
+        logger = logging.getLogger(__name__)
 
         counts = get_verdict_counts(stage_results)
         stages_run = get_stages_run(stage_results)
@@ -95,12 +100,12 @@ async def store_scan_results(
                 if not scan_id:
                     return None
 
-                # Insert scan_findings
-                all_findings: list[Finding] = []
-                for stage in stage_results:
-                    all_findings.extend(stage.findings)
+                # Insert scan_findings — use enriched findings if available
+                findings_to_store = enriched_findings if enriched_findings is not None else [
+                    f for stage in stage_results for f in stage.findings
+                ]
 
-                if all_findings:
+                if findings_to_store:
                     finding_values = [
                         (
                             scan_id,
@@ -114,16 +119,19 @@ async def store_scan_results(
                             f.evidence,
                             f.llm_verdict,
                             f.llm_reviewed,
+                            getattr(f, "remediation", None),
+                            getattr(f, "cwe_id", None),
                         )
-                        for f in all_findings
+                        for f in findings_to_store
                     ]
 
                     await cur.executemany(
                         """
                         INSERT INTO scan_findings
                         (scan_id, stage, severity, type, description, location,
-                         confidence, tool, evidence, llm_verdict, llm_reviewed)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                         confidence, tool, evidence, llm_verdict, llm_reviewed,
+                         remediation, cwe_id)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         finding_values,
                     )
@@ -133,7 +141,7 @@ async def store_scan_results(
 
     except Exception as e:
         # Log error but don't fail the scan
-        print(f"Database storage error: {e}")
+        logger.error(f"Database storage error for version_id={version_id}: {e}", exc_info=True)
         return None
 
 
@@ -238,12 +246,14 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                     )
                 )
 
-        # Stage 2: Static Code Analysis
+        # Stage 2: Static Code Analysis (with context evaluation + ambiguous findings)
+        stage2_ambiguous: list[Finding] = []
+        stage2_ran = False
         elapsed = int((time.monotonic() - start) * 1000)
         remaining_budget = MAX_SCAN_DURATION_MS - elapsed
         if remaining_budget > 10000:
             try:
-                result = stage2_analyze(
+                result, stage2_ambiguous = stage2_analyze(
                     ingest_result,
                     request.manifest,
                     request.permissions,
@@ -260,12 +270,18 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                     )
                 )
 
-        # Stage 3: Prompt Injection Detection (with LLM corroboration)
+        # Stage 3: Prompt Injection Detection (with context evaluation + LLM corroboration)
         elapsed = int((time.monotonic() - start) * 1000)
         remaining_budget = MAX_SCAN_DURATION_MS - elapsed
         if remaining_budget > 5000:
             try:
-                result, llm_analysis = await stage3_detect_injection(ingest_result, llm_analysis)
+                result, llm_analysis = await stage3_detect_injection(
+                    ingest_result,
+                    llm_analysis,
+                    permissions=request.permissions,
+                    manifest=request.manifest,
+                    extra_ambiguous=stage2_ambiguous,
+                )
                 stage_results.append(result)
             except Exception as e:
                 stage_results.append(
@@ -340,24 +356,9 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
         ]
     )
 
-    # Compute final verdict
-    verdict = compute_verdict(stage_results)
-    duration_ms = int((time.monotonic() - start) * 1000)
-
-    # Store results in database
-    scan_id = await store_scan_results(
-        request.version_id,
-        verdict,
-        stage_results,
-        duration_ms,
-        file_hashes,
-        llm_analysis,
-    )
-
-    return ScanResponse(
-        scan_id=scan_id,
-        verdict=verdict.value,
-        findings=[
+    # Enrich findings with remediation guidance and CWE references
+    enriched_findings = enrich_findings(
+        [
             Finding(
                 stage=f["stage"],
                 severity=f["severity"],
@@ -371,7 +372,28 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                 llm_reviewed=f.get("llm_reviewed", False),
             )
             for f in deduped_findings
-        ],
+        ]
+    )
+
+    # Compute final verdict
+    verdict = compute_verdict(stage_results)
+    duration_ms = int((time.monotonic() - start) * 1000)
+
+    # Store results in database
+    scan_id = await store_scan_results(
+        request.version_id,
+        verdict,
+        stage_results,
+        duration_ms,
+        file_hashes,
+        llm_analysis,
+        enriched_findings=enriched_findings,
+    )
+
+    return ScanResponse(
+        scan_id=scan_id,
+        verdict=verdict.value,
+        findings=enriched_findings,
         stage_results=stage_results,
         duration_ms=duration_ms,
         file_hashes=file_hashes,
@@ -398,32 +420,12 @@ async def scan_handler(request: ScanRequest) -> ScanResponse:
     try:
         return await run_scan_pipeline(request)
     except Exception as e:
-        # Catch-all for unexpected errors
-        return ScanResponse(
-            scan_id=None,
-            verdict=ScanVerdict.FAIL.value,
-            findings=[
-                Finding(
-                    stage="orchestrator",
-                    severity="critical",
-                    type="scan_error",
-                    description=f"Scan failed with unexpected error: {e!s}",
-                    confidence=1.0,
-                    tool="scan_orchestrator",
-                )
-            ],
-            stage_results=[
-                StageResult(
-                    stage="orchestrator",
-                    status="errored",
-                    findings=[],
-                    duration_ms=0,
-                    error=str(e),
-                )
-            ],
-            duration_ms=0,
-            file_hashes={},
-            llm_analysis=None,
+        # Catch-all for unexpected errors — return 500 so caller can distinguish crash from result
+        import logging
+        logging.getLogger(__name__).error(f"Scan pipeline crashed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Scan failed with unexpected error: {e!s}",
         )
 
 
