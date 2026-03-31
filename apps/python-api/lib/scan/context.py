@@ -12,12 +12,11 @@ Conservative: only downgrades when ALL applicable factors agree.
 Returns (finding, is_resolved). Resolved findings skip LLM (Layer 2).
 """
 
-import ast
 import logging
 import re
 from typing import Any
 
-from lib.scan.markdown_utils import get_code_block_language, is_inside_code_block, is_inside_heading
+from lib.scan.markdown_utils import is_inside_code_block, is_inside_heading
 from lib.scan.models import Finding
 from lib.scan.safe_patterns import is_build_file, is_safe_env_var, is_safe_subprocess_call, is_test_file
 
@@ -156,10 +155,7 @@ class ContextEvaluator:
             return True
 
         # Subprocess with subprocess permission declared
-        if finding.type in ("shell_injection", "subprocess_usage") and self._subprocess_allowed:
-            return True
-
-        return False
+        return bool(finding.type in ("shell_injection", "subprocess_usage") and self._subprocess_allowed)
 
     def _is_network_finding(self, finding: Finding) -> bool:
         """Check if finding relates to network access."""

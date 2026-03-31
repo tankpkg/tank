@@ -21,8 +21,8 @@ from pathlib import Path
 import httpx
 
 from lib.scan.llm_types import (
-    DEFAULT_GROQ_70B_MODEL,
     DEFAULT_GROQ_8B_MODEL,
+    DEFAULT_GROQ_70B_MODEL,
     DEFAULT_OPENROUTER_MODEL,
     DEFAULT_TIMEOUT_MS,
     LLM_SYSTEM_PROMPT,
@@ -31,7 +31,6 @@ from lib.scan.llm_types import (
     LLMProviderConfig,
     LLMVerdict,
 )
-
 from lib.scan.models import Finding
 
 logger = logging.getLogger(__name__)
@@ -205,7 +204,7 @@ class LLMAnalyzer:
             f"LLM filtering: {len(ambiguous)} ambiguous (to LLM), {len(deterministic)} deterministic (bypass LLM)"
         )
         if deterministic:
-            logger.debug(f"Deterministic finding types: {{f.type for f in deterministic}}")
+            logger.debug("Deterministic finding types: {f.type for f in deterministic}")
 
         return ambiguous, deterministic
 

@@ -6,7 +6,6 @@ Pure utility functions with no async or external API dependencies.
 import json
 import re
 from pathlib import Path
-from typing import Any
 
 from lib.scan.models import Finding
 

@@ -61,6 +61,7 @@ async def store_scan_results(
 
     try:
         import logging
+
         import psycopg
         from psycopg.rows import dict_row
 
@@ -248,7 +249,6 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
 
         # Stage 2: Static Code Analysis (with context evaluation + ambiguous findings)
         stage2_ambiguous: list[Finding] = []
-        stage2_ran = False
         elapsed = int((time.monotonic() - start) * 1000)
         remaining_budget = MAX_SCAN_DURATION_MS - elapsed
         if remaining_budget > 10000:
@@ -426,7 +426,7 @@ async def scan_handler(request: ScanRequest) -> ScanResponse:
         raise HTTPException(
             status_code=500,
             detail=f"Scan failed with unexpected error: {e!s}",
-        )
+        ) from e
 
 
 @app.get("/scan/health")

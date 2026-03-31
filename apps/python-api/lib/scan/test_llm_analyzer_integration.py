@@ -8,11 +8,9 @@ import pytest
 
 from lib.scan.llm_analyzer import (
     LLMAnalyzer,
-    LLMVerdict,
     check_llm_health,
 )
 from lib.scan.models import Finding
-
 
 # ==============================================================================
 # SHARED FIXTURES

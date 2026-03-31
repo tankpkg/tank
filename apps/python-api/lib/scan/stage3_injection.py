@@ -12,13 +12,13 @@ from pathlib import Path
 from lib.scan.cisco_scanner import run_skill_scanner
 from lib.scan.llm_analyzer import LLMAnalyzer
 from lib.scan.models import Finding, IngestResult, LLMAnalysis, StageResult
+from lib.scan.snyk_scanner import run_snyk_scanner
 from lib.scan.stage3_patterns import (
     ALL_PATTERNS,
     compute_suspicion_score,
     detect_base64_in_comments,
     detect_hidden_content,
 )
-from lib.scan.snyk_scanner import run_snyk_scanner
 
 
 def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:

@@ -199,10 +199,7 @@ def is_test_file(file_path: str) -> bool:
     Returns:
         True if the path matches test/example patterns.
     """
-    for pattern in TEST_PATH_PATTERNS:
-        if pattern.search(file_path):
-            return True
-    return False
+    return any(pattern.search(file_path) for pattern in TEST_PATH_PATTERNS)
 
 
 def is_build_file(file_path: str) -> bool:

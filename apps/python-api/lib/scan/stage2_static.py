@@ -11,10 +11,9 @@ from typing import Any
 
 from lib.scan.context import ContextEvaluator
 from lib.scan.models import Finding, IngestResult, StageResult
-from lib.scan.safe_patterns import is_safe_subprocess_call
 from lib.scan.stage2_analyzers import (
-    PYTHON_EXTENSIONS,
     JS_EXTENSIONS,
+    PYTHON_EXTENSIONS,
     SHELL_EXTENSIONS,
     analyze_js_file,
     analyze_python_file,
