@@ -70,19 +70,15 @@ export function ScanPage() {
     }
   }
 
-  const criticalCount = result?.findings.filter(f => f.severity === 'critical').length ?? 0;
-  const highCount = result?.findings.filter(f => f.severity === 'high').length ?? 0;
-  const mediumCount = result?.findings.length
-    ? result.findings.filter(f => f.severity === 'medium').length
-    : 0;
+  const criticalCount = result?.findings.filter((f) => f.severity === 'critical').length ?? 0;
+  const highCount = result?.findings.filter((f) => f.severity === 'high').length ?? 0;
+  const mediumCount = result?.findings.length ? result.findings.filter((f) => f.severity === 'medium').length : 0;
 
   return (
     <div className="tank-shell py-10 space-y-8">
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight">Security Scanner</h1>
-        <p className="mt-1 text-muted-foreground">
-          Scan any npm package or tarball URL for security vulnerabilities.
-        </p>
+        <p className="mt-1 text-muted-foreground">Scan any npm package or tarball URL for security vulnerabilities.</p>
       </div>
 
       {/* Input */}
@@ -126,7 +122,9 @@ export function ScanPage() {
       {state === 'error' && error && (
         <Card>
           <CardContent className="py-6">
-            <p role="alert" className="text-sm font-medium text-destructive">{error}</p>
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {error}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -144,8 +142,7 @@ export function ScanPage() {
                     <Button
                       size="sm"
                       variant="secondary"
-                      onClick={() => copy('Scan Result', JSON.stringify(result, null, 2))}
-                    >
+                      onClick={() => copy('Scan Result', JSON.stringify(result, null, 2))}>
                       {copiedLabel === 'Scan Result' ? 'Copied!' : 'Share'}
                     </Button>
                   </div>
@@ -168,11 +165,10 @@ export function ScanPage() {
               {/* Pipeline stages */}
               {result.stage_results.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {result.stage_results.map(stage => (
+                  {result.stage_results.map((stage) => (
                     <span
                       key={stage.stage}
-                      className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground"
-                    >
+                      className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
                       {stage.stage} ({stage.duration_ms}ms)
                     </span>
                   ))}

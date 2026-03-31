@@ -15,7 +15,7 @@ export class RateLimiter {
 
   constructor(
     private maxRequests: number,
-    private windowSeconds: number = 3600
+    private windowSeconds = 3600
   ) {}
 
   check(key: string): { allowed: boolean; remaining: number; retryAfter: number } {
@@ -65,10 +65,13 @@ export const authProLimiter = new RateLimiter(200, 3600); // 200/hr
 
 // Periodic cleanup every 30 minutes to prevent unbounded memory growth
 if (typeof setInterval !== 'undefined') {
-  const handle = setInterval(() => {
-    anonymousLimiter.cleanup();
-    authFreeLimiter.cleanup();
-    authProLimiter.cleanup();
-  }, 30 * 60 * 1000);
+  const handle = setInterval(
+    () => {
+      anonymousLimiter.cleanup();
+      authFreeLimiter.cleanup();
+      authProLimiter.cleanup();
+    },
+    30 * 60 * 1000
+  );
   handle.unref?.(); // Don't prevent process exit
 }
