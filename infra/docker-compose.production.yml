@@ -42,8 +42,8 @@ services:
     container_name: tank-rustfs
     restart: unless-stopped
     environment:
-      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-tank}
-      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-tank123456}
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-${MINIO_ROOT_USER:-tank}}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-tank123456}}
       RUSTFS_VOLUMES: /data
       RUSTFS_ADDRESS: 0.0.0.0:9000
       RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
@@ -51,7 +51,7 @@ services:
     volumes:
       - rustfs_data:/data
     ports:
-      - "${S3_CONSOLE_PORT:-9001}:9001"
+      - "${S3_CONSOLE_PORT:-${MINIO_CONSOLE_PORT:-9001}}:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
       interval: 30s
@@ -104,8 +104,8 @@ services:
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
       STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
       S3_ENDPOINT: http://rustfs:9000
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-tank}
-      S3_SECRET_KEY: ${S3_SECRET_KEY:-tank123456}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-${MINIO_ROOT_USER:-tank}}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-tank123456}}
       S3_BUCKET: ${S3_BUCKET:-packages}
       S3_REGION: ${S3_REGION:-us-east-1}
       PYTHON_API_URL: http://scanner:8000

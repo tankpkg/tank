@@ -660,7 +660,7 @@ export function SetupWizardScreen() {
                   </select>
                 </div>
 
-                {(['rustfs', 's3', 's3-compatible'] as string[]).includes(state.storage.backend) && (
+                {(['minio', 'rustfs', 's3', 's3-compatible'] as string[]).includes(state.storage.backend) && (
                   <>
                     {state.storage.backend !== 's3' && (
                       <div className="space-y-2">

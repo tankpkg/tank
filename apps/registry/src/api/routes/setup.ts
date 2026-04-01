@@ -170,7 +170,7 @@ export const setupRoutes = new Hono()
       supabaseServiceKey?: string;
     }>();
 
-    const normalizedBackend = ['rustfs', 's3', 's3-compatible'].includes(body.backend) ? 's3' : body.backend;
+    const normalizedBackend = ['minio', 'rustfs', 's3', 's3-compatible'].includes(body.backend) ? 's3' : body.backend;
 
     const update: Record<string, unknown> = {
       storageBackend: normalizedBackend,
@@ -250,7 +250,7 @@ export const setupRoutes = new Hono()
         return c.json({ ok: true });
       }
 
-      if (['s3', 'rustfs', 's3-compatible'].includes(backend)) {
+      if (['s3', 'minio', 'rustfs', 's3-compatible'].includes(backend)) {
         if (!body.accessKey || !body.secretKey) {
           return c.json({ ok: false, error: 'S3 access key and secret key are required' }, 400);
         }

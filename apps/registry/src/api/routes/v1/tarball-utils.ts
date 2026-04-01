@@ -37,60 +37,71 @@ export function listFilesInTarball(tarball: Uint8Array): Promise<string[]> {
   });
 }
 
-export function extractFileFromTarball(tarball: Uint8Array, targetPath: string): Promise<string | null> {
+export async function extractFileFromTarball(tarball: Uint8Array, targetPath: string): Promise<string | null> {
+  const rawPaths = await collectRawPaths(tarball);
+  const stripped = stripCommonRoot(rawPaths);
+  const idx = stripped.indexOf(targetPath);
+  if (idx === -1) return null;
+
+  const rawTarget = rawPaths[idx];
+  return extractSingleFile(tarball, rawTarget);
+}
+
+function collectRawPaths(tarball: Uint8Array): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const extractor = extract();
+    const gunzip = createGunzip();
+    const paths: string[] = [];
+
+    extractor.on('entry', (header, stream, next) => {
+      if (header.type === 'file') paths.push(header.name);
+      stream.resume();
+      stream.on('end', next);
+    });
+
+    extractor.on('finish', () => resolve(paths));
+    extractor.on('error', reject);
+    gunzip.on('error', reject);
+    gunzip.pipe(extractor);
+    gunzip.end(Buffer.from(tarball));
+  });
+}
+
+function extractSingleFile(tarball: Uint8Array, rawPath: string): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const extractor = extract();
     const gunzip = createGunzip();
     let found = false;
-    const allRaw: string[] = [];
-    const pendingChunks = new Map<string, Buffer[]>();
 
     extractor.on('entry', (header, stream, next) => {
-      if (header.type !== 'file') {
+      if (!found && header.type === 'file' && header.name === rawPath) {
+        if (header.size && header.size > MAX_TARBALL_FILE_BYTES) {
+          stream.resume();
+          stream.on('end', next);
+          return;
+        }
+        const chunks: Buffer[] = [];
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        stream.on('end', () => {
+          found = true;
+          resolve(Buffer.concat(chunks).toString('utf-8'));
+          gunzip.destroy();
+        });
+      } else {
         stream.resume();
         stream.on('end', next);
-        return;
       }
-
-      if (header.size && header.size > MAX_TARBALL_FILE_BYTES) {
-        stream.resume();
-        stream.on('end', next);
-        return;
-      }
-
-      const raw = header.name;
-      allRaw.push(raw);
-
-      const chunks: Buffer[] = [];
-      pendingChunks.set(raw, chunks);
-      stream.on('data', (chunk: Buffer) => chunks.push(chunk));
-      stream.on('end', next);
     });
 
     extractor.on('finish', () => {
-      if (found) return;
-      const stripped = stripCommonRoot(allRaw);
-      const idx = stripped.indexOf(targetPath);
-
-      if (idx === -1) {
-        resolve(null);
-        return;
-      }
-
-      const matchedRaw = allRaw[idx];
-      const chunks = pendingChunks.get(matchedRaw);
-      if (!chunks) {
-        resolve(null);
-        return;
-      }
-
-      found = true;
-      resolve(Buffer.concat(chunks).toString('utf-8'));
+      if (!found) resolve(null);
     });
-
-    extractor.on('error', reject);
-    gunzip.on('error', reject);
-
+    extractor.on('error', (err) => {
+      if (!found) reject(err);
+    });
+    gunzip.on('error', (err) => {
+      if (!found) reject(err);
+    });
     gunzip.pipe(extractor);
     gunzip.end(Buffer.from(tarball));
   });

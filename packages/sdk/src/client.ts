@@ -232,6 +232,16 @@ export class TankClient {
     if (options?.buffer || options?.dest) {
       const buffer = await this.readStreamWithLimit(res.body, MAX_DOWNLOAD_BYTES);
 
+      const nodeCrypto = await import('node:crypto');
+      const hash = nodeCrypto.createHash('sha512').update(buffer).digest('base64');
+      const computed = `sha512-${hash}`;
+      if (detail.integrity && detail.integrity !== 'pending' && computed !== detail.integrity) {
+        throw new TankIntegrityError('Integrity verification failed', {
+          expected: detail.integrity,
+          actual: computed
+        });
+      }
+
       if (options?.dest) {
         const destDir = options.dest.replace(/^~/, os.homedir());
         if (!fs.existsSync(destDir)) {
@@ -241,17 +251,6 @@ export class TankClient {
         const filename = `${safeName}-${version}.tgz`;
         const destPath = path.join(destDir, filename);
         fs.writeFileSync(destPath, buffer);
-
-        const nodeCrypto = await import('node:crypto');
-        const hash = nodeCrypto.createHash('sha512').update(buffer).digest('base64');
-        const computed = `sha512-${hash}`;
-        if (detail.integrity && detail.integrity !== 'pending' && computed !== detail.integrity) {
-          fs.unlinkSync(destPath);
-          throw new TankIntegrityError('Integrity verification failed', {
-            expected: detail.integrity,
-            actual: computed
-          });
-        }
         return;
       }
 

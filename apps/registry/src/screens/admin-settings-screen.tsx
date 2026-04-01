@@ -260,7 +260,7 @@ export function AdminSettingsScreen() {
     );
   }
 
-  const isS3Backend = ['s3', 'rustfs', 's3-compatible'].includes(storageBackend);
+  const isS3Backend = ['s3', 'minio', 'rustfs', 's3-compatible'].includes(storageBackend);
   const isSupabaseBackend = storageBackend === 'supabase';
 
   return (

@@ -269,7 +269,16 @@ export async function extractSafely(tarball: Buffer, destDir: string): Promise<v
       if (entry === path.basename(tmpTarball)) continue;
       const src = path.join(tmpDir, entry);
       const dst = path.join(destDir, entry);
-      fs.renameSync(src, dst);
+      try {
+        fs.renameSync(src, dst);
+      } catch (err: unknown) {
+        if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
+          fs.cpSync(src, dst, { recursive: true });
+          fs.rmSync(src, { recursive: true, force: true });
+        } else {
+          throw err;
+        }
+      }
     }
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });

@@ -13,7 +13,7 @@ export {
   REGISTRY_URL as DEFAULT_REGISTRY_URL
 } from '@internals/schemas';
 
-export const SDK_VERSION = '0.1.0';
+export const SDK_VERSION = '0.10.6';
 export const DEFAULT_CONFIG_DIR = '~/.tank';
 export const DEFAULT_MAX_RETRIES = 3;
 export const DEFAULT_TIMEOUT_MS = 30_000;
