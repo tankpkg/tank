@@ -85,6 +85,32 @@ export interface ScanDetails {
   lowCount: number;
   infoCount: number;
   llm_analysis?: LLMAnalysisInfo | null;
+  depAudit?: DepAuditData | null;
+}
+
+export interface DepAuditData {
+  ecosystem: string;
+  packageCount: number;
+  vulnerableCount: number;
+  vulnSummary: { critical: number; high: number; medium: number; low: number };
+  tldr: string | null;
+  healthScore: number | null;
+  status: string;
+  packages: Array<{
+    name: string;
+    version: string;
+    quality: number | null;
+    popularity: number | null;
+    maintenance: number | null;
+    overallScore: number | null;
+    vulns: Array<{
+      id: string;
+      cve: string | null;
+      severity: string;
+      title: string;
+      url: string | null;
+    }>;
+  }>;
 }
 
 export interface SkillVersionDetail {
@@ -234,7 +260,15 @@ export async function getSkillDetail(
       WHERE sf.scan_id = (
         SELECT sr.id FROM scan_results sr WHERE sr.version_id = sv.id
         ORDER BY sr.created_at DESC LIMIT 1
-      )) AS "scanFindings"
+      )) AS "scanFindings",
+      (SELECT row_to_json(da) FROM (
+        SELECT da2.ecosystem, da2.package_count AS "packageCount",
+               da2.vulnerable_count AS "vulnerableCount", da2.vuln_summary AS "vulnSummary",
+               da2.tldr, da2.health_score AS "healthScore", da2.status,
+               da2.packages
+        FROM dep_audit_results da2 WHERE da2.version_id = sv.id
+        ORDER BY da2.created_at DESC LIMIT 1
+      ) da) AS "depAudit"
     FROM skills s
     LEFT JOIN "user" u ON u.id = s.publisher_id
     LEFT JOIN skill_versions sv ON sv.skill_id = s.id
@@ -263,6 +297,7 @@ export async function getSkillDetail(
   const latestRowData = rows.find((r) => r.version === latestRow?.version);
   const scanResultJson = latestRowData?.scanResult as Record<string, unknown> | null;
   const scanFindingsJson = latestRowData?.scanFindings as ScanFinding[] | null;
+  const depAuditJson = latestRowData?.depAudit as DepAuditData | null;
 
   // Safely parse scannedAt date
   let scannedAt: Date | null = null;
@@ -292,7 +327,8 @@ export async function getSkillDetail(
         llm_analysis:
           scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === 'object'
             ? (scanResultJson.llm_analysis as LLMAnalysisInfo)
-            : null
+            : null,
+        depAudit: depAuditJson ?? null
       }
     : {
         verdict: null,
@@ -305,7 +341,8 @@ export async function getSkillDetail(
         mediumCount: 0,
         lowCount: 0,
         infoCount: 0,
-        llm_analysis: null
+        llm_analysis: null,
+        depAudit: null
       };
 
   const latestVersion: SkillVersionDetail | null = latestRow

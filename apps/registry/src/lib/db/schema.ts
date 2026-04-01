@@ -322,6 +322,42 @@ export const scanFindings = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// dep_audit_results — dependency audit data from free APIs (npms.io, OSV.dev, npm audit)
+// ---------------------------------------------------------------------------
+
+export const depAuditResults = pgTable(
+  'dep_audit_results',
+  {
+    id,
+    versionId: uuid('version_id')
+      .notNull()
+      .references(() => skillVersions.id),
+    ecosystem: text('ecosystem').notNull(), // 'npm', 'pypi', 'mixed', 'none'
+    packageCount: integer('package_count').notNull().default(0),
+    vulnerableCount: integer('vulnerable_count').notNull().default(0),
+    vulnSummary: jsonb('vuln_summary').$type<{ critical: number; high: number; medium: number; low: number }>(),
+    packages:
+      jsonb('packages').$type<
+        Array<{
+          name: string;
+          version: string;
+          quality: number | null;
+          popularity: number | null;
+          maintenance: number | null;
+          overallScore: number | null;
+          vulns: Array<{ id: string; cve: string | null; severity: string; title: string; url: string | null }>;
+        }>
+      >(),
+    tldr: text('tldr'),
+    healthScore: real('health_score'),
+    sourcesQueried: jsonb('sources_queried').$type<{ npms: boolean; osv: boolean; npmAudit: boolean }>(),
+    status: text('status').notNull().default('pending'), // 'pending','completed','partial_failure','failed'
+    createdAt
+  },
+  (table) => [index('dep_audit_results_version_id_created_at_idx').on(table.versionId, table.createdAt)]
+);
+
+// ---------------------------------------------------------------------------
 // Relations
 // ---------------------------------------------------------------------------
 
@@ -398,7 +434,15 @@ export const skillVersionsRelations = relations(skillVersions, ({ one, many }) =
     fields: [skillVersions.publishedBy],
     references: [user.id]
   }),
-  scanResults: many(scanResults)
+  scanResults: many(scanResults),
+  depAuditResults: many(depAuditResults)
+}));
+
+export const depAuditResultsRelations = relations(depAuditResults, ({ one }) => ({
+  version: one(skillVersions, {
+    fields: [depAuditResults.versionId],
+    references: [skillVersions.id]
+  })
 }));
 
 export const scanResultsRelations = relations(scanResults, ({ one, many }) => ({

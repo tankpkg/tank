@@ -5,6 +5,7 @@ import { env } from '~/consts/env';
 import { db } from '~/lib/db';
 import { user } from '~/lib/db/auth-schema';
 import { auditEvents, scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
+import { depAuditService } from '~/lib/dep-audit/service';
 import { getStorageProvider } from '~/services/storage/provider';
 
 export const packagesRoutes = new Hono()
@@ -291,6 +292,11 @@ export const packagesRoutes = new Hono()
       targetType: 'skill',
       targetId: row.skillId,
       metadata: { name, version: row.version, versionId: row.versionId }
+    });
+
+    // Non-blocking: refresh dep audit data for this version
+    depAuditService.runAudit(row.versionId, row.manifest as Record<string, unknown>).catch(() => {
+      // Dep audit failure is non-blocking
     });
 
     return c.json({

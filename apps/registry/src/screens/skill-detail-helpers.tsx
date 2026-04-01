@@ -1,4 +1,5 @@
 import { encodeSkillName } from '@internals/helpers';
+import { DepAuditCard } from '~/components/skills/dep-audit-card';
 import { FindingsTable } from '~/components/skills/findings-table';
 import type { PipelineStage } from '~/components/skills/scan-pipeline';
 import { ScanPipeline } from '~/components/skills/scan-pipeline';
@@ -150,6 +151,8 @@ export function buildSecurityTab({ data, scanDetails }: { data: SkillDetailResul
       </div>
 
       <ScanPipeline stages={buildPipelineStages(scanDetails)} />
+
+      {scanDetails.depAudit && <DepAuditCard depAudit={scanDetails.depAudit} />}
     </div>
   );
 }
