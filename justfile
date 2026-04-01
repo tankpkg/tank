@@ -75,11 +75,12 @@ build target='all':
         registry) bun run --filter registry build ;;
         cli)     bun run --filter @tankpkg/cli build ;;
         mcp)     bun run --filter @tankpkg/mcp-server build ;;
+        sdk)     bun run --filter @tankpkg/sdk build ;;
         internals-schemas) bun run --filter @internals/schemas build ;;
         internals-helpers) bun run --filter @internals/helpers build ;;
         binary) bun run --filter @tankpkg/cli build:binary ;;
         all)    bun turbo build ;;
-        *) echo "Unknown target: {{target}}. Use: registry, cli, mcp, internals-schemas, internals-helpers, binary, all" && exit 1 ;;
+        *) echo "Unknown target: {{target}}. Use: registry, cli, mcp, sdk, internals-schemas, internals-helpers, binary, all" && exit 1 ;;
     esac
 
 # just fmt        - format all code (TypeScript + Python)
@@ -184,6 +185,10 @@ bump VERSION:
     jq ".version = \"{{VERSION}}\"" packages/mcp-server/package.json > packages/mcp-server/package.json.tmp && mv packages/mcp-server/package.json.tmp packages/mcp-server/package.json
     jq ".version = \"{{VERSION}}\"" packages/internals-schemas/package.json > packages/internals-schemas/package.json.tmp && mv packages/internals-schemas/package.json.tmp packages/internals-schemas/package.json
     jq ".version = \"{{VERSION}}\"" packages/internals-helpers/package.json > packages/internals-helpers/package.json.tmp && mv packages/internals-helpers/package.json.tmp packages/internals-helpers/package.json
+    jq ".version = \"{{VERSION}}\"" packages/sdk/package.json > packages/sdk/package.json.tmp && mv packages/sdk/package.json.tmp packages/sdk/package.json
+
+    # Update SDK core version (Python pyproject.toml)
+    sed -i.bak "s/^version = .*/version = \"{{VERSION}}\"/" packages/sdk-core/crates/python/pyproject.toml && rm -f packages/sdk-core/crates/python/pyproject.toml.bak
 
     # Update Chart.yaml
     sed -i.bak "s/^appVersion: .*/appVersion: \"{{VERSION}}\"/" infra/helm/tank/Chart.yaml && rm -f infra/helm/tank/Chart.yaml.bak
@@ -361,16 +366,29 @@ ci-publish-npm-nightly:
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build internals-helpers
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build cli
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build mcp
+    TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build sdk
     (cd packages/cli && npm publish --no-git-checks --access public --tag nightly)
     (cd packages/mcp-server && npm publish --no-git-checks --access public --tag nightly)
+    (cd packages/sdk && npm publish --no-git-checks --access public --tag nightly)
 
 [group('ci')]
 ci-publish-npm VERSION:
     #!/usr/bin/env bash
     set -euo pipefail
     just ci-build-cli {{VERSION}}
+    (cd packages/sdk && bun run build)
     (cd packages/cli && npm publish --no-git-checks --access public)
     (cd packages/mcp-server && npm publish --no-git-checks --access public)
+    (cd packages/sdk && npm publish --no-git-checks --access public)
+
+[group('ci')]
+ci-publish-pypi:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd packages/sdk-core/crates/python
+    pip install maturin
+    maturin build --release
+    maturin publish
 
 [group('ci')]
 ci-release-tag VERSION:

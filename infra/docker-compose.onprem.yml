@@ -30,23 +30,26 @@ services:
     networks:
       - tank
 
-  minio:
-    image: minio/minio:latest
+  rustfs:
+    image: rustfs/rustfs:latest
     container_name: tank-storage
     restart: unless-stopped
-    command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-tank}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-changeme123456}
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-${MINIO_ROOT_USER:-tank}}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-changeme123456}}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: "true"
     volumes:
-      - miniodata:/data
+      - rustfs_data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
       interval: 5s
       timeout: 5s
       retries: 5
     ports:
-      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+      - "${S3_CONSOLE_PORT:-${MINIO_CONSOLE_PORT:-9001}}:9001"
     networks:
       - tank
 
@@ -56,7 +59,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-tank}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-tank}
-      S3_ENDPOINT: http://minio:9000
+      S3_ENDPOINT: http://rustfs:9000
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
@@ -81,9 +84,9 @@ services:
       BETTER_AUTH_URL: ${APP_URL:-http://localhost:3000}
       AUTH_PROVIDERS: ${AUTH_PROVIDERS:-credentials}
       STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
-      S3_ENDPOINT: http://minio:9000
-      S3_ACCESS_KEY: ${MINIO_ROOT_USER:-tank}
-      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-changeme123456}
+      S3_ENDPOINT: http://rustfs:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-${MINIO_ROOT_USER:-tank}}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-changeme123456}}
       S3_BUCKET: ${S3_BUCKET:-packages}
       S3_REGION: ${S3_REGION:-us-east-1}
       PYTHON_API_URL: http://scanner:8000
@@ -100,7 +103,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
+      rustfs:
         condition: service_healthy
       scanner:
         condition: service_started
@@ -109,7 +112,7 @@ services:
 
 volumes:
   pgdata:
-  miniodata:
+  rustfs_data:
 
 networks:
   tank:

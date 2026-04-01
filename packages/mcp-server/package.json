@@ -24,6 +24,7 @@
   "devDependencies": {
     "@internals/helpers": "workspace:*",
     "@internals/schemas": "workspace:*",
+    "@tankpkg/sdk": "workspace:*",
     "@types/node": "^25.5.0",
     "tsdown": "^0.21.3",
     "tsx": "^4.21.0",

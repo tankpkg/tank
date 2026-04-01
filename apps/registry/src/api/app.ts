@@ -11,7 +11,7 @@ import { storageRoutes } from './routes/storage';
 import { v1Routes } from './routes/v1';
 
 function normalizeBackend(raw: string): string {
-  return ['minio', 's3-compatible'].includes(raw) ? 's3' : raw;
+  return ['minio', 'rustfs', 's3-compatible'].includes(raw) ? 's3' : raw;
 }
 
 const storageReady = (async () => {

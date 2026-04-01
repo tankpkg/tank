@@ -1,6 +1,4 @@
-import { zValidator } from '@hono/zod-validator';
-import { Hono } from 'hono';
-import { z } from 'zod';
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { getAppUrl } from '~/lib/app-url';
 import { isUserBlocked } from '~/lib/auth/authz';
 import { authorizeSession, consumeSession, createSession, getSession } from '~/lib/auth/cli-store';
@@ -8,19 +6,168 @@ import { auth } from '~/lib/auth/core';
 import { authLog } from '~/services/logger';
 
 const startSchema = z.object({
-  state: z.string().min(8).max(256)
+  state: z.string().min(8).max(256).openapi({ description: 'Random state string for CSRF protection' })
 });
 const authorizeSchema = z.object({
-  sessionCode: z.uuid()
+  sessionCode: z.string().uuid().openapi({ description: 'Session code from /start' })
 });
 const exchangeSchema = z.object({
-  sessionCode: z.uuid(),
-  state: z.string().min(8).max(256)
+  sessionCode: z.string().uuid().openapi({ description: 'Session code from /start' }),
+  state: z.string().min(8).max(256).openapi({ description: 'Must match the state from /start' })
 });
 
-export const cliAuthRoutes = new Hono()
+const startRoute = createRoute({
+  method: 'post',
+  path: '/start',
+  tags: ['CLI Auth'],
+  summary: 'Start CLI authentication flow',
+  description: 'Creates a pending CLI auth session. The user opens the returned authUrl in a browser to approve.',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: startSchema }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: 'Auth session created',
+      content: {
+        'application/json': {
+          schema: z.object({
+            authUrl: z.string().url(),
+            sessionCode: z.string().uuid()
+          })
+        }
+      }
+    },
+    400: {
+      description: 'Invalid request',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    }
+  }
+});
 
-  .post('/start', zValidator('json', startSchema), async (c) => {
+const authorizeRoute = createRoute({
+  method: 'post',
+  path: '/authorize',
+  tags: ['CLI Auth'],
+  summary: 'Authorize a CLI session',
+  description: 'Called from the web UI after the user approves the CLI login. Requires an active web session.',
+  security: [{ BearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: authorizeSchema }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: 'Session authorized',
+      content: {
+        'application/json': {
+          schema: z.object({ success: z.literal(true) })
+        }
+      }
+    },
+    400: {
+      description: 'Invalid request or session could not be authorized',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    401: {
+      description: 'No web session',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    403: {
+      description: 'Account suspended',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    404: {
+      description: 'Session not found or expired',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    }
+  }
+});
+
+const exchangeRoute = createRoute({
+  method: 'post',
+  path: '/exchange',
+  tags: ['CLI Auth'],
+  summary: 'Exchange session for API token',
+  description: 'Exchanges an authorized CLI session code for a long-lived API token.',
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: exchangeSchema }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: 'Token issued',
+      content: {
+        'application/json': {
+          schema: z.object({
+            token: z.string(),
+            user: z.object({
+              name: z.string().nullable(),
+              email: z.string().nullable()
+            })
+          })
+        }
+      }
+    },
+    400: {
+      description: 'Invalid or expired session',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    403: {
+      description: 'Account suspended',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    500: {
+      description: 'Failed to create API key',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    }
+  }
+});
+
+export const cliAuthRoutes = new OpenAPIHono()
+
+  .openapi(startRoute, async (c) => {
     try {
       const { state } = c.req.valid('json');
 
@@ -36,7 +183,7 @@ export const cliAuthRoutes = new Hono()
         'Session created successfully'
       );
 
-      return c.json({ authUrl, sessionCode });
+      return c.json({ authUrl, sessionCode }, 200);
     } catch (err) {
       authLog.error(
         {
@@ -50,7 +197,7 @@ export const cliAuthRoutes = new Hono()
     }
   })
 
-  .post('/authorize', zValidator('json', authorizeSchema), async (c) => {
+  .openapi(authorizeRoute, async (c) => {
     try {
       authLog.info({ action: 'authorize' }, 'CLI auth authorize request received');
 
@@ -100,7 +247,7 @@ export const cliAuthRoutes = new Hono()
         'Session authorized successfully'
       );
 
-      return c.json({ success: true });
+      return c.json({ success: true as const }, 200);
     } catch (err) {
       authLog.error(
         {
@@ -114,7 +261,7 @@ export const cliAuthRoutes = new Hono()
     }
   })
 
-  .post('/exchange', zValidator('json', exchangeSchema), async (c) => {
+  .openapi(exchangeRoute, async (c) => {
     try {
       authLog.info({ action: 'exchange' }, 'CLI auth exchange request received');
 
@@ -180,13 +327,16 @@ export const cliAuthRoutes = new Hono()
         'Exchange completed successfully - user authenticated via CLI'
       );
 
-      return c.json({
-        token: apiKeyResult.key,
-        user: {
-          name: session.userName ?? null,
-          email: session.userEmail ?? null
-        }
-      });
+      return c.json(
+        {
+          token: apiKeyResult.key,
+          user: {
+            name: session.userName ?? null,
+            email: session.userEmail ?? null
+          }
+        },
+        200
+      );
     } catch (err) {
       authLog.error(
         {

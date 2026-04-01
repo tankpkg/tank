@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "tankpkg"
+version = "0.1.0"
+requires-python = ">=3.9"
+description = "Tank SDK core — Python bindings for the security-first AI skill package manager"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Rust",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.maturin]
+manifest-path = "Cargo.toml"
+features = ["pyo3/abi3-py39"]

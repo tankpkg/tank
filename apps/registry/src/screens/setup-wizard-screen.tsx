@@ -31,7 +31,7 @@ interface StepState {
   };
   instanceUrl: { url: string };
   storage: {
-    backend: 'minio' | 's3' | 'supabase' | 's3-compatible' | 'filesystem';
+    backend: 'rustfs' | 's3' | 'supabase' | 's3-compatible' | 'filesystem';
     endpoint: string;
     region: string;
     bucket: string;
@@ -228,7 +228,7 @@ export function SetupWizardScreen() {
     },
     instanceUrl: { url: typeof window !== 'undefined' ? window.location.origin : '' },
     storage: {
-      backend: 'minio',
+      backend: 'rustfs',
       endpoint: '',
       region: 'us-east-1',
       bucket: 'packages',
@@ -269,7 +269,7 @@ export function SetupWizardScreen() {
             let uiBackend: StepState['storage']['backend'] = s.storage.backend;
             if (sd.backend === 'filesystem') uiBackend = 'filesystem';
             else if (sd.backend === 'supabase') uiBackend = 'supabase';
-            else if (sd.backend === 's3' && sd.endpoint) uiBackend = 'minio';
+            else if (sd.backend === 's3' && sd.endpoint) uiBackend = 'rustfs';
             else if (sd.backend === 's3') uiBackend = 's3';
 
             return {
@@ -340,7 +340,7 @@ export function SetupWizardScreen() {
         await run(async () => {
           const s = state.storage;
           await post('/api/setup/storage', {
-            backend: s.backend === 'minio' ? 's3' : s.backend,
+            backend: s.backend === 'rustfs' ? 's3' : s.backend,
             endpoint: s.endpoint || undefined,
             region: s.region || undefined,
             bucket: s.bucket || undefined,
@@ -628,8 +628,8 @@ export function SetupWizardScreen() {
                     onChange={(e) => {
                       const backend = e.target.value as StepState['storage']['backend'];
                       const defaults: Record<string, Partial<StepState['storage']>> = {
-                        minio: {
-                          endpoint: 'http://minio:9000',
+                        rustfs: {
+                          endpoint: 'http://rustfs:9000',
                           region: 'us-east-1',
                           bucket: 'packages',
                           accessKey: '',
@@ -652,7 +652,7 @@ export function SetupWizardScreen() {
                       }));
                     }}
                     disabled={loading}>
-                    <option value="minio">MinIO (Docker Compose)</option>
+                    <option value="rustfs">RustFS (Docker Compose)</option>
                     <option value="s3">AWS S3</option>
                     <option value="s3-compatible">S3-Compatible (R2, DigitalOcean, Backblaze)</option>
                     <option value="supabase">Supabase Storage</option>
@@ -660,7 +660,7 @@ export function SetupWizardScreen() {
                   </select>
                 </div>
 
-                {(['minio', 's3', 's3-compatible'] as string[]).includes(state.storage.backend) && (
+                {(['minio', 'rustfs', 's3', 's3-compatible'] as string[]).includes(state.storage.backend) && (
                   <>
                     {state.storage.backend !== 's3' && (
                       <div className="space-y-2">
@@ -668,8 +668,8 @@ export function SetupWizardScreen() {
                         <Input
                           id="storage-endpoint"
                           placeholder={
-                            state.storage.backend === 'minio'
-                              ? 'http://minio:9000'
+                            state.storage.backend === 'rustfs'
+                              ? 'http://rustfs:9000'
                               : 'https://s3.us-east-1.amazonaws.com'
                           }
                           value={state.storage.endpoint}

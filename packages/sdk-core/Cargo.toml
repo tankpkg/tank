@@ -1,0 +1,32 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/node",
+    "crates/python",
+]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.88"
+license = "MIT"
+
+[workspace.dependencies]
+sdk-core    = { path = "crates/core" }
+napi        = { version = "3", default-features = false, features = ["napi8"] }
+napi-derive = { version = "3" }
+napi-build  = { version = "2" }
+pyo3        = { version = "0.28", features = ["extension-module"] }
+sha2        = "0.10"
+tar         = "0.4"
+flate2      = "1"
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+thiserror   = "2"
+semver      = "1"
+glob-match  = "0.2"
+base64      = "0.22"
+
+[profile.release]
+lto   = true
+strip = "symbols"

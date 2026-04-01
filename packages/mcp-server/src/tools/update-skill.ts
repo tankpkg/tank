@@ -271,9 +271,7 @@ export function registerUpdateSkillTool(server: McpServer): void {
       // 10. Download tarball
       let tarballBuffer: ArrayBuffer;
       try {
-        const tarballRes = await fetch(versionData.downloadUrl, {
-          headers: client.token ? { Authorization: `Bearer ${client.token}` } : {}
-        });
+        const tarballRes = await fetch(versionData.downloadUrl);
         if (!tarballRes.ok) {
           return {
             content: [

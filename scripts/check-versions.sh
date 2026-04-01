@@ -11,6 +11,7 @@ declare -a FILES=(
   "packages/mcp-server/package.json"
   "packages/internals-schemas/package.json"
   "packages/internals-helpers/package.json"
+  "packages/sdk/package.json"
   "infra/helm/tank/Chart.yaml"
 )
 
