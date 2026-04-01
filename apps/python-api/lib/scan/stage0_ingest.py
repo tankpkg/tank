@@ -335,7 +335,7 @@ def narrow_to_sub_path(
     temp_dir: str,
     sub_path: str,
     extracted_files: list[str],
-) -> tuple[str, list[str], int, list[Finding]]:
+) -> tuple[str, list[str], int | None, list[Finding]]:
     """Narrow extracted contents to a specific subdirectory.
 
     Used for monorepo support where a tarball contains multiple skills
@@ -350,14 +350,15 @@ def narrow_to_sub_path(
         extracted_files: List of relative file paths from extraction
 
     Returns:
-        (new_temp_dir, filtered_files, total_size, findings)
+        (new_temp_dir, filtered_files, total_size_or_none, findings)
+        total_size is None on early-return paths to avoid overwriting caller's value.
     """
     findings: list[Finding] = []
 
     # Reject empty/whitespace-only sub_path
     sub_path = sub_path.strip()
     if not sub_path:
-        return temp_dir, extracted_files, 0, findings
+        return temp_dir, extracted_files, None, findings
 
     # Reject null bytes — Path() accepts them but filesystem calls crash
     if "\x00" in sub_path:
@@ -371,7 +372,7 @@ def narrow_to_sub_path(
                 tool="stage0_ingest",
             )
         )
-        return temp_dir, extracted_files, 0, findings
+        return temp_dir, extracted_files, None, findings
 
     # Sanitize sub_path to prevent path traversal
     clean_sub_path = Path(sub_path).as_posix()
@@ -379,7 +380,7 @@ def narrow_to_sub_path(
     # Per-component check: reject ".." and "." as path components.
     # Substring check (".." in s) would false-positive on names like "skill-v2..0".
     parts = Path(clean_sub_path).parts
-    if any(part in ("..", ".") for part in parts) or clean_sub_path.startswith("/"):
+    if not parts or any(part in ("..", ".") for part in parts) or clean_sub_path.startswith("/"):
         findings.append(
             Finding(
                 stage="stage0",
@@ -390,7 +391,7 @@ def narrow_to_sub_path(
                 tool="stage0_ingest",
             )
         )
-        return temp_dir, extracted_files, 0, findings
+        return temp_dir, extracted_files, None, findings
 
     # GitHub tarballs have a single top-level directory (e.g., "owner-repo-sha/")
     top_entries = [e for e in os.listdir(temp_dir) if os.path.isdir(os.path.join(temp_dir, e))]
@@ -411,12 +412,12 @@ def narrow_to_sub_path(
                 stage="stage0",
                 severity="critical",
                 type="sub_path_escape",
-                description=f"sub_path resolves outside extraction directory: {sub_path}",
+                description=f"sub_path resolves outside extraction directory: {sub_path[:255]}",
                 confidence=1.0,
                 tool="stage0_ingest",
             )
         )
-        return temp_dir, extracted_files, 0, findings
+        return temp_dir, extracted_files, None, findings
 
     if not os.path.isdir(target_dir):
         findings.append(
@@ -424,12 +425,12 @@ def narrow_to_sub_path(
                 stage="stage0",
                 severity="medium",
                 type="sub_path_not_found",
-                description=f"Requested sub_path '{sub_path}' not found in archive",
+                description=f"Requested sub_path '{sub_path[:255]}' not found in archive",
                 confidence=1.0,
                 tool="stage0_ingest",
             )
         )
-        return temp_dir, extracted_files, 0, findings
+        return temp_dir, extracted_files, None, findings
 
     # Create new temp directory with only the sub_path contents.
     # Skip symlinks entirely (matches safe_extract behavior) — copytree/copy2
@@ -444,7 +445,7 @@ def narrow_to_sub_path(
             if os.path.isdir(src):
                 shutil.copytree(src, dst, ignore=_ignore_symlinks)
             else:
-                shutil.copy2(src, dst)
+                shutil.copy2(src, dst, follow_symlinks=False)
     except Exception:
         shutil.rmtree(new_temp_dir, ignore_errors=True)
         raise
@@ -565,9 +566,11 @@ async def stage0_ingest(tarball_url: str, sub_path: str | None = None) -> Ingest
 
     # Narrow to sub_path if specified (monorepo support)
     if sub_path:
-        temp_dir, extracted_files, total_size, sub_path_findings = narrow_to_sub_path(
+        temp_dir, extracted_files, narrowed_size, sub_path_findings = narrow_to_sub_path(
             temp_dir, sub_path, extracted_files
         )
+        if narrowed_size is not None:
+            total_size = narrowed_size
         findings.extend(sub_path_findings)
 
     # Compute file hashes
