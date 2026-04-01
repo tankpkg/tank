@@ -326,6 +326,11 @@ def compute_file_hashes(base_dir: str, files: list[str]) -> dict[str, str]:
     return hashes
 
 
+def _ignore_symlinks(directory: str, entries: list[str]) -> set[str]:
+    """copytree ignore function that skips symlinks at every level."""
+    return {e for e in entries if os.path.islink(os.path.join(directory, e))}
+
+
 def narrow_to_sub_path(
     temp_dir: str,
     sub_path: str,
@@ -352,6 +357,20 @@ def narrow_to_sub_path(
     # Reject empty/whitespace-only sub_path
     sub_path = sub_path.strip()
     if not sub_path:
+        return temp_dir, extracted_files, 0, findings
+
+    # Reject null bytes — Path() accepts them but filesystem calls crash
+    if "\x00" in sub_path:
+        findings.append(
+            Finding(
+                stage="stage0",
+                severity="critical",
+                type="invalid_sub_path",
+                description="Invalid sub_path contains null byte",
+                confidence=1.0,
+                tool="stage0_ingest",
+            )
+        )
         return temp_dir, extracted_files, 0, findings
 
     # Sanitize sub_path to prevent path traversal
@@ -412,16 +431,20 @@ def narrow_to_sub_path(
         )
         return temp_dir, extracted_files, 0, findings
 
-    # Create new temp directory with only the sub_path contents
+    # Create new temp directory with only the sub_path contents.
+    # Skip symlinks entirely (matches safe_extract behavior) — copytree/copy2
+    # would either follow them out of sandbox or preserve dangling links.
     new_temp_dir = tempfile.mkdtemp(prefix="tank_scan_sub_")
     try:
         for item in os.listdir(target_dir):
             src = os.path.join(target_dir, item)
+            if os.path.islink(src):
+                continue
             dst = os.path.join(new_temp_dir, item)
             if os.path.isdir(src):
-                shutil.copytree(src, dst, symlinks=True)
+                shutil.copytree(src, dst, ignore=_ignore_symlinks)
             else:
-                shutil.copy2(src, dst, follow_symlinks=False)
+                shutil.copy2(src, dst)
     except Exception:
         shutil.rmtree(new_temp_dir, ignore_errors=True)
         raise

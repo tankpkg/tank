@@ -236,3 +236,203 @@ class TestNarrowToSubPath:
         finally:
             os.chmod(target, 0o644)
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+class TestEdgeCases:
+    """Edge cases an attacker might try that aren't obvious."""
+
+    def test_null_byte_injection_blocked(self):
+        """Null bytes bypass Path() but crash filesystem calls — must reject early."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/skill-a/SKILL.md": "# Skill A",
+            }
+        )
+
+        _, _, _, findings = narrow_to_sub_path(temp_dir, "skill-a\x00/../etc/passwd", file_list)
+
+        assert len(findings) == 1
+        assert findings[0].type == "invalid_sub_path"
+        assert findings[0].severity == "critical"
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_null_byte_without_traversal_blocked(self):
+        """Even without traversal chars, null bytes must be rejected."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/skill-a/SKILL.md": "# Skill A",
+            }
+        )
+
+        _, _, _, findings = narrow_to_sub_path(temp_dir, "skill\x00-a", file_list)
+
+        assert len(findings) == 1
+        assert findings[0].type == "invalid_sub_path"
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_backslash_traversal_unix_safe(self):
+        """On Unix, backslash is a literal char — treated as 'not found', not traversal."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/skill-a/SKILL.md": "# Skill A",
+            }
+        )
+
+        _, _, _, findings = narrow_to_sub_path(temp_dir, "skill-a\\..\\..\\etc", file_list)
+
+        assert len(findings) == 1
+        assert findings[0].type == "sub_path_not_found"
+        assert findings[0].severity == "medium"
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_url_encoded_traversal_not_decoded(self):
+        """URL-encoded '../' (%2e%2e/) is NOT decoded — treated as literal."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/skill-a/SKILL.md": "# Skill A",
+            }
+        )
+
+        _, _, _, findings = narrow_to_sub_path(temp_dir, "%2e%2e/%2e%2e/etc/passwd", file_list)
+
+        assert len(findings) == 1
+        assert findings[0].type == "sub_path_not_found"
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_sub_path_targeting_file_not_directory(self):
+        """sub_path pointing to a file (not dir) returns 'not found'."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/skill-a/SKILL.md": "# Skill A",
+            }
+        )
+
+        _, _, _, findings = narrow_to_sub_path(temp_dir, "skill-a/SKILL.md", file_list)
+
+        assert len(findings) == 1
+        assert findings[0].type == "sub_path_not_found"
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_trailing_slash_normalized(self):
+        """Trailing slash is normalized away by Path — still works."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/skill-a/SKILL.md": "# Skill A",
+            }
+        )
+
+        new_dir, new_files, _, findings = narrow_to_sub_path(temp_dir, "skill-a/", file_list)
+
+        assert len(findings) == 0
+        assert set(new_files) == {"SKILL.md"}
+
+        shutil.rmtree(new_dir, ignore_errors=True)
+
+    def test_symlink_in_sub_path_skipped_during_copy(self):
+        """Symlinks in extracted content are skipped, not followed or preserved."""
+        temp_dir = tempfile.mkdtemp(prefix="tank_test_")
+        skill_dir = os.path.join(temp_dir, "owner-repo-abc123", "skill-a")
+        os.makedirs(skill_dir)
+        with open(os.path.join(skill_dir, "SKILL.md"), "w") as f:
+            f.write("# Legit")
+        os.symlink("/etc/passwd", os.path.join(skill_dir, "evil-link"))
+
+        file_list = ["owner-repo-abc123/skill-a/SKILL.md", "owner-repo-abc123/skill-a/evil-link"]
+
+        new_dir, new_files, _, findings = narrow_to_sub_path(temp_dir, "skill-a", file_list)
+
+        assert len(findings) == 0
+        assert "SKILL.md" in new_files
+        assert not os.path.exists(os.path.join(new_dir, "evil-link"))
+
+        shutil.rmtree(new_dir, ignore_errors=True)
+
+    def test_symlink_dir_in_sub_path_skipped(self):
+        """Symlink directories in extracted content are skipped entirely."""
+        temp_dir = tempfile.mkdtemp(prefix="tank_test_")
+        skill_dir = os.path.join(temp_dir, "owner-repo-abc123", "skill-a")
+        os.makedirs(skill_dir)
+        with open(os.path.join(skill_dir, "SKILL.md"), "w") as f:
+            f.write("# Legit")
+        os.symlink("/etc", os.path.join(skill_dir, "evil-dir"))
+
+        file_list = ["owner-repo-abc123/skill-a/SKILL.md"]
+
+        new_dir, new_files, _, findings = narrow_to_sub_path(temp_dir, "skill-a", file_list)
+
+        assert len(findings) == 0
+        assert not os.path.exists(os.path.join(new_dir, "evil-dir"))
+
+        shutil.rmtree(new_dir, ignore_errors=True)
+
+    def test_nested_symlink_inside_subdir_skipped(self):
+        """Symlinks nested inside subdirectories are also filtered out."""
+        temp_dir = tempfile.mkdtemp(prefix="tank_test_")
+        skill_dir = os.path.join(temp_dir, "owner-repo-abc123", "skill-a")
+        scripts_dir = os.path.join(skill_dir, "scripts")
+        os.makedirs(scripts_dir)
+        with open(os.path.join(skill_dir, "SKILL.md"), "w") as f:
+            f.write("# Legit")
+        with open(os.path.join(scripts_dir, "helper.py"), "w") as f:
+            f.write("pass")
+        os.symlink("/etc/shadow", os.path.join(scripts_dir, "sneaky"))
+
+        file_list = ["owner-repo-abc123/skill-a/SKILL.md"]
+
+        new_dir, new_files, _, findings = narrow_to_sub_path(temp_dir, "skill-a", file_list)
+
+        assert len(findings) == 0
+        assert not os.path.exists(os.path.join(new_dir, "scripts", "sneaky"))
+        assert os.path.isfile(os.path.join(new_dir, "scripts", "helper.py"))
+
+        shutil.rmtree(new_dir, ignore_errors=True)
+
+    def test_newline_in_sub_path_with_traversal_blocked(self):
+        """Newline char followed by '../' is caught by component check."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/skill-a/SKILL.md": "# Skill A",
+            }
+        )
+
+        _, _, _, findings = narrow_to_sub_path(temp_dir, "skill-a\n../../etc", file_list)
+
+        assert len(findings) == 1
+        assert findings[0].type == "invalid_sub_path"
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_tilde_not_expanded(self):
+        """~ is NOT expanded to home directory — treated as literal."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/skill-a/SKILL.md": "# Skill A",
+            }
+        )
+
+        _, _, _, findings = narrow_to_sub_path(temp_dir, "~/etc/passwd", file_list)
+
+        assert len(findings) == 1
+        assert findings[0].type == "sub_path_not_found"
+
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def test_triple_dot_not_blocked(self):
+        """'...' (three dots) is NOT '..' — treated as literal directory name."""
+        temp_dir, file_list = _create_mock_extraction(
+            {
+                "owner-repo-abc123/.../SKILL.md": "# Sneaky",
+            }
+        )
+
+        new_dir, new_files, _, findings = narrow_to_sub_path(temp_dir, "...", file_list)
+
+        assert len(findings) == 0
+        assert "SKILL.md" in new_files
+
+        shutil.rmtree(new_dir, ignore_errors=True)

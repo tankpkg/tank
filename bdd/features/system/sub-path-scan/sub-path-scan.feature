@@ -115,3 +115,86 @@ Feature: Sub-path narrowing for monorepo scanning
     When the scan pipeline runs
     Then all files in the tarball are scanned
     And no sub_path narrowing occurs
+
+  # ── Null byte injection (S6) ─────────────────────────────────────────
+  @critical
+  Scenario Outline: Null byte injection is rejected (S6)
+    Given an extracted tarball with skill directories
+    When narrow_to_sub_path is called with sub_path containing null bytes "<attack>"
+    Then a critical finding of type "invalid_sub_path" is returned
+
+    Examples:
+      | attack                       |
+      | skill-a\x00/../etc/passwd    |
+      | skill\x00-a                  |
+
+  # ── Symlink defense in copy (S7) ─────────────────────────────────────
+  @critical
+  Scenario: Symlink files in extracted content are skipped during copy (S7)
+    Given an extracted tarball where skill-a contains a symlink to /etc/passwd
+    When narrow_to_sub_path copies skill-a to a new temp dir
+    Then the symlink is NOT present in the new temp directory
+    And legitimate files are present
+
+  @critical
+  Scenario: Symlink directories in extracted content are skipped (S8)
+    Given an extracted tarball where skill-a contains a symlink dir to /etc
+    When narrow_to_sub_path copies skill-a to a new temp dir
+    Then the symlink directory is NOT present in the new temp directory
+
+  @critical
+  Scenario: Nested symlinks inside subdirectories are filtered (S9)
+    Given an extracted tarball where skill-a/scripts/ contains a symlink
+    When narrow_to_sub_path copies skill-a to a new temp dir
+    Then the nested symlink is NOT in the copied scripts/ directory
+    And legitimate scripts are present
+
+  # ── Platform-specific traversal (E4) ─────────────────────────────────
+  @medium
+  Scenario: Backslash traversal is harmless on Unix (E4)
+    Given an extracted tarball
+    When narrow_to_sub_path is called with sub_path "skill-a\..\..\etc"
+    Then a medium finding of type "sub_path_not_found" is returned
+
+  # ── Encoding evasion (E5) ────────────────────────────────────────────
+  @medium
+  Scenario: URL-encoded traversal is NOT decoded (E5)
+    Given an extracted tarball
+    When narrow_to_sub_path is called with sub_path "%2e%2e/%2e%2e/etc"
+    Then a medium finding of type "sub_path_not_found" is returned
+
+  # ── File vs directory (E6) ───────────────────────────────────────────
+  @low
+  Scenario: sub_path targeting a file returns not found (E6)
+    Given an extracted tarball containing "skill-a/SKILL.md"
+    When narrow_to_sub_path is called with sub_path "skill-a/SKILL.md"
+    Then a medium finding of type "sub_path_not_found" is returned
+
+  # ── Trailing slash normalization (E7) ────────────────────────────────
+  @low
+  Scenario: Trailing slash is normalized and works (E7)
+    Given an extracted tarball containing "skill-a/"
+    When narrow_to_sub_path is called with sub_path "skill-a/"
+    Then no findings are returned
+    And only skill-a files are in the new temp directory
+
+  # ── Tilde not expanded (E8) ─────────────────────────────────────────
+  @medium
+  Scenario: Tilde is NOT expanded to home directory (E8)
+    Given an extracted tarball
+    When narrow_to_sub_path is called with sub_path "~/etc/passwd"
+    Then a medium finding of type "sub_path_not_found" is returned
+
+  # ── Triple-dot not confused with double-dot (E9) ────────────────────
+  @low
+  Scenario: Triple-dot directory name is allowed (E9)
+    Given an extracted tarball containing directory "..."
+    When narrow_to_sub_path is called with sub_path "..."
+    Then no findings are returned
+
+  # ── Newline traversal (E10) ─────────────────────────────────────────
+  @medium
+  Scenario: Newline embedded before traversal chars is caught (E10)
+    Given an extracted tarball
+    When narrow_to_sub_path is called with sub_path containing "skill-a\n../../etc"
+    Then a critical finding of type "invalid_sub_path" is returned
