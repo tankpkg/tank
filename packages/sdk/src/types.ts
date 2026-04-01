@@ -100,6 +100,15 @@ export interface ExtractResult {
   integrity: string;
 }
 
+export interface SkillContent {
+  name: string;
+  version: string;
+  content: string;
+  references: Record<string, string>;
+  scripts: Record<string, string>;
+  files: string[];
+}
+
 export interface LinkOptions {
   agents?: string[];
 }

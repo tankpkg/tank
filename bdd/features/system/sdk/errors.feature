@@ -23,10 +23,10 @@ Feature: SDK Typed Errors
     Then the error has property "status" with value <status>
 
     Examples:
-      | error_class          | status |
-      | TankAuthError        | 401    |
-      | TankNotFoundError    | 404    |
-      | TankPermissionError  | 403    |
+      | error_class         | status |
+      | TankAuthError       | 401    |
+      | TankNotFoundError   | 404    |
+      | TankPermissionError | 403    |
 
   # C10: Network errors include cause
   Scenario: TankNetworkError wraps the original connection error

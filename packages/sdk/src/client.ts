@@ -14,6 +14,7 @@ import type {
   DownloadOptions,
   Permissions,
   SearchResponse,
+  SkillContent,
   SkillInfoResponse,
   TankClientOptions,
   UserInfo,
@@ -300,6 +301,52 @@ export class TankClient {
       if (err instanceof TankAuthError || err instanceof TankNotFoundError) return null;
       throw err;
     }
+  }
+
+  async listFiles(name: string, version?: string): Promise<string[]> {
+    const ver = version ?? (await this.info(name)).latestVersion;
+    if (!ver) throw new TankNotFoundError(`No versions found for ${name}`, name);
+    const result = await this.json<{ files: string[] }>('GET', `/skills/${encodeURIComponent(name)}/${ver}/files`);
+    return result.files;
+  }
+
+  async readFile(name: string, version: string, filePath: string): Promise<string> {
+    if (filePath.includes('..')) throw new TankNetworkError(`Invalid file path: ${filePath}`);
+    const encodedName = encodeURIComponent(name);
+    const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
+    const res = await this.request('GET', `/skills/${encodedName}/${version}/files/${encodedPath}`);
+    if (res.status === 404) throw new TankNotFoundError(`File not found: ${filePath}`, name);
+    if (!res.ok) throw new TankNetworkError(`Failed to read file: HTTP ${res.status}`);
+    return res.text();
+  }
+
+  async readSkill(name: string, version?: string): Promise<SkillContent> {
+    const ver = version ?? (await this.info(name)).latestVersion;
+    if (!ver) throw new TankNotFoundError(`No versions found for ${name}`, name);
+
+    const files = await this.listFiles(name, ver);
+
+    const skillMd = files.find((f) => f === 'SKILL.md');
+    const content = skillMd ? await this.readFile(name, ver, 'SKILL.md') : '';
+
+    const refFiles = files.filter((f) => f.startsWith('references/'));
+    const scriptFiles = files.filter((f) => f.startsWith('scripts/'));
+
+    const refEntries = await Promise.all(
+      refFiles.map(async (f) => [f.replace('references/', ''), await this.readFile(name, ver, f)] as const)
+    );
+    const scriptEntries = await Promise.all(
+      scriptFiles.map(async (f) => [f.replace('scripts/', ''), await this.readFile(name, ver, f)] as const)
+    );
+
+    return {
+      name,
+      version: ver,
+      content,
+      references: Object.fromEntries(refEntries),
+      scripts: Object.fromEntries(scriptEntries),
+      files
+    };
   }
 
   async getStarCount(name: string): Promise<{ count: number; isStarred: boolean }> {

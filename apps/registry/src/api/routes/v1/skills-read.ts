@@ -10,6 +10,43 @@ import { visibilityClause } from '~/lib/db/visibility';
 import { apiLog } from '~/services/logger';
 import { getStorageProvider } from '~/services/storage/provider';
 
+function listFilesInTarball(tarball: Uint8Array): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const extractor = extract();
+    const gunzip = createGunzip();
+    const rawPaths: string[] = [];
+
+    extractor.on('entry', (header, stream, next) => {
+      if (header.type === 'file') {
+        rawPaths.push(header.name);
+      }
+      stream.resume();
+      stream.on('end', next);
+    });
+
+    extractor.on('finish', () => {
+      const files = stripCommonRoot(rawPaths);
+      resolve(files);
+    });
+    extractor.on('error', reject);
+    gunzip.on('error', reject);
+
+    gunzip.pipe(extractor);
+    gunzip.end(Buffer.from(tarball));
+  });
+}
+
+function stripCommonRoot(paths: string[]): string[] {
+  if (paths.length === 0) return [];
+  const firstSegments = paths.map((p) => p.split('/')[0]);
+  const allSameRoot = firstSegments.every((s) => s === firstSegments[0]);
+  const rootHasNoExtension = !firstSegments[0].includes('.');
+  if (allSameRoot && rootHasNoExtension && paths.every((p) => p.includes('/'))) {
+    return paths.map((p) => p.replace(/^[^/]+\//, '')).filter(Boolean);
+  }
+  return paths;
+}
+
 function extractFileFromTarball(tarball: Uint8Array, targetPath: string): Promise<string | null> {
   return new Promise((resolve, reject) => {
     const extractor = extract();
@@ -383,6 +420,40 @@ export const skillsReadRoutes = new OpenAPIHono()
         { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
         500
       );
+    }
+  })
+
+  .get('/:name/:version/files', async (c) => {
+    try {
+      const name = decodeURIComponent(c.req.param('name'));
+      const version = c.req.param('version');
+
+      const rows = await db.execute(sql`
+        SELECT sv.tarball_path AS "tarballPath"
+        FROM skills s
+        INNER JOIN skill_versions sv ON sv.skill_id = s.id AND sv.version = ${version}
+        WHERE s.name = ${name}
+        LIMIT 1
+      `);
+
+      if (rows.length === 0) {
+        return c.json({ error: 'Skill version not found' }, 404);
+      }
+
+      const tarballPath = (rows[0] as Record<string, unknown>).tarballPath as string;
+
+      let tarballBytes: Uint8Array;
+      try {
+        tarballBytes = await getStorageProvider().getObject(tarballPath);
+      } catch {
+        return c.json({ error: 'Package not available' }, 404);
+      }
+
+      const files = await listFilesInTarball(tarballBytes);
+      return c.json({ name, version, files }, 200);
+    } catch (error) {
+      apiLog.error({ error }, 'file listing failed');
+      return c.json({ error: 'Internal server error' }, 500);
     }
   })
 

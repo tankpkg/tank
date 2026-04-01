@@ -35,6 +35,7 @@ export type {
   RemoveResult,
   SearchResponse,
   SearchResult,
+  SkillContent,
   SkillInfoResponse,
   SkillsJson,
   SkillsLock,
