@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
+import re
 import time
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 import httpx
 
@@ -23,6 +25,7 @@ DEFAULT_REGISTRY_URL = "https://www.tankpkg.dev"
 DEFAULT_CONFIG_DIR = "~/.tank"
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_TIMEOUT = 30.0
+MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024
 
 
 def _read_config(config_dir: str | None = None) -> dict:
@@ -42,17 +45,43 @@ def _resolve_token(token: str | None, config: dict) -> str | None:
     return config.get("token")
 
 
+def _parse_registry_origin(raw: str) -> str:
+    parsed = urlparse(raw)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Registry URL must use http or https: {raw}")
+    if parsed.username or parsed.password:
+        raise ValueError(f"Registry URL must not contain credentials: {raw}")
+    port = f":{parsed.port}" if parsed.port else ""
+    return f"{parsed.scheme}://{parsed.hostname}{port}"
+
+
 def _resolve_registry(registry_url: str | None, config: dict) -> str:
-    if registry_url:
-        return registry_url.rstrip("/")
-    env_url = os.environ.get("TANK_REGISTRY_URL", "").strip()
-    if env_url:
-        return env_url.rstrip("/")
-    return (config.get("registry") or DEFAULT_REGISTRY_URL).rstrip("/")
+    raw = (
+        registry_url
+        or os.environ.get("TANK_REGISTRY_URL", "").strip()
+        or config.get("registry")
+        or DEFAULT_REGISTRY_URL
+    )
+    return _parse_registry_origin(raw)
+
+
+def _validate_download_url(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise TankNetworkError(f"Download URL must use http or https: {url}")
+    if parsed.username or parsed.password:
+        raise TankNetworkError(f"Download URL must not contain credentials: {url}")
 
 
 def _encode_name(name: str) -> str:
     return quote(name, safe="")
+
+
+def _safe_json(resp: httpx.Response, fallback_key: str, fallback_msg: str) -> str:
+    try:
+        return resp.json().get(fallback_key, fallback_msg)
+    except Exception:
+        return resp.text or fallback_msg
 
 
 class TankClient:
@@ -72,6 +101,15 @@ class TankClient:
         self._timeout = timeout
         self._client = httpx.Client(timeout=timeout)
 
+    def close(self) -> None:
+        self._client.close()
+
+    def __enter__(self) -> TankClient:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()
+
     def _headers(self) -> dict[str, str]:
         h: dict[str, str] = {"User-Agent": f"tankpkg-sdk-python/{SDK_VERSION}"}
         if self._token:
@@ -85,7 +123,11 @@ class TankClient:
         for attempt in range(self._max_retries + 1):
             try:
                 resp = self._client.request(
-                    method, url, headers=self._headers(), json=json_body, follow_redirects=False
+                    method,
+                    url,
+                    headers=self._headers(),
+                    json=json_body,
+                    follow_redirects=False,
                 )
                 if 300 <= resp.status_code < 400:
                     raise TankNetworkError(f"Unexpected redirect ({resp.status_code}) from {url}")
@@ -106,9 +148,9 @@ class TankClient:
         if resp.status_code == 401:
             raise TankAuthError()
         if resp.status_code == 403:
-            raise TankPermissionError(resp.json().get("error", "Permission denied"))
+            raise TankPermissionError(_safe_json(resp, "error", "Permission denied"))
         if resp.status_code == 404:
-            raise TankNotFoundError(resp.json().get("error", "Not found"))
+            raise TankNotFoundError(_safe_json(resp, "error", "Not found"))
         if not resp.is_success:
             raise TankNetworkError(f"HTTP {resp.status_code}: {resp.text}")
         return resp.json()
@@ -142,21 +184,34 @@ class TankClient:
 
     def download(self, name: str, version: str, *, dest: str | None = None) -> bytes:
         detail = self.version_detail(name, version)
-        resp = self._client.get(detail.download_url, follow_redirects=False)
-        if 300 <= resp.status_code < 400:
-            raise TankNetworkError(f"Unexpected redirect ({resp.status_code}) from download URL")
-        if not resp.is_success:
-            raise TankNetworkError(f"Failed to download tarball: HTTP {resp.status_code}")
+        _validate_download_url(detail.download_url)
 
-        data = resp.content
+        received = 0
+        chunks: list[bytes] = []
+        with self._client.stream("GET", detail.download_url, follow_redirects=False) as resp:
+            if 300 <= resp.status_code < 400:
+                raise TankNetworkError(f"Unexpected redirect ({resp.status_code}) from download URL")
+            if not resp.is_success:
+                raise TankNetworkError(f"Failed to download tarball: HTTP {resp.status_code}")
+            for chunk in resp.iter_bytes():
+                received += len(chunk)
+                if received > MAX_DOWNLOAD_BYTES:
+                    raise TankNetworkError(f"Tarball exceeds {MAX_DOWNLOAD_BYTES} byte limit")
+                chunks.append(chunk)
+
+        data = b"".join(chunks)
+
         if dest:
-            dest_path = Path(dest).expanduser()
+            dest_path = Path(dest).expanduser().resolve()
             dest_path.mkdir(parents=True, exist_ok=True)
-            safe_name = name.replace("/", "-").replace("..", "")
-            file_path = dest_path / f"{safe_name}-{version}.tgz"
+            safe_name = re.sub(r"[/\\]", "-", name).replace("..", "")
+            safe_version = re.sub(r"[/\\]", "-", version).replace("..", "")
+            file_path = dest_path / f"{safe_name}-{safe_version}.tgz"
+            if not file_path.resolve().is_relative_to(dest_path):
+                raise TankNetworkError("Path traversal detected in filename")
             file_path.write_bytes(data)
 
-            computed = "sha512-" + hashlib.sha512(data).digest().hex()
+            computed = "sha512-" + base64.b64encode(hashlib.sha512(data).digest()).decode()
             if detail.integrity and detail.integrity != "pending" and computed != detail.integrity:
                 file_path.unlink(missing_ok=True)
                 raise TankIntegrityError("Integrity verification failed", expected=detail.integrity, actual=computed)
@@ -173,8 +228,7 @@ class TankClient:
         return self.version_detail(name, latest)
 
     def permissions(self, name: str, version: str | None = None) -> dict | None:
-        detail = self.audit(name, version)
-        return detail.permissions
+        return self.audit(name, version).permissions
 
     def list_files(self, name: str, version: str | None = None) -> list[str]:
         if not version:
@@ -211,22 +265,15 @@ class TankClient:
         references: dict[str, str] = {}
         for f in files:
             if f.startswith("references/"):
-                key = f.removeprefix("references/")
-                references[key] = self.read_file(name, version, f)
+                references[f.removeprefix("references/")] = self.read_file(name, version, f)
 
         scripts: dict[str, str] = {}
         for f in files:
             if f.startswith("scripts/"):
-                key = f.removeprefix("scripts/")
-                scripts[key] = self.read_file(name, version, f)
+                scripts[f.removeprefix("scripts/")] = self.read_file(name, version, f)
 
         return SkillContent(
-            name=name,
-            version=version,
-            content=content,
-            references=references,
-            scripts=scripts,
-            files=files,
+            name=name, version=version, content=content, references=references, scripts=scripts, files=files
         )
 
     def whoami(self) -> UserInfo | None:
