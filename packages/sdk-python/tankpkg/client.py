@@ -131,7 +131,7 @@ class TankClient:
                 )
                 if 300 <= resp.status_code < 400:
                     raise TankNetworkError(f"Unexpected redirect ({resp.status_code}) from {url}")
-                if resp.status_code in (429, 500, 502, 503) and attempt < self._max_retries:
+                if (resp.status_code == 429 or resp.status_code >= 500) and attempt < self._max_retries:
                     time.sleep(min(2**attempt, 30))
                     continue
                 return resp
@@ -286,3 +286,9 @@ class TankClient:
 
     def get_star_count(self, name: str) -> dict:
         return self._json("GET", f"/skills/{_encode_name(name)}/star")
+
+    def star(self, name: str) -> None:
+        self._json("POST", f"/skills/{_encode_name(name)}/star")
+
+    def unstar(self, name: str) -> None:
+        self._json("DELETE", f"/skills/{_encode_name(name)}/star")

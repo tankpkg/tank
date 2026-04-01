@@ -322,6 +322,27 @@ export class TankClient {
     return res.text();
   }
 
+  private async batchRead(
+    name: string,
+    ver: string,
+    items: Array<{ f: string; prefix: string }>,
+    concurrency = 6
+  ): Promise<Array<{ key: string; prefix: string; content: string }>> {
+    const results: Array<{ key: string; prefix: string; content: string }> = [];
+    for (let i = 0; i < items.length; i += concurrency) {
+      const batch = items.slice(i, i + concurrency);
+      const batchResults = await Promise.all(
+        batch.map(async ({ f, prefix }) => ({
+          key: f.slice(prefix.length),
+          prefix,
+          content: await this.readFile(name, ver, f)
+        }))
+      );
+      results.push(...batchResults);
+    }
+    return results;
+  }
+
   async readSkill(name: string, version?: string): Promise<SkillContent> {
     const ver = version ?? (await this.info(name)).latestVersion;
     if (!ver) throw new TankNotFoundError(`No versions found for ${name}`, name);
@@ -331,15 +352,14 @@ export class TankClient {
     const skillMd = files.find((f) => f === 'SKILL.md');
     const content = skillMd ? await this.readFile(name, ver, 'SKILL.md') : '';
 
-    const refFiles = files.filter((f) => f.startsWith('references/'));
-    const scriptFiles = files.filter((f) => f.startsWith('scripts/'));
+    const filesToRead = [
+      ...files.filter((f) => f.startsWith('references/')).map((f) => ({ f, prefix: 'references/' })),
+      ...files.filter((f) => f.startsWith('scripts/')).map((f) => ({ f, prefix: 'scripts/' }))
+    ];
 
-    const refEntries = await Promise.all(
-      refFiles.map(async (f) => [f.replace('references/', ''), await this.readFile(name, ver, f)] as const)
-    );
-    const scriptEntries = await Promise.all(
-      scriptFiles.map(async (f) => [f.replace('scripts/', ''), await this.readFile(name, ver, f)] as const)
-    );
+    const results = await this.batchRead(name, ver, filesToRead);
+    const refEntries = results.filter((r) => r.prefix === 'references/').map((r) => [r.key, r.content] as const);
+    const scriptEntries = results.filter((r) => r.prefix === 'scripts/').map((r) => [r.key, r.content] as const);
 
     return {
       name,

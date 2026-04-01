@@ -113,7 +113,11 @@ export async function downloadAllParallel(
   return results;
 }
 
-export function verifyExtractedDependencies(extractDir: string, node: ResolvedNode): void {
+export function verifyExtractedDependencies(
+  extractDir: string,
+  node: ResolvedNode,
+  onProgress?: (msg: string) => void
+): void {
   let extractedManifestPath = path.join(extractDir, MANIFEST_FILENAME);
   if (!fs.existsSync(extractedManifestPath)) {
     extractedManifestPath = path.join(extractDir, LEGACY_MANIFEST_FILENAME);
@@ -130,7 +134,7 @@ export function verifyExtractedDependencies(extractDir: string, node: ResolvedNo
     const extractedSorted = Object.fromEntries(Object.entries(extractedDeps).sort(([a], [b]) => a.localeCompare(b)));
     const apiSorted = Object.fromEntries(Object.entries(apiDeps).sort(([a], [b]) => a.localeCompare(b)));
     if (JSON.stringify(extractedSorted) !== JSON.stringify(apiSorted)) {
-      // Non-critical mismatch — callers can handle via onProgress or ignore
+      onProgress?.(`Warning: ${node.name}@${node.version} manifest dependencies differ from registry metadata`);
     }
   } catch {
     // Non-fatal.
