@@ -311,9 +311,12 @@ export class TankClient {
   }
 
   async readFile(name: string, version: string, filePath: string): Promise<string> {
-    if (filePath.includes('..')) throw new TankNetworkError(`Invalid file path: ${filePath}`);
+    const normalized = filePath.replace(/\\/g, '/').replace(/\0/g, '');
+    if (!normalized || normalized.startsWith('/') || normalized.split('/').some((s) => s === '..')) {
+      throw new TankNetworkError(`Invalid file path: ${filePath}`);
+    }
     const encodedName = encodeURIComponent(name);
-    const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
+    const encodedPath = normalized.split('/').map(encodeURIComponent).join('/');
     const res = await this.request('GET', `/skills/${encodedName}/${version}/files/${encodedPath}`);
     if (res.status === 404) throw new TankNotFoundError(`File not found: ${filePath}`, name);
     if (!res.ok) throw new TankNetworkError(`Failed to read file: HTTP ${res.status}`);

@@ -1,7 +1,5 @@
-import { createGunzip } from 'node:zlib';
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { sql } from 'drizzle-orm';
-import { extract } from 'tar-stream';
 
 import { resolveRequestUserId } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
@@ -9,77 +7,7 @@ import { skills } from '~/lib/db/schema';
 import { visibilityClause } from '~/lib/db/visibility';
 import { apiLog } from '~/services/logger';
 import { getStorageProvider } from '~/services/storage/provider';
-
-function listFilesInTarball(tarball: Uint8Array): Promise<string[]> {
-  return new Promise((resolve, reject) => {
-    const extractor = extract();
-    const gunzip = createGunzip();
-    const rawPaths: string[] = [];
-
-    extractor.on('entry', (header, stream, next) => {
-      if (header.type === 'file') {
-        rawPaths.push(header.name);
-      }
-      stream.resume();
-      stream.on('end', next);
-    });
-
-    extractor.on('finish', () => {
-      const files = stripCommonRoot(rawPaths);
-      resolve(files);
-    });
-    extractor.on('error', reject);
-    gunzip.on('error', reject);
-
-    gunzip.pipe(extractor);
-    gunzip.end(Buffer.from(tarball));
-  });
-}
-
-function stripCommonRoot(paths: string[]): string[] {
-  if (paths.length === 0) return [];
-  const firstSegments = paths.map((p) => p.split('/')[0]);
-  const allSameRoot = firstSegments.every((s) => s === firstSegments[0]);
-  const rootHasNoExtension = !firstSegments[0].includes('.');
-  if (allSameRoot && rootHasNoExtension && paths.every((p) => p.includes('/'))) {
-    return paths.map((p) => p.replace(/^[^/]+\//, '')).filter(Boolean);
-  }
-  return paths;
-}
-
-function extractFileFromTarball(tarball: Uint8Array, targetPath: string): Promise<string | null> {
-  return new Promise((resolve, reject) => {
-    const extractor = extract();
-    const gunzip = createGunzip();
-    let found = false;
-
-    extractor.on('entry', (header, stream, next) => {
-      const raw = header.name;
-      const stripped = raw.replace(/^[^/]+\//, '');
-      if (raw === targetPath || stripped === targetPath) {
-        const chunks: Buffer[] = [];
-        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
-        stream.on('end', () => {
-          found = true;
-          resolve(Buffer.concat(chunks).toString('utf-8'));
-        });
-      } else {
-        stream.resume();
-      }
-      stream.on('end', next);
-    });
-
-    extractor.on('finish', () => {
-      if (!found) resolve(null);
-    });
-
-    extractor.on('error', reject);
-    gunzip.on('error', reject);
-
-    gunzip.pipe(extractor);
-    gunzip.end(Buffer.from(tarball));
-  });
-}
+import { extractFileFromTarball, listFilesInTarball } from './tarball-utils';
 
 async function recordDownload(skillId: string): Promise<void> {
   await db.execute(sql`
@@ -427,12 +355,13 @@ export const skillsReadRoutes = new OpenAPIHono()
     try {
       const name = decodeURIComponent(c.req.param('name'));
       const version = c.req.param('version');
+      const requesterId = await resolveRequestUserId(c.req.raw);
 
       const rows = await db.execute(sql`
         SELECT sv.tarball_path AS "tarballPath"
         FROM skills s
         INNER JOIN skill_versions sv ON sv.skill_id = s.id AND sv.version = ${version}
-        WHERE s.name = ${name}
+        WHERE s.name = ${name} AND ${visibilityClause(requesterId)}
         LIMIT 1
       `);
 
@@ -461,11 +390,17 @@ export const skillsReadRoutes = new OpenAPIHono()
     try {
       const name = decodeURIComponent(c.req.param('name'));
       const version = c.req.param('version');
-      const rawUrl = new URL(c.req.url);
-      const pathParts = rawUrl.pathname.split('/files/');
-      const filePath = pathParts.length > 1 ? decodeURIComponent(pathParts[pathParts.length - 1]) : '';
+      const requesterId = await resolveRequestUserId(c.req.raw);
 
-      if (!filePath || filePath.includes('..')) {
+      let filePath: string;
+      try {
+        filePath = decodeURIComponent(c.req.param('*') ?? '');
+      } catch {
+        return c.json({ error: 'Invalid file path encoding' }, 400);
+      }
+
+      const normalized = filePath.replace(/\\/g, '/').replace(/\0/g, '');
+      if (!normalized || normalized.startsWith('/') || normalized.split('/').some((s) => s === '..')) {
         return c.json({ error: 'Invalid file path' }, 400);
       }
 
@@ -473,7 +408,7 @@ export const skillsReadRoutes = new OpenAPIHono()
         SELECT sv.tarball_path AS "tarballPath"
         FROM skills s
         INNER JOIN skill_versions sv ON sv.skill_id = s.id AND sv.version = ${version}
-        WHERE s.name = ${name}
+        WHERE s.name = ${name} AND ${visibilityClause(requesterId)}
         LIMIT 1
       `);
 
@@ -491,7 +426,7 @@ export const skillsReadRoutes = new OpenAPIHono()
         return c.json({ error: 'Not found' }, 404);
       }
 
-      const fileContent = await extractFileFromTarball(tarballBytes, filePath);
+      const fileContent = await extractFileFromTarball(tarballBytes, normalized);
       if (fileContent === null) {
         return c.json({ error: 'File not found in package' }, 404);
       }
