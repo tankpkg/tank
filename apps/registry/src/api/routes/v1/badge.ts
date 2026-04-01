@@ -45,13 +45,51 @@ function renderBadge(label: string, value: string, color: string): string {
 </svg>`;
 }
 
+function vulnCountColor(count: number): string {
+  if (count === 0) return '#4c1';
+  if (count <= 2) return '#dfb317';
+  return '#fe7d37';
+}
+
 export const badgeRoutes = new Hono().get('/:name{.+}', async (c) => {
   const rawName = c.req.param('name');
   const name = decodeURIComponent(rawName);
+  const badgeType = c.req.query('type');
 
   c.header('Cache-Control', 'public, max-age=300');
   c.header('Content-Type', 'image/svg+xml');
 
+  // Dependency vulnerability badge: ?type=deps
+  if (badgeType === 'deps') {
+    try {
+      const rows = await db.execute(sql`
+        SELECT da.vulnerable_count AS "vulnerableCount",
+               da.vuln_summary AS "vulnSummary"
+        FROM ${skills} s
+        INNER JOIN skill_versions sv ON sv.skill_id = s.id
+        LEFT JOIN dep_audit_results da ON da.version_id = sv.id
+        WHERE s.name = ${name}
+        ORDER BY sv.created_at DESC, da.created_at DESC
+        LIMIT 1
+      `);
+
+      if (rows.length === 0 || (rows[0] as Record<string, unknown>).vulnerableCount === null) {
+        return c.body(renderBadge('deps', 'not found', '#999'));
+      }
+
+      const row = rows[0] as Record<string, unknown>;
+      const count = Number(row.vulnerableCount) || 0;
+      const vulnSummary = row.vulnSummary as { critical?: number } | null;
+      const hasCritical = (vulnSummary?.critical ?? 0) > 0;
+      const color = hasCritical ? '#e05d44' : vulnCountColor(count);
+      const label = `${count} ${count === 1 ? 'vuln' : 'vulns'}`;
+      return c.body(renderBadge('deps', label, color));
+    } catch {
+      return c.body(renderBadge('deps', 'error', '#999'));
+    }
+  }
+
+  // Default: security verdict badge (backward compatible)
   try {
     const rows = await db.execute(sql`
       SELECT sr.verdict
