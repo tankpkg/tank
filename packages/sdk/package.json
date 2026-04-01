@@ -1,0 +1,53 @@
+{
+  "name": "@tankpkg/sdk",
+  "version": "0.10.6",
+  "description": "Official TypeScript SDK for the Tank registry — search, download, install, and audit AI agent skills programmatically",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./errors": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./constants": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "dependencies": {
+    "@internals/helpers": "workspace:*",
+    "tar": "^7.5.11",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@internals/schemas": "workspace:*",
+    "@types/node": "^25.5.0",
+    "@types/tar": "^7.0.87",
+    "tsdown": "^0.21.3",
+    "vitest": "^4"
+  },
+  "peerDependencies": {
+    "@internals/schemas": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@internals/schemas": {
+      "optional": true
+    }
+  }
+}

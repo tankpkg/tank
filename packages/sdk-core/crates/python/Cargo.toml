@@ -1,0 +1,13 @@
+[package]
+name = "sdk-python"
+version = "0.1.0"
+edition.workspace = true
+
+[lib]
+name = "tankpkg"
+crate-type = ["cdylib"]
+
+[dependencies]
+sdk-core   = { workspace = true }
+pyo3       = { workspace = true }
+serde_json = { workspace = true }

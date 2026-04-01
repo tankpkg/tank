@@ -260,7 +260,7 @@ export function AdminSettingsScreen() {
     );
   }
 
-  const isS3Backend = ['s3', 'minio', 's3-compatible'].includes(storageBackend);
+  const isS3Backend = ['s3', 'rustfs', 's3-compatible'].includes(storageBackend);
   const isSupabaseBackend = storageBackend === 'supabase';
 
   return (
@@ -332,7 +332,7 @@ export function AdminSettingsScreen() {
               onChange={setStorageBackend}
               options={[
                 { value: 's3', label: 'Amazon S3' },
-                { value: 'minio', label: 'MinIO' },
+                { value: 'rustfs', label: 'RustFS' },
                 { value: 's3-compatible', label: 'S3-Compatible' },
                 { value: 'supabase', label: 'Supabase Storage' },
                 { value: 'filesystem', label: 'Filesystem' }

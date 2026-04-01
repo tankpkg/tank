@@ -1,7 +1,5 @@
-import { zValidator } from '@hono/zod-validator';
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { eq } from 'drizzle-orm';
-import { Hono } from 'hono';
-import { z } from 'zod';
 import { env } from '~/consts/env';
 import { verifyCliAuth } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
@@ -78,22 +76,79 @@ async function triggerSecurityScan(
 }
 
 const confirmSchema = z.object({
-  versionId: z.uuid(),
+  versionId: z.string().uuid().openapi({ description: 'Version ID returned from publish' }),
   integrity: z
     .string()
     .regex(/^sha512-/, 'Must be a sha512 integrity hash')
-    .max(256),
-  fileCount: z.number().int().min(0).max(10_000).optional(),
+    .max(256)
+    .openapi({ description: 'SHA-512 integrity hash of the tarball' }),
+  fileCount: z.number().int().min(0).max(10_000).optional().openapi({ description: 'Number of files in the tarball' }),
   tarballSize: z
     .number()
     .int()
     .min(0)
     .max(100 * 1024 * 1024)
-    .optional(),
-  readme: z.string().max(500_000).optional()
+    .optional()
+    .openapi({ description: 'Tarball size in bytes (max 100MB)' }),
+  readme: z.string().max(500_000).optional().openapi({ description: 'README content' })
 });
 
-export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json', confirmSchema), async (c) => {
+const confirmRoute = createRoute({
+  method: 'post',
+  path: '/confirm',
+  tags: ['Publishing'],
+  summary: 'Confirm upload and trigger scan',
+  description: 'Confirms that a tarball has been uploaded. Triggers security scanning and audit scoring.',
+  security: [{ BearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': { schema: confirmSchema }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: 'Upload confirmed, scan completed',
+      content: {
+        'application/json': {
+          schema: z.object({
+            success: z.literal(true),
+            name: z.string(),
+            version: z.string(),
+            scanVerdict: z.string().nullable()
+          })
+        }
+      }
+    },
+    400: {
+      description: 'Version already confirmed or invalid data',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    404: {
+      description: 'Skill version not found',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    }
+  }
+});
+
+export const skillsConfirmRoutes = new OpenAPIHono().openapi(confirmRoute, async (c) => {
   const verified = await verifyCliAuth(c.req.raw);
   if (!verified) {
     return c.json({ error: 'Unauthorized' }, 401);
@@ -227,15 +282,15 @@ export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json'
       .where(eq(skillVersions.id, versionId));
   }
 
-  // Non-blocking: fire dep audit as side effect (never blocks publish response)
-  depAuditService.runAudit(versionId, manifest).catch(() => {
-    // Silently fail — dep audit is non-blocking
-  });
+  depAuditService.runAudit(versionId, manifest).catch(() => {});
 
-  return c.json({
-    success: true,
-    name: skill?.name ?? 'unknown',
-    version: version.version,
-    scanVerdict
-  });
+  return c.json(
+    {
+      success: true as const,
+      name: skill?.name ?? 'unknown',
+      version: version.version,
+      scanVerdict
+    },
+    200
+  );
 });

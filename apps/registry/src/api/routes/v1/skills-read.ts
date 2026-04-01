@@ -1,6 +1,6 @@
 import { createGunzip } from 'node:zlib';
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { sql } from 'drizzle-orm';
-import { Hono } from 'hono';
 import { extract } from 'tar-stream';
 
 import { resolveRequestUserId } from '~/lib/auth/authz';
@@ -52,12 +52,132 @@ async function recordDownload(skillId: string): Promise<void> {
   `);
 }
 
-export const skillsReadRoutes = new Hono()
+const nameParam = z.object({
+  name: z.string().openapi({ description: 'Skill name (URL-encoded)', example: '@tank/react' })
+});
 
-  // GET /skills/:name — single skill metadata with latest version
-  .get('/:name', async (c) => {
+const nameVersionParam = z.object({
+  name: z.string().openapi({ description: 'Skill name (URL-encoded)', example: '@tank/react' }),
+  version: z.string().openapi({ description: 'Semver version', example: '1.0.0' })
+});
+
+const errorSchema = z.object({ error: z.string() });
+
+const getSkillRoute = createRoute({
+  method: 'get',
+  path: '/{name}',
+  tags: ['Skills'],
+  summary: 'Get skill metadata',
+  description: 'Returns metadata for a skill including its latest version.',
+  request: { params: nameParam },
+  responses: {
+    200: {
+      description: 'Skill metadata',
+      content: {
+        'application/json': {
+          schema: z.object({
+            name: z.string(),
+            description: z.string().nullable(),
+            visibility: z.enum(['public', 'private']),
+            latestVersion: z.string().nullable(),
+            publisher: z.object({ name: z.string().nullable() }),
+            createdAt: z.string(),
+            updatedAt: z.string()
+          })
+        }
+      }
+    },
+    404: {
+      description: 'Skill not found',
+      content: { 'application/json': { schema: errorSchema } }
+    }
+  }
+});
+
+const getVersionsRoute = createRoute({
+  method: 'get',
+  path: '/{name}/versions',
+  tags: ['Skills'],
+  summary: 'List skill versions',
+  description: 'Returns all published versions for a skill.',
+  request: { params: nameParam },
+  responses: {
+    200: {
+      description: 'Version list',
+      content: {
+        'application/json': {
+          schema: z.object({
+            name: z.string(),
+            versions: z.array(
+              z.object({
+                version: z.string(),
+                integrity: z.string(),
+                auditScore: z.number().nullable(),
+                auditStatus: z.string(),
+                publishedAt: z.string()
+              })
+            )
+          })
+        }
+      }
+    },
+    404: {
+      description: 'Skill not found',
+      content: { 'application/json': { schema: errorSchema } }
+    }
+  }
+});
+
+const getVersionDetailRoute = createRoute({
+  method: 'get',
+  path: '/{name}/{version}',
+  tags: ['Skills'],
+  summary: 'Get version detail',
+  description: 'Returns full detail for a specific skill version including a signed download URL.',
+  request: { params: nameVersionParam },
+  responses: {
+    200: {
+      description: 'Version detail with download URL',
+      content: {
+        'application/json': {
+          schema: z.object({
+            name: z.string(),
+            version: z.string(),
+            description: z.string().nullable(),
+            integrity: z.string(),
+            permissions: z.any(),
+            auditScore: z.number().nullable(),
+            auditStatus: z.string(),
+            downloadUrl: z.string(),
+            publishedAt: z.string(),
+            downloads: z.number(),
+            scanVerdict: z.string().nullable(),
+            scanFindings: z.array(z.any()),
+            dependencies: z.record(z.string(), z.string())
+          })
+        }
+      }
+    },
+    404: {
+      description: 'Skill or version not found',
+      content: { 'application/json': { schema: errorSchema } }
+    },
+    500: {
+      description: 'Internal server error',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string(), details: z.string().optional() })
+        }
+      }
+    }
+  }
+});
+
+export const skillsReadRoutes = new OpenAPIHono()
+
+  .openapi(getSkillRoute, async (c) => {
     const requesterUserId = await resolveRequestUserId(c.req.raw);
-    const rawName = c.req.param('name');
+    const { name: rawName } = c.req.valid('param');
     const name = decodeURIComponent(rawName);
     const visClause = visibilityClause(requesterUserId);
 
@@ -86,23 +206,25 @@ export const skillsReadRoutes = new Hono()
 
     const row = results[0] as Record<string, unknown>;
 
-    return c.json({
-      name: row.name as string,
-      description: row.description as string | null,
-      visibility: row.visibility as 'public' | 'private',
-      latestVersion: (row.latestVersion as string) ?? null,
-      publisher: {
-        name: (row.publisherName as string) || null
+    return c.json(
+      {
+        name: row.name as string,
+        description: row.description as string | null,
+        visibility: row.visibility as 'public' | 'private',
+        latestVersion: (row.latestVersion as string) ?? null,
+        publisher: {
+          name: (row.publisherName as string) || null
+        },
+        createdAt: row.createdAt as string,
+        updatedAt: row.updatedAt as string
       },
-      createdAt: row.createdAt as string,
-      updatedAt: row.updatedAt as string
-    });
+      200
+    );
   })
 
-  // GET /skills/:name/versions — all versions for a skill
-  .get('/:name/versions', async (c) => {
+  .openapi(getVersionsRoute, async (c) => {
     const requesterUserId = await resolveRequestUserId(c.req.raw);
-    const rawName = c.req.param('name');
+    const { name: rawName } = c.req.valid('param');
     const name = decodeURIComponent(rawName);
     const visClause = visibilityClause(requesterUserId);
 
@@ -126,29 +248,30 @@ export const skillsReadRoutes = new Hono()
 
     const skillName = (rows[0] as Record<string, unknown>).name as string;
 
-    return c.json({
-      name: skillName,
-      versions: rows
-        .filter(
-          (r: Record<string, unknown>) =>
-            r.version !== null && r.integrity !== 'pending' && r.auditStatus !== 'pending-upload'
-        )
-        .map((r: Record<string, unknown>) => ({
-          version: r.version as string,
-          integrity: r.integrity as string,
-          auditScore: r.auditScore != null ? Number(r.auditScore) : null,
-          auditStatus: r.auditStatus as string,
-          publishedAt: r.publishedAt as string
-        }))
-    });
+    return c.json(
+      {
+        name: skillName,
+        versions: rows
+          .filter(
+            (r: Record<string, unknown>) =>
+              r.version !== null && r.integrity !== 'pending' && r.auditStatus !== 'pending-upload'
+          )
+          .map((r: Record<string, unknown>) => ({
+            version: r.version as string,
+            integrity: r.integrity as string,
+            auditScore: r.auditScore != null ? Number(r.auditScore) : null,
+            auditStatus: r.auditStatus as string,
+            publishedAt: r.publishedAt as string
+          }))
+      },
+      200
+    );
   })
 
-  // GET /skills/:name/:version — specific version detail with download URL
-  .get('/:name/:version', async (c) => {
+  .openapi(getVersionDetailRoute, async (c) => {
     try {
       const requesterUserId = await resolveRequestUserId(c.req.raw);
-      const rawName = c.req.param('name');
-      const version = c.req.param('version');
+      const { name: rawName, version } = c.req.valid('param');
       const name = decodeURIComponent(rawName);
       const visClause = visibilityClause(requesterUserId);
 
@@ -200,7 +323,6 @@ export const skillsReadRoutes = new Hono()
         return c.json({ error: 'Failed to generate download URL' }, 500);
       }
 
-      // Fire-and-forget download recording
       recordDownload(skillId).catch((err) => apiLog.warn({ err, skillId }, 'download recording failed'));
 
       const metaRows = await db.execute(sql`
@@ -238,21 +360,24 @@ export const skillsReadRoutes = new Hono()
 
       const dependencies = (row.dependencies as Record<string, string> | null) ?? {};
 
-      return c.json({
-        name: row.name as string,
-        version: row.version as string,
-        description: row.description as string | null,
-        integrity: row.integrity as string,
-        permissions: row.permissions,
-        auditScore: row.auditScore != null ? Number(row.auditScore) : null,
-        auditStatus: row.auditStatus as string,
-        downloadUrl: signedDownloadUrl,
-        publishedAt: row.publishedAt as string,
-        downloads: downloadCount,
-        scanVerdict,
-        scanFindings: scanFindingsList,
-        dependencies
-      });
+      return c.json(
+        {
+          name: row.name as string,
+          version: row.version as string,
+          description: row.description as string | null,
+          integrity: row.integrity as string,
+          permissions: row.permissions,
+          auditScore: row.auditScore != null ? Number(row.auditScore) : null,
+          auditStatus: row.auditStatus as string,
+          downloadUrl: signedDownloadUrl,
+          publishedAt: row.publishedAt as string,
+          downloads: downloadCount,
+          scanVerdict,
+          scanFindings: scanFindingsList,
+          dependencies
+        },
+        200
+      );
     } catch (error) {
       return c.json(
         { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },

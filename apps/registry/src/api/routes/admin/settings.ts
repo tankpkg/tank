@@ -40,7 +40,7 @@ interface SettingsBody {
 }
 
 function normalizeBackend(raw: string): string {
-  return ['minio', 's3-compatible'].includes(raw) ? 's3' : raw;
+  return ['rustfs', 's3-compatible'].includes(raw) ? 's3' : raw;
 }
 
 export const settingsRoutes = new Hono()
