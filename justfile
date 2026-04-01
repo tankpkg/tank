@@ -172,9 +172,9 @@ bump VERSION:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Validate semver format (basic check)
-    if ! [[ "{{VERSION}}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      echo "Invalid version format: {{VERSION}} (expected X.Y.Z)"
+    # Validate semver format (basic check, or nightly pre-release format)
+    if ! [[ "{{VERSION}}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] && ! [[ "{{VERSION}}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-nightly\.[0-9]+\.[a-f0-9a-f]+$ ]]; then
+      echo "Invalid version format: {{VERSION}} (expected X.Y.Z or X.Y.Z-nightly.YYYYMMDD.SHORT_SHA)"
       exit 1
     fi
 

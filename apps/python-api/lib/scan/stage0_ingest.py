@@ -23,11 +23,18 @@ MAX_EXTRACTED_SIZE = 50 * 1024 * 1024  # 50MB
 MAX_COMPRESSION_RATIO = 100  # decompressed/compressed
 DOWNLOAD_TIMEOUT = 30.0  # seconds
 
-# Allowed domains for tarball downloads (Supabase storage + configured object storage)
+# Allowed domains for tarball downloads (Supabase storage + configured object storage + registries)
 DEFAULT_ALLOWED_DOWNLOAD_DOMAINS = [
     "supabase.co",
     "supabase.com",
     "supabase.in",
+    # Public registries (used by public scan endpoint)
+    "github.com",
+    "codeload.github.com",
+    "api.github.com",
+    "npm.pkg.github.com",
+    "registry.npmjs.org",
+    "ghcr.io",
     # Local development fallback
     "localhost",
     "127.0.0.1",
