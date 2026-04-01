@@ -349,15 +349,24 @@ def narrow_to_sub_path(
     """
     findings: list[Finding] = []
 
+    # Reject empty/whitespace-only sub_path
+    sub_path = sub_path.strip()
+    if not sub_path:
+        return temp_dir, extracted_files, 0, findings
+
     # Sanitize sub_path to prevent path traversal
     clean_sub_path = Path(sub_path).as_posix()
-    if ".." in clean_sub_path or clean_sub_path.startswith("/"):
+
+    # Per-component check: reject ".." and "." as path components.
+    # Substring check (".." in s) would false-positive on names like "skill-v2..0".
+    parts = Path(clean_sub_path).parts
+    if any(part in ("..", ".") for part in parts) or clean_sub_path.startswith("/"):
         findings.append(
             Finding(
                 stage="stage0",
                 severity="critical",
                 type="invalid_sub_path",
-                description=f"Invalid sub_path contains path traversal: {sub_path}",
+                description=f"Invalid sub_path contains path traversal: {sub_path[:255]}",
                 confidence=1.0,
                 tool="stage0_ingest",
             )
@@ -365,10 +374,7 @@ def narrow_to_sub_path(
         return temp_dir, extracted_files, 0, findings
 
     # GitHub tarballs have a single top-level directory (e.g., "owner-repo-sha/")
-    top_entries = [
-        e for e in os.listdir(temp_dir)
-        if os.path.isdir(os.path.join(temp_dir, e))
-    ]
+    top_entries = [e for e in os.listdir(temp_dir) if os.path.isdir(os.path.join(temp_dir, e))]
 
     if len(top_entries) == 1:
         repo_root = os.path.join(temp_dir, top_entries[0])
@@ -408,13 +414,17 @@ def narrow_to_sub_path(
 
     # Create new temp directory with only the sub_path contents
     new_temp_dir = tempfile.mkdtemp(prefix="tank_scan_sub_")
-    for item in os.listdir(target_dir):
-        src = os.path.join(target_dir, item)
-        dst = os.path.join(new_temp_dir, item)
-        if os.path.isdir(src):
-            shutil.copytree(src, dst)
-        else:
-            shutil.copy2(src, dst)
+    try:
+        for item in os.listdir(target_dir):
+            src = os.path.join(target_dir, item)
+            dst = os.path.join(new_temp_dir, item)
+            if os.path.isdir(src):
+                shutil.copytree(src, dst, symlinks=True)
+            else:
+                shutil.copy2(src, dst, follow_symlinks=False)
+    except Exception:
+        shutil.rmtree(new_temp_dir, ignore_errors=True)
+        raise
 
     # Clean up original temp dir
     shutil.rmtree(temp_dir, ignore_errors=True)

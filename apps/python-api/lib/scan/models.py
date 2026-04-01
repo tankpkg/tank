@@ -67,6 +67,7 @@ class ScanRequest(BaseModel):
     permissions: dict[str, Any] = Field(..., description="Declared permissions from database")
     sub_path: str | None = Field(
         None,
+        max_length=255,
         description="Subdirectory within the tarball to scan. "
         "Useful for monorepos containing multiple skills where only one should be scanned. "
         "Example: 'my-skill' to scan only the my-skill/ directory.",
