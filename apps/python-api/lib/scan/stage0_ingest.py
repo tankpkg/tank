@@ -566,9 +566,13 @@ async def stage0_ingest(tarball_url: str, sub_path: str | None = None) -> Ingest
 
     # Narrow to sub_path if specified (monorepo support)
     if sub_path:
-        temp_dir, extracted_files, narrowed_size, sub_path_findings = narrow_to_sub_path(
-            temp_dir, sub_path, extracted_files
-        )
+        try:
+            temp_dir, extracted_files, narrowed_size, sub_path_findings = narrow_to_sub_path(
+                temp_dir, sub_path, extracted_files
+            )
+        except Exception:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise
         if narrowed_size is not None:
             total_size = narrowed_size
         findings.extend(sub_path_findings)
