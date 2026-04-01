@@ -1,6 +1,6 @@
 import { encodeSkillName } from '@internals/helpers';
 import { Link } from '@tanstack/react-router';
-import { Download, Lock, Star } from 'lucide-react';
+import { Download, Lock, ShieldAlert, ShieldCheck, Star } from 'lucide-react';
 
 import { MobileSkillsFilters } from '~/components/skills/mobile-skills-filters';
 import { SearchBar } from '~/components/skills/search-bar';
@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/com
 import type {
   FreshnessBucket,
   PopularityBucket,
-  ScoreBucket,
+  SecurityVerdict,
   SkillSearchResponse,
   SkillSearchResult,
   SortOption,
@@ -25,7 +25,7 @@ export interface SkillsListScreenProps {
   page: number;
   sort: SortOption;
   visibility: VisibilityFilter;
-  scoreBucket: ScoreBucket;
+  securityVerdict: SecurityVerdict;
   freshness: FreshnessBucket;
   popularity: PopularityBucket;
   hasReadme: boolean;
@@ -40,7 +40,7 @@ export function SkillsListScreen({
   page,
   sort,
   visibility,
-  scoreBucket,
+  securityVerdict,
   freshness,
   popularity,
   hasReadme,
@@ -63,7 +63,7 @@ export function SkillsListScreen({
 
       <MobileSkillsFilters
         currentVisibility={visibility}
-        currentScoreBucket={scoreBucket}
+        currentSecurityVerdict={securityVerdict}
         currentFreshness={freshness}
         currentPopularity={popularity}
         currentHasReadme={hasReadme}
@@ -74,7 +74,7 @@ export function SkillsListScreen({
         <div className="hidden lg:block">
           <SkillsFilters
             currentVisibility={visibility}
-            currentScoreBucket={scoreBucket}
+            currentSecurityVerdict={securityVerdict}
             currentFreshness={freshness}
             currentPopularity={popularity}
             currentHasReadme={hasReadme}
@@ -127,16 +127,31 @@ export function FiltersSkeleton() {
   );
 }
 
+const verdictConfig: Record<string, { label: string; className: string; Icon: typeof ShieldCheck }> = {
+  pass: { label: 'Pass', className: 'text-green-600', Icon: ShieldCheck },
+  pass_with_notes: { label: 'Notes', className: 'text-yellow-600', Icon: ShieldCheck },
+  flagged: { label: 'Flagged', className: 'text-orange-600', Icon: ShieldAlert },
+  fail: { label: 'Unsafe', className: 'text-red-600', Icon: ShieldAlert }
+};
+
 function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn: boolean }) {
+  const verdict = skill.scanVerdict ? verdictConfig[skill.scanVerdict] : null;
+
   return (
     <Link to="/skills/$" params={{ _splat: encodeSkillName(skill.name) }}>
       <Card className="h-full cursor-pointer transition-colors hover:border-primary/50">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
-            {isLoggedIn && skill.visibility === 'private' && (
-              <Lock className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-            )}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {verdict && (
+                <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${verdict.className}`}>
+                  <verdict.Icon className="size-3" />
+                  {verdict.label}
+                </span>
+              )}
+              {isLoggedIn && skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground" />}
+            </div>
           </div>
           {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
         </CardHeader>

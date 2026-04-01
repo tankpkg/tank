@@ -124,7 +124,6 @@ export function buildSecurityTab({ data, scanDetails }: { data: SkillDetailResul
   return (
     <div className="space-y-6" data-testid="security-root">
       <SecurityOverview
-        score={null}
         verdict={scanDetails.verdict ?? null}
         durationMs={scanDetails.durationMs ?? null}
         scannedAt={scanDetails.scannedAt ? String(scanDetails.scannedAt) : null}

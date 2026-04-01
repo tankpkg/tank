@@ -56,33 +56,37 @@ export function FindingsTable({ findings }: FindingsTableProps) {
   }
 
   return (
-    <div className="rounded-lg border overflow-hidden">
+    <div className="rounded-lg border overflow-hidden overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="text-xs font-medium uppercase tracking-wide">Severity</TableHead>
-            <TableHead className="text-xs font-medium uppercase tracking-wide">Type</TableHead>
+            <TableHead className="w-[90px] text-xs font-medium uppercase tracking-wide">Severity</TableHead>
+            <TableHead className="w-[100px] text-xs font-medium uppercase tracking-wide">Type</TableHead>
             <TableHead className="text-xs font-medium uppercase tracking-wide">Description</TableHead>
-            <TableHead className="text-xs font-medium uppercase tracking-wide">Location</TableHead>
-            <TableHead className="text-xs font-medium uppercase tracking-wide">Tool</TableHead>
+            <TableHead className="w-[160px] text-xs font-medium uppercase tracking-wide">Location</TableHead>
+            <TableHead className="w-[100px] text-xs font-medium uppercase tracking-wide">Tool</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {findings.map((f, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: findings can have duplicate stage+type
             <TableRow key={`${f.stage}-${f.type}-${i}`} className="align-top">
-              <TableCell>
+              <TableCell className="min-w-0">
                 <span
                   className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${severityColor[f.severity] ?? ''}`}>
                   {f.severity}
                 </span>
               </TableCell>
-              <TableCell className="font-mono text-xs">{f.type}</TableCell>
-              <TableCell className="max-w-xs">
+              <TableCell className="min-w-0 font-mono text-xs">{f.type}</TableCell>
+              <TableCell className="min-w-0">
                 <ExpandableDescription description={f.description} evidence={f.evidence ?? null} />
               </TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">{f.location ?? '\u2014'}</TableCell>
-              <TableCell className="text-xs text-muted-foreground">{f.tool ?? f.stage}</TableCell>
+              <TableCell
+                className="min-w-0 font-mono text-xs text-muted-foreground truncate max-w-[160px]"
+                title={f.location ?? undefined}>
+                {f.location ?? '\u2014'}
+              </TableCell>
+              <TableCell className="min-w-0 text-xs text-muted-foreground">{f.tool ?? f.stage}</TableCell>
             </TableRow>
           ))}
         </TableBody>

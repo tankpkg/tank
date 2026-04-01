@@ -2,7 +2,6 @@ import { formatDate } from '~/lib/format';
 import type { LLMAnalysisInfo } from '~/lib/skills/data';
 
 export interface SecurityOverviewProps {
-  score: number | null;
   verdict: string | null;
   durationMs: number | null;
   scannedAt: string | null;
@@ -14,7 +13,6 @@ export interface SecurityOverviewProps {
 }
 
 export function SecurityOverview({
-  score,
   verdict,
   durationMs,
   scannedAt,
@@ -30,18 +28,6 @@ export function SecurityOverview({
     <div className="rounded-lg border p-4 space-y-3" data-testid="security-overview">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span
-            className={`text-3xl font-bold ${
-              (score ?? 0) >= 8
-                ? 'text-green-600'
-                : (score ?? 0) >= 6
-                  ? 'text-yellow-600'
-                  : (score ?? 0) >= 4
-                    ? 'text-orange-600'
-                    : 'text-red-600'
-            }`}>
-            {score !== null ? `${score}/10` : '\u2014'}
-          </span>
           {verdict && (
             <span
               className={`inline-flex px-2 py-1 rounded text-xs font-medium text-white ${
