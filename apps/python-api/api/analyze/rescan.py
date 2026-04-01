@@ -1,7 +1,8 @@
 """POST /api/analyze/rescan — Cron endpoint for re-scanning old skill versions.
 
 Called daily by Vercel Cron Jobs. Re-scans versions that haven't been
-scanned in 24+ hours and updates their audit status if verdict changes.
+scanned in 24+ hours, stores updated scan results + findings, and
+updates audit status if verdict changes.
 """
 
 import os
@@ -11,7 +12,10 @@ from typing import Any
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
-from lib.scan.models import ScanVerdict, StageResult
+from api.analyze.scan import store_scan_results
+from lib.scan.dedup import deduplicate_findings
+from lib.scan.models import Finding, ScanVerdict, StageResult
+from lib.scan.remediation import enrich_findings
 from lib.scan.stage0_ingest import cleanup_ingest, stage0_ingest
 from lib.scan.stage1_structure import stage1_validate
 from lib.scan.stage2_static import stage2_analyze
@@ -221,6 +225,52 @@ async def rescan_version(version: dict[str, Any]) -> dict[str, Any]:
         verdict = compute_verdict(stage_results)
         duration_ms = int((time.monotonic() - start) * 1000)
 
+        # Deduplicate + enrich findings, then store in DB
+        all_findings = [f for sr in stage_results for f in sr.findings]
+        deduped = deduplicate_findings(
+            [
+                {
+                    "stage": f.stage,
+                    "severity": f.severity,
+                    "type": f.type,
+                    "description": f.description,
+                    "location": f.location,
+                    "confidence": f.confidence,
+                    "tool": f.tool,
+                    "evidence": f.evidence,
+                    "llm_verdict": f.llm_verdict,
+                    "llm_reviewed": f.llm_reviewed,
+                }
+                for f in all_findings
+            ]
+        )
+        enriched = enrich_findings(
+            [
+                Finding(
+                    stage=f["stage"],
+                    severity=f["severity"],
+                    type=f["type"],
+                    description=f["description"],
+                    location=f.get("location"),
+                    confidence=f.get("confidence"),
+                    tool=f.get("tool"),
+                    evidence=f.get("evidence"),
+                    llm_verdict=f.get("llm_verdict"),
+                    llm_reviewed=f.get("llm_reviewed", False),
+                )
+                for f in deduped
+            ]
+        )
+
+        await store_scan_results(
+            version_id,
+            verdict,
+            stage_results,
+            duration_ms,
+            ingest.file_hashes if ingest.stage_result.status != "failed" else {},
+            enriched_findings=enriched,
+        )
+
         # Update audit status
         old_verdict = version.get("last_verdict")
         await update_version_audit_status(version_id, verdict, old_verdict)
@@ -230,7 +280,7 @@ async def rescan_version(version: dict[str, Any]) -> dict[str, Any]:
             "status": "completed",
             "verdict": verdict.value,
             "duration_ms": duration_ms,
-            "finding_count": sum(len(sr.findings) for sr in stage_results),
+            "finding_count": len(enriched),
         }
 
     except Exception as e:

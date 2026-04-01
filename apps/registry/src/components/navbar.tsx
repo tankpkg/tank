@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 const NAV_ITEMS = [
   { text: 'Skills', href: '/skills' },
+  { text: 'Scan', href: '/scan' },
   { text: 'Docs', href: '/docs/overview' }
 ];
 

@@ -42,8 +42,22 @@ jobs:
     permissions:
       contents: read
       security-events: write
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tank
+          POSTGRES_PASSWORD: tank
+          POSTGRES_DB: tank_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U tank"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     env:
-      DATABASE_URL: postgresql://fake:fake@localhost:5432/fake
+      DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_test
       SUPABASE_URL: https://fake.supabase.co
       BETTER_AUTH_SECRET: ci-test-secret-not-real
       APP_URL: http://localhost:5555
@@ -82,7 +96,7 @@ jobs:
         run: bun run build
 
       - name: Push DB schema
-        run: bash scripts/ensure-pg-trgm.mjs && (cd apps/registry && bunx drizzle-kit push)
+        run: bun scripts/ensure-pg-trgm.mjs && (cd apps/registry && bunx drizzle-kit push)
 
       - name: Lint & format check
         run: bun run lint:readonly && bun run format:readonly
@@ -97,7 +111,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Run Python tests
-        run: cd apps/python-api && PYTHONPATH=. uv run pytest lib/scan/test_llm_analyzer.py -v
+        run: cd apps/python-api && PYTHONPATH=. uv run pytest lib/scan/test_llm_analyzer.py tests/test_rescan_stores_results.py tests/test_detect_secrets_available.py -v
 
       - name: Ruff lint
         run: uv run ruff check apps/python-api
