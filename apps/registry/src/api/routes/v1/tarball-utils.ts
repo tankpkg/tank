@@ -94,7 +94,9 @@ function extractSingleFile(tarball: Uint8Array, rawPath: string): Promise<string
           accumulated += chunk.byteLength;
           if (accumulated > MAX_TARBALL_FILE_BYTES) {
             found = true;
-            stream.destroy(new Error(`File exceeds ${MAX_TARBALL_FILE_BYTES} byte limit (actual bytes)`));
+            reject(new Error(`File exceeds ${MAX_TARBALL_FILE_BYTES} byte limit (actual bytes)`));
+            stream.destroy();
+            gunzip.destroy();
             return;
           }
           chunks.push(chunk);

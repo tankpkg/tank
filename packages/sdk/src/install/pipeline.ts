@@ -173,7 +173,8 @@ export function readExtractedDependencies(extractDir: string): Record<string, st
 export function writeLockfileWithResolvedGraph(
   lock: SkillsLock,
   nodes: ResolvedNode[],
-  downloaded: Map<string, { buffer: Buffer; integrity: string }>
+  downloaded: Map<string, { buffer: Buffer; integrity: string }>,
+  onProgress?: (msg: string) => void
 ): SkillsLock {
   for (const node of nodes) {
     const key = buildSkillKey(node.name, node.version);
@@ -185,6 +186,11 @@ export function writeLockfileWithResolvedGraph(
     const integrity = downloaded.get(node.name)?.integrity ?? lock.skills[key]?.integrity ?? node.meta.integrity;
 
     const permsParsed = permissionsSchema.safeParse(node.meta.permissions);
+    if (!permsParsed.success) {
+      onProgress?.(
+        `Warning: ${node.name}@${node.version} has unrecognized permissions format — treating as unrestricted`
+      );
+    }
     const validatedPerms: Permissions = permsParsed.success ? permsParsed.data : {};
 
     lock.skills[key] = {
