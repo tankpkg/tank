@@ -43,6 +43,41 @@ COMPILED_SECRET_PATTERNS = [
     (re.compile(pattern), severity, description) for pattern, severity, description in CUSTOM_SECRET_PATTERNS
 ]
 
+# Placeholder values that indicate example/tutorial content, not real secrets
+PLACEHOLDER_PATTERNS: list[re.Pattern] = [
+    re.compile(r"\b(user|username|admin|root|password|pass|pwd|secret|token|key|value|your[_-]?)\b", re.IGNORECASE),
+    re.compile(r"\b(example|sample|demo|test|placeholder|dummy|fake|todo|changeme|default)\b", re.IGNORECASE),
+    re.compile(r"\b(localhost|127\.0\.0\.1|0\.0\.0\.0|host|hostname)\b", re.IGNORECASE),
+    re.compile(r"\bxxx+\b|\babc+\b|\b123+\b"),
+]
+
+# File paths that indicate example/tutorial/documentation context
+EXAMPLE_PATH_PATTERNS: list[re.Pattern] = [
+    re.compile(r"(^|/)examples?/", re.IGNORECASE),
+    re.compile(r"(^|/)docs?/", re.IGNORECASE),
+    re.compile(r"(^|/)guides?/", re.IGNORECASE),
+    re.compile(r"(^|/)tutorials?/", re.IGNORECASE),
+    re.compile(r"(^|/)samples?/", re.IGNORECASE),
+    re.compile(r"(^|/)demo/", re.IGNORECASE),
+    re.compile(r"\.example(\.|$)", re.IGNORECASE),
+    re.compile(r"\.sample(\.|$)", re.IGNORECASE),
+    re.compile(r"\.template(\.|$)", re.IGNORECASE),
+    re.compile(r"(setup|config|getting.started|quickstart)", re.IGNORECASE),
+]
+
+
+def _is_example_path(file_path: str) -> bool:
+    """Check if file is in an example/tutorial/documentation context."""
+    return any(p.search(file_path) for p in EXAMPLE_PATH_PATTERNS)
+
+
+def _is_placeholder_value(matched_text: str) -> bool:
+    """Check if a matched secret value is a placeholder/example."""
+    lower = matched_text.lower()
+    # Check if the match contains obvious placeholder words
+    return any(p.search(lower) for p in PLACEHOLDER_PATTERNS)
+
+
 # Files to skip (binary, images, etc.)
 SKIP_EXTENSIONS = {
     ".png",
@@ -74,32 +109,22 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
     findings: list[Finding] = []
 
     try:
+        from detect_secrets.core.scan import get_files_to_scan, scan_file
         from detect_secrets.settings import transient_settings
 
         # Configure detect-secrets with all plugins
         plugins = [
-            # AWS
             {"name": "AWSKeyDetector"},
-            # Azure
             {"name": "AzureStorageKeyDetector"},
-            # Basic auth
             {"name": "BasicAuthDetector"},
-            # GitHub
             {"name": "GitHubTokenDetector"},
-            # High entropy strings
             {"name": "Base64HighEntropyString", "limit": 4.5},
             {"name": "HexHighEntropyString", "limit": 3.0},
-            # Private keys
             {"name": "PrivateKeyDetector"},
-            # Slack
             {"name": "SlackDetector"},
-            # Stripe
             {"name": "StripeDetector"},
-            # Twilio
             {"name": "TwilioKeyDetector"},
-            # Keyword detector
             {"name": "KeywordDetector"},
-            # JWT
             {"name": "JwtTokenDetector"},
         ]
 
@@ -110,41 +135,23 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                     {"path": "detect_secrets.filters.allowlist.is_line_allowlisted"},
                 ],
             }
-        ) as settings:
-            # Scan the temp directory
-            from detect_secrets.core.plugins.util import get_mapping_from_secret_type_to_class
-            from detect_secrets.core.scan import get_files_to_scan
-
-            plugin_map = get_mapping_from_secret_type_to_class()
-
-            for file_path in get_files_to_scan([temp_dir], settings):
+        ):
+            for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True):
                 try:
-                    with open(file_path, errors="replace") as f:
-                        lines = f.readlines()
-
-                    for line_num, line in enumerate(lines, 1):
-                        for plugin_class in plugin_map.values():
-                            try:
-                                plugin = plugin_class()
-                                for secret in plugin.analyze_line(line):
-                                    rel_path = str(Path(file_path).relative_to(temp_dir))
-                                    findings.append(
-                                        Finding(
-                                            stage="stage4",
-                                            severity="critical",
-                                            type=f"secret_{secret.type}",
-                                            description=f"Secret detected: {secret.type}",
-                                            location=f"{rel_path}:{line_num}",
-                                            confidence=0.9,
-                                            tool="detect-secrets",
-                                            evidence=line.strip()[:100] if len(line.strip()) > 100 else line.strip(),
-                                        )
-                                    )
-                            except Exception as plugin_error:
-                                # Log plugin errors for debugging but continue with other plugins
-                                print(f"detect-secrets plugin error: {plugin_error}")
+                    for secret in scan_file(file_path):
+                        rel_path = str(Path(file_path).relative_to(temp_dir))
+                        findings.append(
+                            Finding(
+                                stage="stage4",
+                                severity="critical",
+                                type=f"secret_{secret.type}",
+                                description=f"Secret detected: {secret.type}",
+                                location=f"{rel_path}:{secret.line_number}",
+                                confidence=0.9,
+                                tool="detect-secrets",
+                            )
+                        )
                 except Exception as file_error:
-                    # Log file read errors for debugging but continue with other files
                     print(f"detect-secrets file scan error: {file_error}")
 
     except ImportError:
@@ -187,6 +194,8 @@ def run_custom_patterns(temp_dir: str, file_list: list[str]) -> list[Finding]:
         if not full_path.is_file():
             continue
 
+        is_example = _is_example_path(file_path)
+
         try:
             with open(full_path, encoding="utf-8", errors="replace") as f:
                 content = f.read()
@@ -197,18 +206,26 @@ def run_custom_patterns(temp_dir: str, file_list: list[str]) -> list[Finding]:
                 for line_num, line in enumerate(lines, 1):
                     matches = pattern.finditer(line)
                     for match in matches:
-                        # Mask the secret in evidence
                         matched_text = match.group(0)
+
+                        # Skip placeholder/example values
+                        if _is_placeholder_value(matched_text):
+                            continue
+
+                        # Downgrade findings in example/tutorial files
+                        effective_severity = "info" if is_example else severity
+
+                        # Mask the secret in evidence
                         masked = matched_text[:10] + "..." if len(matched_text) > 10 else matched_text
 
                         findings.append(
                             Finding(
                                 stage="stage4",
-                                severity=severity,
+                                severity=effective_severity,
                                 type="custom_secret_pattern",
                                 description=f"Potential secret detected: {description}",
                                 location=f"{file_path}:{line_num}",
-                                confidence=0.85,
+                                confidence=0.85 if not is_example else 0.4,
                                 tool="stage4_custom",
                                 evidence=f"Pattern match: {masked}",
                             )

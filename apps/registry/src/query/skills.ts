@@ -7,7 +7,7 @@ import {
   type FreshnessBucket,
   getSkillDetail,
   type PopularityBucket,
-  type ScoreBucket,
+  type SecurityVerdict,
   type SkillDetailResult,
   type SkillSearchResponse,
   type SkillsSearchParams,
@@ -31,7 +31,7 @@ export interface SkillsListParams {
   limit: number;
   sort: SortOption;
   visibility: VisibilityFilter;
-  scoreBucket: ScoreBucket;
+  securityVerdict: SecurityVerdict;
   freshness?: FreshnessBucket;
   popularity?: PopularityBucket;
   hasReadme?: boolean;
