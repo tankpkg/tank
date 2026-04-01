@@ -388,13 +388,11 @@ export const skillsReadRoutes = new OpenAPIHono()
 
   .get('/:name/:version/files/*', async (c) => {
     try {
-      const name = decodeURIComponent(c.req.param('name'));
-      const version = c.req.param('version');
-      const requesterId = await resolveRequestUserId(c.req.raw);
-
+      const rawUrl = new URL(c.req.url);
+      const pathParts = rawUrl.pathname.split('/files/');
       let filePath: string;
       try {
-        filePath = decodeURIComponent(c.req.param('*') ?? '');
+        filePath = pathParts.length > 1 ? decodeURIComponent(pathParts[pathParts.length - 1]) : '';
       } catch {
         return c.json({ error: 'Invalid file path encoding' }, 400);
       }
@@ -403,6 +401,12 @@ export const skillsReadRoutes = new OpenAPIHono()
       if (!normalized || normalized.startsWith('/') || normalized.split('/').some((s) => s === '..')) {
         return c.json({ error: 'Invalid file path' }, 400);
       }
+
+      const nameVersionPath = pathParts[0].replace(/.*\/skills\//, '');
+      const segments = nameVersionPath.split('/');
+      const version = segments[segments.length - 1];
+      const name = decodeURIComponent(segments.slice(0, -1).join('/'));
+      const requesterId = await resolveRequestUserId(c.req.raw);
 
       const rows = await db.execute(sql`
         SELECT sv.tarball_path AS "tarballPath"
