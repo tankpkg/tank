@@ -68,7 +68,7 @@ packages/
       errors.ts                     # Typed error classes
       constants.ts                  # Re-exported constants
       types.ts                      # Re-exported types from @internals/schemas
-      rest/                         # Layer A — Stainless-generated REST client
+      rest/                         # Reserved for future generated client
         generated/                  # Auto-generated — DO NOT EDIT
       install/                      # Layer B — extracted from CLI
         pipeline.ts                 # download → extract → verify → lockfile
@@ -83,7 +83,7 @@ packages/
       __init__.py
       client.py                     # TankClient constructor
       errors.py                     # Typed error classes
-      rest/                         # Stainless-generated REST client
+      rest/                         # Reserved for future generated client
     pyproject.toml
     setup.cfg
 
@@ -116,7 +116,7 @@ apps/
 | C1  | OpenAPI spec is generated from Hono route handlers via @hono/zod-openapi — never hand-written YAML | Prevents spec drift from code            | CI: spec regeneration check |
 | C2  | Spec covers ALL `/api/v1/` public endpoints (auth, search, skills CRUD, publish, star, badge)      | Complete API coverage for SDK generation | BDD scenario                |
 | C3  | Spec includes Zod schema references for all request/response bodies                                | Typed SDK generation                     | BDD scenario                |
-| C4  | Spec is exported as JSON at a stable URL (`/api/v1/openapi.json`) for Stainless ingestion          | Stainless auto-sync                      | BDD scenario                |
+| C4  | Spec is exported as JSON at a stable URL (`/api/v1/openapi.json`)                                  | API documentation + tooling              | BDD scenario                |
 
 ### Constructor & Auth (Phase 2)
 
@@ -148,6 +148,16 @@ apps/
 | C18 | `permissions(name, version?)` returns the declared permission set (network, filesystem, subprocess) | Permission budget evaluation before install | BDD scenario |
 | C19 | `whoami()` returns user info if authenticated, `null` if no valid token                             | Auth status check                           | BDD scenario |
 
+### Skill Content Access (Phase 3)
+
+| #   | Rule                                                                                                                                                                             | Rationale                                                   | Verified by  |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------ |
+| C36 | `listFiles(name, version?)` returns all file paths in the skill package                                                                                                          | File discovery for agents loading skills                    | BDD scenario |
+| C37 | `readFile(name, version, path)` returns file content as string; rejects paths with `..`, backslashes, NUL bytes, or absolute paths                                               | Secure individual file access                               | BDD scenario |
+| C38 | `readSkill(name, version?)` returns `SkillContent` with `content` (SKILL.md), `references` (dict keyed by filename), `scripts` (dict keyed by filename), and `files` (all paths) | Single-call complete skill loading for LLM context          | BDD scenario |
+| C39 | `readSkill()` fetches references and scripts in parallel where possible                                                                                                          | Performance — skills with many references shouldn't be slow | BDD scenario |
+| C40 | File listing and file reading endpoints enforce visibility checks — private skills return 404 to unauthorized users                                                              | No data leakage of private skill content                    | BDD scenario |
+
 ### Install Pipeline (Phase 4 — TypeScript only at v1)
 
 | #   | Rule                                                                                                                                            | Rationale                             | Verified by  |
@@ -168,21 +178,24 @@ apps/
 | C28 | SDK exports typed error classes: `TankError` (base), `TankAuthError`, `TankNotFoundError`, `TankPermissionError`, `TankNetworkError`, `TankIntegrityError`, `TankConflictError` | Programmatic error handling | TypeScript compilation |
 | C29 | SDK exports constants: `AGENT_PATHS`, `MANIFEST_FILENAME`, `LOCKFILE_FILENAME`, `SUPPORTED_AGENTS`                                                                              | Integration helpers         | TypeScript compilation |
 
-### Python SDK (v1 scope)
+### Python SDK
 
-| #   | Rule                                                                                                       | Rationale                                         | Verified by  |
-| --- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------ |
-| C30 | Python SDK at v1 includes Layer A only: search, info, versions, download, audit, permissions, whoami, star | Ship fast; install pipeline deferred to Rust core | BDD scenario |
-| C31 | Python SDK uses snake_case method names and Pythonic conventions (context managers, type hints)            | Idiomatic Python                                  | Code review  |
-| C32 | Python SDK raises typed exceptions mirroring TS error classes                                              | Consistent error handling cross-language          | BDD scenario |
+| #   | Rule                                                                                                                       | Rationale                                | Verified by  |
+| --- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | ------------ |
+| C30 | Python SDK includes: search, info, versions, download, audit, permissions, whoami, star, read_skill, list_files, read_file | Full parity with TS SDK for skill access | BDD scenario |
+| C31 | Python SDK uses snake_case method names, context managers (`with TankClient() as client:`), and type hints                 | Idiomatic Python                         | Code review  |
+| C32 | Python SDK raises typed exceptions mirroring TS error classes (TankError hierarchy)                                        | Consistent error handling cross-language | BDD scenario |
+| C41 | Python SDK validates registry URL (reject credentials, non-http schemes) same as TS                                        | Security parity                          | BDD scenario |
+| C42 | Python SDK uses streaming download with 100MB byte limit                                                                   | DoS prevention parity with TS            | BDD scenario |
+| C43 | Python SDK computes integrity as `sha512-{base64}` (not hex) matching lockfile format                                      | Correct integrity verification           | BDD scenario |
 
-### Shared Rust Core (future — post v1)
+### Shared Rust Core
 
-| #   | Rule                                                                                              | Rationale                                                            | Verified by      |
-| --- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------- |
-| C33 | Rust core implements dep resolution, permission checking, tarball extraction, lockfile read/write | Single source of truth for install logic across all SDKs             | Integration test |
-| C34 | NAPI-RS bindings expose Rust core to Node.js; PyO3 bindings expose to Python                      | Multi-language without logic duplication                             | Integration test |
-| C35 | Rust core is optional — TS SDK falls back to pure-TS implementation if native binary unavailable  | Graceful degradation; no hard native dependency for simple use cases | BDD scenario     |
+| #   | Rule                                                                                                                                                                         | Rationale                                                            | Verified by           |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------- |
+| C33 | Rust core implements permission checking, tarball extraction (with tarbomb protection), integrity verification, lockfile read/write. Full dep graph resolver is future work. | Single source of truth for security-critical operations              | cargo test (22 tests) |
+| C34 | NAPI-RS bindings expose Rust core to Node.js; PyO3 bindings expose to Python                                                                                                 | Multi-language without logic duplication                             | cargo check           |
+| C35 | Rust core is optional — TS SDK falls back to pure-TS implementation if native binary unavailable                                                                             | Graceful degradation; no hard native dependency for simple use cases | BDD scenario          |
 
 ---
 
@@ -220,6 +233,17 @@ apps/
 | E16 | `tank.download("@tank/react", "1.0.0", { dest: "./skills/" })` with tampered tarball | Throws `TankIntegrityError` with expected vs actual hash             |
 | E17 | `tank.download("@acme/nonexistent", "1.0.0")`                                        | Throws `TankNotFoundError`                                           |
 
+### Skill Content Access
+
+| #   | Input                                                                       | Expected Output                                                 |
+| --- | --------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| E35 | `tank.listFiles("@tank/react")`                                             | Returns `["SKILL.md", "references/component-patterns.md", ...]` |
+| E36 | `tank.readFile("@tank/react", "2.2.0", "SKILL.md")`                         | Returns SKILL.md content as string                              |
+| E37 | `tank.readFile("@tank/react", "2.2.0", "references/component-patterns.md")` | Returns reference file content                                  |
+| E38 | `tank.readFile("@tank/react", "2.2.0", "../etc/passwd")`                    | Throws `TankNetworkError` (path traversal rejected)             |
+| E39 | `tank.readSkill("@tank/react")`                                             | Returns `{ content, references, scripts, files }`               |
+| E40 | `tank.readSkill("@acme/nonexistent")`                                       | Throws `TankNotFoundError`                                      |
+
 ### Security & Audit
 
 | #   | Input                             | Expected Output                                                                         |
@@ -247,13 +271,16 @@ apps/
 | E28 | `tank.link("./my-skill/", { agents: ["opencode"] })`     | Adds skill path to OpenCode agent config      |
 | E29 | `tank.unlink("@org/my-skill", { agents: ["opencode"] })` | Removes skill path from OpenCode agent config |
 
-### Python SDK (v1)
+### Python SDK
 
-| #   | Input                                                          | Expected Output                                                         |
-| --- | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| E30 | `tank = TankClient(token="tank_xxx")` → `tank.search("react")` | Returns search results following Python conventions (snake_case fields) |
-| E31 | `tank.info("@acme/nonexistent")`                               | Raises `TankNotFoundError`                                              |
-| E32 | `tank.download("@tank/react", "1.0.0", dest="./skills/")`      | Writes tarball to disk; verifies integrity                              |
+| #   | Input                                                          | Expected Output                                                      |
+| --- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| E30 | `tank = TankClient(token="tank_xxx")` → `tank.search("react")` | Returns search results with snake_case fields                        |
+| E31 | `tank.info("@acme/nonexistent")`                               | Raises `TankNotFoundError`                                           |
+| E32 | `tank.download("@tank/react", "1.0.0", dest="./skills/")`      | Writes tarball to disk; verifies sha512-base64 integrity             |
+| E41 | `tank.read_skill("@tank/react")`                               | Returns `SkillContent(content=..., references={...}, scripts={...})` |
+| E42 | `with TankClient(registry_url="http://...") as client:`        | Context manager closes httpx client on exit                          |
+| E43 | `TankClient(registry_url="ftp://evil.com")`                    | Raises `ValueError` (non-http scheme rejected)                       |
 
 ### Error Classes
 
