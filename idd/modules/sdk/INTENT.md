@@ -18,51 +18,44 @@ CLI-only product in a world of programmatic integrations.
 
 **Single source of truth:**
 
-- `packages/sdk/` — TypeScript SDK package (Layer A: generated REST client + Layer B: hand-written install pipeline)
-- `packages/sdk-python/` — Python SDK package (Layer A only at v1, Layer B via shared Rust core later)
-- `packages/sdk-core/` — Shared Rust core for dep resolution, permission checking, install pipeline (future)
-- `apps/registry/src/api/openapi.ts` — OpenAPI spec generated from Hono routes via @hono/zod-openapi
+- `packages/sdk/` — TypeScript SDK package (hand-written REST client + install pipeline extracted from CLI)
+- `packages/sdk-python/` — Python SDK package (hand-written httpx REST client, install pipeline via Rust core later)
+- `packages/sdk-core/` — Shared Rust core for permission checking, tarball extraction, integrity verification, lockfile I/O (dep graph resolver is future work)
+- `apps/registry/src/api/routes/v1.ts` — OpenAPI 3.1 spec served at `/api/v1/openapi.json` via @hono/zod-openapi
 
 ---
 
 ## Layer 1: Structure
 
-### Architecture: Two Layers + Shared Core
+### Architecture: Hand-Written Clients + Shared Core
 
 ```
-                    ┌──────────────────┐
-                    │  OpenAPI Spec     │  Generated from Hono routes
-                    │  (zod-openapi)    │  via @hono/zod-openapi
-                    └────────┬─────────┘
-                             │
-                    ┌────────▼─────────┐
-                    │    Stainless      │  Auto-generates idiomatic
-                    │  (free FOSS)      │  SDK clients from OpenAPI
-                    └───┬──────────┬───┘
-                        │          │
-           ┌────────────▼┐    ┌───▼────────────┐
-           │ TS REST      │    │ Python REST     │
-           │ Client       │    │ Client          │
-           │ (Layer A)    │    │ (Layer A)       │
-           └──────┬───────┘    └───┬────────────┘
-                  │                │
-           ┌──────▼───────┐    ┌───▼────────────┐
-           │ TS Install    │    │ Python Install  │
-           │ Pipeline      │    │ Pipeline        │
-           │ (Layer B)     │    │ (Layer B)       │  ← future
-           │ extracted     │    │ via Rust core   │
-           │ from CLI      │    │ (NAPI/PyO3)     │
-           └──────────────┘    └────────────────┘
-                  │                │
-           ┌──────▼────────────────▼──┐
-           │   Shared Rust Core       │  ← future
-           │   (dep resolver,         │
-           │    permission checker,   │
-           │    tarball extraction,   │
-           │    lockfile writer)      │
-           │   NAPI-RS ↔ PyO3        │
-           └──────────────────────────┘
+           ┌────────────────┐    ┌────────────────┐
+           │ TS SDK          │    │ Python SDK      │
+           │ (hand-written   │    │ (hand-written   │
+           │  fetch client)  │    │  httpx client)  │
+           └──────┬─────────┘    └───┬────────────┘
+                  │                  │
+           ┌──────▼─────────┐    ┌───▼────────────┐
+           │ TS Install      │    │ Python Install  │
+           │ Pipeline         │    │ Pipeline        │  ← future
+           │ (extracted       │    │ (via Rust core  │
+           │  from CLI)       │    │  NAPI/PyO3)     │
+           └──────┬──────────┘    └───┬────────────┘
+                  │  optional          │
+           ┌──────▼────────────────────▼──┐
+           │   Shared Rust Core           │
+           │   permissions, extraction,   │
+           │   integrity, lockfile I/O    │
+           │   NAPI-RS ↔ PyO3            │
+           │   (full dep resolver: TODO)  │
+           └──────────────────────────────┘
 ```
+
+**Note:** Stainless (auto-generated REST clients) was evaluated but not adopted.
+Hand-written clients are simpler for ~15 endpoints and allow custom security
+hardening (redirect blocking, credential leak prevention, streaming size caps)
+that generated clients don't provide out of the box.
 
 ### Package Layout
 
@@ -273,18 +266,20 @@ apps/
 
 ## Implementation Phases
 
-| Phase | Scope                                                                                                 | Depends on | Blocks v1 |
-| ----- | ----------------------------------------------------------------------------------------------------- | ---------- | --------- |
-| 1     | OpenAPI spec via @hono/zod-openapi + Stainless setup + generate TS & Python REST clients              | —          | Yes       |
-| 2     | `packages/sdk` + `packages/sdk-python` package structure, constructor, auth, errors, constants, types | Phase 1    | Yes       |
-| 3     | Core API methods (search, info, versions, download, audit, permissions, whoami, star) in both SDKs    | Phase 2    | Yes       |
-| 4     | Install pipeline extraction from CLI into TS SDK (install, update, remove, link, unlink)              | Phase 3    | Yes       |
-| 5     | Shared Rust core (dep resolver, permission checker, extract, lockfile) with NAPI-RS + PyO3 bindings   | Phase 4    | Yes       |
-| 6     | Publish `@tankpkg/sdk@0.1.0` to npm + `tankpkg@0.1.0` to PyPI; refactor CLI + MCP to consume SDK      | Phase 5    | Yes       |
+| Phase | Scope                                                                                            | Status                                 |
+| ----- | ------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| 1     | OpenAPI spec via @hono/zod-openapi, serve at `/api/v1/openapi.json`                              | ✅ Done                                |
+| 2     | `packages/sdk` + `packages/sdk-python` — constructor, auth, errors, constants, types             | ✅ Done                                |
+| 3     | Core API methods (search, info, versions, download, readSkill, audit, permissions, whoami, star) | ✅ Done                                |
+| 4     | Install pipeline extraction from CLI into TS SDK (resolver, pipeline, permissions)               | ✅ Done                                |
+| 5     | Shared Rust core (permissions, extraction, integrity, lockfile) + NAPI-RS + PyO3 bindings        | ✅ Done (dep graph resolver is future) |
+| 6     | Publish workflows, MCP server migration, justfile recipes                                        | ✅ Done                                |
 
 ## Resolved Decisions
 
-1. **Endpoint scope:** Public-only (~15 endpoints). Admin panel stays web-only. Fits within Stainless free tier (25 limit).
-2. **Rust core timing:** Blocks v1. Both SDKs ship with full install pipeline via Rust core (NAPI-RS + PyO3).
-3. **Semver policy:** Start at 0.1.0. Breaking changes allowed per semver. Upgrade to 1.0.0 after real-world validation.
-4. **MCP server:** Migrates to SDK in Phase 6. Single API client across CLI, MCP, and external integrations.
+1. **Endpoint scope:** Public-only (~15 endpoints). Admin panel stays web-only.
+2. **REST clients:** Hand-written (not Stainless). ~15 endpoints don't justify code generation overhead. Hand-written clients allow custom security hardening.
+3. **Rust core:** Implements permissions, extraction, integrity, lockfile. Full dependency graph resolver deferred — currently only `resolve_version()` (semver matching). Full graph resolution stays in TS until Python SDK needs install.
+4. **Semver policy:** Follows monorepo version (0.10.x). Breaking changes allowed per semver.
+5. **MCP server:** Migrated to SDK-backed api-client with `sdk` getter for gradual tool migration.
+6. **Infrastructure:** MinIO replaced with RustFS across all docker-compose files.
