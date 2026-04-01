@@ -87,15 +87,110 @@ Non-obvious:
 - `stable` — production. Only updated via release. Deploys to www.tankpkg.dev (Vercel production).
 - `release/vX.Y.Z` — permanent snapshot per version. Never deleted.
 
-### Release Process
+### Release Process (Step-by-Step)
+
+**Prerequisites:** All changes merged to `main` via PRs (`main` has branch protection — no direct pushes).
+
+```bash
+# 1. Ensure main is up to date
+git checkout main && git pull origin main
+
+# 2. Bump version in all packages (updates 6 package.json + Helm Chart.yaml)
+just bump 0.11.0
+
+# 3. Commit + PR the version bump (can't push directly to main)
+git checkout -b chore/bump-0.11.0
+git add -A && git commit -m "chore: bump version to 0.11.0"
+git push -u origin chore/bump-0.11.0
+gh pr create --title "chore: bump version to 0.11.0" --base main
+gh pr merge --squash --admin --delete-branch
+
+# 4. Sync main, create release branch + tag
+git checkout main && git pull origin main
+just ci-release-tag 0.11.0
+#   → creates branch release/v0.11.0
+#   → creates + pushes tag v0.11.0
+#   → tag push triggers CI workflows automatically
+
+# 5. Merge main → stable (deploys to www.tankpkg.dev via Vercel)
+just ci-merge-stable
+#   If pre-push hook fails: git push --no-verify origin stable
+#   If branch protection blocks: merge manually via PR
+```
+
+**Tag push cascades (automatic):**
 
 ```
-just ci-release-tag 0.11.0    # creates release/v0.11.0 branch + tag
-just ci-merge-stable          # merges main → stable
+v0.11.0 tag push
+├─ release.yml  → CLI binaries (5 platforms) + GitHub Release + npm + Homebrew + .deb (~4 min)
+│   ├─ build-linux-x64        ─┐
+│   ├─ build-linux-arm64       │ parallel binary compilation
+│   ├─ build-darwin-x64        │ (bun build --compile per platform)
+│   ├─ build-darwin-arm64      │
+│   ├─ build-windows-x64      ─┘
+│   ├─ publish-npm            → `npm publish` to @tankpkg/cli@X.Y.Z
+│   ├─ release                → GitHub Release with binaries + .deb + SHA256SUMS
+│   └─ update-homebrew        → PR to homebrew-tap repo
+└─ publish.yml  → Docker images + Helm chart (~15-20 min)
+    ├─ docker-tank-scanner  (~1 min)
+    ├─ docker-tank-web      (~15 min, multi-arch + CLI binary compilation)
+    ├─ helm-publish
+    └─ smoke-test-compose   (runs after docker-tank-web)
+```
 
-Tag push cascades:
-├─ release.yml  → CLI binaries (5 platforms) + GitHub Release + npm + Homebrew + .deb
-└─ publish.yml  → Docker images (ghcr.io :latest + :vX.Y.Z) + Helm chart
+**All artifacts share the same version from the same tag push.** CLI, npm, Docker, Helm — all `0.11.0`.
+
+**CLI release artifacts** (attached to GitHub Release):
+
+| Asset                            | Description                |
+| -------------------------------- | -------------------------- |
+| `tank-linux-x64` (+`.tar.gz`)    | Linux amd64 binary         |
+| `tank-linux-arm64` (+`.tar.gz`)  | Linux arm64 binary         |
+| `tank-darwin-x64` (+`.tar.gz`)   | macOS Intel binary         |
+| `tank-darwin-arm64` (+`.tar.gz`) | macOS Apple Silicon binary |
+| `tank-windows-x64.exe`           | Windows binary             |
+| `tank_X.Y.Z_amd64.deb`           | Debian package (amd64)     |
+| `tank_X.Y.Z_arm64.deb`           | Debian package (arm64)     |
+| `SHA256SUMS`                     | Checksums for all assets   |
+
+**CLI install channels:**
+
+| Channel  | Command                         | Source                                |
+| -------- | ------------------------------- | ------------------------------------- |
+| npm      | `npm i -g @tankpkg/cli`         | release.yml → publish-npm             |
+| Homebrew | `brew install tankpkg/tap/tank` | release.yml → update-homebrew         |
+| Binary   | Download from GitHub Release    | release.yml → release                 |
+| .deb     | `dpkg -i tank_X.Y.Z_amd64.deb`  | release.yml → release                 |
+| On-prem  | `/install-cli` page on instance | publish.yml → baked into Docker image |
+
+**Docker image tags produced** (semver pattern strips `v` prefix):
+
+| Registry                     | Tags pushed                     |
+| ---------------------------- | ------------------------------- |
+| `ghcr.io/tankpkg/tank-web`   | `0.11.0`, `0.11`, `0`, `latest` |
+| `docker.io/tankpkg/tank-web` | `0.11.0`, `0.11`, `0`, `latest` |
+
+**Monitoring a release:**
+
+```bash
+gh run list --workflow publish.yml --limit 3        # check Docker status
+gh run list --workflow release.yml --limit 3        # check CLI status
+gh run watch <run-id> --exit-status                 # live tail
+gh run view <run-id> --log-failed                   # debug failures
+docker manifest inspect ghcr.io/tankpkg/tank-web:0.11.0  # verify image exists
+gh release view v0.11.0 --json assets --jq '.assets[].name'  # verify CLI assets
+```
+
+**Recovery — if publish.yml fails:**
+
+```bash
+# 1. Fix the issue on main (via PR)
+# 2. Delete old tag, re-tag on fixed commit, re-push
+git checkout main && git pull origin main
+git tag -d v0.11.0 && git push origin :refs/tags/v0.11.0
+git tag v0.11.0 && git push origin v0.11.0
+# 3. Merge fix to stable too
+git checkout stable && git merge main --no-edit && git push --no-verify origin stable
 ```
 
 Or via GitHub Actions UI: Actions → Create Release → enter version.

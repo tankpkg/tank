@@ -1,6 +1,6 @@
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { skillsJsonSchema } from '@internals/schemas';
 import { and, desc, eq } from 'drizzle-orm';
-import { Hono } from 'hono';
 
 import { verifyCliAuth } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
@@ -9,7 +9,92 @@ import { skills, skillVersions } from '~/lib/db/schema';
 import { checkPermissionEscalation, type VersionPermissions } from '~/lib/skills/permission-escalation';
 import { getStorageProvider } from '~/services/storage/provider';
 
-export const skillsPublishRoutes = new Hono().post('/', async (c) => {
+const publishRoute = createRoute({
+  method: 'post',
+  path: '/',
+  tags: ['Publishing'],
+  summary: 'Publish a skill',
+  description:
+    'Creates a new skill version and returns a signed upload URL for the tarball. Requires skills:publish scope.',
+  security: [{ BearerAuth: [] }],
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: z.object({
+            manifest: z.any().openapi({ description: 'skills.json manifest object' }),
+            readme: z.string().optional().openapi({ description: 'README content' }),
+            files: z.array(z.string()).optional().openapi({ description: 'List of files in the package' })
+          })
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: 'Skill version created, upload URL returned',
+      content: {
+        'application/json': {
+          schema: z.object({
+            uploadUrl: z.string().url(),
+            skillId: z.string(),
+            versionId: z.string()
+          })
+        }
+      }
+    },
+    400: {
+      description: 'Invalid manifest or permission escalation',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string(), details: z.any().optional() })
+        }
+      }
+    },
+    401: {
+      description: 'Unauthorized',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    403: {
+      description: 'Not a member of the org',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    404: {
+      description: 'Organization not found',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    409: {
+      description: 'Version already exists',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    },
+    500: {
+      description: 'Failed to generate upload URL',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
+    }
+  }
+});
+
+export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async (c) => {
   const verified = await verifyCliAuth(c.req.raw, ['skills:publish']);
   if (!verified) {
     return c.json({ error: 'Unauthorized. Valid API key with skills:publish scope required.' }, 401);
@@ -231,9 +316,12 @@ export const skillsPublishRoutes = new Hono().post('/', async (c) => {
     return c.json({ error: 'Failed to generate upload URL' }, 500);
   }
 
-  return c.json({
-    uploadUrl: signedUploadUrl,
-    skillId: skill.id,
-    versionId: skillVersion.id
-  });
+  return c.json(
+    {
+      uploadUrl: signedUploadUrl,
+      skillId: skill.id,
+      versionId: skillVersion.id
+    },
+    200
+  );
 });

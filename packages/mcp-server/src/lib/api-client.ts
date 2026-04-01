@@ -1,43 +1,39 @@
+import { TankAuthError, TankClient } from '@tankpkg/sdk';
 import { getConfig, type TankConfig } from './config.js';
 
 export interface ApiClientOptions {
   configDir?: string;
 }
 
-/**
- * Tank API client for MCP server.
- */
 export class TankApiClient {
+  private client: TankClient;
   private config: TankConfig;
 
   constructor(options: ApiClientOptions = {}) {
     this.config = getConfig(options.configDir);
+    this.client = new TankClient({
+      token: this.config.token,
+      registryUrl: this.config.registry,
+      configDir: options.configDir
+    });
   }
 
-  /**
-   * Get the base URL for the Tank API.
-   */
   get baseUrl(): string {
     return this.config.registry;
   }
 
-  /**
-   * Get the auth token (if available).
-   */
   get token(): string | undefined {
     return this.config.token;
   }
 
-  /**
-   * Check if authenticated.
-   */
   get isAuthenticated(): boolean {
     return !!this.config.token;
   }
 
-  /**
-   * Make an authenticated API request.
-   */
+  get sdk(): TankClient {
+    return this.client;
+  }
+
   async fetch<T>(
     path: string,
     options: RequestInit = {}
@@ -55,7 +51,8 @@ export class TankApiClient {
     try {
       const response = await fetch(url, {
         ...options,
-        headers
+        headers,
+        signal: AbortSignal.timeout(30_000)
       });
 
       if (!response.ok) {
@@ -86,18 +83,21 @@ export class TankApiClient {
       return { valid: false, reason: 'no-token' };
     }
 
-    const result = await this.fetch<{ name: string | null; email: string | null; userId: string }>(
-      '/api/v1/auth/whoami'
-    );
-
-    if (result.ok) {
-      return { valid: true, user: { name: result.data.name, email: result.data.email } };
+    try {
+      const user = await this.client.whoami();
+      if (user) {
+        return { valid: true, user: { name: user.name, email: user.email } };
+      }
+      return { valid: false, reason: 'unauthorized' };
+    } catch (err) {
+      if (err instanceof TankAuthError) {
+        return { valid: false, reason: 'unauthorized' };
+      }
+      return {
+        valid: false,
+        reason: 'network-error',
+        error: err instanceof Error ? err.message : 'Unknown error'
+      };
     }
-
-    if (result.status === 0) {
-      return { valid: false, reason: 'network-error', error: result.error };
-    }
-
-    return { valid: false, reason: 'unauthorized' };
   }
 }

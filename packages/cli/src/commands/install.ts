@@ -351,7 +351,9 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
 
   const extractDirForSkill = createExtractDirResolver(directory, global, resolvedHome);
   const resolvedNodeByName = new Map(resolvedNodes.map((node) => [node.name, node]));
-  const downloaded = await downloadAllParallel(nodesToInstall, spinner);
+  const downloaded = await downloadAllParallel(nodesToInstall, (msg) => {
+    spinner.text = msg;
+  });
 
   for (const node of nodesToInstall) {
     const payload = downloaded.get(node.name);

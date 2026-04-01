@@ -1,5 +1,5 @@
+import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { sql } from 'drizzle-orm';
-import { Hono } from 'hono';
 
 import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
@@ -51,8 +51,31 @@ function vulnCountColor(count: number): string {
   return '#fe7d37';
 }
 
-export const badgeRoutes = new Hono().get('/:name{.+}', async (c) => {
-  const rawName = c.req.param('name');
+const badgeRoute = createRoute({
+  method: 'get',
+  path: '/{name}',
+  tags: ['Badges'],
+  summary: 'Get audit score badge',
+  description: 'Returns an SVG badge showing the audit score for a skill.',
+  request: {
+    params: z.object({
+      name: z.string().openapi({ description: 'Skill name (URL-encoded)', example: '@org/my-skill' })
+    })
+  },
+  responses: {
+    200: {
+      description: 'SVG badge image',
+      content: {
+        'image/svg+xml': {
+          schema: z.string()
+        }
+      }
+    }
+  }
+});
+
+export const badgeRoutes = new OpenAPIHono().openapi(badgeRoute, async (c) => {
+  const { name: rawName } = c.req.valid('param');
   const name = decodeURIComponent(rawName);
   const badgeType = c.req.query('type');
 

@@ -22,6 +22,7 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@fontsource-variable/space-grotesk": "^5.2.10",
+    "@hono/zod-openapi": "^1.2.4",
     "@hono/zod-validator": "^0.7.6",
     "@internals/helpers": "workspace:*",
     "@internals/schemas": "workspace:*",
