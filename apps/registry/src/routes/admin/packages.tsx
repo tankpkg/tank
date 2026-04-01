@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Search, Star, Trash2 } from 'lucide-react';
+import { RefreshCw, Search, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '~/components/ui/button';
@@ -15,7 +15,7 @@ import {
 import { Input } from '~/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
 import { formatDate } from '~/lib/format';
-import { adminDeletePackageFn, adminPackagesFn, adminUpdatePackageFn } from '~/query/admin';
+import { adminDeletePackageFn, adminPackagesFn, adminRescanPackageFn, adminUpdatePackageFn } from '~/query/admin';
 
 export const Route = createFileRoute('/admin/packages')({
   component: AdminPackages
@@ -47,6 +47,10 @@ function AdminPackages() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'packages'] });
       setDeleteTarget(null);
     }
+  });
+
+  const rescanMutation = useMutation({
+    mutationFn: (input: { skillId: string }) => adminRescanPackageFn({ data: input })
   });
 
   const totalPages = data ? Math.ceil(data.total / data.limit) : 1;
@@ -129,13 +133,27 @@ function AdminPackages() {
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">{formatDate(pkg.updatedAt)}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      title="Delete package"
-                      onClick={() => setDeleteTarget({ id: pkg.id, name: pkg.name })}>
-                      <Trash2 className="size-3.5 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        title="Rescan package"
+                        disabled={rescanMutation.isPending}
+                        onClick={() => {
+                          rescanMutation.mutate({ skillId: pkg.id });
+                        }}>
+                        <RefreshCw
+                          className={`size-3.5 ${rescanMutation.isPending ? 'animate-spin text-muted-foreground' : 'text-muted-foreground'}`}
+                        />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        title="Delete package"
+                        onClick={() => setDeleteTarget({ id: pkg.id, name: pkg.name })}>
+                        <Trash2 className="size-3.5 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

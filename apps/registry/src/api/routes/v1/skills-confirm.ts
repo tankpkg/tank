@@ -6,6 +6,7 @@ import { env } from '~/consts/env';
 import { verifyCliAuth } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
+import { depAuditService } from '~/lib/dep-audit/service';
 import type { ScanFinding } from '~/lib/skills/data';
 import { getStorageProvider } from '~/services/storage/provider';
 
@@ -225,6 +226,11 @@ export const skillsConfirmRoutes = new Hono().post('/confirm', zValidator('json'
       })
       .where(eq(skillVersions.id, versionId));
   }
+
+  // Non-blocking: fire dep audit as side effect (never blocks publish response)
+  depAuditService.runAudit(versionId, manifest).catch(() => {
+    // Silently fail — dep audit is non-blocking
+  });
 
   return c.json({
     success: true,

@@ -235,6 +235,30 @@ export const adminDeletePackageFn = createServerFn({ method: 'POST' })
     return { ok: true };
   });
 
+export const adminRescanPackageFn = createServerFn({ method: 'POST' })
+  .inputValidator((input: { skillId: string }) => input)
+  .handler(async ({ data }) => {
+    await requireAdmin();
+
+    // Look up skill name from ID
+    const [skill] = await db.select({ name: skills.name }).from(skills).where(eq(skills.id, data.skillId));
+    if (!skill) throw new Error('Package not found');
+
+    // Call the internal rescan API
+    const baseUrl = process.env.APP_URL ?? 'http://localhost:5555';
+    const res = await fetch(`${baseUrl}/api/admin/packages/${encodeURIComponent(skill.name)}/rescan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: 'Rescan failed' }));
+      throw new Error((body as Record<string, string>).error ?? 'Rescan failed');
+    }
+
+    return { ok: true };
+  });
+
 // ── Organizations ─────────────────────────────────────────────────────────
 
 interface AdminOrgsInput {
