@@ -89,7 +89,22 @@ function extractSingleFile(tarball: Uint8Array, rawPath: string): Promise<string
           return;
         }
         const chunks: Buffer[] = [];
-        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        let accumulated = 0;
+        stream.on('data', (chunk: Buffer) => {
+          accumulated += chunk.byteLength;
+          if (accumulated > MAX_TARBALL_FILE_BYTES) {
+            found = true;
+            stream.destroy(new Error(`File exceeds ${MAX_TARBALL_FILE_BYTES} byte limit (actual bytes)`));
+            return;
+          }
+          chunks.push(chunk);
+        });
+        stream.on('error', (err) => {
+          if (!found) {
+            found = true;
+            reject(err);
+          }
+        });
         stream.on('end', () => {
           found = true;
           resolve(Buffer.concat(chunks).toString('utf-8'));
