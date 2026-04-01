@@ -430,7 +430,16 @@ export const skillsReadRoutes = new OpenAPIHono()
         return c.json({ error: 'Not found' }, 404);
       }
 
-      const fileContent = await extractFileFromTarball(tarballBytes, normalized);
+      let fileContent: string | null;
+      try {
+        fileContent = await extractFileFromTarball(tarballBytes, normalized);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : '';
+        if (msg.includes('byte limit')) {
+          return c.json({ error: 'File too large to serve' }, 413);
+        }
+        throw err;
+      }
       if (fileContent === null) {
         return c.json({ error: 'File not found in package' }, 404);
       }

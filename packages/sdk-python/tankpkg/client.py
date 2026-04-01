@@ -201,6 +201,10 @@ class TankClient:
 
         data = b"".join(chunks)
 
+        computed = "sha512-" + base64.b64encode(hashlib.sha512(data).digest()).decode()
+        if detail.integrity and detail.integrity != "pending" and computed != detail.integrity:
+            raise TankIntegrityError("Integrity verification failed", expected=detail.integrity, actual=computed)
+
         if dest:
             dest_path = Path(dest).expanduser().resolve()
             dest_path.mkdir(parents=True, exist_ok=True)
@@ -210,11 +214,6 @@ class TankClient:
             if not file_path.resolve().is_relative_to(dest_path):
                 raise TankNetworkError("Path traversal detected in filename")
             file_path.write_bytes(data)
-
-            computed = "sha512-" + base64.b64encode(hashlib.sha512(data).digest()).decode()
-            if detail.integrity and detail.integrity != "pending" and computed != detail.integrity:
-                file_path.unlink(missing_ok=True)
-                raise TankIntegrityError("Integrity verification failed", expected=detail.integrity, actual=computed)
 
         return data
 

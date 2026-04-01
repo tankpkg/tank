@@ -2,6 +2,7 @@ import { createGunzip } from 'node:zlib';
 import { extract } from 'tar-stream';
 
 const MAX_TARBALL_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_TARBALL_ENTRIES = 10_000;
 
 export function stripCommonRoot(paths: string[]): string[] {
   if (paths.length === 0) return [];
@@ -22,6 +23,11 @@ export function listFilesInTarball(tarball: Uint8Array): Promise<string[]> {
 
     extractor.on('entry', (header, stream, next) => {
       if (header.type === 'file') {
+        if (rawPaths.length >= MAX_TARBALL_ENTRIES) {
+          gunzip.destroy();
+          reject(new Error(`Tarball exceeds ${MAX_TARBALL_ENTRIES} entry limit`));
+          return;
+        }
         rawPaths.push(header.name);
       }
       stream.resume();
@@ -76,8 +82,10 @@ function extractSingleFile(tarball: Uint8Array, rawPath: string): Promise<string
     extractor.on('entry', (header, stream, next) => {
       if (!found && header.type === 'file' && header.name === rawPath) {
         if (header.size && header.size > MAX_TARBALL_FILE_BYTES) {
+          found = true;
           stream.resume();
-          stream.on('end', next);
+          reject(new Error(`File exceeds ${MAX_TARBALL_FILE_BYTES} byte limit`));
+          gunzip.destroy();
           return;
         }
         const chunks: Buffer[] = [];

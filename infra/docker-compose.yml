@@ -121,8 +121,8 @@ services:
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
       STORAGE_BACKEND: ${STORAGE_BACKEND:-s3}
       S3_ENDPOINT: http://rustfs:9000
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-tank}
-      S3_SECRET_KEY: ${S3_SECRET_KEY:-tank123456}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-${MINIO_ROOT_USER:-tank}}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-tank123456}}
       S3_BUCKET: ${S3_BUCKET:-packages}
       S3_REGION: ${S3_REGION:-us-east-1}
       PYTHON_API_URL: http://scanner:8000
