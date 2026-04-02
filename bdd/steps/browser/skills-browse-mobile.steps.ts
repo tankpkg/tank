@@ -69,9 +69,4 @@ Then('the mobile filter bar should have horizontal scroll', async ({ page }) => 
   expect(overflow).toBe('auto');
 });
 
-Then('the page should not have horizontal overflow', async ({ page }) => {
-  const hasOverflow = await page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth
-  );
-  expect(hasOverflow).toBe(false);
-});
+// Step 'the page should not have horizontal overflow' defined in skill-detail-mobile.steps.ts
