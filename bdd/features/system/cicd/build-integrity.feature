@@ -46,3 +46,9 @@ Feature: Build artifact integrity for npm-published packages
   Scenario: MCP server lists transitive deps of bundled @internal/shared
     When I read the MCP server package.json dependencies
     Then "semver" is listed as a dependency
+
+  @medium
+  Scenario: Root typecheck uses monorepo-aware command (E6)
+    When I read the pre-push hook script
+    Then it runs "bun run typecheck"
+    And it does not run "bun tsc -b --noEmit"

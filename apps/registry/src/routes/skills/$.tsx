@@ -2,7 +2,7 @@ import { encodeSkillName } from '@internals/helpers';
 import { createFileRoute, notFound } from '@tanstack/react-router';
 
 import { BASE_URL, routeHead } from '~/consts/seo';
-import { skillDetailQueryOptions } from '~/query/skills';
+import { isTalkEnabledFn, skillDetailQueryOptions } from '~/query/skills';
 import { SkillDetailScreen } from '~/screens/skill-detail-screen';
 
 export const Route = createFileRoute('/skills/$')({
@@ -11,7 +11,8 @@ export const Route = createFileRoute('/skills/$')({
     const skillName = decodeURIComponent(rawPath);
     const data = await context.queryClient.ensureQueryData(skillDetailQueryOptions(skillName));
     if (!data) throw notFound();
-    return { data, skillName };
+    const talkEnabled = await isTalkEnabledFn();
+    return { data, skillName, talkEnabled };
   },
   head: ({ loaderData }) => {
     const data = loaderData?.data;
@@ -60,7 +61,7 @@ export const Route = createFileRoute('/skills/$')({
 });
 
 function SkillDetailPage() {
-  const { data } = Route.useLoaderData();
+  const { data, talkEnabled } = Route.useLoaderData();
 
-  return <SkillDetailScreen data={data} />;
+  return <SkillDetailScreen data={data} talkEnabled={talkEnabled} />;
 }

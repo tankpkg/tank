@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
-
+import { env } from '~/consts/env';
 import { auth } from '~/lib/auth/core';
 import {
   type FreshnessBucket,
@@ -67,3 +67,7 @@ export function skillDetailQueryOptions(name: string) {
     staleTime: 60_000
   });
 }
+
+export const isTalkEnabledFn = createServerFn({ method: 'GET' }).handler(async (): Promise<boolean> => {
+  return !!env.PROMPT2BOT_API_TOKEN;
+});
