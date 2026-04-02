@@ -6,8 +6,9 @@ import { getDocBySlug } from '~/query/docs';
 export const Route = createFileRoute('/docs/$')({
   loader: async ({ params }) => {
     const raw = params._splat || 'overview';
-    if (raw.endsWith('.txt')) {
-      throw redirect({ href: `/docs/${raw.replace(/\.txt$/, '.md')}`, statusCode: 301 });
+    if (raw.endsWith('/llms.txt')) {
+      const slug = raw.replace(/\/llms\.txt$/, '');
+      throw redirect({ href: `/api/docs/${slug}`, statusCode: 301 });
     }
     const slug = raw;
     const doc = await getDocBySlug({ data: slug });

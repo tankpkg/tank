@@ -26,7 +26,8 @@ Tank is a security-first package manager for AI agent skills. It provides versio
 - [Secure AI Skills Checklist](https://tankpkg.dev/docs/security-checklist): Security best practices checklist for publishing safe AI agent skills — covering permissions, code security, prompt injection prevention, and dependency management.
 - [Security Model](https://tankpkg.dev/docs/security): How Tank's 6-stage security pipeline scans AI agent skills for vulnerabilities, prompt injection, credential theft, and supply chain attacks before they reach your agents.
 - [Self-Host in 15 Minutes](https://tankpkg.dev/docs/self-host-quickstart): Get Tank running on your own infrastructure with Docker Compose — automated setup wizard, no manual configuration needed.
-- [Self-Hosting Tank](https://tankpkg.dev/docs/self-hosting): Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, MinIO, and security scanning.
+- [Self-Hosting Tank](https://tankpkg.dev/docs/self-hosting): Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, RustFS, and security scanning.
+- [Credential Vault](https://tankpkg.dev/docs/vault): Protect API keys and secrets from AI agent exfiltration with Tank's format-preserving tokenization proxy — real credentials never reach the model.
 
 ## Optional
 

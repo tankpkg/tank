@@ -9,6 +9,43 @@ Tank is a **security-first package manager for AI agent skills** — the `npm` f
 
 Agent skills execute with the agent's full authority — reading files, making API calls, running shell commands. Tank treats that seriously.
 
+<svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Without Tank (left) -->
+  <rect x="15" y="10" width="370" height="345" rx="12" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="200" y="36" text-anchor="middle" fill="#dc2626" font-size="14" font-weight="600">Without Tank</text>
+  <text x="200" y="70" text-anchor="middle" fill="currentColor" font-size="12">Agent installs skill from marketplace</text>
+  <text x="200" y="100" text-anchor="middle" fill="#64748b" font-size="11">No scanning. No versioning. No lockfile.</text>
+  <text x="200" y="118" text-anchor="middle" fill="#64748b" font-size="11">No declared permissions.</text>
+  <!-- Attack examples -->
+  <rect x="35" y="140" width="330" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="200" y="157" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">CREDENTIAL THEFT</text>
+  <text x="200" y="172" text-anchor="middle" fill="#64748b" font-size="10">Reads ~/.ssh/*, .env, API keys → exfiltrates</text>
+  <rect x="35" y="190" width="330" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="200" y="207" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">PROMPT INJECTION</text>
+  <text x="200" y="222" text-anchor="middle" fill="#64748b" font-size="10">Hidden instructions hijack agent behavior</text>
+  <rect x="35" y="240" width="330" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="200" y="257" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">SUPPLY CHAIN ATTACK</text>
+  <text x="200" y="272" text-anchor="middle" fill="#64748b" font-size="10">Typosquat packages install malware silently</text>
+  <text x="200" y="336" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">ClawHavoc: 341 malicious skills, 12% of marketplace</text>
+  <!-- With Tank (right) -->
+  <rect x="415" y="10" width="370" height="345" rx="12" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="600" y="36" text-anchor="middle" fill="#10b981" font-size="14" font-weight="600">With Tank</text>
+  <!-- 4 guarantees -->
+  <rect x="435" y="55" width="330" height="48" rx="6" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="73" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">6-STAGE SECURITY SCAN</text>
+  <text x="600" y="93" text-anchor="middle" fill="#64748b" font-size="10">Injection, secrets, supply chain, static analysis</text>
+  <rect x="435" y="113" width="330" height="48" rx="6" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="131" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">PERMISSION BUDGETS</text>
+  <text x="600" y="151" text-anchor="middle" fill="#64748b" font-size="10">Declare needs. Set ceilings. Enforced at install.</text>
+  <rect x="435" y="171" width="330" height="48" rx="6" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="189" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">SHA-512 INTEGRITY + LOCKFILE</text>
+  <text x="600" y="209" text-anchor="middle" fill="#64748b" font-size="10">Hash-verified. Deterministic. Tamper = failure.</text>
+  <rect x="435" y="229" width="330" height="48" rx="6" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="247" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">CREDENTIAL VAULT</text>
+  <text x="600" y="267" text-anchor="middle" fill="#64748b" font-size="10">Tokenization proxy strips keys before LLM.</text>
+  <text x="600" y="336" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Every ClawHavoc attack class → blocked by design</text>
+</svg>
+
 ## Deployment Options
 
 | Option              | URL                                                | Best For                                    |
@@ -94,13 +131,14 @@ You're deploying Tank for your organization, enforcing internal policies, or nee
 
 ### Core Concepts
 
-| Page                                     | Description                                                      |
-| ---------------------------------------- | ---------------------------------------------------------------- |
-| [Getting Started](/docs/getting-started) | Install the CLI, authenticate, and run your first command        |
-| [Publishing](/docs/publishing)           | `tank.json` manifest reference, versioning, and publish workflow |
-| [Installing](/docs/installing)           | Install skills, manage the lockfile, and review permissions      |
-| [Security Model](/docs/security)         | 6-stage scanning pipeline, verdict rules, and audit scores       |
-| [Permissions](/docs/permissions)         | Declare, review, and enforce skill permission boundaries         |
+| Page                                     | Description                                                                 |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| [Getting Started](/docs/getting-started) | Install the CLI, authenticate, and run your first command                   |
+| [Publishing](/docs/publishing)           | `tank.json` manifest reference, versioning, and publish workflow            |
+| [Installing](/docs/installing)           | Install skills, manage the lockfile, and review permissions                 |
+| [Security Model](/docs/security)         | 6-stage scanning pipeline, verdict rules, and audit scores                  |
+| [Permissions](/docs/permissions)         | Declare, review, and enforce skill permission boundaries                    |
+| [Credential Vault](/docs/vault)          | Format-preserving tokenization proxy — real credentials never reach the LLM |
 
 ### Tutorials
 
@@ -110,10 +148,12 @@ You're deploying Tank for your organization, enforcing internal policies, or nee
 | [Security Checklist](/docs/security-checklist)        | Pre-publish checklist covering permissions, code, and secrets     |
 | [Self-Host in 15 Minutes](/docs/self-host-quickstart) | Docker Compose deployment in one session                          |
 
-### Integrations
+### SDKs & Integrations
 
 | Page                                 | Description                                                          |
 | ------------------------------------ | -------------------------------------------------------------------- |
+| [TypeScript SDK](/docs/sdk)          | Programmatic registry access — search, download, and tool generation |
+| [Python SDK](/docs/sdk-python)       | Python client for search, download, audit, and install               |
 | [CI/CD Integration](/docs/cicd)      | GitHub Actions, GitLab CI, Docker pipeline examples                  |
 | [GitHub Action](/docs/github-action) | Official `tankpkg/tank@v1` action — publish and install in CI        |
 | [MCP Server](/docs/mcp)              | Use Tank tools directly inside AI editors via Model Context Protocol |
@@ -127,6 +167,7 @@ You're deploying Tank for your organization, enforcing internal policies, or nee
 | [CLI Reference](/docs/cli)         | Every `tank` command with flags, examples, and exit codes     |
 | [API Reference](/docs/api)         | REST API endpoints for the registry and admin operations      |
 | [Self-Hosting](/docs/self-hosting) | Full production deployment guide with Docker Compose and Helm |
+| [Releases](/docs/releases)         | Version history, changelog, and upgrade notes                 |
 
 ## Why Tank Exists
 

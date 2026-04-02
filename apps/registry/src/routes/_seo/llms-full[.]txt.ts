@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { setResponseHeader } from '@tanstack/react-start/server';
 
-import { parseFrontmatter, readDocFile, readDocFiles } from '~/lib/docs-fs';
+import { parseFrontmatter, readDocFile, readDocFiles, stripSvg } from '~/lib/docs-fs';
 
 export const Route = createFileRoute('/_seo/llms-full.txt')({
   server: {
@@ -33,7 +33,7 @@ description: ${data.description || ''}
 url: ${url}
 ---
 
-${body.trim()}
+${stripSvg(body.trim())}
 `);
   }
 

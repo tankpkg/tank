@@ -7,6 +7,50 @@ description: Automate AI agent skill installation and publishing in CI/CD pipeli
 
 This guide covers automated skill installation and publishing in CI/CD pipelines — GitHub Actions, GitLab CI, or any environment where `tank install` or `tank publish` runs without a browser.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 205" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="ci-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <rect x="15" y="12" width="58" height="18" rx="4" fill="#64748b" fill-opacity="0.15"/>
+  <text x="44" y="25" text-anchor="middle" fill="#64748b" font-size="8" font-weight="600">LOCAL</text>
+  <rect x="15" y="38" width="175" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="102.5" y="56" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">tank login</text>
+  <text x="102.5" y="70" text-anchor="middle" fill="#64748b" font-size="8">developer runs in terminal</text>
+  <line x1="190" y1="60" x2="205" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="210" y="38" width="175" height="44" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="297.5" y="56" text-anchor="middle" fill="#eab308" font-size="10" font-weight="600">Browser OAuth</text>
+  <text x="297.5" y="70" text-anchor="middle" fill="#64748b" font-size="8">GitHub auth in browser</text>
+  <line x1="385" y1="60" x2="400" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="405" y="38" width="175" height="44" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="492.5" y="56" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">Token saved locally</text>
+  <text x="492.5" y="70" text-anchor="middle" fill="#64748b" font-size="8">~/.tank/config.json</text>
+  <line x1="580" y1="60" x2="595" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="600" y="38" width="205" height="44" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="702.5" y="56" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">tank install / tank publish</text>
+  <text x="702.5" y="70" text-anchor="middle" fill="#64748b" font-size="8">CLI reads token automatically</text>
+  <rect x="15" y="100" width="790" height="1" fill="#16a34a" fill-opacity="0.35"/>
+  <text x="410" y="112" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="600">Same commands, same security — only the auth method changes</text>
+  <rect x="15" y="122" width="34" height="18" rx="4" fill="#10b981" fill-opacity="0.15"/>
+  <text x="32" y="135" text-anchor="middle" fill="#10b981" font-size="8" font-weight="600">CI</text>
+  <rect x="15" y="148" width="175" height="44" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="102.5" y="166" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">TANK_TOKEN secret</text>
+  <text x="102.5" y="180" text-anchor="middle" fill="#64748b" font-size="8">stored in CI settings</text>
+  <line x1="190" y1="170" x2="205" y2="170" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="210" y="148" width="175" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="297.5" y="166" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">No browser needed</text>
+  <text x="297.5" y="180" text-anchor="middle" fill="#64748b" font-size="8">env var is auto-read</text>
+  <line x1="385" y1="170" x2="400" y2="170" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="405" y="148" width="175" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="492.5" y="166" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Same CLI commands</text>
+  <text x="492.5" y="180" text-anchor="middle" fill="#64748b" font-size="8">install, verify, publish</text>
+  <line x1="580" y1="170" x2="595" y2="170" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="600" y="148" width="205" height="44" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="702.5" y="166" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Same security guarantees</text>
+  <text x="702.5" y="180" text-anchor="middle" fill="#64748b" font-size="8">verify + audit + permission budget</text>
+</svg>
+</div>
+
 ## How It Works
 
 1. Create an **API token** from your dashboard
@@ -265,6 +309,38 @@ Skills are installed to `.tank/skills/` relative to the working directory (local
 For global installs (shared across projects), use `tank install -g`. Global skills go to `~/.tank/skills/`.
 
 ## Service Accounts (Teams & Enterprise)
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 90" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sa-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Admin creates -->
+  <rect x="15" y="20" width="130" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="80" y="41" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">Admin creates</text>
+  <text x="80" y="55" text-anchor="middle" fill="#64748b" font-size="8">service account</text>
+  <line x1="145" y1="45" x2="165" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#sa-arrow)"/>
+  <!-- API key -->
+  <rect x="170" y="20" width="130" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="235" y="41" text-anchor="middle" fill="#10b981" font-size="9" font-weight="600">API key</text>
+  <text x="235" y="55" text-anchor="middle" fill="#64748b" font-size="8">skills:publish</text>
+  <line x1="300" y1="45" x2="320" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#sa-arrow)"/>
+  <!-- CI Secret -->
+  <rect x="325" y="20" width="130" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="390" y="41" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">CI secret</text>
+  <text x="390" y="55" text-anchor="middle" fill="#64748b" font-size="8">TANK_TOKEN</text>
+  <line x1="455" y1="45" x2="475" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#sa-arrow)"/>
+  <!-- CI Runner -->
+  <rect x="480" y="20" width="130" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="545" y="41" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">CI runner</text>
+  <text x="545" y="55" text-anchor="middle" fill="#64748b" font-size="8">authenticates</text>
+  <line x1="610" y1="45" x2="630" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#sa-arrow)"/>
+  <!-- Publishes -->
+  <rect x="635" y="20" width="100" height="50" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="685" y="41" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="600">Publishes</text>
+  <text x="685" y="55" text-anchor="middle" fill="#64748b" font-size="8">@org scope</text>
+</svg>
+</div>
 
 For teams that need a shared CI identity (not tied to a personal account), admins can create service accounts via the API:
 

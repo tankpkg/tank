@@ -43,7 +43,7 @@ function buildBotPrompt(params: CreateSkillBotParams): string {
     'Tank is a security-first package manager for AI agent skills — instruction files that extend AI coding agents.',
     '',
     '== INSTALL ==',
-    `tank install ${skillName}`,
+    `tank install -g ${skillName}`,
     '',
     '== METADATA ==',
     `Name: ${skillName} | Version: ${version}`,
@@ -72,7 +72,7 @@ export async function createSkillBot(params: CreateSkillBotParams): Promise<Crea
         endpoint: 'create-bot-api',
         payload: {
           apiToken: params.apiToken,
-          name: `Tank: ${params.skillName} v${params.version}`,
+          name: params.skillName,
           prompt: buildBotPrompt(params)
         }
       })
@@ -89,6 +89,7 @@ export async function createSkillBot(params: CreateSkillBotParams): Promise<Crea
       botId?: string;
       secret?: string;
       chatLink?: string;
+      aliceAndBotPublicId?: string;
       error?: string;
     };
 
@@ -102,8 +103,7 @@ export async function createSkillBot(params: CreateSkillBotParams): Promise<Crea
       botId: data.botId,
       secret: data.secret,
       chatLink: data.chatLink,
-      // TODO: confirm with uri if create-bot-api exposes the alice-and-bot public key
-      botPublicKey: null
+      botPublicKey: data.aliceAndBotPublicId ?? null
     };
   } catch (err) {
     // biome-ignore lint/suspicious/noConsole: intentional — server-side diagnostic for bot creation failures

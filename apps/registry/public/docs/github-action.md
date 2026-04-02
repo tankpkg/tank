@@ -7,12 +7,49 @@ description: Automate AI agent skill publishing with Tank's official GitHub Acti
 
 Tank's official GitHub Action automates the full skill publishing lifecycle directly from your CI/CD pipeline. On every push to `main`, the action validates your skill manifest, runs security scanning, publishes to the Tank registry, and generates an audit score badge you can embed in your README.
 
-## What the Action Does
-
-1. **Validates** your `tank.json` manifest — schema, semver format, and permission declarations
-2. **Runs security scanning** — the same 6-stage pipeline used by the registry (structure, static AST, injection, secrets, supply chain)
-3. **Publishes** the skill tarball to the Tank registry and stores it in the configured storage backend
-4. **Outputs** the published name, version, audit score, and a badge URL you can use in your README
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 150" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="ga-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Push to main -->
+  <rect x="10" y="45" width="110" height="50" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="65" y="67" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Push to main</text>
+  <text x="65" y="82" text-anchor="middle" fill="#64748b" font-size="10">or v* tag</text>
+  <!-- Arrow -->
+  <line x1="120" y1="70" x2="150" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Action -->
+  <rect x="155" y="45" width="130" height="50" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="220" y="67" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">tankpkg/tank@v1</text>
+  <text x="220" y="82" text-anchor="middle" fill="#64748b" font-size="10">GitHub Action</text>
+  <!-- Arrow -->
+  <line x1="285" y1="70" x2="315" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Validate -->
+  <rect x="320" y="45" width="100" height="50" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="370" y="67" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Validate</text>
+  <text x="370" y="82" text-anchor="middle" fill="#64748b" font-size="10">manifest</text>
+  <!-- Arrow -->
+  <line x1="420" y1="70" x2="445" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Security Scan -->
+  <rect x="450" y="45" width="110" height="50" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="505" y="67" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Scan</text>
+  <text x="505" y="82" text-anchor="middle" fill="#64748b" font-size="10">6-stage pipeline</text>
+  <!-- Arrow -->
+  <line x1="560" y1="70" x2="585" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Publish -->
+  <rect x="590" y="45" width="90" height="50" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="635" y="74" text-anchor="middle" fill="#16a34a" font-size="13" font-weight="600">Publish</text>
+  <!-- Arrow -->
+  <line x1="680" y1="70" x2="710" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Outputs -->
+  <rect x="715" y="25" width="95" height="90" rx="8" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="762" y="47" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Outputs</text>
+  <text x="762" y="65" text-anchor="middle" fill="#64748b" font-size="10">name</text>
+  <text x="762" y="78" text-anchor="middle" fill="#64748b" font-size="10">version</text>
+  <text x="762" y="91" text-anchor="middle" fill="#64748b" font-size="10">audit-score</text>
+  <text x="762" y="104" text-anchor="middle" fill="#64748b" font-size="10">badge-url</text>
+</svg>
+</div>
 
 <Callout type="info">
   The action uses the same `tank publish` flow under the hood. It reads your `TANK_TOKEN` secret, authenticates, and

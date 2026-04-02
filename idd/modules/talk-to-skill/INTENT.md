@@ -41,15 +41,17 @@ Embedded AI chat on every skill detail page. Users can ask questions about a ski
 - Mobile: button in the mobile action bar alongside Star + Download
 - Both open the same Dialog overlay with the alice-and-bot Chat component
 - Chat styled to match Tank dark theme (tank-green-ui primary, dark background)
+- Anonymous visitors should enter chat immediately without an "Enter your display name" dialog
 
 ## Examples
 
-| Input                                                    | Expected Output                                                |
-| -------------------------------------------------------- | -------------------------------------------------------------- |
-| Visitor clicks "Talk to this skill" (no bot exists yet)  | API call creates bot → chat opens with bot that knows README   |
-| Visitor clicks "Talk to this skill" (bot already exists) | Chat opens immediately — no API call, no delay                 |
-| `PROMPT2BOT_API_TOKEN` is unset                          | No button, no bubble rendered anywhere                         |
-| Skill has no README, only description                    | Button still shows; bot uses description + metadata as context |
-| Skill page on mobile                                     | Button visible in mobile action bar                            |
-| Bot creation API fails                                   | Error shown to user; skill page continues to work normally     |
-| Attacker inspects network responses                      | `prompt2botSecret` never appears in any response body          |
+| Input                                                    | Expected Output                                                         |
+| -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Visitor clicks "Talk to this skill" (no bot exists yet)  | API call creates bot → chat opens with bot that knows README            |
+| Visitor clicks "Talk to this skill" (bot already exists) | Chat opens immediately — no API call, no delay                          |
+| `PROMPT2BOT_API_TOKEN` is unset                          | No button, no bubble rendered anywhere                                  |
+| Skill has no README, only description                    | Button still shows; bot uses description + metadata as context          |
+| Skill page on mobile                                     | Button visible in mobile action bar                                     |
+| Bot creation API fails                                   | Error shown to user; skill page continues to work normally              |
+| Attacker inspects network responses                      | `prompt2botSecret` never appears in any response body                   |
+| First-time anonymous visitor opens chat                  | Alice&Bot credentials are pre-seeded and no display-name dialog appears |
