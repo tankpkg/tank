@@ -5,24 +5,12 @@ import { TrustBadge } from '~/components/skills/trust-badge';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
+import type { ScanFinding } from '~/lib/skills/data';
 import { useClipboard } from '~/lib/useClipboard';
 
 interface ScanResult {
   verdict: string;
-  findings: Array<{
-    stage: string;
-    severity: string;
-    type: string;
-    description: string;
-    location: string | null;
-    confidence: number | null;
-    tool: string | null;
-    evidence: string | null;
-    llm_verdict?: string | null;
-    llm_reviewed?: boolean;
-    remediation?: string | null;
-    cwe_id?: string | null;
-  }>;
+  findings: ScanFinding[];
   duration_ms: number;
   stage_results: Array<{
     stage: string;

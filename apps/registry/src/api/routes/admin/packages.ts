@@ -1,12 +1,10 @@
 import { and, count, desc, eq, ilike, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
-import { env } from '~/consts/env';
 import { db } from '~/lib/db';
 import { user } from '~/lib/db/auth-schema';
-import { auditEvents, scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
-import { depAuditService } from '~/lib/dep-audit/service';
-import { getStorageProvider } from '~/services/storage/provider';
+import { auditEvents, skills, skillVersions } from '~/lib/db/schema';
+import { runRescan } from '~/lib/skills/rescan';
 
 export const packagesRoutes = new Hono()
 
@@ -163,147 +161,19 @@ export const packagesRoutes = new Hono()
 
   .post('/:name{.+}/rescan', async (c) => {
     const name = decodeURIComponent(c.req.param('name'));
-    const scanApiUrl = env.PYTHON_API_URL;
 
-    if (!scanApiUrl) {
-      return c.json({ error: 'Scanner not configured' }, 503);
-    }
+    const [skill] = await db.select({ id: skills.id }).from(skills).where(eq(skills.name, name)).limit(1);
 
-    const rows = await db
-      .select({
-        skillId: skills.id,
-        versionId: skillVersions.id,
-        version: skillVersions.version,
-        tarballPath: skillVersions.tarballPath,
-        manifest: skillVersions.manifest,
-        permissions: skillVersions.permissions
-      })
-      .from(skills)
-      .innerJoin(skillVersions, eq(skillVersions.skillId, skills.id))
-      .where(eq(skills.name, name))
-      .orderBy(desc(skillVersions.createdAt))
-      .limit(1);
-
-    if (rows.length === 0) {
-      return c.json({ error: 'Package or version not found' }, 404);
-    }
-
-    const row = rows[0];
-
-    let signedUrl: string;
-    try {
-      const urlData = await getStorageProvider().createSignedUrl(row.tarballPath, 3600, 'public');
-      signedUrl = urlData.signedUrl;
-    } catch (err) {
-      return c.json(
-        { error: 'Failed to generate download URL for rescan', detail: String(err), tarballPath: row.tarballPath },
-        500
-      );
-    }
-
-    const scanResponse = await fetch(`${scanApiUrl}/api/analyze/scan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tarball_url: signedUrl,
-        version_id: row.versionId,
-        manifest: row.manifest,
-        permissions: row.permissions
-      })
-    });
-
-    if (!scanResponse.ok) {
-      const body = await scanResponse.text().catch(() => 'unreadable');
-      return c.json({ error: 'Scanner returned an error', status: scanResponse.status, body }, 502);
-    }
-
-    const scanResult = (await scanResponse.json().catch(() => null)) as {
-      scan_id?: string | null;
-      verdict?: string;
-      findings?: Array<{
-        stage: string;
-        severity: string;
-        type: string;
-        description: string;
-        location?: string | null;
-        confidence?: number | null;
-        tool?: string | null;
-        evidence?: string | null;
-        llm_verdict?: string | null;
-        llm_reviewed?: boolean;
-      }>;
-      stage_results?: Array<{ stage: string }>;
-      duration_ms?: number;
-      file_hashes?: Record<string, string>;
-      llm_analysis?: Record<string, unknown>;
-    } | null;
-
-    if (!scanResult?.verdict || !scanResult.findings) {
-      return c.json({ error: 'Scanner returned invalid result', result: scanResult }, 502);
-    }
-
-    const findings = scanResult.findings;
-    const counts = {
-      critical: findings.filter((f) => f.severity === 'critical').length,
-      high: findings.filter((f) => f.severity === 'high').length,
-      medium: findings.filter((f) => f.severity === 'medium').length,
-      low: findings.filter((f) => f.severity === 'low').length
-    };
-
-    const [inserted] = await db
-      .insert(scanResults)
-      .values({
-        versionId: row.versionId,
-        verdict: scanResult.verdict,
-        totalFindings: findings.length,
-        criticalCount: counts.critical,
-        highCount: counts.high,
-        mediumCount: counts.medium,
-        lowCount: counts.low,
-        stagesRun: scanResult.stage_results?.map((s) => s.stage) ?? [],
-        durationMs: scanResult.duration_ms ?? 0,
-        fileHashes: scanResult.file_hashes ?? {},
-        llmAnalysis: scanResult.llm_analysis as typeof scanResults.$inferInsert.llmAnalysis
-      })
-      .returning({ id: scanResults.id });
-
-    if (inserted && findings.length > 0) {
-      await db.insert(scanFindings).values(
-        findings.map((f) => ({
-          scanId: inserted.id,
-          stage: f.stage,
-          severity: f.severity,
-          type: f.type,
-          description: f.description,
-          location: f.location ?? null,
-          confidence: f.confidence ?? null,
-          tool: f.tool ?? null,
-          evidence: f.evidence ?? null,
-          llmVerdict: f.llm_verdict ?? null,
-          llmReviewed: f.llm_reviewed ?? false
-        }))
-      );
+    if (!skill) {
+      return c.json({ error: 'Package not found' }, 404);
     }
 
     const adminUser = c.get('adminUser' as never) as { id: string };
-    await db.insert(auditEvents).values({
-      action: 'admin.package.rescan',
-      actorId: adminUser.id,
-      targetType: 'skill',
-      targetId: row.skillId,
-      metadata: { name, version: row.version, versionId: row.versionId }
-    });
 
-    // Non-blocking: refresh dep audit data for this version
-    depAuditService.runAudit(row.versionId, row.manifest as Record<string, unknown>).catch(() => {
-      // Dep audit failure is non-blocking
-    });
-
-    return c.json({
-      success: true,
-      scan_id: inserted.id,
-      verdict: scanResult.verdict,
-      findings_count: findings.length,
-      version: row.version
-    });
+    try {
+      const result = await runRescan(skill.id, adminUser.id);
+      return c.json(result);
+    } catch (err) {
+      return c.json({ error: (err as Error).message }, 502);
+    }
   });
