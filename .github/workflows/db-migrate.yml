@@ -55,5 +55,5 @@ jobs:
       - name: Ensure pg_trgm extension
         run: bun scripts/ensure-pg-trgm.mjs
 
-      - name: Push DB schema
-        run: cd apps/registry && bunx drizzle-kit push --force
+      - name: Run DB migrations
+        run: cd apps/registry && bunx drizzle-kit migrate

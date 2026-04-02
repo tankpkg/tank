@@ -16,9 +16,9 @@ fi
 if [ "$AUTO_MIGRATE" = "true" ]; then
   echo "[Tank] AUTO_MIGRATE=true — running headless setup..."
 
-  echo "[Tank] Pushing database schema..."
-  bun ./node_modules/drizzle-kit/bin.cjs push --force --config=drizzle.config.js 2>&1 || {
-    echo "[Tank] ERROR: Schema push failed. Is DATABASE_URL correct?"
+  echo "[Tank] Running database migrations..."
+  bun ./node_modules/drizzle-kit/bin.cjs migrate --config=drizzle.config.js 2>&1 || {
+    echo "[Tank] ERROR: Migration failed. Is DATABASE_URL correct?"
     exit 1
   }
 
