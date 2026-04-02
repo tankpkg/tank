@@ -765,6 +765,50 @@ Source: https://tankpkg.dev/docs/cicd
 
 This guide covers automated skill installation and publishing in CI/CD pipelines — GitHub Actions, GitLab CI, or any environment where `tank install` or `tank publish` runs without a browser.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 205" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="ci-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <rect x="15" y="12" width="58" height="18" rx="4" fill="#64748b" fill-opacity="0.15"/>
+  <text x="44" y="25" text-anchor="middle" fill="#64748b" font-size="8" font-weight="600">LOCAL</text>
+  <rect x="15" y="38" width="175" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="102.5" y="56" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">tank login</text>
+  <text x="102.5" y="70" text-anchor="middle" fill="#64748b" font-size="8">developer runs in terminal</text>
+  <line x1="190" y1="60" x2="205" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="210" y="38" width="175" height="44" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="297.5" y="56" text-anchor="middle" fill="#eab308" font-size="10" font-weight="600">Browser OAuth</text>
+  <text x="297.5" y="70" text-anchor="middle" fill="#64748b" font-size="8">GitHub auth in browser</text>
+  <line x1="385" y1="60" x2="400" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="405" y="38" width="175" height="44" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="492.5" y="56" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">Token saved locally</text>
+  <text x="492.5" y="70" text-anchor="middle" fill="#64748b" font-size="8">~/.tank/config.json</text>
+  <line x1="580" y1="60" x2="595" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="600" y="38" width="205" height="44" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="702.5" y="56" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">tank install / tank publish</text>
+  <text x="702.5" y="70" text-anchor="middle" fill="#64748b" font-size="8">CLI reads token automatically</text>
+  <rect x="15" y="100" width="790" height="1" fill="#16a34a" fill-opacity="0.35"/>
+  <text x="410" y="112" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="600">Same commands, same security — only the auth method changes</text>
+  <rect x="15" y="122" width="34" height="18" rx="4" fill="#10b981" fill-opacity="0.15"/>
+  <text x="32" y="135" text-anchor="middle" fill="#10b981" font-size="8" font-weight="600">CI</text>
+  <rect x="15" y="148" width="175" height="44" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="102.5" y="166" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">TANK_TOKEN secret</text>
+  <text x="102.5" y="180" text-anchor="middle" fill="#64748b" font-size="8">stored in CI settings</text>
+  <line x1="190" y1="170" x2="205" y2="170" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="210" y="148" width="175" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="297.5" y="166" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">No browser needed</text>
+  <text x="297.5" y="180" text-anchor="middle" fill="#64748b" font-size="8">env var is auto-read</text>
+  <line x1="385" y1="170" x2="400" y2="170" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="405" y="148" width="175" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="492.5" y="166" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Same CLI commands</text>
+  <text x="492.5" y="180" text-anchor="middle" fill="#64748b" font-size="8">install, verify, publish</text>
+  <line x1="580" y1="170" x2="595" y2="170" stroke="#64748b" stroke-width="1.5" marker-end="url(#ci-arrow)"/>
+  <rect x="600" y="148" width="205" height="44" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="702.5" y="166" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Same security guarantees</text>
+  <text x="702.5" y="180" text-anchor="middle" fill="#64748b" font-size="8">verify + audit + permission budget</text>
+</svg>
+</div>
+
 ## How It Works
 
 1. Create an **API token** from your dashboard
@@ -1024,6 +1068,38 @@ For global installs (shared across projects), use `tank install -g`. Global skil
 
 ## Service Accounts (Teams & Enterprise)
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 90" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sa-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Admin creates -->
+  <rect x="15" y="20" width="130" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="80" y="41" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">Admin creates</text>
+  <text x="80" y="55" text-anchor="middle" fill="#64748b" font-size="8">service account</text>
+  <line x1="145" y1="45" x2="165" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#sa-arrow)"/>
+  <!-- API key -->
+  <rect x="170" y="20" width="130" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="235" y="41" text-anchor="middle" fill="#10b981" font-size="9" font-weight="600">API key</text>
+  <text x="235" y="55" text-anchor="middle" fill="#64748b" font-size="8">skills:publish</text>
+  <line x1="300" y1="45" x2="320" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#sa-arrow)"/>
+  <!-- CI Secret -->
+  <rect x="325" y="20" width="130" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="390" y="41" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">CI secret</text>
+  <text x="390" y="55" text-anchor="middle" fill="#64748b" font-size="8">TANK_TOKEN</text>
+  <line x1="455" y1="45" x2="475" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#sa-arrow)"/>
+  <!-- CI Runner -->
+  <rect x="480" y="20" width="130" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="545" y="41" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">CI runner</text>
+  <text x="545" y="55" text-anchor="middle" fill="#64748b" font-size="8">authenticates</text>
+  <line x1="610" y1="45" x2="630" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#sa-arrow)"/>
+  <!-- Publishes -->
+  <rect x="635" y="20" width="100" height="50" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="685" y="41" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="600">Publishes</text>
+  <text x="685" y="55" text-anchor="middle" fill="#64748b" font-size="8">@org scope</text>
+</svg>
+</div>
+
 For teams that need a shared CI identity (not tied to a personal account), admins can create service accounts via the API:
 
 ```bash
@@ -1120,6 +1196,7 @@ tank init
 | `--private` | Make skill private |
 | `--force` | Overwrite existing tank.json |
 
+
 ## tank login
 
 Authenticate with the Tank registry via browser
@@ -1127,6 +1204,7 @@ Authenticate with the Tank registry via browser
 ```bash
 tank login
 ```
+
 
 ## tank whoami
 
@@ -1136,6 +1214,7 @@ Show the currently logged-in user
 tank whoami
 ```
 
+
 ## tank logout
 
 Remove authentication token from config
@@ -1143,6 +1222,7 @@ Remove authentication token from config
 ```bash
 tank logout
 ```
+
 
 ## tank publish
 
@@ -1157,10 +1237,11 @@ tank publish
 ### Options
 
 | Flag | Description |
-|---|---|---|
+|---|---|
 | `--dry-run` | Validate and pack without uploading |
 | `--private` | Publish skill as private |
 | `--visibility <mode>` | Skill visibility (public | private) |
+
 
 ## tank install
 
@@ -1177,13 +1258,14 @@ tank install [name] [version-range]
 | Name | Description | Required |
 |---|---|---|
 | `name` | Skill name (e.g., @org/skill-name). Omit to install from lockfile. | No |
-| `version-range` | Semver range (default: \*) | No |
+| `version-range` | Semver range (default: *) | No |
 
 ### Options
 
 | Flag | Description |
 |---|---|
 | `-g, --global` | Install skill globally (available to all projects) |
+
 
 ## tank remove
 
@@ -1207,6 +1289,7 @@ tank remove <name>
 |---|---|
 | `-g, --global` | Remove a globally installed skill |
 
+
 ## tank update
 
 Update skills to latest versions within their ranges
@@ -1229,6 +1312,7 @@ tank update [name]
 |---|---|
 | `-g, --global` | Update globally installed skills |
 
+
 ## tank verify
 
 Verify installed skills match the lockfile
@@ -1236,6 +1320,7 @@ Verify installed skills match the lockfile
 ```bash
 tank verify
 ```
+
 
 ## tank permissions
 
@@ -1246,6 +1331,7 @@ Display resolved permission summary for installed skills
 ```bash
 tank permissions
 ```
+
 
 ## tank search
 
@@ -1263,6 +1349,7 @@ tank search <query>
 |---|---|---|
 | `query` | Search query | Yes |
 
+
 ## tank info
 
 Show detailed information about a skill
@@ -1279,6 +1366,7 @@ tank info <name>
 |---|---|---|
 | `name` | Skill name (e.g., @org/skill-name) | Yes |
 
+
 ## tank audit
 
 Display security audit results for installed skills
@@ -1292,6 +1380,7 @@ tank audit [name]
 | Name | Description | Required |
 |---|---|---|
 | `name` | Skill name to audit (omit to audit all) | No |
+
 
 ## tank run
 
@@ -1313,6 +1402,7 @@ tank run <agent>
 |---|---|
 | `--verbose` | Print verbose vault proxy details |
 
+
 ## tank scan
 
 Scan a local skill for security issues without publishing
@@ -1327,6 +1417,7 @@ tank scan
 |---|---|
 | `-d, --directory <path>` | Directory to scan (default: current directory) |
 
+
 ## tank link
 
 Link current skill directory to AI agent directories (for development)
@@ -1337,6 +1428,7 @@ Link current skill directory to AI agent directories (for development)
 tank link
 ```
 
+
 ## tank unlink
 
 Remove skill symlinks from AI agent directories
@@ -1344,6 +1436,7 @@ Remove skill symlinks from AI agent directories
 ```bash
 tank unlink
 ```
+
 
 ## tank doctor
 
@@ -1353,6 +1446,7 @@ Diagnose agent integration health
 tank doctor
 ```
 
+
 ## tank migrate
 
 Migrate skills.json → tank.json and skills.lock → tank.lock
@@ -1360,6 +1454,7 @@ Migrate skills.json → tank.json and skills.lock → tank.lock
 ```bash
 tank migrate
 ```
+
 
 ## tank upgrade
 
@@ -1381,6 +1476,7 @@ tank upgrade [version]
 |---|---|
 | `--dry-run` | Check for updates without installing |
 | `--force` | Reinstall even if already on the target version |
+
 
 ## Quick Reference
 
@@ -1471,6 +1567,42 @@ Source: https://tankpkg.dev/docs/getting-started
 # Getting Started with Tank
 
 Tank is a security-first package manager for AI agent skills. Every install is SHA-512 verified, every skill is statically analyzed before it reaches the registry, and permission budgets prevent skills from accessing more than they declare. This guide takes you from zero to a fully verified working setup.
+
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="400" y="20" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600">What Happens at Each Step</text>
+  <!-- Step 1 -->
+  <rect x="15" y="35" width="145" height="65" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="87" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">1. npm i -g @tankpkg/cli</text>
+  <text x="87" y="72" text-anchor="middle" fill="#64748b" font-size="9">or brew install tankpkg/tap/tank</text>
+  <text x="87" y="88" text-anchor="middle" fill="#64748b" font-size="9">20 commands available after install</text>
+  <!-- Step 2 -->
+  <rect x="172" y="35" width="145" height="65" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="244" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">2. tank login</text>
+  <text x="244" y="72" text-anchor="middle" fill="#64748b" font-size="9">Opens browser → GitHub OAuth</text>
+  <text x="244" y="88" text-anchor="middle" fill="#64748b" font-size="9">Token stored in ~/.tank/config.json</text>
+  <!-- Step 3 -->
+  <rect x="329" y="35" width="145" height="65" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="401" y="55" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">3. tank install @org/skill</text>
+  <text x="401" y="72" text-anchor="middle" fill="#64748b" font-size="9">Resolves deps, downloads tarball,</text>
+  <text x="401" y="88" text-anchor="middle" fill="#64748b" font-size="9">SHA-512 verify, permission check</text>
+  <!-- Step 4 -->
+  <rect x="486" y="35" width="145" height="65" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="558" y="55" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">4. tank verify</text>
+  <text x="558" y="72" text-anchor="middle" fill="#64748b" font-size="9">Re-hashes every installed file</text>
+  <text x="558" y="88" text-anchor="middle" fill="#64748b" font-size="9">against lockfile. Tamper detection.</text>
+  <!-- Step 5 -->
+  <rect x="643" y="35" width="145" height="65" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="715" y="55" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">5. tank audit @org/skill</text>
+  <text x="715" y="72" text-anchor="middle" fill="#64748b" font-size="9">View 6-stage scan results.</text>
+  <text x="715" y="88" text-anchor="middle" fill="#64748b" font-size="9">Score 0-10. See all findings.</text>
+  <!-- Bottom comparison -->
+  <rect x="15" y="120" width="370" height="60" rx="8" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="200" y="142" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Other package managers: download file, hope for the best</text>
+  <text x="200" y="160" text-anchor="middle" fill="#64748b" font-size="10">No hash check, no permission audit, no scan results</text>
+  <rect x="415" y="120" width="370" height="60" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="600" y="142" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Tank: every file verified, every permission declared</text>
+  <text x="600" y="160" text-anchor="middle" fill="#64748b" font-size="10">SHA-512 integrity + budget enforcement + 6-stage scan</text>
+</svg>
 
 ## Prerequisites
 
@@ -1695,12 +1827,49 @@ Source: https://tankpkg.dev/docs/github-action
 
 Tank's official GitHub Action automates the full skill publishing lifecycle directly from your CI/CD pipeline. On every push to `main`, the action validates your skill manifest, runs security scanning, publishes to the Tank registry, and generates an audit score badge you can embed in your README.
 
-## What the Action Does
-
-1. **Validates** your `tank.json` manifest — schema, semver format, and permission declarations
-2. **Runs security scanning** — the same 6-stage pipeline used by the registry (structure, static AST, injection, secrets, supply chain)
-3. **Publishes** the skill tarball to the Tank registry and stores it in the configured storage backend
-4. **Outputs** the published name, version, audit score, and a badge URL you can use in your README
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 150" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="ga-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Push to main -->
+  <rect x="10" y="45" width="110" height="50" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="65" y="67" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Push to main</text>
+  <text x="65" y="82" text-anchor="middle" fill="#64748b" font-size="10">or v* tag</text>
+  <!-- Arrow -->
+  <line x1="120" y1="70" x2="150" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Action -->
+  <rect x="155" y="45" width="130" height="50" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="220" y="67" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">tankpkg/tank@v1</text>
+  <text x="220" y="82" text-anchor="middle" fill="#64748b" font-size="10">GitHub Action</text>
+  <!-- Arrow -->
+  <line x1="285" y1="70" x2="315" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Validate -->
+  <rect x="320" y="45" width="100" height="50" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="370" y="67" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Validate</text>
+  <text x="370" y="82" text-anchor="middle" fill="#64748b" font-size="10">manifest</text>
+  <!-- Arrow -->
+  <line x1="420" y1="70" x2="445" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Security Scan -->
+  <rect x="450" y="45" width="110" height="50" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="505" y="67" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Scan</text>
+  <text x="505" y="82" text-anchor="middle" fill="#64748b" font-size="10">6-stage pipeline</text>
+  <!-- Arrow -->
+  <line x1="560" y1="70" x2="585" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Publish -->
+  <rect x="590" y="45" width="90" height="50" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="635" y="74" text-anchor="middle" fill="#16a34a" font-size="13" font-weight="600">Publish</text>
+  <!-- Arrow -->
+  <line x1="680" y1="70" x2="710" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#ga-arrow)"/>
+  <!-- Outputs -->
+  <rect x="715" y="25" width="95" height="90" rx="8" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="762" y="47" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Outputs</text>
+  <text x="762" y="65" text-anchor="middle" fill="#64748b" font-size="10">name</text>
+  <text x="762" y="78" text-anchor="middle" fill="#64748b" font-size="10">version</text>
+  <text x="762" y="91" text-anchor="middle" fill="#64748b" font-size="10">audit-score</text>
+  <text x="762" y="104" text-anchor="middle" fill="#64748b" font-size="10">badge-url</text>
+</svg>
+</div>
 
 <Callout type="info">
   The action uses the same `tank publish` flow under the hood. It reads your `TANK_TOKEN` secret, authenticates, and
@@ -1978,6 +2147,54 @@ Source: https://tankpkg.dev/docs/installing
 
 Tank's install pipeline does significantly more than download a file. Every install resolves the full dependency tree, verifies SHA-512 integrity for every package, extracts tarballs through a security filter, enforces your project's permission budget, and writes a deterministic lockfile. This page covers every command and behavior you need for day-to-day skill management.
 
+<svg viewBox="0 0 800 330" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="400" y="20" text-anchor="middle" fill="currentColor" font-size="14" font-weight="600">What tank install Does That npm install Doesn't</text>
+  <!-- Column 1: What's the same -->
+  <rect x="15" y="40" width="250" height="130" rx="10" fill="none" stroke="currentColor" stroke-width="1"/>
+  <text x="140" y="62" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Same as npm</text>
+  <text x="30" y="84" fill="#64748b" font-size="10">Resolve semver ranges (^1.2.0)</text>
+  <text x="30" y="102" fill="#64748b" font-size="10">Build dependency graph</text>
+  <text x="30" y="120" fill="#64748b" font-size="10">Download tarballs in parallel</text>
+  <text x="30" y="138" fill="#64748b" font-size="10">Write lockfile for determinism</text>
+  <text x="30" y="158" fill="#64748b" font-size="10">Extract to local directory</text>
+  <!-- Column 2: What Tank adds -->
+  <rect x="280" y="40" width="505" height="130" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="532" y="62" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">What Tank Adds</text>
+  <!-- SHA-512 -->
+  <text x="295" y="84" fill="#dc2626" font-size="10" font-weight="600">SHA-512 INTEGRITY</text>
+  <text x="470" y="84" fill="#64748b" font-size="10">Every file hash-checked. Mismatch = hard failure. No override.</text>
+  <!-- Permission budget -->
+  <text x="295" y="106" fill="#dc2626" font-size="10" font-weight="600">PERMISSION BUDGET</text>
+  <text x="470" y="106" fill="#64748b" font-size="10">Skill permissions checked against project ceiling before extract.</text>
+  <!-- Extraction filter -->
+  <text x="295" y="128" fill="#eab308" font-size="10" font-weight="600">EXTRACTION FILTER</text>
+  <text x="470" y="128" fill="#64748b" font-size="10">Blocks symlinks, hardlinks, path traversal (../), absolute paths.</text>
+  <!-- Size limits -->
+  <text x="295" y="150" fill="#eab308" font-size="10" font-weight="600">SIZE LIMITS</text>
+  <text x="470" y="150" fill="#64748b" font-size="10">50MB max tarball, 1000 files max. Prevents resource exhaustion.</text>
+  <!-- What this prevents -->
+  <rect x="15" y="190" width="770" height="130" rx="10" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="400" y="212" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Real Attacks These Checks Prevent</text>
+  <rect x="30" y="225" width="240" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="40" y="241" fill="#dc2626" font-size="10" font-weight="600">Symlink escape</text>
+  <text x="40" y="255" fill="#64748b" font-size="9">skill/../../.ssh/id_rsa → reads private keys</text>
+  <rect x="285" y="225" width="240" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="295" y="241" fill="#dc2626" font-size="10" font-weight="600">Path traversal</text>
+  <text x="295" y="255" fill="#64748b" font-size="9">../../../etc/passwd in tarball entry name</text>
+  <rect x="540" y="225" width="230" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="550" y="241" fill="#dc2626" font-size="10" font-weight="600">Tampered tarball</text>
+  <text x="550" y="255" fill="#64748b" font-size="9">MITM modifies download → hash mismatch → blocked</text>
+  <rect x="30" y="275" width="240" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="40" y="291" fill="#dc2626" font-size="10" font-weight="600">Permission creep</text>
+  <text x="40" y="305" fill="#64748b" font-size="9">Skill wants network.* but budget says no → rejected</text>
+  <rect x="285" y="275" width="240" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="295" y="291" fill="#dc2626" font-size="10" font-weight="600">Zip bomb</text>
+  <text x="295" y="305" fill="#64748b" font-size="9">10KB compressed → 10GB extracted → size limit blocks</text>
+  <rect x="540" y="275" width="230" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="550" y="291" fill="#dc2626" font-size="10" font-weight="600">Absolute path overwrite</text>
+  <text x="550" y="305" fill="#64748b" font-size="9">/usr/bin/malware in tarball → absolute path rejected</text>
+</svg>
+
 ## Installing a Skill
 
 ### Basic install
@@ -2017,6 +2234,38 @@ This is the correct command for CI/CD pipelines, where reproducibility is critic
 
 ## Dependency Resolution
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 750 100" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="dep-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <rect x="5" y="25" width="105" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="57" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Read</text>
+  <text x="57" y="62" text-anchor="middle" fill="currentColor" font-size="9">tank.json</text>
+  <line x1="110" y1="50" x2="125" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="130" y="25" width="105" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="182" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Resolve</text>
+  <text x="182" y="62" text-anchor="middle" fill="currentColor" font-size="9">semver ranges</text>
+  <line x1="235" y1="50" x2="250" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="255" y="25" width="105" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="307" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Fetch</text>
+  <text x="307" y="62" text-anchor="middle" fill="currentColor" font-size="9">metadata</text>
+  <line x1="360" y1="50" x2="375" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="380" y="25" width="105" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="432" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Build</text>
+  <text x="432" y="62" text-anchor="middle" fill="currentColor" font-size="9">dependency graph</text>
+  <line x1="485" y1="50" x2="500" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="505" y="25" width="105" height="50" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="557" y="47" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">Detect</text>
+  <text x="557" y="62" text-anchor="middle" fill="currentColor" font-size="9">conflicts</text>
+  <line x1="610" y1="50" x2="625" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="630" y="25" width="110" height="50" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="685" y="47" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">Flatten</text>
+  <text x="685" y="62" text-anchor="middle" fill="currentColor" font-size="9">install set</text>
+  <text x="375" y="16" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Dependency Resolution</text>
+</svg>
+</div>
+
 Tank uses a **fixpoint iteration algorithm** to resolve the full dependency tree. This means it doesn't just install the skill you named — it walks every skill's own `tank.json` to discover transitive dependencies, then iterates until the resolved set stabilizes.
 
 ### How it works
@@ -2045,6 +2294,27 @@ ERROR  Dependency conflict detected:
 Tank does **not** silently pick one version. Conflicts are hard errors.
 
 ## The Lockfile (`tank.lock`)
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 640 95" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="lock-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <text x="185" y="16" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Lockfile Structure</text>
+  <rect x="15" y="24" width="340" height="58" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="185" y="41" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">tank.lock</text>
+  <text x="32" y="61" fill="currentColor" font-size="10" font-weight="600">package</text>
+  <text x="105" y="61" fill="#64748b" font-size="10">@org/skill-name</text>
+  <text x="280" y="61" fill="currentColor" font-size="10" font-weight="600">v</text>
+  <text x="296" y="61" fill="#64748b" font-size="10">1.2.3</text>
+  <text x="32" y="76" fill="currentColor" font-size="10" font-weight="600">integrity</text>
+  <text x="105" y="76" fill="#64748b" font-size="10">sha512-abc123...==</text>
+  <line x1="355" y1="53" x2="410" y2="53" stroke="#64748b" stroke-width="1.5" marker-end="url(#lock-arrow)"/>
+  <rect x="418" y="30" width="205" height="46" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="520.5" y="49" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Deterministic install</text>
+  <text x="520.5" y="64" text-anchor="middle" fill="#64748b" font-size="9">same versions on every machine</text>
+</svg>
+</div>
 
 The `tank.lock` file is the source of truth for your install state. Commit it to version control.
 
@@ -2085,6 +2355,22 @@ The `tank.lock` file is the source of truth for your install state. Commit it to
 </Callout>
 
 ## Security on Install
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 520 120" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="260" y="18" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Install Security Checks</text>
+  <rect x="15" y="30" width="235" height="28" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="132.5" y="49" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ SHA-512 integrity verify</text>
+  <rect x="270" y="30" width="235" height="28" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="387.5" y="49" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ No symlinks / hardlinks</text>
+  <rect x="15" y="64" width="235" height="28" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="132.5" y="83" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ No path traversal (../)</text>
+  <rect x="270" y="64" width="235" height="28" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="387.5" y="83" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ No absolute paths</text>
+  <rect x="95" y="98" width="330" height="18" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="260" y="111" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ Size limits: 50MB tarball / 1000 files</text>
+</svg>
+</div>
 
 Tank applies multiple security filters during tarball extraction. These checks run before any file touches disk and cannot be bypassed:
 
@@ -2290,6 +2576,68 @@ MCP is an open protocol by Anthropic that enables AI assistants to connect to ex
 - Link skills into agent workspaces for local development
 - Diagnose environment health issues
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="mcp-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="mcp-arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#dc2626"/></marker>
+    <marker id="mcp-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16a34a"/></marker>
+  </defs>
+  <!-- Divider -->
+  <line x1="380" y1="10" x2="380" y2="180" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <!-- LEFT: Without MCP -->
+  <text x="190" y="18" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Without MCP — 6 context switches</text>
+  <!-- Developer -->
+  <rect x="10" y="32" width="80" height="140" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="50" y="52" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">You</text>
+  <!-- Agent -->
+  <rect x="260" y="32" width="80" height="140" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="300" y="52" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Agent</text>
+  <!-- Back-and-forth arrows (6 of them) -->
+  <line x1="90" y1="68" x2="258" y2="68" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="64" text-anchor="middle" fill="#dc2626" font-size="7">1. "tank search X"</text>
+  <line x1="258" y1="82" x2="90" y2="82" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="79" text-anchor="middle" fill="#dc2626" font-size="7">2. copies result</text>
+  <line x1="90" y1="96" x2="258" y2="96" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="93" text-anchor="middle" fill="#dc2626" font-size="7">3. pastes to agent</text>
+  <line x1="258" y1="110" x2="90" y2="110" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="107" text-anchor="middle" fill="#dc2626" font-size="7">4. "install Y"</text>
+  <line x1="90" y1="124" x2="258" y2="124" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="121" text-anchor="middle" fill="#dc2626" font-size="7">5. "tank install Y"</text>
+  <line x1="258" y1="138" x2="90" y2="138" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="135" text-anchor="middle" fill="#dc2626" font-size="7">6. confirms done</text>
+  <!-- Slow label -->
+  <text x="174" y="162" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">~3 minutes of copy-paste</text>
+  <!-- RIGHT: With MCP -->
+  <text x="596" y="18" text-anchor="middle" fill="#16a34a" font-size="12" font-weight="600">With MCP — 1 conversation</text>
+  <!-- Agent -->
+  <rect x="400" y="40" width="110" height="100" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="455" y="60" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">Agent</text>
+  <text x="455" y="76" text-anchor="middle" fill="#64748b" font-size="8">calls tank_search</text>
+  <text x="455" y="88" text-anchor="middle" fill="#64748b" font-size="8">reads result</text>
+  <text x="455" y="100" text-anchor="middle" fill="#64748b" font-size="8">calls tank_install</text>
+  <text x="455" y="112" text-anchor="middle" fill="#64748b" font-size="8">calls tank_verify</text>
+  <text x="455" y="128" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="600">done ✓</text>
+  <!-- Direct connection -->
+  <line x1="510" y1="90" x2="555" y2="90" stroke="#16a34a" stroke-width="2" marker-end="url(#mcp-arrow-green)"/>
+  <text x="533" y="82" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="600">MCP</text>
+  <!-- Tank MCP Server -->
+  <rect x="558" y="50" width="130" height="80" rx="10" fill="#10b981" stroke="#10b981" stroke-width="1.5"/>
+  <text x="623" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="600">Tank MCP</text>
+  <text x="623" y="95" text-anchor="middle" fill="white" font-size="10" opacity="0.85">17 tools</text>
+  <text x="623" y="112" text-anchor="middle" fill="white" font-size="9" opacity="0.7">direct access</text>
+  <!-- Arrow to registry -->
+  <line x1="688" y1="90" x2="720" y2="90" stroke="#64748b" stroke-width="1.5" marker-end="url(#mcp-arrow)"/>
+  <rect x="722" y="72" width="68" height="36" rx="6" fill="none" stroke="currentColor" stroke-width="1"/>
+  <text x="756" y="94" text-anchor="middle" fill="#64748b" font-size="8">Registry</text>
+  <!-- Fast label -->
+  <text x="596" y="162" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">~10 seconds, zero context switches</text>
+  <!-- Bottom note -->
+  <rect x="160" y="186" width="480" height="28" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="400" y="205" text-anchor="middle" fill="#64748b" font-size="11">17 tools. Zero copy-paste. The agent manages skills itself.</text>
+</svg>
+</div>
+
 ## Supported AI Tools
 
 | Tool | MCP Support | Config Location |
@@ -2399,6 +2747,48 @@ The AI will initiate a GitHub OAuth device flow, display a verification code, an
 ---
 
 ## All 17 Tools
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 750 180" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Row 1 -->
+  <!-- Auth -->
+  <rect x="10" y="10" width="230" height="72" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="125" y="30" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">Auth</text>
+  <text x="125" y="50" text-anchor="middle" fill="currentColor" font-size="10">login</text>
+  <text x="80" y="66" text-anchor="middle" fill="#64748b" font-size="10">whoami</text>
+  <text x="170" y="66" text-anchor="middle" fill="#64748b" font-size="10">logout</text>
+  <!-- Publish -->
+  <rect x="260" y="10" width="220" height="72" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="370" y="30" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Publish</text>
+  <text x="330" y="54" text-anchor="middle" fill="#64748b" font-size="10">init-skill</text>
+  <text x="420" y="54" text-anchor="middle" fill="#64748b" font-size="10">publish-skill</text>
+  <!-- Install -->
+  <rect x="500" y="10" width="240" height="72" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="620" y="30" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Install</text>
+  <text x="545" y="50" text-anchor="middle" fill="#64748b" font-size="10">install</text>
+  <text x="620" y="50" text-anchor="middle" fill="#64748b" font-size="10">update</text>
+  <text x="695" y="50" text-anchor="middle" fill="#64748b" font-size="10">remove</text>
+  <text x="620" y="66" text-anchor="middle" fill="#64748b" font-size="10">verify</text>
+  <!-- Row 2 -->
+  <!-- Security -->
+  <rect x="10" y="98" width="230" height="72" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="125" y="118" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Security</text>
+  <text x="65" y="142" text-anchor="middle" fill="#64748b" font-size="10">audit</text>
+  <text x="125" y="142" text-anchor="middle" fill="#64748b" font-size="10">scan</text>
+  <text x="190" y="142" text-anchor="middle" fill="#64748b" font-size="10">permissions</text>
+  <!-- Discovery -->
+  <rect x="260" y="98" width="220" height="72" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="370" y="118" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Discovery</text>
+  <text x="330" y="142" text-anchor="middle" fill="#64748b" font-size="10">search</text>
+  <text x="420" y="142" text-anchor="middle" fill="#64748b" font-size="10">info</text>
+  <!-- Dev -->
+  <rect x="500" y="98" width="240" height="72" rx="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="620" y="118" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Dev</text>
+  <text x="565" y="142" text-anchor="middle" fill="#64748b" font-size="10">link</text>
+  <text x="620" y="142" text-anchor="middle" fill="#64748b" font-size="10">unlink</text>
+  <text x="680" y="142" text-anchor="middle" fill="#64748b" font-size="10">doctor</text>
+</svg>
+</div>
 
 ### Authentication
 
@@ -2920,6 +3310,43 @@ Source: https://tankpkg.dev/docs/organizations
 
 Organizations let teams publish AI agent skills under a shared namespace, manage members, and control who can publish under a given scope. If you've used npm orgs or GitHub organizations, the concept is the same — `@your-org/skill-name` signals provenance and shared ownership.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- LEFT: unscoped — suspicious -->
+  <rect x="10" y="10" width="360" height="120" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="190" y="34" text-anchor="middle" fill="#dc2626" font-size="13" font-weight="600">@random-user/code-review</text>
+  <text x="190" y="52" text-anchor="middle" fill="#64748b" font-size="10">Who is this?</text>
+  <line x1="60" y1="68" x2="320" y2="68" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="30" y="86" text-anchor="start" fill="#dc2626" font-size="10">✗</text>
+  <text x="44" y="86" text-anchor="start" fill="#64748b" font-size="10">No team behind it</text>
+  <text x="30" y="104" text-anchor="start" fill="#dc2626" font-size="10">✗</text>
+  <text x="44" y="104" text-anchor="start" fill="#64748b" font-size="10">No trust signal — could be anyone</text>
+  <text x="30" y="122" text-anchor="start" fill="#dc2626" font-size="10">✗</text>
+  <text x="44" y="122" text-anchor="start" fill="#64748b" font-size="10">No org controls who publishes</text>
+
+  <!-- RIGHT: org-scoped — verified -->
+  <rect x="420" y="10" width="370" height="120" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="605" y="34" text-anchor="middle" fill="#16a34a" font-size="13" font-weight="600">@acme/code-review</text>
+  <text x="605" y="52" text-anchor="middle" fill="#10b981" font-size="10">Acme Corp — verified org</text>
+  <line x1="470" y1="68" x2="740" y2="68" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="440" y="86" text-anchor="start" fill="#16a34a" font-size="10">✓</text>
+  <text x="454" y="86" text-anchor="start" fill="currentColor" font-size="10" font-weight="600">5 members, role-based access</text>
+  <text x="440" y="104" text-anchor="start" fill="#16a34a" font-size="10">✓</text>
+  <text x="454" y="104" text-anchor="start" fill="currentColor" font-size="10" font-weight="600">Team-controlled publishing</text>
+  <text x="440" y="122" text-anchor="start" fill="#16a34a" font-size="10">✓</text>
+  <text x="454" y="122" text-anchor="start" fill="currentColor" font-size="10" font-weight="600">@acme scope enforced server-side</text>
+
+  <!-- VS divider -->
+  <rect x="382" y="52" width="28" height="28" rx="14" fill="currentColor" fill-opacity="0.08" stroke="currentColor" stroke-width="1" opacity="0.3"/>
+  <text x="396" y="71" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">vs</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="10" y="148" width="780" height="40" rx="8" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
+  <text x="400" y="168" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">Scoped names = provenance. Only org members can publish to @acme — enforced at the API level.</text>
+  <text x="400" y="182" text-anchor="middle" fill="#64748b" font-size="9">You always know who published it.</text>
+</svg>
+</div>
+
 ## Why Organizations Exist
 
 Publishing under a personal account works fine for individual developers. But teams need:
@@ -2995,6 +3422,34 @@ tank install @acme/my-skill
 
 ## Managing Members
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 720 135" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Owner tier -->
+  <rect x="15" y="8" width="690" height="34" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <rect x="15" y="8" width="92" height="34" rx="10" fill="#16a34a" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="61" y="30" text-anchor="middle" fill="white" font-size="11" font-weight="600">Owner</text>
+  <text x="128" y="22" fill="currentColor" font-size="10">Full control</text>
+  <text x="250" y="22" fill="#64748b" font-size="10">delete org</text>
+  <text x="360" y="22" fill="#64748b" font-size="10">transfer ownership</text>
+  <text x="128" y="35" fill="#64748b" font-size="9">includes every admin + member permission</text>
+  <!-- Admin tier -->
+  <rect x="15" y="50" width="690" height="34" rx="10" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <rect x="15" y="50" width="92" height="34" rx="10" fill="#eab308" stroke="#eab308" stroke-width="1.5"/>
+  <text x="61" y="72" text-anchor="middle" fill="white" font-size="11" font-weight="600">Admin</text>
+  <text x="128" y="64" fill="currentColor" font-size="10">manage members</text>
+  <text x="270" y="64" fill="#64748b" font-size="10">invite / remove</text>
+  <text x="390" y="64" fill="#64748b" font-size="10">edit settings</text>
+  <text x="128" y="77" fill="#64748b" font-size="9">includes every member permission</text>
+  <!-- Member tier -->
+  <rect x="15" y="92" width="690" height="34" rx="10" fill="none" stroke="#64748b" stroke-width="1.5"/>
+  <rect x="15" y="92" width="92" height="34" rx="10" fill="#64748b" stroke="#64748b" stroke-width="1.5"/>
+  <text x="61" y="114" text-anchor="middle" fill="white" font-size="11" font-weight="600">Member</text>
+  <text x="128" y="106" fill="currentColor" font-size="10">publish skills</text>
+  <text x="255" y="106" fill="#64748b" font-size="10">view members</text>
+  <text x="382" y="106" fill="#64748b" font-size="10">install private skills</text>
+</svg>
+</div>
+
 ### Inviting Members
 
 From the organization settings page, go to **Members → Invite Member**. Enter the email address of the person you want to add.
@@ -3048,6 +3503,38 @@ Private and org-level skills do not appear in public search results. They are on
 </Callout>
 
 ## Enterprise OIDC Single Sign-On
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 700 100" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="oidc-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="oidc-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16a34a"/></marker>
+  </defs>
+  <!-- Employee -->
+  <rect x="10" y="28" width="100" height="44" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="60" y="48" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">Employee</text>
+  <text x="60" y="62" text-anchor="middle" fill="#64748b" font-size="9">clicks login</text>
+  <!-- Arrow 1 -->
+  <line x1="110" y1="50" x2="148" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#oidc-arrow)"/>
+  <!-- IdP -->
+  <rect x="148" y="22" width="140" height="56" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="218" y="44" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">Corporate IdP</text>
+  <text x="218" y="60" text-anchor="middle" fill="#64748b" font-size="9">Okta / Azure AD</text>
+  <!-- Arrow 2 -->
+  <line x1="288" y1="50" x2="326" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#oidc-arrow)"/>
+  <text x="307" y="40" text-anchor="middle" fill="#64748b" font-size="8">OIDC</text>
+  <!-- Tank callback -->
+  <rect x="326" y="22" width="130" height="56" rx="8" fill="#10b981" stroke="#10b981" stroke-width="1.5"/>
+  <text x="391" y="44" text-anchor="middle" fill="white" font-size="11" font-weight="600">Tank Verifies</text>
+  <text x="391" y="60" text-anchor="middle" fill="white" font-size="9" opacity="0.85">ID token + claims</text>
+  <!-- Arrow 3 -->
+  <line x1="456" y1="50" x2="494" y2="50" stroke="#16a34a" stroke-width="1.5" marker-end="url(#oidc-arrow-green)"/>
+  <!-- Auto-provision -->
+  <rect x="494" y="22" width="196" height="56" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="592" y="44" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Auto-Provision</text>
+  <text x="592" y="60" text-anchor="middle" fill="#64748b" font-size="9">Org membership granted</text>
+</svg>
+</div>
 
 Organizations on enterprise plans can configure OpenID Connect (OIDC) SSO so team members authenticate with your identity provider (Okta, Azure AD, Google Workspace, etc.) instead of GitHub.
 
@@ -3127,6 +3614,43 @@ Source: https://tankpkg.dev/docs/overview
 Tank is a **security-first package manager for AI agent skills** — the `npm` for the agent era, built after the ClawHavoc incident revealed that 341 malicious skills (12% of a major marketplace) were distributing credential-stealing malware. Where other registries have no versioning, no lockfiles, no permissions, and no security scanning, Tank enforces all four from day one.
 
 Agent skills execute with the agent's full authority — reading files, making API calls, running shell commands. Tank treats that seriously.
+
+<svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Without Tank (left) -->
+  <rect x="15" y="10" width="370" height="345" rx="12" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="200" y="36" text-anchor="middle" fill="#dc2626" font-size="14" font-weight="600">Without Tank</text>
+  <text x="200" y="70" text-anchor="middle" fill="currentColor" font-size="12">Agent installs skill from marketplace</text>
+  <text x="200" y="100" text-anchor="middle" fill="#64748b" font-size="11">No scanning. No versioning. No lockfile.</text>
+  <text x="200" y="118" text-anchor="middle" fill="#64748b" font-size="11">No declared permissions.</text>
+  <!-- Attack examples -->
+  <rect x="35" y="140" width="330" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="200" y="157" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">CREDENTIAL THEFT</text>
+  <text x="200" y="172" text-anchor="middle" fill="#64748b" font-size="10">Reads ~/.ssh/*, .env, API keys → exfiltrates</text>
+  <rect x="35" y="190" width="330" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="200" y="207" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">PROMPT INJECTION</text>
+  <text x="200" y="222" text-anchor="middle" fill="#64748b" font-size="10">Hidden instructions hijack agent behavior</text>
+  <rect x="35" y="240" width="330" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="200" y="257" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">SUPPLY CHAIN ATTACK</text>
+  <text x="200" y="272" text-anchor="middle" fill="#64748b" font-size="10">Typosquat packages install malware silently</text>
+  <text x="200" y="336" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">ClawHavoc: 341 malicious skills, 12% of marketplace</text>
+  <!-- With Tank (right) -->
+  <rect x="415" y="10" width="370" height="345" rx="12" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="600" y="36" text-anchor="middle" fill="#10b981" font-size="14" font-weight="600">With Tank</text>
+  <!-- 4 guarantees -->
+  <rect x="435" y="55" width="330" height="48" rx="6" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="73" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">6-STAGE SECURITY SCAN</text>
+  <text x="600" y="93" text-anchor="middle" fill="#64748b" font-size="10">Injection, secrets, supply chain, static analysis</text>
+  <rect x="435" y="113" width="330" height="48" rx="6" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="131" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">PERMISSION BUDGETS</text>
+  <text x="600" y="151" text-anchor="middle" fill="#64748b" font-size="10">Declare needs. Set ceilings. Enforced at install.</text>
+  <rect x="435" y="171" width="330" height="48" rx="6" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="189" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">SHA-512 INTEGRITY + LOCKFILE</text>
+  <text x="600" y="209" text-anchor="middle" fill="#64748b" font-size="10">Hash-verified. Deterministic. Tamper = failure.</text>
+  <rect x="435" y="229" width="330" height="48" rx="6" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="600" y="247" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">CREDENTIAL VAULT</text>
+  <text x="600" y="267" text-anchor="middle" fill="#64748b" font-size="10">Tokenization proxy strips keys before LLM.</text>
+  <text x="600" y="336" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Every ClawHavoc attack class → blocked by design</text>
+</svg>
 
 ## Deployment Options
 
@@ -3220,6 +3744,7 @@ You're deploying Tank for your organization, enforcing internal policies, or nee
 | [Installing](/docs/installing) | Install skills, manage the lockfile, and review permissions |
 | [Security Model](/docs/security) | 6-stage scanning pipeline, verdict rules, and audit scores |
 | [Permissions](/docs/permissions) | Declare, review, and enforce skill permission boundaries |
+| [Credential Vault](/docs/vault) | Format-preserving tokenization proxy — real credentials never reach the LLM |
 
 ### Tutorials
 
@@ -3229,10 +3754,12 @@ You're deploying Tank for your organization, enforcing internal policies, or nee
 | [Security Checklist](/docs/security-checklist) | Pre-publish checklist covering permissions, code, and secrets |
 | [Self-Host in 15 Minutes](/docs/self-host-quickstart) | Docker Compose deployment in one session |
 
-### Integrations
+### SDKs & Integrations
 
 | Page | Description |
 |---|---|
+| [TypeScript SDK](/docs/sdk) | Programmatic registry access — search, download, and tool generation |
+| [Python SDK](/docs/sdk-python) | Python client for search, download, audit, and install |
 | [CI/CD Integration](/docs/cicd) | GitHub Actions, GitLab CI, Docker pipeline examples |
 | [GitHub Action](/docs/github-action) | Official `tankpkg/tank@v1` action — publish and install in CI |
 | [MCP Server](/docs/mcp) | Use Tank tools directly inside AI editors via Model Context Protocol |
@@ -3246,6 +3773,7 @@ You're deploying Tank for your organization, enforcing internal policies, or nee
 | [CLI Reference](/docs/cli) | Every `tank` command with flags, examples, and exit codes |
 | [API Reference](/docs/api) | REST API endpoints for the registry and admin operations |
 | [Self-Hosting](/docs/self-hosting) | Full production deployment guide with Docker Compose and Helm |
+| [Releases](/docs/releases) | Version history, changelog, and upgrade notes |
 
 ## Why Tank Exists
 
@@ -3272,6 +3800,51 @@ Source: https://tankpkg.dev/docs/permissions
 
 Tank's permission system is the primary mechanism for preventing malicious skills from accessing resources they were never supposed to touch. This page explains the permission schema, the project-level budget, how enforcement works at install time, and how version bumps interact with permission changes.
 
+<svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Layer 1: Skill declares -->
+  <rect x="15" y="10" width="370" height="320" rx="12" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="200" y="36" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600">Layer 1: Skill Declares What It Needs</text>
+  <text x="200" y="56" text-anchor="middle" fill="#64748b" font-size="11">"I need access to these resources"</text>
+  <!-- Example skill manifest -->
+  <rect x="35" y="72" width="330" height="120" rx="8" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="50" y="92" fill="#64748b" font-size="10">@acme/seo-audit declares:</text>
+  <text x="50" y="114" fill="currentColor" font-size="11">network:  api.anthropic.com, cdn.jsdelivr.net</text>
+  <text x="50" y="134" fill="currentColor" font-size="11">fs.read:  ./src/**, ./package.json</text>
+  <text x="50" y="154" fill="currentColor" font-size="11">fs.write: ./output/**</text>
+  <text x="50" y="174" fill="currentColor" font-size="11">env:      ANTHROPIC_API_KEY</text>
+  <!-- What happens without this -->
+  <rect x="35" y="205" width="330" height="45" rx="6" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="50" y="224" fill="#dc2626" font-size="10" font-weight="600">Without permissions?</text>
+  <text x="50" y="240" fill="#64748b" font-size="10">Skill can read ~/.ssh/*, call evil.com, run rm -rf /</text>
+  <!-- What subprocess: true means -->
+  <rect x="35" y="260" width="330" height="55" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="50" y="280" fill="#dc2626" font-size="10" font-weight="600">subprocess: true = DANGER</text>
+  <text x="50" y="296" fill="#64748b" font-size="10">Bypasses all other permissions. The skill can do anything</text>
+  <text x="50" y="308" fill="#64748b" font-size="10">the agent's user account can do. Treat as a red flag.</text>
+  <!-- Layer 2: Project sets ceiling -->
+  <rect x="415" y="10" width="370" height="320" rx="12" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="600" y="36" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">Layer 2: Project Sets a Ceiling</text>
+  <text x="600" y="56" text-anchor="middle" fill="#64748b" font-size="11">"I allow skills to use at most this much"</text>
+  <!-- Project budget -->
+  <rect x="435" y="72" width="330" height="100" rx="8" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="450" y="92" fill="#64748b" font-size="10">tank.json budget:</text>
+  <text x="450" y="114" fill="currentColor" font-size="11">network:  api.anthropic.com, *.vercel.com</text>
+  <text x="450" y="134" fill="currentColor" font-size="11">fs.read:  ./src/**, ./public/**, ./package.json</text>
+  <text x="450" y="154" fill="currentColor" font-size="11">subprocess: false</text>
+  <!-- Result: fit or reject -->
+  <rect x="435" y="188" width="155" height="60" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="512" y="212" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Skill fits budget?</text>
+  <text x="512" y="232" text-anchor="middle" fill="#16a34a" font-size="12" font-weight="600">INSTALL</text>
+  <rect x="610" y="188" width="155" height="60" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="687" y="212" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Exceeds budget?</text>
+  <text x="687" y="232" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">HARD REJECT</text>
+  <!-- Concrete rejection example -->
+  <rect x="435" y="262" width="330" height="55" rx="6" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="450" y="280" fill="#dc2626" font-size="10" font-weight="600">Example rejection:</text>
+  <text x="450" y="296" fill="#64748b" font-size="10">Skill needs *.googleapis.com → not in budget</text>
+  <text x="450" y="308" fill="#64748b" font-size="10">→ tank install fails with exact mismatch shown</text>
+</svg>
+
 ## Why Permissions Matter for AI Agent Skills
 
 An AI agent is a process that acts on your behalf. When you give an agent a skill, that skill runs with the agent's full authority — the same API tokens, filesystem access, and subprocess privileges the agent itself holds. There is no OS-level sandbox. There is no automatic restriction.
@@ -3296,6 +3869,34 @@ Tank's permission model requires skills to declare upfront what they need. Proje
 ---
 
 ## Permission Types
+
+<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="400" y="22" text-anchor="middle" fill="currentColor" font-size="14" font-weight="600">Four Permission Types — Ordered by Risk</text>
+  <!-- Subprocess (highest risk) -->
+  <rect x="15" y="40" width="770" height="46" rx="8" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="30" y="60" fill="#dc2626" font-size="12" font-weight="600">subprocess: true/false</text>
+  <text x="30" y="76" fill="#64748b" font-size="10">Can run ANY shell command. Bypasses all other permissions. Default: false.</text>
+  <text x="735" y="60" text-anchor="end" fill="#dc2626" font-size="10" font-weight="600">CRITICAL</text>
+  <text x="735" y="76" text-anchor="end" fill="#dc2626" font-size="10">rm -rf, curl, install malware</text>
+  <!-- Network -->
+  <rect x="15" y="96" width="770" height="46" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="30" y="116" fill="#eab308" font-size="12" font-weight="600">network.outbound: ["api.stripe.com"]</text>
+  <text x="30" y="132" fill="#64748b" font-size="10">Which domains the skill may call. Wildcards: *.domain.com (single level).</text>
+  <text x="735" y="116" text-anchor="end" fill="#eab308" font-size="10" font-weight="600">HIGH</text>
+  <text x="735" y="132" text-anchor="end" fill="#64748b" font-size="10">data exfiltration channel</text>
+  <!-- Environment -->
+  <rect x="15" y="152" width="770" height="46" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="30" y="172" fill="#eab308" font-size="12" font-weight="600">environment: ["OPENAI_API_KEY"]</text>
+  <text x="30" y="188" fill="#64748b" font-size="10">Named env vars the skill can read. No wildcards — each var listed explicitly.</text>
+  <text x="735" y="172" text-anchor="end" fill="#eab308" font-size="10" font-weight="600">HIGH</text>
+  <text x="735" y="188" text-anchor="end" fill="#64748b" font-size="10">credential theft vector</text>
+  <!-- Filesystem -->
+  <rect x="15" y="208" width="770" height="46" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="30" y="228" fill="#10b981" font-size="12" font-weight="600">filesystem.read/write: ["./src/**"]</text>
+  <text x="30" y="244" fill="#64748b" font-size="10">Glob patterns relative to project root. Read and write tracked separately.</text>
+  <text x="735" y="228" text-anchor="end" fill="#10b981" font-size="10" font-weight="600">MEDIUM</text>
+  <text x="735" y="244" text-anchor="end" fill="#64748b" font-size="10">scoped by path globs</text>
+</svg>
 
 Permissions are declared in the `permissions` object of a skill's `SKILL.md` manifest. The full schema is defined in `packages/internals-schemas/src/schemas/permissions.ts` as a Zod schema and validated on both the CLI and registry server.
 
@@ -3474,6 +4075,52 @@ If `@community/seo-audit` declares `network.outbound: ["*.googleapis.com"]` — 
 
 ## Budget Enforcement: How `checkPermissionBudget()` Works
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 750 120" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="bf-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="bf-ok" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16a34a"/></marker>
+    <marker id="bf-no" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#dc2626"/></marker>
+  </defs>
+  <!-- For each skill -->
+  <rect x="5" y="35" width="90" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="50" y="55" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">For each</text>
+  <text x="50" y="70" text-anchor="middle" fill="#64748b" font-size="10">skill</text>
+  <line x1="95" y1="60" x2="118" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <!-- Check network -->
+  <rect x="123" y="35" width="100" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="173" y="55" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Network</text>
+  <text x="173" y="70" text-anchor="middle" fill="#64748b" font-size="9">domains</text>
+  <line x1="223" y1="60" x2="238" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <!-- Check filesystem -->
+  <rect x="243" y="35" width="100" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="293" y="55" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Filesystem</text>
+  <text x="293" y="70" text-anchor="middle" fill="#64748b" font-size="9">paths</text>
+  <line x1="343" y1="60" x2="358" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <!-- Check subprocess -->
+  <rect x="363" y="35" width="100" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="413" y="55" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Subprocess</text>
+  <text x="413" y="70" text-anchor="middle" fill="#64748b" font-size="9">boolean</text>
+  <line x1="463" y1="60" x2="478" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <!-- Check env vars -->
+  <rect x="483" y="35" width="100" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="533" y="55" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Env Vars</text>
+  <text x="533" y="70" text-anchor="middle" fill="#64748b" font-size="9">names</text>
+  <!-- All pass? diamond -->
+  <line x1="583" y1="60" x2="608" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <polygon points="640,35 670,60 640,85 610,60" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="640" y="64" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">All OK?</text>
+  <!-- Pass path -->
+  <line x1="670" y1="50" x2="698" y2="25" stroke="#16a34a" stroke-width="1.5" marker-end="url(#bf-ok)"/>
+  <rect x="688" y="5" width="57" height="26" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="716" y="23" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Install</text>
+  <!-- Reject path -->
+  <line x1="670" y1="70" x2="698" y2="95" stroke="#dc2626" stroke-width="1.5" marker-end="url(#bf-no)"/>
+  <rect x="688" y="88" width="57" height="26" rx="6" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="716" y="106" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Reject</text>
+</svg>
+</div>
+
 The budget enforcement logic runs in the CLI (`apps/cli/src/lib/`) during `tank install` and `tank update`. It compares each skill's declared permissions against the project budget field by field.
 
 ### Domain Matching (`network.outbound`)
@@ -3522,6 +4169,44 @@ The enforcer checks all skills against the budget before extracting any of them.
 ---
 
 ## Permission Escalation Detection
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 650 140" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- PATCH column -->
+  <rect x="10" y="10" width="195" height="120" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="107" y="35" text-anchor="middle" fill="#dc2626" font-size="14" font-weight="600">PATCH</text>
+  <text x="107" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">No changes allowed</text>
+  <line x1="40" y1="66" x2="175" y2="66" stroke="#dc2626" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <text x="30" y="84" fill="#dc2626" font-size="18" font-weight="600">X</text>
+  <text x="50" y="84" fill="#64748b" font-size="10">new domains</text>
+  <text x="30" y="100" fill="#dc2626" font-size="18" font-weight="600">X</text>
+  <text x="50" y="100" fill="#64748b" font-size="10">new env vars</text>
+  <text x="30" y="116" fill="#dc2626" font-size="18" font-weight="600">X</text>
+  <text x="50" y="116" fill="#64748b" font-size="10">new file paths</text>
+  <!-- MINOR column -->
+  <rect x="225" y="10" width="195" height="120" rx="10" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="322" y="35" text-anchor="middle" fill="#eab308" font-size="14" font-weight="600">MINOR</text>
+  <text x="322" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">Safe additions only</text>
+  <line x1="255" y1="66" x2="390" y2="66" stroke="#eab308" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <text x="245" y="84" fill="#eab308" font-size="14" font-weight="600">~</text>
+  <text x="265" y="84" fill="#64748b" font-size="10">file paths OK</text>
+  <text x="245" y="100" fill="#eab308" font-size="14" font-weight="600">~</text>
+  <text x="265" y="100" fill="#64748b" font-size="10">benign env OK</text>
+  <text x="245" y="116" fill="#dc2626" font-size="18" font-weight="600">X</text>
+  <text x="265" y="116" fill="#64748b" font-size="10">no subprocess/domains</text>
+  <!-- MAJOR column -->
+  <rect x="440" y="10" width="195" height="120" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="537" y="35" text-anchor="middle" fill="#16a34a" font-size="14" font-weight="600">MAJOR</text>
+  <text x="537" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">All changes allowed</text>
+  <line x1="470" y1="66" x2="605" y2="66" stroke="#16a34a" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <text x="465" y="84" fill="#16a34a" font-size="14" font-weight="600">OK</text>
+  <text x="492" y="84" fill="#64748b" font-size="10">new domains</text>
+  <text x="465" y="100" fill="#16a34a" font-size="14" font-weight="600">OK</text>
+  <text x="492" y="100" fill="#64748b" font-size="10">subprocess toggle</text>
+  <text x="465" y="116" fill="#16a34a" font-size="14" font-weight="600">OK</text>
+  <text x="492" y="116" fill="#64748b" font-size="10">secret env vars</text>
+</svg>
+</div>
 
 Every new version of a skill is checked against its previous version's permissions when published. This prevents a malicious publisher from sneaking dangerous permission changes through as minor or patch releases.
 
@@ -3707,6 +4392,51 @@ Source: https://tankpkg.dev/docs/publish-first-skill
 
 This tutorial walks you through publishing your first AI agent skill to the Tank registry in under 10 minutes. By the end, your skill will be scanned, versioned, and available for others to install.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 100" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="pub-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <!-- Step 1 -->
+  <rect x="15" y="22" width="115" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="70" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">1</text>
+  <text x="70" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="10">Install CLI</text>
+  <text x="70" y="70" text-anchor="middle" fill="#64748b" font-size="9">npm i -g</text>
+  <line x1="130" y1="50" x2="145" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 2 -->
+  <rect x="150" y="22" width="115" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="207" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">2</text>
+  <text x="207" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="10">Login</text>
+  <text x="207" y="70" text-anchor="middle" fill="#64748b" font-size="9">tank login</text>
+  <line x1="265" y1="50" x2="280" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 3 -->
+  <rect x="285" y="22" width="115" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="342" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">3</text>
+  <text x="342" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="10">Init</text>
+  <text x="342" y="70" text-anchor="middle" fill="#64748b" font-size="9">tank init</text>
+  <line x1="400" y1="50" x2="415" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 4 -->
+  <rect x="420" y="22" width="115" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="477" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">4</text>
+  <text x="477" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="10">SKILL.md</text>
+  <text x="477" y="70" text-anchor="middle" fill="#64748b" font-size="9">write content</text>
+  <line x1="535" y1="50" x2="550" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 5 (green) -->
+  <rect x="555" y="22" width="115" height="55" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="612" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">5</text>
+  <text x="612" y="58" text-anchor="middle" fill="#10b981" font-weight="600" font-size="10">Dry Run</text>
+  <text x="612" y="70" text-anchor="middle" fill="#64748b" font-size="9">security scan</text>
+  <line x1="670" y1="50" x2="685" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 6 (green) -->
+  <rect x="690" y="22" width="115" height="55" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="747" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">6</text>
+  <text x="747" y="58" text-anchor="middle" fill="#16a34a" font-weight="600" font-size="10">Publish</text>
+  <text x="747" y="70" text-anchor="middle" fill="#64748b" font-size="9">goes live</text>
+</svg>
+</div>
+
 ## Prerequisites
 
 - Node.js 24+ installed
@@ -3872,6 +4602,34 @@ Source: https://tankpkg.dev/docs/publishing
 
 Publishing to Tank is a deliberate process, not a one-liner. Every skill goes through a 6-stage security pipeline before it becomes installable. Permission escalation is enforced at the version level. This guide walks you through every step, from initial manifest authoring to post-publish validation.
 
+<svg viewBox="0 0 920 320" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="450" y="22" text-anchor="middle" fill="currentColor" font-size="14" font-weight="600">Publishing: Three Safety Nets Before Your Skill Goes Live</text>
+  <rect x="15" y="44" width="280" height="118" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="152.5" y="66" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Net 1: Local Validation</text>
+  <text x="155" y="90" text-anchor="middle" fill="#64748b" font-size="10">tank doctor checks config + auth</text>
+  <text x="155" y="108" text-anchor="middle" fill="#64748b" font-size="10">dry-run validates manifest + size</text>
+  <text x="155" y="126" text-anchor="middle" fill="#64748b" font-size="10">files &lt; 1000, tarball &lt; 50MB</text>
+  <text x="152.5" y="146" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Nothing leaves your machine</text>
+  <rect x="320" y="44" width="280" height="118" rx="10" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="449.5" y="66" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Net 2: 6-Stage Security Scan</text>
+  <text x="460" y="90" text-anchor="middle" fill="#64748b" font-size="10">Runs after upload, before listing</text>
+  <text x="460" y="108" text-anchor="middle" fill="#64748b" font-size="10">Checks injection, secrets, supply chain</text>
+  <text x="460" y="126" text-anchor="middle" fill="#64748b" font-size="10">Static analysis + LLM corroboration</text>
+  <text x="449.5" y="146" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">FAIL verdict blocks installation</text>
+  <rect x="625" y="44" width="280" height="118" rx="10" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="746.5" y="66" text-anchor="middle" fill="#eab308" font-size="12" font-weight="600">Net 3: Escalation Rules</text>
+  <text x="765" y="90" text-anchor="middle" fill="#64748b" font-size="10">Compares new version against last version</text>
+  <text x="765" y="108" text-anchor="middle" fill="#64748b" font-size="10">PATCH: no new permissions</text>
+  <text x="765" y="126" text-anchor="middle" fill="#64748b" font-size="10">MINOR: no network or subprocess</text>
+  <text x="765" y="144" text-anchor="middle" fill="#64748b" font-size="10">MAJOR: anything allowed</text>
+  <rect x="15" y="185" width="890" height="110" rx="10" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="449.5" y="208" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">Why this matters: supply chain attacks are incremental</text>
+  <text x="35" y="235" fill="currentColor" font-size="10">1. Attacker publishes a legitimate v1.0.0 and gains trust.</text>
+  <text x="35" y="255" fill="currentColor" font-size="10">2. Next they ship v1.0.1 that quietly adds network.outbound: ["evil.com"].</text>
+  <text x="35" y="275" fill="#dc2626" font-size="10" font-weight="600">Tank blocks step 2: patch releases cannot add new permissions.</text>
+  <text x="35" y="290" fill="#64748b" font-size="10">The attack fails at publish time instead of after 1,000 installs.</text>
+</svg>
+
 ## Preflight Checklist
 
 Before running `tank publish`, confirm all of the following:
@@ -3996,6 +4754,34 @@ To publish under your personal namespace, use your GitHub username as the scope:
 
 ## Versioning Policy and Permission Escalation Rules
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="360" y="18" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Permission Escalation Matrix</text>
+  <rect x="110" y="28" width="180" height="28" rx="6" fill="none" stroke="#64748b" stroke-width="1"/>
+  <text x="200" y="47" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">PATCH</text>
+  <rect x="300" y="28" width="180" height="28" rx="6" fill="none" stroke="#64748b" stroke-width="1"/>
+  <text x="390" y="47" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">MINOR</text>
+  <rect x="490" y="28" width="180" height="28" rx="6" fill="none" stroke="#64748b" stroke-width="1"/>
+  <text x="580" y="47" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">MAJOR</text>
+  <text x="55" y="78" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">network</text>
+  <rect x="170" y="64" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="200" y="80" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="360" y="64" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="390" y="80" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="550" y="64" width="60" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="580" y="80" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">✓</text>
+  <text x="55" y="108" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">subproc</text>
+  <rect x="170" y="94" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="200" y="110" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="360" y="94" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="390" y="110" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="550" y="94" width="60" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="580" y="110" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">✓</text>
+  <text x="55" y="138" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">fs paths</text>
+  <rect x="170" y="124" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="200" y="140" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="360" y="124" width="60" height="24" rx="5" fill="none" stroke="#eab308" stroke-width="1.5"/><text x="390" y="140" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">~</text>
+  <rect x="550" y="124" width="60" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="580" y="140" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">✓</text>
+  <text x="55" y="168" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">env vars</text>
+  <rect x="170" y="154" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="200" y="170" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="360" y="154" width="60" height="24" rx="5" fill="none" stroke="#eab308" stroke-width="1.5"/><text x="390" y="170" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">~</text>
+  <rect x="550" y="154" width="60" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="580" y="170" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">✓</text>
+</svg>
+</div>
+
 Tank enforces strict rules about what changes are allowed at each semver bump level. These rules are applied automatically at publish time — violations are rejected with a descriptive error, not a warning.
 
 ### Semver bump types
@@ -4064,6 +4850,50 @@ The following are automatically excluded from the published tarball and are neve
 Skills exceeding either limit are rejected at publish time. The dry run (`--dry-run`) will surface these before upload.
 
 ## What the Security Scanner Checks
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 840 110" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="scan-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <text x="420" y="18" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Scanner Stage Summary</text>
+  <!-- Stage 0 -->
+  <rect x="15" y="32" width="125" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="77.5" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">0. Ingest</text>
+  <text x="77.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">hashing +</text>
+  <text x="77.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">metadata</text>
+  <line x1="140" y1="58" x2="150" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 1 -->
+  <rect x="155" y="32" width="125" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="217.5" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">1. Structure</text>
+  <text x="217.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">layout + file</text>
+  <text x="217.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">validation</text>
+  <line x1="280" y1="58" x2="290" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 2 -->
+  <rect x="295" y="32" width="125" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="357.5" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">2. Static</text>
+  <text x="357.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">AST checks for</text>
+  <text x="357.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">dangerous APIs</text>
+  <line x1="420" y1="58" x2="430" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 3 — red border -->
+  <rect x="435" y="32" width="125" height="62" rx="8" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="497.5" y="47" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">3. Injection</text>
+  <text x="497.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">prompt injection</text>
+  <text x="497.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">+ jailbreaks</text>
+  <line x1="560" y1="58" x2="570" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 4 -->
+  <rect x="575" y="32" width="125" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="637.5" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">4. Secrets</text>
+  <text x="637.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">credentials +</text>
+  <text x="637.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">API keys</text>
+  <line x1="700" y1="58" x2="710" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 5 -->
+  <rect x="715" y="32" width="110" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="770" y="49" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">5. Supply</text>
+  <text x="770" y="64" text-anchor="middle" fill="#64748b" font-size="9">typosquat +</text>
+  <text x="770" y="76" text-anchor="middle" fill="#64748b" font-size="9">dep confusion</text>
+</svg>
+</div>
 
 After upload, Tank runs a 6-stage security pipeline. The stages are:
 
@@ -4193,6 +5023,40 @@ Source: https://tankpkg.dev/docs/releases
 
 Tank uses two release channels: **stable** for production use and **nightly** for early access to upcoming features.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 230" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <rect x="15" y="12" width="385" height="175" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <rect x="19" y="16" width="60" height="20" rx="5" fill="#16a34a"/>
+  <text x="49" y="30" text-anchor="middle" fill="white" font-size="9" font-weight="600">Stable</text>
+  <text x="207.5" y="54" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Use for production</text>
+  <text x="35" y="80" fill="#64748b" font-size="9">Version</text>
+  <text x="110" y="80" fill="currentColor" font-size="9" font-weight="600">v0.11.0 tag</text>
+  <text x="35" y="100" fill="#64748b" font-size="9">Artifacts</text>
+  <text x="110" y="100" fill="currentColor" font-size="9">npm @latest · Docker :latest</text>
+  <text x="110" y="116" fill="currentColor" font-size="9">GitHub Release · Homebrew</text>
+  <text x="35" y="140" fill="#64748b" font-size="9">Registry</text>
+  <text x="110" y="140" fill="#16a34a" font-size="9" font-weight="600">www.tankpkg.dev</text>
+  <text x="35" y="164" fill="#64748b" font-size="9">Meaning</text>
+  <text x="110" y="164" fill="currentColor" font-size="9">tested, reviewed, production-ready</text>
+
+  <rect x="420" y="12" width="385" height="175" rx="10" fill="none" stroke="#eab308" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <rect x="424" y="16" width="62" height="20" rx="5" fill="#eab308"/>
+  <text x="455" y="30" text-anchor="middle" fill="white" font-size="9" font-weight="600">Nightly</text>
+  <text x="612.5" y="54" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Use for testing upcoming changes</text>
+  <text x="440" y="80" fill="#64748b" font-size="9">Version</text>
+  <text x="515" y="80" fill="currentColor" font-size="9" font-weight="600">0.0.0-nightly.xxx</text>
+  <text x="440" y="100" fill="#64748b" font-size="9">Artifacts</text>
+  <text x="515" y="100" fill="currentColor" font-size="9">npm @nightly · Docker :nightly</text>
+  <text x="440" y="140" fill="#64748b" font-size="9">Registry</text>
+  <text x="515" y="140" fill="#eab308" font-size="9" font-weight="600">nightly.tankpkg.dev</text>
+  <text x="440" y="164" fill="#64748b" font-size="9">Warning</text>
+  <text x="515" y="164" fill="#dc2626" font-size="9" font-weight="600">may contain breaking changes</text>
+
+  <rect x="15" y="198" width="790" height="18" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
+  <text x="410" y="211" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Stable = production. Nightly = testing preview builds.</text>
+</svg>
+</div>
+
 ## Release Channels
 
 | Channel | Web Registry | Scanner | CLI | Docker Images |
@@ -4201,6 +5065,42 @@ Tank uses two release channels: **stable** for production use and **nightly** fo
 | **Nightly** | [nightly.tankpkg.dev](https://nightly.tankpkg.dev) | [nightly-scanner.tankpkg.dev](https://nightly-scanner.tankpkg.dev) | `npm i -g @tankpkg/cli@nightly` | `ghcr.io/tankpkg/tank-web:nightly` |
 
 ## Stable Releases
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 215" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="rc-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Tag push -->
+  <rect x="15" y="78" width="145" height="50" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="87.5" y="100" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">v* tag push</text>
+  <text x="87.5" y="116" text-anchor="middle" fill="#64748b" font-size="9">triggers CI</text>
+  <!-- Fan-out lines -->
+  <line x1="160" y1="88" x2="285" y2="26" stroke="#64748b" stroke-width="1.5" marker-end="url(#rc-arrow)"/>
+  <line x1="160" y1="94" x2="285" y2="64" stroke="#64748b" stroke-width="1.5" marker-end="url(#rc-arrow)"/>
+  <line x1="160" y1="102" x2="285" y2="102" stroke="#64748b" stroke-width="1.5" marker-end="url(#rc-arrow)"/>
+  <line x1="160" y1="110" x2="285" y2="140" stroke="#64748b" stroke-width="1.5" marker-end="url(#rc-arrow)"/>
+  <line x1="160" y1="118" x2="285" y2="178" stroke="#64748b" stroke-width="1.5" marker-end="url(#rc-arrow)"/>
+  <!-- npm -->
+  <rect x="285" y="12" width="230" height="28" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="31" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">npm — @tankpkg/cli</text>
+  <!-- Docker -->
+  <rect x="285" y="50" width="230" height="28" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="69" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Docker — ghcr.io images</text>
+  <!-- GitHub Release -->
+  <rect x="285" y="88" width="230" height="28" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="107" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">GitHub Release — binaries</text>
+  <!-- Homebrew -->
+  <rect x="285" y="126" width="230" height="28" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="145" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Homebrew — formula</text>
+  <!-- Vercel -->
+  <rect x="285" y="164" width="230" height="28" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="400" y="183" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">Vercel — www.tankpkg.dev</text>
+  <!-- parallel label -->
+  <rect x="545" y="92" width="170" height="24" rx="6" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-width="1" stroke-dasharray="3,2" opacity="0.3"/>
+  <text x="630" y="108" text-anchor="middle" fill="#64748b" font-size="9" font-weight="600">all 5 publish jobs run in parallel</text>
+</svg>
+</div>
 
 Stable releases are triggered by pushing a `v*` tag (e.g., `v0.9.0`). This publishes:
 
@@ -4322,6 +5222,61 @@ Source: https://tankpkg.dev/docs/sdk-python
 # Python SDK
 
 `tankpkg` gives your Python application programmatic access to the Tank skill registry. Search skills, read their full content (including references and scripts), download tarballs with integrity verification, and inspect security audit results — with typed exceptions, streaming downloads, and context manager support.
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="py-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+
+  <!-- 4 capability cards -->
+  <!-- 1: Search / Discovery -->
+  <rect x="10" y="10" width="185" height="80" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="20" y="30" text-anchor="start" fill="#10b981" font-size="10" font-weight="600">DISCOVERY</text>
+  <text x="20" y="48" text-anchor="start" fill="currentColor" font-size="11" font-weight="600">search("react")</text>
+  <line x1="20" y1="56" x2="180" y2="56" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="20" y="70" text-anchor="start" fill="#64748b" font-size="10">→ 47 skills found</text>
+  <text x="20" y="84" text-anchor="start" fill="#64748b" font-size="9">name, score, downloads, version</text>
+
+  <!-- 2: Read / Content -->
+  <rect x="205" y="10" width="195" height="80" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="215" y="30" text-anchor="start" fill="#10b981" font-size="10" font-weight="600">CONTENT</text>
+  <text x="215" y="48" text-anchor="start" fill="currentColor" font-size="11" font-weight="600">read_skill("@tank/react")</text>
+  <line x1="215" y1="56" x2="385" y2="56" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="215" y="70" text-anchor="start" fill="#64748b" font-size="10">→ SKILL.md + references/ + scripts/</text>
+  <text x="215" y="84" text-anchor="start" fill="#64748b" font-size="9">full content for LLM context</text>
+
+  <!-- 3: Download / Integrity -->
+  <rect x="410" y="10" width="185" height="80" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="420" y="30" text-anchor="start" fill="#16a34a" font-size="10" font-weight="600">INTEGRITY</text>
+  <text x="420" y="48" text-anchor="start" fill="currentColor" font-size="11" font-weight="600">download("@tank/react")</text>
+  <line x1="420" y1="56" x2="580" y2="56" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="420" y="70" text-anchor="start" fill="#64748b" font-size="10">→ SHA-512 verified .tar.gz</text>
+  <text x="420" y="84" text-anchor="start" fill="#64748b" font-size="9">100MB cap, streaming download</text>
+
+  <!-- 4: Audit / Security -->
+  <rect x="605" y="10" width="185" height="80" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="615" y="30" text-anchor="start" fill="#dc2626" font-size="10" font-weight="600">SECURITY</text>
+  <text x="615" y="48" text-anchor="start" fill="currentColor" font-size="11" font-weight="600">audit("@tank/react")</text>
+  <line x1="615" y1="56" x2="775" y2="56" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="615" y="70" text-anchor="start" fill="#64748b" font-size="10">→ score: 9.2, verdict: PASS</text>
+  <text x="615" y="84" text-anchor="start" fill="#64748b" font-size="9">6-stage scan findings</text>
+
+  <!-- Arrows connecting to unified result -->
+  <line x1="102" y1="90" x2="102" y2="116" stroke="#64748b" stroke-width="1.5" marker-end="url(#py-arrow)"/>
+  <line x1="302" y1="90" x2="302" y2="116" stroke="#64748b" stroke-width="1.5" marker-end="url(#py-arrow)"/>
+  <line x1="502" y1="90" x2="502" y2="116" stroke="#64748b" stroke-width="1.5" marker-end="url(#py-arrow)"/>
+  <line x1="697" y1="90" x2="697" y2="116" stroke="#64748b" stroke-width="1.5" marker-end="url(#py-arrow)"/>
+
+  <!-- Unified client bar -->
+  <rect x="10" y="120" width="780" height="36" rx="8" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="142" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">TankClient — same API as the TypeScript SDK</text>
+
+  <!-- Bottom note -->
+  <rect x="10" y="168" width="780" height="26" rx="8" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
+  <text x="400" y="185" text-anchor="middle" fill="#64748b" font-size="10">Auto-discovers token from ~/.tank/config.json → TANK_TOKEN env → explicit token= parameter</text>
+</svg>
+</div>
 
 ```bash
 pip install tankpkg
@@ -4645,6 +5600,44 @@ npm install @tankpkg/sdk
 
 ## Quick Start
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 120" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sdk-flow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Your App -->
+  <rect x="10" y="30" width="100" height="50" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="60" y="52" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Your App</text>
+  <text x="60" y="68" text-anchor="middle" fill="#64748b" font-size="10">Node.js</text>
+  <!-- Arrow -->
+  <line x1="110" y1="55" x2="150" y2="55" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-flow)"/>
+  <!-- TankClient -->
+  <rect x="155" y="25" width="130" height="60" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="220" y="50" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">TankClient</text>
+  <text x="220" y="68" text-anchor="middle" fill="#64748b" font-size="10">token + retries</text>
+  <!-- Arrow -->
+  <line x1="285" y1="55" x2="325" y2="55" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-flow)"/>
+  <!-- Registry API -->
+  <rect x="330" y="25" width="130" height="60" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="395" y="50" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Tank Registry</text>
+  <text x="395" y="68" text-anchor="middle" fill="#64748b" font-size="10">REST API</text>
+  <!-- Arrow to returns -->
+  <line x1="460" y1="40" x2="505" y2="18" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-flow)"/>
+  <line x1="460" y1="50" x2="505" y2="44" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-flow)"/>
+  <line x1="460" y1="60" x2="505" y2="70" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-flow)"/>
+  <line x1="460" y1="70" x2="505" y2="96" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-flow)"/>
+  <!-- Return types -->
+  <rect x="510" y="4" width="180" height="26" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="600" y="22" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">SkillContent — SKILL.md + refs</text>
+  <rect x="510" y="34" width="180" height="26" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="600" y="52" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">SearchResults</text>
+  <rect x="510" y="64" width="180" height="26" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="600" y="82" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">AuditReport</text>
+  <rect x="510" y="94" width="180" height="26" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="600" y="112" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">DownloadStream</text>
+</svg>
+</div>
+
 ```typescript
 import { TankClient } from "@tankpkg/sdk";
 
@@ -4914,6 +5907,52 @@ const response = await openai.chat.completions.create({
 
 Generate framework-agnostic tool definitions from skills. The generated tools work with OpenAI function calling, Anthropic tool use, MCP, LangChain, CrewAI, and any framework that consumes JSON Schema tool definitions.
 
+<svg viewBox="0 0 780 220" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sdk-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <!-- Title -->
+  <text x="390" y="22" text-anchor="middle" fill="currentColor" font-size="14" font-weight="600">Tool Generation Flow</text>
+  <!-- Registry -->
+  <rect x="20" y="55" width="130" height="70" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="85" y="82" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Tank Registry</text>
+  <text x="85" y="100" text-anchor="middle" fill="#64748b" font-size="10">SKILL.md + refs</text>
+  <!-- Arrow -->
+  <line x1="150" y1="90" x2="195" y2="90" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-arrow)"/>
+  <text x="172" y="82" text-anchor="middle" fill="#64748b" font-size="9">fetch</text>
+  <!-- createSkillTool -->
+  <rect x="200" y="45" width="170" height="90" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="285" y="72" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">createSkillTool()</text>
+  <text x="285" y="92" text-anchor="middle" fill="currentColor" font-size="10">→ name, description</text>
+  <text x="285" y="108" text-anchor="middle" fill="currentColor" font-size="10">→ inputSchema</text>
+  <text x="285" y="124" text-anchor="middle" fill="currentColor" font-size="10">→ execute(action)</text>
+  <!-- Output arrows -->
+  <line x1="370" y1="68" x2="460" y2="55" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-arrow)"/>
+  <line x1="370" y1="90" x2="460" y2="90" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-arrow)"/>
+  <line x1="370" y1="112" x2="460" y2="125" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-arrow)"/>
+  <line x1="370" y1="125" x2="460" y2="160" stroke="#64748b" stroke-width="1.5" marker-end="url(#sdk-arrow)"/>
+  <!-- .toOpenAI() -->
+  <rect x="465" y="35" width="140" height="35" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="535" y="57" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.toOpenAI()</text>
+  <!-- .toMCP() -->
+  <rect x="465" y="77" width="140" height="35" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="535" y="99" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.toMCP()</text>
+  <!-- .execute() -->
+  <rect x="465" y="119" width="140" height="35" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="535" y="141" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.execute(action)</text>
+  <!-- Anthropic/LangChain -->
+  <rect x="465" y="161" width="140" height="35" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="535" y="183" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">LangChain / CrewAI</text>
+  <!-- Actions legend -->
+  <rect x="630" y="77" width="135" height="80" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="697" y="97" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">Actions</text>
+  <text x="697" y="115" text-anchor="middle" fill="currentColor" font-size="10">read_all → full skill</text>
+  <text x="697" y="131" text-anchor="middle" fill="currentColor" font-size="10">list → file paths</text>
+  <text x="697" y="147" text-anchor="middle" fill="currentColor" font-size="10">read → single file</text>
+</svg>
+
 ### `createSkillTool(client, name, version?)`
 
 Creates a tool definition for a single skill. The tool provides filesystem-like access to the skill's content.
@@ -5050,6 +6089,60 @@ Source: https://tankpkg.dev/docs/search
 
 Tank provides three ways to find AI agent skills: the CLI, the web UI, and the REST API. All three methods query the same underlying search index and return the same results — choose whichever fits your workflow.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 230" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="s-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="s-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16a34a"/></marker>
+  </defs>
+  <!-- Query with typo -->
+  <rect x="15" y="12" width="150" height="52" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="90" y="31" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">User query</text>
+  <text x="90" y="50" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">"vercel deplyo"</text>
+  <!-- Arrows to 3 tiers -->
+  <line x1="165" y1="28" x2="205" y2="28" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <line x1="165" y1="38" x2="205" y2="93" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <line x1="165" y1="48" x2="205" y2="158" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <!-- Tier 1: ILIKE — no match -->
+  <rect x="210" y="5" width="270" height="44" rx="8" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="300" y="23" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">Tier 1: ILIKE exact/substring</text>
+  <text x="300" y="38" text-anchor="middle" fill="#64748b" font-size="9">No exact text match for the typo</text>
+  <rect x="400" y="12" width="65" height="28" rx="6" fill="none" stroke="#64748b" stroke-width="1"/>
+  <text x="432.5" y="31" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600">0 pts</text>
+  <!-- Tier 2: pg_trgm — MATCH -->
+  <rect x="210" y="66" width="270" height="56" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="300" y="84" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Tier 2: pg_trgm fuzzy match</text>
+  <text x="300" y="100" text-anchor="middle" fill="currentColor" font-size="9">Finds "vercel-deploy" despite typo</text>
+  <text x="300" y="113" text-anchor="middle" fill="#64748b" font-size="8">similarity 0.68 → 204 pts</text>
+  <rect x="400" y="80" width="65" height="28" rx="6" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="432.5" y="99" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">204</text>
+  <!-- Tier 3: tsvector — stem match -->
+  <rect x="210" y="138" width="270" height="48" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="300" y="156" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Tier 3: tsvector stemming</text>
+  <text x="300" y="172" text-anchor="middle" fill="currentColor" font-size="9">"deploy" stem also matches "deployment"</text>
+  <rect x="400" y="148" width="65" height="28" rx="6" fill="none" stroke="currentColor" stroke-width="1"/>
+  <text x="432.5" y="167" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">45</text>
+  <!-- Sum arrows -->
+  <line x1="480" y1="27" x2="560" y2="92" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <line x1="480" y1="94" x2="560" y2="94" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <line x1="480" y1="162" x2="560" y2="100" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <!-- Combined box -->
+  <rect x="565" y="72" width="90" height="44" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="610" y="90" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">SUM</text>
+  <text x="610" y="107" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">249 pts</text>
+  <!-- Arrow to result -->
+  <line x1="655" y1="94" x2="702" y2="94" stroke="#16a34a" stroke-width="2" marker-end="url(#s-arrow-green)"/>
+  <!-- Result -->
+  <rect x="715" y="60" width="170" height="68" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="800" y="82" text-anchor="middle" fill="#16a34a" font-size="12" font-weight="600">#1 vercel-deploy</text>
+  <text x="800" y="99" text-anchor="middle" fill="currentColor" font-size="10">v2.3.1 · score 9.4</text>
+  <text x="800" y="116" text-anchor="middle" fill="#64748b" font-size="9">12,400 downloads</text>
+  <!-- Bottom note -->
+  <rect x="170" y="194" width="560" height="24" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="450" y="210" text-anchor="middle" fill="#64748b" font-size="10">Typo tolerance + stemming = you find what you meant</text>
+</svg>
+</div>
+
 ## Three Ways to Search
 
 | Method | Best For |
@@ -5059,6 +6152,47 @@ Tank provides three ways to find AI agent skills: the CLI, the web UI, and the R
 | `GET /api/v1/search` | Programmatic discovery, custom tooling, MCP integrations |
 
 ## How Tank Search Works
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 150" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sr-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Query -->
+  <rect x="10" y="55" width="90" height="44" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="55" y="82" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Query</text>
+  <!-- Fan-out -->
+  <line x1="100" y1="67" x2="155" y2="22" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <line x1="100" y1="77" x2="155" y2="72" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <line x1="100" y1="87" x2="155" y2="122" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <!-- ILIKE box -->
+  <rect x="165" y="8" width="200" height="40" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="265" y="21" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">ILIKE prefix/substring</text>
+  <text x="265" y="36" text-anchor="middle" fill="#64748b" font-size="10">400 pts max — exact match</text>
+  <!-- pg_trgm box -->
+  <rect x="165" y="54" width="200" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="265" y="71" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">pg_trgm fuzzy</text>
+  <text x="265" y="86" text-anchor="middle" fill="#64748b" font-size="10">300 pts max — handles typos</text>
+  <!-- tsvector box -->
+  <rect x="165" y="100" width="200" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="265" y="121" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">tsvector full-text</text>
+  <text x="265" y="136" text-anchor="middle" fill="#64748b" font-size="10">100 pts max — stemming</text>
+  <!-- Merge arrows -->
+  <line x1="365" y1="28" x2="440" y2="68" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <line x1="365" y1="74" x2="440" y2="74" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <line x1="365" y1="120" x2="440" y2="80" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <!-- SUM box -->
+  <rect x="445" y="54" width="110" height="40" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="485" y="71" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">SUM</text>
+  <text x="485" y="86" text-anchor="middle" fill="#64748b" font-size="10">+ bonus pts</text>
+  <!-- Arrow to ranked -->
+  <line x1="535" y1="74" x2="575" y2="74" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <!-- Ranked Results -->
+  <rect x="605" y="50" width="140" height="44" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="675" y="69" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Ranked Results</text>
+  <text x="675" y="84" text-anchor="middle" fill="#64748b" font-size="10">ORDER BY score</text>
+</svg>
+</div>
 
 Tank uses a **hybrid 3-tier ranking** system that combines multiple matching strategies into a single relevance score. This means you get useful results even with typos, partial words, or short queries.
 
@@ -5273,6 +6407,35 @@ Source: https://tankpkg.dev/docs/security-checklist
 
 Use this checklist before publishing any AI agent skill to ensure it follows security best practices.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 90" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sec-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect x="10" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="67" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Manifest</text>
+  <text x="67" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+  <line x1="125" y1="40" x2="148" y2="40" stroke="#64748b" stroke-width="1.5" marker-end="url(#sec-arrow)"/>
+  <rect x="153" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="210" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Code</text>
+  <text x="210" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+  <line x1="268" y1="40" x2="291" y2="40" stroke="#64748b" stroke-width="1.5" marker-end="url(#sec-arrow)"/>
+  <rect x="296" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="353" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Prompts</text>
+  <text x="353" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+  <line x1="411" y1="40" x2="434" y2="40" stroke="#64748b" stroke-width="1.5" marker-end="url(#sec-arrow)"/>
+  <rect x="439" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="496" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Secrets</text>
+  <text x="496" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+  <line x1="554" y1="40" x2="577" y2="40" stroke="#64748b" stroke-width="1.5" marker-end="url(#sec-arrow)"/>
+  <rect x="582" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="639" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Dependencies</text>
+  <text x="639" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+</svg>
+</div>
+
 ## Manifest Security
 
 - [ ] **Minimal permissions** — Only declare permissions your skill actually needs
@@ -5420,10 +6583,61 @@ Tank was built as the answer. Security scanning is mandatory, non-optional, and 
 
 The pipeline is implemented in Python (`python-api/lib/scan/`) as six independent stages. Each stage can error without blocking subsequent stages, but errors are surfaced in the final verdict. All stages write structured findings into a shared result object that feeds the verdict engine.
 
-```
-tarball → [Stage 0] → [Stage 1] → [Stage 2] → [Stage 3] → [Stage 4] → [Stage 5] → verdict
-           ingest      structure   static       injection    secrets     supply
-```
+<svg viewBox="0 0 930 410" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="465" y="22" text-anchor="middle" fill="currentColor" font-size="15" font-weight="600">What Each Stage Catches</text>
+  <text x="465" y="40" text-anchor="middle" fill="#64748b" font-size="11">Every publish runs all 6 stages. Each finds a different attack class.</text>
+  <!-- Stage 0 -->
+  <rect x="15" y="55" width="290" height="82" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="160" y="74" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Stage 0 — Ingest</text>
+  <text x="160" y="92" text-anchor="middle" fill="currentColor" font-size="10">Quarantine + hash before extraction</text>
+  <text x="160" y="106" text-anchor="middle" fill="currentColor" font-size="10">Tarball never touches disk unsanitized</text>
+  <text x="160" y="124" text-anchor="middle" fill="#64748b" font-size="9">catches: corrupted or malformed tarballs</text>
+  <!-- Stage 1 -->
+  <rect x="320" y="55" width="290" height="82" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="465" y="74" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Stage 1 — Structure</text>
+  <text x="465" y="92" text-anchor="middle" fill="currentColor" font-size="10">Unicode tricks: NFKC, invisible chars,</text>
+  <text x="465" y="106" text-anchor="middle" fill="currentColor" font-size="10">RTL override, zero-width joiners</text>
+  <text x="465" y="124" text-anchor="middle" fill="#64748b" font-size="9">catches: Trojan Source / homoglyph attacks</text>
+  <!-- Stage 2 -->
+  <rect x="625" y="55" width="290" height="82" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="770" y="74" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Stage 2 — Static Analysis</text>
+  <text x="770" y="92" text-anchor="middle" fill="currentColor" font-size="10">Bandit + regex scan for eval(), exec(),</text>
+  <text x="770" y="106" text-anchor="middle" fill="currentColor" font-size="10">os.system(), subprocess and obfuscation</text>
+  <text x="770" y="124" text-anchor="middle" fill="#64748b" font-size="9">catches: dangerous APIs and hidden behavior</text>
+  <!-- Stage 3 — highlighted as most critical -->
+  <rect x="15" y="152" width="290" height="92" rx="8" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="160" y="171" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Stage 3 — Injection Detection</text>
+  <text x="160" y="187" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="600">MOST CRITICAL</text>
+  <text x="160" y="204" text-anchor="middle" fill="currentColor" font-size="10">114 prompt-injection patterns like</text>
+  <text x="160" y="218" text-anchor="middle" fill="currentColor" font-size="10">"ignore previous" and base64 payloads</text>
+  <text x="160" y="234" text-anchor="middle" fill="#64748b" font-size="9">LLM helps confirm real threat vs false positive</text>
+  <!-- Stage 4 -->
+  <rect x="320" y="152" width="290" height="92" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="465" y="171" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">Stage 4 — Secrets</text>
+  <text x="465" y="190" text-anchor="middle" fill="currentColor" font-size="10">11 plugins + 10 regexes for AWS keys,</text>
+  <text x="465" y="204" text-anchor="middle" fill="currentColor" font-size="10">GitHub PATs, OpenAI keys, JWTs, DB URLs</text>
+  <text x="465" y="220" text-anchor="middle" fill="#64748b" font-size="9">catches: hardcoded credentials in package files</text>
+  <!-- Stage 5 -->
+  <rect x="625" y="152" width="290" height="92" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="770" y="171" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Stage 5 — Supply Chain</text>
+  <text x="770" y="190" text-anchor="middle" fill="currentColor" font-size="10">Typosquatting (@opanai/gpt), OSV vulns,</text>
+  <text x="770" y="204" text-anchor="middle" fill="currentColor" font-size="10">dependency confusion and unsafe runtime installs</text>
+  <text x="770" y="220" text-anchor="middle" fill="#64748b" font-size="9">catches: impostor packages and risky dependencies</text>
+  <!-- Verdict Engine -->
+  <rect x="225" y="265" width="480" height="55" rx="10" fill="none" stroke="currentColor" stroke-width="2"/>
+  <text x="465" y="288" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600">Verdict Engine — findings counted by severity</text>
+  <text x="465" y="305" text-anchor="middle" fill="#64748b" font-size="10">critical / high / medium / low counts determine the outcome</text>
+  <!-- Three outcomes -->
+  <rect x="55" y="340" width="250" height="55" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="175" y="367" text-anchor="middle" fill="#16a34a" font-size="13" font-weight="600">PASS</text>
+  <text x="180" y="378" text-anchor="middle" fill="#64748b" font-size="10">No critical/high findings. Installable.</text>
+  <rect x="340" y="340" width="250" height="55" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="450" y="367" text-anchor="middle" fill="#eab308" font-size="13" font-weight="600">FLAGGED</text>
+  <text x="465" y="378" text-anchor="middle" fill="#64748b" font-size="10">1-3 high findings. Installable with warning.</text>
+  <rect x="625" y="340" width="250" height="55" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="725" y="367" text-anchor="middle" fill="#dc2626" font-size="13" font-weight="600">FAIL</text>
+  <text x="750" y="378" text-anchor="middle" fill="#64748b" font-size="10">Any critical or 4+ high. Blocked.</text>
+</svg>
 
 ### Stage 0: Ingestion & Safe Quarantine
 
@@ -5706,6 +6920,40 @@ The rules are applied in order — the first matching rule determines the verdic
 
 ## Audit Score Algorithm
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="400" y="16" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Audit Score Breakdown (0-10)</text>
+  <rect x="15" y="28" width="120" height="42" rx="8" fill="#10b981" fill-opacity="0.12" stroke="#10b981" stroke-width="1"/>
+  <text x="75" y="46" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Base</text>
+  <text x="75" y="60" text-anchor="middle" fill="#64748b" font-size="9">SKILL + desc + perms</text>
+  <text x="75" y="82" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">3 pts</text>
+  <rect x="145" y="28" width="120" height="42" rx="8" fill="#16a34a" fill-opacity="0.12" stroke="#16a34a" stroke-width="1"/>
+  <text x="205" y="46" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">No issues</text>
+  <text x="205" y="60" text-anchor="middle" fill="#64748b" font-size="9">zero findings</text>
+  <text x="205" y="82" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">2 pts</text>
+  <rect x="275" y="28" width="120" height="42" rx="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1"/>
+  <text x="335" y="46" text-anchor="middle" fill="#eab308" font-size="10" font-weight="600">Perm match</text>
+  <text x="335" y="60" text-anchor="middle" fill="#64748b" font-size="9">code vs declared</text>
+  <text x="335" y="82" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">2 pts</text>
+  <rect x="405" y="28" width="90" height="42" rx="8" fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1"/>
+  <text x="450" y="46" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Files</text>
+  <text x="450" y="60" text-anchor="middle" fill="#64748b" font-size="9">under 100</text>
+  <text x="450" y="82" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">1 pt</text>
+  <rect x="505" y="28" width="90" height="42" rx="8" fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1"/>
+  <text x="550" y="46" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">README</text>
+  <text x="550" y="60" text-anchor="middle" fill="#64748b" font-size="9">present</text>
+  <text x="550" y="82" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">1 pt</text>
+  <rect x="605" y="28" width="90" height="42" rx="8" fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1"/>
+  <text x="650" y="46" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Size</text>
+  <text x="650" y="60" text-anchor="middle" fill="#64748b" font-size="9">under 5MB</text>
+  <text x="650" y="82" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">1 pt</text>
+  <rect x="705" y="28" width="80" height="42" rx="8" fill="none" stroke="currentColor" stroke-width="1"/>
+  <text x="745" y="46" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Max</text>
+  <text x="745" y="64" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">10</text>
+  <text x="400" y="112" text-anchor="middle" fill="#64748b" font-size="10">Verdict is pass/fail. Audit score is the quality signal on top.</text>
+</svg>
+</div>
+
 The audit score (0–10) is separate from the security verdict. Where the verdict is binary (pass/fail), the score is a continuous quality signal displayed on every skill's registry page and returned by `tank audit`.
 
 The score is computed by `lib/audit-score.ts` across 8 weighted checks:
@@ -5747,6 +6995,43 @@ tank audit @org/skill-name
 ---
 
 ## LLM-Assisted Analysis
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 750 120" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="llm-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="llm-ok" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#10b981"/></marker>
+  </defs>
+  <!-- Stage 3 Findings -->
+  <rect x="15" y="25" width="120" height="65" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="75" y="48" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">Stage 3</text>
+  <text x="75" y="62" text-anchor="middle" fill="#64748b" font-size="10">Ambiguous</text>
+  <text x="75" y="76" text-anchor="middle" fill="#64748b" font-size="10">findings</text>
+  <!-- Arrow -->
+  <line x1="135" y1="57" x2="170" y2="57" stroke="#64748b" stroke-width="1.5" marker-end="url(#llm-arrow)"/>
+  <!-- LLM Prompt -->
+  <rect x="175" y="17" width="155" height="80" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="252" y="38" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">LLM Prompt</text>
+  <text x="252" y="54" text-anchor="middle" fill="#64748b" font-size="9">skill code context</text>
+  <text x="252" y="68" text-anchor="middle" fill="#64748b" font-size="9">+ finding details</text>
+  <text x="252" y="82" text-anchor="middle" fill="#64748b" font-size="9">+ eval criteria</text>
+  <!-- Arrow -->
+  <line x1="330" y1="57" x2="370" y2="57" stroke="#64748b" stroke-width="1.5" marker-end="url(#llm-arrow)"/>
+  <!-- LLM Response -->
+  <rect x="375" y="17" width="155" height="80" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="452" y="38" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">LLM Response</text>
+  <text x="452" y="54" text-anchor="middle" fill="#16a34a" font-size="9">confirm threat</text>
+  <text x="452" y="68" text-anchor="middle" fill="#eab308" font-size="9">reclassify severity</text>
+  <text x="452" y="82" text-anchor="middle" fill="#64748b" font-size="9">dismiss as false pos</text>
+  <!-- Arrow -->
+  <line x1="530" y1="57" x2="575" y2="57" stroke="#10b981" stroke-width="1.5" marker-end="url(#llm-ok)"/>
+  <!-- Final Severity -->
+  <rect x="580" y="22" width="150" height="70" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="655" y="48" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Final</text>
+  <text x="655" y="64" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Severity</text>
+  <text x="655" y="80" text-anchor="middle" fill="#64748b" font-size="9">never above pattern match</text>
+</svg>
+</div>
 
 Some security findings require contextual judgment that pattern matching alone cannot make accurately. Stage 3 (prompt injection detection) can optionally use an LLM to corroborate ambiguous findings before promoting them to a final severity level.
 
@@ -5853,6 +7138,32 @@ Source: https://tankpkg.dev/docs/self-host-quickstart
 
 Get a fully functional Tank registry running on your infrastructure with a single `docker compose up`.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 100" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sh-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect x="10" y="20" width="140" height="55" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="80" y="40" text-anchor="middle" fill="#64748b" font-weight="600" font-size="11">1</text>
+  <text x="80" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="13">Download YAML</text>
+  <line x1="150" y1="47" x2="180" y2="47" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <rect x="185" y="20" width="140" height="55" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="255" y="40" text-anchor="middle" fill="#64748b" font-weight="600" font-size="11">2</text>
+  <text x="255" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="13">Create .env</text>
+  <line x1="325" y1="47" x2="355" y2="47" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <rect x="360" y="20" width="160" height="55" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="440" y="40" text-anchor="middle" fill="#64748b" font-weight="600" font-size="11">3</text>
+  <text x="440" y="58" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">docker compose up</text>
+  <line x1="520" y1="47" x2="550" y2="47" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <rect x="555" y="20" width="155" height="55" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="632" y="40" text-anchor="middle" fill="#64748b" font-weight="600" font-size="11">4</text>
+  <text x="632" y="58" text-anchor="middle" fill="#16a34a" font-weight="600" font-size="13">Setup Wizard</text>
+  <text x="632" y="72" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">/setup</text>
+</svg>
+</div>
+
 ## Prerequisites
 
 - Docker Engine 24+ and Docker Compose v2
@@ -5860,6 +7171,28 @@ Get a fully functional Tank registry running on your infrastructure with a singl
 - A domain pointing to your server (or use localhost for testing)
 
 ## Quick Start
+
+### Minimal `docker run` (single Tank container)
+
+If you already have a PostgreSQL database URL, you can preview Tank with a single `tank-web` container and local filesystem storage.
+
+> **Trade-off**: this is the smallest possible preview setup. For publishing scans and S3-compatible package storage, use the full compose file with RustFS + scanner.
+
+```bash
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/DBNAME' \
+  -e BETTER_AUTH_SECRET='change-me' \
+  -e APP_URL='http://localhost:3000' \
+  -e STORAGE_BACKEND='filesystem' \
+  -e STORAGE_FS_PATH='/app/data/packages' \
+  -e TANK_MODE='selfhosted' \
+  -e AUTO_MIGRATE='true' \
+  -e AUTH_PROVIDERS='credentials' \
+  -v tank-data:/app/data \
+  ghcr.io/tankpkg/tank-web:latest
+```
+
+Use this when you want to try the UI and setup flow without running separate storage containers.
 
 ### 1. Create a directory and download the compose file
 
@@ -5903,7 +7236,7 @@ docker compose up -d
 
 > **Image tags**: The compose file builds from source by default (no internet needed). For pre-built images, edit `docker-compose.production.yml` and use `:latest` (stable) or `:nightly` (bleeding edge).
 
-This starts PostgreSQL, MinIO (storage), the security scanner, and the Tank web app. Database tables are created automatically on first boot.
+This starts PostgreSQL, RustFS (storage), the security scanner, and the Tank web app. Database tables are created automatically on first boot.
 
 > **Note on Images**: By default, `docker compose up` uses the `:nightly` image tags to ensure you have the latest features. For production environments, we strongly recommend pinning to a specific version tag (e.g., `:v0.8.1`) or the `:latest` stable tag.
 
@@ -5913,7 +7246,7 @@ Visit `http://localhost:3000/setup` in your browser. The wizard walks you throug
 
 1. **Database** — connection is pre-configured from your `.env`
 2. **URL** — confirm your registry's public URL
-3. **Storage** — choose MinIO (default), S3, or local filesystem
+3. **Storage** — choose RustFS (default), S3, or local filesystem
 4. **Admin Account** — create your first admin user
 5. **Authentication** — optionally configure GitHub OAuth or OIDC SSO
 6. **Scanner** — configure LLM for enhanced security analysis (optional)
@@ -5957,7 +7290,7 @@ This creates the admin user and skips the setup wizard entirely.
 
 Source: https://tankpkg.dev/docs/self-hosting
 
-> Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, MinIO, and security scanning.
+> Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, RustFS, and security scanning.
 
 
 # Self-Hosting Tank
@@ -5968,31 +7301,66 @@ Deploy your own Tank registry for complete control over AI agent skill distribut
 
 A self-hosted Tank deployment runs four core services:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       Your Infrastructure                        │
-│                                                                  │
-│  ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐│
-│  │  Web app     │──▶│  PostgreSQL  │   │   MinIO / S3         ││
-│  │  Web + API   │   │   17+        │   │   (tarball storage)  ││
-│  │  (port 3000) │   │  (port 5432) │   │   (port 9000)        ││
-│  └──────┬───────┘   └──────────────┘   └──────────────────────┘│
-│         │                                                        │
-│         │           ┌──────────────┐                            │
-│         └──────────▶│   FastAPI    │                            │
-│                     │   Security   │                            │
-│                     │   Scanner    │                            │
-│                     │  (port 8000) │                            │
-│                     └──────────────┘                            │
-└─────────────────────────────────────────────────────────────────┘
-```
+<svg viewBox="0 0 750 340" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sh-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <!-- Title -->
+  <text x="375" y="22" text-anchor="middle" fill="currentColor" font-size="15" font-weight="600">Self-Hosted Deployment Topology</text>
+  <!-- Outer boundary -->
+  <rect x="15" y="40" width="720" height="290" rx="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="375" y="62" text-anchor="middle" fill="#64748b" font-size="11">Your Infrastructure</text>
+  <!-- CLI/Browser -->
+  <rect x="40" y="80" width="130" height="60" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="105" y="105" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">CLI / Browser</text>
+  <text x="105" y="125" text-anchor="middle" fill="#64748b" font-size="10">tank install, UI</text>
+  <!-- Arrow to Web -->
+  <line x1="170" y1="110" x2="235" y2="110" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <!-- Web App -->
+  <rect x="240" y="75" width="180" height="75" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="330" y="100" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">Web App + API</text>
+  <text x="330" y="118" text-anchor="middle" fill="currentColor" font-size="10">TanStack Start</text>
+  <text x="330" y="135" text-anchor="middle" fill="#64748b" font-size="10">:3000</text>
+  <!-- Arrow to PostgreSQL -->
+  <line x1="420" y1="95" x2="500" y2="95" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <!-- PostgreSQL -->
+  <rect x="505" y="75" width="130" height="60" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="570" y="100" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">PostgreSQL 17</text>
+  <text x="570" y="118" text-anchor="middle" fill="#64748b" font-size="10">:5432</text>
+  <!-- Arrow to RustFS -->
+  <line x1="420" y1="130" x2="500" y2="190" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <!-- RustFS -->
+  <rect x="505" y="170" width="130" height="60" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="570" y="195" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">RustFS (S3)</text>
+  <text x="570" y="215" text-anchor="middle" fill="#64748b" font-size="10">:9000 (tarballs)</text>
+  <!-- Arrow to Scanner -->
+  <line x1="330" y1="150" x2="330" y2="225" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <!-- Scanner -->
+  <rect x="240" y="230" width="180" height="75" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="330" y="255" text-anchor="middle" fill="#dc2626" font-size="13" font-weight="600">Security Scanner</text>
+  <text x="330" y="273" text-anchor="middle" fill="currentColor" font-size="10">FastAPI + Python 3.14</text>
+  <text x="330" y="290" text-anchor="middle" fill="#64748b" font-size="10">:8000 (6-stage pipeline)</text>
+  <!-- Arrow from Scanner to PG -->
+  <line x1="420" y1="270" x2="505" y2="135" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#sh-arrow)"/>
+  <!-- Optional Ollama -->
+  <rect x="55" y="240" width="140" height="55" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="125" y="262" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600">Ollama (optional)</text>
+  <text x="125" y="280" text-anchor="middle" fill="#64748b" font-size="9">local LLM analysis</text>
+  <line x1="195" y1="267" x2="237" y2="267" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#sh-arrow)"/>
+  <!-- Monitoring -->
+  <rect x="55" y="170" width="140" height="55" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="125" y="192" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600">Grafana + Loki</text>
+  <text x="125" y="210" text-anchor="middle" fill="#64748b" font-size="9">:3001 (monitoring)</text>
+</svg>
 
 | Service | Technology | Purpose |
 |---|---|---|
 | **Web app** | TanStack Start | Registry UI, REST API, CLI backend |
 | **Security scanner** | FastAPI + Python 3.14 | 6-stage security scanning pipeline |
 | **Database** | PostgreSQL 17+ | Skills, versions, users, audit logs |
-| **Object storage** | MinIO (S3-compatible) | Skill tarballs |
+| **Object storage** | RustFS (S3-compatible) | Skill tarballs |
 
 ## Docker Image Tags
 
@@ -6052,13 +7420,13 @@ APP_URL=https://tank.yourcompany.com
 GITHUB_CLIENT_ID=your-github-oauth-app-id
 GITHUB_CLIENT_SECRET=your-github-oauth-app-secret
 
-# Storage (MinIO / S3)
+# Storage (RustFS / S3)
 STORAGE_BACKEND=s3
-S3_ACCESS_KEY=minioadmin
-S3_SECRET_KEY=minioadmin
+S3_ACCESS_KEY=tank
+S3_SECRET_KEY=changeme123456
 AWS_REGION=us-east-1
 S3_BUCKET=tank-skills
-S3_ENDPOINT=http://minio:9000
+S3_ENDPOINT=http://rustfs:9000
 
 # Security scanner
 PYTHON_API_URL=http://scanner:8000
@@ -6087,14 +7455,17 @@ services:
     ports:
       - "5432:5432"
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+  rustfs:
+    image: rustfs/rustfs:latest
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-tank}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-changeme123456}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: "true"
     volumes:
-      - minio_data:/data
+      - rustfs_data:/data
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -6119,12 +7490,12 @@ services:
       - "3000:3000"
     depends_on:
       - postgres
-      - minio
+      - rustfs
       - scanner
 
 volumes:
   postgres_data:
-  minio_data:
+  rustfs_data:
 ```
 
 **Optional: Local LLM analysis with Ollama**
@@ -6240,7 +7611,7 @@ The `infra/helm/tank/` chart includes:
 | Dependency | Version | Purpose |
 |---|---|---|
 | PostgreSQL | 15.5.38 | Primary database |
-| MinIO | 5.4.0 | S3-compatible object storage |
+| RustFS | latest | S3-compatible object storage |
 
 ### Quick Start
 
@@ -6318,11 +7689,11 @@ postgresql:
     username: tank
     password: "" # Set via --set or sealed secret
 
-minio:
+rustfs:
   enabled: true
   auth:
-    rootUser: minioadmin
-    rootPassword: "" # Set via --set or sealed secret
+    accessKey: tank
+    secretKey: "" # Set via --set or sealed secret
 ```
 
 ### Run Migrations on Helm Install
@@ -6382,7 +7753,7 @@ helm upgrade tank infra/helm/tank/ \
 |---|---|---|
 | `STORAGE_BACKEND` | `s3`, `supabase`, or `filesystem` | `supabase` |
 | `S3_BUCKET` | Bucket name for tarballs | — |
-| `S3_ENDPOINT` | S3 endpoint (for MinIO) | — |
+| `S3_ENDPOINT` | S3 endpoint (for RustFS) | — |
 | `S3_ACCESS_KEY` | S3 access key | — |
 | `S3_SECRET_KEY` | S3 secret key | — |
 | `S3_REGION` | S3 region | `us-east-1` |
@@ -6403,7 +7774,7 @@ helm upgrade tank infra/helm/tank/ \
 - **Scanner**: Security scanner code lives in `apps/python-api/`.
 - **Turbo builds**: Use `bun turbo build --filter=@tankpkg/web...` for dependency-aware monorepo builds.
 - **Auth secret**: Never omit `BETTER_AUTH_SECRET` in production. Sessions fail silently without it.
-- **Storage backend**: Supabase is for cloud deployments. Use `s3` with MinIO for self-hosted.
+- **Storage backend**: Supabase is for cloud deployments. Use `s3` with RustFS for self-hosted.
 
 ## Monitoring
 
@@ -6442,13 +7813,13 @@ Verify `PYTHON_API_URL` points to the scanner service. In Docker Compose, use th
 curl $PYTHON_API_URL/health
 ```
 
-### MinIO bucket not found
+### RustFS bucket not found
 
-Create the bucket before starting the web app:
+RustFS auto-creates buckets on first write. If you need to create one manually:
 
 ```bash
-docker compose exec minio mc alias set local http://localhost:9000 minioadmin minioadmin
-docker compose exec minio mc mb local/tank-skills
+docker compose exec rustfs mc alias set local http://localhost:9000 tank changeme123456
+docker compose exec rustfs mc mb local/tank-skills
 ```
 
 ### Helm chart: pods stuck in `Pending`
@@ -6461,6 +7832,385 @@ kubectl get nodes -o wide
 ```
 
 Adjust `resources.requests` in `values.yaml` if needed.
+
+
+---
+
+# Credential Vault
+
+Source: https://tankpkg.dev/docs/vault
+
+> Protect API keys and secrets from AI agent exfiltration with Tank's format-preserving tokenization proxy — real credentials never reach the model.
+
+
+# Credential Vault
+
+Tank Vault is a **format-preserving tokenization proxy** that sits between your AI agent and the LLM provider. It intercepts outgoing requests, replaces real credentials with structurally identical fakes, and restores them in responses — so the model never sees your actual API keys, database URLs, or tokens.
+
+<svg viewBox="0 0 800 250" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="v-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+    <marker id="v-arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#dc2626"/>
+    </marker>
+    <marker id="v-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#16a34a"/>
+    </marker>
+  </defs>
+  <!-- Left: WITHOUT VAULT -->
+  <text x="200" y="18" text-anchor="middle" fill="#dc2626" font-size="13" font-weight="600">Without Vault</text>
+  <!-- Step 1: Agent sends real key -->
+  <rect x="10" y="30" width="130" height="40" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="75" y="46" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">Agent sends</text>
+  <text x="75" y="60" text-anchor="middle" fill="#dc2626" font-size="8">sk_live_&lt;REAL…&gt;</text>
+  <line x1="140" y1="50" x2="162" y2="50" stroke="#dc2626" stroke-width="1.5" marker-end="url(#v-arrow-red)"/>
+  <!-- Step 2: Provider logs contain real key -->
+  <rect x="165" y="30" width="130" height="40" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="230" y="46" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">Provider logs</text>
+  <text x="230" y="60" text-anchor="middle" fill="#dc2626" font-size="8">your real key</text>
+  <line x1="295" y1="50" x2="317" y2="50" stroke="#dc2626" stroke-width="1.5" marker-end="url(#v-arrow-red)"/>
+  <!-- Step 3: Breach -->
+  <rect x="320" y="30" width="70" height="40" rx="8" fill="#dc2626" fill-opacity="0.1" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="355" y="46" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="600">Breach</text>
+  <text x="355" y="59" text-anchor="middle" fill="#dc2626" font-size="8">💀</text>
+  <!-- Outcome -->
+  <text x="200" y="88" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">→ Attacker has your Stripe account</text>
+  <!-- Divider -->
+  <line x1="400" y1="25" x2="400" y2="210" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <!-- Right: WITH VAULT -->
+  <text x="600" y="18" text-anchor="middle" fill="#16a34a" font-size="13" font-weight="600">With Vault</text>
+  <!-- Step 1: Agent sends fake key -->
+  <rect x="420" y="30" width="130" height="40" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="485" y="46" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">Agent sends</text>
+  <text x="485" y="60" text-anchor="middle" fill="#16a34a" font-size="8">sk_live_&lt;FAKE…&gt;</text>
+  <line x1="550" y1="50" x2="572" y2="50" stroke="#16a34a" stroke-width="1.5" marker-end="url(#v-arrow-green)"/>
+  <!-- Step 2: Provider logs contain fake -->
+  <rect x="575" y="30" width="130" height="40" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="640" y="46" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">Provider logs</text>
+  <text x="640" y="60" text-anchor="middle" fill="#16a34a" font-size="8">only the fake</text>
+  <line x1="705" y1="50" x2="727" y2="50" stroke="#16a34a" stroke-width="1.5" marker-end="url(#v-arrow-green)"/>
+  <!-- Step 3: Breach is harmless -->
+  <rect x="730" y="30" width="60" height="40" rx="8" fill="#16a34a" fill-opacity="0.1" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="760" y="46" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="600">Breach</text>
+  <text x="760" y="59" text-anchor="middle" fill="#16a34a" font-size="8">🤷</text>
+  <!-- Outcome -->
+  <text x="600" y="88" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">→ Your Stripe account is safe</text>
+  <!-- How it works row -->
+  <rect x="80" y="110" width="640" height="70" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="132" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">How Vault Swaps</text>
+  <text x="210" y="152" text-anchor="middle" fill="currentColor" font-size="10">Real: sk_live_<tspan fill="#dc2626" font-weight="600">&lt;REAL_SECRET&gt;</tspan></text>
+  <text x="210" y="168" text-anchor="middle" fill="currentColor" font-size="10">Fake: sk_live_<tspan fill="#16a34a" font-weight="600">&lt;FAKE_SECRET&gt;</tspan></text>
+  <text x="580" y="152" text-anchor="middle" fill="#64748b" font-size="10">Same prefix: sk_live_</text>
+  <text x="580" y="168" text-anchor="middle" fill="#64748b" font-size="10">Same length: 32 chars</text>
+  <!-- Bottom note -->
+  <rect x="100" y="198" width="600" height="34" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="400" y="220" text-anchor="middle" fill="#64748b" font-size="11">The fake has the same prefix + length — the model doesn't notice the difference</text>
+</svg>
+
+## Why This Matters
+
+AI agents routinely pass environment variables, config files, and code context to LLM providers. If that context contains API keys, database URLs, or tokens:
+
+- The **model provider** sees your production secrets in training-eligible API logs
+- A **prompt injection** in a skill could instruct the model to exfiltrate credentials
+- **Stolen tokens** from LLM provider breaches expose your infrastructure
+
+Tank Vault eliminates this entire attack class. Real credentials never leave your machine.
+
+---
+
+## How It Works
+
+### 1. Credential Detection
+
+The scanner uses 10 built-in patterns to detect credentials in outgoing request bodies:
+
+| Pattern ID | Detects | Prefix |
+|---|---|---|
+| `stripe_secret` | Stripe Secret Keys | `sk_live_` / `sk_test_` |
+| `stripe_publishable` | Stripe Publishable Keys | `pk_live_` / `pk_test_` |
+| `aws_access_key` | AWS Access Key IDs | `AKIA` |
+| `github_pat` | GitHub Personal Access Tokens | `ghp_` |
+| `github_oauth` | GitHub OAuth Tokens | `gho_` |
+| `openai_key` | OpenAI API Keys | `sk-proj-` / `sk-` |
+| `elevenlabs_key` | ElevenLabs API Keys | `elvn_` |
+| `jwt_token` | JWT Tokens | `eyJ` |
+| `database_url` | Database Connection Strings | `postgresql://` / `mysql://` / `mongodb://` |
+| `slack_webhook` | Slack Webhook URLs | `https://hooks.slack.com/services/` |
+
+### 2. Format-Preserving Tokenization
+
+When a credential is detected, Vault generates a **structurally identical fake** — same prefix, same length, same character set. The fake passes format validation in the model's context but is cryptographically unrelated to the real credential.
+
+```
+Real:  sk_live_<REAL_SECRET>
+Fake:  sk_live_<FAKE_SECRET>   ← same prefix, same shape, clearly non-production placeholders
+```
+
+**Security properties:**
+
+- Fakes are generated using `crypto.getRandomValues()` (CSPRNG)
+- No 5+ character overlap between real and fake suffixes (brute-force resistant)
+- Each real credential maps to exactly one fake (bidirectional mapping)
+- Mapping is held in-memory only — never written to disk
+
+### 3. Proxy Interception
+
+The proxy only redacts requests that look like AI generation calls — specifically, POST requests with a JSON body containing a `messages` array (the standard chat completion format). All other traffic passes through unmodified.
+
+On the response path, the proxy restores all fake tokens back to their real values, so the agent receives correct credentials in model output.
+
+---
+
+## Architecture
+
+<svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="v-arrow2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <!-- Title -->
+  <text x="400" y="25" text-anchor="middle" fill="currentColor" font-size="16" font-weight="600">Vault Internal Architecture</text>
+  <!-- Detector -->
+  <rect x="40" y="60" width="200" height="100" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="140" y="88" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">Detector</text>
+  <text x="140" y="108" text-anchor="middle" fill="currentColor" font-size="11">patterns.ts — 10 regexes</text>
+  <text x="140" y="126" text-anchor="middle" fill="currentColor" font-size="11">scanner.ts — scan(text)</text>
+  <text x="140" y="144" text-anchor="middle" fill="#64748b" font-size="10">sorted, deduped matches</text>
+  <!-- Arrow -->
+  <line x1="240" y1="110" x2="290" y2="110" stroke="#64748b" stroke-width="1.5" marker-end="url(#v-arrow2)"/>
+  <!-- Tokenizer -->
+  <rect x="295" y="60" width="210" height="100" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="88" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">Tokenizer</text>
+  <text x="400" y="108" text-anchor="middle" fill="currentColor" font-size="11">generator.ts — CSPRNG fakes</text>
+  <text x="400" y="126" text-anchor="middle" fill="currentColor" font-size="11">vault.ts — bidirectional map</text>
+  <text x="400" y="144" text-anchor="middle" fill="#64748b" font-size="10">redact() / restore()</text>
+  <!-- Arrow -->
+  <line x1="505" y1="110" x2="555" y2="110" stroke="#64748b" stroke-width="1.5" marker-end="url(#v-arrow2)"/>
+  <!-- Proxy -->
+  <rect x="560" y="60" width="200" height="100" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="660" y="88" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">Proxy Server</text>
+  <text x="660" y="108" text-anchor="middle" fill="currentColor" font-size="11">server.ts — HTTP proxy</text>
+  <text x="660" y="126" text-anchor="middle" fill="currentColor" font-size="11">interceptor.ts — AI filter</text>
+  <text x="660" y="144" text-anchor="middle" fill="#64748b" font-size="10">redact out → restore in</text>
+  <!-- Runner box -->
+  <rect x="180" y="210" width="440" height="100" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="400" y="238" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600">Runner</text>
+  <text x="400" y="258" text-anchor="middle" fill="currentColor" font-size="11">agents.ts — 6 agent configs (Claude, OpenCode, Cursor, Codex…)</text>
+  <text x="400" y="278" text-anchor="middle" fill="currentColor" font-size="11">run.ts — spawn agent with env overrides</text>
+  <text x="400" y="296" text-anchor="middle" fill="#64748b" font-size="10">strategies: base-url-overrides | https-proxy | node-options | best-effort</text>
+  <!-- Arrow from runner to proxy -->
+  <line x1="560" y1="160" x2="560" y2="205" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="575" y="185" fill="#64748b" font-size="10">spawns</text>
+  <!-- Bootstrap -->
+  <rect x="180" y="335" width="440" height="40" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="400" y="360" text-anchor="middle" fill="#64748b" font-size="11">bootstrap.cjs — patches globalThis.fetch to route through proxy (Node.js --require)</text>
+</svg>
+
+The vault package has four layers:
+
+| Layer | Files | Responsibility |
+|---|---|---|
+| **Detector** | `detector/patterns.ts`, `detector/scanner.ts` | Pattern-match credentials in text using 10 regex rules |
+| **Tokenizer** | `tokenizer/generator.ts`, `tokenizer/vault.ts` | Generate fakes, maintain bidirectional real↔fake mapping |
+| **Proxy** | `proxy/server.ts`, `proxy/interceptor.ts`, `proxy/streaming.ts` | HTTP proxy that redacts outgoing AI requests and restores responses |
+| **Runner** | `runner/agents.ts`, `runner/run.ts`, `proxy/bootstrap.cjs` | Launch agents with env overrides to route traffic through the proxy |
+
+---
+
+## Supported Agents
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 150" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="vp-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Agent Detected -->
+  <rect x="10" y="50" width="120" height="44" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="70" y="69" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Agent detected</text>
+  <text x="70" y="84" text-anchor="middle" fill="#64748b" font-size="10">runtime check</text>
+  <!-- Arrow to decision -->
+  <line x1="130" y1="72" x2="170" y2="72" stroke="#64748b" stroke-width="1.5" marker-end="url(#vp-arrow)"/>
+  <!-- Decision diamond (simulated with rotated rect) -->
+  <rect x="185" y="52" width="76" height="40" rx="4" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="223" y="69" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Node.js?</text>
+  <text x="223" y="81" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Bun?</text>
+  <!-- Yes arrow up -->
+  <line x1="261" y1="58" x2="330" y2="28" stroke="#16a34a" stroke-width="1.5" marker-end="url(#vp-arrow)"/>
+  <text x="290" y="36" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="600">yes</text>
+  <!-- base-url-overrides box -->
+  <rect x="335" y="10" width="160" height="36" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="415" y="33" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">base-url-overrides</text>
+  <!-- Decision 2: Electron/Rust? -->
+  <line x1="261" y1="72" x2="330" y2="72" stroke="#64748b" stroke-width="1.5" marker-end="url(#vp-arrow)"/>
+  <rect x="335" y="52" width="76" height="40" rx="4" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="373" y="69" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Electron?</text>
+  <text x="373" y="81" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Rust?</text>
+  <!-- Yes arrow to https-proxy -->
+  <line x1="411" y1="72" x2="460" y2="72" stroke="#16a34a" stroke-width="1.5" marker-end="url(#vp-arrow)"/>
+  <text x="433" y="65" text-anchor="middle" fill="#16a34a" font-size="9" font-weight="600">yes</text>
+  <rect x="465" y="54" width="125" height="36" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="527" y="77" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">https-proxy</text>
+  <!-- No arrow down to best-effort -->
+  <line x1="261" y1="86" x2="330" y2="120" stroke="#eab308" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#vp-arrow)"/>
+  <text x="290" y="112" text-anchor="middle" fill="#eab308" font-size="9" font-weight="600">unknown</text>
+  <rect x="335" y="104" width="200" height="36" rx="8" fill="none" stroke="#eab308" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="435" y="127" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">best-effort (all strategies)</text>
+</svg>
+</div>
+
+The runner knows how to proxy traffic for these AI agents:
+
+| Agent | Runtime | Proxy Strategy |
+|---|---|---|
+| **Claude** (Claude Code) | Node.js | `base-url-overrides` — rewrites `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL`, etc. |
+| **OpenCode** | Bun | `base-url-overrides` — same env var rewriting |
+| **Cursor** | Electron | `https-proxy` — sets `HTTPS_PROXY` / `HTTP_PROXY` env vars |
+| **Codex** | Rust | `https-proxy` — sets `HTTPS_PROXY` / `HTTP_PROXY` env vars |
+| **OpenClaw** | Unknown | `best-effort` — combines all strategies |
+| **Universal** | Unknown | `best-effort` — combines all strategies |
+
+### Proxy Strategies
+
+| Strategy | How It Works |
+|---|---|
+| `base-url-overrides` | Rewrites `ANTHROPIC_BASE_URL`, `OPENAI_BASE_URL`, `MISTRAL_BASE_URL`, `GROQ_BASE_URL` to point at the vault proxy. The agent thinks it's talking to the real API. |
+| `https-proxy` | Sets standard `HTTPS_PROXY` and `HTTP_PROXY` environment variables. Works with any HTTP client that respects proxy settings. |
+| `node-options` | Injects `--require bootstrap.cjs` via `NODE_OPTIONS`, which patches `globalThis.fetch` to route all traffic through the proxy. Also sets `HTTPS_PROXY`. |
+| `best-effort` | Applies all three strategies simultaneously. Used when the agent's runtime is unknown. |
+
+---
+
+## Target URL Routing
+
+The proxy supports two methods for determining where to forward requests:
+
+### Header-based (used by `bootstrap.cjs`)
+
+```http
+POST /proxy HTTP/1.1
+x-target-url: https://api.anthropic.com/v1/messages
+Content-Type: application/json
+
+{ "messages": [...] }
+```
+
+### Path-based (used by `base-url-overrides`)
+
+The original API base URL is base64url-encoded into the proxy path:
+
+```
+Original:  https://api.anthropic.com
+Proxy URL: http://127.0.0.1:{port}/_/aHR0cHM6Ly9hcGkuYW50aHJvcGljLmNvbQ/v1/messages
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                     base64url-encoded original base URL
+```
+
+The proxy decodes the base URL and appends the remaining path to reconstruct the full target URL.
+
+---
+
+## Programmatic API
+
+### Scan for credentials
+
+```typescript
+import { scan } from "@tankpkg/vault";
+
+const matches = scan("Connect to postgresql://admin:secret@db.internal:5432/app");
+// [{ start: 11, end: 57, patternId: 'database_url' }]
+```
+
+### Generate format-preserving fakes
+
+```typescript
+import { generateFake } from "@tankpkg/vault";
+
+const fake = generateFake("sk_live_<REAL_SECRET>", "stripe_secret");
+// 'sk_live_<FAKE_SECRET>' — same prefix, same shape, random placeholder token
+```
+
+### Use the vault store for bidirectional mapping
+
+```typescript
+import { VaultStore } from "@tankpkg/vault";
+
+const vault = new VaultStore();
+
+// Store a real → fake mapping
+vault.store("sk_live_real123", "sk_live_fake456", "stripe_secret");
+
+// Redact all known credentials in a text block
+const redacted = vault.redact("My key is sk_live_real123");
+// 'My key is sk_live_fake456'
+
+// Restore originals from redacted text
+const restored = vault.restore(redacted);
+// 'My key is sk_live_real123'
+```
+
+### Access credential patterns
+
+```typescript
+import { CREDENTIAL_PATTERNS } from "@tankpkg/vault";
+
+for (const pattern of CREDENTIAL_PATTERNS) {
+  console.log(pattern.id, pattern.prefix, pattern.label);
+}
+```
+
+---
+
+## Security Model
+
+### What Vault protects against
+
+| Threat | How Vault prevents it |
+|---|---|
+| **Credential leakage to LLM providers** | Real keys never appear in API request bodies — only format-preserving fakes |
+| **Prompt injection exfiltration** | Even if a skill tricks the model into outputting credentials, the output contains fakes |
+| **LLM provider data breaches** | Logs at the provider side contain only fake credentials |
+| **Training data contamination** | Your secrets can't appear in future model training data |
+
+### What Vault does NOT protect against
+
+| Limitation | Why |
+|---|---|
+| **Credentials in non-AI traffic** | Only POST requests with `messages` arrays are redacted |
+| **Runtime secret access** | An agent process can still read `process.env` directly — Vault protects the LLM channel, not the local process |
+| **Streaming responses** | `streaming.ts` is currently a passthrough — full streaming support is planned |
+
+### Cryptographic properties
+
+- **CSPRNG**: Fake suffixes generated via `crypto.getRandomValues()` with rejection sampling to avoid modulo bias
+- **No overlap guarantee**: Generator retries up to 10 times to ensure no 5+ character substring overlap between real and fake suffixes
+- **In-memory only**: The real↔fake mapping lives in `VaultStore` (a pair of `Map` objects) — never serialized to disk, never logged
+
+---
+
+## Package Details
+
+```
+@tankpkg/vault v0.1.0
+├── src/detector/    — credential pattern matching
+├── src/tokenizer/   — fake generation + bidirectional vault store
+├── src/proxy/       — HTTP proxy server + AI request interceptor
+└── src/runner/      — agent launch configs + environment wiring
+```
+
+Zero runtime dependencies. Built with `tsdown`, tested with Vitest.
+
+---
+
+## Further Reading
+
+- [Security Model](/docs/security) — How Tank's 6-stage security pipeline scans skills
+- [Permissions](/docs/permissions) — Declare and enforce what skills can access
+- [CLI Reference](/docs/cli) — All `tank` commands including `tank vault` (planned)
+- [Self-Hosting](/docs/self-hosting) — Run your own registry with full security infrastructure
 
 
 ---

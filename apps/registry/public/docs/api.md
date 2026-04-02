@@ -7,43 +7,6 @@ description: Complete REST API reference for the Tank skill registry — authent
 
 The Tank REST API gives you programmatic access to every capability in the registry: searching skills, publishing new versions, managing stars, triggering security scans, and the full CLI OAuth flow. All endpoints live under a single base URL and follow consistent JSON conventions.
 
-<div class="my-6 flex justify-center overflow-x-auto">
-<svg viewBox="0 0 820 220" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
-  <text x="410" y="20" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Auth levels and token format</text>
-
-  <rect x="15" y="35" width="500" height="42" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
-  <rect x="25" y="40" width="78" height="32" rx="6" fill="#dc2626"/>
-  <text x="64" y="60" text-anchor="middle" fill="white" font-size="9" font-weight="600">Admin</text>
-  <text x="125" y="53" fill="currentColor" font-size="10" font-weight="600">skills:admin</text>
-  <text x="125" y="67" fill="#64748b" font-size="9">moderation, users, settings</text>
-
-  <rect x="15" y="87" width="500" height="42" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
-  <rect x="25" y="92" width="78" height="32" rx="6" fill="#eab308"/>
-  <text x="64" y="112" text-anchor="middle" fill="white" font-size="9" font-weight="600">Auth'd</text>
-  <text x="125" y="105" fill="currentColor" font-size="10" font-weight="600">skills:read + skills:publish</text>
-  <text x="125" y="119" fill="#64748b" font-size="9">token required · 1,000 req/hr</text>
-
-  <rect x="15" y="139" width="500" height="42" rx="8" fill="none" stroke="#64748b" stroke-width="1.5"/>
-  <rect x="25" y="144" width="78" height="32" rx="6" fill="#64748b"/>
-  <text x="64" y="164" text-anchor="middle" fill="white" font-size="9" font-weight="600">Anon</text>
-  <text x="125" y="157" fill="currentColor" font-size="10" font-weight="600">read-only access</text>
-  <text x="125" y="171" fill="#64748b" font-size="9">no token needed · 100 req/hr</text>
-
-  <rect x="545" y="35" width="260" height="108" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3"/>
-  <text x="675" y="56" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Token format</text>
-  <text x="675" y="79" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Bearer tank_abc...xyz</text>
-  <text x="675" y="99" text-anchor="middle" fill="#64748b" font-size="9">All API keys start with tank_</text>
-  <text x="675" y="118" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="600">No tank_ prefix → 401</text>
-
-  <rect x="545" y="155" width="75" height="20" rx="5" fill="#16a34a" fill-opacity="0.15" stroke="#16a34a" stroke-width="1"/>
-  <text x="582.5" y="169" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="600">skills:read</text>
-  <rect x="630" y="155" width="90" height="20" rx="5" fill="#eab308" fill-opacity="0.15" stroke="#eab308" stroke-width="1"/>
-  <text x="675" y="169" text-anchor="middle" fill="#eab308" font-size="8" font-weight="600">skills:publish</text>
-  <rect x="730" y="155" width="75" height="20" rx="5" fill="#dc2626" fill-opacity="0.15" stroke="#dc2626" stroke-width="1"/>
-  <text x="767.5" y="169" text-anchor="middle" fill="#dc2626" font-size="8" font-weight="600">admin</text>
-</svg>
-</div>
-
 **Base URL**
 
 ```
@@ -73,11 +36,11 @@ All Tank API keys begin with `tank_`. Tokens without this prefix are rejected wi
 
 **Scopes**
 
-| Scope            | Grants                                               |
-| ---------------- | ---------------------------------------------------- |
-| `skills:read`    | Read skill metadata, versions, files, stars          |
-| `skills:publish` | Publish new skills and new versions                  |
-| `skills:admin`   | Administrative actions (moderation, user management) |
+| Scope | Grants |
+|---|---|
+| `skills:read` | Read skill metadata, versions, files, stars |
+| `skills:publish` | Publish new skills and new versions |
+| `skills:admin` | Administrative actions (moderation, user management) |
 
 <Callout type="info">
   Tokens inherit the minimum scope needed. A token with only `skills:read` cannot publish; you will receive a `403` if you try.
@@ -89,11 +52,11 @@ All Tank API keys begin with `tank_`. Tokens without this prefix are rejected wi
 
 Rate limits are applied per IP for anonymous requests and per token for authenticated requests.
 
-| Tier          | Requests / hour |
-| ------------- | --------------- |
-| Anonymous     | 100             |
-| Authenticated | 1,000           |
-| Pro           | 10,000          |
+| Tier | Requests / hour |
+|---|---|
+| Anonymous | 100 |
+| Authenticated | 1,000 |
+| Pro | 10,000 |
 
 When you exceed your limit, the API returns `429 Too Many Requests`. The response includes a `Retry-After` header indicating how many seconds to wait before retrying.
 
@@ -112,14 +75,14 @@ All errors follow a consistent envelope. The `error` field contains a machine-re
 
 **Common HTTP status codes**
 
-| Status | Error Code         | When it occurs                                       |
-| ------ | ------------------ | ---------------------------------------------------- |
-| `401`  | `UNAUTHORIZED`     | Token missing, malformed, or revoked                 |
-| `403`  | `FORBIDDEN`        | Token valid but lacks the required scope             |
-| `404`  | `NOT_FOUND`        | Skill, version, or resource does not exist           |
-| `409`  | `VERSION_EXISTS`   | You attempted to publish an already-existing version |
-| `422`  | `VALIDATION_ERROR` | Request body failed Zod schema validation            |
-| `429`  | `RATE_LIMITED`     | Hourly request limit exceeded                        |
+| Status | Error Code | When it occurs |
+|---|---|---|
+| `401` | `UNAUTHORIZED` | Token missing, malformed, or revoked |
+| `403` | `FORBIDDEN` | Token valid but lacks the required scope |
+| `404` | `NOT_FOUND` | Skill, version, or resource does not exist |
+| `409` | `VERSION_EXISTS` | You attempted to publish an already-existing version |
+| `422` | `VALIDATION_ERROR` | Request body failed Zod schema validation |
+| `429` | `RATE_LIMITED` | Hourly request limit exceeded |
 
 **Validation error shape**
 
@@ -150,11 +113,11 @@ Full-text search across all public skills. Uses a hybrid strategy: `ILIKE` for e
 
 **Query parameters**
 
-| Parameter | Type   | Default | Description                                                        |
-| --------- | ------ | ------- | ------------------------------------------------------------------ |
-| `q`       | string | —       | Search query. Matched against skill name, description, and author. |
-| `page`    | number | `1`     | Page number. Minimum `1`.                                          |
-| `limit`   | number | `20`    | Results per page. Range `1`–`50`.                                  |
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `q` | string | — | Search query. Matched against skill name, description, and author. |
+| `page` | number | `1` | Page number. Minimum `1`. |
+| `limit` | number | `20` | Results per page. Range `1`–`50`. |
 
 **Response**
 
@@ -215,16 +178,16 @@ Initiates skill publication. The response includes a pre-signed `uploadUrl`; you
 }
 ```
 
-| Field                  | Type                      | Required | Description                                                                       |
-| ---------------------- | ------------------------- | -------- | --------------------------------------------------------------------------------- |
-| `manifest.name`        | string                    | Yes      | Scoped or unscoped skill name. Scoped names (`@org/name`) require org membership. |
-| `manifest.version`     | string                    | Yes      | Semver string. Must not already exist for this skill.                             |
-| `manifest.description` | string                    | Yes      | Short description shown in search results.                                        |
-| `manifest.visibility`  | `"public"` \| `"private"` | Yes      | Public skills are visible to everyone. Private skills require auth.               |
-| `manifest.permissions` | object                    | Yes      | Declared permission budget. Validated against Zod schema.                         |
-| `manifest.repository`  | string                    | No       | Source repository URL for provenance display.                                     |
-| `readme`               | string                    | No       | Markdown content for the skill's registry page.                                   |
-| `files`                | string[]                  | No       | List of file paths included in the tarball.                                       |
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `manifest.name` | string | Yes | Scoped or unscoped skill name. Scoped names (`@org/name`) require org membership. |
+| `manifest.version` | string | Yes | Semver string. Must not already exist for this skill. |
+| `manifest.description` | string | Yes | Short description shown in search results. |
+| `manifest.visibility` | `"public"` \| `"private"` | Yes | Public skills are visible to everyone. Private skills require auth. |
+| `manifest.permissions` | object | Yes | Declared permission budget. Validated against Zod schema. |
+| `manifest.repository` | string | No | Source repository URL for provenance display. |
+| `readme` | string | No | Markdown content for the skill's registry page. |
+| `files` | string[] | No | List of file paths included in the tarball. |
 
 **Validation rules**
 
@@ -271,9 +234,9 @@ Returns top-level metadata for a skill plus its latest published version.
 
 **Path parameters**
 
-| Parameter | Description                                                                               |
-| --------- | ----------------------------------------------------------------------------------------- |
-| `name`    | Skill name, URL-encoded. Scoped names use `@org%2Fskill` or `@org/skill` (both accepted). |
+| Parameter | Description |
+|---|---|
+| `name` | Skill name, URL-encoded. Scoped names use `@org%2Fskill` or `@org/skill` (both accepted). |
 
 **Response `200 OK`**
 
@@ -344,9 +307,9 @@ Returns full metadata for a specific published version, including its permission
 
 **Path parameters**
 
-| Parameter | Description                         |
-| --------- | ----------------------------------- |
-| `name`    | Skill name.                         |
+| Parameter | Description |
+|---|---|
+| `name` | Skill name. |
 | `version` | Exact semver string (e.g. `2.3.1`). |
 
 **Response `200 OK`**
@@ -386,11 +349,11 @@ Returns the raw content of a specific file within a skill version's tarball. Use
 
 **Path parameters**
 
-| Parameter | Description                                                     |
-| --------- | --------------------------------------------------------------- |
-| `name`    | Skill name.                                                     |
-| `version` | Exact semver string.                                            |
-| `path`    | File path within the tarball (e.g. `SKILL.md`, `src/index.ts`). |
+| Parameter | Description |
+|---|---|
+| `name` | Skill name. |
+| `version` | Exact semver string. |
+| `path` | File path within the tarball (e.g. `SKILL.md`, `src/index.ts`). |
 
 **Response**
 
@@ -420,11 +383,11 @@ After uploading the tarball to the `uploadUrl` returned by `POST /api/v1/skills`
 }
 ```
 
-| Field       | Type   | Required | Description                                                  |
-| ----------- | ------ | -------- | ------------------------------------------------------------ |
-| `skillId`   | string | Yes      | `skillId` from the publish initiation response.              |
-| `versionId` | string | Yes      | `versionId` from the publish initiation response.            |
-| `integrity` | string | Yes      | SHA-512 hash of the tarball in the format `sha512-<base64>`. |
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `skillId` | string | Yes | `skillId` from the publish initiation response. |
+| `versionId` | string | Yes | `versionId` from the publish initiation response. |
+| `integrity` | string | Yes | SHA-512 hash of the tarball in the format `sha512-<base64>`. |
 
 **Response `200 OK`**
 
@@ -575,23 +538,23 @@ curl -X POST https://tankpkg.dev/api/v1/scan \
 
 **Verdict rules**
 
-| Verdict           | Condition                                           |
-| ----------------- | --------------------------------------------------- |
-| `PASS`            | Zero findings, or only informational notes.         |
-| `PASS_WITH_NOTES` | Low-severity findings only.                         |
-| `FLAGGED`         | 1–3 high-severity findings.                         |
-| `FAIL`            | Any critical finding, or 4+ high-severity findings. |
+| Verdict | Condition |
+|---|---|
+| `PASS` | Zero findings, or only informational notes. |
+| `PASS_WITH_NOTES` | Low-severity findings only. |
+| `FLAGGED` | 1–3 high-severity findings. |
+| `FAIL` | Any critical finding, or 4+ high-severity findings. |
 
 **Pipeline stages**
 
-| Stage    | Name         | What it checks                                                                                            |
-| -------- | ------------ | --------------------------------------------------------------------------------------------------------- |
-| `stage0` | Ingest       | Tarball structure, SHA-512 hashing, extraction safety (no symlinks, no path traversal, no absolute paths) |
-| `stage1` | Structure    | Required files (`SKILL.md`, manifest), file count (under 100), total size (under 50 MB)                   |
-| `stage2` | Static       | AST analysis — eval, exec, obfuscated code, suspicious imports                                            |
-| `stage3` | Injection    | Prompt injection patterns in Markdown and skill definition files                                          |
-| `stage4` | Secrets      | Hardcoded credentials, API keys, tokens using entropy analysis                                            |
-| `stage5` | Supply chain | Dependency tree analysis, known-malicious package hashes                                                  |
+| Stage | Name | What it checks |
+|---|---|---|
+| `stage0` | Ingest | Tarball structure, SHA-512 hashing, extraction safety (no symlinks, no path traversal, no absolute paths) |
+| `stage1` | Structure | Required files (`SKILL.md`, manifest), file count (under 100), total size (under 50 MB) |
+| `stage2` | Static | AST analysis — eval, exec, obfuscated code, suspicious imports |
+| `stage3` | Injection | Prompt injection patterns in Markdown and skill definition files |
+| `stage4` | Secrets | Hardcoded credentials, API keys, tokens using entropy analysis |
+| `stage5` | Supply chain | Dependency tree analysis, known-malicious package hashes |
 
 <Callout type="info">
   Each stage is independent. A failure in one stage does not prevent subsequent stages from running. All findings are aggregated into the final verdict.
@@ -600,46 +563,6 @@ curl -X POST https://tankpkg.dev/api/v1/scan \
 ---
 
 ## CLI Auth Flow
-
-<div class="my-6 flex justify-center overflow-x-auto">
-<svg viewBox="0 0 800 170" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
-  <defs>
-    <marker id="cli-flow-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
-  </defs>
-  <!-- Lifelines -->
-  <line x1="90" y1="48" x2="90" y2="160" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
-  <line x1="300" y1="48" x2="300" y2="160" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
-  <line x1="510" y1="48" x2="510" y2="160" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
-  <line x1="710" y1="48" x2="710" y2="160" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
-  <!-- Actor boxes -->
-  <rect x="35" y="10" width="110" height="34" rx="8" fill="#10b981" stroke="#10b981" stroke-width="1.5"/>
-  <text x="90" y="32" text-anchor="middle" fill="white" font-size="10" font-weight="600">CLI</text>
-  <rect x="245" y="10" width="110" height="34" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
-  <text x="300" y="32" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Browser</text>
-  <rect x="455" y="10" width="110" height="34" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
-  <text x="510" y="32" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">GitHub</text>
-  <rect x="655" y="10" width="110" height="34" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
-  <text x="710" y="32" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Tank API</text>
-  <!-- 1: CLI opens browser -->
-  <line x1="100" y1="60" x2="290" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#cli-flow-arrow)"/>
-  <text x="195" y="55" text-anchor="middle" fill="#64748b" font-size="9">1. Opens auth URL</text>
-  <!-- 2: Browser → GitHub -->
-  <line x1="310" y1="80" x2="500" y2="80" stroke="#64748b" stroke-width="1.5" marker-end="url(#cli-flow-arrow)"/>
-  <text x="405" y="75" text-anchor="middle" fill="#64748b" font-size="9">2. User authorizes</text>
-  <!-- 3: GitHub → Tank -->
-  <line x1="520" y1="100" x2="700" y2="100" stroke="#16a34a" stroke-width="1.5" marker-end="url(#cli-flow-arrow)"/>
-  <text x="610" y="95" text-anchor="middle" fill="#16a34a" font-size="9">3. Callback + code</text>
-  <!-- Tank issues token -->
-  <rect x="670" y="108" width="80" height="16" rx="4" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="3,2"/>
-  <text x="710" y="119" text-anchor="middle" fill="#10b981" font-size="8">Issues token</text>
-  <!-- 4: CLI polls -->
-  <line x1="100" y1="136" x2="700" y2="136" stroke="#10b981" stroke-width="1.5" marker-end="url(#cli-flow-arrow)"/>
-  <text x="400" y="131" text-anchor="middle" fill="#10b981" font-size="9">4. Poll /exchange → receives API key</text>
-  <!-- CLI stores token -->
-  <rect x="35" y="146" width="110" height="16" rx="4" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="3,2"/>
-  <text x="90" y="157" text-anchor="middle" fill="#64748b" font-size="8">~/.tank/config.json</text>
-</svg>
-</div>
 
 The CLI uses a browser-based OAuth flow to obtain an API key without requiring users to copy-paste tokens manually. The three-step sequence is: **start → (user authorizes in browser) → exchange**.
 
@@ -683,9 +606,9 @@ This URL is opened in the user's browser (not called directly by the CLI). The u
 
 **Query parameters**
 
-| Parameter | Description                              |
-| --------- | ---------------------------------------- |
-| `token`   | The `pollToken` from the start response. |
+| Parameter | Description |
+|---|---|
+| `token` | The `pollToken` from the start response. |
 
 After the user approves, the browser is redirected back to the CLI callback and the poll token transitions to an authorized state. The CLI can now exchange it.
 
@@ -749,21 +672,21 @@ Returns an SVG badge displaying a skill's current audit score. Designed to embed
 
 **Path parameters**
 
-| Parameter | Description                                            |
-| --------- | ------------------------------------------------------ |
-| `name`    | Skill name, URL-encoded (e.g. `@vercel%2Fnext-skill`). |
+| Parameter | Description |
+|---|---|
+| `name` | Skill name, URL-encoded (e.g. `@vercel%2Fnext-skill`). |
 
 **Response**
 
 Returns `image/svg+xml` content. The badge color encodes the score tier:
 
-| Score | Color        | Meaning   |
-| ----- | ------------ | --------- |
-| 9–10  | Green        | Excellent |
-| 7–8   | Yellow-green | Good      |
-| 5–6   | Yellow       | Fair      |
-| 3–4   | Orange       | Poor      |
-| 0–2   | Red          | Failing   |
+| Score | Color | Meaning |
+|---|---|---|
+| 9–10 | Green | Excellent |
+| 7–8 | Yellow-green | Good |
+| 5–6 | Yellow | Fair |
+| 3–4 | Orange | Poor |
+| 0–2 | Red | Failing |
 
 **Usage in Markdown**
 
@@ -780,41 +703,6 @@ curl https://tankpkg.dev/api/v1/badge/%40vercel%2Fnext-skill -o badge.svg
 ---
 
 ## Full Publish Workflow
-
-<div class="my-6 flex justify-center overflow-x-auto">
-<svg viewBox="0 0 800 90" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
-  <defs>
-    <marker id="pub-wf-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
-    <marker id="pub-wf-arrow-g" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16a34a"/></marker>
-  </defs>
-  <!-- tank publish -->
-  <rect x="15" y="20" width="115" height="50" rx="8" fill="#10b981" stroke="#10b981" stroke-width="1.5"/>
-  <text x="72" y="42" text-anchor="middle" fill="white" font-size="9" font-weight="600">tank publish</text>
-  <text x="72" y="56" text-anchor="middle" fill="white" font-size="8" opacity="0.8">CLI</text>
-  <line x1="130" y1="45" x2="145" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-wf-arrow)"/>
-  <!-- Pack -->
-  <rect x="150" y="20" width="115" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
-  <text x="207" y="49" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">Pack .tgz</text>
-  <line x1="265" y1="45" x2="280" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-wf-arrow)"/>
-  <!-- Upload -->
-  <rect x="285" y="20" width="115" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
-  <text x="342" y="49" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">Upload</text>
-  <line x1="400" y1="45" x2="415" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-wf-arrow)"/>
-  <!-- Scanner -->
-  <rect x="420" y="15" width="115" height="60" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
-  <text x="477" y="40" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="600">Security Scan</text>
-  <text x="477" y="55" text-anchor="middle" fill="#64748b" font-size="8">6-stage pipeline</text>
-  <line x1="535" y1="45" x2="550" y2="45" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-wf-arrow)"/>
-  <!-- Verdict -->
-  <rect x="555" y="20" width="100" height="50" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
-  <text x="605" y="49" text-anchor="middle" fill="#eab308" font-size="9" font-weight="600">Verdict</text>
-  <line x1="655" y1="45" x2="670" y2="45" stroke="#16a34a" stroke-width="1.5" marker-end="url(#pub-wf-arrow-g)"/>
-  <!-- Published -->
-  <rect x="675" y="20" width="110" height="50" rx="8" fill="#16a34a" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="730" y="42" text-anchor="middle" fill="white" font-size="9" font-weight="600">Published</text>
-  <text x="730" y="56" text-anchor="middle" fill="white" font-size="8" opacity="0.8">Registry</text>
-</svg>
-</div>
 
 The following shows the complete three-step flow the `tank publish` CLI command performs internally.
 
