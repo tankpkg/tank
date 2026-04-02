@@ -1,12 +1,13 @@
 import { Check, Copy, MessageSquare } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { DownloadButton } from '~/components/skills/download-button';
 import { SkillSidebar } from '~/components/skills/skill-sidebar';
 import { SkillTabs } from '~/components/skills/skill-tabs';
 import { StarButton } from '~/components/skills/star-button';
-import { TalkToSkillWidget } from '~/components/skills/talk-to-skill-widget';
+import { TalkToSkillWidget, type TalkToSkillWidgetHandle } from '~/components/skills/talk-to-skill-widget';
 import { TrustBadge } from '~/components/skills/trust-badge';
+
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
@@ -41,18 +42,15 @@ function parseDescription(raw: string | null): { summary: string; triggers: stri
 
 interface SkillDetailScreenProps {
   data: SkillDetailResult;
-  talkEnabled: boolean;
 }
 
 function MobileActionBar({
   data,
   scanDetails,
-  talkEnabled,
   onTalkClick
 }: {
   data: SkillDetailResult;
   scanDetails: ScanDetails | null;
-  talkEnabled: boolean;
   onTalkClick: () => void;
 }) {
   const installCmd = `tank install ${data.name}`;
@@ -65,17 +63,10 @@ function MobileActionBar({
       <div className="flex items-center gap-2 flex-wrap">
         <StarButton skillName={data.name} initialStarred={data.isStarred} initialCount={data.starCount} />
         {data.latestVersion && <DownloadButton skillName={data.name} version={data.latestVersion.version} />}
-        {talkEnabled && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5"
-            onClick={onTalkClick}
-            data-testid="talk-button-mobile">
-            <MessageSquare className="size-3.5" />
-            Talk to skill
-          </Button>
-        )}
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={onTalkClick} data-testid="talk-button-mobile">
+          <MessageSquare className="size-3.5" />
+          Talk to skill
+        </Button>
         {scanDetails && (
           <TrustBadge
             verdict={scanDetails.verdict}
@@ -99,10 +90,10 @@ function MobileActionBar({
   );
 }
 
-export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps) {
+export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
   const [activeTab, setActiveTab] = useState('readme');
   const [triggersExpanded, setTriggersExpanded] = useState(false);
-  const [talkOpen, setTalkOpen] = useState(false);
+  const talkWidgetRef = useRef<TalkToSkillWidgetHandle>(null);
   const latestManifest = safeParseJson(data.latestVersion?.manifest);
   const fileList: string[] = Array.isArray(latestManifest?.files) ? (latestManifest.files as string[]) : [];
   const license = typeof latestManifest?.license === 'string' ? latestManifest.license : null;
@@ -138,17 +129,15 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
               Private
             </Badge>
           )}
-          {talkEnabled && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 hidden lg:inline-flex"
-              onClick={() => setTalkOpen(true)}
-              data-testid="talk-button-header">
-              <MessageSquare className="size-3.5" />
-              Talk to this skill
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 hidden lg:inline-flex"
+            onClick={() => talkWidgetRef.current?.trigger()}
+            data-testid="talk-button-header">
+            <MessageSquare className="size-3.5" />
+            Talk to this skill
+          </Button>
         </div>
         {desc.summary && (
           <div className="mt-4">
@@ -193,19 +182,15 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
       <MobileActionBar
         data={data}
         scanDetails={scanDetails ?? null}
-        talkEnabled={talkEnabled}
-        onTalkClick={() => setTalkOpen(true)}
+        onTalkClick={() => talkWidgetRef.current?.trigger()}
       />
 
-      {talkEnabled && (
-        <TalkToSkillWidget
-          skillName={data.name}
-          chatLink={data.latestVersion?.prompt2botChatLink ?? null}
-          botPublicKey={data.latestVersion?.prompt2botBotPublicKey ?? null}
-          open={talkOpen}
-          onOpenChange={setTalkOpen}
-        />
-      )}
+      <TalkToSkillWidget
+        ref={talkWidgetRef}
+        skillName={data.name}
+        chatLink={data.latestVersion?.prompt2botChatLink ?? null}
+        botPublicKey={data.latestVersion?.prompt2botBotPublicKey ?? null}
+      />
 
       <SkillTabs
         readmeContent={readmeContent ?? null}
