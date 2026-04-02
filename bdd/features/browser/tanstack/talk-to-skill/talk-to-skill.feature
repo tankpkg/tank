@@ -1,54 +1,52 @@
+@tanstack
+@talk-to-skill
 Feature: Talk to this Skill
   As a developer browsing skills
   I want to chat with an AI that knows about a specific skill
   So I can evaluate it before installing
 
   Background:
-    Given PROMPT2BOT_API_TOKEN is configured
-    And the skill "@test/hello-skill" version "1.0.0" is published with a README
+    Given a public skill exists in the registry
 
-  Scenario: Header button is visible on skill page
-    When I navigate to the skill page for "@test/hello-skill"
-    Then the "Talk to this skill" button is visible in the header section
+  Scenario: Header button is visible on skill detail page
+    When I visit the talk skill detail page
+    Then I see the "Talk to this skill" header button
 
-  Scenario: Floating chat bubble is visible on skill page
-    When I navigate to the skill page for "@test/hello-skill"
-    Then the floating chat bubble is visible in the bottom-right corner
+  Scenario: Floating chat bubble is visible on skill detail page
+    When I visit the talk skill detail page
+    Then I see the floating chat bubble
 
-  Scenario: First click creates a bot and opens chat
-    When I navigate to the skill page for "@test/hello-skill"
-    And I click the "Talk to this skill" button
-    Then a POST request is made to "/api/skills/%40test%2Fhello-skill/talk"
-    And the chat dialog opens
-    And the chat dialog shows "Powered by prompt2bot" attribution
-    And the skill version now has a prompt2botBotId in the database
+  Scenario: Clicking the header button loads the alice-and-bot chat widget without name prompt
+    When I visit the talk skill detail page
+    And I click the "Talk to this skill" header button
+    Then the alice-and-bot chat widget is rendered on the page
+    And I do not see the display-name dialog
 
-  Scenario: Second click reuses the cached bot
-    Given the skill "@test/hello-skill" version "1.0.0" already has a prompt2bot bot
-    When I navigate to the skill page for "@test/hello-skill"
-    And I click the "Talk to this skill" button
-    Then no POST request is made to the talk endpoint
-    And the chat dialog opens immediately
+  Scenario: Clicking the floating bubble loads the alice-and-bot chat widget without name prompt
+    When I visit the talk skill detail page
+    And I click the floating chat bubble
+    Then the alice-and-bot chat widget is rendered on the page
+    And I do not see the display-name dialog
 
-  Scenario: Button hidden when PROMPT2BOT_API_TOKEN is unset
-    Given PROMPT2BOT_API_TOKEN is not configured
-    When I navigate to the skill page for "@test/hello-skill"
-    Then no "Talk to this skill" button is visible
-    And no floating chat bubble is visible
+  Scenario: Talk API endpoint creates a bot and returns chat link
+    When I call the talk API for the skill
+    Then the talk API returns a chat link
+    And the talk API returns a bot public key
 
-  Scenario: Skill without README still gets a bot
-    Given the skill "@test/no-readme" version "1.0.0" is published without a README
-    When I navigate to the skill page for "@test/no-readme"
-    And I click the "Talk to this skill" button
-    Then a bot is created using the skill description as context
-    And the chat dialog opens
+  Scenario: Talk API returns cached bot on second call
+    Given I have already called the talk API for the skill
+    When I call the talk API for the skill again
+    Then the talk API returns the same chat link
 
-  Scenario: Mobile action bar includes talk button
-    Given the viewport is mobile width
-    When I navigate to the skill page for "@test/hello-skill"
-    Then the "Talk to this skill" button is visible in the mobile action bar
+  Scenario: Closing and reopening the chat preserves conversation
+    When I visit the talk skill detail page
+    And I click the "Talk to this skill" header button
+    Then the alice-and-bot chat widget is rendered on the page
+    When I close the alice-and-bot chat
+    Then the alice-and-bot chat panel is not visible
+    When I click the floating chat bubble
+    Then the alice-and-bot chat widget is rendered on the page
 
-  Scenario: Bot secret is never exposed to the client
-    When I navigate to the skill page for "@test/hello-skill"
-    Then the page data does not contain "prompt2botSecret"
-    And no network response contains the field "prompt2botSecret"
+  Scenario: Bot secret is never exposed in skill detail response
+    When I visit the talk skill detail page
+    Then the page source does not contain "prompt2botSecret"

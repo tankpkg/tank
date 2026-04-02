@@ -35,10 +35,25 @@ export function readDocFile(filename: string): string {
   return rawDocs[key];
 }
 
+/** Strip all inline SVG blocks (including wrapper divs) from markdown */
+export function stripSvg(text: string): string {
+  return text
+    .replace(/<div[^>]*>[\s]*<svg[\s\S]*?<\/svg>[\s]*<\/div>/gi, '')
+    .replace(/<svg[\s\S]*?<\/svg>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export function serveDocMarkdown(slug: string): { content: string; found: boolean } {
   const filename = `${slug}.md`;
   const content = readDocFile(filename);
   if (!content) return { content: '# Not Found\n\nThis documentation page does not exist.', found: false };
   const { body } = parseFrontmatter(content);
   return { content: body, found: true };
+}
+
+/** Serve SVG-stripped markdown for LLM consumption */
+export function serveDocForLlm(slug: string): { content: string; found: boolean } {
+  const { content, found } = serveDocMarkdown(slug);
+  return { content: stripSvg(content), found };
 }

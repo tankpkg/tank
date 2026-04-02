@@ -5,6 +5,7 @@ import { auth } from '~/lib/auth/core';
 import { requireAdmin } from './middleware/require-admin';
 import { adminRoutes } from './routes/admin';
 import { cliRoutes } from './routes/cli';
+import { docsLlmRoutes } from './routes/docs-llm';
 import { ogRoutes } from './routes/og';
 import { setupRoutes } from './routes/setup';
 import { storageRoutes } from './routes/storage';
@@ -78,6 +79,7 @@ export const app = new Hono()
   })
   .route('/storage', storageRoutes)
   .route('/og', ogRoutes)
+  .route('/docs', docsLlmRoutes)
   .route('/cli', cliRoutes)
   .use('/v1/*', async (_c, next) => {
     await storageReady;

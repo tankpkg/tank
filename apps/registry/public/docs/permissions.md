@@ -7,6 +7,51 @@ description: Understand Tank's permission model for AI agent skills — declare,
 
 Tank's permission system is the primary mechanism for preventing malicious skills from accessing resources they were never supposed to touch. This page explains the permission schema, the project-level budget, how enforcement works at install time, and how version bumps interact with permission changes.
 
+<svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Layer 1: Skill declares -->
+  <rect x="15" y="10" width="370" height="320" rx="12" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="200" y="36" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600">Layer 1: Skill Declares What It Needs</text>
+  <text x="200" y="56" text-anchor="middle" fill="#64748b" font-size="11">"I need access to these resources"</text>
+  <!-- Example skill manifest -->
+  <rect x="35" y="72" width="330" height="120" rx="8" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="50" y="92" fill="#64748b" font-size="10">@acme/seo-audit declares:</text>
+  <text x="50" y="114" fill="currentColor" font-size="11">network:  api.anthropic.com, cdn.jsdelivr.net</text>
+  <text x="50" y="134" fill="currentColor" font-size="11">fs.read:  ./src/**, ./package.json</text>
+  <text x="50" y="154" fill="currentColor" font-size="11">fs.write: ./output/**</text>
+  <text x="50" y="174" fill="currentColor" font-size="11">env:      ANTHROPIC_API_KEY</text>
+  <!-- What happens without this -->
+  <rect x="35" y="205" width="330" height="45" rx="6" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="50" y="224" fill="#dc2626" font-size="10" font-weight="600">Without permissions?</text>
+  <text x="50" y="240" fill="#64748b" font-size="10">Skill can read ~/.ssh/*, call evil.com, run rm -rf /</text>
+  <!-- What subprocess: true means -->
+  <rect x="35" y="260" width="330" height="55" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="50" y="280" fill="#dc2626" font-size="10" font-weight="600">subprocess: true = DANGER</text>
+  <text x="50" y="296" fill="#64748b" font-size="10">Bypasses all other permissions. The skill can do anything</text>
+  <text x="50" y="308" fill="#64748b" font-size="10">the agent's user account can do. Treat as a red flag.</text>
+  <!-- Layer 2: Project sets ceiling -->
+  <rect x="415" y="10" width="370" height="320" rx="12" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="600" y="36" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">Layer 2: Project Sets a Ceiling</text>
+  <text x="600" y="56" text-anchor="middle" fill="#64748b" font-size="11">"I allow skills to use at most this much"</text>
+  <!-- Project budget -->
+  <rect x="435" y="72" width="330" height="100" rx="8" fill="none" stroke="#10b981" stroke-width="1"/>
+  <text x="450" y="92" fill="#64748b" font-size="10">tank.json budget:</text>
+  <text x="450" y="114" fill="currentColor" font-size="11">network:  api.anthropic.com, *.vercel.com</text>
+  <text x="450" y="134" fill="currentColor" font-size="11">fs.read:  ./src/**, ./public/**, ./package.json</text>
+  <text x="450" y="154" fill="currentColor" font-size="11">subprocess: false</text>
+  <!-- Result: fit or reject -->
+  <rect x="435" y="188" width="155" height="60" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="512" y="212" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Skill fits budget?</text>
+  <text x="512" y="232" text-anchor="middle" fill="#16a34a" font-size="12" font-weight="600">INSTALL</text>
+  <rect x="610" y="188" width="155" height="60" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="687" y="212" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Exceeds budget?</text>
+  <text x="687" y="232" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">HARD REJECT</text>
+  <!-- Concrete rejection example -->
+  <rect x="435" y="262" width="330" height="55" rx="6" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="450" y="280" fill="#dc2626" font-size="10" font-weight="600">Example rejection:</text>
+  <text x="450" y="296" fill="#64748b" font-size="10">Skill needs *.googleapis.com → not in budget</text>
+  <text x="450" y="308" fill="#64748b" font-size="10">→ tank install fails with exact mismatch shown</text>
+</svg>
+
 ## Why Permissions Matter for AI Agent Skills
 
 An AI agent is a process that acts on your behalf. When you give an agent a skill, that skill runs with the agent's full authority — the same API tokens, filesystem access, and subprocess privileges the agent itself holds. There is no OS-level sandbox. There is no automatic restriction.
@@ -31,6 +76,34 @@ Tank's permission model requires skills to declare upfront what they need. Proje
 ---
 
 ## Permission Types
+
+<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="400" y="22" text-anchor="middle" fill="currentColor" font-size="14" font-weight="600">Four Permission Types — Ordered by Risk</text>
+  <!-- Subprocess (highest risk) -->
+  <rect x="15" y="40" width="770" height="46" rx="8" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="30" y="60" fill="#dc2626" font-size="12" font-weight="600">subprocess: true/false</text>
+  <text x="30" y="76" fill="#64748b" font-size="10">Can run ANY shell command. Bypasses all other permissions. Default: false.</text>
+  <text x="735" y="60" text-anchor="end" fill="#dc2626" font-size="10" font-weight="600">CRITICAL</text>
+  <text x="735" y="76" text-anchor="end" fill="#dc2626" font-size="10">rm -rf, curl, install malware</text>
+  <!-- Network -->
+  <rect x="15" y="96" width="770" height="46" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="30" y="116" fill="#eab308" font-size="12" font-weight="600">network.outbound: ["api.stripe.com"]</text>
+  <text x="30" y="132" fill="#64748b" font-size="10">Which domains the skill may call. Wildcards: *.domain.com (single level).</text>
+  <text x="735" y="116" text-anchor="end" fill="#eab308" font-size="10" font-weight="600">HIGH</text>
+  <text x="735" y="132" text-anchor="end" fill="#64748b" font-size="10">data exfiltration channel</text>
+  <!-- Environment -->
+  <rect x="15" y="152" width="770" height="46" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="30" y="172" fill="#eab308" font-size="12" font-weight="600">environment: ["OPENAI_API_KEY"]</text>
+  <text x="30" y="188" fill="#64748b" font-size="10">Named env vars the skill can read. No wildcards — each var listed explicitly.</text>
+  <text x="735" y="172" text-anchor="end" fill="#eab308" font-size="10" font-weight="600">HIGH</text>
+  <text x="735" y="188" text-anchor="end" fill="#64748b" font-size="10">credential theft vector</text>
+  <!-- Filesystem -->
+  <rect x="15" y="208" width="770" height="46" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="30" y="228" fill="#10b981" font-size="12" font-weight="600">filesystem.read/write: ["./src/**"]</text>
+  <text x="30" y="244" fill="#64748b" font-size="10">Glob patterns relative to project root. Read and write tracked separately.</text>
+  <text x="735" y="228" text-anchor="end" fill="#10b981" font-size="10" font-weight="600">MEDIUM</text>
+  <text x="735" y="244" text-anchor="end" fill="#64748b" font-size="10">scoped by path globs</text>
+</svg>
 
 Permissions are declared in the `permissions` object of a skill's `SKILL.md` manifest. The full schema is defined in `packages/internals-schemas/src/schemas/permissions.ts` as a Zod schema and validated on both the CLI and registry server.
 
@@ -209,6 +282,52 @@ If `@community/seo-audit` declares `network.outbound: ["*.googleapis.com"]` — 
 
 ## Budget Enforcement: How `checkPermissionBudget()` Works
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 750 120" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="bf-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="bf-ok" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16a34a"/></marker>
+    <marker id="bf-no" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#dc2626"/></marker>
+  </defs>
+  <!-- For each skill -->
+  <rect x="5" y="35" width="90" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="50" y="55" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">For each</text>
+  <text x="50" y="70" text-anchor="middle" fill="#64748b" font-size="10">skill</text>
+  <line x1="95" y1="60" x2="118" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <!-- Check network -->
+  <rect x="123" y="35" width="100" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="173" y="55" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Network</text>
+  <text x="173" y="70" text-anchor="middle" fill="#64748b" font-size="9">domains</text>
+  <line x1="223" y1="60" x2="238" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <!-- Check filesystem -->
+  <rect x="243" y="35" width="100" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="293" y="55" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Filesystem</text>
+  <text x="293" y="70" text-anchor="middle" fill="#64748b" font-size="9">paths</text>
+  <line x1="343" y1="60" x2="358" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <!-- Check subprocess -->
+  <rect x="363" y="35" width="100" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="413" y="55" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Subprocess</text>
+  <text x="413" y="70" text-anchor="middle" fill="#64748b" font-size="9">boolean</text>
+  <line x1="463" y1="60" x2="478" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <!-- Check env vars -->
+  <rect x="483" y="35" width="100" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="533" y="55" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Env Vars</text>
+  <text x="533" y="70" text-anchor="middle" fill="#64748b" font-size="9">names</text>
+  <!-- All pass? diamond -->
+  <line x1="583" y1="60" x2="608" y2="60" stroke="#64748b" stroke-width="1.5" marker-end="url(#bf-arrow)"/>
+  <polygon points="640,35 670,60 640,85 610,60" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="640" y="64" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">All OK?</text>
+  <!-- Pass path -->
+  <line x1="670" y1="50" x2="698" y2="25" stroke="#16a34a" stroke-width="1.5" marker-end="url(#bf-ok)"/>
+  <rect x="688" y="5" width="57" height="26" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="716" y="23" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Install</text>
+  <!-- Reject path -->
+  <line x1="670" y1="70" x2="698" y2="95" stroke="#dc2626" stroke-width="1.5" marker-end="url(#bf-no)"/>
+  <rect x="688" y="88" width="57" height="26" rx="6" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="716" y="106" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Reject</text>
+</svg>
+</div>
+
 The budget enforcement logic runs in the CLI (`apps/cli/src/lib/`) during `tank install` and `tank update`. It compares each skill's declared permissions against the project budget field by field.
 
 ### Domain Matching (`network.outbound`)
@@ -257,6 +376,44 @@ The enforcer checks all skills against the budget before extracting any of them.
 ---
 
 ## Permission Escalation Detection
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 650 140" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- PATCH column -->
+  <rect x="10" y="10" width="195" height="120" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="107" y="35" text-anchor="middle" fill="#dc2626" font-size="14" font-weight="600">PATCH</text>
+  <text x="107" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">No changes allowed</text>
+  <line x1="40" y1="66" x2="175" y2="66" stroke="#dc2626" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <text x="30" y="84" fill="#dc2626" font-size="18" font-weight="600">X</text>
+  <text x="50" y="84" fill="#64748b" font-size="10">new domains</text>
+  <text x="30" y="100" fill="#dc2626" font-size="18" font-weight="600">X</text>
+  <text x="50" y="100" fill="#64748b" font-size="10">new env vars</text>
+  <text x="30" y="116" fill="#dc2626" font-size="18" font-weight="600">X</text>
+  <text x="50" y="116" fill="#64748b" font-size="10">new file paths</text>
+  <!-- MINOR column -->
+  <rect x="225" y="10" width="195" height="120" rx="10" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="322" y="35" text-anchor="middle" fill="#eab308" font-size="14" font-weight="600">MINOR</text>
+  <text x="322" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">Safe additions only</text>
+  <line x1="255" y1="66" x2="390" y2="66" stroke="#eab308" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <text x="245" y="84" fill="#eab308" font-size="14" font-weight="600">~</text>
+  <text x="265" y="84" fill="#64748b" font-size="10">file paths OK</text>
+  <text x="245" y="100" fill="#eab308" font-size="14" font-weight="600">~</text>
+  <text x="265" y="100" fill="#64748b" font-size="10">benign env OK</text>
+  <text x="245" y="116" fill="#dc2626" font-size="18" font-weight="600">X</text>
+  <text x="265" y="116" fill="#64748b" font-size="10">no subprocess/domains</text>
+  <!-- MAJOR column -->
+  <rect x="440" y="10" width="195" height="120" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="537" y="35" text-anchor="middle" fill="#16a34a" font-size="14" font-weight="600">MAJOR</text>
+  <text x="537" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">All changes allowed</text>
+  <line x1="470" y1="66" x2="605" y2="66" stroke="#16a34a" stroke-width="0.5" stroke-dasharray="4,3"/>
+  <text x="465" y="84" fill="#16a34a" font-size="14" font-weight="600">OK</text>
+  <text x="492" y="84" fill="#64748b" font-size="10">new domains</text>
+  <text x="465" y="100" fill="#16a34a" font-size="14" font-weight="600">OK</text>
+  <text x="492" y="100" fill="#64748b" font-size="10">subprocess toggle</text>
+  <text x="465" y="116" fill="#16a34a" font-size="14" font-weight="600">OK</text>
+  <text x="492" y="116" fill="#64748b" font-size="10">secret env vars</text>
+</svg>
+</div>
 
 Every new version of a skill is checked against its previous version's permissions when published. This prevents a malicious publisher from sneaking dangerous permission changes through as minor or patch releases.
 

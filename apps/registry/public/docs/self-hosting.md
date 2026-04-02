@@ -1,6 +1,6 @@
 ---
 title: Self-Hosting Tank
-description: Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, MinIO, and security scanning.
+description: Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, RustFS, and security scanning.
 ---
 
 # Self-Hosting Tank
@@ -11,31 +11,66 @@ Deploy your own Tank registry for complete control over AI agent skill distribut
 
 A self-hosted Tank deployment runs four core services:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                       Your Infrastructure                        │
-│                                                                  │
-│  ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐│
-│  │  Web app     │──▶│  PostgreSQL  │   │   MinIO / S3         ││
-│  │  Web + API   │   │   17+        │   │   (tarball storage)  ││
-│  │  (port 3000) │   │  (port 5432) │   │   (port 9000)        ││
-│  └──────┬───────┘   └──────────────┘   └──────────────────────┘│
-│         │                                                        │
-│         │           ┌──────────────┐                            │
-│         └──────────▶│   FastAPI    │                            │
-│                     │   Security   │                            │
-│                     │   Scanner    │                            │
-│                     │  (port 8000) │                            │
-│                     └──────────────┘                            │
-└─────────────────────────────────────────────────────────────────┘
-```
+<svg viewBox="0 0 750 340" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sh-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <!-- Title -->
+  <text x="375" y="22" text-anchor="middle" fill="currentColor" font-size="15" font-weight="600">Self-Hosted Deployment Topology</text>
+  <!-- Outer boundary -->
+  <rect x="15" y="40" width="720" height="290" rx="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="375" y="62" text-anchor="middle" fill="#64748b" font-size="11">Your Infrastructure</text>
+  <!-- CLI/Browser -->
+  <rect x="40" y="80" width="130" height="60" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="105" y="105" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">CLI / Browser</text>
+  <text x="105" y="125" text-anchor="middle" fill="#64748b" font-size="10">tank install, UI</text>
+  <!-- Arrow to Web -->
+  <line x1="170" y1="110" x2="235" y2="110" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <!-- Web App -->
+  <rect x="240" y="75" width="180" height="75" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="330" y="100" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">Web App + API</text>
+  <text x="330" y="118" text-anchor="middle" fill="currentColor" font-size="10">TanStack Start</text>
+  <text x="330" y="135" text-anchor="middle" fill="#64748b" font-size="10">:3000</text>
+  <!-- Arrow to PostgreSQL -->
+  <line x1="420" y1="95" x2="500" y2="95" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <!-- PostgreSQL -->
+  <rect x="505" y="75" width="130" height="60" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="570" y="100" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">PostgreSQL 17</text>
+  <text x="570" y="118" text-anchor="middle" fill="#64748b" font-size="10">:5432</text>
+  <!-- Arrow to RustFS -->
+  <line x1="420" y1="130" x2="500" y2="190" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <!-- RustFS -->
+  <rect x="505" y="170" width="130" height="60" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="570" y="195" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">RustFS (S3)</text>
+  <text x="570" y="215" text-anchor="middle" fill="#64748b" font-size="10">:9000 (tarballs)</text>
+  <!-- Arrow to Scanner -->
+  <line x1="330" y1="150" x2="330" y2="225" stroke="#64748b" stroke-width="1.5" marker-end="url(#sh-arrow)"/>
+  <!-- Scanner -->
+  <rect x="240" y="230" width="180" height="75" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="330" y="255" text-anchor="middle" fill="#dc2626" font-size="13" font-weight="600">Security Scanner</text>
+  <text x="330" y="273" text-anchor="middle" fill="currentColor" font-size="10">FastAPI + Python 3.14</text>
+  <text x="330" y="290" text-anchor="middle" fill="#64748b" font-size="10">:8000 (6-stage pipeline)</text>
+  <!-- Arrow from Scanner to PG -->
+  <line x1="420" y1="270" x2="505" y2="135" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#sh-arrow)"/>
+  <!-- Optional Ollama -->
+  <rect x="55" y="240" width="140" height="55" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="125" y="262" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600">Ollama (optional)</text>
+  <text x="125" y="280" text-anchor="middle" fill="#64748b" font-size="9">local LLM analysis</text>
+  <line x1="195" y1="267" x2="237" y2="267" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3" marker-end="url(#sh-arrow)"/>
+  <!-- Monitoring -->
+  <rect x="55" y="170" width="140" height="55" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="125" y="192" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600">Grafana + Loki</text>
+  <text x="125" y="210" text-anchor="middle" fill="#64748b" font-size="9">:3001 (monitoring)</text>
+</svg>
 
-| Service              | Technology            | Purpose                             |
-| -------------------- | --------------------- | ----------------------------------- |
-| **Web app**          | TanStack Start        | Registry UI, REST API, CLI backend  |
-| **Security scanner** | FastAPI + Python 3.14 | 6-stage security scanning pipeline  |
-| **Database**         | PostgreSQL 17+        | Skills, versions, users, audit logs |
-| **Object storage**   | MinIO (S3-compatible) | Skill tarballs                      |
+| Service              | Technology             | Purpose                             |
+| -------------------- | ---------------------- | ----------------------------------- |
+| **Web app**          | TanStack Start         | Registry UI, REST API, CLI backend  |
+| **Security scanner** | FastAPI + Python 3.14  | 6-stage security scanning pipeline  |
+| **Database**         | PostgreSQL 17+         | Skills, versions, users, audit logs |
+| **Object storage**   | RustFS (S3-compatible) | Skill tarballs                      |
 
 ## Docker Image Tags
 
@@ -95,13 +130,13 @@ APP_URL=https://tank.yourcompany.com
 GITHUB_CLIENT_ID=your-github-oauth-app-id
 GITHUB_CLIENT_SECRET=your-github-oauth-app-secret
 
-# Storage (MinIO / S3)
+# Storage (RustFS / S3)
 STORAGE_BACKEND=s3
-S3_ACCESS_KEY=minioadmin
-S3_SECRET_KEY=minioadmin
+S3_ACCESS_KEY=tank
+S3_SECRET_KEY=changeme123456
 AWS_REGION=us-east-1
 S3_BUCKET=tank-skills
-S3_ENDPOINT=http://minio:9000
+S3_ENDPOINT=http://rustfs:9000
 
 # Security scanner
 PYTHON_API_URL=http://scanner:8000
@@ -130,14 +165,17 @@ services:
     ports:
       - "5432:5432"
 
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+  rustfs:
+    image: rustfs/rustfs:latest
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:-tank}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:-changeme123456}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      RUSTFS_CONSOLE_ENABLE: "true"
     volumes:
-      - minio_data:/data
+      - rustfs_data:/data
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -162,12 +200,12 @@ services:
       - "3000:3000"
     depends_on:
       - postgres
-      - minio
+      - rustfs
       - scanner
 
 volumes:
   postgres_data:
-  minio_data:
+  rustfs_data:
 ```
 
 **Optional: Local LLM analysis with Ollama**
@@ -283,7 +321,7 @@ The `infra/helm/tank/` chart includes:
 | Dependency | Version | Purpose                      |
 | ---------- | ------- | ---------------------------- |
 | PostgreSQL | 15.5.38 | Primary database             |
-| MinIO      | 5.4.0   | S3-compatible object storage |
+| RustFS     | latest  | S3-compatible object storage |
 
 ### Quick Start
 
@@ -361,11 +399,11 @@ postgresql:
     username: tank
     password: "" # Set via --set or sealed secret
 
-minio:
+rustfs:
   enabled: true
   auth:
-    rootUser: minioadmin
-    rootPassword: "" # Set via --set or sealed secret
+    accessKey: tank
+    secretKey: "" # Set via --set or sealed secret
 ```
 
 ### Run Migrations on Helm Install
@@ -425,7 +463,7 @@ helm upgrade tank infra/helm/tank/ \
 | ----------------- | --------------------------------- | -------------------- |
 | `STORAGE_BACKEND` | `s3`, `supabase`, or `filesystem` | `supabase`           |
 | `S3_BUCKET`       | Bucket name for tarballs          | —                    |
-| `S3_ENDPOINT`     | S3 endpoint (for MinIO)           | —                    |
+| `S3_ENDPOINT`     | S3 endpoint (for RustFS)          | —                    |
 | `S3_ACCESS_KEY`   | S3 access key                     | —                    |
 | `S3_SECRET_KEY`   | S3 secret key                     | —                    |
 | `S3_REGION`       | S3 region                         | `us-east-1`          |
@@ -446,7 +484,7 @@ helm upgrade tank infra/helm/tank/ \
 - **Scanner**: Security scanner code lives in `apps/python-api/`.
 - **Turbo builds**: Use `bun turbo build --filter=@tankpkg/web...` for dependency-aware monorepo builds.
 - **Auth secret**: Never omit `BETTER_AUTH_SECRET` in production. Sessions fail silently without it.
-- **Storage backend**: Supabase is for cloud deployments. Use `s3` with MinIO for self-hosted.
+- **Storage backend**: Supabase is for cloud deployments. Use `s3` with RustFS for self-hosted.
 
 ## Monitoring
 
@@ -485,13 +523,13 @@ Verify `PYTHON_API_URL` points to the scanner service. In Docker Compose, use th
 curl $PYTHON_API_URL/health
 ```
 
-### MinIO bucket not found
+### RustFS bucket not found
 
-Create the bucket before starting the web app:
+RustFS auto-creates buckets on first write. If you need to create one manually:
 
 ```bash
-docker compose exec minio mc alias set local http://localhost:9000 minioadmin minioadmin
-docker compose exec minio mc mb local/tank-skills
+docker compose exec rustfs mc alias set local http://localhost:9000 tank changeme123456
+docker compose exec rustfs mc mb local/tank-skills
 ```
 
 ### Helm chart: pods stuck in `Pending`

@@ -7,6 +7,51 @@ description: Step-by-step tutorial to publish your first AI agent skill to the T
 
 This tutorial walks you through publishing your first AI agent skill to the Tank registry in under 10 minutes. By the end, your skill will be scanned, versioned, and available for others to install.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 100" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="pub-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <!-- Step 1 -->
+  <rect x="15" y="22" width="115" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="70" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">1</text>
+  <text x="70" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="10">Install CLI</text>
+  <text x="70" y="70" text-anchor="middle" fill="#64748b" font-size="9">npm i -g</text>
+  <line x1="130" y1="50" x2="145" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 2 -->
+  <rect x="150" y="22" width="115" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="207" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">2</text>
+  <text x="207" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="10">Login</text>
+  <text x="207" y="70" text-anchor="middle" fill="#64748b" font-size="9">tank login</text>
+  <line x1="265" y1="50" x2="280" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 3 -->
+  <rect x="285" y="22" width="115" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="342" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">3</text>
+  <text x="342" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="10">Init</text>
+  <text x="342" y="70" text-anchor="middle" fill="#64748b" font-size="9">tank init</text>
+  <line x1="400" y1="50" x2="415" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 4 -->
+  <rect x="420" y="22" width="115" height="55" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="477" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">4</text>
+  <text x="477" y="58" text-anchor="middle" fill="currentColor" font-weight="600" font-size="10">SKILL.md</text>
+  <text x="477" y="70" text-anchor="middle" fill="#64748b" font-size="9">write content</text>
+  <line x1="535" y1="50" x2="550" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 5 (green) -->
+  <rect x="555" y="22" width="115" height="55" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="612" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">5</text>
+  <text x="612" y="58" text-anchor="middle" fill="#10b981" font-weight="600" font-size="10">Dry Run</text>
+  <text x="612" y="70" text-anchor="middle" fill="#64748b" font-size="9">security scan</text>
+  <line x1="670" y1="50" x2="685" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#pub-arrow)"/>
+  <!-- Step 6 (green) -->
+  <rect x="690" y="22" width="115" height="55" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="747" y="42" text-anchor="middle" fill="#64748b" font-weight="600" font-size="10">6</text>
+  <text x="747" y="58" text-anchor="middle" fill="#16a34a" font-weight="600" font-size="10">Publish</text>
+  <text x="747" y="70" text-anchor="middle" fill="#64748b" font-size="9">goes live</text>
+</svg>
+</div>
+
 ## Prerequisites
 
 - Node.js 24+ installed
