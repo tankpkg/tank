@@ -231,7 +231,7 @@ class TestNarrowToSubPath:
         os.chmod(target, 0o000)
 
         try:
-            with pytest.raises(Exception):
+            with pytest.raises((OSError, PermissionError, ValueError)):
                 narrow_to_sub_path(temp_dir, "skill-a", file_list)
         finally:
             os.chmod(target, 0o644)

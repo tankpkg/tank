@@ -38,11 +38,11 @@ jobs:
       - name: Generate API docs
         run: node scripts/gen-api-docs.mjs
 
-      - name: Generate llms.txt
-        run: node scripts/gen-llms-txt.mjs
-
       - name: Format generated docs
         run: npx prettier --write apps/registry/public/docs/cli.md apps/registry/public/docs/api.md
+
+      - name: Generate llms.txt
+        run: node scripts/gen-llms-txt.mjs
 
       - name: Check for uncommitted changes
         run: |

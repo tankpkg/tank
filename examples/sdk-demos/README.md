@@ -13,12 +13,12 @@ Requires a running Tank registry at `http://localhost:5555` with at least one pu
 
 ## Demos
 
-| File | Framework | Loop | Run |
-|------|-----------|------|-----|
-| `demo-openai.mjs` | OpenAI | Manual agentic loop | `OPENAI_API_KEY=... node demo-openai.mjs` |
-| `demo-vercel-ai.mjs` | Vercel AI SDK | Auto (`maxSteps`) | `OPENAI_API_KEY=... node demo-vercel-ai.mjs` |
-| `demo-anthropic.mjs` | Anthropic Claude | Manual agentic loop | `ANTHROPIC_API_KEY=... node demo-anthropic.mjs` |
-| `demo-mcp-server.mjs` | MCP Server | N/A (server) | `node demo-mcp-server.mjs` |
+| File                  | Framework        | Loop                | Run                                             |
+| --------------------- | ---------------- | ------------------- | ----------------------------------------------- |
+| `demo-openai.mjs`     | OpenAI           | Manual agentic loop | `OPENAI_API_KEY=... node demo-openai.mjs`       |
+| `demo-vercel-ai.mjs`  | Vercel AI SDK    | Auto (`maxSteps`)   | `OPENAI_API_KEY=... node demo-vercel-ai.mjs`    |
+| `demo-anthropic.mjs`  | Anthropic Claude | Manual agentic loop | `ANTHROPIC_API_KEY=... node demo-anthropic.mjs` |
+| `demo-mcp-server.mjs` | MCP Server       | N/A (server)        | `node demo-mcp-server.mjs`                      |
 
 ## MCP Server
 

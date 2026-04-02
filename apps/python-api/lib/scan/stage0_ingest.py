@@ -403,10 +403,7 @@ def narrow_to_sub_path(
     # GitHub tarballs have a single top-level directory (e.g., "owner-repo-sha/")
     top_entries = [e for e in os.listdir(temp_dir) if os.path.isdir(os.path.join(temp_dir, e))]
 
-    if len(top_entries) == 1:
-        repo_root = os.path.join(temp_dir, top_entries[0])
-    else:
-        repo_root = temp_dir
+    repo_root = os.path.join(temp_dir, top_entries[0]) if len(top_entries) == 1 else temp_dir
 
     target_dir = os.path.join(repo_root, clean_sub_path)
 

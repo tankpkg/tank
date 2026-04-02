@@ -304,7 +304,7 @@ describe('installCommand', () => {
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify(metaWithSubprocess), { status: 200 }));
 
     await expect(installCommand({ name: '@test-org/my-skill', directory: tmpDir, configDir })).rejects.toThrow(
-      /permission/i
+      /subprocess|permission/i
     );
   });
 

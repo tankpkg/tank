@@ -11,4 +11,5 @@ bun.lock
 *.tsbuildinfo
 .worktrees
 .git
+.claude
 infra/helm

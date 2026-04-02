@@ -16,11 +16,11 @@ Feature: Sub-path narrowing for monorepo scanning
     And the original temp directory is preserved
 
     Examples:
-      | attack                     |
-      | ../../etc/passwd           |
-      | /etc/passwd                |
-      | skill-a/../../etc/passwd   |
-      | .                          |
+      | attack                   |
+      | ../../etc/passwd         |
+      | /etc/passwd              |
+      | skill-a/../../etc/passwd |
+      | .                        |
 
   # ── Symlink defense in depth (S2) ─────────────────────────────────────
   @high
@@ -124,9 +124,9 @@ Feature: Sub-path narrowing for monorepo scanning
     Then a critical finding of type "invalid_sub_path" is returned
 
     Examples:
-      | attack                       |
-      | skill-a\x00/../etc/passwd    |
-      | skill\x00-a                  |
+      | attack                    |
+      | skill-a\x00/../etc/passwd |
+      | skill\x00-a               |
 
   # ── Symlink defense in copy (S7) ─────────────────────────────────────
   @critical
