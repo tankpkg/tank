@@ -18,10 +18,7 @@ export interface RescanResult {
  * Run a full rescan for a skill: Python scanner + dep audit.
  * Called from admin UI and the Hono API route — no HTTP self-call needed.
  */
-export async function runRescan(
-  skillId: string,
-  adminUserId: string
-): Promise<RescanResult> {
+export async function runRescan(skillId: string, adminUserId: string): Promise<RescanResult> {
   const scanApiUrl = env.PYTHON_API_URL;
   if (!scanApiUrl) {
     throw new Error('Scanner not configured');

@@ -162,11 +162,7 @@ export const packagesRoutes = new Hono()
   .post('/:name{.+}/rescan', async (c) => {
     const name = decodeURIComponent(c.req.param('name'));
 
-    const [skill] = await db
-      .select({ id: skills.id })
-      .from(skills)
-      .where(eq(skills.name, name))
-      .limit(1);
+    const [skill] = await db.select({ id: skills.id }).from(skills).where(eq(skills.name, name)).limit(1);
 
     if (!skill) {
       return c.json({ error: 'Package not found' }, 404);

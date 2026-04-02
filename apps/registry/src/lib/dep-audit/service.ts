@@ -67,7 +67,7 @@ export class DepAuditService {
 
       // 5. Store result
       await this.storeResult(versionId, report);
-    } catch (error) {
+    } catch (_error) {
       // Store failure status — never let audit break the publish
       try {
         await this.storeResult(versionId, {
