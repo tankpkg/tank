@@ -78,10 +78,10 @@ export const scanRoutes = new Hono().post('/', zValidator('json', scanSchema), a
     return c.json(scanResult);
   } catch (err) {
     if (err instanceof DOMException && err.name === 'TimeoutError') {
-      log.warn('Public scan timed out', { url });
+      log.warn({ url }, 'Public scan timed out');
       return c.json({ error: 'Scan timed out (55s limit)' }, 504);
     }
-    log.error('Public scan fetch failed', { url, error: String(err) });
+    log.error({ url, error: String(err) }, 'Public scan fetch failed');
     return c.json({ error: 'Scanner unavailable' }, 502);
   }
 });
