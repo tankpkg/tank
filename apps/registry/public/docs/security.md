@@ -31,10 +31,61 @@ Tank was built as the answer. Security scanning is mandatory, non-optional, and 
 
 The pipeline is implemented in Python (`python-api/lib/scan/`) as six independent stages. Each stage can error without blocking subsequent stages, but errors are surfaced in the final verdict. All stages write structured findings into a shared result object that feeds the verdict engine.
 
-```
-tarball → [Stage 0] → [Stage 1] → [Stage 2] → [Stage 3] → [Stage 4] → [Stage 5] → verdict
-           ingest      structure   static       injection    secrets     supply
-```
+<svg viewBox="0 0 930 410" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="465" y="22" text-anchor="middle" fill="currentColor" font-size="15" font-weight="600">What Each Stage Catches</text>
+  <text x="465" y="40" text-anchor="middle" fill="#64748b" font-size="11">Every publish runs all 6 stages. Each finds a different attack class.</text>
+  <!-- Stage 0 -->
+  <rect x="15" y="55" width="290" height="82" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="160" y="74" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Stage 0 — Ingest</text>
+  <text x="160" y="92" text-anchor="middle" fill="currentColor" font-size="10">Quarantine + hash before extraction</text>
+  <text x="160" y="106" text-anchor="middle" fill="currentColor" font-size="10">Tarball never touches disk unsanitized</text>
+  <text x="160" y="124" text-anchor="middle" fill="#64748b" font-size="9">catches: corrupted or malformed tarballs</text>
+  <!-- Stage 1 -->
+  <rect x="320" y="55" width="290" height="82" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="465" y="74" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Stage 1 — Structure</text>
+  <text x="465" y="92" text-anchor="middle" fill="currentColor" font-size="10">Unicode tricks: NFKC, invisible chars,</text>
+  <text x="465" y="106" text-anchor="middle" fill="currentColor" font-size="10">RTL override, zero-width joiners</text>
+  <text x="465" y="124" text-anchor="middle" fill="#64748b" font-size="9">catches: Trojan Source / homoglyph attacks</text>
+  <!-- Stage 2 -->
+  <rect x="625" y="55" width="290" height="82" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="770" y="74" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Stage 2 — Static Analysis</text>
+  <text x="770" y="92" text-anchor="middle" fill="currentColor" font-size="10">Bandit + regex scan for eval(), exec(),</text>
+  <text x="770" y="106" text-anchor="middle" fill="currentColor" font-size="10">os.system(), subprocess and obfuscation</text>
+  <text x="770" y="124" text-anchor="middle" fill="#64748b" font-size="9">catches: dangerous APIs and hidden behavior</text>
+  <!-- Stage 3 — highlighted as most critical -->
+  <rect x="15" y="152" width="290" height="92" rx="8" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="160" y="171" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Stage 3 — Injection Detection</text>
+  <text x="160" y="187" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="600">MOST CRITICAL</text>
+  <text x="160" y="204" text-anchor="middle" fill="currentColor" font-size="10">114 prompt-injection patterns like</text>
+  <text x="160" y="218" text-anchor="middle" fill="currentColor" font-size="10">"ignore previous" and base64 payloads</text>
+  <text x="160" y="234" text-anchor="middle" fill="#64748b" font-size="9">LLM helps confirm real threat vs false positive</text>
+  <!-- Stage 4 -->
+  <rect x="320" y="152" width="290" height="92" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="465" y="171" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">Stage 4 — Secrets</text>
+  <text x="465" y="190" text-anchor="middle" fill="currentColor" font-size="10">11 plugins + 10 regexes for AWS keys,</text>
+  <text x="465" y="204" text-anchor="middle" fill="currentColor" font-size="10">GitHub PATs, OpenAI keys, JWTs, DB URLs</text>
+  <text x="465" y="220" text-anchor="middle" fill="#64748b" font-size="9">catches: hardcoded credentials in package files</text>
+  <!-- Stage 5 -->
+  <rect x="625" y="152" width="290" height="92" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="770" y="171" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Stage 5 — Supply Chain</text>
+  <text x="770" y="190" text-anchor="middle" fill="currentColor" font-size="10">Typosquatting (@opanai/gpt), OSV vulns,</text>
+  <text x="770" y="204" text-anchor="middle" fill="currentColor" font-size="10">dependency confusion and unsafe runtime installs</text>
+  <text x="770" y="220" text-anchor="middle" fill="#64748b" font-size="9">catches: impostor packages and risky dependencies</text>
+  <!-- Verdict Engine -->
+  <rect x="225" y="265" width="480" height="55" rx="10" fill="none" stroke="currentColor" stroke-width="2"/>
+  <text x="465" y="288" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600">Verdict Engine — findings counted by severity</text>
+  <text x="465" y="305" text-anchor="middle" fill="#64748b" font-size="10">critical / high / medium / low counts determine the outcome</text>
+  <!-- Three outcomes -->
+  <rect x="55" y="340" width="250" height="55" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="175" y="367" text-anchor="middle" fill="#16a34a" font-size="13" font-weight="600">PASS</text>
+  <text x="180" y="378" text-anchor="middle" fill="#64748b" font-size="10">No critical/high findings. Installable.</text>
+  <rect x="340" y="340" width="250" height="55" rx="8" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="450" y="367" text-anchor="middle" fill="#eab308" font-size="13" font-weight="600">FLAGGED</text>
+  <text x="465" y="378" text-anchor="middle" fill="#64748b" font-size="10">1-3 high findings. Installable with warning.</text>
+  <rect x="625" y="340" width="250" height="55" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="725" y="367" text-anchor="middle" fill="#dc2626" font-size="13" font-weight="600">FAIL</text>
+  <text x="750" y="378" text-anchor="middle" fill="#64748b" font-size="10">Any critical or 4+ high. Blocked.</text>
+</svg>
 
 ### Stage 0: Ingestion & Safe Quarantine
 
@@ -317,6 +368,40 @@ The rules are applied in order — the first matching rule determines the verdic
 
 ## Audit Score Algorithm
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 800 130" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="400" y="16" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Audit Score Breakdown (0-10)</text>
+  <rect x="15" y="28" width="120" height="42" rx="8" fill="#10b981" fill-opacity="0.12" stroke="#10b981" stroke-width="1"/>
+  <text x="75" y="46" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Base</text>
+  <text x="75" y="60" text-anchor="middle" fill="#64748b" font-size="9">SKILL + desc + perms</text>
+  <text x="75" y="82" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">3 pts</text>
+  <rect x="145" y="28" width="120" height="42" rx="8" fill="#16a34a" fill-opacity="0.12" stroke="#16a34a" stroke-width="1"/>
+  <text x="205" y="46" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">No issues</text>
+  <text x="205" y="60" text-anchor="middle" fill="#64748b" font-size="9">zero findings</text>
+  <text x="205" y="82" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">2 pts</text>
+  <rect x="275" y="28" width="120" height="42" rx="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1"/>
+  <text x="335" y="46" text-anchor="middle" fill="#eab308" font-size="10" font-weight="600">Perm match</text>
+  <text x="335" y="60" text-anchor="middle" fill="#64748b" font-size="9">code vs declared</text>
+  <text x="335" y="82" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">2 pts</text>
+  <rect x="405" y="28" width="90" height="42" rx="8" fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1"/>
+  <text x="450" y="46" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Files</text>
+  <text x="450" y="60" text-anchor="middle" fill="#64748b" font-size="9">under 100</text>
+  <text x="450" y="82" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">1 pt</text>
+  <rect x="505" y="28" width="90" height="42" rx="8" fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1"/>
+  <text x="550" y="46" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">README</text>
+  <text x="550" y="60" text-anchor="middle" fill="#64748b" font-size="9">present</text>
+  <text x="550" y="82" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">1 pt</text>
+  <rect x="605" y="28" width="90" height="42" rx="8" fill="#10b981" fill-opacity="0.10" stroke="#10b981" stroke-width="1"/>
+  <text x="650" y="46" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Size</text>
+  <text x="650" y="60" text-anchor="middle" fill="#64748b" font-size="9">under 5MB</text>
+  <text x="650" y="82" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">1 pt</text>
+  <rect x="705" y="28" width="80" height="42" rx="8" fill="none" stroke="currentColor" stroke-width="1"/>
+  <text x="745" y="46" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Max</text>
+  <text x="745" y="64" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">10</text>
+  <text x="400" y="112" text-anchor="middle" fill="#64748b" font-size="10">Verdict is pass/fail. Audit score is the quality signal on top.</text>
+</svg>
+</div>
+
 The audit score (0–10) is separate from the security verdict. Where the verdict is binary (pass/fail), the score is a continuous quality signal displayed on every skill's registry page and returned by `tank audit`.
 
 The score is computed by `lib/audit-score.ts` across 8 weighted checks:
@@ -358,6 +443,43 @@ tank audit @org/skill-name
 ---
 
 ## LLM-Assisted Analysis
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 750 120" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="llm-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="llm-ok" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#10b981"/></marker>
+  </defs>
+  <!-- Stage 3 Findings -->
+  <rect x="15" y="25" width="120" height="65" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="75" y="48" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">Stage 3</text>
+  <text x="75" y="62" text-anchor="middle" fill="#64748b" font-size="10">Ambiguous</text>
+  <text x="75" y="76" text-anchor="middle" fill="#64748b" font-size="10">findings</text>
+  <!-- Arrow -->
+  <line x1="135" y1="57" x2="170" y2="57" stroke="#64748b" stroke-width="1.5" marker-end="url(#llm-arrow)"/>
+  <!-- LLM Prompt -->
+  <rect x="175" y="17" width="155" height="80" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="252" y="38" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">LLM Prompt</text>
+  <text x="252" y="54" text-anchor="middle" fill="#64748b" font-size="9">skill code context</text>
+  <text x="252" y="68" text-anchor="middle" fill="#64748b" font-size="9">+ finding details</text>
+  <text x="252" y="82" text-anchor="middle" fill="#64748b" font-size="9">+ eval criteria</text>
+  <!-- Arrow -->
+  <line x1="330" y1="57" x2="370" y2="57" stroke="#64748b" stroke-width="1.5" marker-end="url(#llm-arrow)"/>
+  <!-- LLM Response -->
+  <rect x="375" y="17" width="155" height="80" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="452" y="38" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">LLM Response</text>
+  <text x="452" y="54" text-anchor="middle" fill="#16a34a" font-size="9">confirm threat</text>
+  <text x="452" y="68" text-anchor="middle" fill="#eab308" font-size="9">reclassify severity</text>
+  <text x="452" y="82" text-anchor="middle" fill="#64748b" font-size="9">dismiss as false pos</text>
+  <!-- Arrow -->
+  <line x1="530" y1="57" x2="575" y2="57" stroke="#10b981" stroke-width="1.5" marker-end="url(#llm-ok)"/>
+  <!-- Final Severity -->
+  <rect x="580" y="22" width="150" height="70" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="655" y="48" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Final</text>
+  <text x="655" y="64" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Severity</text>
+  <text x="655" y="80" text-anchor="middle" fill="#64748b" font-size="9">never above pattern match</text>
+</svg>
+</div>
 
 Some security findings require contextual judgment that pattern matching alone cannot make accurately. Stage 3 (prompt injection detection) can optionally use an LLM to corroborate ambiguous findings before promoting them to a final severity level.
 

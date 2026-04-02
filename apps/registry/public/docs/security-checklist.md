@@ -7,6 +7,35 @@ description: Security best practices checklist for publishing safe AI agent skil
 
 Use this checklist before publishing any AI agent skill to ensure it follows security best practices.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 90" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sec-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect x="10" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="67" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Manifest</text>
+  <text x="67" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+  <line x1="125" y1="40" x2="148" y2="40" stroke="#64748b" stroke-width="1.5" marker-end="url(#sec-arrow)"/>
+  <rect x="153" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="210" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Code</text>
+  <text x="210" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+  <line x1="268" y1="40" x2="291" y2="40" stroke="#64748b" stroke-width="1.5" marker-end="url(#sec-arrow)"/>
+  <rect x="296" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="353" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Prompts</text>
+  <text x="353" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+  <line x1="411" y1="40" x2="434" y2="40" stroke="#64748b" stroke-width="1.5" marker-end="url(#sec-arrow)"/>
+  <rect x="439" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="496" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Secrets</text>
+  <text x="496" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+  <line x1="554" y1="40" x2="577" y2="40" stroke="#64748b" stroke-width="1.5" marker-end="url(#sec-arrow)"/>
+  <rect x="582" y="15" width="115" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="639" y="35" text-anchor="middle" fill="#10b981" font-weight="600" font-size="13">Dependencies</text>
+  <text x="639" y="52" text-anchor="middle" fill="#64748b" font-weight="600" font-size="18">&#x2713;</text>
+</svg>
+</div>
+
 ## Manifest Security
 
 - [ ] **Minimal permissions** — Only declare permissions your skill actually needs

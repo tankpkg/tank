@@ -7,6 +7,60 @@ description: Find AI agent skills in the Tank registry using hybrid fuzzy search
 
 Tank provides three ways to find AI agent skills: the CLI, the web UI, and the REST API. All three methods query the same underlying search index and return the same results — choose whichever fits your workflow.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 230" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="s-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="s-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16a34a"/></marker>
+  </defs>
+  <!-- Query with typo -->
+  <rect x="15" y="12" width="150" height="52" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="90" y="31" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">User query</text>
+  <text x="90" y="50" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">"vercel deplyo"</text>
+  <!-- Arrows to 3 tiers -->
+  <line x1="165" y1="28" x2="205" y2="28" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <line x1="165" y1="38" x2="205" y2="93" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <line x1="165" y1="48" x2="205" y2="158" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <!-- Tier 1: ILIKE — no match -->
+  <rect x="210" y="5" width="270" height="44" rx="8" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="300" y="23" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">Tier 1: ILIKE exact/substring</text>
+  <text x="300" y="38" text-anchor="middle" fill="#64748b" font-size="9">No exact text match for the typo</text>
+  <rect x="400" y="12" width="65" height="28" rx="6" fill="none" stroke="#64748b" stroke-width="1"/>
+  <text x="432.5" y="31" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600">0 pts</text>
+  <!-- Tier 2: pg_trgm — MATCH -->
+  <rect x="210" y="66" width="270" height="56" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="300" y="84" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Tier 2: pg_trgm fuzzy match</text>
+  <text x="300" y="100" text-anchor="middle" fill="currentColor" font-size="9">Finds "vercel-deploy" despite typo</text>
+  <text x="300" y="113" text-anchor="middle" fill="#64748b" font-size="8">similarity 0.68 → 204 pts</text>
+  <rect x="400" y="80" width="65" height="28" rx="6" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="432.5" y="99" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">204</text>
+  <!-- Tier 3: tsvector — stem match -->
+  <rect x="210" y="138" width="270" height="48" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="300" y="156" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Tier 3: tsvector stemming</text>
+  <text x="300" y="172" text-anchor="middle" fill="currentColor" font-size="9">"deploy" stem also matches "deployment"</text>
+  <rect x="400" y="148" width="65" height="28" rx="6" fill="none" stroke="currentColor" stroke-width="1"/>
+  <text x="432.5" y="167" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">45</text>
+  <!-- Sum arrows -->
+  <line x1="480" y1="27" x2="560" y2="92" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <line x1="480" y1="94" x2="560" y2="94" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <line x1="480" y1="162" x2="560" y2="100" stroke="#64748b" stroke-width="1.5" marker-end="url(#s-arrow)"/>
+  <!-- Combined box -->
+  <rect x="565" y="72" width="90" height="44" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="610" y="90" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">SUM</text>
+  <text x="610" y="107" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">249 pts</text>
+  <!-- Arrow to result -->
+  <line x1="655" y1="94" x2="702" y2="94" stroke="#16a34a" stroke-width="2" marker-end="url(#s-arrow-green)"/>
+  <!-- Result -->
+  <rect x="715" y="60" width="170" height="68" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="800" y="82" text-anchor="middle" fill="#16a34a" font-size="12" font-weight="600">#1 vercel-deploy</text>
+  <text x="800" y="99" text-anchor="middle" fill="currentColor" font-size="10">v2.3.1 · score 9.4</text>
+  <text x="800" y="116" text-anchor="middle" fill="#64748b" font-size="9">12,400 downloads</text>
+  <!-- Bottom note -->
+  <rect x="170" y="194" width="560" height="24" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="450" y="210" text-anchor="middle" fill="#64748b" font-size="10">Typo tolerance + stemming = you find what you meant</text>
+</svg>
+</div>
+
 ## Three Ways to Search
 
 | Method                          | Best For                                                 |
@@ -16,6 +70,47 @@ Tank provides three ways to find AI agent skills: the CLI, the web UI, and the R
 | `GET /api/v1/search`            | Programmatic discovery, custom tooling, MCP integrations |
 
 ## How Tank Search Works
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 150" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="sr-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <!-- Query -->
+  <rect x="10" y="55" width="90" height="44" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="55" y="82" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Query</text>
+  <!-- Fan-out -->
+  <line x1="100" y1="67" x2="155" y2="22" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <line x1="100" y1="77" x2="155" y2="72" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <line x1="100" y1="87" x2="155" y2="122" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <!-- ILIKE box -->
+  <rect x="165" y="8" width="200" height="40" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="265" y="21" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">ILIKE prefix/substring</text>
+  <text x="265" y="36" text-anchor="middle" fill="#64748b" font-size="10">400 pts max — exact match</text>
+  <!-- pg_trgm box -->
+  <rect x="165" y="54" width="200" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="265" y="71" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">pg_trgm fuzzy</text>
+  <text x="265" y="86" text-anchor="middle" fill="#64748b" font-size="10">300 pts max — handles typos</text>
+  <!-- tsvector box -->
+  <rect x="165" y="100" width="200" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="265" y="121" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">tsvector full-text</text>
+  <text x="265" y="136" text-anchor="middle" fill="#64748b" font-size="10">100 pts max — stemming</text>
+  <!-- Merge arrows -->
+  <line x1="365" y1="28" x2="440" y2="68" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <line x1="365" y1="74" x2="440" y2="74" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <line x1="365" y1="120" x2="440" y2="80" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <!-- SUM box -->
+  <rect x="445" y="54" width="110" height="40" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="485" y="71" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">SUM</text>
+  <text x="485" y="86" text-anchor="middle" fill="#64748b" font-size="10">+ bonus pts</text>
+  <!-- Arrow to ranked -->
+  <line x1="535" y1="74" x2="575" y2="74" stroke="#64748b" stroke-width="1.5" marker-end="url(#sr-arrow)"/>
+  <!-- Ranked Results -->
+  <rect x="605" y="50" width="140" height="44" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="675" y="69" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Ranked Results</text>
+  <text x="675" y="84" text-anchor="middle" fill="#64748b" font-size="10">ORDER BY score</text>
+</svg>
+</div>
 
 Tank uses a **hybrid 3-tier ranking** system that combines multiple matching strategies into a single relevance score. This means you get useful results even with typos, partial words, or short queries.
 

@@ -7,6 +7,61 @@ description: Official Python SDK for the Tank registry — search, download, rea
 
 `tankpkg` gives your Python application programmatic access to the Tank skill registry. Search skills, read their full content (including references and scripts), download tarballs with integrity verification, and inspect security audit results — with typed exceptions, streaming downloads, and context manager support.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="py-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+
+  <!-- 4 capability cards -->
+  <!-- 1: Search / Discovery -->
+  <rect x="10" y="10" width="185" height="80" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="20" y="30" text-anchor="start" fill="#10b981" font-size="10" font-weight="600">DISCOVERY</text>
+  <text x="20" y="48" text-anchor="start" fill="currentColor" font-size="11" font-weight="600">search("react")</text>
+  <line x1="20" y1="56" x2="180" y2="56" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="20" y="70" text-anchor="start" fill="#64748b" font-size="10">→ 47 skills found</text>
+  <text x="20" y="84" text-anchor="start" fill="#64748b" font-size="9">name, score, downloads, version</text>
+
+  <!-- 2: Read / Content -->
+  <rect x="205" y="10" width="195" height="80" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="215" y="30" text-anchor="start" fill="#10b981" font-size="10" font-weight="600">CONTENT</text>
+  <text x="215" y="48" text-anchor="start" fill="currentColor" font-size="11" font-weight="600">read_skill("@tank/react")</text>
+  <line x1="215" y1="56" x2="385" y2="56" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="215" y="70" text-anchor="start" fill="#64748b" font-size="10">→ SKILL.md + references/ + scripts/</text>
+  <text x="215" y="84" text-anchor="start" fill="#64748b" font-size="9">full content for LLM context</text>
+
+  <!-- 3: Download / Integrity -->
+  <rect x="410" y="10" width="185" height="80" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="420" y="30" text-anchor="start" fill="#16a34a" font-size="10" font-weight="600">INTEGRITY</text>
+  <text x="420" y="48" text-anchor="start" fill="currentColor" font-size="11" font-weight="600">download("@tank/react")</text>
+  <line x1="420" y1="56" x2="580" y2="56" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="420" y="70" text-anchor="start" fill="#64748b" font-size="10">→ SHA-512 verified .tar.gz</text>
+  <text x="420" y="84" text-anchor="start" fill="#64748b" font-size="9">100MB cap, streaming download</text>
+
+  <!-- 4: Audit / Security -->
+  <rect x="605" y="10" width="185" height="80" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="615" y="30" text-anchor="start" fill="#dc2626" font-size="10" font-weight="600">SECURITY</text>
+  <text x="615" y="48" text-anchor="start" fill="currentColor" font-size="11" font-weight="600">audit("@tank/react")</text>
+  <line x1="615" y1="56" x2="775" y2="56" stroke="currentColor" stroke-width="0.5" opacity="0.15"/>
+  <text x="615" y="70" text-anchor="start" fill="#64748b" font-size="10">→ score: 9.2, verdict: PASS</text>
+  <text x="615" y="84" text-anchor="start" fill="#64748b" font-size="9">6-stage scan findings</text>
+
+  <!-- Arrows connecting to unified result -->
+  <line x1="102" y1="90" x2="102" y2="116" stroke="#64748b" stroke-width="1.5" marker-end="url(#py-arrow)"/>
+  <line x1="302" y1="90" x2="302" y2="116" stroke="#64748b" stroke-width="1.5" marker-end="url(#py-arrow)"/>
+  <line x1="502" y1="90" x2="502" y2="116" stroke="#64748b" stroke-width="1.5" marker-end="url(#py-arrow)"/>
+  <line x1="697" y1="90" x2="697" y2="116" stroke="#64748b" stroke-width="1.5" marker-end="url(#py-arrow)"/>
+
+  <!-- Unified client bar -->
+  <rect x="10" y="120" width="780" height="36" rx="8" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="142" text-anchor="middle" fill="#10b981" font-size="13" font-weight="600">TankClient — same API as the TypeScript SDK</text>
+
+  <!-- Bottom note -->
+  <rect x="10" y="168" width="780" height="26" rx="8" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-width="1" stroke-dasharray="4,3" opacity="0.3"/>
+  <text x="400" y="185" text-anchor="middle" fill="#64748b" font-size="10">Auto-discovers token from ~/.tank/config.json → TANK_TOKEN env → explicit token= parameter</text>
+</svg>
+</div>
+
 ```bash
 pip install tankpkg
 ```

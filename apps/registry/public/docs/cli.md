@@ -5,6 +5,66 @@ description: Complete reference for all 20 Tank CLI commands — install, publis
 
 The Tank CLI provides 20 commands for publishing, installing, and managing AI agent skills with security-first design.
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Group 1: Publish Safely (green) -->
+  <rect x="10" y="10" width="148" height="108" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="84" y="30" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Publish Safely</text>
+  <text x="84" y="48" text-anchor="middle" fill="currentColor" font-size="10">init</text>
+  <text x="84" y="62" text-anchor="middle" fill="currentColor" font-size="10">publish</text>
+  <text x="84" y="76" text-anchor="middle" fill="currentColor" font-size="10">doctor</text>
+  <rect x="20" y="88" width="128" height="22" rx="4" fill="#16a34a" fill-opacity="0.1"/>
+  <text x="84" y="103" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="600">validate before upload</text>
+  <!-- Group 2: Install Securely (red) -->
+  <rect x="170" y="10" width="148" height="108" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="244" y="30" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Install Securely</text>
+  <text x="218" y="48" text-anchor="middle" fill="currentColor" font-size="10">install</text>
+  <text x="270" y="48" text-anchor="middle" fill="currentColor" font-size="10">update</text>
+  <text x="218" y="62" text-anchor="middle" fill="currentColor" font-size="10">remove</text>
+  <text x="270" y="62" text-anchor="middle" fill="currentColor" font-size="10">verify</text>
+  <rect x="180" y="74" width="128" height="36" rx="4" fill="#dc2626" fill-opacity="0.08"/>
+  <text x="244" y="88" text-anchor="middle" fill="#dc2626" font-size="8" font-weight="600">SHA-512 lockfile</text>
+  <text x="244" y="100" text-anchor="middle" fill="#dc2626" font-size="8" font-weight="600">+ permission budget</text>
+  <!-- Group 3: Audit & Monitor (yellow) -->
+  <rect x="330" y="10" width="148" height="108" rx="10" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="404" y="30" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">Audit &amp; Monitor</text>
+  <text x="378" y="48" text-anchor="middle" fill="currentColor" font-size="10">audit</text>
+  <text x="430" y="48" text-anchor="middle" fill="currentColor" font-size="10">scan</text>
+  <text x="378" y="62" text-anchor="middle" fill="currentColor" font-size="10">permissions</text>
+  <text x="430" y="62" text-anchor="middle" fill="currentColor" font-size="10">info</text>
+  <rect x="340" y="74" width="128" height="36" rx="4" fill="#eab308" fill-opacity="0.08"/>
+  <text x="404" y="88" text-anchor="middle" fill="#eab308" font-size="8" font-weight="600">6-stage security scan</text>
+  <text x="404" y="100" text-anchor="middle" fill="#eab308" font-size="8" font-weight="600">see what skills can do</text>
+  <!-- Group 4: Identity (neutral) -->
+  <rect x="490" y="10" width="128" height="108" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="554" y="30" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">Identity</text>
+  <text x="554" y="48" text-anchor="middle" fill="currentColor" font-size="10">login</text>
+  <text x="554" y="62" text-anchor="middle" fill="currentColor" font-size="10">logout</text>
+  <text x="554" y="76" text-anchor="middle" fill="currentColor" font-size="10">whoami</text>
+  <rect x="500" y="88" width="108" height="22" rx="4" fill="none" stroke="#64748b" stroke-width="0.5"/>
+  <text x="554" y="103" text-anchor="middle" fill="#64748b" font-size="8">GitHub OAuth</text>
+  <!-- Group 5: Dev Tools (dashed neutral) -->
+  <rect x="630" y="10" width="160" height="108" rx="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="710" y="30" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">Dev Tools</text>
+  <text x="680" y="48" text-anchor="middle" fill="#64748b" font-size="9">search</text>
+  <text x="740" y="48" text-anchor="middle" fill="#64748b" font-size="9">link</text>
+  <text x="680" y="62" text-anchor="middle" fill="#64748b" font-size="9">unlink</text>
+  <text x="740" y="62" text-anchor="middle" fill="#64748b" font-size="9">run</text>
+  <text x="680" y="76" text-anchor="middle" fill="#64748b" font-size="9">migrate</text>
+  <text x="740" y="76" text-anchor="middle" fill="#64748b" font-size="9">upgrade</text>
+  <rect x="640" y="88" width="140" height="22" rx="4" fill="none" stroke="#64748b" stroke-width="0.5" stroke-dasharray="3,2"/>
+  <text x="710" y="103" text-anchor="middle" fill="#64748b" font-size="8">day-to-day workflow</text>
+  <!-- Bottom: security emphasis -->
+  <rect x="10" y="135" width="468" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="244" y="155" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">Security runs through every phase — not a separate step</text>
+  <text x="244" y="173" text-anchor="middle" fill="#64748b" font-size="9">publish validates → install checks hashes + permissions → audit scans post-install</text>
+  <!-- Command count -->
+  <rect x="500" y="135" width="290" height="50" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="645" y="155" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">20 commands · 7 aliases</text>
+  <text x="645" y="173" text-anchor="middle" fill="#64748b" font-size="9">npm install -g @tankpkg/cli</text>
+</svg>
+</div>
+
 ## Installation
 
 ```bash

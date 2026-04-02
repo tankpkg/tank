@@ -7,6 +7,42 @@ description: Install the Tank CLI, authenticate with GitHub, and install your fi
 
 Tank is a security-first package manager for AI agent skills. Every install is SHA-512 verified, every skill is statically analyzed before it reaches the registry, and permission budgets prevent skills from accessing more than they declare. This guide takes you from zero to a fully verified working setup.
 
+<svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="400" y="20" text-anchor="middle" fill="currentColor" font-size="13" font-weight="600">What Happens at Each Step</text>
+  <!-- Step 1 -->
+  <rect x="15" y="35" width="145" height="65" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="87" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">1. npm i -g @tankpkg/cli</text>
+  <text x="87" y="72" text-anchor="middle" fill="#64748b" font-size="9">or brew install tankpkg/tap/tank</text>
+  <text x="87" y="88" text-anchor="middle" fill="#64748b" font-size="9">20 commands available after install</text>
+  <!-- Step 2 -->
+  <rect x="172" y="35" width="145" height="65" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="244" y="55" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">2. tank login</text>
+  <text x="244" y="72" text-anchor="middle" fill="#64748b" font-size="9">Opens browser → GitHub OAuth</text>
+  <text x="244" y="88" text-anchor="middle" fill="#64748b" font-size="9">Token stored in ~/.tank/config.json</text>
+  <!-- Step 3 -->
+  <rect x="329" y="35" width="145" height="65" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="401" y="55" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">3. tank install @org/skill</text>
+  <text x="401" y="72" text-anchor="middle" fill="#64748b" font-size="9">Resolves deps, downloads tarball,</text>
+  <text x="401" y="88" text-anchor="middle" fill="#64748b" font-size="9">SHA-512 verify, permission check</text>
+  <!-- Step 4 -->
+  <rect x="486" y="35" width="145" height="65" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="558" y="55" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">4. tank verify</text>
+  <text x="558" y="72" text-anchor="middle" fill="#64748b" font-size="9">Re-hashes every installed file</text>
+  <text x="558" y="88" text-anchor="middle" fill="#64748b" font-size="9">against lockfile. Tamper detection.</text>
+  <!-- Step 5 -->
+  <rect x="643" y="35" width="145" height="65" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="715" y="55" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">5. tank audit @org/skill</text>
+  <text x="715" y="72" text-anchor="middle" fill="#64748b" font-size="9">View 6-stage scan results.</text>
+  <text x="715" y="88" text-anchor="middle" fill="#64748b" font-size="9">Score 0-10. See all findings.</text>
+  <!-- Bottom comparison -->
+  <rect x="15" y="120" width="370" height="60" rx="8" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="200" y="142" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">Other package managers: download file, hope for the best</text>
+  <text x="200" y="160" text-anchor="middle" fill="#64748b" font-size="10">No hash check, no permission audit, no scan results</text>
+  <rect x="415" y="120" width="370" height="60" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="600" y="142" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Tank: every file verified, every permission declared</text>
+  <text x="600" y="160" text-anchor="middle" fill="#64748b" font-size="10">SHA-512 integrity + budget enforcement + 6-stage scan</text>
+</svg>
+
 ## Prerequisites
 
 Before installing Tank, confirm you have:

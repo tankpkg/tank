@@ -7,6 +7,34 @@ description: Build, validate, and publish AI agent skills to the Tank registry �
 
 Publishing to Tank is a deliberate process, not a one-liner. Every skill goes through a 6-stage security pipeline before it becomes installable. Permission escalation is enforced at the version level. This guide walks you through every step, from initial manifest authoring to post-publish validation.
 
+<svg viewBox="0 0 920 320" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="450" y="22" text-anchor="middle" fill="currentColor" font-size="14" font-weight="600">Publishing: Three Safety Nets Before Your Skill Goes Live</text>
+  <rect x="15" y="44" width="280" height="118" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="152.5" y="66" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Net 1: Local Validation</text>
+  <text x="155" y="90" text-anchor="middle" fill="#64748b" font-size="10">tank doctor checks config + auth</text>
+  <text x="155" y="108" text-anchor="middle" fill="#64748b" font-size="10">dry-run validates manifest + size</text>
+  <text x="155" y="126" text-anchor="middle" fill="#64748b" font-size="10">files &lt; 1000, tarball &lt; 50MB</text>
+  <text x="152.5" y="146" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Nothing leaves your machine</text>
+  <rect x="320" y="44" width="280" height="118" rx="10" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="449.5" y="66" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Net 2: 6-Stage Security Scan</text>
+  <text x="460" y="90" text-anchor="middle" fill="#64748b" font-size="10">Runs after upload, before listing</text>
+  <text x="460" y="108" text-anchor="middle" fill="#64748b" font-size="10">Checks injection, secrets, supply chain</text>
+  <text x="460" y="126" text-anchor="middle" fill="#64748b" font-size="10">Static analysis + LLM corroboration</text>
+  <text x="449.5" y="146" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">FAIL verdict blocks installation</text>
+  <rect x="625" y="44" width="280" height="118" rx="10" fill="none" stroke="#eab308" stroke-width="1.5"/>
+  <text x="746.5" y="66" text-anchor="middle" fill="#eab308" font-size="12" font-weight="600">Net 3: Escalation Rules</text>
+  <text x="765" y="90" text-anchor="middle" fill="#64748b" font-size="10">Compares new version against last version</text>
+  <text x="765" y="108" text-anchor="middle" fill="#64748b" font-size="10">PATCH: no new permissions</text>
+  <text x="765" y="126" text-anchor="middle" fill="#64748b" font-size="10">MINOR: no network or subprocess</text>
+  <text x="765" y="144" text-anchor="middle" fill="#64748b" font-size="10">MAJOR: anything allowed</text>
+  <rect x="15" y="185" width="890" height="110" rx="10" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="449.5" y="208" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">Why this matters: supply chain attacks are incremental</text>
+  <text x="35" y="235" fill="currentColor" font-size="10">1. Attacker publishes a legitimate v1.0.0 and gains trust.</text>
+  <text x="35" y="255" fill="currentColor" font-size="10">2. Next they ship v1.0.1 that quietly adds network.outbound: ["evil.com"].</text>
+  <text x="35" y="275" fill="#dc2626" font-size="10" font-weight="600">Tank blocks step 2: patch releases cannot add new permissions.</text>
+  <text x="35" y="290" fill="#64748b" font-size="10">The attack fails at publish time instead of after 1,000 installs.</text>
+</svg>
+
 ## Preflight Checklist
 
 Before running `tank publish`, confirm all of the following:
@@ -131,6 +159,34 @@ To publish under your personal namespace, use your GitHub username as the scope:
 
 ## Versioning Policy and Permission Escalation Rules
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="360" y="18" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Permission Escalation Matrix</text>
+  <rect x="110" y="28" width="180" height="28" rx="6" fill="none" stroke="#64748b" stroke-width="1"/>
+  <text x="200" y="47" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">PATCH</text>
+  <rect x="300" y="28" width="180" height="28" rx="6" fill="none" stroke="#64748b" stroke-width="1"/>
+  <text x="390" y="47" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">MINOR</text>
+  <rect x="490" y="28" width="180" height="28" rx="6" fill="none" stroke="#64748b" stroke-width="1"/>
+  <text x="580" y="47" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">MAJOR</text>
+  <text x="55" y="78" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">network</text>
+  <rect x="170" y="64" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="200" y="80" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="360" y="64" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="390" y="80" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="550" y="64" width="60" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="580" y="80" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">✓</text>
+  <text x="55" y="108" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">subproc</text>
+  <rect x="170" y="94" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="200" y="110" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="360" y="94" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="390" y="110" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="550" y="94" width="60" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="580" y="110" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">✓</text>
+  <text x="55" y="138" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">fs paths</text>
+  <rect x="170" y="124" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="200" y="140" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="360" y="124" width="60" height="24" rx="5" fill="none" stroke="#eab308" stroke-width="1.5"/><text x="390" y="140" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">~</text>
+  <rect x="550" y="124" width="60" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="580" y="140" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">✓</text>
+  <text x="55" y="168" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">env vars</text>
+  <rect x="170" y="154" width="60" height="24" rx="5" fill="none" stroke="#dc2626" stroke-width="1.5"/><text x="200" y="170" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="600">✕</text>
+  <rect x="360" y="154" width="60" height="24" rx="5" fill="none" stroke="#eab308" stroke-width="1.5"/><text x="390" y="170" text-anchor="middle" fill="#eab308" font-size="11" font-weight="600">~</text>
+  <rect x="550" y="154" width="60" height="24" rx="5" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="580" y="170" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">✓</text>
+</svg>
+</div>
+
 Tank enforces strict rules about what changes are allowed at each semver bump level. These rules are applied automatically at publish time — violations are rejected with a descriptive error, not a warning.
 
 ### Semver bump types
@@ -199,6 +255,50 @@ The following are automatically excluded from the published tarball and are neve
 Skills exceeding either limit are rejected at publish time. The dry run (`--dry-run`) will surface these before upload.
 
 ## What the Security Scanner Checks
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 840 110" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="scan-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <text x="420" y="18" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Scanner Stage Summary</text>
+  <!-- Stage 0 -->
+  <rect x="15" y="32" width="125" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="77.5" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">0. Ingest</text>
+  <text x="77.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">hashing +</text>
+  <text x="77.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">metadata</text>
+  <line x1="140" y1="58" x2="150" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 1 -->
+  <rect x="155" y="32" width="125" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="217.5" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">1. Structure</text>
+  <text x="217.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">layout + file</text>
+  <text x="217.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">validation</text>
+  <line x1="280" y1="58" x2="290" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 2 -->
+  <rect x="295" y="32" width="125" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="357.5" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">2. Static</text>
+  <text x="357.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">AST checks for</text>
+  <text x="357.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">dangerous APIs</text>
+  <line x1="420" y1="58" x2="430" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 3 — red border -->
+  <rect x="435" y="32" width="125" height="62" rx="8" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="497.5" y="47" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">3. Injection</text>
+  <text x="497.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">prompt injection</text>
+  <text x="497.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">+ jailbreaks</text>
+  <line x1="560" y1="58" x2="570" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 4 -->
+  <rect x="575" y="32" width="125" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="637.5" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">4. Secrets</text>
+  <text x="637.5" y="61" text-anchor="middle" fill="#64748b" font-size="9">credentials +</text>
+  <text x="637.5" y="72" text-anchor="middle" fill="#64748b" font-size="9">API keys</text>
+  <line x1="700" y1="58" x2="710" y2="58" stroke="#64748b" stroke-width="1.5" marker-end="url(#scan-arrow)"/>
+  <!-- Stage 5 -->
+  <rect x="715" y="32" width="110" height="62" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="770" y="49" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">5. Supply</text>
+  <text x="770" y="64" text-anchor="middle" fill="#64748b" font-size="9">typosquat +</text>
+  <text x="770" y="76" text-anchor="middle" fill="#64748b" font-size="9">dep confusion</text>
+</svg>
+</div>
 
 After upload, Tank runs a 6-stage security pipeline. The stages are:
 

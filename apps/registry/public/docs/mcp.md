@@ -21,6 +21,68 @@ MCP is an open protocol by Anthropic that enables AI assistants to connect to ex
 - Link skills into agent workspaces for local development
 - Diagnose environment health issues
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="mcp-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+    <marker id="mcp-arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#dc2626"/></marker>
+    <marker id="mcp-arrow-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#16a34a"/></marker>
+  </defs>
+  <!-- Divider -->
+  <line x1="380" y1="10" x2="380" y2="180" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3" opacity="0.4"/>
+  <!-- LEFT: Without MCP -->
+  <text x="190" y="18" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Without MCP — 6 context switches</text>
+  <!-- Developer -->
+  <rect x="10" y="32" width="80" height="140" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="50" y="52" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">You</text>
+  <!-- Agent -->
+  <rect x="260" y="32" width="80" height="140" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="300" y="52" text-anchor="middle" fill="currentColor" font-size="10" font-weight="600">Agent</text>
+  <!-- Back-and-forth arrows (6 of them) -->
+  <line x1="90" y1="68" x2="258" y2="68" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="64" text-anchor="middle" fill="#dc2626" font-size="7">1. "tank search X"</text>
+  <line x1="258" y1="82" x2="90" y2="82" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="79" text-anchor="middle" fill="#dc2626" font-size="7">2. copies result</text>
+  <line x1="90" y1="96" x2="258" y2="96" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="93" text-anchor="middle" fill="#dc2626" font-size="7">3. pastes to agent</text>
+  <line x1="258" y1="110" x2="90" y2="110" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="107" text-anchor="middle" fill="#dc2626" font-size="7">4. "install Y"</text>
+  <line x1="90" y1="124" x2="258" y2="124" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="121" text-anchor="middle" fill="#dc2626" font-size="7">5. "tank install Y"</text>
+  <line x1="258" y1="138" x2="90" y2="138" stroke="#dc2626" stroke-width="1" marker-end="url(#mcp-arrow-red)"/>
+  <text x="174" y="135" text-anchor="middle" fill="#dc2626" font-size="7">6. confirms done</text>
+  <!-- Slow label -->
+  <text x="174" y="162" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">~3 minutes of copy-paste</text>
+  <!-- RIGHT: With MCP -->
+  <text x="596" y="18" text-anchor="middle" fill="#16a34a" font-size="12" font-weight="600">With MCP — 1 conversation</text>
+  <!-- Agent -->
+  <rect x="400" y="40" width="110" height="100" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="455" y="60" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">Agent</text>
+  <text x="455" y="76" text-anchor="middle" fill="#64748b" font-size="8">calls tank_search</text>
+  <text x="455" y="88" text-anchor="middle" fill="#64748b" font-size="8">reads result</text>
+  <text x="455" y="100" text-anchor="middle" fill="#64748b" font-size="8">calls tank_install</text>
+  <text x="455" y="112" text-anchor="middle" fill="#64748b" font-size="8">calls tank_verify</text>
+  <text x="455" y="128" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="600">done ✓</text>
+  <!-- Direct connection -->
+  <line x1="510" y1="90" x2="555" y2="90" stroke="#16a34a" stroke-width="2" marker-end="url(#mcp-arrow-green)"/>
+  <text x="533" y="82" text-anchor="middle" fill="#16a34a" font-size="8" font-weight="600">MCP</text>
+  <!-- Tank MCP Server -->
+  <rect x="558" y="50" width="130" height="80" rx="10" fill="#10b981" stroke="#10b981" stroke-width="1.5"/>
+  <text x="623" y="78" text-anchor="middle" fill="white" font-size="12" font-weight="600">Tank MCP</text>
+  <text x="623" y="95" text-anchor="middle" fill="white" font-size="10" opacity="0.85">17 tools</text>
+  <text x="623" y="112" text-anchor="middle" fill="white" font-size="9" opacity="0.7">direct access</text>
+  <!-- Arrow to registry -->
+  <line x1="688" y1="90" x2="720" y2="90" stroke="#64748b" stroke-width="1.5" marker-end="url(#mcp-arrow)"/>
+  <rect x="722" y="72" width="68" height="36" rx="6" fill="none" stroke="currentColor" stroke-width="1"/>
+  <text x="756" y="94" text-anchor="middle" fill="#64748b" font-size="8">Registry</text>
+  <!-- Fast label -->
+  <text x="596" y="162" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">~10 seconds, zero context switches</text>
+  <!-- Bottom note -->
+  <rect x="160" y="186" width="480" height="28" rx="8" fill="none" stroke="#64748b" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="400" y="205" text-anchor="middle" fill="#64748b" font-size="11">17 tools. Zero copy-paste. The agent manages skills itself.</text>
+</svg>
+</div>
+
 ## Supported AI Tools
 
 | Tool            | MCP Support   | Config Location                                                         |
@@ -130,6 +192,48 @@ The AI will initiate a GitHub OAuth device flow, display a verification code, an
 ---
 
 ## All 17 Tools
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 750 180" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Row 1 -->
+  <!-- Auth -->
+  <rect x="10" y="10" width="230" height="72" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="125" y="30" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">Auth</text>
+  <text x="125" y="50" text-anchor="middle" fill="currentColor" font-size="10">login</text>
+  <text x="80" y="66" text-anchor="middle" fill="#64748b" font-size="10">whoami</text>
+  <text x="170" y="66" text-anchor="middle" fill="#64748b" font-size="10">logout</text>
+  <!-- Publish -->
+  <rect x="260" y="10" width="220" height="72" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="370" y="30" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Publish</text>
+  <text x="330" y="54" text-anchor="middle" fill="#64748b" font-size="10">init-skill</text>
+  <text x="420" y="54" text-anchor="middle" fill="#64748b" font-size="10">publish-skill</text>
+  <!-- Install -->
+  <rect x="500" y="10" width="240" height="72" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="620" y="30" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Install</text>
+  <text x="545" y="50" text-anchor="middle" fill="#64748b" font-size="10">install</text>
+  <text x="620" y="50" text-anchor="middle" fill="#64748b" font-size="10">update</text>
+  <text x="695" y="50" text-anchor="middle" fill="#64748b" font-size="10">remove</text>
+  <text x="620" y="66" text-anchor="middle" fill="#64748b" font-size="10">verify</text>
+  <!-- Row 2 -->
+  <!-- Security -->
+  <rect x="10" y="98" width="230" height="72" rx="10" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="125" y="118" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Security</text>
+  <text x="65" y="142" text-anchor="middle" fill="#64748b" font-size="10">audit</text>
+  <text x="125" y="142" text-anchor="middle" fill="#64748b" font-size="10">scan</text>
+  <text x="190" y="142" text-anchor="middle" fill="#64748b" font-size="10">permissions</text>
+  <!-- Discovery -->
+  <rect x="260" y="98" width="220" height="72" rx="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <text x="370" y="118" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Discovery</text>
+  <text x="330" y="142" text-anchor="middle" fill="#64748b" font-size="10">search</text>
+  <text x="420" y="142" text-anchor="middle" fill="#64748b" font-size="10">info</text>
+  <!-- Dev -->
+  <rect x="500" y="98" width="240" height="72" rx="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="620" y="118" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Dev</text>
+  <text x="565" y="142" text-anchor="middle" fill="#64748b" font-size="10">link</text>
+  <text x="620" y="142" text-anchor="middle" fill="#64748b" font-size="10">unlink</text>
+  <text x="680" y="142" text-anchor="middle" fill="#64748b" font-size="10">doctor</text>
+</svg>
+</div>
 
 ### Authentication
 

@@ -7,6 +7,54 @@ description: Install, update, remove, and verify AI agent skills with Tank — d
 
 Tank's install pipeline does significantly more than download a file. Every install resolves the full dependency tree, verifies SHA-512 integrity for every package, extracts tarballs through a security filter, enforces your project's permission budget, and writes a deterministic lockfile. This page covers every command and behavior you need for day-to-day skill management.
 
+<svg viewBox="0 0 800 330" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="400" y="20" text-anchor="middle" fill="currentColor" font-size="14" font-weight="600">What tank install Does That npm install Doesn't</text>
+  <!-- Column 1: What's the same -->
+  <rect x="15" y="40" width="250" height="130" rx="10" fill="none" stroke="currentColor" stroke-width="1"/>
+  <text x="140" y="62" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Same as npm</text>
+  <text x="30" y="84" fill="#64748b" font-size="10">Resolve semver ranges (^1.2.0)</text>
+  <text x="30" y="102" fill="#64748b" font-size="10">Build dependency graph</text>
+  <text x="30" y="120" fill="#64748b" font-size="10">Download tarballs in parallel</text>
+  <text x="30" y="138" fill="#64748b" font-size="10">Write lockfile for determinism</text>
+  <text x="30" y="158" fill="#64748b" font-size="10">Extract to local directory</text>
+  <!-- Column 2: What Tank adds -->
+  <rect x="280" y="40" width="505" height="130" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="532" y="62" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">What Tank Adds</text>
+  <!-- SHA-512 -->
+  <text x="295" y="84" fill="#dc2626" font-size="10" font-weight="600">SHA-512 INTEGRITY</text>
+  <text x="470" y="84" fill="#64748b" font-size="10">Every file hash-checked. Mismatch = hard failure. No override.</text>
+  <!-- Permission budget -->
+  <text x="295" y="106" fill="#dc2626" font-size="10" font-weight="600">PERMISSION BUDGET</text>
+  <text x="470" y="106" fill="#64748b" font-size="10">Skill permissions checked against project ceiling before extract.</text>
+  <!-- Extraction filter -->
+  <text x="295" y="128" fill="#eab308" font-size="10" font-weight="600">EXTRACTION FILTER</text>
+  <text x="470" y="128" fill="#64748b" font-size="10">Blocks symlinks, hardlinks, path traversal (../), absolute paths.</text>
+  <!-- Size limits -->
+  <text x="295" y="150" fill="#eab308" font-size="10" font-weight="600">SIZE LIMITS</text>
+  <text x="470" y="150" fill="#64748b" font-size="10">50MB max tarball, 1000 files max. Prevents resource exhaustion.</text>
+  <!-- What this prevents -->
+  <rect x="15" y="190" width="770" height="130" rx="10" fill="none" stroke="#dc2626" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="400" y="212" text-anchor="middle" fill="#dc2626" font-size="12" font-weight="600">Real Attacks These Checks Prevent</text>
+  <rect x="30" y="225" width="240" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="40" y="241" fill="#dc2626" font-size="10" font-weight="600">Symlink escape</text>
+  <text x="40" y="255" fill="#64748b" font-size="9">skill/../../.ssh/id_rsa → reads private keys</text>
+  <rect x="285" y="225" width="240" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="295" y="241" fill="#dc2626" font-size="10" font-weight="600">Path traversal</text>
+  <text x="295" y="255" fill="#64748b" font-size="9">../../../etc/passwd in tarball entry name</text>
+  <rect x="540" y="225" width="230" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="550" y="241" fill="#dc2626" font-size="10" font-weight="600">Tampered tarball</text>
+  <text x="550" y="255" fill="#64748b" font-size="9">MITM modifies download → hash mismatch → blocked</text>
+  <rect x="30" y="275" width="240" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="40" y="291" fill="#dc2626" font-size="10" font-weight="600">Permission creep</text>
+  <text x="40" y="305" fill="#64748b" font-size="9">Skill wants network.* but budget says no → rejected</text>
+  <rect x="285" y="275" width="240" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="295" y="291" fill="#dc2626" font-size="10" font-weight="600">Zip bomb</text>
+  <text x="295" y="305" fill="#64748b" font-size="9">10KB compressed → 10GB extracted → size limit blocks</text>
+  <rect x="540" y="275" width="230" height="40" rx="6" fill="none" stroke="#dc2626" stroke-width="1"/>
+  <text x="550" y="291" fill="#dc2626" font-size="10" font-weight="600">Absolute path overwrite</text>
+  <text x="550" y="305" fill="#64748b" font-size="9">/usr/bin/malware in tarball → absolute path rejected</text>
+</svg>
+
 ## Installing a Skill
 
 ### Basic install
@@ -46,6 +94,38 @@ This is the correct command for CI/CD pipelines, where reproducibility is critic
 
 ## Dependency Resolution
 
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 750 100" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="dep-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <rect x="5" y="25" width="105" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="57" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Read</text>
+  <text x="57" y="62" text-anchor="middle" fill="currentColor" font-size="9">tank.json</text>
+  <line x1="110" y1="50" x2="125" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="130" y="25" width="105" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="182" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Resolve</text>
+  <text x="182" y="62" text-anchor="middle" fill="currentColor" font-size="9">semver ranges</text>
+  <line x1="235" y1="50" x2="250" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="255" y="25" width="105" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="307" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Fetch</text>
+  <text x="307" y="62" text-anchor="middle" fill="currentColor" font-size="9">metadata</text>
+  <line x1="360" y1="50" x2="375" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="380" y="25" width="105" height="50" rx="8" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="432" y="47" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">Build</text>
+  <text x="432" y="62" text-anchor="middle" fill="currentColor" font-size="9">dependency graph</text>
+  <line x1="485" y1="50" x2="500" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="505" y="25" width="105" height="50" rx="8" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="557" y="47" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="600">Detect</text>
+  <text x="557" y="62" text-anchor="middle" fill="currentColor" font-size="9">conflicts</text>
+  <line x1="610" y1="50" x2="625" y2="50" stroke="#64748b" stroke-width="1.5" marker-end="url(#dep-arrow)"/>
+  <rect x="630" y="25" width="110" height="50" rx="8" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="685" y="47" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">Flatten</text>
+  <text x="685" y="62" text-anchor="middle" fill="currentColor" font-size="9">install set</text>
+  <text x="375" y="16" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Dependency Resolution</text>
+</svg>
+</div>
+
 Tank uses a **fixpoint iteration algorithm** to resolve the full dependency tree. This means it doesn't just install the skill you named — it walks every skill's own `tank.json` to discover transitive dependencies, then iterates until the resolved set stabilizes.
 
 ### How it works
@@ -74,6 +154,27 @@ ERROR  Dependency conflict detected:
 Tank does **not** silently pick one version. Conflicts are hard errors.
 
 ## The Lockfile (`tank.lock`)
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 640 95" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <defs>
+    <marker id="lock-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#64748b"/></marker>
+  </defs>
+  <text x="185" y="16" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Lockfile Structure</text>
+  <rect x="15" y="24" width="340" height="58" rx="10" fill="none" stroke="#10b981" stroke-width="1.5"/>
+  <text x="185" y="41" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">tank.lock</text>
+  <text x="32" y="61" fill="currentColor" font-size="10" font-weight="600">package</text>
+  <text x="105" y="61" fill="#64748b" font-size="10">@org/skill-name</text>
+  <text x="280" y="61" fill="currentColor" font-size="10" font-weight="600">v</text>
+  <text x="296" y="61" fill="#64748b" font-size="10">1.2.3</text>
+  <text x="32" y="76" fill="currentColor" font-size="10" font-weight="600">integrity</text>
+  <text x="105" y="76" fill="#64748b" font-size="10">sha512-abc123...==</text>
+  <line x1="355" y1="53" x2="410" y2="53" stroke="#64748b" stroke-width="1.5" marker-end="url(#lock-arrow)"/>
+  <rect x="418" y="30" width="205" height="46" rx="10" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="520.5" y="49" text-anchor="middle" fill="#16a34a" font-size="11" font-weight="600">Deterministic install</text>
+  <text x="520.5" y="64" text-anchor="middle" fill="#64748b" font-size="9">same versions on every machine</text>
+</svg>
+</div>
 
 The `tank.lock` file is the source of truth for your install state. Commit it to version control.
 
@@ -114,6 +215,22 @@ The `tank.lock` file is the source of truth for your install state. Commit it to
 </Callout>
 
 ## Security on Install
+
+<div class="my-6 flex justify-center overflow-x-auto">
+<svg viewBox="0 0 520 120" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <text x="260" y="18" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Install Security Checks</text>
+  <rect x="15" y="30" width="235" height="28" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="132.5" y="49" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ SHA-512 integrity verify</text>
+  <rect x="270" y="30" width="235" height="28" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="387.5" y="49" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ No symlinks / hardlinks</text>
+  <rect x="15" y="64" width="235" height="28" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="132.5" y="83" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ No path traversal (../)</text>
+  <rect x="270" y="64" width="235" height="28" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="387.5" y="83" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ No absolute paths</text>
+  <rect x="95" y="98" width="330" height="18" rx="6" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="260" y="111" text-anchor="middle" fill="#16a34a" font-size="10" font-weight="600">✓ Size limits: 50MB tarball / 1000 files</text>
+</svg>
+</div>
 
 Tank applies multiple security filters during tarball extraction. These checks run before any file touches disk and cannot be bypassed:
 
