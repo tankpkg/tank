@@ -52,7 +52,7 @@ const MAX_FILES_IN_ERROR = 10;
 
 function sanitizeToolName(skillName: string): string {
   const raw = skillName
-    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/[^a-zA-Z0-9_]/g, '_')
     .replace(/^_+/, '')
     .replace(/_+/g, '_');
   return raw.slice(0, MAX_TOOL_NAME_LENGTH) || 'skill_tool';
