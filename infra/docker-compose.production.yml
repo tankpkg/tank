@@ -114,6 +114,7 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@tank.local}
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
       TANK_MODE: selfhosted
+      AUTO_MIGRATE: "true"
     depends_on:
       postgres:
         condition: service_healthy

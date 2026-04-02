@@ -91,6 +91,7 @@ services:
       S3_REGION: ${S3_REGION:-us-east-1}
       PYTHON_API_URL: http://scanner:8000
       TANK_MODE: selfhosted
+      AUTO_MIGRATE: "true"
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
       FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:-}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
