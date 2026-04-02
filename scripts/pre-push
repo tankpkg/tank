@@ -89,7 +89,7 @@ if [ "$TS_CHANGED" -eq 1 ]; then
   fi
 
   echo "  └─ typecheck"
-  if ! bun tsc -b --noEmit > /dev/null 2>&1; then
+  if ! bun run typecheck > /dev/null 2>&1; then
     echo "     ✗ typecheck failed"
     FAILED=1
   else
@@ -101,7 +101,7 @@ fi
 if echo "$CHANGED" | grep -qE "^(\.github/|eslint\.config\.ts|\.prettierrc|\.prettierignore|tsconfig|package\.json|justfile)"; then
   echo "▸ Root config changed — running full verification"
 
-  if ! bun prettier --check . > /dev/null 2>&1; then
+  if ! bun run format:readonly > /dev/null 2>&1; then
     echo "  ✗ prettier format check failed"
     FAILED=1
   fi

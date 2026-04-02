@@ -42,15 +42,18 @@ function parseDescription(raw: string | null): { summary: string; triggers: stri
 
 interface SkillDetailScreenProps {
   data: SkillDetailResult;
+  talkEnabled: boolean;
 }
 
 function MobileActionBar({
   data,
   scanDetails,
+  talkEnabled,
   onTalkClick
 }: {
   data: SkillDetailResult;
   scanDetails: ScanDetails | null;
+  talkEnabled: boolean;
   onTalkClick: () => void;
 }) {
   const installCmd = `tank install ${data.name}`;
@@ -63,10 +66,17 @@ function MobileActionBar({
       <div className="flex items-center gap-2 flex-wrap">
         <StarButton skillName={data.name} initialStarred={data.isStarred} initialCount={data.starCount} />
         {data.latestVersion && <DownloadButton skillName={data.name} version={data.latestVersion.version} />}
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={onTalkClick} data-testid="talk-button-mobile">
-          <MessageSquare className="size-3.5" />
-          Talk to skill
-        </Button>
+        {talkEnabled && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={onTalkClick}
+            data-testid="talk-button-mobile">
+            <MessageSquare className="size-3.5" />
+            Talk to skill
+          </Button>
+        )}
         {scanDetails && (
           <TrustBadge
             verdict={scanDetails.verdict}
@@ -90,7 +100,7 @@ function MobileActionBar({
   );
 }
 
-export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
+export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps) {
   const [activeTab, setActiveTab] = useState('readme');
   const [triggersExpanded, setTriggersExpanded] = useState(false);
   const talkWidgetRef = useRef<TalkToSkillWidgetHandle>(null);
@@ -129,15 +139,17 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
               Private
             </Badge>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 hidden lg:inline-flex"
-            onClick={() => talkWidgetRef.current?.trigger()}
-            data-testid="talk-button-header">
-            <MessageSquare className="size-3.5" />
-            Talk to this skill
-          </Button>
+          {talkEnabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 hidden lg:inline-flex"
+              onClick={() => talkWidgetRef.current?.trigger()}
+              data-testid="talk-button-header">
+              <MessageSquare className="size-3.5" />
+              Talk to this skill
+            </Button>
+          )}
         </div>
         {desc.summary && (
           <div className="mt-4">
@@ -182,15 +194,18 @@ export function SkillDetailScreen({ data }: SkillDetailScreenProps) {
       <MobileActionBar
         data={data}
         scanDetails={scanDetails ?? null}
+        talkEnabled={talkEnabled}
         onTalkClick={() => talkWidgetRef.current?.trigger()}
       />
 
-      <TalkToSkillWidget
-        ref={talkWidgetRef}
-        skillName={data.name}
-        chatLink={data.latestVersion?.prompt2botChatLink ?? null}
-        botPublicKey={data.latestVersion?.prompt2botBotPublicKey ?? null}
-      />
+      {talkEnabled && (
+        <TalkToSkillWidget
+          ref={talkWidgetRef}
+          skillName={data.name}
+          chatLink={data.latestVersion?.prompt2botChatLink ?? null}
+          botPublicKey={data.latestVersion?.prompt2botBotPublicKey ?? null}
+        />
+      )}
 
       <SkillTabs
         readmeContent={readmeContent ?? null}
