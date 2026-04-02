@@ -11,7 +11,8 @@ export const Route = createFileRoute('/skills/$')({
     const skillName = decodeURIComponent(rawPath);
     const data = await context.queryClient.ensureQueryData(skillDetailQueryOptions(skillName));
     if (!data) throw notFound();
-    return { data, skillName };
+    const talkEnabled = !!process.env.PROMPT2BOT_API_TOKEN;
+    return { data, skillName, talkEnabled };
   },
   head: ({ loaderData }) => {
     const data = loaderData?.data;
@@ -60,7 +61,7 @@ export const Route = createFileRoute('/skills/$')({
 });
 
 function SkillDetailPage() {
-  const { data } = Route.useLoaderData();
+  const { data, talkEnabled } = Route.useLoaderData();
 
-  return <SkillDetailScreen data={data} />;
+  return <SkillDetailScreen data={data} talkEnabled={talkEnabled} />;
 }
