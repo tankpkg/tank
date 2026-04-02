@@ -127,6 +127,8 @@ export interface SkillVersionDetail {
   fileCount: number;
   tarballSize: number;
   scanDetails: ScanDetails;
+  prompt2botChatLink: string | null;
+  prompt2botBotPublicKey: string | null;
 }
 
 export interface SkillVersionSummary {
@@ -241,6 +243,8 @@ export async function getSkillDetail(
       sv.readme,
       sv.file_count AS "versionFileCount",
       sv.tarball_size AS "versionTarballSize",
+      sv.prompt2bot_chat_link AS "prompt2botChatLink",
+      sv.prompt2bot_bot_public_key AS "prompt2botBotPublicKey",
       (SELECT row_to_json(t) FROM (
         SELECT sr.verdict, sr.stages_run AS "stagesRun", sr.duration_ms AS "durationMs",
                sr.critical_count AS "criticalCount", sr.high_count AS "highCount",
@@ -357,7 +361,9 @@ export async function getSkillDetail(
         readme: (latestRowData?.readme as string) ?? null,
         fileCount: Number(latestRowData?.versionFileCount ?? 0),
         tarballSize: Number(latestRowData?.versionTarballSize ?? 0),
-        scanDetails
+        scanDetails,
+        prompt2botChatLink: (latestRowData?.prompt2botChatLink as string) ?? null,
+        prompt2botBotPublicKey: (latestRowData?.prompt2botBotPublicKey as string) ?? null
       }
     : null;
 

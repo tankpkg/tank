@@ -280,6 +280,86 @@ const response = await openai.chat.completions.create({
 
 ---
 
+## Tool Generator
+
+Generate framework-agnostic tool definitions from skills. The generated tools work with OpenAI function calling, Anthropic tool use, MCP, LangChain, CrewAI, and any framework that consumes JSON Schema tool definitions.
+
+### `createSkillTool(client, name, version?)`
+
+Creates a tool definition for a single skill. The tool provides filesystem-like access to the skill's content.
+
+```typescript
+import { TankClient, createSkillTool } from "@tankpkg/sdk";
+
+const client = new TankClient();
+const tool = await createSkillTool(client, "@tank/react");
+
+console.log(tool.name); // 'tank_react'
+console.log(tool.files); // ['SKILL.md', 'references/hooks.md', ...]
+console.log(tool.description); // Includes skill summary, file list, actions
+```
+
+### Tool Actions
+
+The generated tool supports three actions:
+
+| Action     | Description                                              | Returns                                                       |
+| ---------- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| `read_all` | Complete skill content (SKILL.md + references + scripts) | `{ success, skill: { content, references, scripts, files } }` |
+| `list`     | List all files in the skill                              | `{ success, files }`                                          |
+| `read`     | Read a single file by path                               | `{ success, content }`                                        |
+
+```typescript
+// Execute actions
+const all = await tool.execute({ action: "read_all" });
+const files = await tool.execute({ action: "list" });
+const file = await tool.execute({ action: "read", path: "references/hooks.md" });
+```
+
+### OpenAI Function Calling
+
+```typescript
+import OpenAI from "openai";
+
+const openai = new OpenAI();
+const tool = await createSkillTool(client, "@tank/react");
+
+// Register as OpenAI tool
+const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  tools: [tool.toOpenAI()],
+  messages: [{ role: "user", content: "Read the React skill and explain hooks." }],
+});
+
+// Handle tool call
+const call = response.choices[0].message.tool_calls?.[0];
+if (call) {
+  const result = await tool.execute(JSON.parse(call.function.arguments));
+  // Send result back to OpenAI...
+}
+```
+
+### MCP Tool
+
+```typescript
+// Register as MCP tool
+const mcpDef = tool.toMCP();
+// { name: 'tank_react', description: '...', inputSchema: { type: 'object', ... } }
+```
+
+### Multiple Skills
+
+```typescript
+import { createSkillTools } from "@tankpkg/sdk";
+
+const tools = await createSkillTools(client, ["@tank/react", "@tank/nextjs", "@tank/clean-code"]);
+// Returns array of SkillTool objects, fetched with concurrency=6
+
+const openaiTools = tools.map((t) => t.toOpenAI());
+```
+
+---
+
 ## Exports
 
 Everything is importable from `@tankpkg/sdk`:
@@ -311,6 +391,15 @@ import {
   DEFAULT_REGISTRY_URL,
   SUPPORTED_AGENTS,
   AGENT_PATHS,
+
+  // Tool Generator
+  createSkillTool,
+  createSkillTools,
+  type SkillTool,
+  type SkillToolInput,
+  type SkillToolResult,
+  type OpenAIFunctionTool,
+  type MCPToolDefinition,
 
   // Utilities
   hasNativeAcceleration,

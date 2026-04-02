@@ -22,6 +22,8 @@ export {
 } from './errors.js';
 
 export * from './install/index.js';
+export type { MCPToolDefinition, OpenAIFunctionTool, SkillTool, SkillToolInput, SkillToolResult } from './tools.js';
+export { createSkillTool, createSkillTools } from './tools.js';
 
 export type {
   DownloadOptions,
