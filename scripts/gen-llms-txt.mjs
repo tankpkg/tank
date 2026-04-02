@@ -150,10 +150,10 @@ function normalizeTables(text) {
       const cells = line.split('|').slice(1, -1);
       // Separator row: | --- | --- |
       if (cells.every((c) => /^[\s-]+$/.test(c))) {
-        return '|' + cells.map(() => '---').join('|') + '|';
+        return `|${cells.map(() => '---').join('|')}|`;
       }
       // Data row: trim each cell
-      return '|' + cells.map((c) => ' ' + c.trim() + ' ').join('|') + '|';
+      return `|${cells.map((c) => ` ${c.trim()} `).join('|')}|`;
     })
     .join('\n');
 }
