@@ -135,6 +135,29 @@ This file contains the complete Tank documentation for LLM consumption.
   return output;
 }
 
+/**
+ * Normalize markdown tables to compact format (no padding).
+ * Ensures deterministic output across Node.js versions.
+ */
+function normalizeTables(text) {
+  // Process each line that looks like a markdown table row
+  return text
+    .split('\n')
+    .map((line) => {
+      // Match table rows: | cell | cell |
+      if (!/^\|.*\|$/.test(line)) return line;
+
+      const cells = line.split('|').slice(1, -1);
+      // Separator row: | --- | --- |
+      if (cells.every((c) => /^[\s-]+$/.test(c))) {
+        return '|' + cells.map(() => '---').join('|') + '|';
+      }
+      // Data row: trim each cell
+      return '|' + cells.map((c) => ' ' + c.trim() + ' ').join('|') + '|';
+    })
+    .join('\n');
+}
+
 // Main
 const docs = readDocs();
 
@@ -142,6 +165,6 @@ const llmsTxt = generateLlmsTxt(docs);
 writeFileSync(join(PUBLIC_DIR, 'llms.txt'), llmsTxt);
 console.log(`Generated llms.txt with ${docs.length} pages`);
 
-const llmsFullTxt = generateLlmsFullTxt(docs);
+const llmsFullTxt = normalizeTables(generateLlmsFullTxt(docs));
 writeFileSync(join(PUBLIC_DIR, 'llms-full.txt'), llmsFullTxt);
 console.log(`Generated llms-full.txt (${llmsFullTxt.length} chars)`);
