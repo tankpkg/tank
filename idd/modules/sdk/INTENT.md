@@ -158,6 +158,20 @@ apps/
 | C39 | `readSkill()` fetches references and scripts in parallel where possible                                                                                                          | Performance — skills with many references shouldn't be slow | BDD scenario |
 | C40 | File listing and file reading endpoints enforce visibility checks — private skills return 404 to unauthorized users                                                              | No data leakage of private skill content                    | BDD scenario |
 
+### Dynamic Tool Generator
+
+| #   | Rule                                                                                                                                 | Rationale                                                           | Verified by  |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- | ------------ |
+| C44 | `createSkillTool(client, name)` returns a `SkillTool` with `execute()`, `toOpenAI()`, and `toMCP()`                                  | Framework-agnostic tool generation for any AI agent                 | BDD scenario |
+| C45 | `toOpenAI()` returns `{ type: 'function', function: { name, description, parameters } }` matching the OpenAI function calling schema | Usable with OpenAI, Anthropic, Vercel AI SDK, LangChain             | BDD scenario |
+| C46 | `toMCP()` returns `{ name, description, inputSchema }` matching the MCP tool protocol                                                | Usable with MCP-compatible agents (OpenCode, Cursor, etc.)          | BDD scenario |
+| C47 | Tool `description` includes skill name, version, summary, available files, reference names, and script names                         | Agent can decide whether to use the tool from the description alone | BDD scenario |
+| C48 | `execute({ action: 'read_all' })` returns the full skill content (SKILL.md + references + scripts) equivalent to `readSkill()`       | Single-call complete skill loading via tool interface               | BDD scenario |
+| C49 | `execute({ action: 'list' })` returns all file paths                                                                                 | File discovery via tool interface                                   | BDD scenario |
+| C50 | `execute({ action: 'read', path })` returns a single file's content; returns error if path is missing or not found                   | Targeted file access via tool interface                             | BDD scenario |
+| C51 | `createSkillTools(client, names[])` batch-creates tools for multiple skills with concurrency cap                                     | Agents managing multiple skills need efficient setup                | BDD scenario |
+| C52 | Tool name is derived from skill name: `@org/my-skill` → `org_my_skill` (safe for function names)                                     | Tool names must be valid identifiers in all frameworks              | BDD scenario |
+
 ### Install Pipeline (Phase 4 — TypeScript only at v1)
 
 | #   | Rule                                                                                                                                            | Rationale                             | Verified by  |
@@ -250,6 +264,20 @@ apps/
 | --- | --------------------------------- | --------------------------------------------------------------------------------------- |
 | E18 | `tank.audit("@tank/react")`       | Returns audit result: score (0-10), findings array, stage results                       |
 | E19 | `tank.permissions("@tank/react")` | Returns `Permissions` object: network outbound rules, filesystem paths, subprocess flag |
+
+### Dynamic Tool Generator
+
+| #   | Input                                                       | Expected Output                                                                                                                                    |
+| --- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E44 | `createSkillTool(client, '@tank/react')`                    | Returns `SkillTool` with name `tank_react`, description containing skill info, files list                                                          |
+| E45 | `tool.toOpenAI()`                                           | Returns `{ type: 'function', function: { name: 'tank_react', description: '...', parameters: { type: 'object', properties: { action, path } } } }` |
+| E46 | `tool.toMCP()`                                              | Returns `{ name: 'tank_react', description: '...', inputSchema: { type: 'object', properties: { action, path } } }`                                |
+| E47 | `tool.execute({ action: 'read_all' })`                      | Returns `{ success: true, skill: { content, references, scripts, files } }`                                                                        |
+| E48 | `tool.execute({ action: 'list' })`                          | Returns `{ success: true, files: ['SKILL.md', 'references/...', ...] }`                                                                            |
+| E49 | `tool.execute({ action: 'read', path: 'SKILL.md' })`        | Returns `{ success: true, content: '# React...' }`                                                                                                 |
+| E50 | `tool.execute({ action: 'read' })` (no path)                | Returns `{ success: false, error: 'path is required...' }`                                                                                         |
+| E51 | `tool.execute({ action: 'read', path: 'nonexistent.md' })`  | Returns `{ success: false, error: 'File not found: nonexistent.md...' }`                                                                           |
+| E52 | `createSkillTools(client, ['@tank/react', '@tank/nextjs'])` | Returns array of 2 `SkillTool` objects                                                                                                             |
 
 ### Install Pipeline (TypeScript SDK)
 

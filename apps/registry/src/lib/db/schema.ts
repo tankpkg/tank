@@ -162,6 +162,10 @@ export const skillVersions = pgTable(
     auditScore: real('audit_score'),
     auditStatus: text('audit_status').notNull().default('pending'),
     readme: text('readme'),
+    prompt2botBotId: text('prompt2bot_bot_id'),
+    prompt2botChatLink: text('prompt2bot_chat_link'),
+    prompt2botBotPublicKey: text('prompt2bot_bot_public_key'),
+    prompt2botSecret: text('prompt2bot_secret'),
     publishedBy: text('published_by')
       .notNull()
       .references(() => user.id),
