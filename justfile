@@ -344,6 +344,7 @@ ci-build-cli VERSION:
     just bump {{VERSION}}
     just build internals-schemas
     just build internals-helpers
+    just build sdk
     just build cli
     just build mcp
 
