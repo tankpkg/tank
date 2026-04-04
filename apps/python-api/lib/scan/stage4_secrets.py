@@ -4,6 +4,7 @@ Uses detect-secrets library plus custom regex patterns to find
 API keys, credentials, and sensitive data in skill files.
 """
 
+import logging
 import re
 import time
 from pathlib import Path
@@ -163,9 +164,8 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                         )
                 except Exception as file_error:
                     logging.getLogger(__name__).warning(
-                        f"detect-secrets file scan error: %s",
-                        file_path=strfile_path, file_error
-                        )
+                        "detect-secrets file scan error: %s", file_error
+                    )
 
 
     except ImportError:

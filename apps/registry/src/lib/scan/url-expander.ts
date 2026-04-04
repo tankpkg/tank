@@ -132,7 +132,8 @@ export function expandGitHubFolder(url: string): { tarballUrl: string; subPath: 
 const ALLOWED_FETCH_HOSTS = ['raw.githubusercontent.com'];
 
 /** Reject URLs that resolve to private/internal network ranges. */
-const BLOCKED_HOSTNAMES = /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|0\.|::1|fc|fe80|169\.254\.|metadata\.google\.internal)/i;
+const BLOCKED_HOSTNAMES =
+  /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|0\.|::1|fc|fe80|169\.254\.|metadata\.google\.internal)/i;
 
 function isBlockedHost(hostname: string): boolean {
   if (BLOCKED_HOSTNAMES.test(hostname)) return true;

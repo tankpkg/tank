@@ -17,19 +17,21 @@ const log = baseLog.child({ module: 'external-skills' });
 
 // ── Zod schemas for external API validation ──────────────────────────────────
 
-const skillsShItemSchema = z.object({
-  name: z.string().min(1).max(256),
-  url: z.string().url().max(2048),
-  description: z.string().max(1024).optional(),
-  author: z.string().max(128).optional(),
-  installs: z.number().int().min(0).optional(),
-  // Allow unknown fields from external API — we only extract what we need
-}).passthrough();
+const skillsShItemSchema = z
+  .object({
+    name: z.string().min(1).max(256),
+    url: z.string().url().max(2048),
+    description: z.string().max(1024).optional(),
+    author: z.string().max(128).optional(),
+    installs: z.number().int().min(0).optional()
+    // Allow unknown fields from external API — we only extract what we need
+  })
+  .passthrough();
 
 const skillsShResponseSchema = z.union([
   z.array(skillsShItemSchema),
   z.object({ skills: z.array(skillsShItemSchema) }),
-  z.object({ leaderboard: z.array(skillsShItemSchema) }),
+  z.object({ leaderboard: z.array(skillsShItemSchema) })
 ]);
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -266,7 +268,10 @@ export async function fetchAndCacheExternalSkills(): Promise<void> {
             }
           });
       } catch (err) {
-        log.warn({ error: String(err), chunkStart: i, chunkSize: chunk.length }, 'Chunk upsert failed, falling back to serial');
+        log.warn(
+          { error: String(err), chunkStart: i, chunkSize: chunk.length },
+          'Chunk upsert failed, falling back to serial'
+        );
         // Fallback: individual upserts for this chunk only
         for (const entry of chunk) {
           try {

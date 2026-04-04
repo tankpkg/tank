@@ -77,7 +77,12 @@ function InternalSkillCard({ skill }: { skill: InternalSkillSummary }) {
             <CardTitle className="font-display text-lg font-semibold tracking-tight truncate">{skill.name}</CardTitle>
             {skill.publisher && <p className="mt-0.5 text-xs text-muted-foreground">by {skill.publisher}</p>}
           </div>
-          <TrustBadge verdict={skill.scanVerdict} criticalCount={skill.severityCounts.critical} highCount={skill.severityCounts.high} mediumCount={skill.severityCounts.medium} />
+          <TrustBadge
+            verdict={skill.scanVerdict}
+            criticalCount={skill.severityCounts.critical}
+            highCount={skill.severityCounts.high}
+            mediumCount={skill.severityCounts.medium}
+          />
         </div>
         {skill.description && <CardDescription className="mt-1 line-clamp-2">{skill.description}</CardDescription>}
       </CardHeader>
@@ -171,7 +176,12 @@ function ExternalSkillCard({ skill }: { skill: ExternalSkillSummary }) {
             <CardTitle className="font-display text-lg font-semibold tracking-tight truncate">{skill.name}</CardTitle>
             {skill.author && <p className="mt-0.5 text-xs text-muted-foreground">by {skill.author}</p>}
           </div>
-          <TrustBadge verdict={skill.scanVerdict} criticalCount={skill.severityCounts.critical} highCount={skill.severityCounts.high} mediumCount={skill.severityCounts.medium} />
+          <TrustBadge
+            verdict={skill.scanVerdict}
+            criticalCount={skill.severityCounts.critical}
+            highCount={skill.severityCounts.high}
+            mediumCount={skill.severityCounts.medium}
+          />
         </div>
         {skill.description && <CardDescription className="mt-1 line-clamp-2">{skill.description}</CardDescription>}
       </CardHeader>
