@@ -20,6 +20,7 @@ import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as SkillsSplatRouteImport } from './routes/skills/$'
+import { Route as ScanTopSkillsRouteImport } from './routes/scan/top-skills'
 import { Route as DocsSplatRouteImport } from './routes/docs/$'
 import { Route as DashboardTokensRouteImport } from './routes/dashboard/tokens'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
@@ -90,6 +91,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const SkillsSplatRoute = SkillsSplatRouteImport.update({
   id: '/skills/$',
   path: '/skills/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanTopSkillsRoute = ScanTopSkillsRouteImport.update({
+  id: '/scan/top-skills',
+  path: '/scan/top-skills',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/api/$': typeof ApiSplatRoute
   '/dashboard/tokens': typeof DashboardTokensRoute
   '/docs/$': typeof DocsSplatRoute
+  '/scan/top-skills': typeof ScanTopSkillsRoute
   '/skills/$': typeof SkillsSplatRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/api/$': typeof ApiSplatRoute
   '/dashboard/tokens': typeof DashboardTokensRoute
   '/docs/$': typeof DocsSplatRoute
+  '/scan/top-skills': typeof ScanTopSkillsRoute
   '/skills/$': typeof SkillsSplatRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/api/$': typeof ApiSplatRoute
   '/dashboard/tokens': typeof DashboardTokensRoute
   '/docs/$': typeof DocsSplatRoute
+  '/scan/top-skills': typeof ScanTopSkillsRoute
   '/skills/$': typeof SkillsSplatRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/dashboard/tokens'
     | '/docs/$'
+    | '/scan/top-skills'
     | '/skills/$'
     | '/admin/'
     | '/dashboard/'
@@ -308,6 +318,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/dashboard/tokens'
     | '/docs/$'
+    | '/scan/top-skills'
     | '/skills/$'
     | '/admin'
     | '/dashboard'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/api/$'
     | '/dashboard/tokens'
     | '/docs/$'
+    | '/scan/top-skills'
     | '/skills/$'
     | '/admin/'
     | '/dashboard/'
@@ -360,6 +372,7 @@ export interface RootRouteChildren {
   SeoSitemapDotxmlRoute: typeof SeoSitemapDotxmlRoute
   ApiSplatRoute: typeof ApiSplatRoute
   DocsSplatRoute: typeof DocsSplatRoute
+  ScanTopSkillsRoute: typeof ScanTopSkillsRoute
   SkillsSplatRoute: typeof SkillsSplatRoute
   DocsIndexRoute: typeof DocsIndexRoute
   ScanIndexRoute: typeof ScanIndexRoute
@@ -444,6 +457,13 @@ declare module '@tanstack/react-router' {
       path: '/skills/$'
       fullPath: '/skills/$'
       preLoaderRoute: typeof SkillsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan/top-skills': {
+      id: '/scan/top-skills'
+      path: '/scan/top-skills'
+      fullPath: '/scan/top-skills'
+      preLoaderRoute: typeof ScanTopSkillsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/$': {
@@ -615,6 +635,7 @@ const rootRouteChildren: RootRouteChildren = {
   SeoSitemapDotxmlRoute: SeoSitemapDotxmlRoute,
   ApiSplatRoute: ApiSplatRoute,
   DocsSplatRoute: DocsSplatRoute,
+  ScanTopSkillsRoute: ScanTopSkillsRoute,
   SkillsSplatRoute: SkillsSplatRoute,
   DocsIndexRoute: DocsIndexRoute,
   ScanIndexRoute: ScanIndexRoute,

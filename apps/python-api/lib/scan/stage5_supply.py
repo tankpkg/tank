@@ -106,22 +106,27 @@ def cvss_to_severity(vuln: dict[str, Any]) -> str:
         try:
             if sev.get("type") == "CVSS_V3":
                 score_str = sev.get("score", "0")
+                score = 0.0
                 # Handle both "CVSS:3.1/AV:N/..." and "7.5" formats
                 if score_str.startswith("CVSS"):
-                    # Extract numeric score from vector string
-                    parts = score_str.split("/")
-                    for part in parts:
-                        if part.startswith("AV:"):
-                            continue
+                    # Vector strings don't embed the numeric score directly.
+                    # Try database_specific for the numeric value.
+                    cvss_score = vuln.get("database_specific", {}).get("cvss", {}).get("score", 0)
+                    if isinstance(cvss_score, (int, float)):
+                        score = float(cvss_score)
+                    else:
+                        # Cannot determine score from vector alone; fall through
+                        continue
                 else:
                     score = float(score_str.split("/")[0].split(":")[-1])
-                    if score >= 9.0:
-                        return "critical"
-                    if score >= 7.0:
-                        return "high"
-                    if score >= 4.0:
-                        return "medium"
-                    return "low"
+
+                if score >= 9.0:
+                    return "critical"
+                if score >= 7.0:
+                    return "high"
+                if score >= 4.0:
+                    return "medium"
+                return "low"
         except (ValueError, IndexError):
             continue
 
@@ -184,15 +189,28 @@ async def check_python_dependency(
         vulns = await query_osv(package, version, "PyPI")
         for vuln in vulns[:3]:  # Limit to top 3
             severity = "critical" if vuln.get("severity") == "HIGH" else "high"
+            vuln_id = vuln.get("id", "Unknown")
+            # Extract CVE aliases for linking
+            aliases = vuln.get("aliases", [])
+            cve_id = next((a for a in aliases if a.startswith("CVE-")), vuln_id)
+            evidence_parts = [vuln_id]
+            if cve_id != vuln_id:
+                evidence_parts.append(f"CVE: {cve_id}")
+            summary = vuln.get("summary", "")
+            if summary:
+                evidence_parts.append(summary)
             findings.append(
                 Finding(
                     stage="stage5",
                     severity=severity,
                     type="known_vulnerability",
-                    description=f"Known vulnerability in {package}: {vuln.get('id', 'Unknown')}",
+                    description=f"Known vulnerability in {package}: {vuln_id}",
                     location=file_path,
                     confidence=0.95,
                     tool="stage5_osv",
+                    evidence=" | ".join(evidence_parts),
+                    remediation=f"Update {package} to a patched version. See: https://osv.dev/vulnerability/{vuln_id}",
+                    cwe_id="CWE-1035",
                 )
             )
 

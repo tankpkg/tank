@@ -63,7 +63,7 @@ class LLMAnalysis(BaseModel):
 class ScanRequest(BaseModel):
     """Request to run a full security scan."""
 
-    tarball_url: str = Field(..., description="Signed URL to download the skill tarball")
+    tarball_url: str = Field("", description="Signed URL to download the skill tarball (empty for single-file mode)")
     version_id: str = Field(..., description="skill_versions.id UUID")
     manifest: dict[str, Any] = Field(..., description="Skill manifest from database")
     permissions: dict[str, Any] = Field(..., description="Declared permissions from database")
@@ -73,6 +73,20 @@ class ScanRequest(BaseModel):
         description="Subdirectory within the tarball to scan. "
         "Useful for monorepos containing multiple skills where only one should be scanned. "
         "Example: 'my-skill' to scan only the my-skill/ directory.",
+    )
+    # Single-file mode: provide raw file content instead of tarball
+    single_file_content: str | None = Field(
+        None,
+        description="Raw file content for single-file scan mode. "
+        "When provided, tarball_url is ignored and stages 1-2 are skipped.",
+    )
+    single_file_name: str | None = Field(
+        None,
+        description="Filename for the single file (e.g. 'SKILL.md')",
+    )
+    single_file_content_type: str | None = Field(
+        None,
+        description="Content type hint (e.g. 'text/markdown')",
     )
 
 

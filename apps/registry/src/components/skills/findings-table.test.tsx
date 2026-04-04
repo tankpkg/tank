@@ -33,7 +33,7 @@ describe('resolveExpandable', () => {
     const desc = 'A'.repeat(150);
     const result = resolveExpandable(desc, null);
     expect(result.expandable).toBe(true);
-    expect(result.collapsedText).toBe('A'.repeat(100) + '…');
+    expect(result.collapsedText).toBe(`${'A'.repeat(100)}…`);
     expect(result.expandedText).toBe(desc);
   });
 
@@ -132,7 +132,7 @@ describe('FindingsTable', () => {
     const findings = [makeFinding({ description: longDesc, evidence: null })];
     render(<FindingsTable findings={findings} />);
 
-    expect(screen.getByText('A'.repeat(100) + '…')).toBeTruthy();
+    expect(screen.getByText(`${'A'.repeat(100)}…`)).toBeTruthy();
     const btn = screen.getByText('Show more');
 
     fireEvent.click(btn);
@@ -149,6 +149,8 @@ describe('FindingsTable', () => {
   it('renders dash for null location', () => {
     const findings = [makeFinding({ location: null })];
     render(<FindingsTable findings={findings} />);
-    expect(screen.getByText('—')).toBeTruthy();
+    // Location is now inline under description; when null, no location line is rendered
+    // Verify the finding description is still shown
+    expect(screen.getByText('Test finding')).toBeTruthy();
   });
 });

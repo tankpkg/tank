@@ -362,6 +362,44 @@ export const depAuditResults = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// external_skills — cached external skill metadata + scan results
+// ---------------------------------------------------------------------------
+
+export const externalSkills = pgTable(
+  'external_skills',
+  {
+    id,
+    source: text('source').notNull().default('skills.sh'),
+    name: text('name').notNull(),
+    url: text('url').notNull(),
+    description: text('description'),
+    author: text('author'),
+    installCount: integer('install_count').default(0),
+    scanVerdict: text('scan_verdict'),
+    scanResult: jsonb('scan_result').$type<{
+      verdict: string;
+      findings: Array<{
+        stage: string;
+        severity: string;
+        type: string;
+        description: string;
+        location: string | null;
+        tool: string | null;
+      }>;
+      duration_ms: number;
+    }>(),
+    scannedAt: timestamp('scanned_at', { withTimezone: true }),
+    ...timestamps
+  },
+  (table) => [
+    unique('external_skills_source_url_uniq').on(table.source, table.url),
+    index('external_skills_source_idx').on(table.source),
+    index('external_skills_scan_verdict_idx').on(table.scanVerdict),
+    index('external_skills_install_count_idx').on(table.installCount)
+  ]
+);
+
+// ---------------------------------------------------------------------------
 // Relations
 // ---------------------------------------------------------------------------
 
