@@ -12,7 +12,7 @@ from pathlib import Path
 
 from lib.scan.cisco_scanner import run_skill_scanner
 from lib.scan.llm_analyzer import LLMAnalyzer
-from lib.scan.markdown_utils import is_inside_code_block
+from lib.scan.markdown_utils import is_inside_code_block, is_inside_html_comment
 from lib.scan.models import Finding, IngestResult, LLMAnalysis, StageResult
 from lib.scan.snyk_scanner import run_snyk_scanner
 from lib.scan.stage3_patterns import (
@@ -82,6 +82,10 @@ def analyze_markdown_file(temp_dir: str, file_path: str) -> list[Finding]:
 
                 # Skip matches inside code blocks (triple-backtick sections)
                 if is_inside_code_block(content, match.start()):
+                    continue
+
+                # Skip matches inside HTML comments
+                if is_inside_html_comment(content, match.start()):
                     continue
 
                 # Suppress low-confidence matches in prose context

@@ -8,19 +8,26 @@ Orchestrates the full 6-stage scanning pipeline:
 - Stage 4: Secrets & Credential Scanning
 - Stage 5: Dependency & Supply Chain Audit
 
+Supports two modes:
+1. Tarball mode: tarball_url provided, full pipeline runs.
+2. Single-file mode: single_file_content provided, stages 0-2 skipped.
+
 Includes finding deduplication and SARIF export support.
 
 Stores results in PostgreSQL and returns comprehensive scan response.
 """
 
 import os
+import tempfile
 import time
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 
 from lib.scan.dedup import deduplicate_findings
 from lib.scan.models import (
     Finding,
+    IngestResult,
     LLMAnalysis,
     ScanRequest,
     ScanResponse,
@@ -28,7 +35,7 @@ from lib.scan.models import (
     StageResult,
 )
 from lib.scan.remediation import enrich_findings
-from lib.scan.stage0_ingest import cleanup_ingest, stage0_ingest
+from lib.scan.stage0_ingest import cleanup_ingest, compute_file_hashes, stage0_ingest
 from lib.scan.stage1_structure import stage1_validate
 from lib.scan.stage2_static import stage2_analyze
 from lib.scan.stage3_injection import stage3_detect_injection
@@ -146,6 +153,146 @@ async def store_scan_results(
         # Log error but don't fail the scan
         logger.error(f"Database storage error for version_id={version_id}: {e}", exc_info=True)
         return None
+
+
+async def run_single_file_pipeline(request: ScanRequest) -> ScanResponse:
+    """Run a streamlined scan pipeline for a single file.
+
+    Skips stages that require package structure (stage1, stage2).
+    Runs stage3 (injection), stage4 (secrets), and stage5 (supply chain).
+    """
+    start = time.monotonic()
+    stage_results: list[StageResult] = []
+    llm_analysis: LLMAnalysis | None = None
+
+    file_name = request.single_file_name or "SKILL.md"
+    file_content = request.single_file_content or ""
+
+    # Create a temp directory with the single file for stages that expect a dir
+    temp_dir = tempfile.mkdtemp(prefix="tank_scan_single_")
+    file_path = os.path.join(temp_dir, file_name)
+    Path(file_path).write_text(file_content, encoding="utf-8")
+
+    file_hashes = compute_file_hashes(temp_dir, [file_name])
+    ingest_result = IngestResult(
+        temp_dir=temp_dir,
+        file_hashes=file_hashes,
+        file_list=[file_name],
+        total_size=len(file_content.encode("utf-8")),
+        stage_result=StageResult(
+            stage="stage0",
+            status="passed",
+            findings=[],
+            duration_ms=0,
+        ),
+    )
+    stage_results.append(ingest_result.stage_result)
+
+    try:
+        # Stage 1 & 2: SKIP (no package structure to validate, no code to analyze statically)
+        stage_results.append(
+            StageResult(stage="stage1", status="skipped", findings=[], duration_ms=0)
+        )
+        stage_results.append(
+            StageResult(stage="stage2", status="skipped", findings=[], duration_ms=0)
+        )
+
+        # Stage 3: Prompt Injection Detection
+        elapsed = int((time.monotonic() - start) * 1000)
+        remaining_budget = MAX_SCAN_DURATION_MS - elapsed
+        if remaining_budget > 5000:
+            try:
+                result, llm_analysis = await stage3_detect_injection(
+                    ingest_result,
+                    llm_analysis,
+                )
+                stage_results.append(result)
+            except Exception as e:
+                stage_results.append(
+                    StageResult(stage="stage3", status="errored", findings=[], duration_ms=0, error=str(e))
+                )
+
+        # Stage 4: Secrets & Credential Scanning
+        elapsed = int((time.monotonic() - start) * 1000)
+        remaining_budget = MAX_SCAN_DURATION_MS - elapsed
+        if remaining_budget > 5000:
+            try:
+                result = stage4_scan_secrets(ingest_result)
+                stage_results.append(result)
+            except Exception as e:
+                stage_results.append(
+                    StageResult(stage="stage4", status="errored", findings=[], duration_ms=0, error=str(e))
+                )
+
+        # Stage 5: Supply Chain — skip for single files (no package.json)
+        stage_results.append(
+            StageResult(stage="stage5", status="skipped", findings=[], duration_ms=0)
+        )
+
+    finally:
+        cleanup_ingest(temp_dir)
+
+    # Collect and deduplicate findings
+    all_findings = [f for sr in stage_results for f in sr.findings]
+    deduped_findings = deduplicate_findings(
+        [
+            {
+                "stage": f.stage,
+                "severity": f.severity,
+                "type": f.type,
+                "description": f.description,
+                "location": f.location,
+                "confidence": f.confidence,
+                "tool": f.tool,
+                "evidence": f.evidence,
+                "llm_verdict": f.llm_verdict,
+                "llm_reviewed": f.llm_reviewed,
+            }
+            for f in all_findings
+        ]
+    )
+
+    enriched_findings = enrich_findings(
+        [
+            Finding(
+                stage=f["stage"],
+                severity=f["severity"],
+                type=f["type"],
+                description=f["description"],
+                location=f.get("location"),
+                confidence=f.get("confidence"),
+                tool=f.get("tool"),
+                evidence=f.get("evidence"),
+                llm_verdict=f.get("llm_verdict"),
+                llm_reviewed=f.get("llm_reviewed", False),
+            )
+            for f in deduped_findings
+        ]
+    )
+
+    verdict = compute_verdict(stage_results)
+    duration_ms = int((time.monotonic() - start) * 1000)
+
+    # Store results
+    scan_id = await store_scan_results(
+        request.version_id,
+        verdict,
+        stage_results,
+        duration_ms,
+        file_hashes,
+        llm_analysis,
+        enriched_findings=enriched_findings,
+    )
+
+    return ScanResponse(
+        scan_id=scan_id,
+        verdict=verdict.value,
+        findings=enriched_findings,
+        stage_results=stage_results,
+        duration_ms=duration_ms,
+        file_hashes=file_hashes,
+        llm_analysis=llm_analysis,
+    )
 
 
 async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
@@ -405,22 +552,24 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
 async def scan_handler(request: ScanRequest) -> ScanResponse:
     """Run a full security scan on a skill package.
 
-    Accepts a tarball URL and skill metadata, runs all 6 scanning stages,
-    stores results in PostgreSQL, and returns comprehensive findings.
+    Supports two modes:
+    1. Tarball mode: tarball_url provided, runs full 6-stage pipeline.
+    2. Single-file mode: single_file_content provided, runs stages 3-5 only.
 
     The scan is designed to complete within 55 seconds to stay within
     Vercel's 60-second function timeout.
     """
     # Validate request
-    if not request.tarball_url:
-        raise HTTPException(status_code=400, detail="tarball_url is required")
+    if not request.tarball_url and not request.single_file_content:
+        raise HTTPException(status_code=400, detail="tarball_url or single_file_content is required")
     if not request.version_id:
         raise HTTPException(status_code=400, detail="version_id is required")
 
     try:
+        if request.single_file_content:
+            return await run_single_file_pipeline(request)
         return await run_scan_pipeline(request)
     except Exception as e:
-        # Catch-all for unexpected errors — return 500 so caller can distinguish crash from result
         import logging
 
         logging.getLogger(__name__).error(f"Scan pipeline crashed: {e}", exc_info=True)

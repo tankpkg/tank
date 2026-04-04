@@ -184,15 +184,28 @@ async def check_python_dependency(
         vulns = await query_osv(package, version, "PyPI")
         for vuln in vulns[:3]:  # Limit to top 3
             severity = "critical" if vuln.get("severity") == "HIGH" else "high"
+            vuln_id = vuln.get("id", "Unknown")
+            # Extract CVE aliases for linking
+            aliases = vuln.get("aliases", [])
+            cve_id = next((a for a in aliases if a.startswith("CVE-")), vuln_id)
+            evidence_parts = [vuln_id]
+            if cve_id != vuln_id:
+                evidence_parts.append(f"CVE: {cve_id}")
+            summary = vuln.get("summary", "")
+            if summary:
+                evidence_parts.append(summary)
             findings.append(
                 Finding(
                     stage="stage5",
                     severity=severity,
                     type="known_vulnerability",
-                    description=f"Known vulnerability in {package}: {vuln.get('id', 'Unknown')}",
+                    description=f"Known vulnerability in {package}: {vuln_id}",
                     location=file_path,
                     confidence=0.95,
                     tool="stage5_osv",
+                    evidence=" | ".join(evidence_parts),
+                    remediation=f"Update {package} to a patched version. See: https://osv.dev/vulnerability/{vuln_id}",
+                    cwe_id="CWE-1035",
                 )
             )
 

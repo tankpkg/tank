@@ -29,7 +29,10 @@ const ALLOWED_HOSTS = [
   'ghcr.io',
   'github.com',
   'codeload.github.com',
-  'api.github.com'
+  'api.github.com',
+  'raw.githubusercontent.com',
+  'skills.sh',
+  'www.skills.sh'
 ];
 
 export interface URLValidationResult {
@@ -63,7 +66,7 @@ export function validateScanUrl(rawUrl: string): URLValidationResult {
   const isAllowedHost = ALLOWED_HOSTS.some((h) => hostname === h || hostname.endsWith(`.${h}`));
 
   if (!isAllowedHost) {
-    return { valid: false, error: 'URL host must be a known registry (npmjs.org, github.com, ghcr.io)' };
+    return { valid: false, error: 'URL host must be a known registry (npmjs.org, github.com, ghcr.io, skills.sh)' };
   }
 
   // SSRF: Check for private IPs in hostname

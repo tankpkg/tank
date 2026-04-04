@@ -10,6 +10,7 @@ import { skillsPublishRoutes } from './v1/skills-publish';
 import { skillsReadRoutes } from './v1/skills-read';
 import { starRoutes } from './v1/star';
 import { talkRoutes } from './v1/talk';
+import { topSkillsRoutes } from './v1/top-skills';
 
 export const v1Routes = new OpenAPIHono()
   .route('/auth', authRoutes)
@@ -21,7 +22,8 @@ export const v1Routes = new OpenAPIHono()
   .route('/skills', skillsConfirmRoutes)
   .route('/skills', starRoutes)
   .route('/skills', talkRoutes)
-  .route('/skills', skillsReadRoutes);
+  .route('/skills', skillsReadRoutes)
+  .route('/', topSkillsRoutes);
 
 v1Routes.openAPIRegistry.registerComponent('securitySchemes', 'BearerAuth', {
   type: 'http',
