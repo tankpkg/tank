@@ -8,10 +8,9 @@ Covers:
 - T6: Stage 3 context-aware suppression (code blocks, HTML comments)
 """
 
-import os
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -19,12 +18,10 @@ from lib.scan.markdown_utils import is_inside_html_comment
 from lib.scan.models import Finding, IngestResult, StageResult
 from lib.scan.remediation import enrich_finding
 from lib.scan.stage4_secrets import (
-    PLACEHOLDER_PATTERNS,
     _is_placeholder_value,
     run_custom_patterns,
     stage4_scan_secrets,
 )
-
 
 # ============================================================================
 # T1: detect-secrets import and fallback

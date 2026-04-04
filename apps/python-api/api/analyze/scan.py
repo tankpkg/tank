@@ -190,12 +190,8 @@ async def run_single_file_pipeline(request: ScanRequest) -> ScanResponse:
 
     try:
         # Stage 1 & 2: SKIP (no package structure to validate, no code to analyze statically)
-        stage_results.append(
-            StageResult(stage="stage1", status="skipped", findings=[], duration_ms=0)
-        )
-        stage_results.append(
-            StageResult(stage="stage2", status="skipped", findings=[], duration_ms=0)
-        )
+        stage_results.append(StageResult(stage="stage1", status="skipped", findings=[], duration_ms=0))
+        stage_results.append(StageResult(stage="stage2", status="skipped", findings=[], duration_ms=0))
 
         # Stage 3: Prompt Injection Detection
         elapsed = int((time.monotonic() - start) * 1000)
@@ -225,9 +221,7 @@ async def run_single_file_pipeline(request: ScanRequest) -> ScanResponse:
                 )
 
         # Stage 5: Supply Chain — skip for single files (no package.json)
-        stage_results.append(
-            StageResult(stage="stage5", status="skipped", findings=[], duration_ms=0)
-        )
+        stage_results.append(StageResult(stage="stage5", status="skipped", findings=[], duration_ms=0))
 
     finally:
         cleanup_ingest(temp_dir)
