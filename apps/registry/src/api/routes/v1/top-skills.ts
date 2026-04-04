@@ -18,6 +18,13 @@ const log = baseLog.child({ module: 'api:top-skills' });
 
 export const topSkillsRoutes = new Hono();
 
+interface SeverityCounts {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
 interface InternalSkillSummary {
   name: string;
   description: string | null;
@@ -26,6 +33,7 @@ interface InternalSkillSummary {
   publisher: string;
   downloads: number;
   url: string | null;
+  severityCounts: SeverityCounts;
 }
 
 interface ExternalSkillSummary {
@@ -36,6 +44,7 @@ interface ExternalSkillSummary {
   installCount: number;
   scanVerdict: string | null;
   url: string;
+  severityCounts: SeverityCounts;
 }
 
 interface TopSkillsResponse {
@@ -81,6 +90,10 @@ topSkillsRoutes.get('/skills/top', async (c) => {
           sr.verdict AS "scanVerdict",
           coalesce(u.name, '') AS publisher,
           coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 30), 0) AS downloads,
+          coalesce(sr.critical_count, 0) AS "criticalCount",
+          coalesce(sr.high_count, 0) AS "highCount",
+          coalesce(sr.medium_count, 0) AS "mediumCount",
+          coalesce(sr.low_count, 0) AS "lowCount",
           count(*) OVER() AS total
         FROM skills s
         LEFT JOIN "user" u ON u.id = s.publisher_id
@@ -108,7 +121,13 @@ topSkillsRoutes.get('/skills/top', async (c) => {
         latestVersion: (row.latestVersion as string) ?? null,
         scanVerdict: (row.scanVerdict as string) ?? null,
         publisher: (row.publisher as string) ?? '',
-        downloads: Number(row.downloads) || 0
+        downloads: Number(row.downloads) || 0,
+        severityCounts: {
+          critical: Number(row.criticalCount) || 0,
+          high: Number(row.highCount) || 0,
+          medium: Number(row.mediumCount) || 0,
+          low: Number(row.lowCount) || 0
+        }
       }));
     } catch (err) {
       log.error({ error: String(err) }, 'Failed to fetch internal top skills');
@@ -123,15 +142,27 @@ topSkillsRoutes.get('/skills/top', async (c) => {
 
       total += extSkills.length;
 
-      external = extSkills.map((s) => ({
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        author: s.author,
-        installCount: s.installCount,
-        scanVerdict: s.scanVerdict,
-        url: s.url
-      }));
+      external = extSkills.map((s) => {
+        // Derive severity counts from scanResult findings
+        const findings = s.scanResult?.findings ?? [];
+        const severityCounts = {
+          critical: findings.filter((f) => f.severity === 'critical').length,
+          high: findings.filter((f) => f.severity === 'high').length,
+          medium: findings.filter((f) => f.severity === 'medium').length,
+          low: findings.filter((f) => f.severity === 'low').length
+        };
+
+        return {
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          author: s.author,
+          installCount: s.installCount,
+          scanVerdict: s.scanVerdict,
+          url: s.url,
+          severityCounts
+        };
+      });
     } catch (err) {
       log.error({ error: String(err) }, 'Failed to fetch external top skills');
     }

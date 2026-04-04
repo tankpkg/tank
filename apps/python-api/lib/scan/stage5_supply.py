@@ -106,22 +106,38 @@ def cvss_to_severity(vuln: dict[str, Any]) -> str:
         try:
             if sev.get("type") == "CVSS_V3":
                 score_str = sev.get("score", "0")
+                score = 0.0
                 # Handle both "CVSS:3.1/AV:N/..." and "7.5" formats
                 if score_str.startswith("CVSS"):
-                    # Extract numeric score from vector string
+                    # Extract base score from CVSS vector string
+                    # Format: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
                     parts = score_str.split("/")
                     for part in parts:
-                        if part.startswith("AV:"):
-                            continue
+                        # Parse E:UL (exploit maturity) and derive from impact
+                        # The actual score is not directly in the vector — use
+                        # the database_specific cvss_score as fallback
+                        pass
+                    # Vector strings don't embed the numeric score directly.
+                    # Try database_specific for the numeric value.
+                    cvss_score = (
+                        vuln.get("database_specific", {}).get("cvss", {})
+                        .get("score", 0)
+                    )
+                    if isinstance(cvss_score, (int, float)):
+                        score = float(cvss_score)
+                    else:
+                        # Cannot determine score from vector alone; fall through
+                        continue
                 else:
                     score = float(score_str.split("/")[0].split(":")[-1])
-                    if score >= 9.0:
-                        return "critical"
-                    if score >= 7.0:
-                        return "high"
-                    if score >= 4.0:
-                        return "medium"
-                    return "low"
+
+                if score >= 9.0:
+                    return "critical"
+                if score >= 7.0:
+                    return "high"
+                if score >= 4.0:
+                    return "medium"
+                return "low"
         except (ValueError, IndexError):
             continue
 

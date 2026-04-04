@@ -7,12 +7,30 @@
  */
 
 import { sql } from 'drizzle-orm';
+import { z } from 'zod';
 
 import { db } from '~/lib/db';
 import { externalSkills } from '~/lib/db/schema';
 import { log as baseLog } from '~/services/logger';
 
 const log = baseLog.child({ module: 'external-skills' });
+
+// ── Zod schemas for external API validation ──────────────────────────────────
+
+const skillsShItemSchema = z.object({
+  name: z.string().min(1).max(256),
+  url: z.string().url().max(2048),
+  description: z.string().max(1024).optional(),
+  author: z.string().max(128).optional(),
+  installs: z.number().int().min(0).optional(),
+  // Allow unknown fields from external API — we only extract what we need
+}).passthrough();
+
+const skillsShResponseSchema = z.union([
+  z.array(skillsShItemSchema),
+  z.object({ skills: z.array(skillsShItemSchema) }),
+  z.object({ leaderboard: z.array(skillsShItemSchema) }),
+]);
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -159,21 +177,24 @@ async function fetchFromSkillsSh(endpoint: string): Promise<SkillsShEntry[]> {
 
     if (!response.ok) return [];
 
-    const data = await response.json();
+    const raw = await response.json();
 
-    // Normalize: handle both array and { skills: [...] } shapes
-    const items = Array.isArray(data) ? data : (data?.skills ?? data?.leaderboard ?? []);
-    return items.map((item: Record<string, unknown>) => ({
-      name: String(item.name ?? item.skill_name ?? ''),
-      url: String(item.url ?? item.repository_url ?? item.github_url ?? ''),
-      description: item.description ? String(item.description) : undefined,
-      author: item.author ?? item.owner ?? item.publisher ?? undefined,
-      installs:
-        typeof item.installs === 'number'
-          ? item.installs
-          : typeof item.install_count === 'number'
-            ? item.install_count
-            : 0
+    // Validate response shape with Zod — reject malformed data
+    const parsed = skillsShResponseSchema.safeParse(raw);
+    if (!parsed.success) {
+      log.warn({ endpoint, error: parsed.error.message }, 'Invalid skills.sh response schema — discarding');
+      return [];
+    }
+
+    // Normalize: extract items array from validated response
+    const data = parsed.data;
+    const items = Array.isArray(data) ? data : 'skills' in data ? data.skills : data.leaderboard;
+    return items.map((item: z.infer<typeof skillsShItemSchema>) => ({
+      name: item.name,
+      url: item.url,
+      description: item.description,
+      author: item.author,
+      installs: item.installs ?? 0
     }));
   } catch {
     return [];
@@ -216,56 +237,55 @@ export async function fetchAndCacheExternalSkills(): Promise<void> {
   // Batch upsert into DB
   const validEntries = entries.filter((e) => e.name && e.url);
   if (validEntries.length > 0) {
-    try {
-      await db
-        .insert(externalSkills)
-        .values(
-          validEntries.map((entry) => ({
-            source: 'skills.sh',
-            name: entry.name,
-            url: entry.url,
-            description: entry.description ?? null,
-            author: typeof entry.author === 'string' ? entry.author : String(entry.author ?? ''),
-            installCount: entry.installs ?? 0
-          }))
-        )
-        .onConflictDoUpdate({
-          target: [externalSkills.source, externalSkills.url],
-          set: {
-            name: sql`EXCLUDED.name`,
-            description: sql`EXCLUDED.description`,
-            author: sql`EXCLUDED.author`,
-            installCount: sql`EXCLUDED.install_count`,
-            updatedAt: new Date()
+    const CHUNK_SIZE = 25;
+
+    const toRow = (entry: SkillsShEntry) => ({
+      source: 'skills.sh',
+      name: entry.name,
+      url: entry.url,
+      description: entry.description ?? null,
+      author: typeof entry.author === 'string' ? entry.author : String(entry.author ?? ''),
+      installCount: entry.installs ?? 0
+    });
+
+    // Chunk to keep parameter count bounded and avoid query plan blowup
+    for (let i = 0; i < validEntries.length; i += CHUNK_SIZE) {
+      const chunk = validEntries.slice(i, i + CHUNK_SIZE);
+      try {
+        await db
+          .insert(externalSkills)
+          .values(chunk.map(toRow))
+          .onConflictDoUpdate({
+            target: [externalSkills.source, externalSkills.url],
+            set: {
+              name: sql`EXCLUDED.name`,
+              description: sql`EXCLUDED.description`,
+              author: sql`EXCLUDED.author`,
+              installCount: sql`EXCLUDED.install_count`,
+              updatedAt: new Date()
+            }
+          });
+      } catch (err) {
+        log.warn({ error: String(err), chunkStart: i, chunkSize: chunk.length }, 'Chunk upsert failed, falling back to serial');
+        // Fallback: individual upserts for this chunk only
+        for (const entry of chunk) {
+          try {
+            await db
+              .insert(externalSkills)
+              .values(toRow(entry))
+              .onConflictDoUpdate({
+                target: [externalSkills.source, externalSkills.url],
+                set: {
+                  name: entry.name,
+                  description: entry.description ?? null,
+                  author: typeof entry.author === 'string' ? entry.author : String(entry.author ?? ''),
+                  installCount: entry.installs ?? 0,
+                  updatedAt: new Date()
+                }
+              });
+          } catch (innerErr) {
+            log.warn({ name: entry.name, error: String(innerErr) }, 'Failed to upsert external skill');
           }
-        });
-    } catch (err) {
-      log.warn({ error: String(err), count: validEntries.length }, 'Batch upsert failed, falling back to serial');
-      // Fallback: serial upsert for robustness
-      for (const entry of validEntries) {
-        try {
-          await db
-            .insert(externalSkills)
-            .values({
-              source: 'skills.sh',
-              name: entry.name,
-              url: entry.url,
-              description: entry.description ?? null,
-              author: typeof entry.author === 'string' ? entry.author : String(entry.author ?? ''),
-              installCount: entry.installs ?? 0
-            })
-            .onConflictDoUpdate({
-              target: [externalSkills.source, externalSkills.url],
-              set: {
-                name: entry.name,
-                description: entry.description ?? null,
-                author: typeof entry.author === 'string' ? entry.author : String(entry.author ?? ''),
-                installCount: entry.installs ?? 0,
-                updatedAt: new Date()
-              }
-            });
-        } catch (innerErr) {
-          log.warn({ name: entry.name, error: String(innerErr) }, 'Failed to upsert external skill');
         }
       }
     }

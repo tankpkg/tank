@@ -131,6 +131,16 @@ export function expandGitHubFolder(url: string): { tarballUrl: string; subPath: 
  */
 const ALLOWED_FETCH_HOSTS = ['raw.githubusercontent.com'];
 
+/** Reject URLs that resolve to private/internal network ranges. */
+const BLOCKED_HOSTNAMES = /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|0\.|::1|fc|fe80|169\.254\.|metadata\.google\.internal)/i;
+
+function isBlockedHost(hostname: string): boolean {
+  if (BLOCKED_HOSTNAMES.test(hostname)) return true;
+  // Block any hostname without a dot (no TLD = likely internal)
+  if (!hostname.includes('.')) return true;
+  return false;
+}
+
 export async function fetchRawFileContent(url: string): Promise<{ content: string; contentType: string } | null> {
   // Validate fetch target (defense-in-depth against SSRF)
   const parsed = parseURL(url);
@@ -139,11 +149,31 @@ export async function fetchRawFileContent(url: string): Promise<{ content: strin
     return null;
   }
 
+  // Block private/internal hostnames even if allowlist somehow passes
+  if (isBlockedHost(parsed.hostname)) {
+    log.warn({ url, host: parsed.hostname }, 'Blocked fetch to private/internal host');
+    return null;
+  }
+
+  // Enforce HTTPS only
+  if (parsed.protocol !== 'https:') {
+    log.warn({ url, protocol: parsed.protocol }, 'Blocked non-HTTPS fetch');
+    return null;
+  }
+
   try {
     const response = await fetch(url, {
       signal: AbortSignal.timeout(15_000),
+      redirect: 'follow',
       headers: { 'User-Agent': 'Tank-Security-Scanner/1.0' }
     });
+
+    // Validate redirect destination didn't land on an internal host
+    const finalUrl = new URL(response.url);
+    if (isBlockedHost(finalUrl.hostname)) {
+      log.warn({ url, finalUrl: response.url }, 'Blocked redirect to private/internal host');
+      return null;
+    }
 
     if (!response.ok) {
       log.warn({ url, status: response.status }, 'Failed to fetch raw file content');
