@@ -55,7 +55,10 @@ PLACEHOLDER_PATTERNS: list[re.Pattern] = [
     re.compile(r"\bsk[_-]?placeholder\b", re.IGNORECASE),
     re.compile(r"\breplace[_-]?me\b", re.IGNORECASE),
     re.compile(r"<your[_-]?(key|secret|token|api|password)>", re.IGNORECASE),
-    re.compile(r"\b(insert|put|place|add|replace|enter)\s+(your|the|a|an)\s+(key|secret|token|api|value|password)", re.IGNORECASE),
+    re.compile(
+        r"\b(insert|put|place|add|replace|enter)\s+(your|the|a|an)\s+(key|secret|token|api|value|password)",
+        re.IGNORECASE,
+    ),
     re.compile(r"\b(fill|change|update)\s+(in|with|to)\s+(your|the|a)\b", re.IGNORECASE),
     # Common template strings
     re.compile(r"\$\{[A-Z_]+\}", re.IGNORECASE),  # ${ENV_VAR} template patterns
@@ -163,10 +166,7 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                             )
                         )
                 except Exception as file_error:
-                    logging.getLogger(__name__).warning(
-                        "detect-secrets file scan error: %s", file_error
-                    )
-
+                    logging.getLogger(__name__).warning("detect-secrets file scan error: %s", file_error)
 
     except ImportError:
         # detect-secrets not available, add info finding

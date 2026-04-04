@@ -109,20 +109,9 @@ def cvss_to_severity(vuln: dict[str, Any]) -> str:
                 score = 0.0
                 # Handle both "CVSS:3.1/AV:N/..." and "7.5" formats
                 if score_str.startswith("CVSS"):
-                    # Extract base score from CVSS vector string
-                    # Format: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
-                    parts = score_str.split("/")
-                    for part in parts:
-                        # Parse E:UL (exploit maturity) and derive from impact
-                        # The actual score is not directly in the vector — use
-                        # the database_specific cvss_score as fallback
-                        pass
                     # Vector strings don't embed the numeric score directly.
                     # Try database_specific for the numeric value.
-                    cvss_score = (
-                        vuln.get("database_specific", {}).get("cvss", {})
-                        .get("score", 0)
-                    )
+                    cvss_score = vuln.get("database_specific", {}).get("cvss", {}).get("score", 0)
                     if isinstance(cvss_score, (int, float)):
                         score = float(cvss_score)
                     else:
