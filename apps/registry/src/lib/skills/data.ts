@@ -390,7 +390,7 @@ export async function getSkillDetail(
 
 // ── Skills Search ────────────────────────────────────────────────────────────
 
-function escapeLike(input: string): string {
+export function escapeLike(input: string): string {
   return input.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 

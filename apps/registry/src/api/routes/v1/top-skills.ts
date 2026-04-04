@@ -10,6 +10,7 @@ import { Hono } from 'hono';
 
 import { resolveRequestUserId } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
+import { escapeLike } from '~/lib/skills/data';
 import { getTopExternalSkills, searchExternalSkills } from '~/services/external-skills';
 import { log as baseLog } from '~/services/logger';
 import { authFreeLimiter } from '../../middleware/rate-limit';
@@ -77,8 +78,9 @@ topSkillsRoutes.get('/skills/top', async (c) => {
   // Internal skills: top by download count
   if (source === 'all' || source === 'internal') {
     try {
+      const escaped = q ? escapeLike(q) : '';
       const searchCondition = q
-        ? sql`AND (s.name ILIKE ${`%${q.replace(/[%_]/g, '\\$&')}%`} OR s.description ILIKE ${`%${q.replace(/[%_]/g, '\\$&')}%`})`
+        ? sql`AND (s.name ILIKE ${`%${escaped}%`} OR s.description ILIKE ${`%${escaped}%`})`
         : sql``;
 
       const rows = (await db.execute(sql`
@@ -144,7 +146,9 @@ topSkillsRoutes.get('/skills/top', async (c) => {
 
       external = extSkills.map((s) => {
         // Derive severity counts from scanResult findings
-        const findings = s.scanResult?.findings ?? [];
+        const findings =
+          s.scanResult?.findings ??
+          ([] as Array<{ severity: string; stage: string; type: string; description: string }>);
         const severityCounts = {
           critical: findings.filter((f) => f.severity === 'critical').length,
           high: findings.filter((f) => f.severity === 'high').length,

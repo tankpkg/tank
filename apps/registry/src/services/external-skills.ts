@@ -11,6 +11,7 @@ import { z } from 'zod';
 
 import { db } from '~/lib/db';
 import { externalSkills } from '~/lib/db/schema';
+import { escapeLike } from '~/lib/skills/data';
 import { log as baseLog } from '~/services/logger';
 
 const log = baseLog.child({ module: 'external-skills' });
@@ -327,7 +328,7 @@ export async function getTopExternalSkills(limit: number): Promise<ExternalSkill
  * Search cached external skills by name or description.
  */
 export async function searchExternalSkills(query: string, limit: number): Promise<ExternalSkill[]> {
-  const pattern = `%${query.replace(/[%_]/g, '\\$&')}%`;
+  const pattern = `%${escapeLike(query)}%`;
 
   const rows = await db
     .select()
