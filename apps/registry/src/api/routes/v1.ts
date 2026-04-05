@@ -18,12 +18,12 @@ export const v1Routes = new OpenAPIHono()
   .route('/cli-auth', cliAuthRoutes)
   .route('/scan', scanRoutes)
   .route('/search', searchRoutes)
+  .route('/skills', topSkillsRoutes)
   .route('/skills', skillsPublishRoutes)
   .route('/skills', skillsConfirmRoutes)
   .route('/skills', starRoutes)
   .route('/skills', talkRoutes)
-  .route('/skills', skillsReadRoutes)
-  .route('/', topSkillsRoutes);
+  .route('/skills', skillsReadRoutes);
 
 v1Routes.openAPIRegistry.registerComponent('securitySchemes', 'BearerAuth', {
   type: 'http',

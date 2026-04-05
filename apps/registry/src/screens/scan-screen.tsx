@@ -30,10 +30,11 @@ interface ScanResult {
 type ScanState = 'idle' | 'loading' | 'success' | 'error';
 
 const URL_EXAMPLES = [
-  'https://registry.npmjs.org/@scope/pkg/-/pkg-1.0.0.tgz',
+  'https://github.com/anthropics/skills/blob/main/skills/skill-creator/SKILL.md',
   'https://github.com/owner/repo/tree/main/skill-dir',
   'https://raw.githubusercontent.com/owner/repo/main/SKILL.md',
-  'https://skills.sh/owner/repo/skill-name'
+  'https://skills.sh/owner/repo/skill-name',
+  'https://agentskills.co.il/he/skills/category/skill-name'
 ];
 
 export function ScanPage() {
@@ -82,12 +83,15 @@ export function ScanPage() {
   const stagesRun =
     result?.stage_results?.filter((s) => s.status === 'passed' || s.status === 'failed').map((s) => s.stage) ?? [];
 
+  const ingestFailure = result?.findings.find((f) => f.stage === 'stage0' && f.severity === 'critical');
+
   return (
     <div className="tank-shell py-10 space-y-8">
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight">Security Scanner</h1>
         <p className="mt-1 text-muted-foreground">
-          Scan any npm package, GitHub repo, raw file, or skills.sh link for security vulnerabilities.
+          Scan any npm package, GitHub repo, raw file, skills.sh, or agentskills.co.il link for security
+          vulnerabilities.
         </p>
       </div>
 
@@ -113,7 +117,14 @@ export function ScanPage() {
           </div>
           <div className="flex flex-wrap gap-1.5">
             <span className="text-xs text-muted-foreground">Supports:</span>
-            {['npm tarballs', 'GitHub repos', 'GitHub folders', 'Raw .md files', 'skills.sh links'].map((type) => (
+            {[
+              'npm tarballs',
+              'GitHub repos',
+              'GitHub folders',
+              'Raw .md files',
+              'skills.sh links',
+              'agentskills.co.il'
+            ].map((type) => (
               <span
                 key={type}
                 className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
@@ -149,6 +160,22 @@ export function ScanPage() {
       {/* Results */}
       {state === 'success' && result && (
         <div className="space-y-6">
+          {/* Ingest failure warning */}
+          {ingestFailure && (
+            <Card className="border-amber-300 dark:border-amber-800">
+              <CardContent className="py-4 space-y-2">
+                <p role="alert" className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                  Package download failed
+                </p>
+                <p className="text-sm text-muted-foreground break-words">
+                  {ingestFailure.description.length > 200
+                    ? `${ingestFailure.description.slice(0, 200)}...`
+                    : ingestFailure.description}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Security Overview */}
           <SecurityOverview
             verdict={result.verdict}

@@ -1,4 +1,4 @@
-import { Bot, Bug, Key, Link2, ScanSearch, Shield } from 'lucide-react';
+import { Bot, Bug, Download, Key, Link2, ScanSearch, Shield } from 'lucide-react';
 
 import type { ScanFinding } from '~/lib/skills/data';
 
@@ -59,7 +59,25 @@ export function buildScanningTools(scanDetails: {
   const stagesRun = scanDetails.stagesRun ?? [];
   const findings = scanDetails.findings ?? [];
 
+  const ingestFailed = stagesRun.includes('stage0') && findings.some((f) => f.stage === 'stage0');
+
   return [
+    {
+      name: 'Download & Ingest',
+      category: 'Package Fetch',
+      icon: <Download className="size-4" />,
+      ran: true,
+      status: ingestFailed ? 'failed' : 'ran',
+      findingCount: findings.filter((f) => f.stage === 'stage0').length
+    },
+    {
+      name: 'Structure Validator',
+      category: 'Validation',
+      icon: <Shield className="size-4" />,
+      ran: stagesRun.includes('stage1'),
+      status: stagesRun.includes('stage1') ? 'ran' : 'skipped',
+      findingCount: findings.filter((f) => f.stage === 'stage1').length
+    },
     {
       name: 'Semgrep',
       category: 'SAST',

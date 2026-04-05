@@ -170,6 +170,8 @@ function CategoryGroup({ category, findings }: { category: string; findings: Sca
 }
 
 const CATEGORY_MAP: Record<string, string> = {
+  stage0: 'Ingest & Download',
+  stage1: 'Validation',
   stage2: 'Static Analysis',
   stage3: 'Injection Detection',
   stage4: 'Secrets & Credentials',
