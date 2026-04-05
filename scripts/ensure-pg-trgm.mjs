@@ -1,4 +1,8 @@
+import dns from 'node:dns';
 import postgres from 'postgres';
+
+// Force IPv4 resolution to avoid ECONNREFUSED on hosts with broken IPv6
+dns.setDefaultResultOrder('ipv4first');
 
 const dbUrl = process.env.DATABASE_URL;
 
