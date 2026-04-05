@@ -54,7 +54,7 @@ interface TopSkillsResponse {
   total: number;
 }
 
-topSkillsRoutes.get('/skills/top', async (c) => {
+topSkillsRoutes.get('/top', async (c) => {
   // Rate limiting
   const userId = await resolveRequestUserId(c.req.raw);
   const rateKey = userId ?? c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? 'unknown';

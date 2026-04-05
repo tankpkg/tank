@@ -11,6 +11,7 @@
  * - GitHub folder URLs (github.com/owner/repo/tree/branch/path)
  * - Raw GitHub files (raw.githubusercontent.com)
  * - skills.sh URLs (skills.sh/owner/repo/skill-name)
+ * - agentskills.co.il URLs (agentskills.co.il/{lang}/skills/{category}/{skill-name})
  */
 
 import { zValidator } from '@hono/zod-validator';
