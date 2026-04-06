@@ -76,8 +76,8 @@ describe('E2E: `tank build` CLI command — real binary, real filesystem', () =>
     const hookWrapper = path.join(out, '.claude/hooks/quality-gate.mjs');
     if (fs.existsSync(hookWrapper)) {
       const wrapperContent = fs.readFileSync(hookWrapper, 'utf-8');
-      expect(wrapperContent).toContain('quality-gate.handler');
-      expect(wrapperContent).not.toContain('./hooks/quality-gate.ts');
+      expect(wrapperContent).toContain('Quality gate');
+      expect(wrapperContent).toContain('getChangedCodeFiles');
     }
   });
 

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "test:run": "vitest run"
   },
   "devDependencies": {

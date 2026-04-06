@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "test:system": "vitest run",
     "test:browser": "bunx bddgen test && bunx playwright test"
   },

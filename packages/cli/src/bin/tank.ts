@@ -70,15 +70,25 @@ program
   .description("Compile a skill's atoms for the detected (or specified) platform")
   .option('-p, --platform <platform>', 'Target platform (opencode, claude-code, cursor, windsurf, cline, roo-code)')
   .option('-o, --out <dir>', 'Output directory (default: current directory)')
-  .action(async (skill: string, opts: { platform?: string; out?: string }) => {
-    try {
-      await buildCommand({ skill, platform: opts.platform, out: opts.out });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Build failed: ${msg}`);
-      process.exit(1);
+  .option('--dry-run', 'Preview files without writing')
+  .option('--list-platforms', 'List available platforms and exit')
+  .action(
+    async (skill: string, opts: { platform?: string; out?: string; dryRun?: boolean; listPlatforms?: boolean }) => {
+      try {
+        await buildCommand({
+          skill,
+          platform: opts.platform,
+          out: opts.out,
+          dryRun: opts.dryRun,
+          listPlatforms: opts.listPlatforms
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Build failed: ${msg}`);
+        process.exit(1);
+      }
     }
-  });
+  );
 
 program
   .command('login')

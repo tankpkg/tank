@@ -59,9 +59,26 @@ export interface BuildOptions {
   target?: string;
   platform?: string;
   out?: string;
+  dryRun?: boolean;
+  listPlatforms?: boolean;
+}
+
+export function listPlatforms(): void {
+  logger.info('Available platforms:\n');
+  for (const [id, adapter] of Object.entries(ADAPTERS)) {
+    const caps = Object.entries(adapter.capabilities)
+      .filter(([, v]) => v !== 'none')
+      .map(([k]) => k);
+    logger.info(`  ${id.padEnd(14)} ${caps.join(', ')}`);
+  }
 }
 
 export async function buildCommand(opts: BuildOptions): Promise<void> {
+  if (opts.listPlatforms) {
+    listPlatforms();
+    return;
+  }
+
   const spinner = ora('Building...').start();
 
   try {
@@ -93,20 +110,23 @@ export async function buildCommand(opts: BuildOptions): Promise<void> {
 
     spinner.text = `Compiling ${pkg.name} for ${adapter.name}...`;
     const compiled = compilePackage(pkg, adapter, { sourceDir: skillDir });
-    const count = writeFiles(targetDir, compiled);
 
-    if (compiled.warnings.length > 0) {
-      spinner.succeed(`Built ${count} files for ${adapter.name}`);
-      for (const w of compiled.warnings) {
-        const icon = w.level === 'skipped' ? '⏭️ ' : '⚠️ ';
-        logger.warn(`${icon}[${w.atomKind}] ${w.message}`);
+    if (opts.dryRun) {
+      spinner.succeed(`[dry-run] Would write ${compiled.files.length} files for ${adapter.name}`);
+      for (const f of compiled.files) {
+        logger.info(`  ${f.path}`);
       }
     } else {
+      const count = writeFiles(targetDir, compiled);
       spinner.succeed(`Built ${count} files for ${adapter.name}`);
+      for (const f of compiled.files) {
+        logger.info(`  ${f.path}`);
+      }
     }
 
-    for (const f of compiled.files) {
-      logger.info(`  ${f.path}`);
+    for (const w of compiled.warnings) {
+      const icon = w.level === 'skipped' ? '⏭️ ' : '⚠️ ';
+      logger.warn(`${icon}[${w.atomKind}] ${w.message}`);
     }
 
     if (compiled.skipped.length > 0) {

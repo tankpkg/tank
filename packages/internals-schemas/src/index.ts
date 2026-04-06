@@ -84,7 +84,12 @@ export {
   userRoleSchema,
   userStatusSchema
 } from '~/schemas/permissions.js';
-export { type SkillsJson, skillsJsonSchema } from '~/schemas/skills-json.js';
+export {
+  type PublishManifest,
+  publishManifestSchema,
+  type SkillsJson,
+  skillsJsonSchema
+} from '~/schemas/skills-json.js';
 export {
   type LockedSkill,
   type LockedSkillV1,

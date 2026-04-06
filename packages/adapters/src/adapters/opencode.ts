@@ -236,18 +236,13 @@ export const ${pascalCase(name)}: Plugin = async ({ client, $ }) => {
       _running = true;
       $\`git status --porcelain -uall 2>/dev/null\`.text().then((stat) => {
         const fp = stat.trim();
-        console.log("[${name}] fingerprint:", JSON.stringify(fp), "last:", JSON.stringify(_lastFingerprint));
         if (!fp || fp === _lastFingerprint) {
           _running = false;
           return;
         }
         _lastFingerprint = fp;
-        console.log("[${name}] loading handler...");
         return import("${handlerRelPath}").then((handler) => {
-          console.log("[${name}] handler loaded, calling default...");
           return handler.default(e, { client, $ });
-        }).then(() => {
-          console.log("[${name}] handler completed");
         });
       }).catch((err) => console.error("[${name}] ERROR:", err)).finally(() => { _running = false; });
     },
