@@ -25,7 +25,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY!,
+        'x-api-key': ANTHROPIC_API_KEY ?? '',
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -38,7 +38,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { type: string; content: Array<{ text: string }> };
     expect(body.type).toBe('message');
-    expect(body.content[0]!.text.length).toBeGreaterThan(0);
+    expect(body.content[0]?.text.length).toBeGreaterThan(0);
   });
 
   it('detects credential in message and stores it in vault', async () => {
@@ -49,7 +49,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY!,
+        'x-api-key': ANTHROPIC_API_KEY ?? '',
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
@@ -79,7 +79,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY!,
+        'x-api-key': ANTHROPIC_API_KEY ?? '',
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({

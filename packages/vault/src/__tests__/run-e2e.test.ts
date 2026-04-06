@@ -99,7 +99,7 @@ describe('run E2E — real process through real proxy', () => {
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('"status":200');
 
-    const providerBody = providerLog[providerLog.length - 1]!;
+    const providerBody = providerLog[providerLog.length - 1] ?? '';
     expect(providerBody).not.toContain(REAL_STRIPE);
 
     const parsed = JSON.parse(providerBody);
