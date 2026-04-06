@@ -17,41 +17,41 @@ describe('agent configs', () => {
   it('claude is configured as Node.js with base-url-overrides strategy', () => {
     const config = getAgentConfig('claude');
     expect(config).toBeDefined();
-    expect(config!.runtime).toBe('node');
-    expect(config!.strategy).toBe('base-url-overrides');
+    expect(config?.runtime).toBe('node');
+    expect(config?.strategy).toBe('base-url-overrides');
   });
 
   it('opencode is configured as Bun with base-url-overrides strategy', () => {
     const config = getAgentConfig('opencode');
     expect(config).toBeDefined();
-    expect(config!.runtime).toBe('bun');
-    expect(config!.strategy).toBe('base-url-overrides');
+    expect(config?.runtime).toBe('bun');
+    expect(config?.strategy).toBe('base-url-overrides');
   });
 
   it('cursor is configured as Electron with https-proxy strategy', () => {
     const config = getAgentConfig('cursor');
     expect(config).toBeDefined();
-    expect(config!.runtime).toBe('electron');
-    expect(config!.strategy).toBe('https-proxy');
+    expect(config?.runtime).toBe('electron');
+    expect(config?.strategy).toBe('https-proxy');
   });
 
   it('codex is configured as Rust with https-proxy strategy', () => {
     const config = getAgentConfig('codex');
     expect(config).toBeDefined();
-    expect(config!.runtime).toBe('rust');
-    expect(config!.strategy).toBe('https-proxy');
+    expect(config?.runtime).toBe('rust');
+    expect(config?.strategy).toBe('https-proxy');
   });
 
   it('openclaw uses best-effort strategy', () => {
     const config = getAgentConfig('openclaw');
     expect(config).toBeDefined();
-    expect(config!.strategy).toBe('best-effort');
+    expect(config?.strategy).toBe('best-effort');
   });
 
   it('universal uses best-effort strategy', () => {
     const config = getAgentConfig('universal');
     expect(config).toBeDefined();
-    expect(config!.strategy).toBe('best-effort');
+    expect(config?.strategy).toBe('best-effort');
   });
 
   it('returns undefined for unknown agent', () => {
@@ -117,8 +117,8 @@ describe('buildAgentEnv()', () => {
 
     it('encoded upstream decodes back to original URL', () => {
       const env = buildAgentEnv('base-url-overrides', proxyUrl, baseEnv);
-      const anthropicUrl = env.ANTHROPIC_BASE_URL!;
-      const encoded = anthropicUrl.split('/_/')[1]!;
+      const anthropicUrl = env.ANTHROPIC_BASE_URL ?? '';
+      const encoded = anthropicUrl.split('/_/')[1] ?? '';
       const decoded = Buffer.from(encoded, 'base64url').toString('utf-8');
       expect(decoded).toBe('https://api.anthropic.com');
     });
