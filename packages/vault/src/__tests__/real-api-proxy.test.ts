@@ -70,7 +70,7 @@ describe.skipIf(!HAS_API_KEY)('real API proxy — Anthropic', () => {
     const fake = vault.lookupReal(TEST_STRIPE);
     expect(fake).not.toBeNull();
     expect(fake).not.toBe(TEST_STRIPE);
-    expect(fake!.startsWith('sk_live_')).toBe(true);
+    expect(fake?.startsWith('sk_live_')).toBe(true);
     expect(fake).toHaveLength(TEST_STRIPE.length);
   });
 

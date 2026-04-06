@@ -230,7 +230,10 @@ function ExternalSkillCard({ skill }: { skill: ExternalSkillSummary }) {
             <ExternalLink className="size-3" />
             Source
           </a>
-          <Link to="/scan" search={{ url: skill.url }} className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline">
+          <Link
+            to="/scan"
+            search={{ url: skill.url }}
+            className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline">
             Scan
           </Link>
         </div>
