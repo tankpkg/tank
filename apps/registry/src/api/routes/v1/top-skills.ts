@@ -11,7 +11,7 @@ import { Hono } from 'hono';
 import { resolveRequestUserId } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { escapeLike } from '~/lib/skills/data';
-import { getTopExternalSkills, searchExternalSkills } from '~/services/external-skills';
+import { getTopExternalSkills, searchExternalSkills, warmCacheIfNeeded } from '~/services/external-skills';
 import { log as baseLog } from '~/services/logger';
 import { authFreeLimiter } from '../../middleware/rate-limit';
 
@@ -84,6 +84,12 @@ topSkillsRoutes.get('/top', async (c) => {
         : sql``;
 
       const rows = (await db.execute(sql`
+        WITH download_counts AS (
+          SELECT skill_id, sum(count)::int AS downloads
+          FROM skill_download_daily
+          WHERE date >= CURRENT_DATE - 30
+          GROUP BY skill_id
+        )
         SELECT
           s.name,
           s.description,
@@ -91,13 +97,14 @@ topSkillsRoutes.get('/top', async (c) => {
           sv.version AS "latestVersion",
           sr.verdict AS "scanVerdict",
           coalesce(u.name, '') AS publisher,
-          coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 30), 0) AS downloads,
+          coalesce(dc.downloads, 0) AS downloads,
           coalesce(sr.critical_count, 0) AS "criticalCount",
           coalesce(sr.high_count, 0) AS "highCount",
           coalesce(sr.medium_count, 0) AS "mediumCount",
           coalesce(sr.low_count, 0) AS "lowCount",
           count(*) OVER() AS total
         FROM skills s
+        LEFT JOIN download_counts dc ON dc.skill_id = s.id
         LEFT JOIN "user" u ON u.id = s.publisher_id
         LEFT JOIN skill_versions sv ON sv.skill_id = s.id
           AND sv.created_at = (
@@ -139,6 +146,9 @@ topSkillsRoutes.get('/top', async (c) => {
   // External skills: top by install count
   if (source === 'all' || source === 'external') {
     try {
+      // Warm cache if stale/empty (lazy, first-request pattern)
+      await warmCacheIfNeeded();
+
       const extLimit = source === 'external' ? limit : Math.ceil(limit / 2);
       const extSkills = q ? await searchExternalSkills(q, extLimit) : await getTopExternalSkills(extLimit);
 

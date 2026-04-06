@@ -110,7 +110,8 @@ describe('transparent proxy — real fetch() interception via bootstrap', () => 
     const fwdContent = parsed.messages[0].content as string;
     expect(fwdContent).toContain('sk_live_');
     expect(fwdContent).not.toContain(REAL_STRIPE);
-    const fake = fwdContent.match(/sk_live_\w+/)![0]!;
+    const fake = fwdContent.match(/sk_live_\w+/)?.[0];
+    expect(fake).toBeDefined();
     expect(fake).toHaveLength(REAL_STRIPE.length);
 
     const responseData = JSON.parse(result.stdout.trim());
@@ -168,10 +169,11 @@ describe('transparent proxy — real fetch() interception via bootstrap', () => 
 
     expect(result.code).toBe(0);
 
-    const body1 = JSON.parse(targetLog[beforeCount]!);
-    const body2 = JSON.parse(targetLog[beforeCount + 1]!);
-    const fake1 = (body1.messages[0].content as string).match(/sk_live_\w+/)![0];
-    const fake2 = (body2.messages[0].content as string).match(/sk_live_\w+/)![0];
+    const body1 = JSON.parse(targetLog[beforeCount] ?? '{}');
+    const body2 = JSON.parse(targetLog[beforeCount + 1] ?? '{}');
+    const fake1 = (body1.messages[0].content as string).match(/sk_live_\w+/)?.[0];
+    const fake2 = (body2.messages[0].content as string).match(/sk_live_\w+/)?.[0];
+    expect(fake1).toBeDefined();
     expect(fake1).toBe(fake2);
     expect(fake1).not.toBe(REAL_STRIPE);
 
@@ -202,7 +204,7 @@ describe('transparent proxy — real fetch() interception via bootstrap', () => 
 
     expect(result.code).toBe(0);
 
-    const body = targetLog[beforeCount]!;
+    const body = targetLog[beforeCount] ?? '';
     expect(body).not.toContain(REAL_STRIPE);
     expect(body).not.toContain(REAL_AWS);
 

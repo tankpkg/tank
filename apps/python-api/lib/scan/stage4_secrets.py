@@ -5,6 +5,7 @@ API keys, credentials, and sensitive data in skill files.
 """
 
 import logging
+import os
 import re
 import time
 from pathlib import Path
@@ -121,8 +122,13 @@ SKIP_EXTENSIONS = {
 def run_detect_secrets(temp_dir: str) -> list[Finding]:
     """Run detect-secrets library on all files."""
     findings: list[Finding] = []
+    logger = logging.getLogger(__name__)
 
     try:
+        import detect_secrets
+
+        logger.info("detect-secrets version: %s", getattr(detect_secrets, "__version__", "unknown"))
+
         from detect_secrets.core.scan import get_files_to_scan, scan_file
         from detect_secrets.settings import transient_settings
 
@@ -150,10 +156,11 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                 ],
             }
         ):
-            for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True):
+            for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True, root=temp_dir):
+                abs_path = os.path.join(temp_dir, file_path)
                 try:
-                    for secret in scan_file(file_path):
-                        rel_path = str(Path(file_path).relative_to(temp_dir))
+                    for secret in scan_file(abs_path):
+                        rel_path = file_path
                         findings.append(
                             Finding(
                                 stage="stage4",
@@ -166,10 +173,14 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                             )
                         )
                 except Exception as file_error:
-                    logging.getLogger(__name__).warning("detect-secrets file scan error: %s", file_error)
+                    logger.warning("detect-secrets file scan error: %s", file_error)
 
     except ImportError:
-        # detect-secrets not available, add info finding
+        logger.warning(
+            "detect-secrets library not available — comprehensive secret scanning disabled. "
+            "Install with: pip install detect-secrets>=1.5.0",
+            exc_info=True,
+        )
         findings.append(
             Finding(
                 stage="stage4",
@@ -181,6 +192,7 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
             )
         )
     except Exception as e:
+        logger.warning("detect-secrets scan error: %s", e, exc_info=True)
         findings.append(
             Finding(
                 stage="stage4",

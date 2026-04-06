@@ -1,4 +1,15 @@
-import { ChevronDown, ChevronUp, Download, ExternalLink, RefreshCw, ShieldCheck, ShieldX, Users } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  ExternalLink,
+  RefreshCw,
+  ShieldCheck,
+  ShieldX,
+  Users
+} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { SecurityOverview } from '~/components/skills/security-overview';
@@ -219,9 +230,12 @@ function ExternalSkillCard({ skill }: { skill: ExternalSkillSummary }) {
             <ExternalLink className="size-3" />
             Source
           </a>
-          <a href={`/scan`} className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline">
+          <Link
+            to="/scan"
+            search={{ url: skill.url }}
+            className="inline-flex items-center gap-1 text-xs text-blue-500 hover:underline">
             Scan
-          </a>
+          </Link>
         </div>
 
         <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)} className="w-full justify-between">
@@ -320,6 +334,10 @@ export function TopSkillsScreen() {
     <div className="tank-shell py-10 space-y-8">
       {/* Header */}
       <div>
+        <Link to="/scan" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-3.5" />
+          Back to Scanner
+        </Link>
         <h1 className="font-display text-3xl font-semibold tracking-tight">Security Showcase</h1>
         <p className="mt-1 text-muted-foreground">
           Top skills ranked by popularity, with security scan verdicts at a glance.
