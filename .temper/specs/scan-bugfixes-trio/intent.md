@@ -20,13 +20,13 @@ Three bugs block core scanning workflows:
 
 ## Size Limits (existing, not changing)
 
-| Limit | Value | Scope |
-|---|---|---|
-| MAX_TARBALL_SIZE | 50 MB | Compressed tarball (checked via HEAD Content-Length) |
-| MAX_EXTRACTED_SIZE | 50 MB | Total extracted content on disk |
-| MAX_COMPRESSION_RATIO | 100x | Zip bomb detection |
-| Individual file | 5 MB | Per-file inside tarball |
-| Download timeout | 30s | HTTP timeout |
+| Limit                 | Value | Scope                                                |
+| --------------------- | ----- | ---------------------------------------------------- |
+| MAX_TARBALL_SIZE      | 50 MB | Compressed tarball (checked via HEAD Content-Length) |
+| MAX_EXTRACTED_SIZE    | 50 MB | Total extracted content on disk                      |
+| MAX_COMPRESSION_RATIO | 100x  | Zip bomb detection                                   |
+| Individual file       | 5 MB  | Per-file inside tarball                              |
+| Download timeout      | 30s   | HTTP timeout                                         |
 
 For oversized repos: the `sub_path` mechanism (`narrow_to_sub_path()`) extracts only the relevant subdirectory, reducing effective size.
 

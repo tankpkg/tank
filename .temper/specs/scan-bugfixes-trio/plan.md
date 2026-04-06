@@ -90,12 +90,12 @@ flowchart TD
 
 ## Blast Radius
 
-| Area | Impact | Risk |
-|---|---|---|
-| URL expansion | All GitHub scan paths | High -- every GitHub scan |
-| Docker build | Scanner container | Medium -- build-only |
-| Python scanner | Error handling | Low -- logging only |
-| Scan page | Downstream of Bug 2 | None -- no changes needed |
+| Area           | Impact                | Risk                      |
+| -------------- | --------------------- | ------------------------- |
+| URL expansion  | All GitHub scan paths | High -- every GitHub scan |
+| Docker build   | Scanner container     | Medium -- build-only      |
+| Python scanner | Error handling        | Low -- logging only       |
+| Scan page      | Downstream of Bug 2   | None -- no changes needed |
 
 ## Risk: Medium
 
