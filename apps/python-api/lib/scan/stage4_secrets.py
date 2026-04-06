@@ -5,6 +5,7 @@ API keys, credentials, and sensitive data in skill files.
 """
 
 import logging
+import os
 import re
 import time
 from pathlib import Path
@@ -155,10 +156,11 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                 ],
             }
         ):
-            for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True):
+            for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True, root=temp_dir):
+                abs_path = os.path.join(temp_dir, file_path)
                 try:
-                    for secret in scan_file(file_path):
-                        rel_path = str(Path(file_path).relative_to(temp_dir))
+                    for secret in scan_file(abs_path):
+                        rel_path = file_path
                         findings.append(
                             Finding(
                                 stage="stage4",
