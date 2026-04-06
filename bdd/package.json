@@ -9,10 +9,13 @@
   },
   "dependencies": {
     "@internals/helpers": "workspace:*",
-    "postgres": "^3.4.8"
+    "@internals/schemas": "workspace:*",
+    "postgres": "^3.4.8",
+    "semver": "^7.7.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/semver": "^7.7.0",
     "cipher-kit": "^3.0.0",
     "playwright-bdd": "^8.5.0",
     "vitest": "^4.1.0"

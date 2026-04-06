@@ -23,6 +23,7 @@
     "lint:fix": "biome check --write ."
   },
   "devDependencies": {
+    "@internals/adapters": "workspace:*",
     "@internals/helpers": "workspace:*",
     "@internals/schemas": "workspace:*",
     "@tankpkg/sdk": "workspace:*",
