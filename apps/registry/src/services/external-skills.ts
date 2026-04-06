@@ -158,6 +158,54 @@ const SEED_SKILLS: Array<{
   }
 ];
 
+// ── Cache warming guard ─────────────────────────────────────────────────────
+
+let warmingPromise: Promise<void> | null = null;
+
+/**
+ * Check if the external skills cache is stale (empty or older than 1 hour).
+ * Queries the newest updatedAt row to decide.
+ */
+export async function isCacheStale(ttlMs = 3_600_000): Promise<boolean> {
+  const rows = await db
+    .select({ updatedAt: externalSkills.updatedAt })
+    .from(externalSkills)
+    .orderBy(sql`${externalSkills.updatedAt} DESC NULLS LAST`)
+    .limit(1);
+
+  if (rows.length === 0) return true;
+
+  const newest = rows[0].updatedAt?.getTime();
+  if (!newest) return true;
+
+  return Date.now() - newest > ttlMs;
+}
+
+/**
+ * Warm the external skills cache with a mutex to prevent thundering herd.
+ * If a warm is already in progress, awaits it instead of starting another.
+ */
+export async function warmCacheIfNeeded(): Promise<void> {
+  if (warmingPromise) {
+    await warmingPromise;
+    return;
+  }
+
+  const stale = await isCacheStale();
+  if (!stale) return;
+
+  // Re-check after async staleness test — another request may have started warming
+  if (warmingPromise) {
+    await warmingPromise;
+    return;
+  }
+
+  warmingPromise = fetchAndCacheExternalSkills().finally(() => {
+    warmingPromise = null;
+  });
+  await warmingPromise;
+}
+
 // ── API fetch helpers ────────────────────────────────────────────────────────
 
 interface SkillsShEntry {

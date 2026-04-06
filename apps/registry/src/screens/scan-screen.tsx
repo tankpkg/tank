@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import { useEffect, useRef, useState } from 'react';
 
 import { FindingsTable } from '~/components/skills/findings-table';
 import { buildScanningTools, ScanningToolsStrip } from '~/components/skills/scanning-tools-strip';
@@ -37,16 +38,18 @@ const URL_EXAMPLES = [
   'https://agentskills.co.il/he/skills/category/skill-name'
 ];
 
-export function ScanPage() {
-  const [url, setUrl] = useState('');
+export function ScanPage({ initialUrl }: { initialUrl?: string }) {
+  const [url, setUrl] = useState(initialUrl ?? '');
   const [state, setState] = useState<ScanState>('idle');
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { copiedLabel, copy } = useClipboard();
   const [placeholder] = useState(() => URL_EXAMPLES[0]);
+  const lastAutoScannedUrl = useRef<string | null>(null);
 
-  async function handleScan() {
-    if (!url.trim()) return;
+  async function handleScan(targetUrl?: string) {
+    const scanUrl = targetUrl ?? url;
+    if (!scanUrl.trim()) return;
 
     setState('loading');
     setError(null);
@@ -56,7 +59,7 @@ export function ScanPage() {
       const response = await fetch('/api/v1/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim() })
+        body: JSON.stringify({ url: scanUrl.trim() })
       });
 
       const data = await response.json();
@@ -75,6 +78,15 @@ export function ScanPage() {
     }
   }
 
+  // Auto-scan when deep-linked with ?url= parameter
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional — run once per unique initialUrl
+  useEffect(() => {
+    if (initialUrl && lastAutoScannedUrl.current !== initialUrl) {
+      lastAutoScannedUrl.current = initialUrl;
+      void handleScan(initialUrl);
+    }
+  }, [initialUrl]);
+
   const criticalCount = result?.findings.filter((f) => f.severity === 'critical').length ?? 0;
   const highCount = result?.findings.filter((f) => f.severity === 'high').length ?? 0;
   const mediumCount = result?.findings.filter((f) => f.severity === 'medium').length ?? 0;
@@ -91,7 +103,10 @@ export function ScanPage() {
         <h1 className="font-display text-3xl font-semibold tracking-tight">Security Scanner</h1>
         <p className="mt-1 text-muted-foreground">
           Scan any npm package, GitHub repo, raw file, skills.sh, or agentskills.co.il link for security
-          vulnerabilities.
+          vulnerabilities.{' '}
+          <Link to="/scan/top-skills" className="text-blue-500 hover:underline">
+            Browse top skills
+          </Link>
         </p>
       </div>
 
@@ -111,7 +126,7 @@ export function ScanPage() {
               disabled={state === 'loading'}
               className="flex-1"
             />
-            <Button onClick={handleScan} disabled={state === 'loading' || !url.trim()}>
+            <Button onClick={() => void handleScan()} disabled={state === 'loading' || !url.trim()}>
               {state === 'loading' ? 'Scanning...' : 'Scan Now'}
             </Button>
           </div>
