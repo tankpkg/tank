@@ -116,23 +116,23 @@ flowchart TD
 
 ## Blast Radius
 
-| Area | Files | Impact |
-|------|-------|--------|
-| Top-skills API | `api/routes/v1/top-skills.ts` | Add cache warm call, optimize query |
-| External skills service | `services/external-skills.ts` | Add mutex guard |
-| Scan route | `routes/scan/index.tsx` | Add `validateSearch` for URL param |
-| Scan screen | `screens/scan-screen.tsx` | Add `initialUrl` prop, auto-scan, nav link |
-| Top-skills screen | `screens/top-skills-screen.tsx` | Add back-link to scan |
-| DB schema | `lib/db/schema.ts` | Verify/verify index on `skill_download_daily` |
-| Python stage4 | `apps/python-api/lib/scan/stage4_secrets.py` | Better error handling + logging |
-| Docker build | `apps/python-api/requirements.txt` | Verify detect-secrets installs |
+| Area                    | Files                                        | Impact                                        |
+| ----------------------- | -------------------------------------------- | --------------------------------------------- |
+| Top-skills API          | `api/routes/v1/top-skills.ts`                | Add cache warm call, optimize query           |
+| External skills service | `services/external-skills.ts`                | Add mutex guard                               |
+| Scan route              | `routes/scan/index.tsx`                      | Add `validateSearch` for URL param            |
+| Scan screen             | `screens/scan-screen.tsx`                    | Add `initialUrl` prop, auto-scan, nav link    |
+| Top-skills screen       | `screens/top-skills-screen.tsx`              | Add back-link to scan                         |
+| DB schema               | `lib/db/schema.ts`                           | Verify/verify index on `skill_download_daily` |
+| Python stage4           | `apps/python-api/lib/scan/stage4_secrets.py` | Better error handling + logging               |
+| Docker build            | `apps/python-api/requirements.txt`           | Verify detect-secrets installs                |
 
 ## Risk Assessment
 
-| Fix | Risk | Mitigation |
-|-----|------|------------|
-| Cache warm on API call | Low — falls back to seed data | Mutex prevents thundering herd |
-| Query optimization | Low — CTE is standard SQL | Revert to subquery if regression |
-| URL param deep link | Low — additive only | Graceful fallback if param missing |
-| detect-secrets fix | Low — logging only, no logic change | Custom patterns still work |
-| Navigation links | None — pure UI additions | N/A |
+| Fix                    | Risk                                | Mitigation                         |
+| ---------------------- | ----------------------------------- | ---------------------------------- |
+| Cache warm on API call | Low — falls back to seed data       | Mutex prevents thundering herd     |
+| Query optimization     | Low — CTE is standard SQL           | Revert to subquery if regression   |
+| URL param deep link    | Low — additive only                 | Graceful fallback if param missing |
+| detect-secrets fix     | Low — logging only, no logic change | Custom patterns still work         |
+| Navigation links       | None — pure UI additions            | N/A                                |

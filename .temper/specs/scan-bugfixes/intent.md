@@ -26,4 +26,5 @@ Five bugs blocking core user flows:
 - Navigation changes must work on mobile and desktop
 
 ## Complexity: Medium
+
 ## Risk: Low — isolated fixes, no cross-cutting concerns

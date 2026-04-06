@@ -163,14 +163,14 @@ flowchart TD
 
 ## Blast Radius
 
-| Area | Files | Impact |
-|------|-------|--------|
-| Python scanner | `stage4_secrets.py`, `models.py`, `verdict.py`, `dedup.py`, `remediation.py`, `stage3_injection.py` | Fix detect-secrets, reduce FPs, enrich findings |
-| Scan API | `api/routes/v1/scan.ts`, `lib/scan/url-validator.ts` | Expand accepted URLs, new input types |
-| URL expander (NEW) | `lib/scan/url-expander.ts` | GitHub/skills.sh URL normalization |
-| Skill detail screen | `skill-detail-screen.tsx`, `skill-detail-helpers.tsx` | Wire remediation to UI |
-| Security components | `security-overview.tsx`, `findings-table.tsx`, `scanning-tools-strip.tsx`, `scan-pipeline.tsx` | UX redesign |
-| Scan screen | `scan-screen.tsx` | Accept folders, .md files, expanded results |
-| Top skills (NEW) | `screens/top-skills-screen.tsx`, `api/routes/v1/top-skills.ts` | New page + API |
-| DB schema | `lib/db/schema.ts` | External skill cache table |
-| Data types | `lib/skills/data.ts` | `ScanFinding` adds `remediation`, `cwe_id` display |
+| Area                | Files                                                                                               | Impact                                             |
+| ------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Python scanner      | `stage4_secrets.py`, `models.py`, `verdict.py`, `dedup.py`, `remediation.py`, `stage3_injection.py` | Fix detect-secrets, reduce FPs, enrich findings    |
+| Scan API            | `api/routes/v1/scan.ts`, `lib/scan/url-validator.ts`                                                | Expand accepted URLs, new input types              |
+| URL expander (NEW)  | `lib/scan/url-expander.ts`                                                                          | GitHub/skills.sh URL normalization                 |
+| Skill detail screen | `skill-detail-screen.tsx`, `skill-detail-helpers.tsx`                                               | Wire remediation to UI                             |
+| Security components | `security-overview.tsx`, `findings-table.tsx`, `scanning-tools-strip.tsx`, `scan-pipeline.tsx`      | UX redesign                                        |
+| Scan screen         | `scan-screen.tsx`                                                                                   | Accept folders, .md files, expanded results        |
+| Top skills (NEW)    | `screens/top-skills-screen.tsx`, `api/routes/v1/top-skills.ts`                                      | New page + API                                     |
+| DB schema           | `lib/db/schema.ts`                                                                                  | External skill cache table                         |
+| Data types          | `lib/skills/data.ts`                                                                                | `ScanFinding` adds `remediation`, `cwe_id` display |

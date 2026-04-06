@@ -3,6 +3,7 @@
 ## Problem
 
 The security report is confusing for users:
+
 1. **detect-secrets is broken** — stage4 silently fails, no secrets are detected
 2. **Existing fields never displayed** — `cwe_id`, `remediation`, `confidence`, `llm_verdict` exist in `ScanFinding` type but are never rendered in any component
 3. **External tools poorly attributed** — Cisco, Snyk, Bandit, detect-secrets, OSV.dev all produce findings but the frontend uses a hardcoded tool list instead of dynamic attribution from actual findings
@@ -40,4 +41,5 @@ The security report is confusing for users:
 3. **Security researchers** — need to see which tools ran and what each found
 
 ## Complexity: Complex
+
 ## Risk: Medium — scanner changes affect every skill's security verdict
