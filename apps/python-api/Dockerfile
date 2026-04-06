@@ -2,7 +2,7 @@
 # Build context: repo root (for uv.lock access)
 
 # Stage 1: Build
-FROM python:3.14-alpine AS builder
+FROM python:3.12-alpine AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
@@ -20,11 +20,14 @@ COPY uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
+# Build-time health check: verify detect-secrets is importable
+RUN python -c "import detect_secrets; print('detect-secrets:', detect_secrets.__version__)"
+
 COPY apps/python-api/api ./api
 COPY apps/python-api/lib ./lib
 
 # Stage 2: Production
-FROM python:3.14-alpine AS runner
+FROM python:3.12-alpine AS runner
 
 WORKDIR /app
 

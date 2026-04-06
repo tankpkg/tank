@@ -7,6 +7,7 @@ API keys, credentials, and sensitive data in skill files.
 import logging
 import os
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -178,13 +179,15 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
     except ImportError:
         logger.warning(
             "detect-secrets library not available — comprehensive secret scanning disabled. "
-            "Install with: pip install detect-secrets>=1.5.0",
+            "Python %s on %s. Install with: pip install detect-secrets>=1.5.0",
+            sys.version,
+            sys.platform,
             exc_info=True,
         )
         findings.append(
             Finding(
                 stage="stage4",
-                severity="low",
+                severity="medium",
                 type="detect_secrets_unavailable",
                 description="detect-secrets library not available - skipping comprehensive secret scan",
                 confidence=0.5,
