@@ -109,10 +109,10 @@ function parseURL(url: string): URL | null {
  * → sub_path: {path}
  *
  * github.com/{owner}/{repo} (no tree)
- * → tarball: https://codeload.github.com/{owner}/{repo}/tar.gz/main
+ * → tarball: https://codeload.github.com/{owner}/{repo}/tar.gz/{default_branch}
  * → sub_path: null
  */
-export function expandGitHubFolder(url: string): { tarballUrl: string; subPath: string | null } | null {
+export async function expandGitHubFolder(url: string): Promise<{ tarballUrl: string; subPath: string | null } | null> {
   const parsed = parseURL(url);
   if (!parsed || parsed.hostname !== 'github.com') return null;
 
@@ -138,9 +138,10 @@ export function expandGitHubFolder(url: string): { tarballUrl: string; subPath: 
     };
   }
 
-  // Just owner/repo — use main branch, no sub_path
+  // Just owner/repo — resolve default branch
+  const branch = await resolveDefaultBranch(owner, cleanRepo);
   return {
-    tarballUrl: `https://codeload.github.com/${owner}/${cleanRepo}/tar.gz/main`,
+    tarballUrl: `https://codeload.github.com/${owner}/${cleanRepo}/tar.gz/${branch}`,
     subPath: null
   };
 }
@@ -192,6 +193,96 @@ function isBlockedHost(hostname: string): boolean {
   // Block any hostname without a dot (no TLD = likely internal)
   if (!hostname.includes('.')) return true;
   return false;
+}
+
+/**
+ * In-memory cache for GitHub default branch lookups.
+ * 10-minute TTL to avoid hitting the 60 req/hr unauthenticated rate limit.
+ * Capped at 1000 entries to prevent unbounded growth in long-running processes.
+ */
+const MAX_BRANCH_CACHE_SIZE = 1000;
+const branchCache = new Map<string, { branch: string; expires: number }>();
+const BRANCH_CACHE_TTL_MS = 10 * 60 * 1000;
+
+/** Evict expired entries; if cache is still full, drop oldest. */
+function evictBranchCache(): void {
+  const now = Date.now();
+  for (const [key, val] of branchCache) {
+    if (val.expires <= now) branchCache.delete(key);
+  }
+  if (branchCache.size >= MAX_BRANCH_CACHE_SIZE) {
+    // Drop the oldest entry (first inserted — Map preserves insertion order)
+    const oldest = branchCache.keys().next().value;
+    if (oldest) branchCache.delete(oldest);
+  }
+}
+
+/** Clear the entire branch cache (used in tests). */
+export function clearBranchCache(): void {
+  branchCache.clear();
+}
+
+/**
+ * Resolve the default branch name for a GitHub repo.
+ *
+ * Strategy:
+ * 1. Check in-memory cache
+ * 2. Call GitHub API (`GET /repos/{owner}/{repo}`) with 5s timeout
+ * 3. Fallback: HEAD probe `main` then `master` on codeload.github.com
+ * 4. Final fallback: return `"main"`
+ */
+export async function resolveDefaultBranch(owner: string, repo: string): Promise<string> {
+  const cacheKey = `${owner}/${repo}`;
+  const cached = branchCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return cached.branch;
+  }
+
+  // Strategy 1: GitHub API
+  try {
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      signal: AbortSignal.timeout(5_000),
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'Tank-Security-Scanner/1.0'
+      }
+    });
+
+    if (response.ok) {
+      const data = (await response.json()) as { default_branch?: string };
+      const branch = data.default_branch ?? 'main';
+      evictBranchCache();
+      branchCache.set(cacheKey, { branch, expires: Date.now() + BRANCH_CACHE_TTL_MS });
+      return branch;
+    }
+  } catch {
+    // API failed — fall through to HEAD probe
+  }
+
+  // Strategy 2: HEAD probe on codeload.github.com
+  for (const candidate of ['main', 'master'] as const) {
+    try {
+      const probeUrl = `https://codeload.github.com/${owner}/${repo}/tar.gz/${candidate}`;
+      const probeResponse = await fetch(probeUrl, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(5_000),
+        redirect: 'follow',
+        headers: { 'User-Agent': 'Tank-Security-Scanner/1.0' }
+      });
+      if (probeResponse.ok) {
+        evictBranchCache();
+        branchCache.set(cacheKey, { branch: candidate, expires: Date.now() + BRANCH_CACHE_TTL_MS });
+        return candidate;
+      }
+    } catch {
+      // Probe failed — try next candidate
+    }
+  }
+
+  // Strategy 3: hardcoded fallback — cache it to avoid repeat failures
+  evictBranchCache();
+  branchCache.set(cacheKey, { branch: 'main', expires: Date.now() + BRANCH_CACHE_TTL_MS });
+  return 'main';
 }
 
 export async function fetchRawFileContent(url: string): Promise<{ content: string; contentType: string } | null> {
@@ -257,10 +348,10 @@ export async function fetchRawFileContent(url: string): Promise<{ content: strin
  * Resolve a skills.sh URL to a GitHub tarball URL.
  *
  * skills.sh/{owner}/{repo}/{skill-name}
- * → https://codeload.github.com/{owner}/{repo}/tar.gz/main
+ * → https://codeload.github.com/{owner}/{repo}/tar.gz/{default_branch}
  * → sub_path: {skill-name}
  */
-export function expandSkillsShUrl(url: string): { tarballUrl: string; subPath: string } | null {
+export async function expandSkillsShUrl(url: string): Promise<{ tarballUrl: string; subPath: string } | null> {
   const parsed = parseURL(url);
   if (!parsed) return null;
 
@@ -279,8 +370,9 @@ export function expandSkillsShUrl(url: string): { tarballUrl: string; subPath: s
   const repo = parts[1];
   const skillName = parts[2];
 
+  const branch = await resolveDefaultBranch(owner, repo);
   return {
-    tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/main`,
+    tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/${branch}`,
     subPath: skillName
   };
 }
@@ -297,9 +389,10 @@ export async function fetchSkillFileFromGitHub(
   skillPath: string
 ): Promise<{ content: string; contentType: string } | null> {
   const candidates = ['SKILL.md', 'skill.md', 'README.md', 'README'];
+  const branch = await resolveDefaultBranch(owner, repo);
 
   for (const filename of candidates) {
-    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/${skillPath}/${filename}`;
+    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${skillPath}/${filename}`;
     try {
       const response = await fetch(rawUrl, {
         signal: AbortSignal.timeout(10_000),
@@ -370,8 +463,9 @@ async function scrapeAgentskillsGithub(
     if (npxMatch) {
       const owner = npxMatch[2];
       const repo = npxMatch[3];
+      const branch = await resolveDefaultBranch(owner, repo);
       return {
-        tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/main`,
+        tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/${branch}`,
         subPath: skillName,
         owner,
         repo
@@ -383,8 +477,9 @@ async function scrapeAgentskillsGithub(
     if (ghMatch) {
       const owner = ghMatch[1];
       const repo = ghMatch[2];
+      const branch = await resolveDefaultBranch(owner, repo);
       return {
-        tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/main`,
+        tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/${branch}`,
         subPath: skillName,
         owner,
         repo
@@ -462,7 +557,7 @@ export async function expandScanUrl(rawUrl: string): Promise<ExpandedURL> {
 
   switch (urlType) {
     case 'github_folder': {
-      const expanded = expandGitHubFolder(rawUrl);
+      const expanded = await expandGitHubFolder(rawUrl);
       if (!expanded) {
         return { tarballUrl: rawUrl, subPath: null, fileContent: null, urlType: 'unknown', contentType: null };
       }
@@ -505,7 +600,7 @@ export async function expandScanUrl(rawUrl: string): Promise<ExpandedURL> {
         }
       }
       // Fallback to tarball
-      const folderExpanded = expandGitHubFolder(rawUrl);
+      const folderExpanded = await expandGitHubFolder(rawUrl);
       if (!folderExpanded) {
         return { tarballUrl: rawUrl, subPath: null, fileContent: null, urlType: 'unknown', contentType: null };
       }
@@ -519,7 +614,7 @@ export async function expandScanUrl(rawUrl: string): Promise<ExpandedURL> {
     }
 
     case 'skills_sh': {
-      const expanded = expandSkillsShUrl(rawUrl);
+      const expanded = await expandSkillsShUrl(rawUrl);
       if (!expanded) {
         return { tarballUrl: rawUrl, subPath: null, fileContent: null, urlType: 'unknown', contentType: null };
       }

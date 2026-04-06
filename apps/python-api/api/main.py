@@ -26,6 +26,16 @@ from api.analyze.scan import app as scan_app
 from api.analyze.security import app as security_app
 from lib.scan.llm_health import check_llm_health
 
+# Startup diagnostics: verify critical scanner dependencies are available
+import logging as _logging
+
+_startup_logger = _logging.getLogger("tank.scanner.startup")
+try:
+    import detect_secrets as _ds  # noqa: F401
+    _startup_logger.info("detect-secrets %s available (Python %s on %s)", getattr(_ds, "__version__", "unknown"), __import__("sys").version.split()[0], __import__("sys").platform)
+except ImportError:
+    _startup_logger.warning("detect-secrets NOT available — secret scanning will use regex fallback only (Python %s on %s)", __import__("sys").version.split()[0], __import__("sys").platform)
+
 # Create main app
 app = FastAPI(
     title="Tank Security Scanner",
