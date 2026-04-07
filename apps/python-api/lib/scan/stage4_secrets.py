@@ -128,7 +128,13 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
     try:
         import detect_secrets
 
-        logger.info("detect-secrets version: %s", getattr(detect_secrets, "__version__", "unknown"))
+        try:
+            from importlib.metadata import version as pkg_version
+
+            ds_version = pkg_version("detect-secrets")
+        except Exception:
+            ds_version = getattr(detect_secrets, "__version__", "unknown")
+        logger.info("detect-secrets version: %s", ds_version)
 
         from detect_secrets.core.scan import get_files_to_scan, scan_file
         from detect_secrets.settings import transient_settings
@@ -162,17 +168,33 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                 try:
                     for secret in scan_file(abs_path):
                         rel_path = file_path
-                        findings.append(
-                            Finding(
-                                stage="stage4",
-                                severity="critical",
-                                type=f"secret_{secret.type}",
-                                description=f"Secret detected: {secret.type}",
-                                location=f"{rel_path}:{secret.line_number}",
-                                confidence=0.9,
-                                tool="detect-secrets",
-                            )
+
+                        # Read the matched line for evidence
+                        evidence_text = ""
+                        try:
+                            with open(abs_path, encoding="utf-8", errors="replace") as f:
+                                lines = f.readlines()
+                                if 0 < secret.line_number <= len(lines):
+                                    evidence_text = lines[secret.line_number - 1].strip()[:200]
+                        except Exception:
+                            pass
+
+                        finding = Finding(
+                            stage="stage4",
+                            severity="critical",
+                            type=f"secret_{secret.type}",
+                            description=f"Secret detected: {secret.type}",
+                            location=f"{rel_path}:{secret.line_number}",
+                            confidence=0.9,
+                            tool="detect-secrets",
+                            evidence=evidence_text or None,
                         )
+
+                        # Downgrade severity for files in example/doc paths
+                        if _is_example_path(rel_path):
+                            finding.severity = "info"
+
+                        findings.append(finding)
                 except Exception as file_error:
                     logger.warning("detect-secrets file scan error: %s", file_error)
 

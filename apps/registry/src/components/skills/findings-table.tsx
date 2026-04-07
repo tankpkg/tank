@@ -25,7 +25,7 @@ const severityDot: Record<string, string> = {
   info: 'bg-muted-foreground'
 };
 
-const TRUNCATE_LENGTH = 100;
+const TRUNCATE_LENGTH = 150;
 
 const LLM_VERDICT_STYLES: Record<string, { label: string; className: string }> = {
   confirmed_threat: { label: 'Confirmed', className: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' },
