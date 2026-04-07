@@ -73,87 +73,87 @@ const SEED_SKILLS: Array<{
   installCount: number;
 }> = [
   {
-    name: 'context7-docs',
-    url: 'https://github.com/contextLabs/context7-docs',
-    description: 'Fetch up-to-date documentation for any library or framework via Context7 MCP.',
-    author: 'contextLabs',
+    name: 'soultrace',
+    url: 'https://skills.sh/soultrace-ai/soultrace-skill/soultrace',
+    description: 'AI-powered end-to-end testing and trace analysis for web applications.',
+    author: 'soultrace-ai',
     installCount: 45000
   },
   {
-    name: 'playwright-browser',
-    url: 'https://github.com/anthropics/playwright-browser-skill',
-    description: 'Browser automation via Playwright — navigate, click, fill forms, extract data.',
-    author: 'anthropics',
+    name: 'find-skills',
+    url: 'https://skills.sh/vercel-labs/skills/find-skills',
+    description: 'Discover and search for AI agent skills across registries.',
+    author: 'vercel-labs',
     installCount: 38000
   },
   {
-    name: 'sequential-thinking',
-    url: 'https://github.com/modelcontextprotocol/sequential-thinking',
-    description: 'Structured chain-of-thought reasoning with backtracking and revision.',
-    author: 'modelcontextprotocol',
+    name: 'microsoft-foundry',
+    url: 'https://skills.sh/microsoft/azure-skills/microsoft-foundry',
+    description: 'Azure AI Foundry integration for model deployment and management.',
+    author: 'microsoft',
     installCount: 32000
   },
   {
-    name: 'memory-bank',
-    url: 'https://github.com/anthropics/memory-bank',
-    description: 'Persistent memory management for AI agents across sessions.',
+    name: 'frontend-design',
+    url: 'https://skills.sh/anthropics/skills/frontend-design',
+    description: 'High-quality frontend UI generation with design best practices.',
     author: 'anthropics',
     installCount: 28000
   },
   {
-    name: 'filesystem-server',
-    url: 'https://github.com/modelcontextprotocol/filesystem-server',
-    description: 'Secure file system access with configurable root directories.',
-    author: 'modelcontextprotocol',
+    name: 'vercel-react-best-practices',
+    url: 'https://skills.sh/vercel-labs/agent-skills/vercel-react-best-practices',
+    description: 'React and Next.js best practices for production applications.',
+    author: 'vercel-labs',
     installCount: 25000
   },
   {
-    name: 'github-skills',
-    url: 'https://github.com/github/github-mcp-tools',
-    description: 'GitHub API integration — repos, issues, PRs, actions.',
-    author: 'github',
+    name: 'remotion-best-practices',
+    url: 'https://skills.sh/remotion-dev/skills/remotion-best-practices',
+    description: 'Programmatic video creation with Remotion framework best practices.',
+    author: 'remotion-dev',
     installCount: 22000
   },
   {
-    name: 'brave-search',
-    url: 'https://github.com/brave-com/brave-search-mcp',
-    description: 'Web search via Brave Search API with privacy-first approach.',
-    author: 'brave-com',
+    name: 'agent-browser',
+    url: 'https://skills.sh/vercel-labs/agent-browser/agent-browser',
+    description: 'Browser automation for AI agents — navigate, interact, extract data.',
+    author: 'vercel-labs',
     installCount: 19000
   },
   {
-    name: 'sqlite-explorer',
-    url: 'https://github.com/modelcontextprotocol/sqlite-explorer',
-    description: 'Read-only SQLite database exploration and query tool.',
-    author: 'modelcontextprotocol',
+    name: 'supabase-postgres-best-practices',
+    url: 'https://skills.sh/supabase/agent-skills/supabase-postgres-best-practices',
+    description: 'PostgreSQL performance optimization and best practices from Supabase.',
+    author: 'supabase',
     installCount: 16000
   },
   {
-    name: 'fetch-web',
-    url: 'https://github.com/modelcontextprotocol/fetch-web',
-    description: 'HTTP client for fetching web content with HTML-to-markdown conversion.',
-    author: 'modelcontextprotocol',
+    name: 'skill-creator',
+    url: 'https://skills.sh/anthropics/skills/skill-creator',
+    description: 'Create and publish AI agent skills with scaffolding and validation.',
+    author: 'anthropics',
     installCount: 14000
   },
   {
-    name: 'puppeteer-crawl',
-    url: 'https://github.com/anthropics/puppeteer-crawl-skill',
-    description: 'Web crawling and scraping via headless Chrome/Puppeteer.',
-    author: 'anthropics',
+    name: 'shadcn',
+    url: 'https://skills.sh/shadcn/ui/shadcn',
+    description: 'Build UIs with shadcn/ui components and design system patterns.',
+    author: 'shadcn',
     installCount: 12000
   },
   {
-    name: 'slack-integration',
-    url: 'https://github.com/slackapi/slack-mcp-server',
-    description: 'Slack workspace integration — send messages, read channels, manage threads.',
-    author: 'slackapi',
+    name: 'impeccable-frontend-design',
+    url: 'https://skills.sh/pbakaus/impeccable/frontend-design',
+    description: 'Production-grade frontend design with accessibility and performance focus.',
+    author: 'pbakaus',
     installCount: 11000
   },
   {
-    name: 'postgres-query',
-    url: 'https://github.com/modelcontextprotocol/postgres-query',
-    description: 'Execute SQL queries against PostgreSQL databases with safety checks.',
-    author: 'modelcontextprotocol',
+    name: 'lark-base',
+    url: 'https://skills.sh/larksuite/cli/lark-base',
+    description: 'Lark Base integration for spreadsheet and database operations.',
+    author: 'larksuite',
     installCount: 9500
   }
 ];

@@ -88,7 +88,7 @@ describe('full E2E — credential vault lifecycle', () => {
     expect(vault.size).toBe(2);
 
     // Phase 3: verify provider NEVER saw real credentials
-    const providerBody1 = providerLog[providerLog.length - 1]!;
+    const providerBody1 = providerLog[providerLog.length - 1];
     expect(providerBody1).not.toContain(REAL_STRIPE);
     expect(providerBody1).not.toContain(REAL_AWS);
 

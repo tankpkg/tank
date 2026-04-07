@@ -371,9 +371,33 @@ export async function expandSkillsShUrl(url: string): Promise<{ tarballUrl: stri
   const skillName = parts[2];
 
   const branch = await resolveDefaultBranch(owner, repo);
+
+  // Skills.sh repos typically follow the convention: skills/{skill-name}/SKILL.md
+  // Probe which sub_path exists in the repo
+  let subPath = skillName;
+  for (const candidate of [`skills/${skillName}`, skillName]) {
+    try {
+      const probeUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${candidate}`;
+      const probeResp = await fetch(probeUrl, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(3_000),
+        headers: {
+          Accept: 'application/vnd.github.v3+json',
+          'User-Agent': 'Tank-Security-Scanner/1.0'
+        }
+      });
+      if (probeResp.ok) {
+        subPath = candidate;
+        break;
+      }
+    } catch {
+      // Probe failed — try next candidate
+    }
+  }
+
   return {
     tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/${branch}`,
-    subPath: skillName
+    subPath
   };
 }
 
@@ -386,31 +410,37 @@ export async function expandSkillsShUrl(url: string): Promise<{ tarballUrl: stri
 export async function fetchSkillFileFromGitHub(
   owner: string,
   repo: string,
-  skillPath: string
+  skillPath: string,
+  options?: { trySkillsConvention?: boolean }
 ): Promise<{ content: string; contentType: string } | null> {
   const candidates = ['SKILL.md', 'skill.md', 'README.md', 'README'];
   const branch = await resolveDefaultBranch(owner, repo);
 
-  for (const filename of candidates) {
-    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${skillPath}/${filename}`;
-    try {
-      const response = await fetch(rawUrl, {
-        signal: AbortSignal.timeout(10_000),
-        redirect: 'follow',
-        headers: { 'User-Agent': 'Tank-Security-Scanner/1.0' }
-      });
+  // Try direct path first, optionally skills/{skillPath} (common skills.sh convention)
+  const pathCandidates = options?.trySkillsConvention ? [skillPath, `skills/${skillPath}`] : [skillPath];
 
-      if (!response.ok) continue;
+  for (const path of pathCandidates) {
+    for (const filename of candidates) {
+      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}/${filename}`;
+      try {
+        const response = await fetch(rawUrl, {
+          signal: AbortSignal.timeout(10_000),
+          redirect: 'follow',
+          headers: { 'User-Agent': 'Tank-Security-Scanner/1.0' }
+        });
 
-      // Validate redirect stayed on allowed host
-      const finalUrl = new URL(response.url);
-      if (isBlockedHost(finalUrl.hostname)) continue;
-      if (!ALLOWED_FETCH_HOSTS.some((h) => finalUrl.hostname === h || finalUrl.hostname.endsWith(`.${h}`))) continue;
+        if (!response.ok) continue;
 
-      const content = await response.text();
-      return { content, contentType: 'text/markdown' };
-    } catch {
-      // File not found, try next candidate
+        // Validate redirect stayed on allowed host
+        const finalUrl = new URL(response.url);
+        if (isBlockedHost(finalUrl.hostname)) continue;
+        if (!ALLOWED_FETCH_HOSTS.some((h) => finalUrl.hostname === h || finalUrl.hostname.endsWith(`.${h}`))) continue;
+
+        const content = await response.text();
+        return { content, contentType: 'text/markdown' };
+      } catch {
+        // File not found, try next candidate
+      }
     }
   }
 
@@ -510,13 +540,15 @@ async function resolveAgentskillsContent(url: string): Promise<{ content: string
   const skillName = parts[skillsIdx + 2];
 
   // Strategy 1: Try skills-il org directly (covers majority of skills)
-  const directResult = await fetchSkillFileFromGitHub('skills-il', category, skillName);
+  const directResult = await fetchSkillFileFromGitHub('skills-il', category, skillName, { trySkillsConvention: true });
   if (directResult) return directResult;
 
   // Strategy 2: Scrape page to find GitHub owner/repo, then fetch file
   const scraped = await scrapeAgentskillsGithub(url, category, skillName);
   if (scraped) {
-    const fileResult = await fetchSkillFileFromGitHub(scraped.owner, scraped.repo, skillName);
+    const fileResult = await fetchSkillFileFromGitHub(scraped.owner, scraped.repo, skillName, {
+      trySkillsConvention: true
+    });
     if (fileResult) return fileResult;
 
     // Return tarball info for fallback

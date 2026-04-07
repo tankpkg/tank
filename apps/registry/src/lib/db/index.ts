@@ -27,6 +27,7 @@ export const sql = new Proxy({} as ReturnType<typeof postgres>, {
   },
   apply(_, _thisArg, args) {
     ensureInitialized();
+    // biome-ignore lint/complexity/noBannedTypes: proxy requires Function type for dynamic dispatch
     return (_sql as Function).apply(_sql, args);
   }
 }) as ReturnType<typeof postgres>;
