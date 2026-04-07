@@ -9,17 +9,41 @@ Today, teaching something to your AI agent means scattering config across `.open
 
 ## How It Works
 
-```
-                  tank.json
-                     │
-              ┌──────┴──────┐
-              │  tank build  │
-              └──────┬──────┘
-       ┌─────────┬───┴───┬─────────┐
-       ▼         ▼       ▼         ▼
-   .opencode/  .claude/  .cursor/  .windsurf/
-   (native)    (native)  (native)  (native)
-```
+<div style="margin: 2rem 0; display: flex; justify-content: center; overflow-x: auto;">
+<svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- tank.json source -->
+  <rect x="260" y="10" width="200" height="50" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
+  <text x="360" y="41" text-anchor="middle" fill="#10b981" font-size="16" font-weight="600">tank.json</text>
+  <!-- Arrow down -->
+  <line x1="360" y1="60" x2="360" y2="90" stroke="#64748b" stroke-width="1.5"/>
+  <polygon points="354,86 360,96 366,86" fill="#64748b"/>
+  <!-- tank build box -->
+  <rect x="280" y="96" width="160" height="44" rx="8" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="1.5"/>
+  <text x="360" y="123" text-anchor="middle" fill="#10b981" font-size="14" font-weight="600">tank build</text>
+  <!-- Fan-out arrows -->
+  <line x1="310" y1="140" x2="80" y2="185" stroke="#64748b" stroke-width="1.2"/>
+  <polygon points="76,181 80,191 86,183" fill="#64748b"/>
+  <line x1="340" y1="140" x2="240" y2="185" stroke="#64748b" stroke-width="1.2"/>
+  <polygon points="236,181 240,191 246,183" fill="#64748b"/>
+  <line x1="380" y1="140" x2="480" y2="185" stroke="#64748b" stroke-width="1.2"/>
+  <polygon points="474,183 480,191 484,181" fill="#64748b"/>
+  <line x1="410" y1="140" x2="640" y2="185" stroke="#64748b" stroke-width="1.2"/>
+  <polygon points="634,183 640,191 644,181" fill="#64748b"/>
+  <!-- Platform boxes -->
+  <rect x="20" y="190" width="120" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="80" y="211" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.opencode/</text>
+  <text x="80" y="228" text-anchor="middle" fill="#64748b" font-size="10">plugins, agents, mcp</text>
+  <rect x="180" y="190" width="120" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="240" y="211" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.claude/</text>
+  <text x="240" y="228" text-anchor="middle" fill="#64748b" font-size="10">hooks, rules, agents</text>
+  <rect x="420" y="190" width="120" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="480" y="211" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.cursor/</text>
+  <text x="480" y="228" text-anchor="middle" fill="#64748b" font-size="10">rules, mcp, agents</text>
+  <rect x="580" y="190" width="120" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="640" y="211" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.windsurf/</text>
+  <text x="640" y="228" text-anchor="middle" fill="#64748b" font-size="10">rules, mcp config</text>
+</svg>
+</div>
 
 You define **what** your skill does. Tank handles **where** each platform needs the files.
 
@@ -62,15 +86,49 @@ That's it. Tank generates the correct `.opencode/plugins/` files. Change `--plat
 
 Each atom is a building block. Combine them to create anything from a simple instruction file to a full quality-gate system with hooks, agents, and review criteria.
 
-| Atom            | What It Does                             | Think of It As                      |
-| --------------- | ---------------------------------------- | ----------------------------------- |
-| **instruction** | Injects knowledge into the agent's brain | A SKILL.md that works everywhere    |
-| **hook**        | Runs code when the agent does something  | A git hook, but for AI agents       |
-| **agent**       | Creates a sub-agent with specific skills | A specialist you can summon         |
-| **tool**        | Registers an MCP server                  | Giving the agent a new superpower   |
-| **rule**        | Blocks or allows specific actions        | A security guard with a checklist   |
-| **resource**    | Makes a file available to the agent      | Putting a reference doc on the desk |
-| **prompt**      | Defines a reusable prompt template       | A fill-in-the-blanks form           |
+<div style="margin: 2rem 0; display: flex; justify-content: center; overflow-x: auto;">
+<svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Row 1: Core trio -->
+  <rect x="20" y="10" width="230" height="64" rx="10" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="40" y="36" fill="#10b981" font-size="20">📄</text>
+  <text x="68" y="36" fill="currentColor" font-size="13" font-weight="600">instruction</text>
+  <text x="68" y="56" fill="#64748b" font-size="11">Injects knowledge into the agent</text>
+  <rect x="265" y="10" width="230" height="64" rx="10" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="285" y="36" fill="#10b981" font-size="20">⚡</text>
+  <text x="313" y="36" fill="currentColor" font-size="13" font-weight="600">hook</text>
+  <text x="313" y="56" fill="#64748b" font-size="11">Runs code on 37 agent events</text>
+  <rect x="510" y="10" width="230" height="64" rx="10" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="530" y="36" fill="#10b981" font-size="20">🤖</text>
+  <text x="558" y="36" fill="currentColor" font-size="13" font-weight="600">agent</text>
+  <text x="558" y="56" fill="#64748b" font-size="11">Specialist sub-agent to delegate to</text>
+  <!-- Row 2: Integration pair -->
+  <rect x="20" y="90" width="230" height="64" rx="10" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
+  <text x="40" y="116" fill="currentColor" font-size="20">🔧</text>
+  <text x="68" y="116" fill="currentColor" font-size="13" font-weight="600">tool</text>
+  <text x="68" y="136" fill="#64748b" font-size="11">Registers an MCP server</text>
+  <rect x="265" y="90" width="230" height="64" rx="10" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
+  <text x="285" y="116" fill="currentColor" font-size="20">🛡️</text>
+  <text x="313" y="116" fill="currentColor" font-size="13" font-weight="600">rule</text>
+  <text x="313" y="136" fill="#64748b" font-size="11">Declarative block / allow / warn</text>
+  <!-- Row 3: Data pair -->
+  <rect x="20" y="170" width="230" height="64" rx="10" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
+  <text x="40" y="196" fill="currentColor" font-size="20">📎</text>
+  <text x="68" y="196" fill="currentColor" font-size="13" font-weight="600">resource</text>
+  <text x="68" y="216" fill="#64748b" font-size="11">File or URI the agent can access</text>
+  <rect x="265" y="170" width="230" height="64" rx="10" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
+  <text x="285" y="196" fill="currentColor" font-size="20">💬</text>
+  <text x="313" y="196" fill="currentColor" font-size="13" font-weight="600">prompt</text>
+  <text x="313" y="216" fill="#64748b" font-size="11">Reusable template with arguments</text>
+  <!-- Annotation -->
+  <line x1="510" y1="90" x2="510" y2="234" stroke="#10b981" stroke-width="1" stroke-dasharray="4,3"/>
+  <rect x="520" y="102" width="220" height="120" rx="8" fill="#10b981" fill-opacity="0.05" stroke="#10b981" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="630" y="128" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">Combine freely</text>
+  <text x="630" y="150" text-anchor="middle" fill="#64748b" font-size="11">1 atom = simple skill</text>
+  <text x="630" y="168" text-anchor="middle" fill="#64748b" font-size="11">3 atoms = quality gate</text>
+  <text x="630" y="186" text-anchor="middle" fill="#64748b" font-size="11">7 atoms = full framework</text>
+  <text x="630" y="210" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">All compile to every platform</text>
+</svg>
+</div>
 
 ---
 
@@ -214,16 +272,88 @@ A reusable prompt template with named arguments.
 
 Not every platform supports every atom. Tank compiles what it can and warns about the rest — nothing silently disappears.
 
-|                 | instruction | hook | agent | tool | rule | resource | prompt |
-| --------------- | ----------- | ---- | ----- | ---- | ---- | -------- | ------ |
-| **OpenCode**    | ✅          | ✅   | ✅    | ✅   | ✅   | ⚠️       | ✅     |
-| **Claude Code** | ✅          | ✅   | 📝    | ✅   | ✅   | ⚠️       | ✅     |
-| **Cursor**      | ✅          | ✅   | ✅    | ✅   | ✅   | ⚠️       | ⚠️     |
-| **Windsurf**    | ✅          | ⚠️   | ⚠️    | ✅   | ⚠️   | ❌       | ❌     |
-| **Cline**       | ✅          | ⚠️   | ⚠️    | ✅   | ⚠️   | ✅       | ✅     |
-| **Roo Code**    | ✅          | ⚠️   | ✅    | ✅   | ⚠️   | ✅       | ✅     |
-
-✅ = native &nbsp; 📝 = inlined into instructions &nbsp; ⚠️ = partial / degraded &nbsp; ❌ = skipped with warning
+<div style="margin: 2rem 0; display: flex; justify-content: center; overflow-x: auto;">
+<svg viewBox="0 0 760 310" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Column headers -->
+  <text x="140" y="24" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">instruction</text>
+  <text x="230" y="24" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">hook</text>
+  <text x="320" y="24" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">agent</text>
+  <text x="410" y="24" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">tool</text>
+  <text x="500" y="24" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">rule</text>
+  <text x="590" y="24" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">resource</text>
+  <text x="680" y="24" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">prompt</text>
+  <!-- Row separator -->
+  <line x1="20" y1="35" x2="740" y2="35" stroke="currentColor" stroke-opacity="0.1" stroke-width="1"/>
+  <!-- OpenCode row -->
+  <text x="55" y="60" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">OpenCode</text>
+  <circle cx="140" cy="56" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="140" y="60" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="230" cy="56" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="230" y="60" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="320" cy="56" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="320" y="60" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="410" cy="56" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="410" y="60" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="500" cy="56" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="500" y="60" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="590" cy="56" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="590" y="60" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="680" cy="56" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="680" y="60" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <!-- Claude Code row -->
+  <line x1="20" y1="75" x2="740" y2="75" stroke="currentColor" stroke-opacity="0.05" stroke-width="1"/>
+  <text x="55" y="100" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Claude Code</text>
+  <circle cx="140" cy="96" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="140" y="100" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="230" cy="96" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="230" y="100" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="320" cy="96" r="8" fill="#3b82f6" fill-opacity="0.12" stroke="#3b82f6" stroke-width="1.2"/><text x="320" y="100" text-anchor="middle" fill="#3b82f6" font-size="9">📝</text>
+  <circle cx="410" cy="96" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="410" y="100" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="500" cy="96" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="500" y="100" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="590" cy="96" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="590" y="100" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="680" cy="96" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="680" y="100" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <!-- Cursor row -->
+  <line x1="20" y1="115" x2="740" y2="115" stroke="currentColor" stroke-opacity="0.05" stroke-width="1"/>
+  <text x="55" y="140" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Cursor</text>
+  <circle cx="140" cy="136" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="140" y="140" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="230" cy="136" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="230" y="140" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="320" cy="136" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="320" y="140" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="410" cy="136" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="410" y="140" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="500" cy="136" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="500" y="140" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="590" cy="136" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="590" y="140" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="680" cy="136" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="680" y="140" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <!-- Windsurf row -->
+  <line x1="20" y1="155" x2="740" y2="155" stroke="currentColor" stroke-opacity="0.05" stroke-width="1"/>
+  <text x="55" y="180" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Windsurf</text>
+  <circle cx="140" cy="176" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="140" y="180" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="230" cy="176" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="230" y="180" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="320" cy="176" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="320" y="180" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="410" cy="176" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="410" y="180" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="500" cy="176" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="500" y="180" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="590" cy="176" r="8" fill="#dc2626" fill-opacity="0.1" stroke="#dc2626" stroke-width="1.2"/><text x="590" y="180" text-anchor="middle" fill="#dc2626" font-size="10">✗</text>
+  <circle cx="680" cy="176" r="8" fill="#dc2626" fill-opacity="0.1" stroke="#dc2626" stroke-width="1.2"/><text x="680" y="180" text-anchor="middle" fill="#dc2626" font-size="10">✗</text>
+  <!-- Cline row -->
+  <line x1="20" y1="195" x2="740" y2="195" stroke="currentColor" stroke-opacity="0.05" stroke-width="1"/>
+  <text x="55" y="220" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Cline</text>
+  <circle cx="140" cy="216" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="140" y="220" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="230" cy="216" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="230" y="220" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="320" cy="216" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="320" y="220" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="410" cy="216" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="410" y="220" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="500" cy="216" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="500" y="220" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="590" cy="216" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="590" y="220" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="680" cy="216" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="680" y="220" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <!-- Roo Code row -->
+  <line x1="20" y1="235" x2="740" y2="235" stroke="currentColor" stroke-opacity="0.05" stroke-width="1"/>
+  <text x="55" y="260" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">Roo Code</text>
+  <circle cx="140" cy="256" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="140" y="260" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="230" cy="256" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="230" y="260" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="320" cy="256" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="320" y="260" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="410" cy="256" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="410" y="260" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="500" cy="256" r="8" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="500" y="260" text-anchor="middle" fill="#eab308" font-size="10">~</text>
+  <circle cx="590" cy="256" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="590" y="260" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <circle cx="680" cy="256" r="8" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.5"/><text x="680" y="260" text-anchor="middle" fill="#10b981" font-size="10">✓</text>
+  <!-- Legend -->
+  <circle cx="180" cy="295" r="6" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-width="1.2"/><text x="180" y="299" text-anchor="middle" fill="#10b981" font-size="8">✓</text>
+  <text x="198" y="299" fill="#64748b" font-size="10">native</text>
+  <circle cx="280" cy="295" r="6" fill="#eab308" fill-opacity="0.12" stroke="#eab308" stroke-width="1.2"/><text x="280" y="299" text-anchor="middle" fill="#eab308" font-size="8">~</text>
+  <text x="298" y="299" fill="#64748b" font-size="10">partial</text>
+  <circle cx="370" cy="295" r="6" fill="#3b82f6" fill-opacity="0.12" stroke="#3b82f6" stroke-width="1.2"/><text x="370" y="299" text-anchor="middle" fill="#3b82f6" font-size="7">📝</text>
+  <text x="388" y="299" fill="#64748b" font-size="10">inlined</text>
+  <circle cx="460" cy="295" r="6" fill="#dc2626" fill-opacity="0.1" stroke="#dc2626" stroke-width="1.2"/><text x="460" y="299" text-anchor="middle" fill="#dc2626" font-size="8">✗</text>
+  <text x="478" y="299" fill="#64748b" font-size="10">skipped</text>
+</svg>
+</div>
 
 ## Hook Events Reference
 
