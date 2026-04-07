@@ -417,9 +417,7 @@ export async function fetchSkillFileFromGitHub(
   const branch = await resolveDefaultBranch(owner, repo);
 
   // Try direct path first, optionally skills/{skillPath} (common skills.sh convention)
-  const pathCandidates = options?.trySkillsConvention
-    ? [skillPath, `skills/${skillPath}`]
-    : [skillPath];
+  const pathCandidates = options?.trySkillsConvention ? [skillPath, `skills/${skillPath}`] : [skillPath];
 
   for (const path of pathCandidates) {
     for (const filename of candidates) {
@@ -548,7 +546,9 @@ async function resolveAgentskillsContent(url: string): Promise<{ content: string
   // Strategy 2: Scrape page to find GitHub owner/repo, then fetch file
   const scraped = await scrapeAgentskillsGithub(url, category, skillName);
   if (scraped) {
-    const fileResult = await fetchSkillFileFromGitHub(scraped.owner, scraped.repo, skillName, { trySkillsConvention: true });
+    const fileResult = await fetchSkillFileFromGitHub(scraped.owner, scraped.repo, skillName, {
+      trySkillsConvention: true
+    });
     if (fileResult) return fileResult;
 
     // Return tarball info for fallback
