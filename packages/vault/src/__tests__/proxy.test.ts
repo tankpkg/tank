@@ -166,7 +166,7 @@ describe('proxy server — real HTTP', () => {
   it('restores fake credentials in response', async () => {
     vault.store(REAL_STRIPE_KEY, 'sk_live_FAKEFORTEST00000000000', 'stripe_secret');
 
-    const providerPort = mockProvider.port;
+    const _providerPort = mockProvider.port;
     const responseServer = createServer((req, res) => {
       let reqBody = '';
       req.on('data', (c: Buffer) => {
@@ -203,8 +203,8 @@ describe('proxy server — real HTTP', () => {
     });
 
     const resBody = (await res.json()) as { choices: Array<{ message: { content: string } }> };
-    expect(resBody.choices[0]!.message.content).toContain(REAL_STRIPE_KEY);
-    expect(resBody.choices[0]!.message.content).not.toContain('sk_live_FAKEFORTEST00000000000');
+    expect(resBody.choices[0]?.message.content).toContain(REAL_STRIPE_KEY);
+    expect(resBody.choices[0]?.message.content).not.toContain('sk_live_FAKEFORTEST00000000000');
 
     responseServer.close();
   });
