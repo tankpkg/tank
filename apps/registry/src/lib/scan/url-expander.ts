@@ -31,6 +31,8 @@ export interface ExpandedURL {
   urlType: URLType;
   /** Content type hint for single-file mode */
   contentType: string | null;
+  /** Human-readable error if URL resolution failed (repo not found, etc.) */
+  error?: string;
 }
 
 /**
@@ -112,7 +114,7 @@ function parseURL(url: string): URL | null {
  * → tarball: https://codeload.github.com/{owner}/{repo}/tar.gz/{default_branch}
  * → sub_path: null
  */
-export async function expandGitHubFolder(url: string): Promise<{ tarballUrl: string; subPath: string | null } | null> {
+export async function expandGitHubFolder(url: string): Promise<{ tarballUrl: string; subPath: string | null; notFound?: boolean } | null> {
   const parsed = parseURL(url);
   if (!parsed || parsed.hostname !== 'github.com') return null;
 
@@ -139,10 +141,11 @@ export async function expandGitHubFolder(url: string): Promise<{ tarballUrl: str
   }
 
   // Just owner/repo — resolve default branch
-  const branch = await resolveDefaultBranch(owner, cleanRepo);
+  const result = await resolveDefaultBranch(owner, cleanRepo);
   return {
-    tarballUrl: `https://codeload.github.com/${owner}/${cleanRepo}/tar.gz/${branch}`,
-    subPath: null
+    tarballUrl: `https://codeload.github.com/${owner}/${cleanRepo}/tar.gz/${result.branch}`,
+    subPath: null,
+    notFound: result.notFound
   };
 }
 
@@ -201,7 +204,7 @@ function isBlockedHost(hostname: string): boolean {
  * Capped at 1000 entries to prevent unbounded growth in long-running processes.
  */
 const MAX_BRANCH_CACHE_SIZE = 1000;
-const branchCache = new Map<string, { branch: string; expires: number }>();
+const branchCache = new Map<string, { branch: string; notFound?: boolean; expires: number }>();
 const BRANCH_CACHE_TTL_MS = 10 * 60 * 1000;
 
 /** Evict expired entries; if cache is still full, drop oldest. */
@@ -230,12 +233,17 @@ export function clearBranchCache(): void {
  * 2. Call GitHub API (`GET /repos/{owner}/{repo}`) with 5s timeout
  * 3. Fallback: HEAD probe `main` then `master` on codeload.github.com
  * 4. Final fallback: return `"main"`
+ *
+ * Returns `{ branch, notFound }` — check `notFound` to detect nonexistent repos.
  */
-export async function resolveDefaultBranch(owner: string, repo: string): Promise<string> {
+export async function resolveDefaultBranch(
+  owner: string,
+  repo: string
+): Promise<{ branch: string; notFound?: boolean }> {
   const cacheKey = `${owner}/${repo}`;
   const cached = branchCache.get(cacheKey);
   if (cached && cached.expires > Date.now()) {
-    return cached.branch;
+    return { branch: cached.branch, notFound: cached.notFound };
   }
 
   // Strategy 1: GitHub API
@@ -253,13 +261,21 @@ export async function resolveDefaultBranch(owner: string, repo: string): Promise
       const branch = data.default_branch ?? 'main';
       evictBranchCache();
       branchCache.set(cacheKey, { branch, expires: Date.now() + BRANCH_CACHE_TTL_MS });
-      return branch;
+      return { branch };
+    }
+
+    // 404 from GitHub API means the repo doesn't exist (or is private)
+    if (response.status === 404) {
+      evictBranchCache();
+      branchCache.set(cacheKey, { branch: 'main', notFound: true, expires: Date.now() + BRANCH_CACHE_TTL_MS });
+      return { branch: 'main', notFound: true };
     }
   } catch {
     // API failed — fall through to HEAD probe
   }
 
   // Strategy 2: HEAD probe on codeload.github.com
+  let lastProbeStatus = 0;
   for (const candidate of ['main', 'master'] as const) {
     try {
       const probeUrl = `https://codeload.github.com/${owner}/${repo}/tar.gz/${candidate}`;
@@ -269,20 +285,22 @@ export async function resolveDefaultBranch(owner: string, repo: string): Promise
         redirect: 'follow',
         headers: { 'User-Agent': 'Tank-Security-Scanner/1.0' }
       });
+      lastProbeStatus = probeResponse.status;
       if (probeResponse.ok) {
         evictBranchCache();
         branchCache.set(cacheKey, { branch: candidate, expires: Date.now() + BRANCH_CACHE_TTL_MS });
-        return candidate;
+        return { branch: candidate };
       }
     } catch {
       // Probe failed — try next candidate
     }
   }
 
-  // Strategy 3: hardcoded fallback — cache it to avoid repeat failures
+  // If both probes returned 404, the repo likely doesn't exist
+  const notFound = lastProbeStatus === 404;
   evictBranchCache();
-  branchCache.set(cacheKey, { branch: 'main', expires: Date.now() + BRANCH_CACHE_TTL_MS });
-  return 'main';
+  branchCache.set(cacheKey, { branch: 'main', notFound, expires: Date.now() + BRANCH_CACHE_TTL_MS });
+  return { branch: 'main', notFound };
 }
 
 export async function fetchRawFileContent(url: string): Promise<{ content: string; contentType: string } | null> {
@@ -370,7 +388,7 @@ export async function expandSkillsShUrl(url: string): Promise<{ tarballUrl: stri
   const repo = parts[1];
   const skillName = parts[2];
 
-  const branch = await resolveDefaultBranch(owner, repo);
+  const { branch } = await resolveDefaultBranch(owner, repo);
 
   // Skills.sh repos typically follow the convention: skills/{skill-name}/SKILL.md
   // Probe which sub_path exists in the repo
@@ -414,7 +432,7 @@ export async function fetchSkillFileFromGitHub(
   options?: { trySkillsConvention?: boolean }
 ): Promise<{ content: string; contentType: string } | null> {
   const candidates = ['SKILL.md', 'skill.md', 'README.md', 'README'];
-  const branch = await resolveDefaultBranch(owner, repo);
+  const { branch } = await resolveDefaultBranch(owner, repo);
 
   // Try direct path first, optionally skills/{skillPath} (common skills.sh convention)
   const pathCandidates = options?.trySkillsConvention ? [skillPath, `skills/${skillPath}`] : [skillPath];
@@ -493,7 +511,7 @@ async function scrapeAgentskillsGithub(
     if (npxMatch) {
       const owner = npxMatch[2];
       const repo = npxMatch[3];
-      const branch = await resolveDefaultBranch(owner, repo);
+      const { branch } = await resolveDefaultBranch(owner, repo);
       return {
         tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/${branch}`,
         subPath: skillName,
@@ -507,7 +525,7 @@ async function scrapeAgentskillsGithub(
     if (ghMatch) {
       const owner = ghMatch[1];
       const repo = ghMatch[2];
-      const branch = await resolveDefaultBranch(owner, repo);
+      const { branch } = await resolveDefaultBranch(owner, repo);
       return {
         tarballUrl: `https://codeload.github.com/${owner}/${repo}/tar.gz/${branch}`,
         subPath: skillName,
@@ -592,6 +610,16 @@ export async function expandScanUrl(rawUrl: string): Promise<ExpandedURL> {
       const expanded = await expandGitHubFolder(rawUrl);
       if (!expanded) {
         return { tarballUrl: rawUrl, subPath: null, fileContent: null, urlType: 'unknown', contentType: null };
+      }
+      if (expanded.notFound) {
+        return {
+          tarballUrl: '',
+          subPath: null,
+          fileContent: null,
+          urlType: 'github_folder',
+          contentType: null,
+          error: 'Repository not found. Check that the URL is correct and the repository is public.'
+        };
       }
       return {
         tarballUrl: expanded.tarballUrl,

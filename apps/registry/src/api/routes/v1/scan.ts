@@ -70,6 +70,11 @@ export const scanRoutes = new Hono().post('/', zValidator('json', scanSchema), a
 
   log.info({ url, urlType: expanded.urlType, tarballUrl: expanded.tarballUrl }, 'URL expanded');
 
+  // Early exit if URL expansion detected a problem (e.g. repo not found)
+  if (expanded.error) {
+    return c.json({ error: expanded.error }, 400);
+  }
+
   // Step 5: Route to scanner
   try {
     const headers: Record<string, string> = {

@@ -177,15 +177,14 @@ export function ScanPage({ initialUrl }: { initialUrl?: string }) {
         <div className="space-y-6">
           {/* Ingest failure warning */}
           {ingestFailure && (
-            <Card className="border-amber-300 dark:border-amber-800">
+            <Card className="border-destructive/50">
               <CardContent className="py-4 space-y-2">
-                <p role="alert" className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                <p role="alert" className="text-sm font-medium text-destructive">
                   Package download failed
                 </p>
-                <p className="text-sm text-muted-foreground break-words">
-                  {ingestFailure.description.length > 200
-                    ? `${ingestFailure.description.slice(0, 200)}...`
-                    : ingestFailure.description}
+                <p className="text-sm text-muted-foreground break-words">{ingestFailure.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  Check that the URL is correct and the repository or package is publicly accessible.
                 </p>
               </CardContent>
             </Card>
