@@ -114,7 +114,9 @@ function parseURL(url: string): URL | null {
  * → tarball: https://codeload.github.com/{owner}/{repo}/tar.gz/{default_branch}
  * → sub_path: null
  */
-export async function expandGitHubFolder(url: string): Promise<{ tarballUrl: string; subPath: string | null; notFound?: boolean } | null> {
+export async function expandGitHubFolder(
+  url: string
+): Promise<{ tarballUrl: string; subPath: string | null; notFound?: boolean } | null> {
   const parsed = parseURL(url);
   if (!parsed || parsed.hostname !== 'github.com') return null;
 
