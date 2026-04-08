@@ -494,6 +494,7 @@ def _friendly_download_error(exc: Exception, url: str) -> str:
 
     # Fallback: strip raw URL from httpx error to keep it clean
     import re
+
     clean = re.sub(r" for url 'https?://[^']+}'", "", msg)
     clean = re.sub(r" for url 'https?://[^']+'", "", clean)
     return f"Failed to download package: {clean}"
