@@ -39,7 +39,7 @@ describe('resolveDefaultBranch', () => {
       .mockResolvedValueOnce(mockResponse({ body: { default_branch: 'master' } }));
 
     const first = await resolveDefaultBranch('test-owner', 'cached-repo');
-    expect(first).toBe('master');
+    expect(first).toEqual({ branch: 'master' });
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
@@ -47,8 +47,8 @@ describe('resolveDefaultBranch', () => {
   it('returns default_branch from GitHub API', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockResponse({ body: { default_branch: 'develop' } }));
 
-    const branch = await resolveDefaultBranch('owner', 'custom-branch-repo');
-    expect(branch).toBe('develop');
+    const result = await resolveDefaultBranch('owner', 'custom-branch-repo');
+    expect(result).toEqual({ branch: 'develop' });
   });
 
   it('falls back to HEAD probe when API fails', async () => {
@@ -57,8 +57,8 @@ describe('resolveDefaultBranch', () => {
       .mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
       .mockResolvedValueOnce(mockResponse({ ok: true }));
 
-    const branch = await resolveDefaultBranch('owner', 'master-only-repo');
-    expect(branch).toBe('master');
+    const result = await resolveDefaultBranch('owner', 'master-only-repo');
+    expect(result).toEqual({ branch: 'master' });
   });
 
   it('falls back to HEAD probe on network error', async () => {
@@ -66,22 +66,29 @@ describe('resolveDefaultBranch', () => {
       .mockRejectedValueOnce(new Error('network error'))
       .mockResolvedValueOnce(mockResponse({ ok: true }));
 
-    const branch = await resolveDefaultBranch('owner', 'network-error-repo');
-    expect(branch).toBe('main');
+    const result = await resolveDefaultBranch('owner', 'network-error-repo');
+    expect(result).toEqual({ branch: 'main' });
   });
 
-  it('returns "main" when all strategies fail', async () => {
+  it('returns { branch: "main", notFound: true } when all strategies fail', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse({ ok: false, status: 404 }));
 
-    const branch = await resolveDefaultBranch('owner', 'nonexistent-repo');
-    expect(branch).toBe('main');
+    const result = await resolveDefaultBranch('owner', 'nonexistent-repo');
+    expect(result).toEqual({ branch: 'main', notFound: true });
   });
 
   it('defaults to "main" when API returns no default_branch field', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockResponse({ body: {} }));
 
-    const branch = await resolveDefaultBranch('owner', 'no-branch-field');
-    expect(branch).toBe('main');
+    const result = await resolveDefaultBranch('owner', 'no-branch-field');
+    expect(result).toEqual({ branch: 'main' });
+  });
+
+  it('returns notFound when GitHub API returns 404', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }));
+
+    const result = await resolveDefaultBranch('owner', 'private-repo');
+    expect(result).toEqual({ branch: 'main', notFound: true });
   });
 });
 
@@ -108,6 +115,17 @@ describe('expandGitHubFolder', () => {
     expect(result).toEqual({
       tarballUrl: 'https://codeload.github.com/owner/repo/tar.gz/master',
       subPath: null
+    });
+  });
+
+  it('returns notFound for nonexistent repo', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }));
+
+    const result = await expandGitHubFolder('https://github.com/owner/nonexistent');
+    expect(result).toEqual({
+      tarballUrl: 'https://codeload.github.com/owner/nonexistent/tar.gz/main',
+      subPath: null,
+      notFound: true
     });
   });
 

@@ -470,6 +470,36 @@ def narrow_to_sub_path(
     return new_temp_dir, new_files, total_size, findings
 
 
+def _friendly_download_error(exc: Exception, url: str) -> str:
+    """Convert raw httpx/SSL errors into user-friendly messages."""
+    msg = str(exc)
+
+    # httpx HTTPStatusError: "Client error '404 Not Found' for url '...'"
+    if "404" in msg:
+        return "Repository not found. Check that the URL is correct and the repository is public."
+    if "403" in msg:
+        return "Access denied. The repository may be private or have access restrictions."
+    if "401" in msg:
+        return "Authentication required. The repository may be private."
+
+    # Timeout / connection errors
+    if "timed out" in msg.lower() or "timeout" in msg.lower():
+        return "Download timed out. The repository may be too large or temporarily unavailable."
+    if "connection" in msg.lower() or "connect" in msg.lower():
+        return "Could not connect to the repository host. The service may be temporarily unavailable."
+
+    # Size limit
+    if "exceeds maximum" in msg:
+        return f"Package too large to scan. {msg}"
+
+    # Fallback: strip raw URL from httpx error to keep it clean
+    import re
+
+    clean = re.sub(r" for url 'https?://[^']+}'", "", msg)
+    clean = re.sub(r" for url 'https?://[^']+'", "", clean)
+    return f"Failed to download package: {clean}"
+
+
 async def stage0_ingest(tarball_url: str, sub_path: str | None = None) -> IngestResult:
     """Run Stage 0: Ingestion & Quarantine.
 
@@ -491,12 +521,13 @@ async def stage0_ingest(tarball_url: str, sub_path: str | None = None) -> Ingest
     try:
         tarball_data = await download_tarball(tarball_url)
     except Exception as e:
+        error_msg = _friendly_download_error(e, tarball_url)
         findings.append(
             Finding(
                 stage="stage0",
                 severity="critical",
                 type="download_failed",
-                description=f"Failed to download tarball: {e!s}",
+                description=error_msg,
                 confidence=1.0,
                 tool="stage0_ingest",
             )

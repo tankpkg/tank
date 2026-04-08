@@ -9,6 +9,8 @@ export interface ScanningTool {
   ran: boolean;
   findingCount: number;
   status: 'ran' | 'skipped' | 'failed';
+  /** Why this tool was skipped — shown below the "Skipped" label */
+  skipReason?: string;
 }
 
 export interface ScanningToolsStripProps {
@@ -30,7 +32,9 @@ function ToolCard({ tool }: { tool: ScanningTool }) {
         </div>
       )}
       {tool.status === 'failed' && <div className="text-xs mt-1 text-red-600 dark:text-red-400">Failed</div>}
-      {tool.status === 'skipped' && <div className="text-xs mt-1 text-muted-foreground">Skipped</div>}
+      {tool.status === 'skipped' && (
+        <div className="text-xs mt-1 text-muted-foreground">{tool.skipReason ?? 'Skipped'}</div>
+      )}
     </div>
   );
 }
@@ -38,14 +42,38 @@ function ToolCard({ tool }: { tool: ScanningTool }) {
 export function ScanningToolsStrip({ tools }: ScanningToolsStripProps) {
   if (tools.length === 0) return null;
 
+  const ranCount = tools.filter((t) => t.status === 'ran').length;
+  const total = tools.length;
+
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-      {tools.map((tool) => (
-        <ToolCard key={tool.name} tool={tool} />
-      ))}
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all"
+            style={{ width: `${Math.round((ranCount / total) * 100)}%` }}
+          />
+        </div>
+        <span className="text-xs text-muted-foreground shrink-0">
+          {ranCount}/{total} tools ran
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        {tools.map((tool) => (
+          <ToolCard key={tool.name} tool={tool} />
+        ))}
+      </div>
     </div>
   );
 }
+
+/** Skip reasons for tools that can't run in certain scan contexts. */
+const SKIP_REASONS: Record<string, string> = {
+  stage1: 'Requires package structure',
+  stage2: 'No source code to analyze',
+  stage5: 'No dependency manifest',
+  llm: 'Not configured'
+};
 
 /**
  * Build the scanning tools list dynamically from actual findings data.
@@ -76,6 +104,7 @@ export function buildScanningTools(scanDetails: {
       icon: <Shield className="size-4" />,
       ran: stagesRun.includes('stage1'),
       status: stagesRun.includes('stage1') ? 'ran' : 'skipped',
+      skipReason: stagesRun.includes('stage1') ? undefined : SKIP_REASONS.stage1,
       findingCount: findings.filter((f) => f.stage === 'stage1').length
     },
     {
@@ -84,6 +113,7 @@ export function buildScanningTools(scanDetails: {
       icon: <ScanSearch className="size-4" />,
       ran: stagesRun.includes('stage2'),
       status: stagesRun.includes('stage2') ? 'ran' : 'skipped',
+      skipReason: stagesRun.includes('stage2') ? undefined : SKIP_REASONS.stage2,
       findingCount: findings.filter((f) => f.tool?.includes('semgrep')).length
     },
     {
@@ -92,6 +122,7 @@ export function buildScanningTools(scanDetails: {
       icon: <Bug className="size-4" />,
       ran: stagesRun.includes('stage2'),
       status: stagesRun.includes('stage2') ? 'ran' : 'skipped',
+      skipReason: stagesRun.includes('stage2') ? undefined : SKIP_REASONS.stage2,
       findingCount: findings.filter((f) => f.tool === 'bandit').length
     },
     {
@@ -140,6 +171,7 @@ export function buildScanningTools(scanDetails: {
       icon: <Link2 className="size-4" />,
       ran: stagesRun.includes('stage5'),
       status: stagesRun.includes('stage5') ? 'ran' : 'skipped',
+      skipReason: stagesRun.includes('stage5') ? undefined : SKIP_REASONS.stage5,
       findingCount: findings.filter((f) => f.tool === 'stage5_osv').length
     },
     {
@@ -148,6 +180,7 @@ export function buildScanningTools(scanDetails: {
       icon: <Bot className="size-4" />,
       ran: scanDetails.llm_analysis?.enabled ?? false,
       status: scanDetails.llm_analysis?.enabled ? 'ran' : 'skipped',
+      skipReason: scanDetails.llm_analysis?.enabled ? undefined : SKIP_REASONS.llm,
       findingCount: findings.filter((f) => f.llm_reviewed).length
     }
   ];
