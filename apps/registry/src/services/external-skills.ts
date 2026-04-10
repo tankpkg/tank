@@ -6,12 +6,14 @@
  * API is unreachable.
  */
 
-import { sql } from 'drizzle-orm';
+import { eq, isNull, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { env } from '~/consts/env';
 import { db } from '~/lib/db';
 import { externalSkills } from '~/lib/db/schema';
 import { escapeLike } from '~/lib/skills/data';
+import { expandScanUrl } from '~/lib/scan/url-expander';
 import { log as baseLog } from '~/services/logger';
 
 const log = baseLog.child({ module: 'external-skills' });
@@ -137,9 +139,9 @@ const SEED_SKILLS: Array<{
   },
   {
     name: 'shadcn',
-    url: 'https://skills.sh/shadcn/ui/shadcn',
+    url: 'https://skills.sh/shadcn-ui/ui/shadcn',
     description: 'Build UIs with shadcn/ui components and design system patterns.',
-    author: 'shadcn',
+    author: 'shadcn-ui',
     installCount: 12000
   },
   {
@@ -343,6 +345,120 @@ export async function fetchAndCacheExternalSkills(): Promise<void> {
         }
       }
     }
+  }
+
+  // Fire background scan for skills that need it (non-blocking)
+  scanExternalSkills().catch((err) => {
+    log.warn({ error: String(err) }, 'Background scan failed');
+  });
+}
+
+/**
+ * Update scan result for an external skill by URL.
+ */
+export async function updateExternalSkillScanResult(
+  sourceUrl: string,
+  verdict: string,
+  scanResult: {
+    verdict: string;
+    findings: Array<{
+      stage: string;
+      severity: string;
+      type: string;
+      description: string;
+      location: string | null;
+      tool: string | null;
+    }>;
+    duration_ms: number;
+  },
+  scannedAt: Date
+): Promise<void> {
+  await db
+    .update(externalSkills)
+    .set({ scanVerdict: verdict, scanResult, scannedAt, updatedAt: new Date() })
+    .where(eq(externalSkills.url, sourceUrl));
+}
+
+/**
+ * Scan external skills that don't have a scan verdict yet.
+ * Runs sequentially with rate-limit delay to avoid hammering GitHub/Python API.
+ */
+let scanInProgress = false;
+
+export async function scanExternalSkills(): Promise<void> {
+  if (!env.PYTHON_API_URL) return;
+  if (scanInProgress) return;
+  scanInProgress = true;
+  try {
+
+  const oneHourAgo = new Date(Date.now() - 3_600_000);
+
+  const unscanned = await db
+    .select({ id: externalSkills.id, url: externalSkills.url })
+    .from(externalSkills)
+    .where(or(isNull(externalSkills.scanVerdict), sql`${externalSkills.scannedAt} < ${oneHourAgo}`))
+    .limit(20);
+
+  if (unscanned.length === 0) return;
+
+    log.info({ count: unscanned.length }, 'Starting background scan for external skills');
+
+    for (const skill of unscanned) {
+      try {
+        const expanded = await expandScanUrl(skill.url);
+
+        if (expanded.error) {
+          await updateExternalSkillScanResult(skill.url, 'error', { verdict: 'error', findings: [], duration_ms: 0 }, new Date());
+          continue;
+        }
+
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (env.SCANNER_SERVICE_KEY) headers['X-Scanner-Key'] = env.SCANNER_SERVICE_KEY;
+
+        const body = expanded.fileContent
+          ? {
+              tarball_url: '',
+              version_id: `bg-scan-${crypto.randomUUID()}`,
+              manifest: {},
+              permissions: {},
+              single_file_content: expanded.fileContent,
+              single_file_name: 'SKILL.md',
+              single_file_content_type: expanded.contentType ?? 'text/markdown'
+            }
+          : {
+              tarball_url: expanded.tarballUrl,
+              version_id: `bg-scan-${crypto.randomUUID()}`,
+              manifest: {},
+              permissions: {},
+              sub_path: expanded.subPath ?? undefined
+            };
+
+        const scanResponse = await fetch(`${env.PYTHON_API_URL}/api/analyze/scan`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(55_000)
+        });
+
+        if (!scanResponse.ok) {
+          log.warn({ url: skill.url, status: scanResponse.status }, 'Background scan failed');
+          continue;
+        }
+
+        const scanResult = await scanResponse.json();
+        const verdict = scanResult.verdict ?? 'unknown';
+        await updateExternalSkillScanResult(skill.url, verdict, scanResult, new Date());
+
+        log.info({ url: skill.url, verdict }, 'Background scan completed');
+
+        // Rate limit: 3s delay between scans
+        await new Promise((resolve) => setTimeout(resolve, 3_000));
+      } catch (err) {
+        log.warn({ url: skill.url, error: String(err) }, 'Background scan error for skill');
+      }
+    }
+  } finally {
+    scanInProgress = false;
   }
 }
 

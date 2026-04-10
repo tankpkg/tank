@@ -395,7 +395,7 @@ export async function expandSkillsShUrl(url: string): Promise<{ tarballUrl: stri
   // Skills.sh repos typically follow the convention: skills/{skill-name}/SKILL.md
   // Probe which sub_path exists in the repo
   let subPath = skillName;
-  for (const candidate of [`skills/${skillName}`, skillName]) {
+  for (const candidate of [`skills/${skillName}`, `src/skills/${skillName}`, skillName]) {
     try {
       const probeUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${candidate}`;
       const probeResp = await fetch(probeUrl, {
@@ -437,7 +437,7 @@ export async function fetchSkillFileFromGitHub(
   const { branch } = await resolveDefaultBranch(owner, repo);
 
   // Try direct path first, optionally skills/{skillPath} (common skills.sh convention)
-  const pathCandidates = options?.trySkillsConvention ? [skillPath, `skills/${skillPath}`] : [skillPath];
+  const pathCandidates = options?.trySkillsConvention ? [skillPath, `skills/${skillPath}`, `src/skills/${skillPath}`] : [skillPath];
 
   for (const path of pathCandidates) {
     for (const filename of candidates) {

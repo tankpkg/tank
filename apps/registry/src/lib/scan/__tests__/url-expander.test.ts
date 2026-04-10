@@ -166,6 +166,23 @@ describe('expandSkillsShUrl', () => {
     const result = await expandSkillsShUrl('https://skills.sh/owner/repo');
     expect(result).toBeNull();
   });
+
+  it('probes skills/ then src/skills/ then direct for sub_path', async () => {
+    // Mock resolveDefaultBranch (GitHub API call)
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    fetchMock.mockResolvedValueOnce(mockResponse({ body: { default_branch: 'main' } }));
+
+    // Probe 1: skills/frontend-design → 404
+    fetchMock.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }));
+    // Probe 2: src/skills/frontend-design → 200
+    fetchMock.mockResolvedValueOnce(mockResponse({ ok: true, status: 200 }));
+
+    const result = await expandSkillsShUrl('https://skills.sh/pbakaus/impeccable/frontend-design');
+    expect(result).toEqual({
+      tarballUrl: 'https://codeload.github.com/pbakaus/impeccable/tar.gz/main',
+      subPath: 'src/skills/frontend-design'
+    });
+  });
 });
 
 // ── detectURLType ─────────────────────────────────────────────
