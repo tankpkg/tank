@@ -44,12 +44,10 @@ class TestStage0IngestOrdering:
         size_exceeded_line = None
         narrow_line = None
         for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                if "exceeds maximum" in node.value:
-                    size_exceeded_line = node.lineno
-            if isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == "narrow_to_sub_path":
-                    narrow_line = node.lineno
+            if isinstance(node, ast.Constant) and isinstance(node.value, str) and "exceeds maximum" in node.value:
+                size_exceeded_line = node.lineno
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "narrow_to_sub_path":
+                narrow_line = node.lineno
 
         assert narrow_line is not None, "narrow_to_sub_path call not found"
         assert size_exceeded_line is not None, "size_exceeded check not found"
