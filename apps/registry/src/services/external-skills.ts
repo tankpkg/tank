@@ -12,8 +12,8 @@ import { z } from 'zod';
 import { env } from '~/consts/env';
 import { db } from '~/lib/db';
 import { externalSkills } from '~/lib/db/schema';
-import { escapeLike } from '~/lib/skills/data';
 import { expandScanUrl } from '~/lib/scan/url-expander';
+import { escapeLike } from '~/lib/skills/data';
 import { log as baseLog } from '~/services/logger';
 
 const log = baseLog.child({ module: 'external-skills' });
@@ -390,16 +390,15 @@ export async function scanExternalSkills(): Promise<void> {
   if (scanInProgress) return;
   scanInProgress = true;
   try {
+    const oneHourAgo = new Date(Date.now() - 3_600_000);
 
-  const oneHourAgo = new Date(Date.now() - 3_600_000);
+    const unscanned = await db
+      .select({ id: externalSkills.id, url: externalSkills.url })
+      .from(externalSkills)
+      .where(or(isNull(externalSkills.scanVerdict), sql`${externalSkills.scannedAt} < ${oneHourAgo}`))
+      .limit(20);
 
-  const unscanned = await db
-    .select({ id: externalSkills.id, url: externalSkills.url })
-    .from(externalSkills)
-    .where(or(isNull(externalSkills.scanVerdict), sql`${externalSkills.scannedAt} < ${oneHourAgo}`))
-    .limit(20);
-
-  if (unscanned.length === 0) return;
+    if (unscanned.length === 0) return;
 
     log.info({ count: unscanned.length }, 'Starting background scan for external skills');
 
@@ -408,7 +407,12 @@ export async function scanExternalSkills(): Promise<void> {
         const expanded = await expandScanUrl(skill.url);
 
         if (expanded.error) {
-          await updateExternalSkillScanResult(skill.url, 'error', { verdict: 'error', findings: [], duration_ms: 0 }, new Date());
+          await updateExternalSkillScanResult(
+            skill.url,
+            'error',
+            { verdict: 'error', findings: [], duration_ms: 0 },
+            new Date()
+          );
           continue;
         }
 

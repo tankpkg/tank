@@ -437,7 +437,9 @@ export async function fetchSkillFileFromGitHub(
   const { branch } = await resolveDefaultBranch(owner, repo);
 
   // Try direct path first, optionally skills/{skillPath} (common skills.sh convention)
-  const pathCandidates = options?.trySkillsConvention ? [skillPath, `skills/${skillPath}`, `src/skills/${skillPath}`] : [skillPath];
+  const pathCandidates = options?.trySkillsConvention
+    ? [skillPath, `skills/${skillPath}`, `src/skills/${skillPath}`]
+    : [skillPath];
 
   for (const path of pathCandidates) {
     for (const filename of candidates) {

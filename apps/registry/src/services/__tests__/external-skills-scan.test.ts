@@ -50,8 +50,8 @@ vi.mock('~/lib/scan/url-expander', () => ({
   expandScanUrl: vi.fn()
 }));
 
-import { scanExternalSkills, updateExternalSkillScanResult } from '../external-skills';
 import { expandScanUrl } from '~/lib/scan/url-expander';
+import { scanExternalSkills, updateExternalSkillScanResult } from '../external-skills';
 
 describe('scanExternalSkills', () => {
   afterEach(() => {
@@ -68,9 +68,7 @@ describe('scanExternalSkills', () => {
   });
 
   it('scans skills with null verdict via tarball mode', async () => {
-    mockStore.selectResult = [
-      { id: '1', url: 'https://skills.sh/owner/repo/skill1' }
-    ];
+    mockStore.selectResult = [{ id: '1', url: 'https://skills.sh/owner/repo/skill1' }];
 
     vi.mocked(expandScanUrl).mockResolvedValueOnce({
       tarballUrl: 'https://codeload.github.com/owner/repo/tar.gz/main',
@@ -94,9 +92,7 @@ describe('scanExternalSkills', () => {
   });
 
   it('handles scan errors gracefully', async () => {
-    mockStore.selectResult = [
-      { id: '2', url: 'https://skills.sh/owner/repo/broken' }
-    ];
+    mockStore.selectResult = [{ id: '2', url: 'https://skills.sh/owner/repo/broken' }];
 
     vi.mocked(expandScanUrl).mockResolvedValueOnce({
       tarballUrl: '',
@@ -114,9 +110,7 @@ describe('scanExternalSkills', () => {
   });
 
   it('scans skills via single-file mode when fileContent is present', async () => {
-    mockStore.selectResult = [
-      { id: '3', url: 'https://skills.sh/owner/repo/skill2' }
-    ];
+    mockStore.selectResult = [{ id: '3', url: 'https://skills.sh/owner/repo/skill2' }];
 
     vi.mocked(expandScanUrl).mockResolvedValueOnce({
       tarballUrl: '',
