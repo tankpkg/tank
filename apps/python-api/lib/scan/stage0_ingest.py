@@ -18,7 +18,7 @@ import httpx
 from lib.scan.models import Finding, IngestResult, StageResult
 
 # Configuration
-MAX_TARBALL_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_TARBALL_SIZE = 100 * 1024 * 1024  # 100MB
 MAX_EXTRACTED_SIZE = 50 * 1024 * 1024  # 50MB
 MAX_COMPRESSION_RATIO = 100  # decompressed/compressed
 DOWNLOAD_TIMEOUT = 30.0  # seconds
@@ -583,23 +583,11 @@ async def stage0_ingest(tarball_url: str, sub_path: str | None = None) -> Ingest
     extract_findings, extracted_files, total_size = safe_extract(tar_path, temp_dir)
     findings.extend(extract_findings)
 
-    # Check total extracted size
-    if total_size > MAX_EXTRACTED_SIZE:
-        findings.append(
-            Finding(
-                stage="stage0",
-                severity="critical",
-                type="size_exceeded",
-                description=f"Total extracted size {total_size} exceeds maximum {MAX_EXTRACTED_SIZE}",
-                confidence=1.0,
-                tool="stage0_ingest",
-            )
-        )
-
     # Remove the tarball (we don't need it anymore)
     os.remove(tar_path)
 
     # Narrow to sub_path if specified (monorepo support)
+    # MUST happen before size check so the limit applies to the narrowed subdir, not the full repo
     if sub_path:
         try:
             temp_dir, extracted_files, narrowed_size, sub_path_findings = narrow_to_sub_path(
@@ -611,6 +599,19 @@ async def stage0_ingest(tarball_url: str, sub_path: str | None = None) -> Ingest
         if narrowed_size is not None:
             total_size = narrowed_size
         findings.extend(sub_path_findings)
+
+    # Check total extracted size (after narrowing, so this applies to the actual scanned content)
+    if total_size > MAX_EXTRACTED_SIZE:
+        findings.append(
+            Finding(
+                stage="stage0",
+                severity="critical",
+                type="size_exceeded",
+                description=f"Total extracted size {total_size} exceeds maximum {MAX_EXTRACTED_SIZE}",
+                confidence=1.0,
+                tool="stage0_ingest",
+            )
+        )
 
     # Compute file hashes
     file_hashes = compute_file_hashes(temp_dir, extracted_files)

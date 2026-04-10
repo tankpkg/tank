@@ -22,6 +22,7 @@ import { env } from '~/consts/env';
 import { resolveRequestUserId } from '~/lib/auth/authz';
 import { type ExpandedURL, expandScanUrl } from '~/lib/scan/url-expander';
 import { validateScanUrl } from '~/lib/scan/url-validator';
+import { updateExternalSkillScanResult } from '~/services/external-skills';
 import { log as baseLog } from '~/services/logger';
 import { anonymousLimiter, authFreeLimiter } from '../../middleware/rate-limit';
 
@@ -108,6 +109,7 @@ export const scanRoutes = new Hono().post('/', zValidator('json', scanSchema), a
       }
 
       const scanResult = await scanResponse.json();
+      writebackExternalSkill(url, scanResult);
       return c.json(scanResult);
     }
 
@@ -131,6 +133,7 @@ export const scanRoutes = new Hono().post('/', zValidator('json', scanSchema), a
     }
 
     const scanResult = await scanResponse.json();
+    writebackExternalSkill(url, scanResult);
     return c.json(scanResult);
   } catch (err) {
     if (err instanceof DOMException && err.name === 'TimeoutError') {
@@ -141,6 +144,32 @@ export const scanRoutes = new Hono().post('/', zValidator('json', scanSchema), a
     return c.json({ error: 'Scanner unavailable' }, 502);
   }
 });
+
+/**
+ * Write scan result back to external_skills if the URL matches a known external skill.
+ * Non-blocking: errors are caught and logged, never failing the scan response.
+ */
+function writebackExternalSkill(
+  sourceUrl: string,
+  scanResult: {
+    verdict: string;
+    findings: Array<{
+      stage: string;
+      severity: string;
+      type: string;
+      description: string;
+      location: string | null;
+      tool: string | null;
+    }>;
+    duration_ms: number;
+    [key: string]: unknown;
+  }
+): void {
+  const verdict = typeof scanResult.verdict === 'string' ? scanResult.verdict : 'unknown';
+  updateExternalSkillScanResult(sourceUrl, verdict, scanResult, new Date()).catch((err) => {
+    log.warn({ url: sourceUrl, error: String(err) }, 'Failed to write back scan result to external_skills');
+  });
+}
 
 /**
  * Extract filename from URL for single-file scan mode.
