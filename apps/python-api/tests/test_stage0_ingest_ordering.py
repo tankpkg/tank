@@ -52,8 +52,7 @@ class TestStage0IngestOrdering:
         assert narrow_line is not None, "narrow_to_sub_path call not found"
         assert size_exceeded_line is not None, "size_exceeded check not found"
         assert narrow_line < size_exceeded_line, (
-            f"narrow_to_sub_path (line {narrow_line}) must come before "
-            f"size check (line {size_exceeded_line})"
+            f"narrow_to_sub_path (line {narrow_line}) must come before size check (line {size_exceeded_line})"
         )
 
     def test_max_tarball_size_is_100mb(self):
