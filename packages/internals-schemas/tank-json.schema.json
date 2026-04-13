@@ -1,0 +1,274 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "tank.json",
+  "description": "Tank multi-atom skill package manifest. See https://tankpkg.dev/docs/atoms",
+  "type": "object",
+  "required": ["name", "version", "atoms"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^@[a-z0-9-]+/[a-z0-9][a-z0-9-]*$",
+      "description": "Scoped package name (@org/name)"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.-]+)?(\\+[a-zA-Z0-9.-]+)?$",
+      "description": "Semver version"
+    },
+    "description": { "type": "string", "maxLength": 500 },
+    "atoms": {
+      "type": "array",
+      "description": "Skill atoms — instructions, hooks, agents, tools, rules, resources, prompts",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/instruction" },
+          { "$ref": "#/definitions/hook" },
+          { "$ref": "#/definitions/agent" },
+          { "$ref": "#/definitions/tool" },
+          { "$ref": "#/definitions/rule" },
+          { "$ref": "#/definitions/resource" },
+          { "$ref": "#/definitions/prompt" }
+        ]
+      }
+    },
+    "includes": { "type": "array", "items": { "type": "string" }, "description": "Packages to compose into build" },
+    "skills": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Dependencies (name → semver)"
+    },
+    "permissions": { "$ref": "#/definitions/permissions" },
+    "repository": { "type": "string", "format": "uri" },
+    "visibility": { "type": "string", "enum": ["public", "private"] },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "min_score": { "type": "number", "minimum": 0, "maximum": 10 } },
+      "required": ["min_score"]
+    }
+  },
+  "definitions": {
+    "extensions": {
+      "type": "object",
+      "description": "Platform-specific extension bags",
+      "additionalProperties": { "type": "object", "additionalProperties": true }
+    },
+    "instruction": {
+      "type": "object",
+      "required": ["kind", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "instruction" },
+        "content": { "type": "string", "description": "Relative path to markdown/text file" },
+        "scope": { "type": "string", "enum": ["project", "global", "directory"] },
+        "globs": { "type": "array", "items": { "type": "string" } },
+        "extensions": { "$ref": "#/definitions/extensions" }
+      }
+    },
+    "hook": {
+      "type": "object",
+      "required": ["kind", "event", "handler"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "hook" },
+        "name": { "type": "string" },
+        "event": { "$ref": "#/definitions/hookEvent" },
+        "match": { "type": "string" },
+        "handler": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["type", "actions"],
+              "additionalProperties": false,
+              "properties": {
+                "type": { "const": "dsl" },
+                "actions": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": ["action"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "action": { "type": "string", "enum": ["block", "allow", "rewrite", "injectContext"] },
+                      "match": { "type": "string" },
+                      "reason": { "type": "string" },
+                      "value": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["type", "entry"],
+              "additionalProperties": false,
+              "properties": {
+                "type": { "const": "js" },
+                "entry": { "type": "string", "description": "Relative path to handler script" }
+              }
+            }
+          ]
+        },
+        "scope": { "type": "string", "enum": ["project", "global"] },
+        "extensions": { "$ref": "#/definitions/extensions" }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "required": ["kind", "name", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "agent" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "description": "System prompt / role description" },
+        "tools": { "type": "array", "items": { "type": "string" } },
+        "model": { "type": "string", "description": "Model tier (fast/balanced/powerful/custom) or model ID" },
+        "readonly": { "type": "boolean" },
+        "extensions": { "$ref": "#/definitions/extensions" }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "required": ["kind", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "tool" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "mcp": {
+          "type": "object",
+          "required": ["command"],
+          "additionalProperties": false,
+          "properties": {
+            "command": { "type": "string" },
+            "args": { "type": "array", "items": { "type": "string" } },
+            "env": { "type": "object", "additionalProperties": { "type": "string" } }
+          }
+        },
+        "extensions": { "$ref": "#/definitions/extensions" }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "required": ["kind", "event", "policy"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "rule" },
+        "name": { "type": "string" },
+        "event": { "$ref": "#/definitions/hookEvent" },
+        "match": { "type": "string" },
+        "policy": { "type": "string", "enum": ["block", "allow", "warn"] },
+        "reason": { "type": "string" },
+        "extensions": { "$ref": "#/definitions/extensions" }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "required": ["kind", "uri"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "resource" },
+        "name": { "type": "string" },
+        "uri": { "type": "string" },
+        "description": { "type": "string" },
+        "mimeType": { "type": "string" },
+        "extensions": { "$ref": "#/definitions/extensions" }
+      }
+    },
+    "prompt": {
+      "type": "object",
+      "required": ["kind", "name", "template"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "prompt" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "template": { "type": "string", "description": "Relative path to template file" },
+        "arguments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "required": { "type": "boolean" }
+            }
+          }
+        },
+        "extensions": { "$ref": "#/definitions/extensions" }
+      }
+    },
+    "hookEvent": {
+      "type": "string",
+      "enum": [
+        "pre-file-write",
+        "post-file-write",
+        "pre-file-read",
+        "post-file-read",
+        "pre-file-delete",
+        "post-file-delete",
+        "pre-file-rename",
+        "post-file-rename",
+        "pre-file-create",
+        "post-file-create",
+        "pre-command",
+        "post-command",
+        "pre-bash",
+        "post-bash",
+        "pre-terminal",
+        "post-terminal",
+        "pre-tool-call",
+        "post-tool-call",
+        "pre-mcp-call",
+        "post-mcp-call",
+        "pre-start",
+        "post-start",
+        "pre-stop",
+        "post-stop",
+        "session-idle",
+        "session-resume",
+        "pre-agent-spawn",
+        "post-agent-spawn",
+        "pre-agent-complete",
+        "post-agent-complete",
+        "pre-context-load",
+        "post-context-load",
+        "pre-context-switch",
+        "post-context-switch",
+        "pre-network",
+        "post-network",
+        "on-error",
+        "on-lint-error",
+        "pre-approval",
+        "post-approval"
+      ]
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "type": "object",
+          "properties": { "outbound": { "type": "array", "items": { "type": "string" } } }
+        },
+        "filesystem": {
+          "type": "object",
+          "properties": {
+            "read": { "type": "array", "items": { "type": "string" } },
+            "write": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "subprocess": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "object", "properties": { "allowed": { "type": "array", "items": { "type": "string" } } } }
+          ]
+        }
+      }
+    }
+  }
+}

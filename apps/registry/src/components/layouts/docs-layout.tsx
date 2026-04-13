@@ -14,6 +14,7 @@ const SIDEBAR_ORDER: Array<DocMeta | { separator: string }> = [
   { slug: 'overview', title: 'Overview' },
   { slug: 'getting-started', title: 'Getting Started' },
   { separator: 'Guides' },
+  { slug: 'atoms', title: 'Multi-Atom Skills' },
   { slug: 'publishing', title: 'Publishing' },
   { slug: 'installing', title: 'Installing' },
   { slug: 'organizations', title: 'Organizations' },

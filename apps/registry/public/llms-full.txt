@@ -8185,12 +8185,99 @@ Zero runtime dependencies. Built with `tsdown`, tested with Vitest.
 
 ---
 
+# Building Multi-Atom Skills
+
+Source: https://tankpkg.dev/docs/atoms
+
+> Write one tank.json with atoms — instructions, hooks, agents, tools, rules, resources, prompts — and `tank build` compiles them to native configs for any AI coding agent.
+
+## tank.json Format
+
+```json
+{
+  "name": "@yourorg/my-skill",
+  "version": "1.0.0",
+  "description": "What this skill does",
+  "atoms": [
+    { "kind": "instruction", "content": "SKILL.md" },
+    { "kind": "hook", "event": "pre-file-write", "handler": { "type": "dsl", "actions": [{ "action": "block", "match": "*.env", "reason": "Protect env files" }] } },
+    { "kind": "agent", "name": "reviewer", "role": "Code reviewer", "tools": ["file_read", "grep"], "model": "powerful" },
+    { "kind": "tool", "name": "analyzer", "mcp": { "command": "npx", "args": ["-y", "@myorg/analyzer-mcp"] } },
+    { "kind": "rule", "event": "pre-command", "match": "rm -rf", "policy": "block", "reason": "Dangerous command" },
+    { "kind": "resource", "uri": "references/criteria.md", "description": "Review criteria" },
+    { "kind": "prompt", "name": "review", "template": "prompts/review.md", "arguments": [{ "name": "files", "required": true }] }
+  ]
+}
+```
+
+## The 7 Atom Kinds
+
+| Kind | Required Fields | Purpose |
+|---|---|---|
+| `instruction` | `content` (file path) | Inject context into agent system prompt |
+| `hook` | `event`, `handler` (dsl or js) | Run code/rules on 37 canonical events |
+| `agent` | `name`, `role` | Define sub-agents with tools and model tier |
+| `tool` | `name` | Register MCP servers or external tools |
+| `rule` | `event`, `policy` | Declarative block/allow/warn on events |
+| `resource` | `uri` | Declare files/URIs available to agent |
+| `prompt` | `name`, `template` | Reusable prompt templates with arguments |
+
+## Hook Events (37 canonical)
+
+File: pre/post-file-write, read, delete, rename, create. Command: pre/post-command, bash, terminal. Tool: pre/post-tool-call, mcp-call. Session: pre/post-start, stop, session-idle, session-resume. Agent: pre/post-agent-spawn, agent-complete. Context: pre/post-context-load, context-switch. Network: pre/post-network. Error: on-error, on-lint-error. Approval: pre/post-approval.
+
+## Hook Handlers
+
+DSL (portable across all platforms):
+```json
+{ "type": "dsl", "actions": [{ "action": "block", "match": "*.env", "reason": "Protect env" }] }
+```
+
+JS (full code, platform-specific):
+```json
+{ "type": "js", "entry": "hooks/my-handler.ts" }
+```
+
+## Supported Platforms
+
+| Platform | ID | Build Command |
+|---|---|---|
+| OpenCode | `opencode` | `tank build ./skill --platform opencode` |
+| Claude Code | `claude-code` | `tank build ./skill --platform claude-code` |
+| Cursor | `cursor` | `tank build ./skill --platform cursor` |
+| Windsurf | `windsurf` | `tank build ./skill --platform windsurf` |
+| Cline | `cline` | `tank build ./skill --platform cline` |
+| Roo Code | `roo-code` | `tank build ./skill --platform roo-code` |
+
+Auto-detection: omit `--platform` and Tank detects from project files (.opencode/, .cursor/, .claude/, etc.).
+
+## tank build Command
+
+```bash
+tank build <skill-dir> [--platform <id>] [--out <dir>] [--dry-run] [--list-platforms]
+```
+
+Compiles atoms to platform-native config files. Handles JSON deep-merge when multiple atoms target the same file, inlines `{file:...}` references, copies JS handlers to platform-specific directories.
+
+## Migration from skills.json
+
+1. Rename `skills.json` to `tank.json`
+2. Add `"atoms": [{ "kind": "instruction", "content": "SKILL.md" }]`
+3. Everything else stays the same
+
+## JSON Schema
+
+IDE autocomplete: reference `https://tankpkg.dev/tank-json.schema.json` in your editor.
+
+---
+
 ## Further Reading
 
 - [Security Model](/docs/security) — How Tank's 6-stage security pipeline scans skills
 - [Permissions](/docs/permissions) — Declare and enforce what skills can access
-- [CLI Reference](/docs/cli) — All `tank` commands including `tank vault` (planned)
+- [CLI Reference](/docs/cli) — All `tank` commands including `tank build` and `tank vault` (planned)
 - [Self-Hosting](/docs/self-hosting) — Run your own registry with full security infrastructure
+- [Building Multi-Atom Skills](/docs/atoms) — Complete guide to tank.json and atoms
 
 
 ---

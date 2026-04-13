@@ -1,5 +1,5 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
-import { skillsJsonSchema } from '@internals/schemas';
+import { publishManifestSchema } from '@internals/schemas';
 import { and, desc, eq } from 'drizzle-orm';
 
 import { verifyCliAuth } from '~/lib/auth/authz';
@@ -117,7 +117,7 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
     manifestInput.name = manifestInput.name.toLowerCase().trim();
   }
 
-  const parsed = skillsJsonSchema.safeParse(manifestInput);
+  const parsed = publishManifestSchema.safeParse(manifestInput);
   if (!parsed.success) {
     return c.json({ error: 'Invalid manifest', details: parsed.error.flatten().fieldErrors }, 400);
   }
