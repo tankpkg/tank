@@ -4,7 +4,10 @@ Uses detect-secrets library plus custom regex patterns to find
 API keys, credentials, and sensitive data in skill files.
 """
 
+import logging
+import os
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -49,6 +52,19 @@ PLACEHOLDER_PATTERNS: list[re.Pattern] = [
     re.compile(r"\b(example|sample|demo|test|placeholder|dummy|fake|todo|changeme|default)\b", re.IGNORECASE),
     re.compile(r"\b(localhost|127\.0\.0\.1|0\.0\.0\.0|host|hostname)\b", re.IGNORECASE),
     re.compile(r"\bxxx+\b|\babc+\b|\b123+\b"),
+    # Additional placeholder patterns for common documentation examples
+    re.compile(r"\b(your[_-]?api[_-]?key[_-]?here|your[_-]?secret[_-]?here)\b", re.IGNORECASE),
+    re.compile(r"\bsk[_-]?placeholder\b", re.IGNORECASE),
+    re.compile(r"\breplace[_-]?me\b", re.IGNORECASE),
+    re.compile(r"<your[_-]?(key|secret|token|api|password)>", re.IGNORECASE),
+    re.compile(
+        r"\b(insert|put|place|add|replace|enter)\s+(your|the|a|an)\s+(key|secret|token|api|value|password)",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\b(fill|change|update)\s+(in|with|to)\s+(your|the|a)\b", re.IGNORECASE),
+    # Common template strings
+    re.compile(r"\$\{[A-Z_]+\}", re.IGNORECASE),  # ${ENV_VAR} template patterns
+    re.compile(r"<<[A-Z_]+>>", re.IGNORECASE),  # <<PLACEHOLDER>> patterns
 ]
 
 # File paths that indicate example/tutorial/documentation context
@@ -107,8 +123,19 @@ SKIP_EXTENSIONS = {
 def run_detect_secrets(temp_dir: str) -> list[Finding]:
     """Run detect-secrets library on all files."""
     findings: list[Finding] = []
+    logger = logging.getLogger(__name__)
 
     try:
+        import detect_secrets
+
+        try:
+            from importlib.metadata import version as pkg_version
+
+            ds_version = pkg_version("detect-secrets")
+        except Exception:
+            ds_version = getattr(detect_secrets, "__version__", "unknown")
+        logger.info("detect-secrets version: %s", ds_version)
+
         from detect_secrets.core.scan import get_files_to_scan, scan_file
         from detect_secrets.settings import transient_settings
 
@@ -136,30 +163,53 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                 ],
             }
         ):
-            for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True):
+            for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True, root=temp_dir):
+                abs_path = os.path.join(temp_dir, file_path)
                 try:
-                    for secret in scan_file(file_path):
-                        rel_path = str(Path(file_path).relative_to(temp_dir))
-                        findings.append(
-                            Finding(
-                                stage="stage4",
-                                severity="critical",
-                                type=f"secret_{secret.type}",
-                                description=f"Secret detected: {secret.type}",
-                                location=f"{rel_path}:{secret.line_number}",
-                                confidence=0.9,
-                                tool="detect-secrets",
-                            )
+                    for secret in scan_file(abs_path):
+                        rel_path = file_path
+
+                        # Read the matched line for evidence
+                        evidence_text = ""
+                        try:
+                            with open(abs_path, encoding="utf-8", errors="replace") as f:
+                                lines = f.readlines()
+                                if 0 < secret.line_number <= len(lines):
+                                    evidence_text = lines[secret.line_number - 1].strip()[:200]
+                        except Exception:
+                            pass
+
+                        finding = Finding(
+                            stage="stage4",
+                            severity="critical",
+                            type=f"secret_{secret.type}",
+                            description=f"Secret detected: {secret.type}",
+                            location=f"{rel_path}:{secret.line_number}",
+                            confidence=0.9,
+                            tool="detect-secrets",
+                            evidence=evidence_text or None,
                         )
+
+                        # Downgrade severity for files in example/doc paths
+                        if _is_example_path(rel_path):
+                            finding.severity = "info"
+
+                        findings.append(finding)
                 except Exception as file_error:
-                    print(f"detect-secrets file scan error: {file_error}")
+                    logger.warning("detect-secrets file scan error: %s", file_error)
 
     except ImportError:
-        # detect-secrets not available, add info finding
+        logger.warning(
+            "detect-secrets library not available — comprehensive secret scanning disabled. "
+            "Python %s on %s. Install with: pip install detect-secrets>=1.5.0",
+            sys.version,
+            sys.platform,
+            exc_info=True,
+        )
         findings.append(
             Finding(
                 stage="stage4",
-                severity="low",
+                severity="medium",
                 type="detect_secrets_unavailable",
                 description="detect-secrets library not available - skipping comprehensive secret scan",
                 confidence=0.5,
@@ -167,6 +217,7 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
             )
         )
     except Exception as e:
+        logger.warning("detect-secrets scan error: %s", e, exc_info=True)
         findings.append(
             Finding(
                 stage="stage4",

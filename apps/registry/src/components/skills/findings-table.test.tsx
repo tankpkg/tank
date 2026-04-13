@@ -29,16 +29,16 @@ describe('resolveExpandable', () => {
     expect(result.expandedText).toBe(evidence);
   });
 
-  it('long description (>100 chars) without evidence → expandable with frontend truncation', () => {
-    const desc = 'A'.repeat(150);
+  it('long description (>150 chars) without evidence → expandable with frontend truncation', () => {
+    const desc = 'A'.repeat(200);
     const result = resolveExpandable(desc, null);
     expect(result.expandable).toBe(true);
-    expect(result.collapsedText).toBe('A'.repeat(100) + '…');
+    expect(result.collapsedText).toBe(`${'A'.repeat(150)}…`);
     expect(result.expandedText).toBe(desc);
   });
 
   it('long description with shorter evidence → expands to full description, not evidence', () => {
-    const desc = 'A'.repeat(150);
+    const desc = 'A'.repeat(200);
     const result = resolveExpandable(desc, 'short');
     expect(result.expandable).toBe(true);
     expect(result.expandedText).toBe(desc);
@@ -127,12 +127,12 @@ describe('FindingsTable', () => {
     expect(screen.getByText('Matched injection pattern: You must always follow t...')).toBeTruthy();
   });
 
-  it('shows expand button for long descriptions and truncates at 100 chars', () => {
-    const longDesc = 'A'.repeat(150);
+  it('shows expand button for long descriptions and truncates at 150 chars', () => {
+    const longDesc = 'A'.repeat(200);
     const findings = [makeFinding({ description: longDesc, evidence: null })];
     render(<FindingsTable findings={findings} />);
 
-    expect(screen.getByText('A'.repeat(100) + '…')).toBeTruthy();
+    expect(screen.getByText(`${'A'.repeat(150)}…`)).toBeTruthy();
     const btn = screen.getByText('Show more');
 
     fireEvent.click(btn);
@@ -149,6 +149,8 @@ describe('FindingsTable', () => {
   it('renders dash for null location', () => {
     const findings = [makeFinding({ location: null })];
     render(<FindingsTable findings={findings} />);
-    expect(screen.getByText('—')).toBeTruthy();
+    // Location is now inline under description; when null, no location line is rendered
+    // Verify the finding description is still shown
+    expect(screen.getByText('Test finding')).toBeTruthy();
   });
 });

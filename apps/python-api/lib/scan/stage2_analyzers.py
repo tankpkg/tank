@@ -210,7 +210,7 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
             "file",
         )
 
-        # Build list of absolute paths
+        # Build list of absolute paths as strings
         abs_paths = [str(Path(temp_dir) / f) for f in python_files]
 
         # Run Bandit
@@ -221,6 +221,7 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
         results = b_mgr.get_issue_list()
 
         severity_map = {"HIGH": "high", "MEDIUM": "medium", "LOW": "low"}
+        confidence_map = {"HIGH": 0.9, "MEDIUM": 0.7, "LOW": 0.5}
 
         for issue in results:
             severity = severity_map.get(issue.severity, "medium")
@@ -229,6 +230,9 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
             if issue.test_id in ("B102", "B307"):  # exec, eval
                 severity = "critical"
 
+            # Bandit confidence is a string ("HIGH", "MEDIUM", "LOW")
+            confidence = confidence_map.get(str(issue.confidence), 0.7) if issue.confidence else 0.8
+
             findings.append(
                 Finding(
                     stage="stage2",
@@ -236,7 +240,7 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
                     type=f"bandit_{issue.test_id}",
                     description=issue.text,
                     location=f"{issue.fname}:{issue.lineno}",
-                    confidence=issue.confidence / 100.0 if issue.confidence else 0.8,
+                    confidence=confidence,
                     tool="bandit",
                 )
             )

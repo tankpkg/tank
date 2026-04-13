@@ -3,56 +3,16 @@ import { DepAuditCard } from '~/components/skills/dep-audit-card';
 import { FindingsTable } from '~/components/skills/findings-table';
 import type { PipelineStage } from '~/components/skills/scan-pipeline';
 import { ScanPipeline } from '~/components/skills/scan-pipeline';
-import type { ScanningTool } from '~/components/skills/scanning-tools-strip';
-import { ScanningToolsStrip } from '~/components/skills/scanning-tools-strip';
+import { buildScanningTools, type ScanningTool, ScanningToolsStrip } from '~/components/skills/scanning-tools-strip';
 import { SecurityOverview } from '~/components/skills/security-overview';
 import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
 
-function buildScanningTools(scanDetails: ScanDetails): ScanningTool[] {
-  return [
-    {
-      name: 'Semgrep',
-      category: 'SAST',
-      ran: scanDetails.stagesRun?.includes('stage2') ?? false,
-      findingCount: scanDetails.findings?.filter((f) => f.stage === 'stage2' && f.tool?.includes('semgrep')).length ?? 0
-    },
-    {
-      name: 'Bandit',
-      category: 'Python AST',
-      ran: scanDetails.stagesRun?.includes('stage2') ?? false,
-      findingCount: scanDetails.findings?.filter((f) => f.tool === 'bandit').length ?? 0
-    },
-    {
-      name: 'Cisco Skill Scanner',
-      category: 'Agent Threats',
-      ran: scanDetails.stagesRun?.includes('stage3') ?? false,
-      findingCount: scanDetails.findings?.filter((f) => f.tool === 'cisco-skill-scanner').length ?? 0
-    },
-    {
-      name: 'Snyk Agent Scan',
-      category: 'AI Threats',
-      ran: scanDetails.stagesRun?.includes('stage3') ?? false,
-      findingCount: scanDetails.findings?.filter((f) => f.tool === 'snyk-agent-scan').length ?? 0
-    },
-    {
-      name: 'detect-secrets',
-      category: 'Secrets',
-      ran: scanDetails.stagesRun?.includes('stage4') ?? false,
-      findingCount: scanDetails.findings?.filter((f) => f.stage === 'stage4').length ?? 0
-    },
-    {
-      name: 'OSV API',
-      category: 'SCA',
-      ran: scanDetails.stagesRun?.includes('stage5') ?? false,
-      findingCount: scanDetails.findings?.filter((f) => f.stage === 'stage5').length ?? 0
-    },
-    {
-      name: 'LLM Corroboration',
-      category: scanDetails.llm_analysis?.mode === 'byollm' ? 'Custom LLM' : 'Built-in',
-      ran: scanDetails.llm_analysis?.enabled ?? false,
-      findingCount: scanDetails.findings?.filter((f) => f.llm_reviewed).length ?? 0
-    }
-  ];
+function getScanningTools(scanDetails: ScanDetails): ScanningTool[] {
+  return buildScanningTools({
+    stagesRun: scanDetails.stagesRun ?? [],
+    findings: scanDetails.findings ?? [],
+    llm_analysis: scanDetails.llm_analysis
+  });
 }
 
 function buildPipelineStages(scanDetails: ScanDetails): PipelineStage[] {
@@ -98,7 +58,7 @@ function buildPipelineStages(scanDetails: ScanDetails): PipelineStage[] {
       status: stageStatus('stage3'),
       findingCount: stageFindingCount('stage3'),
       durationMs: 0,
-      tools: ['Regex patterns']
+      tools: ['Regex patterns', 'Cisco Scanner', 'Snyk Agent']
     },
     {
       id: 'stage4',
@@ -136,18 +96,24 @@ export function buildSecurityTab({ data, scanDetails }: { data: SkillDetailResul
       />
 
       <div>
-        <h3 className="text-sm font-semibold mb-2">Scanning Tools</h3>
-        <ScanningToolsStrip tools={buildScanningTools(scanDetails)} />
+        <h2 className="font-display text-xl font-semibold tracking-tight">Scanning Tools</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Tools that analyzed this skill.</p>
+        <div className="mt-3">
+          <ScanningToolsStrip tools={getScanningTools(scanDetails)} />
+        </div>
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold mb-3">
-          Findings
+        <div className="flex items-center gap-2">
+          <h2 className="font-display text-xl font-semibold tracking-tight">Findings</h2>
           {scanDetails.findings && scanDetails.findings.length > 0 && (
-            <span className="ml-2 text-muted-foreground font-normal">({scanDetails.findings.length} total)</span>
+            <span className="text-sm text-muted-foreground">({scanDetails.findings.length} total)</span>
           )}
-        </h3>
-        <FindingsTable findings={scanDetails.findings ?? []} />
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">Security issues detected during the scan.</p>
+        <div className="mt-3">
+          <FindingsTable findings={scanDetails.findings ?? []} />
+        </div>
       </div>
 
       <ScanPipeline stages={buildPipelineStages(scanDetails)} />

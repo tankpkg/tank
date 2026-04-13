@@ -29,6 +29,30 @@ Tank is a security-first package manager for AI agent skills. It provides versio
 - [Self-Hosting Tank](https://tankpkg.dev/docs/self-hosting): Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, RustFS, and security scanning.
 - [Credential Vault](https://tankpkg.dev/docs/vault): Protect API keys and secrets from AI agent exfiltration with Tank's format-preserving tokenization proxy — real credentials never reach the model.
 
+## Multi-Atom Skills (tank.json)
+
+Tank supports multi-atom skill packages via `tank.json`. Atoms are the building blocks: instructions, hooks, agents, tools, rules, resources, and prompts. Write once in a portable IR format, then `tank build` compiles to native configs for 6 platforms.
+
+- [Building Multi-Atom Skills](https://tankpkg.dev/docs/atoms): How to write tank.json with 7 atom kinds, build for any platform, migration from skills.json.
+- [tank build CLI](https://tankpkg.dev/docs/cli#build): Compile atoms to platform-native configs — OpenCode, Claude Code, Cursor, Windsurf, Cline, Roo Code.
+- [JSON Schema](https://tankpkg.dev/tank-json.schema.json): IDE autocomplete for tank.json — validates atoms, events, handlers.
+
+### Supported Atom Kinds
+
+| Kind | Purpose |
+|---|---|
+| `instruction` | Inject context into agent system prompt (SKILL.md → platform-native rules files) |
+| `hook` | Run code/rules on agent events (DSL for portable, JS for advanced) |
+| `agent` | Define sub-agents with role, tools, model tier |
+| `tool` | Register MCP servers or external tools |
+| `rule` | Declarative block/allow/warn policies on events |
+| `resource` | Declare files/URIs available to the agent |
+| `prompt` | Reusable prompt templates with arguments |
+
+### Supported Platforms
+
+OpenCode, Claude Code, Cursor, Windsurf, Cline, Roo Code. Each adapter compiles atoms to the platform's native config format. Unsupported atoms are skipped with warnings.
+
 ## Optional
 
 - [Skills Registry](https://tankpkg.dev/skills): Browse all published skills

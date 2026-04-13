@@ -13,6 +13,61 @@ export {
   REGISTRY_URL
 } from '~/constants/registry.js';
 export {
+  type AdapterCapabilities,
+  adapterCapabilitiesSchema,
+  type CompilationWarning,
+  compilationWarningSchema,
+  type FileWrite,
+  fileWriteSchema,
+  type PlatformAdapter,
+  type PlatformAdapterMeta,
+  type PlatformOutput,
+  platformAdapterMetaSchema,
+  platformOutputSchema,
+  type SupportLevel,
+  supportLevelSchema
+} from '~/schemas/adapters/index.js';
+export {
+  type AgentIR,
+  type AtomIR,
+  type AtomKind,
+  agentIRSchema,
+  atomIRSchema,
+  atomKindSchema,
+  CANONICAL_TOOL_NAMES,
+  type CanonicalToolName,
+  canonicalToolNameSchema,
+  type ExtensionBag,
+  extensionBagSchema,
+  HOOK_EVENTS,
+  type HookActionIR,
+  type HookEvent,
+  type HookHandlerIR,
+  type HookIR,
+  hookActionIRSchema,
+  hookDslHandlerSchema,
+  hookEventSchema,
+  hookHandlerIRSchema,
+  hookIRSchema,
+  hookJsHandlerSchema,
+  type InstructionIR,
+  instructionIRSchema,
+  MODEL_TIERS,
+  type ModelTier,
+  mcpServerConfigSchema,
+  modelTierSchema,
+  type PackageIR,
+  type PromptIR,
+  packageIRSchema,
+  promptIRSchema,
+  type ResourceIR,
+  type RuleIR,
+  resourceIRSchema,
+  ruleIRSchema,
+  type ToolIR,
+  toolIRSchema
+} from '~/schemas/atoms/index.js';
+export {
   type AdminAction,
   adminActionSchema,
   type FilesystemPermissions,
@@ -29,7 +84,12 @@ export {
   userRoleSchema,
   userStatusSchema
 } from '~/schemas/permissions.js';
-export { type SkillsJson, skillsJsonSchema } from '~/schemas/skills-json.js';
+export {
+  type PublishManifest,
+  publishManifestSchema,
+  type SkillsJson,
+  skillsJsonSchema
+} from '~/schemas/skills-json.js';
 export {
   type LockedSkill,
   type LockedSkillV1,

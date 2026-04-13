@@ -117,7 +117,7 @@ describe('proxy server — real HTTP', () => {
     });
 
     expect(res.status).toBe(200);
-    const lastReq = mockProvider.requests[mockProvider.requests.length - 1]!;
+    const lastReq = mockProvider.requests[mockProvider.requests.length - 1] ?? { body: '', headers: {} };
     expect(lastReq.body).not.toContain(REAL_STRIPE_KEY);
 
     const forwarded = JSON.parse(lastReq.body);
@@ -142,7 +142,7 @@ describe('proxy server — real HTTP', () => {
       body
     });
 
-    const lastReq = mockProvider.requests[mockProvider.requests.length - 1]!;
+    const lastReq = mockProvider.requests[mockProvider.requests.length - 1] ?? { body: '', headers: {} };
     expect(lastReq.body).not.toContain(REAL_STRIPE_KEY);
     expect(lastReq.body).not.toContain(REAL_AWS_KEY);
   });
@@ -159,14 +159,14 @@ describe('proxy server — real HTTP', () => {
       body
     });
 
-    const lastReq = mockProvider.requests[mockProvider.requests.length - 1]!;
+    const lastReq = mockProvider.requests[mockProvider.requests.length - 1] ?? { body: '', headers: {} };
     expect(lastReq.body).toBe(body);
   });
 
   it('restores fake credentials in response', async () => {
     vault.store(REAL_STRIPE_KEY, 'sk_live_FAKEFORTEST00000000000', 'stripe_secret');
 
-    const providerPort = mockProvider.port;
+    const _providerPort = mockProvider.port;
     const responseServer = createServer((req, res) => {
       let reqBody = '';
       req.on('data', (c: Buffer) => {
@@ -203,8 +203,8 @@ describe('proxy server — real HTTP', () => {
     });
 
     const resBody = (await res.json()) as { choices: Array<{ message: { content: string } }> };
-    expect(resBody.choices[0]!.message.content).toContain(REAL_STRIPE_KEY);
-    expect(resBody.choices[0]!.message.content).not.toContain('sk_live_FAKEFORTEST00000000000');
+    expect(resBody.choices[0]?.message.content).toContain(REAL_STRIPE_KEY);
+    expect(resBody.choices[0]?.message.content).not.toContain('sk_live_FAKEFORTEST00000000000');
 
     responseServer.close();
   });
@@ -225,7 +225,7 @@ describe('proxy server — real HTTP', () => {
       body
     });
 
-    const lastReq = mockProvider.requests[mockProvider.requests.length - 1]!;
+    const lastReq = mockProvider.requests[mockProvider.requests.length - 1] ?? { body: '', headers: {} };
     const forwarded = JSON.parse(lastReq.body);
     expect(forwarded.messages[0].content).toBe(message);
   });
@@ -252,8 +252,8 @@ describe('proxy server — real HTTP', () => {
     const beforeCount = mockProvider.requests.length;
     await makeRequest();
     await makeRequest();
-    const req1 = mockProvider.requests[beforeCount]!;
-    const req2 = mockProvider.requests[beforeCount + 1]!;
+    const req1 = mockProvider.requests[beforeCount] ?? { body: '', headers: {} };
+    const req2 = mockProvider.requests[beforeCount + 1] ?? { body: '', headers: {} };
 
     const msg1 = JSON.parse(req1.body).messages[0].content as string;
     const msg2 = JSON.parse(req2.body).messages[0].content as string;

@@ -258,7 +258,8 @@ export async function getSkillDetail(
         'stage', sf.stage, 'severity', sf.severity, 'type', sf.type,
         'description', sf.description, 'location', sf.location,
         'confidence', sf.confidence, 'tool', sf.tool, 'evidence', sf.evidence,
-        'llm_verdict', sf.llm_verdict, 'llm_reviewed', sf.llm_reviewed
+        'llm_verdict', sf.llm_verdict, 'llm_reviewed', sf.llm_reviewed,
+        'remediation', sf.remediation, 'cwe_id', sf.cwe_id
       ))
       FROM scan_findings sf
       WHERE sf.scan_id = (
@@ -389,7 +390,7 @@ export async function getSkillDetail(
 
 // ── Skills Search ────────────────────────────────────────────────────────────
 
-function escapeLike(input: string): string {
+export function escapeLike(input: string): string {
   return input.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 

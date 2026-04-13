@@ -268,7 +268,7 @@ async function runLegacyFallback(options: {
   }
 }
 
-function linkInstalledRoots(options: {
+async function linkInstalledRoots(options: {
   rootSkillNames: string[];
   resolvedNodeByName: Map<string, ResolvedNode>;
   extractDirForSkill: (skillName: string) => string;
@@ -276,7 +276,7 @@ function linkInstalledRoots(options: {
   global: boolean;
   resolvedHome: string;
   homedir?: string;
-}): void {
+}): Promise<void> {
   const { rootSkillNames, resolvedNodeByName, extractDirForSkill, directory, global, resolvedHome, homedir } = options;
 
   const agentSkillsBaseDir = global
@@ -325,6 +325,22 @@ function linkInstalledRoots(options: {
   const detectedAgents = detectInstalledAgents(homedir);
   if (detectedAgents.length === 0) {
     logger.warn('No agents detected for linking');
+  }
+
+  for (const skillName of rootSkillNames) {
+    const node = resolvedNodeByName.get(skillName);
+    if (!node) continue;
+    const skillDir = extractDirForSkill(skillName);
+    const manifestPath = path.join(skillDir, 'tank.json');
+    if (!fs.existsSync(manifestPath)) continue;
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      if (!manifest.atoms || !Array.isArray(manifest.atoms) || manifest.atoms.length === 0) continue;
+      const { buildCommand: runBuild } = await import('~/commands/build.js');
+      await runBuild({ skill: skillDir, target: directory });
+    } catch {
+      logger.warn(`Auto-build skipped for ${skillName} (non-fatal)`);
+    }
   }
 }
 
@@ -383,7 +399,7 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
     homedir
   });
 
-  linkInstalledRoots({
+  await linkInstalledRoots({
     rootSkillNames,
     resolvedNodeByName,
     extractDirForSkill,

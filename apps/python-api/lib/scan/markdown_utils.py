@@ -63,6 +63,30 @@ def is_inside_code_block(content: str, position: int) -> bool:
     return any(b.start <= position <= b.end for b in blocks)
 
 
+def is_inside_html_comment(content: str, position: int) -> bool:
+    """Check if a character position falls inside an HTML comment.
+
+    Handles both <!-- ... --> comments spanning single or multiple lines.
+
+    Args:
+        content: Full file content.
+        position: Character offset to check.
+
+    Returns:
+        True if position is inside an HTML comment.
+    """
+    # Find the nearest opening comment before position
+    open_idx = content.rfind("<!--", 0, position)
+    if open_idx == -1:
+        return False
+    # Find the closing comment after the opening
+    close_idx = content.find("-->", open_idx + 4)
+    if close_idx == -1:
+        # Unclosed comment extends to end of content
+        return True
+    return position <= close_idx + 2
+
+
 def is_inside_heading(content: str, position: int) -> bool:
     """Check if a character position is on a markdown heading line.
 
@@ -131,11 +155,15 @@ def is_documentation_context(content: str, position: int) -> bool:
 
     Checks for:
     - Match is inside a code block
+    - Match is inside an HTML comment
     - Match is on a heading line
     - Surrounding lines contain list items (-, *, numbered)
     - Surrounding lines are short (typical of docs, not instructions)
     """
     if is_inside_code_block(content, position):
+        return True
+
+    if is_inside_html_comment(content, position):
         return True
 
     if is_inside_heading(content, position):

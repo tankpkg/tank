@@ -34,7 +34,7 @@ describe('fetchNpmAuditVulnerabilities', () => {
     const result = await fetchNpmAuditVulnerabilities([{ name: 'lodash', version: '4.17.20' }]);
 
     expect(result.size).toBe(1);
-    const vulns = result.get('lodash')!;
+    const vulns = result.get('lodash') ?? [];
     expect(vulns).toHaveLength(1);
     expect(vulns[0]).toMatchObject({
       id: 'npm-audit-1673',

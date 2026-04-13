@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Universal Atom Architecture (Issue #352)
+
+Multi-atom skill packages that compile to native AI agent configs. Write once in `tank.json`, build for any platform.
+
+- **7 atom IR schemas** — instruction, hook, tool, agent, rule, resource, prompt — as Zod schemas in `@internals/schemas`
+- **37 canonical hook events**, 13 canonical tool names, 4 abstract model tiers
+- **6 platform adapters** — OpenCode, Claude Code, Cursor, Windsurf, Cline, Roo Code — each compiles all 7 atom kinds to native configs
+- **Compile orchestrator** — JSON deep-merge for singleton configs (e.g., `.claude/settings.json`), `{file:...}` content inlining, cross-platform handler resolution, package composition with DAG cycle detection
+- **`tank build` CLI command** — `--platform`, `--out`, `--dry-run`, `--list-platforms` flags, auto-detection from project files
+- **`tank install` auto-build** — skills with `atoms` in their manifest are compiled for detected platforms on install
+- **`publishManifestSchema`** — registry accepts both legacy `skills.json` and atom-enriched `tank.json` manifests
+- **JSON Schema** — `tank-json.schema.json` for IDE autocomplete in VS Code, JetBrains, etc.
+- **166 E2E tests** across 8 test files, including 7-atom fixture through all 6 adapters
+- **33 BDD scenarios** across 4 feature files
+- **User guide** (`docs/guide/atoms.md`), CLI reference, adapter contributing guide, RFC doc
+- **llms.txt** updated with atom architecture, build command, and platform table
+
 ## [0.6.0] - 2026-03-06
 
 ### Added

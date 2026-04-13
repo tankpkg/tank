@@ -10,6 +10,7 @@ import { skillsPublishRoutes } from './v1/skills-publish';
 import { skillsReadRoutes } from './v1/skills-read';
 import { starRoutes } from './v1/star';
 import { talkRoutes } from './v1/talk';
+import { topSkillsRoutes } from './v1/top-skills';
 
 export const v1Routes = new OpenAPIHono()
   .route('/auth', authRoutes)
@@ -17,6 +18,7 @@ export const v1Routes = new OpenAPIHono()
   .route('/cli-auth', cliAuthRoutes)
   .route('/scan', scanRoutes)
   .route('/search', searchRoutes)
+  .route('/skills', topSkillsRoutes)
   .route('/skills', skillsPublishRoutes)
   .route('/skills', skillsConfirmRoutes)
   .route('/skills', starRoutes)
