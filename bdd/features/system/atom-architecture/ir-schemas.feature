@@ -6,7 +6,6 @@ Feature: Atom IR schema validation
   So that invalid atoms are caught at parse time and platform-specific details are isolated in extensions
 
   # ─── Instruction atom ──────────────────────────────────────────────────────
-
   @high
   Scenario: Valid instruction atom with required fields
     Given an atom object with kind "instruction" and content "./rules.md" and scope "project"
@@ -34,7 +33,6 @@ Feature: Atom IR schema validation
     Then validation fails with an error about unrecognized keys
 
   # ─── Hook atom ─────────────────────────────────────────────────────────────
-
   @high
   Scenario: Valid hook atom with DSL handler
     Given an atom object with kind "hook" and event "pre-tool-use"
@@ -59,7 +57,6 @@ Feature: Atom IR schema validation
     Then validation fails with an error about handler type discriminator
 
   # ─── Agent atom ────────────────────────────────────────────────────────────
-
   @high
   Scenario: Valid agent atom
     Given an atom object with kind "agent" and name "reviewer" and role "Code reviewer"
@@ -68,7 +65,6 @@ Feature: Atom IR schema validation
     Then validation succeeds
 
   # ─── Tool atom ─────────────────────────────────────────────────────────────
-
   @high
   Scenario: Valid tool atom with MCP server config
     Given an atom object with kind "tool" and name "my-tool"
@@ -77,7 +73,6 @@ Feature: Atom IR schema validation
     Then validation succeeds
 
   # ─── Rule atom ─────────────────────────────────────────────────────────────
-
   @high
   Scenario: Valid rule atom
     Given an atom object with kind "rule" and event "pre-tool-use" and match "bash" and policy "block"
@@ -85,7 +80,6 @@ Feature: Atom IR schema validation
     Then validation succeeds
 
   # ─── Resource atom ─────────────────────────────────────────────────────────
-
   @high
   Scenario: Valid resource atom
     Given an atom object with kind "resource" and uri "docs://api-reference" and description "API docs"
@@ -93,7 +87,6 @@ Feature: Atom IR schema validation
     Then validation succeeds
 
   # ─── Prompt atom ───────────────────────────────────────────────────────────
-
   @high
   Scenario: Valid prompt atom
     Given an atom object with kind "prompt" and name "deploy" and description "Deploy to prod" and template "./prompts/deploy.md"
@@ -101,7 +94,6 @@ Feature: Atom IR schema validation
     Then validation succeeds
 
   # ─── Kind discriminator ────────────────────────────────────────────────────
-
   @high
   Scenario: Atom with missing kind field
     Given an atom object with no kind field

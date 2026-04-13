@@ -7,7 +7,6 @@ Feature: Legacy SKILL.md backward-compatible normalization
   So that the atom architecture does not break backward compatibility
 
   # ─── Legacy package (SKILL.md + tank.json without atoms) ──────────────────
-
   @high
   Scenario: Legacy package with SKILL.md normalizes to single instruction atom
     Given a directory containing "SKILL.md" with content "# My Skill\nDo X when Y"

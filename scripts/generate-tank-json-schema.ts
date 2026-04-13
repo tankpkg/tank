@@ -1,8 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-
-import { packageIRSchema } from '../packages/internals-schemas/src/schemas/atoms/package.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
+import { packageIRSchema } from '../packages/internals-schemas/src/schemas/atoms/package.js';
 
 const jsonSchema = zodToJsonSchema(packageIRSchema as any, {
   name: 'TankJson',

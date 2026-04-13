@@ -6,7 +6,6 @@ Feature: Adapter capability gating and degradation
   So that unsupported atoms are skipped, degraded atoms produce warnings, and supported atoms translate faithfully
 
   # ─── Capability declaration ────────────────────────────────────────────────
-
   @high
   Scenario: Adapter declares capabilities for all 7 atom kinds
     Given a platform adapter named "test-adapter"
@@ -15,7 +14,6 @@ Feature: Adapter capability gating and degradation
     And each support level is one of "full", "degraded", or "none"
 
   # ─── Full support ──────────────────────────────────────────────────────────
-
   @high
   Scenario: Atom compiled with full support
     Given an instruction atom with content "./rules.md"
@@ -25,7 +23,6 @@ Feature: Adapter capability gating and degradation
     And the output contains no warnings
 
   # ─── Degraded support ──────────────────────────────────────────────────────
-
   @high
   Scenario: Atom compiled with degraded support
     Given a hook atom with event "pre-tool-use" and DSL handler
@@ -36,7 +33,6 @@ Feature: Adapter capability gating and degradation
     And the warning message mentions the atom kind "hook"
 
   # ─── No support ────────────────────────────────────────────────────────────
-
   @high
   Scenario: Atom skipped when capability is none
     Given a hook atom with event "pre-tool-use" and DSL handler
@@ -47,7 +43,6 @@ Feature: Adapter capability gating and degradation
     And the warning message mentions the atom kind "hook"
 
   # ─── Version compatibility ─────────────────────────────────────────────────
-
   @high
   Scenario: Target version within supported range
     Given an adapter with supported range ">=2.4.0 <3.0.0"

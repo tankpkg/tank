@@ -7,7 +7,6 @@ Feature: Tier 1 declarative tank.json normalization
   So that I can define multi-atom packages without a build step
 
   # ─── Single atom ───────────────────────────────────────────────────────────
-
   @high
   Scenario: tank.json with a single instruction atom
     Given a "tank.json" with name "@acme/ts-rules" and version "1.0.0"
@@ -18,7 +17,6 @@ Feature: Tier 1 declarative tank.json normalization
     And that atom has kind "instruction"
 
   # ─── Multiple atoms ────────────────────────────────────────────────────────
-
   @high
   Scenario: tank.json with multiple mixed atoms
     Given a "tank.json" with name "@acme/security" and version "1.0.0"
@@ -33,7 +31,6 @@ Feature: Tier 1 declarative tank.json normalization
     And the atom kinds are "instruction", "agent", "rule"
 
   # ─── Includes (composition) ────────────────────────────────────────────────
-
   @high
   Scenario: tank.json with includes references
     Given a "tank.json" with name "@acme/full-stack" and version "1.0.0"
@@ -45,7 +42,6 @@ Feature: Tier 1 declarative tank.json normalization
     And the package contains exactly 1 atom
 
   # ─── Validation errors ─────────────────────────────────────────────────────
-
   @high
   Scenario: tank.json with invalid atom in atoms array
     Given a "tank.json" with name "@acme/broken" and version "1.0.0"
@@ -70,7 +66,6 @@ Feature: Tier 1 declarative tank.json normalization
     And the package contains exactly 0 atoms
 
   # ─── Extensions passthrough ────────────────────────────────────────────────
-
   @medium
   Scenario: Atom extensions survive normalization
     Given a "tank.json" with name "@acme/ext-test" and version "1.0.0"
