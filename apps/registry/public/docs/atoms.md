@@ -10,38 +10,44 @@ Today, teaching something to your AI agent means scattering config across `.open
 ## How It Works
 
 <div style="margin: 2rem 0; display: flex; justify-content: center; overflow-x: auto;">
-<svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
-  <!-- tank.json source -->
-  <rect x="260" y="10" width="200" height="50" rx="10" fill="none" stroke="#10b981" stroke-width="2"/>
-  <text x="360" y="41" text-anchor="middle" fill="#10b981" font-size="16" font-weight="600">tank.json</text>
+<svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Source files group -->
+  <rect x="175" y="8" width="370" height="56" rx="12" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="360" y="28" text-anchor="middle" fill="#64748b" font-size="10" font-weight="600">YOUR SKILL</text>
+  <rect x="190" y="34" width="110" height="24" rx="5" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="1"/>
+  <text x="245" y="50" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">tank.json</text>
+  <rect x="310" y="34" width="110" height="24" rx="5" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="365" y="50" text-anchor="middle" fill="currentColor" font-size="11">hooks/*.ts</text>
+  <rect x="430" y="34" width="100" height="24" rx="5" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="480" y="50" text-anchor="middle" fill="currentColor" font-size="11">SKILL.md</text>
   <!-- Arrow down -->
-  <line x1="360" y1="60" x2="360" y2="90" stroke="#64748b" stroke-width="1.5"/>
-  <polygon points="354,86 360,96 366,86" fill="#64748b"/>
+  <line x1="360" y1="64" x2="360" y2="100" stroke="#64748b" stroke-width="1.5"/>
+  <polygon points="354,96 360,106 366,96" fill="#64748b"/>
   <!-- tank build box -->
-  <rect x="280" y="96" width="160" height="44" rx="8" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="1.5"/>
-  <text x="360" y="123" text-anchor="middle" fill="#10b981" font-size="14" font-weight="600">tank build</text>
+  <rect x="280" y="106" width="160" height="44" rx="8" fill="#10b981" fill-opacity="0.1" stroke="#10b981" stroke-width="1.5"/>
+  <text x="360" y="133" text-anchor="middle" fill="#10b981" font-size="14" font-weight="600">tank build</text>
   <!-- Fan-out arrows -->
-  <line x1="310" y1="140" x2="80" y2="185" stroke="#64748b" stroke-width="1.2"/>
-  <polygon points="76,181 80,191 86,183" fill="#64748b"/>
-  <line x1="340" y1="140" x2="240" y2="185" stroke="#64748b" stroke-width="1.2"/>
-  <polygon points="236,181 240,191 246,183" fill="#64748b"/>
-  <line x1="380" y1="140" x2="480" y2="185" stroke="#64748b" stroke-width="1.2"/>
-  <polygon points="474,183 480,191 484,181" fill="#64748b"/>
-  <line x1="410" y1="140" x2="640" y2="185" stroke="#64748b" stroke-width="1.2"/>
-  <polygon points="634,183 640,191 644,181" fill="#64748b"/>
+  <line x1="310" y1="150" x2="80" y2="200" stroke="#64748b" stroke-width="1.2"/>
+  <polygon points="76,196 80,206 86,198" fill="#64748b"/>
+  <line x1="340" y1="150" x2="240" y2="200" stroke="#64748b" stroke-width="1.2"/>
+  <polygon points="236,196 240,206 246,198" fill="#64748b"/>
+  <line x1="380" y1="150" x2="480" y2="200" stroke="#64748b" stroke-width="1.2"/>
+  <polygon points="474,198 480,206 484,196" fill="#64748b"/>
+  <line x1="410" y1="150" x2="640" y2="200" stroke="#64748b" stroke-width="1.2"/>
+  <polygon points="634,198 640,206 644,196" fill="#64748b"/>
   <!-- Platform boxes -->
-  <rect x="20" y="190" width="120" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
-  <text x="80" y="211" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.opencode/</text>
-  <text x="80" y="228" text-anchor="middle" fill="#64748b" font-size="10">plugins, agents, mcp</text>
-  <rect x="180" y="190" width="120" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
-  <text x="240" y="211" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.claude/</text>
-  <text x="240" y="228" text-anchor="middle" fill="#64748b" font-size="10">hooks, rules, agents</text>
-  <rect x="420" y="190" width="120" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
-  <text x="480" y="211" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.cursor/</text>
-  <text x="480" y="228" text-anchor="middle" fill="#64748b" font-size="10">rules, mcp, agents</text>
-  <rect x="580" y="190" width="120" height="50" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
-  <text x="640" y="211" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.windsurf/</text>
-  <text x="640" y="228" text-anchor="middle" fill="#64748b" font-size="10">rules, mcp config</text>
+  <rect x="20" y="206" width="120" height="54" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="80" y="228" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.opencode/</text>
+  <text x="80" y="246" text-anchor="middle" fill="#64748b" font-size="10">plugins, agents, mcp</text>
+  <rect x="180" y="206" width="120" height="54" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="240" y="228" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.claude/</text>
+  <text x="240" y="246" text-anchor="middle" fill="#64748b" font-size="10">hooks, rules, agents</text>
+  <rect x="420" y="206" width="120" height="54" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="480" y="228" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.cursor/</text>
+  <text x="480" y="246" text-anchor="middle" fill="#64748b" font-size="10">rules, mcp, agents</text>
+  <rect x="580" y="206" width="120" height="54" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.3"/>
+  <text x="640" y="228" text-anchor="middle" fill="currentColor" font-size="11" font-weight="600">.windsurf/</text>
+  <text x="640" y="246" text-anchor="middle" fill="#64748b" font-size="10">rules, mcp config</text>
 </svg>
 </div>
 
@@ -87,46 +93,44 @@ That's it. Tank generates the correct `.opencode/plugins/` files. Change `--plat
 Each atom is a building block. Combine them to create anything from a simple instruction file to a full quality-gate system with hooks, agents, and review criteria.
 
 <div style="margin: 2rem 0; display: flex; justify-content: center; overflow-x: auto;">
-<svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
-  <!-- Row 1: Core trio -->
-  <rect x="20" y="10" width="230" height="64" rx="10" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
-  <text x="40" y="36" fill="#10b981" font-size="20">📄</text>
-  <text x="68" y="36" fill="currentColor" font-size="13" font-weight="600">instruction</text>
-  <text x="68" y="56" fill="#64748b" font-size="11">Injects knowledge into the agent</text>
-  <rect x="265" y="10" width="230" height="64" rx="10" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
-  <text x="285" y="36" fill="#10b981" font-size="20">⚡</text>
-  <text x="313" y="36" fill="currentColor" font-size="13" font-weight="600">hook</text>
-  <text x="313" y="56" fill="#64748b" font-size="11">Runs code on 37 agent events</text>
-  <rect x="510" y="10" width="230" height="64" rx="10" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
-  <text x="530" y="36" fill="#10b981" font-size="20">🤖</text>
-  <text x="558" y="36" fill="currentColor" font-size="13" font-weight="600">agent</text>
-  <text x="558" y="56" fill="#64748b" font-size="11">Specialist sub-agent to delegate to</text>
-  <!-- Row 2: Integration pair -->
-  <rect x="20" y="90" width="230" height="64" rx="10" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
-  <text x="40" y="116" fill="currentColor" font-size="20">🔧</text>
-  <text x="68" y="116" fill="currentColor" font-size="13" font-weight="600">tool</text>
-  <text x="68" y="136" fill="#64748b" font-size="11">Registers an MCP server</text>
-  <rect x="265" y="90" width="230" height="64" rx="10" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
-  <text x="285" y="116" fill="currentColor" font-size="20">🛡️</text>
-  <text x="313" y="116" fill="currentColor" font-size="13" font-weight="600">rule</text>
-  <text x="313" y="136" fill="#64748b" font-size="11">Declarative block / allow / warn</text>
-  <!-- Row 3: Data pair -->
-  <rect x="20" y="170" width="230" height="64" rx="10" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
-  <text x="40" y="196" fill="currentColor" font-size="20">📎</text>
-  <text x="68" y="196" fill="currentColor" font-size="13" font-weight="600">resource</text>
-  <text x="68" y="216" fill="#64748b" font-size="11">File or URI the agent can access</text>
-  <rect x="265" y="170" width="230" height="64" rx="10" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.25"/>
-  <text x="285" y="196" fill="currentColor" font-size="20">💬</text>
-  <text x="313" y="196" fill="currentColor" font-size="13" font-weight="600">prompt</text>
-  <text x="313" y="216" fill="#64748b" font-size="11">Reusable template with arguments</text>
-  <!-- Annotation -->
-  <line x1="510" y1="90" x2="510" y2="234" stroke="#10b981" stroke-width="1" stroke-dasharray="4,3"/>
-  <rect x="520" y="102" width="220" height="120" rx="8" fill="#10b981" fill-opacity="0.05" stroke="#10b981" stroke-width="1" stroke-dasharray="4,3"/>
-  <text x="630" y="128" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">Combine freely</text>
-  <text x="630" y="150" text-anchor="middle" fill="#64748b" font-size="11">1 atom = simple skill</text>
-  <text x="630" y="168" text-anchor="middle" fill="#64748b" font-size="11">3 atoms = quality gate</text>
-  <text x="630" y="186" text-anchor="middle" fill="#64748b" font-size="11">7 atoms = full framework</text>
-  <text x="630" y="210" text-anchor="middle" fill="#10b981" font-size="11" font-weight="600">All compile to every platform</text>
+<svg viewBox="0 0 560 280" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
+  <!-- Row 1 -->
+  <rect x="10" y="10" width="170" height="58" rx="8" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="30" y="36" fill="#10b981" font-size="16">📄</text>
+  <text x="52" y="35" fill="currentColor" font-size="12" font-weight="600">instruction</text>
+  <text x="30" y="52" fill="#64748b" font-size="10">Knowledge for the agent</text>
+  <rect x="195" y="10" width="170" height="58" rx="8" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="215" y="36" fill="#10b981" font-size="16">⚡</text>
+  <text x="237" y="35" fill="currentColor" font-size="12" font-weight="600">hook</text>
+  <text x="215" y="52" fill="#64748b" font-size="10">Code on 37 agent events</text>
+  <rect x="380" y="10" width="170" height="58" rx="8" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="1.5"/>
+  <text x="400" y="36" fill="#10b981" font-size="16">🤖</text>
+  <text x="422" y="35" fill="currentColor" font-size="12" font-weight="600">agent</text>
+  <text x="400" y="52" fill="#64748b" font-size="10">Specialist sub-agent</text>
+  <!-- Row 2 -->
+  <rect x="10" y="80" width="170" height="58" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.2"/>
+  <text x="30" y="106" fill="currentColor" font-size="16">🔧</text>
+  <text x="52" y="105" fill="currentColor" font-size="12" font-weight="600">tool</text>
+  <text x="30" y="122" fill="#64748b" font-size="10">Registers an MCP server</text>
+  <rect x="195" y="80" width="170" height="58" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.2"/>
+  <text x="215" y="106" fill="currentColor" font-size="16">🛡️</text>
+  <text x="237" y="105" fill="currentColor" font-size="12" font-weight="600">rule</text>
+  <text x="215" y="122" fill="#64748b" font-size="10">Block / allow / warn policy</text>
+  <!-- Row 3 -->
+  <rect x="10" y="150" width="170" height="58" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.2"/>
+  <text x="30" y="176" fill="currentColor" font-size="16">📎</text>
+  <text x="52" y="175" fill="currentColor" font-size="12" font-weight="600">resource</text>
+  <text x="30" y="192" fill="#64748b" font-size="10">File or URI for the agent</text>
+  <rect x="195" y="150" width="170" height="58" rx="8" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.2"/>
+  <text x="215" y="176" fill="currentColor" font-size="16">💬</text>
+  <text x="237" y="175" fill="currentColor" font-size="12" font-weight="600">prompt</text>
+  <text x="215" y="192" fill="#64748b" font-size="10">Template with arguments</text>
+  <!-- Bottom annotation - centered -->
+  <text x="280" y="240" text-anchor="middle" fill="#10b981" font-size="12" font-weight="600">Mix and match — 1 atom or all 7. Every combination compiles to every platform.</text>
+  <line x1="80" y1="250" x2="480" y2="250" stroke="#10b981" stroke-width="1" stroke-opacity="0.2"/>
+  <text x="180" y="270" text-anchor="middle" fill="#64748b" font-size="10">1 atom → simple skill</text>
+  <text x="280" y="270" text-anchor="middle" fill="#64748b" font-size="10">·</text>
+  <text x="380" y="270" text-anchor="middle" fill="#64748b" font-size="10">3 atoms → quality gate</text>
 </svg>
 </div>
 
