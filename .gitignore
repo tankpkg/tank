@@ -58,6 +58,11 @@ Thumbs.db
 .sisyphus/
 .superpowers/
 .plans/
+.temper/
+logs/
+
+# Brand iteration drafts (keep assets/ for README-referenced files)
+brand-assets/
 
 # Claude Code
 .claude/settings.local.json
