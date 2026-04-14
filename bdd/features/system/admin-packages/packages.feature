@@ -45,3 +45,17 @@ Feature: Admin package catalog management
   Scenario: Filter by featured=true returns only featured packages
     When I call GET /api/admin/packages?featured=true
     Then all returned packages have featured set to true
+
+  # ── Delete package (C6) ──────────────────────────────────────────────
+  @high
+  Scenario: DELETE /admin/packages/:name cascades to versions and access grants (E6)
+    Given a skill "@{testOrg}/admin-pkg-delete-target" exists with versions and access grants
+    When I call DELETE /api/admin/packages/@{testOrg}/admin-pkg-delete-target
+    Then the response is 200
+    And the skill no longer exists in the database
+
+  # ── Delete non-existent package (C7) ─────────────────────────────────
+  @medium
+  Scenario: DELETE non-existent package returns 404 (E7)
+    When I call DELETE /api/admin/packages/@nonexistent/does-not-exist
+    Then the response is 404

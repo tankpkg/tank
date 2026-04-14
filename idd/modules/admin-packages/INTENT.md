@@ -28,15 +28,19 @@ apps/registry/src/api/middleware/require-admin.ts              # requireAdmin
 | C3  | `status` filter validates against `['active', 'deprecated', 'quarantined', 'removed']`; invalid → 400 | Prevents silent filter failures                  | BDD scenario |
 | C4  | Response includes `publisher` name/email, `versionCount`, `downloadCount` per package                 | Dashboard shows publish and usage data           | BDD scenario |
 | C5  | `PATCH /packages/[name]/status` with `{ status: "quarantined" }` updates the skill record             | Admins can immediately remove malicious packages | BDD scenario |
+| C6  | `DELETE /packages/[name]` cascades to versions, access grants, downloads, stars; returns 200          | Admins must be able to fully remove a package    | BDD scenario |
+| C7  | `DELETE /packages/[name]` for non-existent package returns 404                                        | Clear error on missing target                    | BDD scenario |
 
 ---
 
 ## Layer 3: Examples
 
-| #   | Input                                                                 | Expected                    |
-| --- | --------------------------------------------------------------------- | --------------------------- |
-| E1  | `GET /admin/packages` as admin                                        | 200: paginated package list |
-| E2  | `GET /admin/packages?status=quarantined`                              | Only quarantined packages   |
-| E3  | `GET /admin/packages?status=invalid`                                  | 400: invalid status         |
-| E4  | `GET /admin/packages?search=react`                                    | Packages matching "react"   |
-| E5  | `PATCH /admin/packages/@org/skill/status` `{ status: "quarantined" }` | 200                         |
+| #   | Input                                                                 | Expected                          |
+| --- | --------------------------------------------------------------------- | --------------------------------- |
+| E1  | `GET /admin/packages` as admin                                        | 200: paginated package list       |
+| E2  | `GET /admin/packages?status=quarantined`                              | Only quarantined packages         |
+| E3  | `GET /admin/packages?status=invalid`                                  | 400: invalid status               |
+| E4  | `GET /admin/packages?search=react`                                    | Packages matching "react"         |
+| E5  | `PATCH /admin/packages/@org/skill/status` `{ status: "quarantined" }` | 200                               |
+| E6  | `DELETE /admin/packages/@org/skill` (skill has versions + access)     | 200: skill + related rows removed |
+| E7  | `DELETE /admin/packages/@org/nonexistent`                             | 404: package not found            |
