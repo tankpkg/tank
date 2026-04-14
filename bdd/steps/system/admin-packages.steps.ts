@@ -72,7 +72,70 @@ async function adminGet(path: string, cookieHeader?: string): Promise<{ status: 
   return { status: res.status, body };
 }
 
+async function adminDelete(path: string, cookieHeader?: string): Promise<{ status: number; body: unknown }> {
+  const headers: Record<string, string> = {};
+  if (cookieHeader) headers.Cookie = cookieHeader;
+  const res = await fetch(`${world.registry}${path}`, { method: 'DELETE', headers });
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+  return { status: res.status, body };
+}
+
+interface DeleteTestIds {
+  skillId: string;
+  skillName: string;
+  versionId: string;
+  accessId: string;
+}
+
 // ── Given ──────────────────────────────────────────────────────────────────
+
+async function givenTestSkillWithRelations(name: string): Promise<DeleteTestIds> {
+  const sql = requireSql();
+  const now = new Date();
+  const publisherId = `pkg-pub-${world.runId}`;
+  const skillId = randomUUID();
+  const versionId = randomUUID();
+  const accessId = randomUUID();
+
+  await sql`
+    INSERT INTO "user" (id, name, email, email_verified, created_at, updated_at)
+    VALUES (${publisherId}, ${'BDD Pkg Publisher'}, ${`pkg-pub-${world.runId}@tank.test`}, true, ${now}, ${now})
+    ON CONFLICT (id) DO NOTHING
+  `;
+
+  await sql`
+    INSERT INTO skills (id, name, description, publisher_id, status, visibility, created_at, updated_at)
+    VALUES (${skillId}, ${name}, ${'BDD delete test with relations'}, ${publisherId}, ${'active'}, ${'public'}, ${now}, ${now})
+    ON CONFLICT (name) DO UPDATE SET updated_at = ${now}
+  `;
+  const [existing] = await sql`SELECT id FROM skills WHERE name = ${name} LIMIT 1`;
+  const finalSkillId = (existing?.id as string) ?? skillId;
+
+  // FK → skills.id WITHOUT onDelete cascade — this is the bug condition under test
+  await sql`
+    INSERT INTO skill_versions (id, skill_id, version, integrity, tarball_path, tarball_size, file_count, manifest, permissions, audit_status, published_by, created_at)
+    VALUES (
+      ${versionId}, ${finalSkillId}, ${'1.0.0'},
+      ${'sha512-bdd-delete-test'}, ${'skills/test/delete-test-1.0.0.tgz'},
+      ${512}, ${3},
+      ${JSON.stringify({ name, description: 'BDD delete test', version: '1.0.0' })},
+      ${JSON.stringify({})}, ${'pending'}, ${publisherId}, ${now}
+    )
+  `;
+
+  await sql`
+    INSERT INTO skill_access (id, skill_id, granted_user_id, granted_by, created_at)
+    VALUES (${accessId}, ${finalSkillId}, ${publisherId}, ${publisherId}, ${now})
+    ON CONFLICT DO NOTHING
+  `;
+
+  return { skillId: finalSkillId, skillName: name, versionId, accessId };
+}
 
 async function givenTestSkillExists(name: string): Promise<void> {
   const sql = requireSql();
@@ -196,6 +259,45 @@ describe('Feature: Admin package catalog management', () => {
       for (const pkg of packages) {
         expect(pkg.featured).toBe(true);
       }
+    });
+  });
+
+  // ── Delete package with relations (C6) ──────────────────────────
+
+  describe('Scenario: DELETE /admin/packages/:name cascades to versions and access grants (E6)', () => {
+    let deleteTestIds: DeleteTestIds;
+
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
+      const skillName = `@bdd-pkg-org-${world.runId}/admin-pkg-delete-target`;
+      deleteTestIds = await givenTestSkillWithRelations(skillName);
+
+      const { status } = await adminDelete(
+        `/api/admin/packages/${encodeURIComponent(skillName)}`,
+        world.client?.session?.cookieHeader
+      );
+      expect(status).toBe(200);
+
+      const sql = requireSql();
+      const [skill] = await sql`SELECT id FROM skills WHERE id = ${deleteTestIds.skillId}`;
+      expect(skill).toBeUndefined();
+
+      const versions = await sql`SELECT id FROM skill_versions WHERE skill_id = ${deleteTestIds.skillId}`;
+      expect(versions).toHaveLength(0);
+
+      const access = await sql`SELECT id FROM skill_access WHERE skill_id = ${deleteTestIds.skillId}`;
+      expect(access).toHaveLength(0);
+    });
+  });
+
+  // ── Delete non-existent package (C7) ────────────────────────────
+
+  describe('Scenario: DELETE non-existent package returns 404 (E7)', () => {
+    it.skipIf(!hasDatabase || !hasRegistry)('runs Given/When/Then', async () => {
+      const { status } = await adminDelete(
+        '/api/admin/packages/%40nonexistent%2Fdoes-not-exist',
+        world.client?.session?.cookieHeader
+      );
+      expect(status).toBe(404);
     });
   });
 });

@@ -46,6 +46,9 @@ function AdminPackages() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'packages'] });
       setDeleteTarget(null);
+    },
+    onError: () => {
+      setDeleteTarget(null);
     }
   });
 
