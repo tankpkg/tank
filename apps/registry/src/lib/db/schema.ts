@@ -95,7 +95,7 @@ export const skillAccess = pgTable(
     id,
     skillId: uuid('skill_id')
       .notNull()
-      .references(() => skills.id),
+      .references(() => skills.id, { onDelete: 'cascade' }),
     grantedUserId: text('granted_user_id').references(() => user.id, { onDelete: 'cascade' }),
     grantedOrgId: text('granted_org_id').references(() => organization.id, { onDelete: 'cascade' }),
     grantedBy: text('granted_by')
@@ -151,7 +151,7 @@ export const skillVersions = pgTable(
     id,
     skillId: uuid('skill_id')
       .notNull()
-      .references(() => skills.id),
+      .references(() => skills.id, { onDelete: 'cascade' }),
     version: text('version').notNull(),
     integrity: text('integrity').notNull(),
     tarballPath: text('tarball_path').notNull(),
@@ -263,7 +263,7 @@ export const scanResults = pgTable(
     id,
     versionId: uuid('version_id')
       .notNull()
-      .references(() => skillVersions.id),
+      .references(() => skillVersions.id, { onDelete: 'cascade' }),
     verdict: text('verdict').notNull(), // 'pass', 'pass_with_notes', 'flagged', 'fail'
     totalFindings: integer('total_findings').notNull().default(0),
     criticalCount: integer('critical_count').notNull().default(0),
@@ -304,7 +304,7 @@ export const scanFindings = pgTable(
     id,
     scanId: uuid('scan_id')
       .notNull()
-      .references(() => scanResults.id),
+      .references(() => scanResults.id, { onDelete: 'cascade' }),
     stage: text('stage').notNull(), // 'stage0', 'stage1', ..., 'stage5'
     severity: text('severity').notNull(), // 'critical', 'high', 'medium', 'low'
     type: text('type').notNull(), // e.g. 'prompt_injection', 'shell_injection', 'secret_found'
@@ -335,7 +335,7 @@ export const depAuditResults = pgTable(
     id,
     versionId: uuid('version_id')
       .notNull()
-      .references(() => skillVersions.id),
+      .references(() => skillVersions.id, { onDelete: 'cascade' }),
     ecosystem: text('ecosystem').notNull(), // 'npm', 'pypi', 'mixed', 'none'
     packageCount: integer('package_count').notNull().default(0),
     vulnerableCount: integer('vulnerable_count').notNull().default(0),
