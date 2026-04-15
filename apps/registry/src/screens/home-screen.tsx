@@ -247,7 +247,7 @@ function BottomCta({ starCount }: { starCount: number | null }) {
           viewport={{ once: true }}
           transition={{ duration: 0.3 }}>
           <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight mb-3">
-            Ready to secure your <span className="text-tank">agent skills?</span>
+            Ready to secure your <span className="text-tank">agent packages?</span>
           </h2>
           <p className="text-muted-foreground text-[15px] mb-8">
             Tank is open source and free. Install with confidence.
