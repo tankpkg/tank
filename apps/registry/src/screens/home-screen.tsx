@@ -255,7 +255,7 @@ function BottomCta({ starCount }: { starCount: number | null }) {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" asChild className="group">
               <Link to="/skills" search={{} as never}>
-                Browse Skills
+                Browse Packages
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>

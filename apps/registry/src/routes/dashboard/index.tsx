@@ -15,7 +15,7 @@ const cards = [
     description: 'View and manage your organizations',
     icon: Building2
   },
-  { to: '/skills', label: 'Browse Skills', description: 'Discover and install AI agent skills', icon: Search }
+  { to: '/skills', label: 'Browse Packages', description: 'Discover and install AI agent packages', icon: Search }
 ] as const;
 
 function DashboardHome() {

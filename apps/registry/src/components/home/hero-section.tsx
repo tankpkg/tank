@@ -88,7 +88,7 @@ export function HeroSection({ starCount, selfhostedAppUrl }: HeroSectionProps) {
                 to="/skills"
                 search={{} as never}
                 className="text-muted-foreground/60 hover:text-foreground transition-colors">
-                Browse Skills
+                Browse Packages
               </Link>
               <span className="text-muted-foreground/20">·</span>
               <a

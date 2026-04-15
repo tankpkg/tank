@@ -145,7 +145,7 @@ export function RegistryLayout() {
             </div>
             <div className="flex items-center gap-5 text-sm text-muted-foreground/60">
               <Link to="/skills" search={{} as never} className="hover:text-foreground transition-colors text-[13px]">
-                Skills
+                Packages
               </Link>
               <Link
                 to="/docs/$"

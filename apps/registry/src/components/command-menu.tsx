@@ -54,7 +54,7 @@ const DOC_PAGES = [
 ] as const;
 
 const QUICK_LINKS = [
-  { title: 'Browse Skills', href: '/skills', icon: PackageSearchIcon },
+  { title: 'Browse Packages', href: '/skills', icon: PackageSearchIcon },
   { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboardIcon },
   { title: 'Documentation', href: '/docs/overview', icon: BookOpenIcon },
   { title: 'Sign In', href: '/login', icon: LogInIcon },
