@@ -143,45 +143,49 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
   const verdict = skill.scanVerdict ? verdictConfig[skill.scanVerdict] : null;
 
   return (
-    <Link to="/skills/$" params={{ _splat: encodeSkillName(skill.name) }}>
-      <Card className="h-full cursor-pointer transition-colors hover:border-primary/50">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {verdict && (
-                <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${verdict.className}`}>
-                  <verdict.Icon className="size-3" />
-                  {verdict.label}
-                </span>
-              )}
-              {isLoggedIn && skill.visibility === "private" && <Lock className="size-3.5 text-muted-foreground" />}
-            </div>
-          </div>
-          {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            {skill.latestVersion && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                v{skill.latestVersion}
-              </Badge>
+    <Card className="relative h-full transition-colors hover:border-primary/50" data-testid="skill-card">
+      <Link
+        to="/skills/$"
+        params={{ _splat: encodeSkillName(skill.name) }}
+        className="absolute inset-0 rounded-[inherit]"
+        aria-label={skill.name}
+      />
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {verdict && (
+              <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${verdict.className}`}>
+                <verdict.Icon className="size-3" />
+                {verdict.label}
+              </span>
             )}
-            <span className="flex items-center gap-1 ml-auto">
-              <Download className="size-3" />
-              {skill.downloads.toLocaleString()}
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="size-3" />
-              {skill.stars.toLocaleString()}
-            </span>
+            {isLoggedIn && skill.visibility === "private" && <Lock className="size-3.5 text-muted-foreground" />}
           </div>
-          <div className="mt-1.5">
-            <AtomKindBadges kinds={skill.atomKinds ?? ["skill"]} size="xs" />
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </div>
+        {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          {skill.latestVersion && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              v{skill.latestVersion}
+            </Badge>
+          )}
+          <span className="flex items-center gap-1 ml-auto">
+            <Download className="size-3" />
+            {skill.downloads.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1">
+            <Star className="size-3" />
+            {skill.stars.toLocaleString()}
+          </span>
+        </div>
+        <div className="relative z-10 mt-1.5">
+          <AtomKindBadges kinds={skill.atomKinds ?? ["skill"]} size="xs" asLinks />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
