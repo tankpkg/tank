@@ -11,10 +11,19 @@
  * way to be fast is to minimize the number of separate queries.
  */
 
-import { sql } from 'drizzle-orm';
+import { sql } from "drizzle-orm";
 
-import { db } from '~/lib/db';
-import { visibilityClause } from '~/lib/db/visibility';
+import { db } from "~/lib/db";
+import { visibilityClause } from "~/lib/db/visibility";
+import { extractAtomKinds } from "~/lib/skills/atoms";
+
+function resolveAtomKinds(column: unknown, manifest: unknown): string[] {
+  if (Array.isArray(column) && column.length > 0) return column as string[];
+  if (manifest && typeof manifest === "object") {
+    return extractAtomKinds(manifest as Record<string, unknown>);
+  }
+  return ["skill"];
+}
 
 export type {
   FreshnessBucket,
@@ -22,16 +31,16 @@ export type {
   SecurityVerdict,
   SkillsSearchParams,
   SortOption,
-  VisibilityFilter
-} from './schemas';
+  VisibilityFilter,
+} from "./schemas";
 export {
   freshnessBucketSchema,
   popularityBucketSchema,
   securityVerdictSchema,
   skillsSearchSchema,
   sortOptionSchema,
-  visibilityFilterSchema
-} from './schemas';
+  visibilityFilterSchema,
+} from "./schemas";
 
 import type {
   FreshnessBucket,
@@ -39,14 +48,14 @@ import type {
   SecurityVerdict,
   SkillsSearchParams,
   SortOption,
-  VisibilityFilter
-} from './schemas';
+  VisibilityFilter,
+} from "./schemas";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface ScanFinding {
   stage: string;
-  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  severity: "critical" | "high" | "medium" | "low" | "info";
   type: string;
   description: string;
   location: string | null;
@@ -129,6 +138,7 @@ export interface SkillVersionDetail {
   scanDetails: ScanDetails;
   prompt2botChatLink: string | null;
   prompt2botBotPublicKey: string | null;
+  atomKinds: string[];
 }
 
 export interface SkillVersionSummary {
@@ -142,7 +152,7 @@ export interface SkillVersionSummary {
 export interface SkillDetailResult {
   name: string;
   description: string | null;
-  visibility: 'public' | 'private';
+  visibility: "public" | "private";
   repositoryUrl: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -157,13 +167,14 @@ export interface SkillDetailResult {
 export interface SkillSearchResult {
   name: string;
   description: string | null;
-  visibility: 'public' | 'private';
+  visibility: "public" | "private";
   latestVersion: string | null;
   scanVerdict: string | null;
   publisher: string;
   downloads: number;
   stars: number;
   updatedAt?: Date;
+  atomKinds: string[];
 }
 
 export interface SkillSearchResponse {
@@ -207,7 +218,7 @@ async function hasSkillStarsTable(): Promise<boolean> {
  */
 export async function getSkillDetail(
   name: string,
-  viewerUserId: string | null = null
+  viewerUserId: string | null = null,
 ): Promise<SkillDetailResult | null> {
   const starsTableAvailable = await hasSkillStarsTable();
   const visClause = visibilityClause(viewerUserId);
@@ -245,6 +256,7 @@ export async function getSkillDetail(
       sv.tarball_size AS "versionTarballSize",
       sv.prompt2bot_chat_link AS "prompt2botChatLink",
       sv.prompt2bot_bot_public_key AS "prompt2botBotPublicKey",
+      sv.atom_kinds AS "atomKinds",
       (SELECT row_to_json(t) FROM (
         SELECT sr.verdict, sr.stages_run AS "stagesRun", sr.duration_ms AS "durationMs",
                sr.critical_count AS "criticalCount", sr.high_count AS "highCount",
@@ -294,7 +306,7 @@ export async function getSkillDetail(
       integrity: r.integrity as string,
       auditScore: r.auditScore != null ? Number(r.auditScore) : null,
       auditStatus: r.auditStatus as string,
-      publishedAt: new Date(r.publishedAt as string)
+      publishedAt: new Date(r.publishedAt as string),
     }));
 
   // Parse scan data from the latest version row (first row, already ordered DESC)
@@ -321,7 +333,7 @@ export async function getSkillDetail(
     ? {
         verdict: scanResultJson.verdict as string | null,
         stagesRun: Array.isArray(scanResultJson.stagesRun) ? (scanResultJson.stagesRun as string[]) : [],
-        durationMs: typeof scanResultJson.durationMs === 'number' ? scanResultJson.durationMs : null,
+        durationMs: typeof scanResultJson.durationMs === "number" ? scanResultJson.durationMs : null,
         scannedAt,
         findings: Array.isArray(scanFindingsJson) ? scanFindingsJson : [],
         criticalCount: Number(scanResultJson.criticalCount) || 0,
@@ -330,10 +342,10 @@ export async function getSkillDetail(
         lowCount: Number(scanResultJson.lowCount) || 0,
         infoCount: Number(scanResultJson.infoCount) || 0,
         llm_analysis:
-          scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === 'object'
+          scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === "object"
             ? (scanResultJson.llm_analysis as LLMAnalysisInfo)
             : null,
-        depAudit: depAuditJson ?? null
+        depAudit: depAuditJson ?? null,
       }
     : {
         verdict: null,
@@ -347,7 +359,7 @@ export async function getSkillDetail(
         lowCount: 0,
         infoCount: 0,
         llm_analysis: null,
-        depAudit: null
+        depAudit: null,
       };
 
   const latestVersion: SkillVersionDetail | null = latestRow
@@ -364,7 +376,8 @@ export async function getSkillDetail(
         tarballSize: Number(latestRowData?.versionTarballSize ?? 0),
         scanDetails,
         prompt2botChatLink: (latestRowData?.prompt2botChatLink as string) ?? null,
-        prompt2botBotPublicKey: (latestRowData?.prompt2botBotPublicKey as string) ?? null
+        prompt2botBotPublicKey: (latestRowData?.prompt2botBotPublicKey as string) ?? null,
+        atomKinds: resolveAtomKinds(latestRowData?.atomKinds, latestRowData?.manifest),
       }
     : null;
 
@@ -373,7 +386,7 @@ export async function getSkillDetail(
   const result: SkillDetailResult = {
     name: first.skillName as string,
     description: first.skillDescription as string | null,
-    visibility: (first.skillVisibility as 'public' | 'private') ?? 'public',
+    visibility: (first.skillVisibility as "public" | "private") ?? "public",
     repositoryUrl: first.skillRepositoryUrl as string | null,
     createdAt: new Date(first.skillCreatedAt as string),
     updatedAt: new Date(first.skillUpdatedAt as string),
@@ -382,7 +395,7 @@ export async function getSkillDetail(
     starCount: Number(first.starCount) || 0,
     isStarred: Boolean(first.isStarred),
     latestVersion,
-    versions
+    versions,
   };
 
   return result;
@@ -391,7 +404,7 @@ export async function getSkillDetail(
 // ── Skills Search ────────────────────────────────────────────────────────────
 
 export function escapeLike(input: string): string {
-  return input.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  return input.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
 }
 
 /**
@@ -405,13 +418,13 @@ export function escapeLike(input: string): string {
  */
 function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
   switch (sort) {
-    case 'downloads':
+    case "downloads":
       return sql`coalesce(dl.downloads_7d, 0) DESC`;
-    case 'stars':
+    case "stars":
       return starsAvailable ? sql`coalesce(st.stars_count, 0) DESC` : sql`s.updated_at DESC`;
-    case 'score':
+    case "score":
       return sql`coalesce(sv.audit_score, 0) DESC`;
-    case 'name':
+    case "name":
       return sql`s.name ASC`;
     default:
       return sql`s.updated_at DESC`;
@@ -423,13 +436,13 @@ function buildPrimarySort(sort: SortOption, starsAvailable: boolean) {
  */
 function buildSecurityVerdictClause(verdict: SecurityVerdict) {
   switch (verdict) {
-    case 'pass':
+    case "pass":
       return sql`AND sr.verdict = 'pass'`;
-    case 'pass_with_notes':
+    case "pass_with_notes":
       return sql`AND sr.verdict = 'pass_with_notes'`;
-    case 'flagged':
+    case "flagged":
       return sql`AND sr.verdict = 'flagged'`;
-    case 'fail':
+    case "fail":
       return sql`AND sr.verdict = 'fail'`;
     default:
       return sql``;
@@ -441,18 +454,18 @@ function buildSecurityVerdictClause(verdict: SecurityVerdict) {
  * Only meaningful when the user is logged in and wants to see only public or only private.
  */
 function buildVisibilityFilterClause(visibility: VisibilityFilter) {
-  if (visibility === 'public') return sql`AND s.visibility = 'public'`;
-  if (visibility === 'private') return sql`AND s.visibility = 'private'`;
+  if (visibility === "public") return sql`AND s.visibility = 'public'`;
+  if (visibility === "private") return sql`AND s.visibility = 'private'`;
   return sql``;
 }
 
 function buildFreshnessClause(freshness: FreshnessBucket | undefined) {
   switch (freshness) {
-    case 'week':
+    case "week":
       return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '7 days'`;
-    case 'month':
+    case "month":
       return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '30 days'`;
-    case 'year':
+    case "year":
       return sql`AND s.updated_at >= CURRENT_DATE - INTERVAL '365 days'`;
     default:
       return sql``;
@@ -461,11 +474,11 @@ function buildFreshnessClause(freshness: FreshnessBucket | undefined) {
 
 function buildPopularityClause(popularity: PopularityBucket | undefined) {
   switch (popularity) {
-    case 'popular':
+    case "popular":
       return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) >= 10`;
-    case 'growing':
+    case "growing":
       return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) BETWEEN 1 AND 9`;
-    case 'new':
+    case "new":
       return sql`AND coalesce((SELECT sum(count)::int FROM skill_download_daily WHERE skill_id = s.id AND date >= CURRENT_DATE - 7), 0) = 0`;
     default:
       return sql``;
@@ -475,6 +488,14 @@ function buildPopularityClause(popularity: PopularityBucket | undefined) {
 function buildReadmeClause(hasReadme: boolean | undefined) {
   if (hasReadme) return sql`AND sv.readme IS NOT NULL AND sv.readme != ''`;
   return sql``;
+}
+
+function buildAtomKindClause(atomKind: string | undefined) {
+  if (!atomKind) return sql``;
+  if (atomKind === "skill") {
+    return sql`AND (sv.atom_kinds IS NULL OR array_length(sv.atom_kinds, 1) IS NULL)`;
+  }
+  return sql`AND sv.atom_kinds @> ARRAY[${atomKind}]::text[]`;
 }
 
 /**
@@ -497,25 +518,25 @@ export async function searchSkills(
   paramsOrQ: SkillsSearchParams | string,
   page?: number,
   limit?: number,
-  requesterUserId?: string | null
+  requesterUserId?: string | null,
 ): Promise<SkillSearchResponse> {
   // Normalize: support both new object API and old positional API
   let params: SkillsSearchParams;
-  if (typeof paramsOrQ === 'string') {
+  if (typeof paramsOrQ === "string") {
     params = {
       q: paramsOrQ,
       page: page ?? 1,
       limit: limit ?? 20,
-      sort: 'updated',
-      visibility: 'all',
-      securityVerdict: 'all',
-      requesterUserId
+      sort: "updated",
+      visibility: "all",
+      securityVerdict: "all",
+      requesterUserId,
     };
   } else {
     params = paramsOrQ;
   }
 
-  const { q, sort, visibility, securityVerdict, freshness, popularity, hasReadme } = params;
+  const { q, sort, visibility, securityVerdict, freshness, popularity, hasReadme, atomKind } = params;
   const resolvedPage = params.page;
   const resolvedLimit = params.limit;
 
@@ -524,7 +545,7 @@ export async function searchSkills(
   const visClause = visibilityClause(viewerUserId);
   const offset = (resolvedPage - 1) * resolvedLimit;
 
-  const needsDownloads = sort === 'downloads';
+  const needsDownloads = sort === "downloads";
 
   // Pre-aggregated subquery JOINs (only included when needed for sort)
   const downloadJoin = needsDownloads
@@ -557,6 +578,7 @@ export async function searchSkills(
   const freshnessClause = buildFreshnessClause(freshness);
   const popularityClause = buildPopularityClause(popularity);
   const readmeClause = buildReadmeClause(hasReadme);
+  const atomKindClause = buildAtomKindClause(atomKind);
 
   if (!q) {
     const results = (await db.execute(sql`
@@ -570,6 +592,7 @@ export async function searchSkills(
         coalesce(u.name, '') AS publisher,
         ${downloadsSql} AS downloads,
         ${starsSql} AS stars,
+        sv.atom_kinds AS "atomKinds",
         count(*) OVER() AS total
       FROM skills s
       LEFT JOIN "user" u ON u.id = s.publisher_id
@@ -589,6 +612,7 @@ export async function searchSkills(
       ${freshnessClause}
       ${popularityClause}
       ${readmeClause}
+      ${atomKindClause}
       ORDER BY ${primarySort}, s.id ASC
       OFFSET ${offset}
       LIMIT ${resolvedLimit}
@@ -610,6 +634,7 @@ export async function searchSkills(
       coalesce(u.name, '') AS publisher,
       ${downloadsSql} AS downloads,
       ${starsSql} AS stars,
+      sv.atom_kinds AS "atomKinds",
       count(*) OVER() AS total
     FROM skills s
     LEFT JOIN "user" u ON u.id = s.publisher_id
@@ -636,7 +661,8 @@ export async function searchSkills(
     ${freshnessClause}
     ${popularityClause}
     ${readmeClause}
-    ORDER BY ${sort !== 'updated' ? sql`${primarySort},` : sql``} (
+    ${atomKindClause}
+    ORDER BY ${sort !== "updated" ? sql`${primarySort},` : sql``} (
       CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
       + CASE WHEN s.name ILIKE ${`${q}%`} THEN 800 ELSE 0 END
       + CASE WHEN s.name ILIKE ${`%/${escaped}%`} THEN 600 ELSE 0 END
@@ -661,16 +687,17 @@ function mapSearchResults(rows: Record<string, unknown>[], page: number, limit: 
     results: rows.map((row) => ({
       name: row.name as string,
       description: row.description as string | null,
-      visibility: (row.visibility as 'public' | 'private') ?? 'public',
+      visibility: (row.visibility as "public" | "private") ?? "public",
       latestVersion: (row.latestVersion as string) ?? null,
       scanVerdict: (row.scanVerdict as string) ?? null,
-      publisher: (row.publisher as string) ?? '',
+      publisher: (row.publisher as string) ?? "",
       downloads: Number(row.downloads) || 0,
       stars: Number(row.stars) || 0,
-      updatedAt: row.updatedAt ? new Date(row.updatedAt as string) : undefined
+      updatedAt: row.updatedAt ? new Date(row.updatedAt as string) : undefined,
+      atomKinds: resolveAtomKinds(row.atomKinds, null),
     })),
     page,
     limit,
-    total
+    total,
   };
 }

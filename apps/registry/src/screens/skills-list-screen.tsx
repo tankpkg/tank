@@ -1,14 +1,15 @@
-import { encodeSkillName } from '@internals/helpers';
-import { Link } from '@tanstack/react-router';
-import { Download, Lock, ShieldAlert, ShieldCheck, Star } from 'lucide-react';
+import { encodeSkillName } from "@internals/helpers";
+import { Link } from "@tanstack/react-router";
+import { Download, Lock, ShieldAlert, ShieldCheck, Star } from "lucide-react";
 
-import { MobileSkillsFilters } from '~/components/skills/mobile-skills-filters';
-import { SearchBar } from '~/components/skills/search-bar';
-import { SkillsFilters } from '~/components/skills/skills-filters';
-import { SkillsSort } from '~/components/skills/skills-sort';
-import { Badge } from '~/components/ui/badge';
-import { Button } from '~/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { AtomKindBadges } from "~/components/skills/atom-kind-badge";
+import { MobileSkillsFilters } from "~/components/skills/mobile-skills-filters";
+import { SearchBar } from "~/components/skills/search-bar";
+import { SkillsFilters } from "~/components/skills/skills-filters";
+import { SkillsSort } from "~/components/skills/skills-sort";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import type {
   FreshnessBucket,
   PopularityBucket,
@@ -16,8 +17,8 @@ import type {
   SkillSearchResponse,
   SkillSearchResult,
   SortOption,
-  VisibilityFilter
-} from '~/lib/skills/data';
+  VisibilityFilter,
+} from "~/lib/skills/data";
 
 export interface SkillsListScreenProps {
   data: SkillSearchResponse;
@@ -30,6 +31,7 @@ export interface SkillsListScreenProps {
   popularity: PopularityBucket;
   hasReadme: boolean;
   isLoggedIn: boolean;
+  atomKind?: string;
 }
 
 const LIMIT = 20;
@@ -44,13 +46,14 @@ export function SkillsListScreen({
   freshness,
   popularity,
   hasReadme,
-  isLoggedIn
+  isLoggedIn,
+  atomKind,
 }: SkillsListScreenProps) {
   const totalPages = Math.max(1, Math.ceil(data.total / LIMIT));
 
   const countLabel = query
-    ? `${data.total.toLocaleString()} result${data.total !== 1 ? 's' : ''} for "${query}"`
-    : `${data.total.toLocaleString()} package${data.total !== 1 ? 's' : ''}`;
+    ? `${data.total.toLocaleString()} result${data.total !== 1 ? "s" : ""} for "${query}"`
+    : `${data.total.toLocaleString()} package${data.total !== 1 ? "s" : ""}`;
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" data-testid="skills-list-root">
@@ -68,6 +71,7 @@ export function SkillsListScreen({
         currentPopularity={popularity}
         currentHasReadme={hasReadme}
         isLoggedIn={isLoggedIn}
+        currentAtomKind={atomKind}
       />
 
       <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -79,6 +83,7 @@ export function SkillsListScreen({
             currentPopularity={popularity}
             currentHasReadme={hasReadme}
             isLoggedIn={isLoggedIn}
+            currentAtomKind={atomKind}
           />
         </div>
 
@@ -128,10 +133,10 @@ export function FiltersSkeleton() {
 }
 
 const verdictConfig: Record<string, { label: string; className: string; Icon: typeof ShieldCheck }> = {
-  pass: { label: 'Pass', className: 'text-green-600', Icon: ShieldCheck },
-  pass_with_notes: { label: 'Notes', className: 'text-yellow-600', Icon: ShieldCheck },
-  flagged: { label: 'Flagged', className: 'text-orange-600', Icon: ShieldAlert },
-  fail: { label: 'Unsafe', className: 'text-red-600', Icon: ShieldAlert }
+  pass: { label: "Pass", className: "text-green-600", Icon: ShieldCheck },
+  pass_with_notes: { label: "Notes", className: "text-yellow-600", Icon: ShieldCheck },
+  flagged: { label: "Flagged", className: "text-orange-600", Icon: ShieldAlert },
+  fail: { label: "Unsafe", className: "text-red-600", Icon: ShieldAlert },
 };
 
 function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn: boolean }) {
@@ -150,7 +155,7 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
                   {verdict.label}
                 </span>
               )}
-              {isLoggedIn && skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground" />}
+              {isLoggedIn && skill.visibility === "private" && <Lock className="size-3.5 text-muted-foreground" />}
             </div>
           </div>
           {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
@@ -171,6 +176,9 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
               {skill.stars.toLocaleString()}
             </span>
           </div>
+          <div className="mt-1.5">
+            <AtomKindBadges kinds={skill.atomKinds ?? ["skill"]} size="xs" />
+          </div>
         </CardContent>
       </Card>
     </Link>
@@ -180,11 +188,11 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
 function EmptyState({ query }: { query: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/40 py-16 text-center">
-      <p className="text-lg font-medium">{query ? 'No packages found' : 'No packages published yet'}</p>
+      <p className="text-lg font-medium">{query ? "No packages found" : "No packages published yet"}</p>
       <p className="mt-1 text-sm text-muted-foreground">
         {query
           ? `No results for "${query}". Try a different search term or adjust filters.`
-          : 'Be the first to publish a package!'}
+          : "Be the first to publish a package!"}
       </p>
     </div>
   );

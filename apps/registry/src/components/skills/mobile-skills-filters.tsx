@@ -1,11 +1,17 @@
-import { useNavigate } from '@tanstack/react-router';
-import { FileText } from 'lucide-react';
+import { useNavigate } from "@tanstack/react-router";
+import { FileText } from "lucide-react";
 
-import { Button } from '~/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
-import type { FreshnessBucket, PopularityBucket, SecurityVerdict, VisibilityFilter } from '~/lib/skills/data';
+import { Button } from "~/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import type { FreshnessBucket, PopularityBucket, SecurityVerdict, VisibilityFilter } from "~/lib/skills/data";
 
-import { FRESHNESS_OPTIONS, POPULARITY_OPTIONS, SECURITY_VERDICT_OPTIONS, VISIBILITY_OPTIONS } from './skills-filters';
+import {
+  ATOM_KIND_OPTIONS,
+  FRESHNESS_OPTIONS,
+  POPULARITY_OPTIONS,
+  SECURITY_VERDICT_OPTIONS,
+  VISIBILITY_OPTIONS,
+} from "./skills-filters";
 
 interface MobileSkillsFiltersProps {
   currentVisibility: VisibilityFilter;
@@ -14,18 +20,19 @@ interface MobileSkillsFiltersProps {
   currentPopularity: PopularityBucket;
   currentHasReadme: boolean;
   isLoggedIn: boolean;
+  currentAtomKind?: string;
 }
 
 function useFilterNavigate() {
   const navigate = useNavigate();
   return (paramKey: string, value: string, defaultValue: string) => {
     navigate({
-      to: '/skills',
+      to: "/skills",
       search: (prev: Record<string, unknown>) => ({
         ...prev,
         [paramKey]: value === defaultValue ? undefined : value,
-        page: 1
-      })
+        page: 1,
+      }),
     } as never);
   };
 }
@@ -36,7 +43,8 @@ export function MobileSkillsFilters({
   currentFreshness,
   currentPopularity,
   currentHasReadme,
-  isLoggedIn
+  isLoggedIn,
+  currentAtomKind,
 }: MobileSkillsFiltersProps) {
   const filterNav = useFilterNavigate();
   const navigate = useNavigate();
@@ -44,7 +52,7 @@ export function MobileSkillsFilters({
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden" data-testid="mobile-filter-bar">
       {isLoggedIn && (
-        <Select value={currentVisibility} onValueChange={(v) => filterNav('visibility', v, 'all')}>
+        <Select value={currentVisibility} onValueChange={(v) => filterNav("visibility", v, "all")}>
           <SelectTrigger className="h-8 min-w-[100px] shrink-0 text-xs" data-testid="mobile-filter-visibility">
             <SelectValue placeholder="Visibility" />
           </SelectTrigger>
@@ -58,7 +66,31 @@ export function MobileSkillsFilters({
         </Select>
       )}
 
-      <Select value={currentSecurityVerdict} onValueChange={(v) => filterNav('security', v, 'all')}>
+      <Select
+        value={currentAtomKind ?? "all"}
+        onValueChange={(v) => {
+          navigate({
+            to: "/skills",
+            search: (prev: Record<string, unknown>) => ({
+              ...prev,
+              atomKind: v === "all" ? undefined : v,
+              page: 1,
+            }),
+          } as never);
+        }}>
+        <SelectTrigger className="h-8 min-w-[110px] shrink-0 text-xs" data-testid="mobile-filter-atom-kind">
+          <SelectValue placeholder="Type" />
+        </SelectTrigger>
+        <SelectContent>
+          {ATOM_KIND_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={currentSecurityVerdict} onValueChange={(v) => filterNav("security", v, "all")}>
         <SelectTrigger className="h-8 min-w-[110px] shrink-0 text-xs" data-testid="mobile-filter-security">
           <SelectValue placeholder="Security" />
         </SelectTrigger>
@@ -71,7 +103,7 @@ export function MobileSkillsFilters({
         </SelectContent>
       </Select>
 
-      <Select value={currentFreshness} onValueChange={(v) => filterNav('freshness', v, 'all')}>
+      <Select value={currentFreshness} onValueChange={(v) => filterNav("freshness", v, "all")}>
         <SelectTrigger className="h-8 min-w-[100px] shrink-0 text-xs" data-testid="mobile-filter-freshness">
           <SelectValue placeholder="Freshness" />
         </SelectTrigger>
@@ -84,7 +116,7 @@ export function MobileSkillsFilters({
         </SelectContent>
       </Select>
 
-      <Select value={currentPopularity} onValueChange={(v) => filterNav('popularity', v, 'all')}>
+      <Select value={currentPopularity} onValueChange={(v) => filterNav("popularity", v, "all")}>
         <SelectTrigger className="h-8 min-w-[100px] shrink-0 text-xs" data-testid="mobile-filter-popularity">
           <SelectValue placeholder="Popularity" />
         </SelectTrigger>
@@ -98,17 +130,17 @@ export function MobileSkillsFilters({
       </Select>
 
       <Button
-        variant={currentHasReadme ? 'default' : 'outline'}
+        variant={currentHasReadme ? "default" : "outline"}
         size="sm"
         className="h-8 shrink-0 gap-1 text-xs"
         onClick={() => {
           navigate({
-            to: '/skills',
+            to: "/skills",
             search: (prev: Record<string, unknown>) => ({
               ...prev,
               docs: !currentHasReadme,
-              page: 1
-            })
+              page: 1,
+            }),
           } as never);
         }}
         data-testid="mobile-filter-docs">

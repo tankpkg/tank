@@ -1,125 +1,126 @@
-import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
-import { publishManifestSchema } from '@internals/schemas';
-import { and, desc, eq } from 'drizzle-orm';
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { publishManifestSchema } from "@internals/schemas";
+import { and, desc, eq } from "drizzle-orm";
 
-import { verifyCliAuth } from '~/lib/auth/authz';
-import { db } from '~/lib/db';
-import { account, member, organization, user } from '~/lib/db/auth-schema';
-import { skills, skillVersions } from '~/lib/db/schema';
-import { checkPermissionEscalation, type VersionPermissions } from '~/lib/skills/permission-escalation';
-import { getStorageProvider } from '~/services/storage/provider';
+import { verifyCliAuth } from "~/lib/auth/authz";
+import { db } from "~/lib/db";
+import { account, member, organization, user } from "~/lib/db/auth-schema";
+import { skills, skillVersions } from "~/lib/db/schema";
+import { checkPermissionEscalation, type VersionPermissions } from "~/lib/skills/permission-escalation";
+import { extractAtomKinds } from "~/lib/skills/atoms";
+import { getStorageProvider } from "~/services/storage/provider";
 
 const publishRoute = createRoute({
-  method: 'post',
-  path: '/',
-  tags: ['Publishing'],
-  summary: 'Publish a package',
+  method: "post",
+  path: "/",
+  tags: ["Publishing"],
+  summary: "Publish a package",
   description:
-    'Creates a new package version and returns a signed upload URL for the tarball. Requires skills:publish scope.',
+    "Creates a new package version and returns a signed upload URL for the tarball. Requires skills:publish scope.",
   security: [{ BearerAuth: [] }],
   request: {
     body: {
       content: {
-        'application/json': {
+        "application/json": {
           schema: z.object({
-            manifest: z.any().openapi({ description: 'skills.json manifest object' }),
-            readme: z.string().optional().openapi({ description: 'README content' }),
-            files: z.array(z.string()).optional().openapi({ description: 'List of files in the package' })
-          })
-        }
-      }
-    }
+            manifest: z.any().openapi({ description: "skills.json manifest object" }),
+            readme: z.string().optional().openapi({ description: "README content" }),
+            files: z.array(z.string()).optional().openapi({ description: "List of files in the package" }),
+          }),
+        },
+      },
+    },
   },
   responses: {
     200: {
-      description: 'Package version created, upload URL returned',
+      description: "Package version created, upload URL returned",
       content: {
-        'application/json': {
+        "application/json": {
           schema: z.object({
             uploadUrl: z.string().url(),
             skillId: z.string(),
-            versionId: z.string()
-          })
-        }
-      }
+            versionId: z.string(),
+          }),
+        },
+      },
     },
     400: {
-      description: 'Invalid manifest or permission escalation',
+      description: "Invalid manifest or permission escalation",
       content: {
-        'application/json': {
-          schema: z.object({ error: z.string(), details: z.any().optional() })
-        }
-      }
+        "application/json": {
+          schema: z.object({ error: z.string(), details: z.any().optional() }),
+        },
+      },
     },
     401: {
-      description: 'Unauthorized',
+      description: "Unauthorized",
       content: {
-        'application/json': {
-          schema: z.object({ error: z.string() })
-        }
-      }
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
     },
     403: {
-      description: 'Not a member of the org',
+      description: "Not a member of the org",
       content: {
-        'application/json': {
-          schema: z.object({ error: z.string() })
-        }
-      }
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
     },
     404: {
-      description: 'Organization not found',
+      description: "Organization not found",
       content: {
-        'application/json': {
-          schema: z.object({ error: z.string() })
-        }
-      }
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
     },
     409: {
-      description: 'Version already exists',
+      description: "Version already exists",
       content: {
-        'application/json': {
-          schema: z.object({ error: z.string() })
-        }
-      }
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
     },
     500: {
-      description: 'Failed to generate upload URL',
+      description: "Failed to generate upload URL",
       content: {
-        'application/json': {
-          schema: z.object({ error: z.string() })
-        }
-      }
-    }
-  }
+        "application/json": {
+          schema: z.object({ error: z.string() }),
+        },
+      },
+    },
+  },
 });
 
 export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async (c) => {
-  const verified = await verifyCliAuth(c.req.raw, ['skills:publish']);
+  const verified = await verifyCliAuth(c.req.raw, ["skills:publish"]);
   if (!verified) {
-    return c.json({ error: 'Unauthorized. Valid API key with skills:publish scope required.' }, 401);
+    return c.json({ error: "Unauthorized. Valid API key with skills:publish scope required." }, 401);
   }
 
   let body: unknown;
   try {
     body = await c.req.json();
   } catch {
-    return c.json({ error: 'Invalid JSON body' }, 400);
+    return c.json({ error: "Invalid JSON body" }, 400);
   }
 
   const { manifest: rawManifest, readme, files } = body as { manifest?: unknown; readme?: string; files?: string[] };
-  if (!rawManifest || typeof rawManifest !== 'object') {
-    return c.json({ error: 'Missing manifest in request body' }, 400);
+  if (!rawManifest || typeof rawManifest !== "object") {
+    return c.json({ error: "Missing manifest in request body" }, 400);
   }
 
   const manifestInput = rawManifest as Record<string, unknown>;
-  if (typeof manifestInput.name === 'string') {
+  if (typeof manifestInput.name === "string") {
     manifestInput.name = manifestInput.name.toLowerCase().trim();
   }
 
   const parsed = publishManifestSchema.safeParse(manifestInput);
   if (!parsed.success) {
-    return c.json({ error: 'Invalid manifest', details: parsed.error.flatten().fieldErrors }, 400);
+    return c.json({ error: "Invalid manifest", details: parsed.error.flatten().fieldErrors }, 400);
   }
 
   const manifest = parsed.data;
@@ -143,14 +144,14 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
       const [githubAccount] = await db
         .select({ accessToken: account.accessToken })
         .from(account)
-        .where(and(eq(account.userId, verified.userId), eq(account.providerId, 'github')))
+        .where(and(eq(account.userId, verified.userId), eq(account.providerId, "github")))
         .limit(1);
 
       if (githubAccount?.accessToken) {
         try {
-          const ghRes = await fetch('https://api.github.com/user', {
-            headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: 'application/json' },
-            signal: AbortSignal.timeout(5000)
+          const ghRes = await fetch("https://api.github.com/user", {
+            headers: { Authorization: `Bearer ${githubAccount.accessToken}`, Accept: "application/json" },
+            signal: AbortSignal.timeout(5000),
           });
           if (ghRes.ok) {
             const gh = (await ghRes.json()) as { login: string };
@@ -180,7 +181,7 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
     if (orgs.length === 0) {
       return c.json(
         { error: `Organization '${orgSlug}' not found. You must create the org before publishing scoped packages.` },
-        404
+        404,
       );
     }
 
@@ -199,7 +200,7 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
     orgId = org.id;
   }
 
-  const resolvedVisibility = manifest.visibility ?? 'public';
+  const resolvedVisibility = manifest.visibility ?? "public";
 
   // Find or create skill record
   const existingSkills = await db.select().from(skills).where(eq(skills.name, name)).limit(1);
@@ -214,7 +215,7 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
         repositoryUrl: manifest.repository ?? null,
         publisherId: verified.userId,
         orgId,
-        visibility: resolvedVisibility
+        visibility: resolvedVisibility,
       })
       .returning();
     skill = newSkill;
@@ -259,16 +260,16 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
       prev.version,
       prev.permissions as VersionPermissions,
       version,
-      (manifest.permissions ?? {}) as VersionPermissions
+      (manifest.permissions ?? {}) as VersionPermissions,
     );
 
     if (!escalationResult.allowed) {
       return c.json(
         {
-          error: 'Permission escalation detected',
-          details: escalationResult.violations
+          error: "Permission escalation detected",
+          details: escalationResult.violations,
         },
-        400
+        400,
       );
     }
   }
@@ -280,30 +281,33 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
       and(
         eq(skillVersions.skillId, skill.id),
         eq(skillVersions.publishedBy, verified.userId),
-        eq(skillVersions.auditStatus, 'pending-upload')
-      )
+        eq(skillVersions.auditStatus, "pending-upload"),
+      ),
     );
 
   // Create skill_version record with pending-upload status
   const tarballPath = `skills/${skill.id}/${version}.tgz`;
   const manifestWithFiles = {
     ...manifest,
-    ...(Array.isArray(files) && files.length > 0 ? { files } : {})
+    ...(Array.isArray(files) && files.length > 0 ? { files } : {}),
   } as Record<string, unknown>;
+  const atomKinds = extractAtomKinds(manifestWithFiles);
+  const atomKindsToStore = atomKinds.includes("skill") ? null : atomKinds;
   const [skillVersion] = await db
     .insert(skillVersions)
     .values({
       skillId: skill.id,
       version,
-      integrity: 'pending',
+      integrity: "pending",
       tarballPath,
       tarballSize: 0,
       fileCount: 0,
       manifest: manifestWithFiles,
       permissions: (manifest.permissions ?? {}) as Record<string, unknown>,
-      auditStatus: 'pending-upload',
+      auditStatus: "pending-upload",
       publishedBy: verified.userId,
-      readme: typeof readme === 'string' ? readme : null
+      readme: typeof readme === "string" ? readme : null,
+      atomKinds: atomKindsToStore,
     })
     .returning();
 
@@ -313,15 +317,15 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
     const uploadData = await getStorageProvider().createSignedUploadUrl(tarballPath);
     signedUploadUrl = uploadData.signedUrl;
   } catch {
-    return c.json({ error: 'Failed to generate upload URL' }, 500);
+    return c.json({ error: "Failed to generate upload URL" }, 500);
   }
 
   return c.json(
     {
       uploadUrl: signedUploadUrl,
       skillId: skill.id,
-      versionId: skillVersion.id
+      versionId: skillVersion.id,
     },
-    200
+    200,
   );
 });
