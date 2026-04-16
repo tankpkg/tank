@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Eye, GitBranch, Globe, Lock, Shield, Terminal } from 'lucide-react';
+import { Bot, Eye, GitBranch, Globe, Key, Lock, ScanSearch, Search, Shield, Terminal, Users } from 'lucide-react';
 
 export const features: Array<{ icon: LucideIcon; title: string; description: string }> = [
   {
@@ -26,9 +26,44 @@ export const features: Array<{ icon: LucideIcon; title: string; description: str
       'Not a social contract. A patch that adds network access? Detected and flagged. Permission escalation requires a major bump.'
   },
   {
+    icon: Key,
+    title: 'API Tokens & Keys',
+    description:
+      'Scoped API tokens for CI/CD — read-only, publish-only, or full access. Revoke instantly from the dashboard.'
+  },
+  {
+    icon: Users,
+    title: 'Orgs & Teams',
+    description: 'Create organizations, invite members, assign roles (owner/admin/member). Scoped publishing per team.'
+  },
+  {
+    icon: ScanSearch,
+    title: 'On-Demand Scanner',
+    description:
+      'Scan any package URL from the web UI. Full 6-stage pipeline with Semgrep, Bandit, secrets detection, and LLM analysis.'
+  },
+  {
+    icon: Search,
+    title: 'Advanced Discovery',
+    description:
+      'Filter by verdict, freshness, atom type, popularity. Star packages. Browse trending skills and top publishers.'
+  },
+  {
+    icon: Bot,
+    title: 'Service Accounts',
+    description:
+      'Machine identities for CI/CD pipelines. Scoped permissions, no human credentials needed. Full audit trail.'
+  },
+  {
     icon: Terminal,
     title: 'CLI-First Workflow',
-    description: 'Install, publish, audit, manage permissions from terminal. Designed for developers, not dashboards.'
+    description: '20+ commands — install, publish, audit, build, search, verify, permissions. Designed for developers.'
+  },
+  {
+    icon: Eye,
+    title: 'Audit Trail',
+    description:
+      'Every action logged — publishes, installs, permission changes, moderation decisions. Filter by action, user, or date.'
   },
   {
     icon: Globe,
@@ -38,11 +73,12 @@ export const features: Array<{ icon: LucideIcon; title: string; description: str
 ];
 
 export const cliCommands = [
-  { cmd: 'tank install @vercel/next-skill', desc: 'Install from registry with integrity verification' },
-  { cmd: 'tank install https://github.com/org/skill', desc: 'Install from any URL — scanned before install' },
-  { cmd: 'tank permissions', desc: 'See what your agent is allowed to do' },
+  { cmd: 'tank install @vercel/next-skill', desc: 'Install with integrity verification' },
+  { cmd: 'tank run claude', desc: 'Launch agent with Credential Vault protection' },
+  { cmd: 'tank build', desc: 'Compile atoms for Claude Code, Cursor, OpenCode, and more' },
+  { cmd: 'tank search "react hooks"', desc: 'Search the registry' },
   { cmd: 'tank audit', desc: 'View 6-stage security scan results' },
-  { cmd: 'tank build', desc: 'Compile for Claude Code, Cursor, OpenCode, and more' },
+  { cmd: 'tank verify', desc: 'Verify lockfile integrity (SHA-512)' },
   { cmd: 'tank doctor', desc: 'Diagnose your setup in one command' }
 ];
 
