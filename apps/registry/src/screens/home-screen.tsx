@@ -3,6 +3,7 @@ import { ArrowRight, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
 
+import { AtomsSection } from '~/components/home/atoms-section';
 import { CliPreview } from '~/components/home/cli-preview';
 import { ComparisonTable } from '~/components/home/comparison-table';
 import { EditorIntegration } from '~/components/home/editor-integration';
@@ -11,6 +12,7 @@ import { FaqSection } from '~/components/home/faq-section';
 import { FeaturesGrid } from '~/components/home/features-grid';
 import { HeroSection } from '~/components/home/hero-section';
 import { HowItWorks } from '~/components/home/how-it-works';
+import { VaultSection } from '~/components/home/vault-section';
 import { WhyTankExists } from '~/components/home/why-tank-exists';
 import { WorksWith } from '~/components/home/works-with';
 import { Button } from '~/components/ui/button';
@@ -84,7 +86,11 @@ export function HomeScreen({ publicSkillCount, starCount, selfhostedAppUrl }: Ho
 
       <FeaturesGrid />
 
+      <AtomsSection />
+
       <TankJsonExample />
+
+      <VaultSection />
 
       <CliPreview />
 
