@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react';
 
+import { AtomKindBadges } from '~/components/skills/atom-kind-badge';
 import { DownloadButton } from '~/components/skills/download-button';
 import { InstallCommand } from '~/components/skills/install-command';
 import { QualityChecks } from '~/components/skills/quality-checks';
@@ -39,6 +40,7 @@ export interface SkillSidebarProps {
   scanDetails: ScanDetails | null;
   hasSecurityData: boolean;
   permItems: string[];
+  atomKinds: string[];
 }
 
 export function SkillSidebar({
@@ -56,7 +58,8 @@ export function SkillSidebar({
   license,
   scanDetails,
   hasSecurityData,
-  permItems
+  permItems,
+  atomKinds
 }: SkillSidebarProps) {
   return (
     <aside className="w-full lg:w-72 shrink-0 space-y-4 lg:sticky lg:top-4" data-testid="desktop-sidebar">
@@ -110,6 +113,12 @@ export function SkillSidebar({
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Metadata</h3>
         <dl className="space-y-2 text-sm [&>div]:flex [&>div]:justify-between [&_dt]:text-muted-foreground">
+          <div className="items-start">
+            <dt>Type</dt>
+            <dd className="flex flex-wrap gap-1 mt-0.5">
+              <AtomKindBadges kinds={atomKinds} size="xs" />
+            </dd>
+          </div>
           {latestVersion && (
             <div>
               <dt>Version</dt>

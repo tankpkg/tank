@@ -1,6 +1,7 @@
 import { Check, Copy, MessageSquare } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 
+import { AtomKindBadges } from '~/components/skills/atom-kind-badge';
 import { DownloadButton } from '~/components/skills/download-button';
 import { SkillSidebar } from '~/components/skills/skill-sidebar';
 import { SkillTabs } from '~/components/skills/skill-tabs';
@@ -13,6 +14,7 @@ import { Button } from '~/components/ui/button';
 import { Separator } from '~/components/ui/separator';
 import { useCopyToClipboard } from '~/hooks/use-copy-to-clipboard';
 import { safeParseJson, safeParsePermissions } from '~/lib/format';
+import { extractAtomKinds } from '~/lib/skills/atoms';
 import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
 import { buildSecurityTab } from '~/screens/skill-detail-helpers';
 
@@ -74,7 +76,7 @@ function MobileActionBar({
             onClick={onTalkClick}
             data-testid="talk-button-mobile">
             <MessageSquare className="size-3.5" />
-            Talk to skill
+            Talk to package
           </Button>
         )}
         {scanDetails && (
@@ -121,6 +123,8 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
 
   const securityTab = hasSecurityData && scanDetails ? buildSecurityTab({ data, scanDetails }) : null;
   const desc = useMemo(() => parseDescription(data.description), [data.description]);
+  const atomKinds = extractAtomKinds(latestManifest);
+  const atomsList = Array.isArray(latestManifest?.atoms) ? (latestManifest.atoms as Record<string, unknown>[]) : [];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="skill-detail-root">
@@ -139,6 +143,9 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
               Private
             </Badge>
           )}
+          <div data-testid="skill-detail-atom-badges">
+            <AtomKindBadges kinds={atomKinds} size="sm" />
+          </div>
           {talkEnabled && (
             <Button
               variant="outline"
@@ -147,7 +154,7 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
               onClick={() => talkWidgetRef.current?.trigger()}
               data-testid="talk-button-header">
               <MessageSquare className="size-3.5" />
-              Talk to this skill
+              Talk to this package
             </Button>
           )}
         </div>
@@ -222,6 +229,7 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
         hasSecurityData={hasSecurityData}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        atoms={atomsList}
         sidebar={
           <SkillSidebar
             name={data.name}
@@ -239,6 +247,7 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
             scanDetails={scanDetails ?? null}
             hasSecurityData={hasSecurityData}
             permItems={permItems}
+            atomKinds={atomKinds}
           />
         }
       />

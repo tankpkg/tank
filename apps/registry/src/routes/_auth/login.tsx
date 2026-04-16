@@ -5,7 +5,7 @@ import { LoginScreen } from '~/screens/login-screen';
 
 const settings = routeHead({
   title: 'Sign In | Tank',
-  description: 'Sign in to Tank — security-first package manager for AI agent skills.',
+  description: 'Sign in to Tank — security-first package manager for AI agent packages.',
   path: '/login'
 });
 

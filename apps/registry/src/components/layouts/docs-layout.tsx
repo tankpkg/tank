@@ -14,7 +14,7 @@ const SIDEBAR_ORDER: Array<DocMeta | { separator: string }> = [
   { slug: 'overview', title: 'Overview' },
   { slug: 'getting-started', title: 'Getting Started' },
   { separator: 'Guides' },
-  { slug: 'atoms', title: 'Multi-Atom Skills' },
+  { slug: 'atoms', title: 'Multi-Atom Packages' },
   { slug: 'publishing', title: 'Publishing' },
   { slug: 'installing', title: 'Installing' },
   { slug: 'organizations', title: 'Organizations' },
@@ -35,7 +35,7 @@ const SIDEBAR_ORDER: Array<DocMeta | { separator: string }> = [
   { slug: 'sdk-python', title: 'Python SDK' },
   { slug: 'releases', title: 'Releases' },
   { separator: 'Quick Starts' },
-  { slug: 'publish-first-skill', title: 'Publish First Skill' },
+  { slug: 'publish-first-skill', title: 'Publish First Package' },
   { slug: 'self-host-quickstart', title: 'Self-Host Quickstart' },
   { separator: 'Community' },
   { slug: 'contributors', title: 'Contributors' }

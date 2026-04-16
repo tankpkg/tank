@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AtomsTab } from '~/components/skills/atoms-tab';
 import { FileExplorer } from '~/components/skills/file-explorer';
 import { SkillReadme } from '~/components/skills/skill-readme';
 import { Badge } from '~/components/ui/badge';
@@ -22,6 +23,7 @@ interface SkillTabsProps {
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   sidebar?: ReactNode;
+  atoms?: Record<string, unknown>[];
 }
 
 function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
@@ -65,7 +67,8 @@ export function SkillTabs({
   hasSecurityData = false,
   activeTab = 'readme',
   onTabChange,
-  sidebar
+  sidebar,
+  atoms
 }: SkillTabsProps) {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
@@ -85,6 +88,14 @@ export function SkillTabs({
           className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2">
           Files
         </TabsTrigger>
+        {atoms && atoms.length > 0 && (
+          <TabsTrigger
+            value="atoms"
+            data-testid="atoms-tab-trigger"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2">
+            Atoms
+          </TabsTrigger>
+        )}
         {hasSecurityData && (
           <TabsTrigger
             value="security"
@@ -125,6 +136,12 @@ export function SkillTabs({
           <FileExplorer files={files} skillName={skillName} version={version} readme={readme} manifest={manifest} />
         </div>
       </TabsContent>
+
+      {atoms && atoms.length > 0 && (
+        <TabsContent value="atoms" className="mt-6">
+          <AtomsTab atoms={atoms} data-testid="atoms-tab-intro" />
+        </TabsContent>
+      )}
 
       {hasSecurityData && securityTab && (
         <TabsContent value="security" className="mt-6">

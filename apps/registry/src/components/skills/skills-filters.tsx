@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 
 import { Label } from '~/components/ui/label';
+import { ALL_ATOM_DISPLAY_KINDS, atomDisplayConfig } from '~/lib/skills/atoms';
 import type { FreshnessBucket, PopularityBucket, SecurityVerdict, VisibilityFilter } from '~/lib/skills/data';
 
 interface SkillsFiltersProps {
@@ -10,6 +11,7 @@ interface SkillsFiltersProps {
   currentPopularity: PopularityBucket;
   currentHasReadme: boolean;
   isLoggedIn: boolean;
+  currentAtomKind?: string;
 }
 
 interface FilterGroupProps<T extends string> {
@@ -84,13 +86,22 @@ export const POPULARITY_OPTIONS = [
   { value: 'new' as const, label: 'New' }
 ] as const;
 
+export const ATOM_KIND_OPTIONS = [
+  { value: 'all', label: 'All types' },
+  ...ALL_ATOM_DISPLAY_KINDS.map((kind) => ({
+    value: kind,
+    label: `${atomDisplayConfig[kind].emoji} ${atomDisplayConfig[kind].label}`
+  }))
+];
+
 export function SkillsFilters({
   currentVisibility,
   currentSecurityVerdict,
   currentFreshness,
   currentPopularity,
   currentHasReadme,
-  isLoggedIn
+  isLoggedIn,
+  currentAtomKind
 }: SkillsFiltersProps) {
   const navigate = useNavigate();
 
@@ -100,6 +111,17 @@ export function SkillsFilters({
       search: (prev: Record<string, unknown>) => ({
         ...prev,
         docs: !currentHasReadme,
+        page: 1
+      })
+    } as never);
+  }
+
+  function handleAtomKindChange(value: string) {
+    navigate({
+      to: '/skills',
+      search: (prev: Record<string, unknown>) => ({
+        ...prev,
+        atomKind: value === 'all' ? undefined : value,
         page: 1
       })
     } as never);
@@ -117,6 +139,25 @@ export function SkillsFilters({
             defaultValue="all"
           />
         )}
+
+        <fieldset className="space-y-1.5">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Atom Type</Label>
+          <div className="space-y-1">
+            {ATOM_KIND_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleAtomKindChange(opt.value)}
+                className={`w-full rounded-md px-2.5 py-1.5 text-left text-sm transition-colors ${
+                  (currentAtomKind ?? 'all') === opt.value
+                    ? 'bg-primary/10 font-medium text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         <FilterGroup
           label="Security"

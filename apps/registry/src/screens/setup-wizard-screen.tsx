@@ -11,7 +11,7 @@ const STEPS = [
   { title: 'Storage', description: 'Verify MinIO object storage connectivity' },
   { title: 'Admin Account', description: 'Create the initial administrator account' },
   { title: 'Auth Providers', description: 'Configure optional OAuth and SSO providers' },
-  { title: 'Scanner LLM', description: 'Configure the AI model for skill scanning' },
+  { title: 'Scanner LLM', description: 'Configure the AI model for package scanning' },
   { title: 'Complete', description: 'Review and finalize your setup' }
 ];
 

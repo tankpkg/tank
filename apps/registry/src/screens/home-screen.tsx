@@ -3,8 +3,16 @@ import { ArrowRight, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
 
+import { AtomsSection } from '~/components/home/atoms-section';
+import { CliPreview } from '~/components/home/cli-preview';
+import { ComparisonTable } from '~/components/home/comparison-table';
+import { EditorIntegration } from '~/components/home/editor-integration';
+import { EnterpriseSection } from '~/components/home/enterprise-section';
+import { FaqSection } from '~/components/home/faq-section';
+import { FeaturesGrid } from '~/components/home/features-grid';
 import { HeroSection } from '~/components/home/hero-section';
 import { HowItWorks } from '~/components/home/how-it-works';
+import { VaultSection } from '~/components/home/vault-section';
 import { WhyTankExists } from '~/components/home/why-tank-exists';
 import { WorksWith } from '~/components/home/works-with';
 import { Button } from '~/components/ui/button';
@@ -27,7 +35,7 @@ function buildHomepageJsonLd(_skillCount: number) {
         url: 'https://tankpkg.dev',
         logo: 'https://tankpkg.dev/logo.png',
         description:
-          'Security-first package registry for AI agent skills. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
+          'Security-first package registry for AI agent packages. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
         sameAs: ['https://github.com/tankpkg', 'https://x.com/tankpkg']
       },
       {
@@ -70,13 +78,29 @@ export function HomeScreen({ publicSkillCount, starCount, selfhostedAppUrl }: Ho
 
       <WorksWith />
 
+      <ComparisonTable />
+
       <WhyTankExists />
 
       <HowItWorks />
 
+      <FeaturesGrid />
+
+      <AtomsSection />
+
       <TankJsonExample />
 
+      <VaultSection />
+
+      <CliPreview />
+
+      <EditorIntegration />
+
+      <EnterpriseSection />
+
       <ContributorsSection />
+
+      <FaqSection />
 
       <BottomCta starCount={starCount} />
     </>
@@ -233,7 +257,6 @@ function ContributorsSection() {
 function BottomCta({ starCount }: { starCount: number | null }) {
   return (
     <section className="relative z-[1] border-t border-border overflow-hidden" aria-label="Call to action">
-      {/* Radial glow */}
       <div
         className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px]"
         style={{ background: 'radial-gradient(ellipse, rgba(0,255,65,0.04) 0%, transparent 60%)' }}
@@ -247,7 +270,7 @@ function BottomCta({ starCount }: { starCount: number | null }) {
           viewport={{ once: true }}
           transition={{ duration: 0.3 }}>
           <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight mb-3">
-            Ready to secure your <span className="text-tank">agent skills?</span>
+            Ready to secure your <span className="text-tank">agent packages?</span>
           </h2>
           <p className="text-muted-foreground text-[15px] mb-8">
             Tank is open source and free. Install with confidence.
@@ -255,7 +278,7 @@ function BottomCta({ starCount }: { starCount: number | null }) {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" asChild className="group">
               <Link to="/skills" search={{} as never}>
-                Browse Skills
+                Browse Packages
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>

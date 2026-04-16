@@ -62,7 +62,7 @@ function AdminPackages() {
     <section className="p-8 space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Package Management</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Manage published skills, moderation, and featuring.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Manage published packages, moderation, and featuring.</p>
       </div>
 
       <div className="flex items-center gap-3">
