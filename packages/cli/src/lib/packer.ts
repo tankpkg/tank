@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Readable } from 'node:stream';
 
-import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, skillsJsonSchema } from '@internals/schemas';
+import { LEGACY_MANIFEST_FILENAME, MANIFEST_FILENAME, publishManifestSchema } from '@internals/schemas';
 import ignore from 'ignore';
 import { create } from 'tar';
 
@@ -33,8 +33,7 @@ export interface PackResult {
  * Pack a skill directory into a .tgz tarball with integrity hashing.
  *
  * Validates:
- * - skills.json exists and is valid
- * - SKILL.md exists
+ * - tank.json (or skills.json) exists and is valid
  * - No symlinks or hardlinks
  * - No path traversal (.. components)
  * - No absolute paths
@@ -79,23 +78,28 @@ export async function pack(directory: string): Promise<PackResult> {
     throw new Error(`Invalid ${manifestFilename}: not valid JSON`);
   }
 
-  const validation = skillsJsonSchema.safeParse(parsed);
+  const validation = publishManifestSchema.safeParse(parsed);
   if (!validation.success) {
     const issues = validation.error.issues.map((i) => `  - ${i.path.join('.')}: ${i.message}`).join('\n');
     throw new Error(`Invalid ${manifestFilename}:\n${issues}`);
   }
 
-  // 3. Verify SKILL.md exists and read its content
+  // 3. Read SKILL.md or README.md if present (optional for non-skill packages)
+  let readmeContent = '';
   const skillMdPath = path.join(absDir, 'SKILL.md');
-  if (!fs.existsSync(skillMdPath)) {
-    throw new Error('Missing required file: SKILL.md');
-  }
-
-  let readmeContent: string;
-  try {
-    readmeContent = fs.readFileSync(skillMdPath, 'utf-8');
-  } catch {
-    throw new Error('Failed to read SKILL.md');
+  const readmeMdPath = path.join(absDir, 'README.md');
+  if (fs.existsSync(skillMdPath)) {
+    try {
+      readmeContent = fs.readFileSync(skillMdPath, 'utf-8');
+    } catch {
+      readmeContent = '';
+    }
+  } else if (fs.existsSync(readmeMdPath)) {
+    try {
+      readmeContent = fs.readFileSync(readmeMdPath, 'utf-8');
+    } catch {
+      readmeContent = '';
+    }
   }
 
   // 4. Build ignore filter
