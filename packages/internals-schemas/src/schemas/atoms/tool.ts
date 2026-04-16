@@ -4,11 +4,17 @@ import { extensionBagSchema } from './base.js';
 
 export const mcpServerConfigSchema = z
   .object({
-    command: z.string().min(1),
+    command: z.string().min(1).optional(),
     args: z.array(z.string()).optional(),
-    env: z.record(z.string(), z.string()).optional()
+    env: z.record(z.string(), z.string()).optional(),
+    runtime: z.string().min(1).optional(),
+    entry: z.string().min(1).optional()
   })
-  .strict();
+  .strict()
+  .refine(
+    (data) => data.command || (data.runtime && data.entry),
+    'MCP config must have either "command" or both "runtime" and "entry"'
+  );
 
 export const toolIRSchema = z
   .object({
