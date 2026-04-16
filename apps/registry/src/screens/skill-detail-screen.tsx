@@ -14,7 +14,7 @@ import { Separator } from '~/components/ui/separator';
 import { useCopyToClipboard } from '~/hooks/use-copy-to-clipboard';
 import { safeParseJson, safeParsePermissions } from '~/lib/format';
 import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
-import { buildSecurityTab } from '~/screens/skill-detail-helpers';
+import { buildSecurityTab, buildTokenTab } from '~/screens/skill-detail-helpers';
 
 const MOBILE_TRIGGER_LIMIT = 6;
 
@@ -120,6 +120,8 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
   const hasSecurityData = scanDetails != null;
 
   const securityTab = hasSecurityData && scanDetails ? buildSecurityTab({ data, scanDetails }) : null;
+  const tokenTab = hasSecurityData && scanDetails ? buildTokenTab({ data, scanDetails }) : null;
+  const hasTokenData = !!scanDetails?.findings?.some((f) => f.stage === 'stageT');
   const desc = useMemo(() => parseDescription(data.description), [data.description]);
 
   return (
@@ -220,6 +222,8 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
         manifest={latestManifest}
         securityTab={securityTab}
         hasSecurityData={hasSecurityData}
+        tokenTab={tokenTab}
+        hasTokenData={hasTokenData}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         sidebar={

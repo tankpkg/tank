@@ -1,4 +1,4 @@
-import { Bot, Bug, Download, Key, Link2, ScanSearch, Shield } from 'lucide-react';
+import { Bot, Bug, Download, Key, Link2, ScanSearch, Shield, Zap } from 'lucide-react';
 
 import type { ScanFinding } from '~/lib/skills/data';
 
@@ -173,6 +173,15 @@ export function buildScanningTools(scanDetails: {
       status: stagesRun.includes('stage5') ? 'ran' : 'skipped',
       skipReason: stagesRun.includes('stage5') ? undefined : SKIP_REASONS.stage5,
       findingCount: findings.filter((f) => f.tool === 'stage5_osv').length
+    },
+    {
+      name: 'Token Analyzer',
+      category: 'Token Efficiency',
+      icon: <Zap className="size-4" />,
+      ran: stagesRun.includes('stageT'),
+      status: stagesRun.includes('stageT') ? 'ran' : 'skipped',
+      skipReason: stagesRun.includes('stageT') ? undefined : 'tokenomics not available',
+      findingCount: findings.filter((f) => f.tool === 'token_analyzer' && f.type !== 'token_summary').length
     },
     {
       name: 'LLM Corroboration',
