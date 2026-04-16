@@ -7,7 +7,7 @@ import { createSkillBot } from '~/lib/prompt2bot';
 
 const nameParam = z.object({
   name: z.string().openapi({
-    description: 'Skill name (URL-encoded)',
+    description: 'Package name (URL-encoded)',
     example: '@tank/react'
   })
 });
@@ -16,7 +16,7 @@ const postTalkRoute = createRoute({
   method: 'post',
   path: '/{name}/talk',
   tags: ['Talk'],
-  summary: 'Get or create a prompt2bot chat for a skill',
+  summary: 'Get or create a prompt2bot chat for a package',
   description: 'Lazily creates a prompt2bot bot for the latest published version. Returns chat link on success.',
   request: { params: nameParam },
   responses: {
@@ -32,7 +32,7 @@ const postTalkRoute = createRoute({
       }
     },
     404: {
-      description: 'Skill or version not found',
+      description: 'Package or version not found',
       content: { 'application/json': { schema: z.object({ error: z.string() }) } }
     },
     500: {
@@ -49,7 +49,7 @@ const postTalkRoute = createRoute({
 export const talkRoutes = new OpenAPIHono().openapi(postTalkRoute, async (c) => {
   const apiToken = process.env.PROMPT2BOT_API_TOKEN;
   if (!apiToken) {
-    return c.json({ error: 'Talk to skill feature is not configured' }, 503);
+    return c.json({ error: 'Talk to package feature is not configured' }, 503);
   }
 
   const { name: rawName } = c.req.valid('param');
@@ -61,7 +61,7 @@ export const talkRoutes = new OpenAPIHono().openapi(postTalkRoute, async (c) => 
     .where(eq(skills.name, name))
     .limit(1);
   const skill = skillRows[0];
-  if (!skill) return c.json({ error: 'Skill not found' }, 404);
+  if (!skill) return c.json({ error: 'Package not found' }, 404);
 
   const versionRows = await db
     .select({

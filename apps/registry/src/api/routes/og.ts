@@ -92,7 +92,7 @@ export const ogRoutes = new Hono()
                         letterSpacing: '-1px',
                         maxWidth: '900px'
                       },
-                      children: 'Security-first package manager for AI agent skills'
+                      children: 'Security-first package manager for AI agent packages'
                     }
                   },
                   {
@@ -100,7 +100,7 @@ export const ogRoutes = new Hono()
                     props: {
                       style: { fontSize: '26px', color: '#94a3b8', maxWidth: '800px', lineHeight: 1.4 },
                       children:
-                        'Publish, install, and audit AI skills with integrity verification, permission budgets, and 6-stage security scanning.'
+                        'Publish, install, and audit AI packages with integrity verification, permission budgets, and 6-stage security scanning.'
                     }
                   }
                 ]
@@ -152,7 +152,7 @@ export const ogRoutes = new Hono()
   .get('/:name{.+}', async (c) => {
     const skillName = decodeURIComponent(c.req.param('name'));
 
-    let description = 'AI agent skill on Tank';
+    let description = 'AI agent package on Tank';
     let version: string | null = null;
     let auditScore: number | null = null;
     let publisher = '';

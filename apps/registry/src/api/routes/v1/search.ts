@@ -7,8 +7,8 @@ const searchRoute = createRoute({
   method: 'get',
   path: '/',
   tags: ['Search'],
-  summary: 'Search skills',
-  description: 'Search the registry for skills by keyword. Supports pagination.',
+  summary: 'Search packages',
+  description: 'Search the registry for packages by keyword. Supports pagination.',
   request: {
     query: z.object({
       q: z.string().optional().openapi({ description: 'Search query', example: 'react' }),

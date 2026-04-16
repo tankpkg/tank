@@ -58,7 +58,7 @@ export function SearchBar({ defaultValue }: SearchBarProps) {
       <Input
         type="search"
         name="q"
-        placeholder="Search skills..."
+        placeholder="Search packages..."
         value={value}
         onChange={(e) => {
           setValue(e.target.value);

@@ -17,7 +17,7 @@ async function getStarCount(skillId: string): Promise<number> {
 
 const nameParam = z.object({
   name: z.string().openapi({
-    description: 'Skill name (URL-encoded, supports scoped names like @org/skill)',
+    description: 'Package name (URL-encoded, supports scoped names like @org/skill)',
     example: '@tank/react'
   })
 });
@@ -27,7 +27,7 @@ const getStarRoute = createRoute({
   path: '/{name}/star',
   tags: ['Stars'],
   summary: 'Get star count',
-  description: 'Returns the star count for a skill and whether the current user has starred it.',
+  description: 'Returns the star count for a package and whether the current user has starred it.',
   request: { params: nameParam },
   responses: {
     200: {
@@ -42,7 +42,7 @@ const getStarRoute = createRoute({
       }
     },
     404: {
-      description: 'Skill not found',
+      description: 'Package not found',
       content: {
         'application/json': {
           schema: z.object({ error: z.string() })
@@ -56,8 +56,8 @@ const postStarRoute = createRoute({
   method: 'post',
   path: '/{name}/star',
   tags: ['Stars'],
-  summary: 'Star a skill',
-  description: 'Add a star to a skill. Requires authentication.',
+  summary: 'Star a package',
+  description: 'Add a star to a package. Requires authentication.',
   security: [{ BearerAuth: [] }],
   request: { params: nameParam },
   responses: {
@@ -78,7 +78,7 @@ const postStarRoute = createRoute({
       }
     },
     404: {
-      description: 'Skill not found',
+      description: 'Package not found',
       content: {
         'application/json': {
           schema: z.object({ error: z.string() })
@@ -92,8 +92,8 @@ const deleteStarRoute = createRoute({
   method: 'delete',
   path: '/{name}/star',
   tags: ['Stars'],
-  summary: 'Unstar a skill',
-  description: 'Remove a star from a skill. Requires authentication.',
+  summary: 'Unstar a package',
+  description: 'Remove a star from a package. Requires authentication.',
   security: [{ BearerAuth: [] }],
   request: { params: nameParam },
   responses: {
@@ -114,7 +114,7 @@ const deleteStarRoute = createRoute({
       }
     },
     404: {
-      description: 'Skill not found',
+      description: 'Package not found',
       content: {
         'application/json': {
           schema: z.object({ error: z.string() })
@@ -130,7 +130,7 @@ export const starRoutes = new OpenAPIHono()
     const { name: rawName } = c.req.valid('param');
     const name = decodeURIComponent(rawName);
     const skillId = await resolveSkillId(name);
-    if (!skillId) return c.json({ error: 'Skill not found' }, 404);
+    if (!skillId) return c.json({ error: 'Package not found' }, 404);
 
     const count = await getStarCount(skillId);
 
@@ -155,7 +155,7 @@ export const starRoutes = new OpenAPIHono()
     const { name: rawName } = c.req.valid('param');
     const name = decodeURIComponent(rawName);
     const skillId = await resolveSkillId(name);
-    if (!skillId) return c.json({ error: 'Skill not found' }, 404);
+    if (!skillId) return c.json({ error: 'Package not found' }, 404);
 
     const existing = await db
       .select({ id: skillStars.id })
@@ -177,7 +177,7 @@ export const starRoutes = new OpenAPIHono()
     const { name: rawName } = c.req.valid('param');
     const name = decodeURIComponent(rawName);
     const skillId = await resolveSkillId(name);
-    if (!skillId) return c.json({ error: 'Skill not found' }, 404);
+    if (!skillId) return c.json({ error: 'Package not found' }, 404);
 
     await db.delete(skillStars).where(and(eq(skillStars.skillId, skillId), eq(skillStars.userId, session.user.id)));
 

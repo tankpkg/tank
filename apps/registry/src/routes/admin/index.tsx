@@ -24,7 +24,7 @@ function AdminDashboard() {
 
   const cards = [
     { title: 'Users', icon: Users, value: data?.userCount ?? 0, description: 'Registered accounts' },
-    { title: 'Packages', icon: Package, value: data?.skillCount ?? 0, description: 'Published skills' },
+    { title: 'Packages', icon: Package, value: data?.skillCount ?? 0, description: 'Published packages' },
     {
       title: 'Flagged',
       icon: AlertTriangle,

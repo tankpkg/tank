@@ -36,7 +36,7 @@ v1Routes.doc31('/openapi.json', {
   info: {
     title: 'Tank Registry API',
     version: '1.0.0',
-    description: 'Security-first package manager for AI agent skills'
+    description: 'Security-first package manager for AI agent packages'
   },
   servers: [{ url: '/api/v1' }]
 });

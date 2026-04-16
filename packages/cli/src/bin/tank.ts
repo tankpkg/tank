@@ -6,7 +6,7 @@ import { buildCommand } from '~/commands/build.js';
 import { doctorCommand } from '~/commands/doctor.js';
 import { infoCommand } from '~/commands/info.js';
 import { initCommand } from '~/commands/init.js';
-import { installAll, installCommand } from '~/commands/install.js';
+import { installAll, installCommand, installFromUrl } from '~/commands/install.js';
 import { linkCommand } from '~/commands/link.js';
 import { loginCommand } from '~/commands/login.js';
 import { logoutCommand } from '~/commands/logout.js';
@@ -24,6 +24,7 @@ import { verifyCommand } from '~/commands/verify.js';
 import { whoamiCommand } from '~/commands/whoami.js';
 import { flushLogs } from '~/lib/debug-logger.js';
 import { checkForUpgrade } from '~/lib/upgrade-check.js';
+import { isUrl } from '~/lib/url-fetcher.js';
 import { VERSION } from '~/version.js';
 
 const program = new Command();
@@ -155,13 +156,19 @@ program
 program
   .command('install')
   .alias('i')
-  .description('Install a skill from the Tank registry, or all skills from lockfile')
-  .argument('[name]', 'Skill name (e.g., @org/skill-name). Omit to install from lockfile.')
+  .description('Install a skill from the Tank registry, a URL, or all skills from lockfile')
+  .argument(
+    '[name]',
+    'Skill name or URL (e.g., @org/skill-name or https://github.com/owner/repo). Omit to install from lockfile.'
+  )
   .argument('[version-range]', 'Semver range (default: *)', '*')
   .option('-g, --global', 'Install skill globally (available to all projects)')
-  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean }) => {
+  .option('-y, --yes', 'Auto-accept flagged scan verdicts')
+  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean; yes?: boolean }) => {
     try {
-      if (name) {
+      if (name && isUrl(name)) {
+        await installFromUrl(name, { global: opts.global, yes: opts.yes });
+      } else if (name) {
         await installCommand({ name, versionRange, global: opts.global });
       } else {
         await installAll({ global: opts.global });

@@ -13,9 +13,9 @@ const publishRoute = createRoute({
   method: 'post',
   path: '/',
   tags: ['Publishing'],
-  summary: 'Publish a skill',
+  summary: 'Publish a package',
   description:
-    'Creates a new skill version and returns a signed upload URL for the tarball. Requires skills:publish scope.',
+    'Creates a new package version and returns a signed upload URL for the tarball. Requires skills:publish scope.',
   security: [{ BearerAuth: [] }],
   request: {
     body: {
@@ -32,7 +32,7 @@ const publishRoute = createRoute({
   },
   responses: {
     200: {
-      description: 'Skill version created, upload URL returned',
+      description: 'Package version created, upload URL returned',
       content: {
         'application/json': {
           schema: z.object({

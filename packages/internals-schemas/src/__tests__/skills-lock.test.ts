@@ -202,4 +202,69 @@ describe('skillsLockSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('accepts lockfile entry with source, scan_verdict, and scanned_at', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@org/url-skill@1.0.0': {
+          resolved: 'https://github.com/org/url-skill/archive/v1.0.0.tar.gz',
+          integrity: 'sha512-abc123',
+          permissions: { subprocess: false },
+          audit_score: 7.5,
+          source: 'github',
+          scan_verdict: 'pass',
+          scanned_at: '2026-04-15T12:00:00.000Z'
+        }
+      }
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts lockfile entry without new source tracking fields (backward compat)', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@test/legacy@1.0.0': {
+          resolved: 'https://tankpkg.dev/v1/skills/test-legacy/1.0.0',
+          integrity: 'sha512-xyz',
+          permissions: {},
+          audit_score: 9.0
+        }
+      }
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects invalid source value', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@test/skill@1.0.0': {
+          resolved: 'https://tankpkg.dev/v1/skills/test/1.0.0',
+          integrity: 'sha512-abc',
+          permissions: {},
+          audit_score: null,
+          source: 'unknown_source'
+        }
+      }
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid scan_verdict value', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@test/skill@1.0.0': {
+          resolved: 'https://tankpkg.dev/v1/skills/test/1.0.0',
+          integrity: 'sha512-abc',
+          permissions: {},
+          audit_score: null,
+          scan_verdict: 'maybe'
+        }
+      }
+    });
+    expect(result.success).toBe(false);
+  });
 });

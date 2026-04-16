@@ -95,6 +95,10 @@ export {
   type LockedSkillV1,
   lockedSkillSchema,
   lockedSkillV1Schema,
+  SCAN_VERDICTS,
+  type ScanVerdict,
+  SKILL_SOURCES,
+  type SkillSource,
   type SkillsLock,
   skillsLockSchema,
   skillsLockV1Schema

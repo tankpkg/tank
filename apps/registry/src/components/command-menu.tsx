@@ -40,9 +40,9 @@ interface SkillResult {
 
 const DOC_PAGES = [
   { title: 'Getting Started', slug: 'getting-started', icon: RocketIcon },
-  { title: 'Installing Skills', slug: 'installing', icon: PackageSearchIcon },
-  { title: 'Publishing Skills', slug: 'publishing', icon: BoxIcon },
-  { title: 'Publish Your First Skill', slug: 'publish-first-skill', icon: BookOpenIcon },
+  { title: 'Installing Packages', slug: 'installing', icon: PackageSearchIcon },
+  { title: 'Publishing Packages', slug: 'publishing', icon: BoxIcon },
+  { title: 'Publish Your First Package', slug: 'publish-first-skill', icon: BookOpenIcon },
   { title: 'CLI Reference', slug: 'cli', icon: TerminalIcon },
   { title: 'API Reference', slug: 'api', icon: FileTextIcon },
   { title: 'MCP Server', slug: 'mcp', icon: WrenchIcon },
@@ -132,13 +132,13 @@ export function CommandMenu() {
       open={open}
       onOpenChange={setOpen}
       title="Command Palette"
-      description="Search skills, docs, and navigate Tank">
-      <CommandInput placeholder="Search skills, docs, and more…" value={query} onValueChange={setQuery} />
+      description="Search packages, docs, and navigate Tank">
+      <CommandInput placeholder="Search packages, docs, and more…" value={query} onValueChange={setQuery} />
       <CommandList>
         <CommandEmpty>{loading ? 'Searching…' : 'No results found.'}</CommandEmpty>
 
         {skills.length > 0 && (
-          <CommandGroup heading="Skills">
+          <CommandGroup heading="Packages">
             {skills.map((skill) => (
               <CommandItem
                 key={skill.name}

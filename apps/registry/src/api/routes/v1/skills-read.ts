@@ -18,11 +18,11 @@ async function recordDownload(skillId: string): Promise<void> {
 }
 
 const nameParam = z.object({
-  name: z.string().openapi({ description: 'Skill name (URL-encoded)', example: '@tank/react' })
+  name: z.string().openapi({ description: 'Package name (URL-encoded)', example: '@tank/react' })
 });
 
 const nameVersionParam = z.object({
-  name: z.string().openapi({ description: 'Skill name (URL-encoded)', example: '@tank/react' }),
+  name: z.string().openapi({ description: 'Package name (URL-encoded)', example: '@tank/react' }),
   version: z.string().openapi({ description: 'Semver version', example: '1.0.0' })
 });
 
@@ -32,12 +32,12 @@ const getSkillRoute = createRoute({
   method: 'get',
   path: '/{name}',
   tags: ['Skills'],
-  summary: 'Get skill metadata',
-  description: 'Returns metadata for a skill including its latest version.',
+  summary: 'Get package metadata',
+  description: 'Returns metadata for a package including its latest version.',
   request: { params: nameParam },
   responses: {
     200: {
-      description: 'Skill metadata',
+      description: 'Package metadata',
       content: {
         'application/json': {
           schema: z.object({
@@ -53,7 +53,7 @@ const getSkillRoute = createRoute({
       }
     },
     404: {
-      description: 'Skill not found',
+      description: 'Package not found',
       content: { 'application/json': { schema: errorSchema } }
     }
   }
@@ -63,8 +63,8 @@ const getVersionsRoute = createRoute({
   method: 'get',
   path: '/{name}/versions',
   tags: ['Skills'],
-  summary: 'List skill versions',
-  description: 'Returns all published versions for a skill.',
+  summary: 'List package versions',
+  description: 'Returns all published versions for a package.',
   request: { params: nameParam },
   responses: {
     200: {
@@ -87,7 +87,7 @@ const getVersionsRoute = createRoute({
       }
     },
     404: {
-      description: 'Skill not found',
+      description: 'Package not found',
       content: { 'application/json': { schema: errorSchema } }
     }
   }
@@ -98,7 +98,7 @@ const getVersionDetailRoute = createRoute({
   path: '/{name}/{version}',
   tags: ['Skills'],
   summary: 'Get version detail',
-  description: 'Returns full detail for a specific skill version including a signed download URL.',
+  description: 'Returns full detail for a specific package version including a signed download URL.',
   request: { params: nameVersionParam },
   responses: {
     200: {
@@ -124,7 +124,7 @@ const getVersionDetailRoute = createRoute({
       }
     },
     404: {
-      description: 'Skill or version not found',
+      description: 'Package or version not found',
       content: { 'application/json': { schema: errorSchema } }
     },
     500: {
@@ -166,7 +166,7 @@ export const skillsReadRoutes = new OpenAPIHono()
   `);
 
     if (results.length === 0) {
-      return c.json({ error: 'Skill not found' }, 404);
+      return c.json({ error: 'Package not found' }, 404);
     }
 
     const row = results[0] as Record<string, unknown>;
@@ -208,7 +208,7 @@ export const skillsReadRoutes = new OpenAPIHono()
   `);
 
     if (rows.length === 0) {
-      return c.json({ error: 'Skill not found' }, 404);
+      return c.json({ error: 'Package not found' }, 404);
     }
 
     const skillName = (rows[0] as Record<string, unknown>).name as string;
@@ -270,7 +270,7 @@ export const skillsReadRoutes = new OpenAPIHono()
       `);
 
         if (skillCheck.length === 0) {
-          return c.json({ error: 'Skill not found' }, 404);
+          return c.json({ error: 'Package not found' }, 404);
         }
         return c.json({ error: `Version ${version} not found for ${name}` }, 404);
       }
@@ -366,7 +366,7 @@ export const skillsReadRoutes = new OpenAPIHono()
       `);
 
       if (rows.length === 0) {
-        return c.json({ error: 'Skill version not found' }, 404);
+        return c.json({ error: 'Package version not found' }, 404);
       }
 
       const tarballPath = (rows[0] as Record<string, unknown>).tarballPath as string;
@@ -417,7 +417,7 @@ export const skillsReadRoutes = new OpenAPIHono()
       `);
 
       if (rows.length === 0) {
-        return c.json({ error: 'Skill version not found' }, 404);
+        return c.json({ error: 'Package version not found' }, 404);
       }
 
       const tarballPath = (rows[0] as Record<string, unknown>).tarballPath as string;

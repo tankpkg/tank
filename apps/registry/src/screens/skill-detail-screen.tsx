@@ -74,7 +74,7 @@ function MobileActionBar({
             onClick={onTalkClick}
             data-testid="talk-button-mobile">
             <MessageSquare className="size-3.5" />
-            Talk to skill
+            Talk to package
           </Button>
         )}
         {scanDetails && (
@@ -147,7 +147,7 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
               onClick={() => talkWidgetRef.current?.trigger()}
               data-testid="talk-button-header">
               <MessageSquare className="size-3.5" />
-              Talk to this skill
+              Talk to this package
             </Button>
           )}
         </div>

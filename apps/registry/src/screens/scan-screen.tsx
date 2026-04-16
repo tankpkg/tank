@@ -105,7 +105,7 @@ export function ScanPage({ initialUrl }: { initialUrl?: string }) {
           Scan any npm package, GitHub repo, raw file, skills.sh, or agentskills.co.il link for security
           vulnerabilities.{' '}
           <Link to="/scan/top-skills" className="text-blue-500 hover:underline">
-            Browse top skills
+            Browse top packages
           </Link>
         </p>
       </div>
@@ -113,7 +113,7 @@ export function ScanPage({ initialUrl }: { initialUrl?: string }) {
       {/* Input */}
       <Card>
         <CardHeader>
-          <CardTitle className="font-display text-xl font-semibold tracking-tight">Scan a Package or Skill</CardTitle>
+          <CardTitle className="font-display text-xl font-semibold tracking-tight">Scan a Package</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row">
