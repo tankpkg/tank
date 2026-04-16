@@ -27,7 +27,7 @@ function buildHomepageJsonLd(_skillCount: number) {
         url: 'https://tankpkg.dev',
         logo: 'https://tankpkg.dev/logo.png',
         description:
-          'Security-first package registry for AI agent skills. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
+          'Security-first package registry for AI agent packages. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
         sameAs: ['https://github.com/tankpkg', 'https://x.com/tankpkg']
       },
       {
