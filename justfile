@@ -66,6 +66,7 @@ scan:
 # just build mcp     - MCP server via tsdown
 # just build internals-schemas - shared contract schemas via tsdown
 # just build internals-helpers - shared helpers via tsdown
+# just build adapters - platform adapters via tsdown
 # just build binary  - standalone CLI executable (tsdown + esbuild + SEA)
 [group('build')]
 build target='all':
@@ -78,9 +79,10 @@ build target='all':
         sdk)     bun run --filter @tankpkg/sdk build ;;
         internals-schemas) bun run --filter @internals/schemas build ;;
         internals-helpers) bun run --filter @internals/helpers build ;;
+        adapters) bun run --filter @internals/adapters build ;;
         binary) bun run --filter @tankpkg/cli build:binary ;;
         all)    bun turbo build ;;
-        *) echo "Unknown target: {{target}}. Use: registry, cli, mcp, sdk, internals-schemas, internals-helpers, binary, all" && exit 1 ;;
+        *) echo "Unknown target: {{target}}. Use: registry, cli, mcp, sdk, internals-schemas, internals-helpers, adapters, binary, all" && exit 1 ;;
     esac
 
 # just fmt        - format all code (TypeScript + Python)
@@ -344,6 +346,7 @@ ci-build-cli VERSION:
     just bump {{VERSION}}
     just build internals-schemas
     just build internals-helpers
+    just build adapters
     just build sdk
     just build cli
     just build mcp
@@ -365,6 +368,7 @@ ci-publish-npm-nightly:
     just bump "${NIGHTLY_VERSION}"
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build internals-schemas
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build internals-helpers
+    TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build adapters
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build cli
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build mcp
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build sdk
