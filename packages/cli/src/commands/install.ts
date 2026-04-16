@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -272,6 +273,27 @@ async function runLegacyFallback(options: {
   }
 }
 
+function installToolDependencies(extractDir: string, skillName: string): void {
+  const packageJsonPath = path.join(extractDir, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) return;
+
+  try {
+    const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const hasDeps =
+      (pkg.dependencies && Object.keys(pkg.dependencies).length > 0) ||
+      (pkg.peerDependencies && Object.keys(pkg.peerDependencies).length > 0);
+    if (!hasDeps) return;
+
+    execSync('npm install --production --ignore-scripts --no-audit --no-fund', {
+      cwd: extractDir,
+      stdio: 'pipe',
+      timeout: 60_000
+    });
+  } catch {
+    logger.warn(`Dependency install skipped for ${skillName} (non-fatal)`);
+  }
+}
+
 async function linkInstalledRoots(options: {
   rootSkillNames: string[];
   resolvedNodeByName: Map<string, ResolvedNode>;
@@ -331,6 +353,15 @@ async function linkInstalledRoots(options: {
     logger.warn('No agents detected for linking');
   }
 
+  const agentToPlatform: Record<string, string> = {
+    claude: 'claude-code',
+    opencode: 'opencode',
+    cursor: 'cursor',
+    codex: 'claude-code',
+    openclaw: 'opencode'
+  };
+  const platforms = new Set(detectedAgents.map((a) => agentToPlatform[a.id]).filter(Boolean));
+
   for (const skillName of rootSkillNames) {
     const node = resolvedNodeByName.get(skillName);
     if (!node) continue;
@@ -341,7 +372,9 @@ async function linkInstalledRoots(options: {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
       if (!manifest.atoms || !Array.isArray(manifest.atoms) || manifest.atoms.length === 0) continue;
       const { buildCommand: runBuild } = await import('~/commands/build.js');
-      await runBuild({ skill: skillDir, target: directory });
+      for (const platform of platforms) {
+        await runBuild({ skill: skillDir, target: directory, platform });
+      }
     } catch {
       logger.warn(`Auto-build skipped for ${skillName} (non-fatal)`);
     }
@@ -386,6 +419,9 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
     fs.mkdirSync(extractDir, { recursive: true });
     await extractSafely(payload.buffer, extractDir);
     verifyExtractedDependencies(extractDir, node);
+
+    spinner.text = `Installing dependencies for ${node.name}...`;
+    installToolDependencies(extractDir, node.name);
   }
 
   lock.lockfileVersion = LOCKFILE_VERSION;
