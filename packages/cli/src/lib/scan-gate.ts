@@ -181,9 +181,9 @@ export async function scanUrl(url: string, options?: { token?: string; registryU
   return {
     success: true,
     verdict: data.verdict,
-    auditScore: data.audit_score,
+    auditScore: data.audit_score ?? null,
     findings,
-    durationMs: data.duration_ms
+    durationMs: data.duration_ms ?? null
   };
 }
 
