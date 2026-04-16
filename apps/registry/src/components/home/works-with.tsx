@@ -5,7 +5,10 @@ const TOOLS = [
   { name: 'Cursor', icon: '⊞' },
   { name: 'GitHub Copilot', icon: '◆' },
   { name: 'Codex', icon: '▸' },
-  { name: 'Windsurf', icon: '◇' }
+  { name: 'Windsurf', icon: '◇' },
+  { name: 'OpenCode', icon: '⌘' },
+  { name: 'Cline', icon: '▹' },
+  { name: 'Roo Code', icon: '◈' }
 ];
 
 export function WorksWith() {

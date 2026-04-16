@@ -38,10 +38,12 @@ export const features: Array<{ icon: LucideIcon; title: string; description: str
 ];
 
 export const cliCommands = [
-  { cmd: 'tank install @vercel/next-skill', desc: 'Install with integrity verification' },
-  { cmd: 'tank permissions', desc: 'See what your agent can do' },
-  { cmd: 'tank audit', desc: 'Check security scan results' },
-  { cmd: 'tank publish', desc: 'Publish with 6-stage analysis' }
+  { cmd: 'tank install @vercel/next-skill', desc: 'Install from registry with integrity verification' },
+  { cmd: 'tank install https://github.com/org/skill', desc: 'Install from any URL — scanned before install' },
+  { cmd: 'tank permissions', desc: 'See what your agent is allowed to do' },
+  { cmd: 'tank audit', desc: 'View 6-stage security scan results' },
+  { cmd: 'tank build', desc: 'Compile for Claude Code, Cursor, OpenCode, and more' },
+  { cmd: 'tank doctor', desc: 'Diagnose your setup in one command' }
 ];
 
 export const faqItems = [

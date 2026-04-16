@@ -3,6 +3,12 @@ import { ArrowRight, Users } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useMemo } from 'react';
 
+import { CliPreview } from '~/components/home/cli-preview';
+import { ComparisonTable } from '~/components/home/comparison-table';
+import { EditorIntegration } from '~/components/home/editor-integration';
+import { EnterpriseSection } from '~/components/home/enterprise-section';
+import { FaqSection } from '~/components/home/faq-section';
+import { FeaturesGrid } from '~/components/home/features-grid';
 import { HeroSection } from '~/components/home/hero-section';
 import { HowItWorks } from '~/components/home/how-it-works';
 import { WhyTankExists } from '~/components/home/why-tank-exists';
@@ -70,13 +76,25 @@ export function HomeScreen({ publicSkillCount, starCount, selfhostedAppUrl }: Ho
 
       <WorksWith />
 
+      <ComparisonTable />
+
       <WhyTankExists />
 
       <HowItWorks />
 
+      <FeaturesGrid />
+
       <TankJsonExample />
 
+      <CliPreview />
+
+      <EditorIntegration />
+
+      <EnterpriseSection />
+
       <ContributorsSection />
+
+      <FaqSection />
 
       <BottomCta starCount={starCount} />
     </>
@@ -233,7 +251,6 @@ function ContributorsSection() {
 function BottomCta({ starCount }: { starCount: number | null }) {
   return (
     <section className="relative z-[1] border-t border-border overflow-hidden" aria-label="Call to action">
-      {/* Radial glow */}
       <div
         className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px]"
         style={{ background: 'radial-gradient(ellipse, rgba(0,255,65,0.04) 0%, transparent 60%)' }}
