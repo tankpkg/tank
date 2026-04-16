@@ -3,7 +3,7 @@ import { MenuIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const NAV_ITEMS = [
-  { text: 'Skills', href: '/skills' },
+  { text: 'Packages', href: '/skills' },
   { text: 'Scan', href: '/scan' },
   { text: 'Docs', href: '/docs/overview' }
 ];

@@ -5,19 +5,19 @@ const STEPS = [
     number: '1',
     title: 'Publish with scanning',
     description:
-      'Every skill passes through a 6-stage security pipeline. Malware, secrets, and permission escalation are caught at publish time.'
+      'Every package passes through a 6-stage security pipeline. Malware, secrets, and permission escalation are caught at publish time.'
   },
   {
     number: '2',
     title: 'Install with integrity',
     description:
-      'Every skill is pinned with SHA-512 hashes. If the content changes after install, the next install fails. No silent tampering.'
+      'Every package is pinned with SHA-512 hashes. If the content changes after install, the next install fails. No silent tampering.'
   },
   {
     number: '3',
     title: 'Run with permissions',
     description:
-      'Declare what your agent can do — network, filesystem, subprocess. Skills exceeding the budget are rejected before they run.'
+      'Declare what your agent can do — network, filesystem, subprocess. Packages exceeding the budget are rejected before they run.'
   }
 ];
 

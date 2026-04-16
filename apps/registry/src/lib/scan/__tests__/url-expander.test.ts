@@ -213,6 +213,15 @@ describe('detectURLType', () => {
     expect(detectURLType('https://example.com/package.tar.gz')).toBe('tarball');
   });
 
+  it('detects clawhub.ai skill URLs', () => {
+    expect(detectURLType('https://clawhub.ai/pskoett/self-improving-agent')).toBe('clawhub');
+    expect(detectURLType('https://www.clawhub.ai/pskoett/self-improving-agent')).toBe('clawhub');
+  });
+
+  it('rejects bare clawhub.ai listing pages', () => {
+    expect(detectURLType('https://clawhub.ai/skills')).not.toBe('clawhub');
+  });
+
   it('detects unknown URLs', () => {
     expect(detectURLType('not-a-url')).toBe('unknown');
   });

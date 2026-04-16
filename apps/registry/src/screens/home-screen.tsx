@@ -27,7 +27,7 @@ function buildHomepageJsonLd(_skillCount: number) {
         url: 'https://tankpkg.dev',
         logo: 'https://tankpkg.dev/logo.png',
         description:
-          'Security-first package registry for AI agent skills. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
+          'Security-first package registry for AI agent packages. Prevent credential exfiltration and supply chain attacks with mandatory security scanning.',
         sameAs: ['https://github.com/tankpkg', 'https://x.com/tankpkg']
       },
       {
@@ -247,7 +247,7 @@ function BottomCta({ starCount }: { starCount: number | null }) {
           viewport={{ once: true }}
           transition={{ duration: 0.3 }}>
           <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight mb-3">
-            Ready to secure your <span className="text-tank">agent skills?</span>
+            Ready to secure your <span className="text-tank">agent packages?</span>
           </h2>
           <p className="text-muted-foreground text-[15px] mb-8">
             Tank is open source and free. Install with confidence.
@@ -255,7 +255,7 @@ function BottomCta({ starCount }: { starCount: number | null }) {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" asChild className="group">
               <Link to="/skills" search={{} as never}>
-                Browse Skills
+                Browse Packages
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>

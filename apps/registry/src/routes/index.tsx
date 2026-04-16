@@ -7,9 +7,9 @@ import { homepageStatsQueryOptions } from '~/query/homepage';
 import { HomeScreen } from '~/screens/home-screen';
 
 const data = routeHead({
-  title: 'Tank — Security-first package manager for AI agent skills',
+  title: 'Tank — Security-first package manager for AI agent packages',
   description:
-    'Every skill is scanned for credential theft, prompt injection, and supply chain attacks before installation.',
+    'Every package is scanned for credential theft, prompt injection, and supply chain attacks before installation.',
   path: '/'
 });
 

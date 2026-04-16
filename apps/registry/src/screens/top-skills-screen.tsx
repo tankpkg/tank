@@ -127,7 +127,7 @@ function InternalSkillCard({ skill }: { skill: InternalSkillSummary }) {
 
         <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)} className="w-full justify-between">
           <span className="text-xs">
-            {skill.scanVerdict === 'pass' ? 'Why safe' : skill.scanVerdict ? 'View details' : 'Scan this skill'}
+            {skill.scanVerdict === 'pass' ? 'Why safe' : skill.scanVerdict ? 'View details' : 'Scan this package'}
           </span>
           {expanded ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
         </Button>
@@ -149,14 +149,14 @@ function InternalSkillCard({ skill }: { skill: InternalSkillSummary }) {
                 <p className="text-xs text-muted-foreground">
                   Full findings available on the{' '}
                   <a href={`/skills/${encodeURIComponent(skill.name)}`} className="text-blue-500 hover:underline">
-                    skill detail page
+                    package detail page
                   </a>
                   .
                 </p>
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                This skill has not been scanned yet.{' '}
+                This package has not been scanned yet.{' '}
                 <a href={`/scan`} className="text-blue-500 hover:underline">
                   Run a scan
                 </a>
@@ -257,7 +257,7 @@ function ExternalSkillCard({ skill }: { skill: ExternalSkillSummary }) {
                 llmAnalysis={null}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">This external skill has not been scanned yet.</p>
+              <p className="text-sm text-muted-foreground">This external package has not been scanned yet.</p>
             )}
           </div>
         )}
@@ -340,7 +340,7 @@ export function TopSkillsScreen() {
         </Link>
         <h1 className="font-display text-3xl font-semibold tracking-tight">Security Showcase</h1>
         <p className="mt-1 text-muted-foreground">
-          Top skills ranked by popularity, with security scan verdicts at a glance.
+          Top packages ranked by popularity, with security scan verdicts at a glance.
         </p>
       </div>
 
@@ -352,7 +352,7 @@ export function TopSkillsScreen() {
             variant={source === value ? 'default' : 'secondary'}
             size="sm"
             onClick={() => setSource(value)}>
-            {value === 'all' ? 'All Skills' : value === 'internal' ? 'Tank Registry' : 'External Skills'}
+            {value === 'all' ? 'All Packages' : value === 'internal' ? 'Tank Registry' : 'External Skills'}
           </Button>
         ))}
         {(state === 'success' || state === 'error') && (
@@ -387,7 +387,7 @@ export function TopSkillsScreen() {
           {(source === 'all' || source === 'internal') && data.internal.length > 0 && (
             <section>
               <h2 className="font-display text-xl font-semibold tracking-tight">Tank Registry</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Skills published on Tank, ranked by downloads.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Packages published on Tank, ranked by downloads.</p>
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {data.internal.map((skill) => (
                   <div key={skill.name} className="min-w-0">
@@ -419,7 +419,7 @@ export function TopSkillsScreen() {
           {data.internal.length === 0 && data.external.length === 0 && (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-sm text-muted-foreground">No skills found.</p>
+                <p className="text-sm text-muted-foreground">No packages found.</p>
               </CardContent>
             </Card>
           )}

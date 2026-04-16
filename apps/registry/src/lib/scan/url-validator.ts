@@ -34,7 +34,10 @@ const ALLOWED_HOSTS = [
   'skills.sh',
   'www.skills.sh',
   'agentskills.co.il',
-  'www.agentskills.co.il'
+  'www.agentskills.co.il',
+  'clawhub.ai',
+  'www.clawhub.ai',
+  'wry-manatee-359.convex.site'
 ];
 
 export interface URLValidationResult {
@@ -70,7 +73,8 @@ export function validateScanUrl(rawUrl: string): URLValidationResult {
   if (!isAllowedHost) {
     return {
       valid: false,
-      error: 'URL host must be a known registry (npmjs.org, github.com, ghcr.io, skills.sh, agentskills.co.il)'
+      error:
+        'URL host must be a known registry (npmjs.org, github.com, ghcr.io, skills.sh, agentskills.co.il, clawhub.ai)'
     };
   }
 

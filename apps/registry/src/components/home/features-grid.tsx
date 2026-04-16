@@ -14,7 +14,7 @@ export function FeaturesGrid() {
           Security at <span className="text-tank">every layer</span>
         </h2>
         <p className="text-muted-foreground max-w-xl mx-auto">
-          From publish to install — every skill is scanned, scored, and verified.
+          From publish to install — every package is scanned, scored, and verified.
         </p>
       </div>
 

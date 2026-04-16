@@ -50,13 +50,13 @@ export function SkillsListScreen({
 
   const countLabel = query
     ? `${data.total.toLocaleString()} result${data.total !== 1 ? 's' : ''} for "${query}"`
-    : `${data.total.toLocaleString()} skill${data.total !== 1 ? 's' : ''}`;
+    : `${data.total.toLocaleString()} package${data.total !== 1 ? 's' : ''}`;
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" data-testid="skills-list-root">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Browse Skills</h1>
-        <p className="mt-2 text-muted-foreground">Discover verified AI agent skills for your projects.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Browse Packages</h1>
+        <p className="mt-2 text-muted-foreground">Discover verified AI agent packages for your projects.</p>
       </div>
 
       <SearchBar defaultValue={query} />
@@ -180,11 +180,11 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
 function EmptyState({ query }: { query: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/40 py-16 text-center">
-      <p className="text-lg font-medium">{query ? 'No skills found' : 'No skills published yet'}</p>
+      <p className="text-lg font-medium">{query ? 'No packages found' : 'No packages published yet'}</p>
       <p className="mt-1 text-sm text-muted-foreground">
         {query
           ? `No results for "${query}". Try a different search term or adjust filters.`
-          : 'Be the first to publish a skill!'}
+          : 'Be the first to publish a package!'}
       </p>
     </div>
   );

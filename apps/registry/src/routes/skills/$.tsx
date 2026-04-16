@@ -17,12 +17,12 @@ export const Route = createFileRoute('/skills/$')({
   head: ({ loaderData }) => {
     const data = loaderData?.data;
     if (!data) {
-      return { meta: [{ title: 'Skill not found | Tank' }] };
+      return { meta: [{ title: 'Package not found | Tank' }] };
     }
 
     const version = data.latestVersion?.version;
     const title = version ? `${data.name}@${version} | Tank` : `${data.name} | Tank`;
-    const description = data.description ?? `AI agent skill published on Tank by ${data.publisher.name}.`;
+    const description = data.description ?? `AI agent package published on Tank by ${data.publisher.name}.`;
     const encodedName = encodeSkillName(data.name);
     const head = routeHead({
       title,
@@ -41,7 +41,7 @@ export const Route = createFileRoute('/skills/$')({
             '@type': 'SoftwareApplication',
             name: data.name,
             description,
-            applicationCategory: 'AI Agent Skill',
+            applicationCategory: 'AI Agent Package',
             url: `${BASE_URL}/skills/${encodedName}`,
             author: { '@type': 'Person', name: data.publisher.name },
             offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -54,8 +54,8 @@ export const Route = createFileRoute('/skills/$')({
   component: SkillDetailPage,
   notFoundComponent: () => (
     <div className="max-w-4xl mx-auto py-16 text-center">
-      <h1 className="text-2xl font-bold mb-2">Skill not found</h1>
-      <p className="text-muted-foreground">This skill doesn&apos;t exist or hasn&apos;t been published yet.</p>
+      <h1 className="text-2xl font-bold mb-2">Package not found</h1>
+      <p className="text-muted-foreground">This package doesn&apos;t exist or hasn&apos;t been published yet.</p>
     </div>
   )
 });

@@ -1,9 +1,9 @@
 ---
 title: CLI Reference
-description: Complete reference for all 20 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+description: Complete reference for all 21 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 ---
 
-The Tank CLI provides 20 commands for publishing, installing, and managing AI agent skills with security-first design.
+The Tank CLI provides 21 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
@@ -38,6 +38,21 @@ tank init
 | `--description <desc>`      | Skill description              |
 | `--private`                 | Make skill private             |
 | `--force`                   | Overwrite existing tank.json   |
+
+## tank build <skill>
+
+```bash
+tank build <skill>
+```
+
+### Options
+
+| Flag                        | Description                                                                |
+| --------------------------- | -------------------------------------------------------------------------- |
+| `-p, --platform <platform>` | Target platform (opencode, claude-code, cursor, windsurf, cline, roo-code) |
+| `-o, --out <dir>`           | Output directory (default: current directory)                              |
+| `--dry-run`                 | Preview files without writing                                              |
+| `--list-platforms`          | List available platforms and exit                                          |
 
 ## tank login
 
@@ -83,7 +98,7 @@ tank publish
 
 ## tank install
 
-Install a skill from the Tank registry, or all skills from lockfile
+Install a skill from the Tank registry, a URL, or all skills from lockfile
 
 **Aliases:** `i`
 
@@ -93,16 +108,17 @@ tank install [name] [version-range]
 
 ### Arguments
 
-| Name            | Description                                                        | Required |
-| --------------- | ------------------------------------------------------------------ | -------- |
-| `name`          | Skill name (e.g., @org/skill-name). Omit to install from lockfile. | No       |
-| `version-range` | Semver range (default: \*)                                         | No       |
+| Name            | Description                                                                                                | Required |
+| --------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
+| `name`          | Skill name or URL (e.g., @org/skill-name or https://github.com/owner/repo). Omit to install from lockfile. | No       |
+| `version-range` | Semver range (default: \*)                                                                                 | No       |
 
 ### Options
 
 | Flag           | Description                                        |
 | -------------- | -------------------------------------------------- |
 | `-g, --global` | Install skill globally (available to all projects) |
+| `-y, --yes`    | Auto-accept flagged scan verdicts                  |
 
 ## tank remove
 
@@ -303,28 +319,29 @@ tank upgrade [version]
 
 ## Quick Reference
 
-| Command            | Alias(es) | Description                                                            |
-| ------------------ | --------- | ---------------------------------------------------------------------- |
-| `tank init`        | —         | Create a new tank.json in the current directory                        |
-| `tank login`       | —         | Authenticate with the Tank registry via browser                        |
-| `tank whoami`      | —         | Show the currently logged-in user                                      |
-| `tank logout`      | —         | Remove authentication token from config                                |
-| `tank publish`     | `pub`     | Pack and publish a skill to the Tank registry                          |
-| `tank install`     | `i`       | Install a skill from the Tank registry, or all skills from lockfile    |
-| `tank remove`      | `rm`, `r` | Remove an installed skill                                              |
-| `tank update`      | `up`      | Update skills to latest versions within their ranges                   |
-| `tank verify`      | —         | Verify installed skills match the lockfile                             |
-| `tank permissions` | `perms`   | Display resolved permission summary for installed skills               |
-| `tank search`      | `s`       | Search for skills in the Tank registry                                 |
-| `tank info`        | `show`    | Show detailed information about a skill                                |
-| `tank audit`       | —         | Display security audit results for installed skills                    |
-| `tank run`         | —         | Launch an agent with credential protection (vault proxy)               |
-| `tank scan`        | —         | Scan a local skill for security issues without publishing              |
-| `tank link`        | `ln`      | Link current skill directory to AI agent directories (for development) |
-| `tank unlink`      | —         | Remove skill symlinks from AI agent directories                        |
-| `tank doctor`      | —         | Diagnose agent integration health                                      |
-| `tank migrate`     | —         | Migrate skills.json → tank.json and skills.lock → tank.lock            |
-| `tank upgrade`     | —         | Update tank to the latest version                                      |
+| Command              | Alias(es) | Description                                                                |
+| -------------------- | --------- | -------------------------------------------------------------------------- |
+| `tank init`          | —         | Create a new tank.json in the current directory                            |
+| `tank build <skill>` | —         |                                                                            |
+| `tank login`         | —         | Authenticate with the Tank registry via browser                            |
+| `tank whoami`        | —         | Show the currently logged-in user                                          |
+| `tank logout`        | —         | Remove authentication token from config                                    |
+| `tank publish`       | `pub`     | Pack and publish a skill to the Tank registry                              |
+| `tank install`       | `i`       | Install a skill from the Tank registry, a URL, or all skills from lockfile |
+| `tank remove`        | `rm`, `r` | Remove an installed skill                                                  |
+| `tank update`        | `up`      | Update skills to latest versions within their ranges                       |
+| `tank verify`        | —         | Verify installed skills match the lockfile                                 |
+| `tank permissions`   | `perms`   | Display resolved permission summary for installed skills                   |
+| `tank search`        | `s`       | Search for skills in the Tank registry                                     |
+| `tank info`          | `show`    | Show detailed information about a skill                                    |
+| `tank audit`         | —         | Display security audit results for installed skills                        |
+| `tank run`           | —         | Launch an agent with credential protection (vault proxy)                   |
+| `tank scan`          | —         | Scan a local skill for security issues without publishing                  |
+| `tank link`          | `ln`      | Link current skill directory to AI agent directories (for development)     |
+| `tank unlink`        | —         | Remove skill symlinks from AI agent directories                            |
+| `tank doctor`        | —         | Diagnose agent integration health                                          |
+| `tank migrate`       | —         | Migrate skills.json → tank.json and skills.lock → tank.lock                |
+| `tank upgrade`       | —         | Update tank to the latest version                                          |
 
 ---
 

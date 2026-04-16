@@ -49,7 +49,7 @@ export function HeroSection({ starCount, selfhostedAppUrl }: HeroSectionProps) {
               transition={{ ...spring, delay: 0.05 }}>
               The Package Manager
               <br />
-              <span className="text-tank glow-text">for AI Agent Skills</span>
+              <span className="text-tank glow-text">for AI Agents</span>
             </motion.h1>
 
             {/* Subtitle */}
@@ -59,7 +59,7 @@ export function HeroSection({ starCount, selfhostedAppUrl }: HeroSectionProps) {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2, delay: 0.1 }}>
               Integrity verification, permission budgets, and 6-stage security scanning. What npm did for JavaScript,
-              Tank does for agent skills.
+              Tank does for AI agents.
             </motion.p>
 
             {/* Install method selector — biggest CTA */}
@@ -88,7 +88,7 @@ export function HeroSection({ starCount, selfhostedAppUrl }: HeroSectionProps) {
                 to="/skills"
                 search={{} as never}
                 className="text-muted-foreground/60 hover:text-foreground transition-colors">
-                Browse Skills
+                Browse Packages
               </Link>
               <span className="text-muted-foreground/20">·</span>
               <a

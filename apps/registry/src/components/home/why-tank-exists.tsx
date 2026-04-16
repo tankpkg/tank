@@ -22,17 +22,17 @@ const SOLUTIONS = [
   {
     title: 'Locked versions + integrity',
     description:
-      'SHA-512 hashes pin every skill. Tampered content fails on install. Enforced semver with permission escalation detection.'
+      'SHA-512 hashes pin every package. Tampered content fails on install. Enforced semver with permission escalation detection.'
   },
   {
     title: 'Permission budgets',
     description:
-      'Declare network, filesystem, and subprocess limits. Skills that exceed the budget are rejected before they run.'
+      'Declare network, filesystem, and subprocess limits. Packages that exceed the budget are rejected before they run.'
   },
   {
     title: '6-stage security pipeline',
     description:
-      'Every skill is scanned at publish time: ingestion, validation, static analysis, injection detection, secrets scanning, dependency audit.'
+      'Every package is scanned at publish time: ingestion, validation, static analysis, injection detection, secrets scanning, dependency audit.'
   }
 ];
 
@@ -105,7 +105,7 @@ export function WhyTankExists() {
                 <div>
                   <h4 className="text-sm font-semibold mb-1">Self-host for your organization</h4>
                   <p className="text-[13px] text-muted-foreground leading-relaxed">
-                    Run your own registry internally. Keep skills in your network with the same security guarantees.
+                    Run your own registry internally. Keep packages in your network with the same security guarantees.
                   </p>
                 </div>
               </div>

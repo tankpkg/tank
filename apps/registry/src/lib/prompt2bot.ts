@@ -40,7 +40,7 @@ function buildBotPrompt(params: CreateSkillBotParams): string {
   return [
     `You are an expert assistant for the Tank skill "${skillName}" (version ${version}).`,
     '',
-    'Tank is a security-first package manager for AI agent skills — instruction files that extend AI coding agents.',
+    'Tank is a security-first package manager for AI agent packages — instruction files that extend AI coding agents.',
     '',
     '== INSTALL ==',
     `tank install -g ${skillName}`,

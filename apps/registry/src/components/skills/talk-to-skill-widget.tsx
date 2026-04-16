@@ -241,7 +241,7 @@ function loadWidget(botPublicKey: string, skillName: string, startOpen: boolean)
       if (w.aliceAndBot) {
         w.aliceAndBot.loadChatWidget({
           participants: [botPublicKey],
-          initialMessage: `Hi! Tell me about the ${skillName} skill.`,
+          initialMessage: `Hi! Tell me about the ${skillName} package.`,
           startOpen,
           defaultName: 'Visitor',
           colorScheme: { dark: { primary: '#10b981', background: '#1a1a1a' } }
@@ -374,7 +374,7 @@ export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkill
       onClick={handleClick}
       disabled={loading}
       className="fixed bottom-6 right-6 z-[1000000] flex size-12 items-center justify-center rounded-full bg-[#10b981] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#0d9e6e] focus:outline-none focus:ring-2 focus:ring-[#10b981]/50 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50"
-      aria-label="Talk to this skill"
+      aria-label="Talk to this package"
       data-testid="talk-bubble">
       {loading ? <Loader2 className="size-5 animate-spin" /> : <MessageCircle className="size-5" />}
     </button>
