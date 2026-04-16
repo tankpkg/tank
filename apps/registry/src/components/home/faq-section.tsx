@@ -1,25 +1,37 @@
 import { HelpCircle } from 'lucide-react';
+import { motion } from 'motion/react';
 
 import { faqItems } from '~/consts/homepage';
 
 export function FaqSection() {
   return (
-    <section className="container mx-auto px-4 py-16 md:py-24">
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded bg-tank/10 border border-tank/20 mb-4">
-            <HelpCircle className="w-6 h-6 text-tank" />
+    <section className="relative z-[1] border-t border-border" aria-label="FAQ">
+      <div className="mx-auto max-w-[1000px] px-4 sm:px-6 lg:px-8 py-20">
+        <motion.div
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.3 }}>
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-sm bg-tank/10 border border-tank/12 mb-4">
+            <HelpCircle className="w-5 h-5 text-tank" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-3">
+          <h2 className="text-2xl sm:text-3xl font-display font-bold tracking-tight mb-3">
             Frequently Asked <span className="text-tank">Questions</span>
           </h2>
-        </div>
-        <div className="space-y-6">
-          {faqItems.map((item) => (
-            <div key={item.question} className="border border-tank/10 rounded p-5 bg-card/30">
-              <h3 className="font-semibold text-base mb-2">{item.question}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{item.answer}</p>
-            </div>
+        </motion.div>
+        <div className="max-w-[700px] mx-auto space-y-4">
+          {faqItems.map((item, i) => (
+            <motion.div
+              key={item.question}
+              className="rounded border border-border bg-card/30 p-5"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05, duration: 0.2 }}>
+              <h3 className="text-[15px] font-bold tracking-tight mb-2">{item.question}</h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">{item.answer}</p>
+            </motion.div>
           ))}
         </div>
       </div>

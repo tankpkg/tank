@@ -58,8 +58,9 @@ export function HeroSection({ starCount, selfhostedAppUrl }: HeroSectionProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2, delay: 0.1 }}>
-              Integrity verification, permission budgets, and 6-stage security scanning. What npm did for JavaScript,
-              Tank does for AI agents.
+              Install from registries or any URL — every package scanned through a 6-stage security pipeline. Permission
+              budgets, SHA-512 lockfiles, and escalation detection. What npm did for JavaScript, Tank does for AI
+              agents.
             </motion.p>
 
             {/* Install method selector — biggest CTA */}
