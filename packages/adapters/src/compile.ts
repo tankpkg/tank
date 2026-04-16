@@ -180,6 +180,16 @@ export function compilePackage(
 
   const allAtoms = collectAtoms(pkg, options?.resolver);
 
+  if (options?.sourceDir) {
+    for (const atom of allAtoms) {
+      if (atom.kind === 'tool' && atom.mcp?.entry && atom.mcp?.runtime) {
+        const absoluteEntry = path.resolve(options.sourceDir, atom.mcp.entry);
+        atom.mcp.command = atom.mcp.runtime;
+        atom.mcp.args = [absoluteEntry, ...(atom.mcp.args ?? [])];
+      }
+    }
+  }
+
   for (const atom of allAtoms) {
     const capability = adapter.capabilities[atom.kind as keyof AdapterCapabilities];
 
