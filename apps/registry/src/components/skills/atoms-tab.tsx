@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link } from '@tanstack/react-router';
+import { useState } from 'react';
 
-import { AtomKindBadge, AtomKindBadges } from "~/components/skills/atom-kind-badge";
-import { Button } from "~/components/ui/button";
-import { Separator } from "~/components/ui/separator";
-import { atomDisplayConfig, isBundle, type AtomDisplayKind } from "~/lib/skills/atoms";
+import { AtomKindBadge, AtomKindBadges } from '~/components/skills/atom-kind-badge';
+import { Button } from '~/components/ui/button';
+import { Separator } from '~/components/ui/separator';
+import { type AtomDisplayKind, atomDisplayConfig, isBundle } from '~/lib/skills/atoms';
 
 interface AtomsTabProps {
   atoms: Record<string, unknown>[];
@@ -12,27 +12,27 @@ interface AtomsTabProps {
 
 function getPrimaryIdentifier(atom: Record<string, unknown>): string {
   const kind = atom.kind as string | undefined;
-  const candidates: (keyof typeof atom)[] = ["name", "event", "scope", "uri"];
-  if (kind === "resource") return (atom.uri as string) ?? (atom.name as string) ?? "(unnamed)";
-  if (kind === "hook") return (atom.event as string) ?? (atom.name as string) ?? "(unnamed)";
-  if (kind === "instruction") return (atom.scope as string) ?? (atom.name as string) ?? "(unnamed)";
+  const candidates: (keyof typeof atom)[] = ['name', 'event', 'scope', 'uri'];
+  if (kind === 'resource') return (atom.uri as string) ?? (atom.name as string) ?? '(unnamed)';
+  if (kind === 'hook') return (atom.event as string) ?? (atom.name as string) ?? '(unnamed)';
+  if (kind === 'instruction') return (atom.scope as string) ?? (atom.name as string) ?? '(unnamed)';
   for (const key of candidates) {
-    if (atom[key] && typeof atom[key] === "string") return atom[key] as string;
+    if (atom[key] && typeof atom[key] === 'string') return atom[key] as string;
   }
-  return "(unnamed)";
+  return '(unnamed)';
 }
 
 function getKeyFields(atom: Record<string, unknown>): Array<{ key: string; value: string }> {
-  const skip = new Set(["kind", "name", "event", "scope", "uri", "description"]);
+  const skip = new Set(['kind', 'name', 'event', 'scope', 'uri', 'description']);
   const entries = Object.entries(atom)
-    .filter(([k, v]) => !skip.has(k) && v != null && typeof v !== "object")
+    .filter(([k, v]) => !skip.has(k) && v != null && typeof v !== 'object')
     .slice(0, 3);
   return entries.map(([k, v]) => ({ key: k, value: String(v) }));
 }
 
 function AtomCard({ atom }: { atom: Record<string, unknown> }) {
   const [expanded, setExpanded] = useState(false);
-  const kind = (atom.kind as string) ?? "skill";
+  const kind = (atom.kind as string) ?? 'skill';
   const identifier = getPrimaryIdentifier(atom);
   const keyFields = getKeyFields(atom);
 
@@ -42,7 +42,7 @@ function AtomCard({ atom }: { atom: Record<string, unknown> }) {
         <AtomKindBadge kind={kind as AtomDisplayKind} size="sm" />
         <span className="font-mono text-sm font-medium truncate">{identifier}</span>
       </div>
-      {typeof atom.description === "string" && atom.description && (
+      {typeof atom.description === 'string' && atom.description && (
         <p className="text-xs text-muted-foreground leading-relaxed">{atom.description}</p>
       )}
       {keyFields.length > 0 && (
@@ -60,7 +60,7 @@ function AtomCard({ atom }: { atom: Record<string, unknown> }) {
         size="sm"
         className="h-6 px-0 text-xs text-muted-foreground"
         onClick={() => setExpanded((p) => !p)}>
-        {expanded ? "Show less" : "Show more"}
+        {expanded ? 'Show less' : 'Show more'}
       </Button>
       {expanded && (
         <pre className="rounded border bg-muted/50 p-2 text-[10px] font-mono overflow-x-auto">
@@ -72,11 +72,11 @@ function AtomCard({ atom }: { atom: Record<string, unknown> }) {
 }
 
 export function AtomsTab({ atoms }: AtomsTabProps) {
-  const kinds = Array.from(new Set(atoms.map((a) => (a.kind as string) ?? "skill")));
+  const kinds = Array.from(new Set(atoms.map((a) => (a.kind as string) ?? 'skill')));
   const bundle = isBundle(kinds as AtomDisplayKind[]);
 
   const grouped = kinds.reduce<Record<string, Record<string, unknown>[]>>((acc, kind) => {
-    acc[kind] = atoms.filter((a) => (a.kind ?? "skill") === kind);
+    acc[kind] = atoms.filter((a) => (a.kind ?? 'skill') === kind);
     return acc;
   }, {});
 
@@ -85,8 +85,8 @@ export function AtomsTab({ atoms }: AtomsTabProps) {
       <div className="rounded-lg border bg-muted/50 p-4 text-sm leading-relaxed">
         <p>
           <strong>Atoms</strong> are the building blocks of a Tank package. Each atom teaches your AI agent a specific
-          capability — follow a rule, intercept a tool call, take on a role, or use a resource.{" "}
-          <Link to="/docs/$" params={{ _splat: "atoms" }} className="text-primary hover:underline">
+          capability — follow a rule, intercept a tool call, take on a role, or use a resource.{' '}
+          <Link to="/docs/$" params={{ _splat: 'atoms' }} className="text-primary hover:underline">
             Learn about atoms →
           </Link>
         </p>

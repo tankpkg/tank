@@ -1,41 +1,41 @@
-import { Check, Copy, MessageSquare } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { Check, Copy, MessageSquare } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 
-import { AtomKindBadges } from "~/components/skills/atom-kind-badge";
-import { DownloadButton } from "~/components/skills/download-button";
-import { SkillSidebar } from "~/components/skills/skill-sidebar";
-import { SkillTabs } from "~/components/skills/skill-tabs";
-import { StarButton } from "~/components/skills/star-button";
-import { TalkToSkillWidget, type TalkToSkillWidgetHandle } from "~/components/skills/talk-to-skill-widget";
-import { TrustBadge } from "~/components/skills/trust-badge";
+import { AtomKindBadges } from '~/components/skills/atom-kind-badge';
+import { DownloadButton } from '~/components/skills/download-button';
+import { SkillSidebar } from '~/components/skills/skill-sidebar';
+import { SkillTabs } from '~/components/skills/skill-tabs';
+import { StarButton } from '~/components/skills/star-button';
+import { TalkToSkillWidget, type TalkToSkillWidgetHandle } from '~/components/skills/talk-to-skill-widget';
+import { TrustBadge } from '~/components/skills/trust-badge';
 
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Separator } from "~/components/ui/separator";
-import { useCopyToClipboard } from "~/hooks/use-copy-to-clipboard";
-import { safeParseJson, safeParsePermissions } from "~/lib/format";
-import type { ScanDetails, SkillDetailResult } from "~/lib/skills/data";
-import { extractAtomKinds } from "~/lib/skills/atoms";
-import { buildSecurityTab } from "~/screens/skill-detail-helpers";
+import { Badge } from '~/components/ui/badge';
+import { Button } from '~/components/ui/button';
+import { Separator } from '~/components/ui/separator';
+import { useCopyToClipboard } from '~/hooks/use-copy-to-clipboard';
+import { safeParseJson, safeParsePermissions } from '~/lib/format';
+import { extractAtomKinds } from '~/lib/skills/atoms';
+import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
+import { buildSecurityTab } from '~/screens/skill-detail-helpers';
 
 const MOBILE_TRIGGER_LIMIT = 6;
 
 function parseDescription(raw: string | null): { summary: string; triggers: string[] } {
-  if (!raw) return { summary: "", triggers: [] };
+  if (!raw) return { summary: '', triggers: [] };
 
-  const triggerIdx = raw.indexOf("Triggers:");
+  const triggerIdx = raw.indexOf('Triggers:');
   if (triggerIdx === -1) return { summary: raw.trim(), triggers: [] };
 
   const summary = raw
     .slice(0, triggerIdx)
-    .replace(/\.\s*$/, "")
+    .replace(/\.\s*$/, '')
     .trim();
   const triggerStr = raw
-    .slice(triggerIdx + "Triggers:".length)
-    .replace(/\.$/, "")
+    .slice(triggerIdx + 'Triggers:'.length)
+    .replace(/\.$/, '')
     .trim();
   const triggers = triggerStr
-    .split(",")
+    .split(',')
     .map((t) => t.trim())
     .filter(Boolean);
 
@@ -51,7 +51,7 @@ function MobileActionBar({
   data,
   scanDetails,
   talkEnabled,
-  onTalkClick,
+  onTalkClick
 }: {
   data: SkillDetailResult;
   scanDetails: ScanDetails | null;
@@ -95,7 +95,7 @@ function MobileActionBar({
         </code>
         <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1 text-xs" onClick={() => copy(installCmd)}>
           {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? 'Copied' : 'Copy'}
         </Button>
       </div>
     </div>
@@ -103,19 +103,19 @@ function MobileActionBar({
 }
 
 export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps) {
-  const [activeTab, setActiveTab] = useState("readme");
+  const [activeTab, setActiveTab] = useState('readme');
   const [triggersExpanded, setTriggersExpanded] = useState(false);
   const talkWidgetRef = useRef<TalkToSkillWidgetHandle>(null);
   const latestManifest = safeParseJson(data.latestVersion?.manifest);
   const fileList: string[] = Array.isArray(latestManifest?.files) ? (latestManifest.files as string[]) : [];
-  const license = typeof latestManifest?.license === "string" ? latestManifest.license : null;
+  const license = typeof latestManifest?.license === 'string' ? latestManifest.license : null;
   const permissions = safeParsePermissions(data.latestVersion?.permissions);
 
   const permItems: string[] = [];
   if (permissions?.network?.outbound?.length) permItems.push(`Network: ${permissions.network.outbound.length} host(s)`);
   if (permissions?.filesystem?.read?.length || permissions?.filesystem?.write?.length)
-    permItems.push("Filesystem access");
-  if (permissions?.subprocess) permItems.push("Subprocess execution");
+    permItems.push('Filesystem access');
+  if (permissions?.subprocess) permItems.push('Subprocess execution');
 
   const readmeContent = data.latestVersion?.readme;
   const scanDetails = data.latestVersion?.scanDetails;
@@ -138,7 +138,7 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
               {data.latestVersion.version}
             </Badge>
           )}
-          {data.visibility === "private" && (
+          {data.visibility === 'private' && (
             <Badge variant="outline" className="text-xs">
               Private
             </Badge>
@@ -218,11 +218,11 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
         readmeContent={readmeContent ?? null}
         versions={data.versions.map((v) => ({
           ...v,
-          publishedAt: v.publishedAt instanceof Date ? v.publishedAt.toISOString() : String(v.publishedAt),
+          publishedAt: v.publishedAt instanceof Date ? v.publishedAt.toISOString() : String(v.publishedAt)
         }))}
         files={fileList}
         skillName={data.name}
-        version={data.latestVersion?.version ?? ""}
+        version={data.latestVersion?.version ?? ''}
         readme={data.latestVersion?.readme ?? null}
         manifest={latestManifest}
         securityTab={securityTab}

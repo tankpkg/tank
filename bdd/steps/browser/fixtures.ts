@@ -1,15 +1,15 @@
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-import { generateUuid, hash } from "cipher-kit/node";
+import { generateUuid, hash } from 'cipher-kit/node';
 
-import { test as base, createBdd } from "playwright-bdd";
+import { test as base, createBdd } from 'playwright-bdd';
 
-import { type CliResult, expectSuccess, runTank } from "../../../e2e/helpers/cli";
-import { cleanupFixture, createSkillFixture, type SkillFixture } from "../../../e2e/helpers/fixtures";
-import { cleanupE2E, type E2EContext, setupE2E } from "../../../e2e/helpers/setup";
-import { getRegistryUrl } from "../../../e2e/targets.js";
+import { type CliResult, expectSuccess, runTank } from '../../../e2e/helpers/cli';
+import { cleanupFixture, createSkillFixture, type SkillFixture } from '../../../e2e/helpers/fixtures';
+import { cleanupE2E, type E2EContext, setupE2E } from '../../../e2e/helpers/setup';
+import { getRegistryUrl } from '../../../e2e/targets.js';
 
 export interface UserFixture {
   id: string;
@@ -59,19 +59,19 @@ function hashApiKey(plainKey: string): string {
 }
 
 function createApiKey(seed: string): string {
-  let key = `tank_e2e_${seed}_${generateUuid().replace(/-/g, "")}`;
+  let key = `tank_e2e_${seed}_${generateUuid().replace(/-/g, '')}`;
   while (key.length < 64) {
-    key += generateUuid().replace(/-/g, "");
+    key += generateUuid().replace(/-/g, '');
   }
   return key;
 }
 
 function createHomeDir(registry: string, token?: string, user?: { name: string; email: string }): string {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), "tank-bdd-"));
-  const tankDir = path.join(home, ".tank");
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-bdd-'));
+  const tankDir = path.join(home, '.tank');
   fs.mkdirSync(tankDir, { recursive: true, mode: 0o700 });
   const config: { registry: string; token?: string; user?: { name: string; email: string } } = {
-    registry,
+    registry
   };
   if (token) {
     config.token = token;
@@ -79,7 +79,7 @@ function createHomeDir(registry: string, token?: string, user?: { name: string; 
   if (user) {
     config.user = user;
   }
-  fs.writeFileSync(path.join(tankDir, "config.json"), `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
+  fs.writeFileSync(path.join(tankDir, 'config.json'), `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
   return home;
 }
 
@@ -109,7 +109,7 @@ async function createUserFixture(ctx: E2EContext, opts: UserFixtureOptions): Pro
     INSERT INTO "apikey" (id, key, start, prefix, user_id, enabled, rate_limit_enabled,
                           rate_limit_time_window, rate_limit_max, request_count,
                           created_at, updated_at)
-    VALUES (${apiKeyId}, ${hashedKey}, ${plainKey.substring(0, 6)}, ${"tank_"},
+    VALUES (${apiKeyId}, ${hashedKey}, ${plainKey.substring(0, 6)}, ${'tank_'},
             ${userId}, true, false, 86400000, 1000, 0, ${now}, ${now})
   `;
 
@@ -117,7 +117,7 @@ async function createUserFixture(ctx: E2EContext, opts: UserFixtureOptions): Pro
     const orgId = `e2e-org-${ctx.runId}`;
     await ctx.sql`
       INSERT INTO "member" (id, organization_id, user_id, role, created_at)
-      VALUES (${memberId}, ${orgId}, ${userId}, ${"member"}, ${now})
+      VALUES (${memberId}, ${orgId}, ${userId}, ${'member'}, ${now})
     `;
   }
 
@@ -128,7 +128,7 @@ async function createUserFixture(ctx: E2EContext, opts: UserFixtureOptions): Pro
     name: opts.name,
     email,
     token: plainKey,
-    home,
+    home
   };
 }
 
@@ -137,7 +137,7 @@ async function safeDelete(query: Promise<unknown>) {
     await query;
   } catch (e: unknown) {
     const code = (e as { code?: string }).code;
-    if (code !== "42P01") throw e;
+    if (code !== '42P01') throw e;
   }
 }
 
@@ -160,43 +160,43 @@ export const test = base.extend<BddTestFixtures, BddWorkerFixtures>({
     // biome-ignore lint/correctness/noEmptyPattern: Playwright fixture API requires destructuring
     async ({}, use) => {
       const baseURL = test.info().project.use.baseURL;
-      const ctx = await setupE2E(typeof baseURL === "string" ? baseURL : getRegistryUrl());
+      const ctx = await setupE2E(typeof baseURL === 'string' ? baseURL : getRegistryUrl());
       await use(ctx);
       await cleanupE2E(ctx);
     },
-    { scope: "worker" },
+    { scope: 'worker' }
   ],
   searchQuery: [
     async ({ e2eContext }, use) => {
       await use(`private-packages-${e2eContext.runId}`);
     },
-    { scope: "worker" },
+    { scope: 'worker' }
   ],
   secondUser: [
     async ({ e2eContext }, use) => {
       const user = await createUserFixture(e2eContext, {
-        slug: "bob",
-        name: "Bob",
-        emailPrefix: "bob",
-        addToOrg: true,
+        slug: 'bob',
+        name: 'Bob',
+        emailPrefix: 'bob',
+        addToOrg: true
       });
       await use(user);
       await cleanupUserFixture(e2eContext, user);
     },
-    { scope: "worker" },
+    { scope: 'worker' }
   ],
   thirdUser: [
     async ({ e2eContext }, use) => {
       const user = await createUserFixture(e2eContext, {
-        slug: "charlie",
-        name: "Charlie",
-        emailPrefix: "charlie",
-        addToOrg: false,
+        slug: 'charlie',
+        name: 'Charlie',
+        emailPrefix: 'charlie',
+        addToOrg: false
       });
       await use(user);
       await cleanupUserFixture(e2eContext, user);
     },
-    { scope: "worker" },
+    { scope: 'worker' }
   ],
   noAuthHome: [
     async ({ e2eContext }, use) => {
@@ -204,47 +204,47 @@ export const test = base.extend<BddTestFixtures, BddWorkerFixtures>({
       await use(home);
       cleanupHomeDir(home);
     },
-    { scope: "test" },
+    { scope: 'test' }
   ],
   publishedPrivateSkill: [
     async ({ e2eContext, searchQuery }, use) => {
       const skill = createSkillFixture({
         orgSlug: e2eContext.orgSlug,
-        skillName: "private-access-skill",
-        description: `Private packages ${searchQuery}`,
+        skillName: 'private-access-skill',
+        description: `Private packages ${searchQuery}`
       });
 
-      const result = await runTank(["publish", "--private"], {
+      const result = await runTank(['publish', '--private'], {
         cwd: skill.dir,
         home: e2eContext.home,
-        timeoutMs: 60_000,
+        timeoutMs: 60_000
       });
       expectSuccess(result);
 
       await use(skill);
       cleanupFixture(skill.dir);
     },
-    { scope: "worker" },
+    { scope: 'worker' }
   ],
   publishedPublicSkill: [
     async ({ e2eContext, searchQuery }, use) => {
       const skill = createSkillFixture({
         orgSlug: e2eContext.orgSlug,
-        skillName: "public-search-skill",
-        description: `Private packages ${searchQuery}`,
+        skillName: 'public-search-skill',
+        description: `Private packages ${searchQuery}`
       });
 
-      const result = await runTank(["publish"], {
+      const result = await runTank(['publish'], {
         cwd: skill.dir,
         home: e2eContext.home,
-        timeoutMs: 60_000,
+        timeoutMs: 60_000
       });
       expectSuccess(result);
 
       await use(skill);
       cleanupFixture(skill.dir);
     },
-    { scope: "worker" },
+    { scope: 'worker' }
   ],
   bddState: [
     async ({ searchQuery }, use) => {
@@ -254,12 +254,12 @@ export const test = base.extend<BddTestFixtures, BddWorkerFixtures>({
         cleanupFixture(dir);
       }
     },
-    { scope: "test" },
-  ],
+    { scope: 'test' }
+  ]
 });
 
 export const { Given, When, Then } = createBdd(test);
-export { expectFailure } from "../../../e2e/helpers/cli";
-export { type ConsumerFixture, createConsumerFixture, createSkillFixture } from "../../../e2e/helpers/fixtures";
+export { expectFailure } from '../../../e2e/helpers/cli';
+export { type ConsumerFixture, createConsumerFixture, createSkillFixture } from '../../../e2e/helpers/fixtures';
 export type { SkillFixture };
 export { expectSuccess, runTank };

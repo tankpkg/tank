@@ -1,14 +1,14 @@
-import type { ReactNode } from "react";
-import { AtomsTab } from "~/components/skills/atoms-tab";
-import { FileExplorer } from "~/components/skills/file-explorer";
-import { SkillReadme } from "~/components/skills/skill-readme";
-import { Badge } from "~/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { formatDate } from "~/lib/format";
-import type { SkillVersionSummary } from "~/lib/skills/data";
+import type { ReactNode } from 'react';
+import { AtomsTab } from '~/components/skills/atoms-tab';
+import { FileExplorer } from '~/components/skills/file-explorer';
+import { SkillReadme } from '~/components/skills/skill-readme';
+import { Badge } from '~/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
+import { formatDate } from '~/lib/format';
+import type { SkillVersionSummary } from '~/lib/skills/data';
 
-type SerializedVersion = Omit<SkillVersionSummary, "publishedAt"> & { publishedAt: string };
+type SerializedVersion = Omit<SkillVersionSummary, 'publishedAt'> & { publishedAt: string };
 
 interface SkillTabsProps {
   readmeContent: string | null;
@@ -44,7 +44,7 @@ function VersionHistory({ versions }: { versions: SerializedVersion[] }) {
             <TableCell className="font-mono font-medium">{v.version}</TableCell>
             <TableCell className="text-muted-foreground">{formatDate(v.publishedAt)}</TableCell>
             <TableCell>
-              <Badge variant={v.auditStatus === "published" || v.auditStatus === "completed" ? "secondary" : "outline"}>
+              <Badge variant={v.auditStatus === 'published' || v.auditStatus === 'completed' ? 'secondary' : 'outline'}>
                 {v.auditStatus}
               </Badge>
             </TableCell>
@@ -65,10 +65,10 @@ export function SkillTabs({
   manifest,
   securityTab,
   hasSecurityData = false,
-  activeTab = "readme",
+  activeTab = 'readme',
   onTabChange,
   sidebar,
-  atoms,
+  atoms
 }: SkillTabsProps) {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">

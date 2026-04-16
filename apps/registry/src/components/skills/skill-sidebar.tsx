@@ -1,21 +1,21 @@
-import { Star } from "lucide-react";
+import { Star } from 'lucide-react';
 
-import { AtomKindBadges } from "~/components/skills/atom-kind-badge";
-import { DownloadButton } from "~/components/skills/download-button";
-import { InstallCommand } from "~/components/skills/install-command";
-import { QualityChecks } from "~/components/skills/quality-checks";
-import { StarButton } from "~/components/skills/star-button";
-import { TrustBadge } from "~/components/skills/trust-badge";
-import { VerifiedPublisherBadge } from "~/components/skills/verified-publisher-badge";
-import { Separator } from "~/components/ui/separator";
-import { formatSize, timeAgo } from "~/lib/format";
-import type { ScanDetails } from "~/lib/skills/data";
+import { AtomKindBadges } from '~/components/skills/atom-kind-badge';
+import { DownloadButton } from '~/components/skills/download-button';
+import { InstallCommand } from '~/components/skills/install-command';
+import { QualityChecks } from '~/components/skills/quality-checks';
+import { StarButton } from '~/components/skills/star-button';
+import { TrustBadge } from '~/components/skills/trust-badge';
+import { VerifiedPublisherBadge } from '~/components/skills/verified-publisher-badge';
+import { Separator } from '~/components/ui/separator';
+import { formatSize, timeAgo } from '~/lib/format';
+import type { ScanDetails } from '~/lib/skills/data';
 
 const findings = [
-  { key: "criticalCount", label: "critical", color: "text-red-600" },
-  { key: "highCount", label: "high", color: "text-orange-500" },
-  { key: "mediumCount", label: "medium", color: "text-yellow-500" },
-  { key: "lowCount", label: "low", color: "text-blue-500" },
+  { key: 'criticalCount', label: 'critical', color: 'text-red-600' },
+  { key: 'highCount', label: 'high', color: 'text-orange-500' },
+  { key: 'mediumCount', label: 'medium', color: 'text-yellow-500' },
+  { key: 'lowCount', label: 'low', color: 'text-blue-500' }
 ] as const;
 
 export interface SkillSidebarProps {
@@ -59,7 +59,7 @@ export function SkillSidebar({
   scanDetails,
   hasSecurityData,
   permItems,
-  atomKinds,
+  atomKinds
 }: SkillSidebarProps) {
   return (
     <aside className="w-full lg:w-72 shrink-0 space-y-4 lg:sticky lg:top-4" data-testid="desktop-sidebar">
@@ -102,7 +102,7 @@ export function SkillSidebar({
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-primary hover:underline inline-flex items-center gap-1">
-              {repositoryUrl.replace("https://github.com/", "")}
+              {repositoryUrl.replace('https://github.com/', '')}
               <span className="text-xs">&#8599;</span>
             </a>
           </div>
@@ -156,7 +156,7 @@ export function SkillSidebar({
           )}
           <div>
             <dt>Published</dt>
-            <dd>{latestVersion ? timeAgo(latestVersion.publishedAt) : "\u2014"}</dd>
+            <dd>{latestVersion ? timeAgo(latestVersion.publishedAt) : '\u2014'}</dd>
           </div>
           <div>
             <dt>Publisher</dt>
@@ -195,7 +195,7 @@ export function SkillSidebar({
                     <span>&#9679;</span>
                     <span>
                       {scanDetails[key]} {label} finding
-                      {(scanDetails[key] ?? 0) !== 1 ? "s" : ""}
+                      {(scanDetails[key] ?? 0) !== 1 ? 's' : ''}
                     </span>
                   </div>
                 ))}
