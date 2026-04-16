@@ -24,7 +24,8 @@ export const skillsSearchSchema = z
     docs: z
       .preprocess((v) => v === '1' || v === true, z.boolean())
       .catch(false)
-      .default(false)
+      .default(false),
+    atomKind: z.string().optional()
   })
   .transform(({ security, docs, ...rest }) => ({
     ...rest,
@@ -42,5 +43,6 @@ export interface SkillsSearchParams {
   freshness?: FreshnessBucket;
   popularity?: PopularityBucket;
   hasReadme?: boolean;
+  atomKind?: string;
   requesterUserId?: string | null;
 }

@@ -159,6 +159,7 @@ export const skillVersions = pgTable(
     fileCount: integer('file_count').notNull(),
     manifest: jsonb('manifest').notNull(),
     permissions: jsonb('permissions').notNull(),
+    atomKinds: text('atom_kinds').array(),
     auditScore: real('audit_score'),
     auditStatus: text('audit_status').notNull().default('pending'),
     readme: text('readme'),

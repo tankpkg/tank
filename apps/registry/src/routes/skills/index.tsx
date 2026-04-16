@@ -41,6 +41,7 @@ function SkillsPage() {
       popularity={search.popularity}
       hasReadme={search.hasReadme}
       isLoggedIn={isLoggedIn}
+      atomKind={search.atomKind}
     />
   );
 }

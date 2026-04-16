@@ -15,6 +15,15 @@ import { sql } from 'drizzle-orm';
 
 import { db } from '~/lib/db';
 import { visibilityClause } from '~/lib/db/visibility';
+import { extractAtomKinds } from '~/lib/skills/atoms';
+
+function resolveAtomKinds(column: unknown, manifest: unknown): string[] {
+  if (Array.isArray(column) && column.length > 0) return column as string[];
+  if (manifest && typeof manifest === 'object') {
+    return extractAtomKinds(manifest as Record<string, unknown>);
+  }
+  return ['skill'];
+}
 
 export type {
   FreshnessBucket,
@@ -129,6 +138,7 @@ export interface SkillVersionDetail {
   scanDetails: ScanDetails;
   prompt2botChatLink: string | null;
   prompt2botBotPublicKey: string | null;
+  atomKinds: string[];
 }
 
 export interface SkillVersionSummary {
@@ -164,6 +174,7 @@ export interface SkillSearchResult {
   downloads: number;
   stars: number;
   updatedAt?: Date;
+  atomKinds: string[];
 }
 
 export interface SkillSearchResponse {
@@ -245,6 +256,7 @@ export async function getSkillDetail(
       sv.tarball_size AS "versionTarballSize",
       sv.prompt2bot_chat_link AS "prompt2botChatLink",
       sv.prompt2bot_bot_public_key AS "prompt2botBotPublicKey",
+      sv.atom_kinds AS "atomKinds",
       (SELECT row_to_json(t) FROM (
         SELECT sr.verdict, sr.stages_run AS "stagesRun", sr.duration_ms AS "durationMs",
                sr.critical_count AS "criticalCount", sr.high_count AS "highCount",
@@ -364,7 +376,8 @@ export async function getSkillDetail(
         tarballSize: Number(latestRowData?.versionTarballSize ?? 0),
         scanDetails,
         prompt2botChatLink: (latestRowData?.prompt2botChatLink as string) ?? null,
-        prompt2botBotPublicKey: (latestRowData?.prompt2botBotPublicKey as string) ?? null
+        prompt2botBotPublicKey: (latestRowData?.prompt2botBotPublicKey as string) ?? null,
+        atomKinds: resolveAtomKinds(latestRowData?.atomKinds, latestRowData?.manifest)
       }
     : null;
 
@@ -477,6 +490,14 @@ function buildReadmeClause(hasReadme: boolean | undefined) {
   return sql``;
 }
 
+function buildAtomKindClause(atomKind: string | undefined) {
+  if (!atomKind) return sql``;
+  if (atomKind === 'skill') {
+    return sql`AND (sv.atom_kinds IS NULL OR array_length(sv.atom_kinds, 1) IS NULL)`;
+  }
+  return sql`AND sv.atom_kinds @> ARRAY[${atomKind}]::text[]`;
+}
+
 /**
  * Hybrid search combining three strategies:
  *   1. ILIKE on name — partial, prefix, org-scoped matches
@@ -515,7 +536,7 @@ export async function searchSkills(
     params = paramsOrQ;
   }
 
-  const { q, sort, visibility, securityVerdict, freshness, popularity, hasReadme } = params;
+  const { q, sort, visibility, securityVerdict, freshness, popularity, hasReadme, atomKind } = params;
   const resolvedPage = params.page;
   const resolvedLimit = params.limit;
 
@@ -557,6 +578,7 @@ export async function searchSkills(
   const freshnessClause = buildFreshnessClause(freshness);
   const popularityClause = buildPopularityClause(popularity);
   const readmeClause = buildReadmeClause(hasReadme);
+  const atomKindClause = buildAtomKindClause(atomKind);
 
   if (!q) {
     const results = (await db.execute(sql`
@@ -570,6 +592,7 @@ export async function searchSkills(
         coalesce(u.name, '') AS publisher,
         ${downloadsSql} AS downloads,
         ${starsSql} AS stars,
+        sv.atom_kinds AS "atomKinds",
         count(*) OVER() AS total
       FROM skills s
       LEFT JOIN "user" u ON u.id = s.publisher_id
@@ -589,6 +612,7 @@ export async function searchSkills(
       ${freshnessClause}
       ${popularityClause}
       ${readmeClause}
+      ${atomKindClause}
       ORDER BY ${primarySort}, s.id ASC
       OFFSET ${offset}
       LIMIT ${resolvedLimit}
@@ -610,6 +634,7 @@ export async function searchSkills(
       coalesce(u.name, '') AS publisher,
       ${downloadsSql} AS downloads,
       ${starsSql} AS stars,
+      sv.atom_kinds AS "atomKinds",
       count(*) OVER() AS total
     FROM skills s
     LEFT JOIN "user" u ON u.id = s.publisher_id
@@ -636,6 +661,7 @@ export async function searchSkills(
     ${freshnessClause}
     ${popularityClause}
     ${readmeClause}
+    ${atomKindClause}
     ORDER BY ${sort !== 'updated' ? sql`${primarySort},` : sql``} (
       CASE WHEN lower(s.name) = lower(${q}) THEN 1000 ELSE 0 END
       + CASE WHEN s.name ILIKE ${`${q}%`} THEN 800 ELSE 0 END
@@ -667,7 +693,8 @@ function mapSearchResults(rows: Record<string, unknown>[], page: number, limit: 
       publisher: (row.publisher as string) ?? '',
       downloads: Number(row.downloads) || 0,
       stars: Number(row.stars) || 0,
-      updatedAt: row.updatedAt ? new Date(row.updatedAt as string) : undefined
+      updatedAt: row.updatedAt ? new Date(row.updatedAt as string) : undefined,
+      atomKinds: resolveAtomKinds(row.atomKinds, null)
     })),
     page,
     limit,

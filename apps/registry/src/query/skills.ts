@@ -35,6 +35,7 @@ export interface SkillsListParams {
   freshness?: FreshnessBucket;
   popularity?: PopularityBucket;
   hasReadme?: boolean;
+  atomKind?: string;
 }
 
 export const getSkillsList = createServerFn({ method: 'GET' })
