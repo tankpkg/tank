@@ -282,17 +282,18 @@ function collectFiles(baseDir: string, currentDir: string, ig: ReturnType<typeof
       throw new Error(`Absolute path detected: "${relativePath}"`);
     }
 
-    // Security: check for symlinks using lstat (not stat which follows symlinks)
     const lstatResult = fs.lstatSync(fullPath);
-    if (lstatResult.isSymbolicLink()) {
-      throw new Error(`Symlink detected: "${relativePath}" — symlinks are not allowed in skill packages`);
-    }
 
-    // Check if this path should be ignored
-    // For directories, append '/' so ignore patterns like 'dir/' work correctly
-    const pathForIgnore = lstatResult.isDirectory() ? `${relativePath}/` : relativePath;
+    // Check ignore BEFORE symlink check — ignored files should not block packing
+    const isDir = lstatResult.isDirectory() || (lstatResult.isSymbolicLink() && fs.statSync(fullPath).isDirectory());
+    const pathForIgnore = isDir ? `${relativePath}/` : relativePath;
 
     if (ig.ignores(pathForIgnore)) {
+      continue;
+    }
+
+    if (lstatResult.isSymbolicLink()) {
+      console.warn(`⚠ Skipping symlink: ${relativePath}`);
       continue;
     }
 
