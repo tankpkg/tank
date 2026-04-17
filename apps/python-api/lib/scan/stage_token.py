@@ -50,42 +50,53 @@ def stage_token_analyze(ingest_result: IngestResult) -> StageResult:
         )
 
     # Check if tokenomics CLI is available
-    # Try: global binary → local node_modules/.bin → npx → bunx
+    # Try: global binary → node <local_module> → npx → bunx
     tokenomics_bin = shutil.which("tokenomics")
+
+    # Find the tokenomics JS module (installed via package.json)
+    tokenomics_module: str | None = None
     if not tokenomics_bin:
-        # Vercel installs package.json deps but doesn't put node_modules/.bin on PATH
-        # Check common locations relative to this file
         candidates = [
-            os.path.join(os.getcwd(), "node_modules", ".bin", "tokenomics"),
+            os.path.join(os.getcwd(), "node_modules", "tokenomics", "dist", "analyze.js"),
             os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "node_modules", ".bin", "tokenomics"
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                "node_modules",
+                "tokenomics",
+                "dist",
+                "analyze.js",
             ),
         ]
         for candidate in candidates:
             if os.path.isfile(candidate):
-                tokenomics_bin = candidate
+                tokenomics_module = candidate
                 break
 
-    if not tokenomics_bin and shutil.which("npx"):
-        tokenomics_bin = "npx"
-        run_via_npx = True
-    elif tokenomics_bin:
-        run_via_npx = tokenomics_bin == "npx"
-    else:
-        run_via_npx = False
+    # Find node binary — needed for local module invocation on Vercel
+    node_bin = shutil.which("node")
+    if not node_bin:
+        for candidate in ["/vercel/node-wrapper/node", "/usr/local/bin/node", "/opt/node/bin/node"]:
+            if os.path.isfile(candidate):
+                node_bin = candidate
+                break
 
-    if not tokenomics_bin:
+    # Build the run command
+    run_cmd: list[str] | None = None
+    needs_version_check = False
+
+    if tokenomics_bin:
+        run_cmd = [tokenomics_bin, "--analyze-skill", temp_dir, "--json"]
+        needs_version_check = True
+    elif tokenomics_module and node_bin:
+        run_cmd = [node_bin, tokenomics_module, "--analyze-skill", temp_dir, "--json"]
+    elif shutil.which("npx"):
+        run_cmd = ["npx", "--yes", "tokenomics", "--analyze-skill", temp_dir, "--json"]
+    elif shutil.which("bunx"):
+        run_cmd = ["bunx", "tokenomics", "--analyze-skill", temp_dir, "--json"]
+
+    if not run_cmd:
         return StageResult(
             stage="stageT", status="skipped", findings=[], duration_ms=int((time.monotonic() - start) * 1000)
         )
-
-    # Build the command
-    if run_via_npx:
-        run_cmd: list[str] = ["npx", "--yes", "tokenomics", "--analyze-skill", temp_dir, "--json"]
-    else:
-        run_cmd = [tokenomics_bin, "--analyze-skill", temp_dir, "--json"]
-
-    needs_version_check = not run_via_npx
 
     # Check tokenomics version supports --analyze-skill (>=2.3.0)
     if needs_version_check:
