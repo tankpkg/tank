@@ -156,21 +156,29 @@ async def debug_stage_t():
             found_node = c
             break
 
+    import subprocess
+
+    find_node = None
+    try:
+        result = subprocess.run(
+            ["find", "/", "-name", "node", "-type", "f", "-maxdepth", "5"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        find_node = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()] if result.stdout.strip() else []
+    except Exception as e:
+        find_node = f"error: {e}"
+
     return {
         "__file__": __file__,
         "project_root": project_root,
-        "cwd": os.getcwd(),
         "vendor_path": vendor_path,
         "vendor_exists": os.path.isfile(vendor_path),
-        "node_modules_path": node_modules_path,
-        "node_modules_exists": os.path.isfile(node_modules_path),
         "node_on_path": node_bin,
         "node_candidate_found": found_node,
-        "tokenomics_on_path": shutil.which("tokenomics"),
-        "dir_listing_vendor": os.listdir(os.path.join(project_root, "vendor", "tokenomics"))
-        if os.path.isdir(os.path.join(project_root, "vendor", "tokenomics"))
-        else "DIR_NOT_FOUND",
-        "dir_listing_project_root": [f for f in os.listdir(project_root) if not f.startswith(".")],
+        "find_node_results": find_node,
+        "PATH": os.environ.get("PATH", "").split(":"),
     }
 
 
