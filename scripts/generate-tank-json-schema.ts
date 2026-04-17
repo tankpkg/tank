@@ -3,6 +3,7 @@ import path from 'node:path';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { packageIRSchema } from '../packages/internals-schemas/src/schemas/atoms/package.js';
 
+// biome-ignore lint/suspicious/noExplicitAny: zod-to-json-schema requires ZodTypeAny
 const jsonSchema = zodToJsonSchema(packageIRSchema as any, {
   name: 'TankJson',
   target: 'jsonSchema7'
