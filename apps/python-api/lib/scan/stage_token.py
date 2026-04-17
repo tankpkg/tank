@@ -93,6 +93,11 @@ def stage_token_analyze(ingest_result: IngestResult) -> StageResult:
         run_cmd = ["bunx", "tokenomics", "--analyze-skill", temp_dir, "--json"]
 
     if not run_cmd:
+        logger.warning(
+            "stageT skipped: no tokenomics runner found. "
+            f"tokenomics_bin={tokenomics_bin}, tokenomics_module={tokenomics_module}, "
+            f"node_bin={node_bin}, project_root={project_root}, cwd={os.getcwd()}"
+        )
         return StageResult(
             stage="stageT", status="skipped", findings=[], duration_ms=int((time.monotonic() - start) * 1000)
         )
