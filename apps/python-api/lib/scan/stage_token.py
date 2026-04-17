@@ -17,7 +17,7 @@ from lib.scan.models import Finding, IngestResult, StageResult
 
 logger = logging.getLogger(__name__)
 TOKENOMICS_TIMEOUT = 10  # seconds
-MIN_TOKENOMICS_VERSION = "2.3.0"
+MIN_TOKENOMICS_VERSION = "2.3.1"
 
 
 def stage_token_analyze(ingest_result: IngestResult) -> StageResult:

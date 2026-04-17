@@ -22,8 +22,14 @@ VALID_TOKENOMICS_JSON = {
     "one_liner": "Well-structured skill with no significant waste.",
     "grade": "A",
     "estimated_tokens": 8500,
-    "comparison": "8,500 tokens — above average",
-    "cost_per_use": {"sonnet": "~$0.18", "opus": "~$0.91"},
+    "comparison": "8,500 tokens — above average (avg is ~20,000 tokens)",
+    "cost_per_use": {
+        "sonnet_context_load": "~$0.18",
+        "opus_context_load": "~$0.91",
+        "token_count": 8500,
+        "pricing_note": "Based on input pricing: $3/M (Sonnet), $15/M (Opus)."
+    },
+    "what_this_means": "This skill is expensive to load on every turn.",
     "findings": [
         {
             "rule": "prompt-size",
@@ -47,7 +53,7 @@ def _mock_subprocess_run(analyze_stdout: str | None = None):
     def run_side_effect(cmd, **kwargs):
         mock = MagicMock()
         if "--version" in cmd:
-            mock.stdout = "tokenomics v2.3.0\n"
+            mock.stdout = "tokenomics v2.3.1\n"
             mock.stderr = ""
             mock.returncode = 0
         elif "--analyze-skill" in cmd:
@@ -86,7 +92,7 @@ class TestCLINotInstalled:
 
 
 class TestVersionTooOld:
-    """Scenario: tokenomics installed but version < 2.3.0."""
+    """Scenario: tokenomics installed but version < 2.3.1."""
 
     def test_skipped_on_old_version(self):
         old_version_proc = MagicMock()
@@ -182,7 +188,8 @@ class TestValidJsonOutput:
         assert evidence["estimated_tokens_per_invocation"] == 8500
         assert evidence["total_findings"] == 1
         assert evidence["grade"] == "A"
-        assert evidence["cost_per_use"] == {"sonnet": "~$0.18", "opus": "~$0.91"}
+        assert evidence["cost_per_use"]["sonnet_context_load"] == "~$0.18"
+        assert evidence["cost_per_use"]["opus_context_load"] == "~$0.91"
 
     def test_summary_description_format(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -233,7 +240,7 @@ class TestTimeout:
         def run_side_effect(cmd, **kwargs):
             if "--version" in cmd:
                 mock = MagicMock()
-                mock.stdout = "tokenomics v2.3.0\n"
+                mock.stdout = "tokenomics v2.3.1\n"
                 mock.stderr = ""
                 mock.returncode = 0
                 return mock
@@ -287,7 +294,7 @@ class TestGenericException:
         def run_side_effect(cmd, **kwargs):
             if "--version" in cmd:
                 mock = MagicMock()
-                mock.stdout = "tokenomics v2.3.0\n"
+                mock.stdout = "tokenomics v2.3.1\n"
                 mock.stderr = ""
                 mock.returncode = 0
                 return mock

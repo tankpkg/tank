@@ -78,15 +78,6 @@ function buildPipelineStages(scanDetails: ScanDetails): PipelineStage[] {
       findingCount: stageFindingCount('stage5'),
       durationMs: 0,
       tools: ['OSV API', 'pip-audit']
-    },
-    {
-      id: 'stageT',
-      name: 'Token Analysis',
-      description: 'Estimate token usage efficiency',
-      status: scanDetails.stagesRun?.includes('stageT') ? 'passed' : 'skipped',
-      findingCount: stageFindingCount('stageT'),
-      durationMs: 0,
-      tools: ['tokenomics CLI']
     }
   ];
 }
@@ -99,7 +90,15 @@ function TokenEfficiencyCard({ findings }: { findings: ScanFinding[] }) {
     grade?: string;
     efficiency_score?: number;
     estimated_tokens_per_invocation?: number;
-    cost_per_use?: { sonnet?: string; opus?: string };
+    cost_per_use?: {
+      sonnet?: string;
+      opus?: string;
+      sonnet_context_load?: string;
+      opus_context_load?: string;
+    };
+    one_liner?: string;
+    comparison?: string;
+    what_this_means?: string;
   };
   try {
     evidence = JSON.parse(summary.evidence);
@@ -110,8 +109,8 @@ function TokenEfficiencyCard({ findings }: { findings: ScanFinding[] }) {
   const grade = evidence.grade;
   const score = evidence.efficiency_score;
   const tokens = evidence.estimated_tokens_per_invocation;
-  const costSonnet = evidence.cost_per_use?.sonnet;
-  const costOpus = evidence.cost_per_use?.opus;
+  const costSonnet = evidence.cost_per_use?.sonnet_context_load ?? evidence.cost_per_use?.sonnet;
+  const costOpus = evidence.cost_per_use?.opus_context_load ?? evidence.cost_per_use?.opus;
 
   // Individual token findings (excluding the summary)
   const tokenFindings = findings.filter((f) => f.stage === 'stageT' && f.type !== 'token_summary');
@@ -119,6 +118,8 @@ function TokenEfficiencyCard({ findings }: { findings: ScanFinding[] }) {
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
+        {evidence.one_liner && <p className="text-sm text-muted-foreground">{evidence.one_liner}</p>}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {tokens != null && (
             <div>
@@ -126,6 +127,7 @@ function TokenEfficiencyCard({ findings }: { findings: ScanFinding[] }) {
                 Tokens per Invocation
               </span>
               <p className="mt-1 text-2xl font-semibold tabular-nums">~{tokens.toLocaleString()}</p>
+              {evidence.comparison && <p className="mt-0.5 text-xs text-muted-foreground">{evidence.comparison}</p>}
             </div>
           )}
           {(costSonnet || costOpus) && (
@@ -163,6 +165,8 @@ function TokenEfficiencyCard({ findings }: { findings: ScanFinding[] }) {
             </div>
           )}
         </div>
+
+        {evidence.what_this_means && <p className="text-sm text-muted-foreground">{evidence.what_this_means}</p>}
 
         {tokenFindings.length > 0 && (
           <div className="space-y-2">
@@ -206,7 +210,7 @@ export function buildTokenTab({ scanDetails }: { data: SkillDetailResult; scanDe
 }
 
 export function buildSecurityTab({ data: _data, scanDetails }: { data: SkillDetailResult; scanDetails: ScanDetails }) {
-  const allFindings = scanDetails.findings ?? [];
+  const allFindings = (scanDetails.findings ?? []).filter((f) => f.stage !== 'stageT');
 
   return (
     <div className="space-y-6" data-testid="security-root">
