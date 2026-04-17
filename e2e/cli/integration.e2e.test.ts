@@ -26,7 +26,9 @@ import {
   createSkillFixture,
   type SkillFixture
 } from '../helpers/fixtures';
-import { cleanupE2E, type E2EContext, setupE2E } from '../helpers/setup';
+import { cleanupE2E, type E2EContext, hasRegistry, setupE2E } from '../helpers/setup';
+
+const describeIfRegistry = hasRegistry ? describe : describe.skip;
 
 interface LinksManifest {
   version: 1;
@@ -41,7 +43,7 @@ interface LinksManifest {
   >;
 }
 
-describe('Integration E2E — agent linking workflows', () => {
+describeIfRegistry('Integration E2E — agent linking workflows', () => {
   let ctx: E2EContext;
   let skill: SkillFixture;
   let consumer: ConsumerFixture;

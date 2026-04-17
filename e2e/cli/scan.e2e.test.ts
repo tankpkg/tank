@@ -17,9 +17,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { expectFailure, expectSuccess, runTank } from '../helpers/cli';
 import { cleanupFixture, createSkillFixture } from '../helpers/fixtures';
-import { cleanupE2E, type E2EContext, setupE2E } from '../helpers/setup';
+import { cleanupE2E, type E2EContext, hasRegistry, setupE2E } from '../helpers/setup';
 
-describe('Scan E2E — security scanning via the Tank registry', () => {
+const describeIfRegistry = hasRegistry ? describe : describe.skip;
+
+describeIfRegistry('Scan E2E — security scanning via the Tank registry', () => {
   let ctx: E2EContext;
   const tempDirs: string[] = [];
 

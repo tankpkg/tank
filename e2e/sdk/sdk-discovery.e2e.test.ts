@@ -3,11 +3,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { TankClient, TankNotFoundError } from '@tankpkg/sdk';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { cleanupE2E, type E2EContext, setupE2E } from '../helpers/setup';
+import { cleanupE2E, type E2EContext, hasRegistry, setupE2E } from '../helpers/setup';
+
+const describeIfRegistry = hasRegistry ? describe : describe.skip;
 
 const SEEDED_SKILL = '@tank/react';
 
-describe('SDK Discovery E2E — search, info, versions against seeded registry', () => {
+describeIfRegistry('SDK Discovery E2E — search, info, versions against seeded registry', () => {
   let ctx: E2EContext;
   let client: TankClient;
   const tempDirs: string[] = [];
