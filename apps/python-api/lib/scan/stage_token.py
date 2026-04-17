@@ -50,32 +50,45 @@ def stage_token_analyze(ingest_result: IngestResult) -> StageResult:
         )
 
     # Check if tokenomics CLI is available
-    tokenomics_path = shutil.which("tokenomics")
-    if not tokenomics_path:
+    # Try: global binary → npx (local node_modules) → bunx
+    tokenomics_bin = shutil.which("tokenomics")
+    run_cmd: list[str] | None = None
+    if tokenomics_bin:
+        run_cmd = [tokenomics_bin]
+    elif shutil.which("npx"):
+        run_cmd = ["npx", "--yes", "tokenomics"]
+    elif shutil.which("bunx"):
+        run_cmd = ["bunx", "tokenomics"]
+
+    if not run_cmd:
         return StageResult(
             stage="stageT", status="skipped", findings=[], duration_ms=int((time.monotonic() - start) * 1000)
         )
 
+    # For npx/bunx invocations, skip version check (npx handles it)
+    needs_version_check = bool(tokenomics_bin)
+
     # Check tokenomics version supports --analyze-skill (>=2.3.0)
-    try:
-        ver_result = subprocess.run([tokenomics_path, "--version"], capture_output=True, text=True, timeout=5)
-        version_str = (ver_result.stdout or ver_result.stderr or "").strip()
-        # Parse version from output like "tokenomics v2.3.0" or just "2.3.0"
-        version_str = version_str.lower().replace("tokenomics", "").replace("v", "").strip()
-        installed_parts = [int(p) for p in version_str.split(".") if p.isdigit()]
-        min_parts = [int(p) for p in MIN_TOKENOMICS_VERSION.split(".")]
-        if installed_parts < min_parts:
-            return StageResult(
-                stage="stageT", status="skipped", findings=[], duration_ms=int((time.monotonic() - start) * 1000)
-            )
-    except Exception:
-        # If version check fails, try running anyway — worst case it exits non-zero
-        pass
+    if needs_version_check:
+        try:
+            ver_result = subprocess.run([tokenomics_bin, "--version"], capture_output=True, text=True, timeout=5)
+            version_str = (ver_result.stdout or ver_result.stderr or "").strip()
+            # Parse version from output like "tokenomics v2.3.0" or just "2.3.0"
+            version_str = version_str.lower().replace("tokenomics", "").replace("v", "").strip()
+            installed_parts = [int(p) for p in version_str.split(".") if p.isdigit()]
+            min_parts = [int(p) for p in MIN_TOKENOMICS_VERSION.split(".")]
+            if installed_parts < min_parts:
+                return StageResult(
+                    stage="stageT", status="skipped", findings=[], duration_ms=int((time.monotonic() - start) * 1000)
+                )
+        except Exception:
+            # If version check fails, try running anyway — worst case it exits non-zero
+            pass
 
     # Run tokenomics CLI
     try:
         result = subprocess.run(
-            [tokenomics_path, "--analyze-skill", temp_dir, "--json"],
+            [*run_cmd, "--analyze-skill", temp_dir, "--json"],
             capture_output=True,
             text=True,
             timeout=TOKENOMICS_TIMEOUT,
