@@ -14,6 +14,6 @@ root.title = 'tank.json';
 root.description = 'Tank multi-atom skill package manifest. See https://tankpkg.dev/docs/atoms';
 
 const outPath = path.resolve(import.meta.dirname, '..', 'packages', 'internals-schemas', 'tank-json.schema.json');
-fs.writeFileSync(outPath, JSON.stringify(jsonSchema, null, 2) + '\n');
+fs.writeFileSync(outPath, `${JSON.stringify(jsonSchema, null, 2)}\n`);
 
 console.log(`Generated: ${outPath}`);
