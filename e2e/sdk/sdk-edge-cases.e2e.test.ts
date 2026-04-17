@@ -7,15 +7,18 @@ import {
   TankNotFoundError
 } from '@tankpkg/sdk';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { cleanupE2E, type E2EContext, setupE2E } from '../helpers/setup';
+import { cleanupE2E, type E2EContext, hasRegistry, setupE2E } from '../helpers/setup';
+
+const describeIfRegistry = hasRegistry ? describe : describe.skip;
 
 const SEEDED_SKILL = '@tank/react';
 
-describe('SDK Edge Cases E2E — security, error handling, concurrency', () => {
+describeIfRegistry('SDK Edge Cases E2E — security, error handling, concurrency', () => {
   let ctx: E2EContext;
   let client: TankClient;
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
     client = new TankClient({
       token: ctx.token,

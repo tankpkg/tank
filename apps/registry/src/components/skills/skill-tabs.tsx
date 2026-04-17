@@ -20,6 +20,8 @@ interface SkillTabsProps {
   manifest?: Record<string, unknown>;
   securityTab?: ReactNode;
   hasSecurityData?: boolean;
+  tokenTab?: ReactNode;
+  hasTokenData?: boolean;
   activeTab?: string;
   onTabChange?: (tab: string) => void;
   sidebar?: ReactNode;
@@ -65,6 +67,8 @@ export function SkillTabs({
   manifest,
   securityTab,
   hasSecurityData = false,
+  tokenTab,
+  hasTokenData = false,
   activeTab = 'readme',
   onTabChange,
   sidebar,
@@ -101,6 +105,13 @@ export function SkillTabs({
             value="security"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2">
             Security
+          </TabsTrigger>
+        )}
+        {hasTokenData && (
+          <TabsTrigger
+            value="tokens"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2">
+            Tokens
           </TabsTrigger>
         )}
       </TabsList>
@@ -147,6 +158,15 @@ export function SkillTabs({
         <TabsContent value="security" className="mt-6">
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
             <div className="flex-1 min-w-0 w-full">{securityTab}</div>
+            <div className="hidden lg:block">{sidebar}</div>
+          </div>
+        </TabsContent>
+      )}
+
+      {hasTokenData && tokenTab && (
+        <TabsContent value="tokens" className="mt-6">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+            <div className="flex-1 min-w-0 w-full">{tokenTab}</div>
             <div className="hidden lg:block">{sidebar}</div>
           </div>
         </TabsContent>

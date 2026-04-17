@@ -19,6 +19,9 @@ import postgres from 'postgres';
 
 import { getRegistryUrl } from '../targets.js';
 
+/** Whether the registry is configured for E2E tests. */
+export const hasRegistry = !!process.env.E2E_REGISTRY_URL;
+
 function loadDatabaseUrlFromEnvFile(): string | undefined {
   const envPath = path.resolve(process.cwd(), '.env');
   if (!fs.existsSync(envPath)) {

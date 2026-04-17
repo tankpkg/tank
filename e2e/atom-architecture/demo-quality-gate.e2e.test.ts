@@ -5,7 +5,10 @@ import path from 'node:path';
 
 import { afterAll, describe, expect, it } from 'vitest';
 
-const HOOK_HANDLER_PATH = path.resolve(__dirname, '../../../tank-skills/skills/quality-gate/hooks/quality-gate.ts');
+const QUALITY_GATE_DIR = path.resolve(__dirname, '../../../tank-skills/skills/quality-gate');
+const HOOK_HANDLER_PATH = path.join(QUALITY_GATE_DIR, 'hooks/quality-gate.ts');
+
+const describeIfAvailable = fs.existsSync(QUALITY_GATE_DIR) ? describe : describe.skip;
 
 async function importHandler() {
   return await import(HOOK_HANDLER_PATH);
@@ -23,7 +26,7 @@ function createTmpProject(): string {
   return dir;
 }
 
-describe('DEMO: quality-gate live pipeline — real git, real review, real decisions', () => {
+describeIfAvailable('DEMO: quality-gate live pipeline — real git, real review, real decisions', () => {
   const dirs: string[] = [];
 
   afterAll(() => {

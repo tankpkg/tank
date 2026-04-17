@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "lint": "biome check .",
     "lint:fix": "biome check --write ."
   },

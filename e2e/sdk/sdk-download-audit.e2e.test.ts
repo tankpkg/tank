@@ -1,17 +1,20 @@
 import { TankAuthError, TankClient, TankNotFoundError } from '@tankpkg/sdk';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { cleanupE2E, type E2EContext, setupE2E } from '../helpers/setup';
+import { cleanupE2E, type E2EContext, hasRegistry, setupE2E } from '../helpers/setup';
+
+const describeIfRegistry = hasRegistry ? describe : describe.skip;
 
 const SEEDED_SKILL = '@tank/react';
 const REQUIRE_STORAGE = process.env.E2E_REQUIRE_STORAGE === '1';
 
-describe('SDK Download & Audit E2E — download, audit against seeded registry', () => {
+describeIfRegistry('SDK Download & Audit E2E — download, audit against seeded registry', () => {
   let ctx: E2EContext;
   let client: TankClient;
   let seededVersion: string;
   let hasStorage = false;
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
     client = new TankClient({
       token: ctx.token,

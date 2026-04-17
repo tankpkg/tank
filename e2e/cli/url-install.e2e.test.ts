@@ -24,7 +24,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { expectFailure, runTank } from '../helpers/cli';
 import { cleanupFixture } from '../helpers/fixtures';
-import { cleanupE2E, type E2EContext, setupE2E } from '../helpers/setup';
+import { cleanupE2E, type E2EContext, hasRegistry, setupE2E } from '../helpers/setup';
+
+const describeIfRegistry = hasRegistry ? describe : describe.skip;
 
 /** Real public GitHub repo with SKILL.md at root (721★, stable). NOT a mock. */
 const GITHUB_SKILL_URL = 'https://github.com/FrancyJGLisboa/agent-skill-creator';
@@ -32,11 +34,12 @@ const GITHUB_SKILL_URL = 'https://github.com/FrancyJGLisboa/agent-skill-creator'
 /** A URL that will not resolve to any valid skill (404). */
 const NONEXISTENT_URL = 'https://github.com/tankpkg/this-repo-does-not-exist-e2e-test-12345';
 
-describe('URL Install E2E — `tank install <url>` with real security scanning', () => {
+describeIfRegistry('URL Install E2E — `tank install <url>` with real security scanning', () => {
   let ctx: E2EContext;
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
   });
 

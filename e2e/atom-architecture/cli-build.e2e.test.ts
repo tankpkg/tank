@@ -8,6 +8,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 const TANK_BIN = path.resolve(__dirname, '../../packages/cli/dist/bin/tank.js');
 const QUALITY_GATE_DIR = path.resolve(__dirname, '../../../tank-skills/skills/quality-gate');
 
+const describeIfAvailable = fs.existsSync(QUALITY_GATE_DIR) ? describe : describe.skip;
+
 function run(args: string, opts?: { cwd?: string }): string {
   return execSync(`node ${TANK_BIN} ${args} 2>&1`, {
     cwd: opts?.cwd ?? process.cwd(),
@@ -17,7 +19,7 @@ function run(args: string, opts?: { cwd?: string }): string {
   });
 }
 
-describe('E2E: `tank build` CLI command — real binary, real filesystem', () => {
+describeIfAvailable('E2E: `tank build` CLI command — real binary, real filesystem', () => {
   const dirs: string[] = [];
 
   afterAll(() => {

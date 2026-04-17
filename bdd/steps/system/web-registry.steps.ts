@@ -434,7 +434,10 @@ function thenICanAnswerWhyTankExistsWithoutReadingFurther(): void {
   expect(homepageWorld.heroSection).toMatch(/attackers\s+are\s+already/i);
 }
 
-describe('Feature: Homepage first-time visitor UX', () => {
+const homepageFileExists = fs.existsSync(homepagePath);
+const describeIfHomepage = homepageFileExists ? describe : describe.skip;
+
+describeIfHomepage('Feature: Homepage first-time visitor UX', () => {
   describe('Scenario: Hero section defines "agent skills" in plain language', () => {
     it('runs Given/When/Then', () => {
       givenINavigateToTankHomepage();

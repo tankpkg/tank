@@ -36,6 +36,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi8 \
     libssl3 \
     libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (slim) + tokenomics CLI for Stage T token analysis
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g tokenomics@^2.3.1 \
+    && apt-get purge -y curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN addgroup --system --gid 1001 tank && \
