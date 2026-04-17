@@ -1,0 +1,7 @@
+{
+  "name": "tank-scanner-deps",
+  "private": true,
+  "dependencies": {
+    "tokenomics": "^2.3.1"
+  }
+}

@@ -91,6 +91,28 @@ class TestCLINotInstalled:
         assert result.duration_ms >= 0
 
 
+class TestNpxFallback:
+    """Scenario: no global tokenomics, but npx is available."""
+
+    def test_uses_npx_when_global_not_found(self):
+        """When tokenomics is not global but npx is, should use npx --yes tokenomics."""
+        which_calls = {"tokenomics": None, "npx": "/usr/bin/npx", "bunx": None}
+
+        def mock_which(cmd):
+            return which_calls.get(cmd)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("lib.scan.stage_token.shutil.which", side_effect=mock_which):
+                with patch(
+                    "lib.scan.stage_token.subprocess.run",
+                    side_effect=_mock_subprocess_run(json.dumps(VALID_TOKENOMICS_JSON)),
+                ):
+                    result = stage_token_analyze(make_ingest(tmpdir))
+        assert result.stage == "stageT"
+        assert result.status == "passed"
+        assert len(result.findings) > 0
+
+
 class TestVersionTooOld:
     """Scenario: tokenomics installed but version < 2.3.1."""
 
