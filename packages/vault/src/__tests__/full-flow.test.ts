@@ -123,12 +123,14 @@ describe('full E2E — credential vault lifecycle', () => {
     expect(responseContent).not.toContain(awsFake);
 
     // Phase 5: second request — same credentials reuse same fakes
-    const res2 = await sendChat(`Use ${REAL_STRIPE} for the refund endpoint`);
+    const _res2 = await sendChat(`Use ${REAL_STRIPE} for the refund endpoint`);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by providerLog having entries
     const providerBody2 = providerLog[providerLog.length - 1]!;
     expect(providerBody2).not.toContain(REAL_STRIPE);
     const parsed2 = JSON.parse(providerBody2);
     const fwdMsg2 = parsed2.messages[0].content as string;
     const stripeMatch2 = fwdMsg2.match(/sk_live_\w+/);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by the regex matching
     expect(stripeMatch2![0]).toBe(stripeFake);
   });
 

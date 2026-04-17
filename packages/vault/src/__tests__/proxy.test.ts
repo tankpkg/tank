@@ -166,22 +166,13 @@ describe('proxy server — real HTTP', () => {
   it('restores fake credentials in response', async () => {
     vault.store(REAL_STRIPE_KEY, 'sk_live_FAKEFORTEST00000000000', 'stripe_secret');
 
-    // biome-ignore lint/correctness/noUnusedVariables: responseServer used below
-    const responseServer = createServer((req, res) => {
-      let reqBody = '';
-      req.on('data', (c: Buffer) => {
-        reqBody += c.toString();
-      });
-      req.on('end', () => {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            choices: [
-              { message: { content: `curl -H "Bearer sk_live_FAKEFORTEST00000000000" https://api.stripe.com` } }
-            ]
-          })
-        );
-      });
+    const responseServer = createServer((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(
+        JSON.stringify({
+          choices: [{ message: { content: `curl -H "Bearer sk_live_FAKEFORTEST00000000000" https://api.stripe.com` } }]
+        })
+      );
     });
 
     await new Promise<void>((resolve) => responseServer.listen(0, resolve));
