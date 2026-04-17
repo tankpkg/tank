@@ -60,7 +60,7 @@
         "useHookAtTopLevel": "error"
       },
       "performance": {
-        "noImgElement": "warn"
+        "noImgElement": "off"
       },
       "security": {},
       "suspicious": {
