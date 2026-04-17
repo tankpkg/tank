@@ -132,16 +132,18 @@ function TokenEfficiencyCard({ findings }: { findings: ScanFinding[] }) {
           )}
           {(costSonnet || costOpus) && (
             <div>
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cost per Use</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Context Load Cost
+              </span>
               <div className="mt-1 flex flex-col gap-0.5">
                 {costSonnet && (
                   <span className="text-sm font-medium tabular-nums">
-                    {costSonnet} <span className="text-muted-foreground">Sonnet</span>
+                    {costSonnet} <span className="text-muted-foreground">Sonnet context</span>
                   </span>
                 )}
                 {costOpus && (
                   <span className="text-sm font-medium tabular-nums">
-                    {costOpus} <span className="text-muted-foreground">Opus</span>
+                    {costOpus} <span className="text-muted-foreground">Opus context</span>
                   </span>
                 )}
               </div>
