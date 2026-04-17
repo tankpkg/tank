@@ -18,6 +18,7 @@ export type URLType =
   | 'github_blob_file'
   | 'skills_sh'
   | 'agentskills_il'
+  | 'clawhub'
   | 'unknown';
 
 export interface ExpandedURL {
@@ -76,6 +77,15 @@ export function detectURLType(url: string): URLType {
   if (hostname === 'agentskills.co.il' || hostname === 'www.agentskills.co.il') {
     if (pathname.includes('/skills/')) {
       return 'agentskills_il';
+    }
+  }
+
+  // clawhub.ai/{owner}/{skill-name}
+  if (hostname === 'clawhub.ai' || hostname === 'www.clawhub.ai') {
+    const parts = pathname.split('/').filter(Boolean);
+    // Must have at least 2 segments (owner + skill), exclude bare listing pages
+    if (parts.length >= 2) {
+      return 'clawhub';
     }
   }
 
@@ -187,7 +197,14 @@ export function expandGitHubBlobUrl(
 /**
  * Download raw file content from raw.githubusercontent.com.
  */
-const ALLOWED_FETCH_HOSTS = ['raw.githubusercontent.com', 'agentskills.co.il', 'www.agentskills.co.il'];
+const ALLOWED_FETCH_HOSTS = [
+  'raw.githubusercontent.com',
+  'agentskills.co.il',
+  'www.agentskills.co.il',
+  'clawhub.ai',
+  'www.clawhub.ai',
+  'wry-manatee-359.convex.site'
+];
 
 /** Reject URLs that resolve to private/internal network ranges. */
 const BLOCKED_HOSTNAMES =
@@ -604,6 +621,98 @@ async function expandAgentskillsUrl(url: string): Promise<{ tarballUrl: string; 
 }
 
 /**
+ * Scrape a clawhub.ai skill page to extract the download URL and metadata.
+ *
+ * Strategy:
+ * 1. Fetch page HTML from clawhub.ai
+ * 2. Extract Convex download URL (wry-manatee-359.convex.site/api/v1/download?slug=...)
+ * 3. Try to extract GitHub repo link for tarball fallback
+ * 4. Return download URL or GitHub tarball URL
+ */
+async function scrapeClawHubPage(url: string): Promise<{
+  downloadUrl: string | null;
+  githubOwner: string | null;
+  githubRepo: string | null;
+  skillName: string | null;
+} | null> {
+  const parsed = parseURL(url);
+  if (!parsed || (parsed.hostname !== 'clawhub.ai' && parsed.hostname !== 'www.clawhub.ai')) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(15_000),
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Tank-Security-Scanner/1.0',
+        Accept: 'text/html'
+      }
+    });
+
+    if (!response.ok) {
+      log.warn({ url, status: response.status }, 'Failed to fetch clawhub.ai page');
+      return null;
+    }
+
+    const finalUrl = new URL(response.url);
+    if (finalUrl.hostname !== 'clawhub.ai' && finalUrl.hostname !== 'www.clawhub.ai') {
+      log.warn({ url, finalUrl: response.url }, 'Blocked redirect away from clawhub.ai');
+      return null;
+    }
+
+    const html = await response.text();
+
+    const downloadMatch = html.match(
+      /href=["'](https:\/\/wry-manatee-359\.convex\.site\/api\/v1\/download\?slug=[^"']+)["']/
+    );
+    const downloadUrl = downloadMatch ? downloadMatch[1] : null;
+
+    const ghMatch = html.match(/github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)/);
+    const githubOwner = ghMatch ? ghMatch[1] : null;
+    const githubRepo = ghMatch ? ghMatch[2] : null;
+
+    const parts = parsed.pathname.split('/').filter(Boolean);
+    const skillName = parts.length >= 2 ? parts[1] : null;
+
+    return { downloadUrl, githubOwner, githubRepo, skillName };
+  } catch (err) {
+    log.warn({ url, error: String(err) }, 'Failed to resolve clawhub.ai URL');
+    return null;
+  }
+}
+
+async function expandClawHubUrl(
+  url: string
+): Promise<{ tarballUrl: string; subPath: string | null; fileContent: string | null } | null> {
+  const scraped = await scrapeClawHubPage(url);
+  if (!scraped) return null;
+
+  if (scraped.githubOwner && scraped.githubRepo) {
+    const fileResult = await fetchSkillFileFromGitHub(
+      scraped.githubOwner,
+      scraped.githubRepo,
+      scraped.skillName ?? '',
+      { trySkillsConvention: true }
+    );
+    if (fileResult) {
+      return { tarballUrl: '', subPath: null, fileContent: fileResult.content };
+    }
+
+    const ghExpanded = await expandGitHubFolder(`https://github.com/${scraped.githubOwner}/${scraped.githubRepo}`);
+    if (ghExpanded && !ghExpanded.notFound) {
+      return { tarballUrl: ghExpanded.tarballUrl, subPath: scraped.skillName, fileContent: null };
+    }
+  }
+
+  if (scraped.downloadUrl) {
+    return { tarballUrl: scraped.downloadUrl, subPath: null, fileContent: null };
+  }
+
+  return null;
+}
+
+/**
  * Main entry point: expand any supported URL into a scanner-compatible format.
  */
 export async function expandScanUrl(rawUrl: string): Promise<ExpandedURL> {
@@ -740,6 +849,30 @@ export async function expandScanUrl(rawUrl: string): Promise<ExpandedURL> {
         };
       }
 
+      return { tarballUrl: rawUrl, subPath: null, fileContent: null, urlType: 'unknown', contentType: null };
+    }
+
+    case 'clawhub': {
+      const expanded = await expandClawHubUrl(rawUrl);
+      if (expanded?.fileContent) {
+        log.info({ url: rawUrl }, 'Resolved clawhub.ai to direct file fetch');
+        return {
+          tarballUrl: '',
+          subPath: null,
+          fileContent: expanded.fileContent,
+          urlType: 'clawhub',
+          contentType: 'text/markdown'
+        };
+      }
+      if (expanded?.tarballUrl) {
+        return {
+          tarballUrl: expanded.tarballUrl,
+          subPath: expanded.subPath,
+          fileContent: null,
+          urlType: 'clawhub',
+          contentType: null
+        };
+      }
       return { tarballUrl: rawUrl, subPath: null, fileContent: null, urlType: 'unknown', contentType: null };
     }
 

@@ -5,7 +5,13 @@ import { Button } from '~/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select';
 import type { FreshnessBucket, PopularityBucket, SecurityVerdict, VisibilityFilter } from '~/lib/skills/data';
 
-import { FRESHNESS_OPTIONS, POPULARITY_OPTIONS, SECURITY_VERDICT_OPTIONS, VISIBILITY_OPTIONS } from './skills-filters';
+import {
+  ATOM_KIND_OPTIONS,
+  FRESHNESS_OPTIONS,
+  POPULARITY_OPTIONS,
+  SECURITY_VERDICT_OPTIONS,
+  VISIBILITY_OPTIONS
+} from './skills-filters';
 
 interface MobileSkillsFiltersProps {
   currentVisibility: VisibilityFilter;
@@ -14,6 +20,7 @@ interface MobileSkillsFiltersProps {
   currentPopularity: PopularityBucket;
   currentHasReadme: boolean;
   isLoggedIn: boolean;
+  currentAtomKind?: string;
 }
 
 function useFilterNavigate() {
@@ -36,7 +43,8 @@ export function MobileSkillsFilters({
   currentFreshness,
   currentPopularity,
   currentHasReadme,
-  isLoggedIn
+  isLoggedIn,
+  currentAtomKind
 }: MobileSkillsFiltersProps) {
   const filterNav = useFilterNavigate();
   const navigate = useNavigate();
@@ -57,6 +65,30 @@ export function MobileSkillsFilters({
           </SelectContent>
         </Select>
       )}
+
+      <Select
+        value={currentAtomKind ?? 'all'}
+        onValueChange={(v) => {
+          navigate({
+            to: '/skills',
+            search: (prev: Record<string, unknown>) => ({
+              ...prev,
+              atomKind: v === 'all' ? undefined : v,
+              page: 1
+            })
+          } as never);
+        }}>
+        <SelectTrigger className="h-8 min-w-[110px] shrink-0 text-xs" data-testid="mobile-filter-atom-kind">
+          <SelectValue placeholder="Type" />
+        </SelectTrigger>
+        <SelectContent>
+          {ATOM_KIND_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <Select value={currentSecurityVerdict} onValueChange={(v) => filterNav('security', v, 'all')}>
         <SelectTrigger className="h-8 min-w-[110px] shrink-0 text-xs" data-testid="mobile-filter-security">

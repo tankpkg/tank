@@ -29,6 +29,8 @@ export interface BddState {
   consumerDir?: string;
   tempDirs: string[];
   searchQuery: string;
+  atomSkill?: SkillFixture;
+  legacySkill?: SkillFixture;
 }
 
 interface BddTestFixtures {

@@ -19,7 +19,7 @@ export function NotFoundScreen() {
       <Button asChild variant="outline" size="lg" className="gap-2">
         <Link to="/skills" search={{}}>
           <Search className="size-4" />
-          Browse Skills
+          Browse Packages
         </Link>
       </Button>
     </StatusPage>

@@ -7,9 +7,9 @@ import { skillsListQueryOptions } from '~/query/skills';
 import { SkillsListScreen } from '~/screens/skills-list-screen';
 
 const headData = routeHead({
-  title: 'Browse AI Agent Skills | Tank',
+  title: 'Browse Packages | Tank',
   description:
-    'Discover, compare, and install security-verified AI agent skills. Every skill is scanned for credential theft, prompt injection, and supply chain attacks.',
+    'Discover, compare, and install security-verified AI agent packages. Every package is scanned for credential theft, prompt injection, and supply chain attacks.',
   path: '/skills'
 });
 
@@ -41,6 +41,7 @@ function SkillsPage() {
       popularity={search.popularity}
       hasReadme={search.hasReadme}
       isLoggedIn={isLoggedIn}
+      atomKind={search.atomKind}
     />
   );
 }

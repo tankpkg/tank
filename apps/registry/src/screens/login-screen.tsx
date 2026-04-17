@@ -86,7 +86,7 @@ export function LoginScreen({ enabledProviders, oidcProviderId, redirect, selfHo
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Tank</CardTitle>
-        <CardDescription>Security-first package manager for AI agent skills</CardDescription>
+        <CardDescription>Security-first package manager for AI agent packages</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {verificationEmail ? (

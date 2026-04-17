@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "tankpkg"
-version = "0.12.1"
+version = "0.13.1"
 requires-python = ">=3.9"
 description = "Tank SDK core — Python bindings for the security-first AI skill package manager"
 license = {text = "MIT"}

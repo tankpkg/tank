@@ -24,7 +24,7 @@
     },
     "apps/registry": {
       "name": "registry",
-      "version": "0.11.0",
+      "version": "0.12.1",
       "dependencies": {
         "@alice-and-bot/core": "npm:@jsr/alice-and-bot__core",
         "@aws-sdk/client-s3": "^3.1013.0",
@@ -159,7 +159,7 @@
     },
     "packages/cli": {
       "name": "@tankpkg/cli",
-      "version": "0.11.0",
+      "version": "0.12.1",
       "bin": {
         "tank": "dist/bin/tank.js",
       },
@@ -191,7 +191,7 @@
     },
     "packages/internals-helpers": {
       "name": "@internals/helpers",
-      "version": "0.11.0",
+      "version": "0.12.1",
       "dependencies": {
         "semver": "^7.7.4",
       },
@@ -203,7 +203,7 @@
     },
     "packages/internals-schemas": {
       "name": "@internals/schemas",
-      "version": "0.11.0",
+      "version": "0.12.1",
       "dependencies": {
         "zod": "^4.3.6",
       },
@@ -214,7 +214,7 @@
     },
     "packages/mcp-server": {
       "name": "@tankpkg/mcp-server",
-      "version": "0.11.0",
+      "version": "0.12.1",
       "bin": {
         "tank-mcp": "dist/index.js",
       },
@@ -237,7 +237,7 @@
     },
     "packages/sdk": {
       "name": "@tankpkg/sdk",
-      "version": "0.11.0",
+      "version": "0.12.1",
       "dependencies": {
         "@internals/helpers": "workspace:*",
         "tar": "^7.5.11",

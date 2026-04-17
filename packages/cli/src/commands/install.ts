@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -9,6 +10,8 @@ import {
   LOCKFILE_VERSION,
   MANIFEST_FILENAME,
   type Permissions,
+  type ScanVerdict,
+  type SkillSource,
   type SkillsLock
 } from '@internals/schemas';
 import ora from 'ora';
@@ -40,6 +43,8 @@ import { linkSkillToAgents } from '~/lib/linker.js';
 import { logger } from '~/lib/logger.js';
 import { resolveLockfilePath, resolveManifestPath } from '~/lib/manifest.js';
 import { checkPermissionBudget } from '~/lib/permission-checker.js';
+import { displayScanResults, enforceVerdict, scanUrl } from '~/lib/scan-gate.js';
+import { type FetchResult, fetchFromUrl, type UrlSourceType } from '~/lib/url-fetcher.js';
 import { USER_AGENT } from '~/version.js';
 
 export interface InstallOptions {
@@ -268,6 +273,27 @@ async function runLegacyFallback(options: {
   }
 }
 
+function installToolDependencies(extractDir: string, skillName: string): void {
+  const packageJsonPath = path.join(extractDir, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) return;
+
+  try {
+    const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    const hasDeps =
+      (pkg.dependencies && Object.keys(pkg.dependencies).length > 0) ||
+      (pkg.peerDependencies && Object.keys(pkg.peerDependencies).length > 0);
+    if (!hasDeps) return;
+
+    execSync('npm install --production --ignore-scripts --no-audit --no-fund', {
+      cwd: extractDir,
+      stdio: 'pipe',
+      timeout: 60_000
+    });
+  } catch {
+    logger.warn(`Dependency install skipped for ${skillName} (non-fatal)`);
+  }
+}
+
 async function linkInstalledRoots(options: {
   rootSkillNames: string[];
   resolvedNodeByName: Map<string, ResolvedNode>;
@@ -327,6 +353,15 @@ async function linkInstalledRoots(options: {
     logger.warn('No agents detected for linking');
   }
 
+  const agentToPlatform: Record<string, string> = {
+    claude: 'claude-code',
+    opencode: 'opencode',
+    cursor: 'cursor',
+    codex: 'claude-code',
+    openclaw: 'opencode'
+  };
+  const platforms = new Set(detectedAgents.map((a) => agentToPlatform[a.id]).filter(Boolean));
+
   for (const skillName of rootSkillNames) {
     const node = resolvedNodeByName.get(skillName);
     if (!node) continue;
@@ -337,7 +372,9 @@ async function linkInstalledRoots(options: {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
       if (!manifest.atoms || !Array.isArray(manifest.atoms) || manifest.atoms.length === 0) continue;
       const { buildCommand: runBuild } = await import('~/commands/build.js');
-      await runBuild({ skill: skillDir, target: directory });
+      for (const platform of platforms) {
+        await runBuild({ skill: skillDir, target: directory, platform });
+      }
     } catch {
       logger.warn(`Auto-build skipped for ${skillName} (non-fatal)`);
     }
@@ -382,6 +419,9 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
     fs.mkdirSync(extractDir, { recursive: true });
     await extractSafely(payload.buffer, extractDir);
     verifyExtractedDependencies(extractDir, node);
+
+    spinner.text = `Installing dependencies for ${node.name}...`;
+    installToolDependencies(extractDir, node.name);
   }
 
   lock.lockfileVersion = LOCKFILE_VERSION;
@@ -728,4 +768,231 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
 function buildIntegrity(buffer: Buffer): string {
   const hash = crypto.createHash('sha512').update(buffer).digest('base64');
   return `sha512-${hash}`;
+}
+
+// ---------------------------------------------------------------------------
+// URL-based install
+// ---------------------------------------------------------------------------
+
+/** Map url-fetcher source types to lockfile SkillSource values. */
+function mapSourceType(urlSourceType: UrlSourceType): SkillSource {
+  switch (urlSourceType) {
+    case 'github':
+      return 'github';
+    case 'clawhub':
+      return 'clawhub';
+    case 'skills_sh':
+      return 'skills_sh';
+    case 'agentskills_il':
+      return 'agentskills_il';
+    case 'npm':
+      return 'npm';
+    default:
+      return 'local';
+  }
+}
+
+/** Compute SHA-512 integrity hash over all files in a directory (sorted by path). */
+function computeDirectoryIntegrity(dir: string): string {
+  const files: string[] = [];
+
+  function walkDir(current: string): void {
+    const entries = fs.readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name === '.git') continue;
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        walkDir(fullPath);
+      } else if (entry.isFile()) {
+        files.push(fullPath);
+      }
+    }
+  }
+
+  walkDir(dir);
+  files.sort();
+
+  const hash = crypto.createHash('sha512');
+  for (const file of files) {
+    hash.update(fs.readFileSync(file));
+  }
+  return `sha512-${hash.digest('base64')}`;
+}
+
+/** Read a manifest (tank.json or skills.json) from a directory, returning null if missing/invalid. */
+function readManifestFromDir(dir: string): Record<string, unknown> | null {
+  for (const filename of ['tank.json', 'skills.json']) {
+    const manifestPath = path.join(dir, filename);
+    if (fs.existsSync(manifestPath)) {
+      try {
+        return JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as Record<string, unknown>;
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+export interface InstallFromUrlOptions {
+  global?: boolean;
+  yes?: boolean;
+}
+
+export async function installFromUrl(url: string, options: InstallFromUrlOptions): Promise<void> {
+  const { global = false, yes = false } = options;
+  const resolvedHome = os.homedir();
+  const directory = process.cwd();
+
+  const spinner = ora(`Fetching from URL...`).start();
+
+  // 1. Fetch from URL
+  let fetchResult: FetchResult;
+  try {
+    const output = await fetchFromUrl(url);
+    if (!output.success) {
+      spinner.fail('Fetch failed');
+      logger.error(output.error);
+      process.exit(1);
+    }
+    fetchResult = output;
+    spinner.text = 'Scanning for security issues...';
+  } catch (err) {
+    spinner.fail('Fetch failed');
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(msg);
+    process.exit(1);
+  }
+
+  try {
+    // 2. Scan via public API
+    const scanResult = await scanUrl(url);
+    displayScanResults(scanResult);
+
+    const enforcement = await enforceVerdict(scanResult, { yes });
+    if (!enforcement.allowed) {
+      spinner.fail(enforcement.reason ?? 'Install blocked by security scan');
+      await fetchResult.cleanup();
+      process.exit(1);
+    }
+
+    // 3. Validate skill structure
+    const skillMdPath = path.join(fetchResult.localPath, 'SKILL.md');
+    if (!fs.existsSync(skillMdPath)) {
+      throw new Error("No SKILL.md found. This doesn't appear to be a valid skill.");
+    }
+
+    // 4. Read or generate manifest
+    const existingManifest = readManifestFromDir(fetchResult.localPath);
+    const skillName =
+      (existingManifest?.name as string) ?? fetchResult.inferredName ?? path.basename(fetchResult.localPath);
+    const skillVersion = (existingManifest?.version as string) ?? '0.0.0';
+    const skillDescription = (existingManifest?.description as string) ?? '';
+
+    if (!existingManifest) {
+      const generatedManifest = {
+        name: skillName,
+        version: skillVersion,
+        description: skillDescription
+      };
+      fs.writeFileSync(
+        path.join(fetchResult.localPath, 'tank.json'),
+        `${JSON.stringify(generatedManifest, null, 2)}\n`
+      );
+      logger.info('Generated tank.json (no manifest found in source)');
+    }
+
+    spinner.text = `Installing ${skillName}...`;
+
+    // 5. Determine install location + 6. Copy files
+    const installDir = global
+      ? path.join(resolvedHome, '.tank', 'skills', skillName)
+      : path.join(directory, '.tank', 'skills', skillName);
+
+    if (fs.existsSync(installDir)) {
+      fs.rmSync(installDir, { recursive: true, force: true });
+    }
+    fs.mkdirSync(path.dirname(installDir), { recursive: true });
+    fs.cpSync(fetchResult.localPath, installDir, { recursive: true });
+
+    // 7. Compute integrity hash
+    const integrity = computeDirectoryIntegrity(installDir);
+
+    // 8. Write lockfile entry
+    const lockDir = global ? path.join(resolvedHome, '.tank') : directory;
+    const resolvedLock = resolveLockfilePath(lockDir);
+    const lockPath = resolvedLock.exists
+      ? resolvedLock.path
+      : global
+        ? path.join(resolvedHome, '.tank', LOCKFILE_FILENAME)
+        : path.join(directory, LOCKFILE_FILENAME);
+
+    const lock = readLockOrFresh(lockPath);
+    const lockKey = `${skillName}@${skillVersion}`;
+    const skillPermissions: Permissions = (existingManifest?.permissions as Permissions) ?? {};
+
+    lock.skills[lockKey] = {
+      resolved: url.startsWith('http') ? url : `https://${url}`,
+      integrity,
+      permissions: skillPermissions,
+      audit_score: scanResult.auditScore ?? null,
+      source: mapSourceType(fetchResult.sourceType),
+      scan_verdict: scanResult.verdict as ScanVerdict,
+      scanned_at: new Date().toISOString()
+    };
+
+    lock.lockfileVersion = LOCKFILE_VERSION as 1 | 2;
+    fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+    fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+
+    // 9. Link to agents
+    const linkedAgents: string[] = [];
+    try {
+      const agentSkillsBaseDir = global
+        ? getGlobalAgentSkillsDir(resolvedHome)
+        : path.join(directory, '.tank', 'agent-skills');
+      const linksDir = global ? path.join(resolvedHome, '.tank') : path.join(directory, '.tank');
+
+      const agentSkillDir = prepareAgentSkillDir({
+        skillName,
+        extractDir: installDir,
+        agentSkillsBaseDir,
+        description: skillDescription
+      });
+      const linkResult = linkSkillToAgents({
+        skillName,
+        sourceDir: agentSkillDir,
+        linksDir,
+        source: global ? 'global' : 'local'
+      });
+
+      linkedAgents.push(...linkResult.linked);
+      if (linkResult.failed.length > 0) {
+        for (const failedLink of linkResult.failed) {
+          logger.warn(`Failed to link to ${failedLink.agentId}: ${failedLink.error}`);
+        }
+      }
+    } catch {
+      logger.warn('Agent linking skipped (non-fatal)');
+    }
+
+    const detectedAgents = detectInstalledAgents();
+    if (detectedAgents.length === 0) {
+      logger.warn('No agents detected for linking');
+    }
+
+    // 10. Clean up temp dir
+    await fetchResult.cleanup();
+
+    // 11. Print success message
+    spinner.succeed(`Installed ${skillName} from ${fetchResult.sourceType}`);
+    if (linkedAgents.length > 0) {
+      logger.info(`Linked to ${linkedAgents.join(', ')}`);
+    }
+    logger.info(`Locked (${integrity.slice(0, 20)}..., scanned ${new Date().toISOString().split('T')[0]})`);
+  } catch (err) {
+    await fetchResult.cleanup();
+    spinner.fail('Install failed');
+    throw err;
+  }
 }

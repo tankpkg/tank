@@ -2,6 +2,7 @@ import { encodeSkillName } from '@internals/helpers';
 import { Link } from '@tanstack/react-router';
 import { Download, Lock, ShieldAlert, ShieldCheck, Star } from 'lucide-react';
 
+import { AtomKindBadges } from '~/components/skills/atom-kind-badge';
 import { MobileSkillsFilters } from '~/components/skills/mobile-skills-filters';
 import { SearchBar } from '~/components/skills/search-bar';
 import { SkillsFilters } from '~/components/skills/skills-filters';
@@ -30,6 +31,7 @@ export interface SkillsListScreenProps {
   popularity: PopularityBucket;
   hasReadme: boolean;
   isLoggedIn: boolean;
+  atomKind?: string;
 }
 
 const LIMIT = 20;
@@ -44,19 +46,20 @@ export function SkillsListScreen({
   freshness,
   popularity,
   hasReadme,
-  isLoggedIn
+  isLoggedIn,
+  atomKind
 }: SkillsListScreenProps) {
   const totalPages = Math.max(1, Math.ceil(data.total / LIMIT));
 
   const countLabel = query
     ? `${data.total.toLocaleString()} result${data.total !== 1 ? 's' : ''} for "${query}"`
-    : `${data.total.toLocaleString()} skill${data.total !== 1 ? 's' : ''}`;
+    : `${data.total.toLocaleString()} package${data.total !== 1 ? 's' : ''}`;
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6" data-testid="skills-list-root">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Browse Skills</h1>
-        <p className="mt-2 text-muted-foreground">Discover verified AI agent skills for your projects.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Browse Packages</h1>
+        <p className="mt-2 text-muted-foreground">Discover verified AI agent packages for your projects.</p>
       </div>
 
       <SearchBar defaultValue={query} />
@@ -68,6 +71,7 @@ export function SkillsListScreen({
         currentPopularity={popularity}
         currentHasReadme={hasReadme}
         isLoggedIn={isLoggedIn}
+        currentAtomKind={atomKind}
       />
 
       <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -79,6 +83,7 @@ export function SkillsListScreen({
             currentPopularity={popularity}
             currentHasReadme={hasReadme}
             isLoggedIn={isLoggedIn}
+            currentAtomKind={atomKind}
           />
         </div>
 
@@ -138,53 +143,60 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
   const verdict = skill.scanVerdict ? verdictConfig[skill.scanVerdict] : null;
 
   return (
-    <Link to="/skills/$" params={{ _splat: encodeSkillName(skill.name) }}>
-      <Card className="h-full cursor-pointer transition-colors hover:border-primary/50">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2">
-            <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {verdict && (
-                <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${verdict.className}`}>
-                  <verdict.Icon className="size-3" />
-                  {verdict.label}
-                </span>
-              )}
-              {isLoggedIn && skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground" />}
-            </div>
-          </div>
-          {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            {skill.latestVersion && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                v{skill.latestVersion}
-              </Badge>
+    <Card className="relative h-full transition-colors hover:border-primary/50" data-testid="skill-card">
+      <Link
+        to="/skills/$"
+        params={{ _splat: encodeSkillName(skill.name) }}
+        className="absolute inset-0 rounded-[inherit]"
+        aria-label={skill.name}
+      />
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="text-base leading-snug">{skill.name}</CardTitle>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {verdict && (
+              <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${verdict.className}`}>
+                <verdict.Icon className="size-3" />
+                {verdict.label}
+              </span>
             )}
-            <span className="flex items-center gap-1 ml-auto">
-              <Download className="size-3" />
-              {skill.downloads.toLocaleString()}
-            </span>
-            <span className="flex items-center gap-1">
-              <Star className="size-3" />
-              {skill.stars.toLocaleString()}
-            </span>
+            {isLoggedIn && skill.visibility === 'private' && <Lock className="size-3.5 text-muted-foreground" />}
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </div>
+        {skill.description && <CardDescription className="line-clamp-2 text-xs">{skill.description}</CardDescription>}
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          {skill.latestVersion && (
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+              v{skill.latestVersion}
+            </Badge>
+          )}
+          <span className="flex items-center gap-1 ml-auto">
+            <Download className="size-3" />
+            {skill.downloads.toLocaleString()}
+          </span>
+          <span className="flex items-center gap-1">
+            <Star className="size-3" />
+            {skill.stars.toLocaleString()}
+          </span>
+        </div>
+        <div className="relative z-10 mt-1.5">
+          <AtomKindBadges kinds={skill.atomKinds ?? ['skill']} size="xs" asLinks />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 function EmptyState({ query }: { query: string }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/40 py-16 text-center">
-      <p className="text-lg font-medium">{query ? 'No skills found' : 'No skills published yet'}</p>
+      <p className="text-lg font-medium">{query ? 'No packages found' : 'No packages published yet'}</p>
       <p className="mt-1 text-sm text-muted-foreground">
         {query
           ? `No results for "${query}". Try a different search term or adjust filters.`
-          : 'Be the first to publish a skill!'}
+          : 'Be the first to publish a package!'}
       </p>
     </div>
   );

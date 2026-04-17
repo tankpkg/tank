@@ -22,18 +22,18 @@ import '~/styles/global.css';
 const headSettings = {
   ...routeHead({
     title: SITE_NAME,
-    description: 'Security-first package manager for AI agent skills.',
+    description: 'Security-first package manager for AI agent packages.',
     path: '/'
   }),
   meta: [
     { charSet: 'utf-8' },
     { content: 'width=device-width, initial-scale=1', name: 'viewport' },
     { title: SITE_NAME },
-    { content: 'Security-first package manager for AI agent skills.', name: 'description' },
+    { content: 'Security-first package manager for AI agent packages.', name: 'description' },
     {
       name: 'keywords',
       content:
-        'Tank, AI skills, AI agent skills, package manager, security, Claude Code, Cursor, AI agents, skill registry, developer tools, CLI, security scanning'
+        'Tank, AI skills, AI agent skills, package manager, security, Claude Code, Cursor, AI agents, package registry, developer tools, CLI, security scanning'
     },
     { name: 'author', content: SITE_NAME },
     { name: 'creator', content: SITE_NAME },
@@ -63,7 +63,7 @@ const headSettings = {
         url: BASE_URL,
         logo: `${BASE_URL}/logo512.png`,
         sameAs: ['https://github.com/tankpkg/tank'],
-        description: 'Security-first package manager for AI agent skills'
+        description: 'Security-first package manager for AI agent packages'
       })
     },
     {

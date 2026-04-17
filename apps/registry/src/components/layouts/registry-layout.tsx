@@ -140,12 +140,12 @@ export function RegistryLayout() {
               </Link>
               <span className="text-muted-foreground/20 hidden sm:inline">&bull;</span>
               <span className="text-xs text-muted-foreground/50">
-                Security-first package manager for AI agent skills
+                Security-first package manager for AI agent packages
               </span>
             </div>
             <div className="flex items-center gap-5 text-sm text-muted-foreground/60">
               <Link to="/skills" search={{} as never} className="hover:text-foreground transition-colors text-[13px]">
-                Skills
+                Packages
               </Link>
               <Link
                 to="/docs/$"

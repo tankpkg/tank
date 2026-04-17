@@ -56,10 +56,10 @@ const badgeRoute = createRoute({
   path: '/{name}',
   tags: ['Badges'],
   summary: 'Get audit score badge',
-  description: 'Returns an SVG badge showing the audit score for a skill.',
+  description: 'Returns an SVG badge showing the audit score for a package.',
   request: {
     params: z.object({
-      name: z.string().openapi({ description: 'Skill name (URL-encoded)', example: '@org/my-skill' })
+      name: z.string().openapi({ description: 'Package name (URL-encoded)', example: '@org/my-skill' })
     })
   },
   responses: {

@@ -7,8 +7,9 @@ Tank is a security-first package manager for AI agent skills. It provides versio
 ## Key Resources
 
 - [API Reference](https://tankpkg.dev/docs/api): Complete REST API reference for the Tank skill registry — authentication, search, publishing, version management, and security scanning endpoints.
+- [Building Multi-Atom Skills](https://tankpkg.dev/docs/atoms): Write one tank.json with 7 atom kinds — instructions, hooks, agents, tools, rules, resources, prompts — and tank build compiles them to native configs for 6 AI coding agent platforms.
 - [CI/CD Integration](https://tankpkg.dev/docs/cicd): Automate AI agent skill installation and publishing in CI/CD pipelines — GitHub Actions, GitLab CI, Docker, and the official Tank GitHub Action.
-- [CLI Reference](https://tankpkg.dev/docs/cli): Complete reference for all 20 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+- [CLI Reference](https://tankpkg.dev/docs/cli): Complete reference for all 21 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 - [Contributors](https://tankpkg.dev/docs/contributors): The people who build Tank
 - [Getting Started with Tank](https://tankpkg.dev/docs/getting-started): Install the Tank CLI, authenticate with GitHub, and install your first AI agent skill in under 5 minutes — with SHA-512 integrity verification and permission budgets.
 - [GitHub Action for Publishing](https://tankpkg.dev/docs/github-action): Automate AI agent skill publishing with Tank's official GitHub Action — security scanning, version validation, and badge generation in your CI/CD pipeline.
@@ -28,30 +29,6 @@ Tank is a security-first package manager for AI agent skills. It provides versio
 - [Self-Host in 15 Minutes](https://tankpkg.dev/docs/self-host-quickstart): Get Tank running on your own infrastructure with Docker Compose — automated setup wizard, no manual configuration needed.
 - [Self-Hosting Tank](https://tankpkg.dev/docs/self-hosting): Deploy your own Tank registry on-premise — Docker Compose for quick setup, Kubernetes with Helm charts for production, with PostgreSQL, RustFS, and security scanning.
 - [Credential Vault](https://tankpkg.dev/docs/vault): Protect API keys and secrets from AI agent exfiltration with Tank's format-preserving tokenization proxy — real credentials never reach the model.
-
-## Multi-Atom Skills (tank.json)
-
-Tank supports multi-atom skill packages via `tank.json`. Atoms are the building blocks: instructions, hooks, agents, tools, rules, resources, and prompts. Write once in a portable IR format, then `tank build` compiles to native configs for 6 platforms.
-
-- [Building Multi-Atom Skills](https://tankpkg.dev/docs/atoms): How to write tank.json with 7 atom kinds, build for any platform, migration from skills.json.
-- [tank build CLI](https://tankpkg.dev/docs/cli#build): Compile atoms to platform-native configs — OpenCode, Claude Code, Cursor, Windsurf, Cline, Roo Code.
-- [JSON Schema](https://tankpkg.dev/tank-json.schema.json): IDE autocomplete for tank.json — validates atoms, events, handlers.
-
-### Supported Atom Kinds
-
-| Kind | Purpose |
-|---|---|
-| `instruction` | Inject context into agent system prompt (SKILL.md → platform-native rules files) |
-| `hook` | Run code/rules on agent events (DSL for portable, JS for advanced) |
-| `agent` | Define sub-agents with role, tools, model tier |
-| `tool` | Register MCP servers or external tools |
-| `rule` | Declarative block/allow/warn policies on events |
-| `resource` | Declare files/URIs available to the agent |
-| `prompt` | Reusable prompt templates with arguments |
-
-### Supported Platforms
-
-OpenCode, Claude Code, Cursor, Windsurf, Cline, Roo Code. Each adapter compiles atoms to the platform's native config format. Unsupported atoms are skipped with warnings.
 
 ## Optional
 

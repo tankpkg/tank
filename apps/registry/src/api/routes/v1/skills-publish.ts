@@ -6,6 +6,7 @@ import { verifyCliAuth } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { account, member, organization, user } from '~/lib/db/auth-schema';
 import { skills, skillVersions } from '~/lib/db/schema';
+import { extractAtomKinds } from '~/lib/skills/atoms';
 import { checkPermissionEscalation, type VersionPermissions } from '~/lib/skills/permission-escalation';
 import { getStorageProvider } from '~/services/storage/provider';
 
@@ -13,9 +14,9 @@ const publishRoute = createRoute({
   method: 'post',
   path: '/',
   tags: ['Publishing'],
-  summary: 'Publish a skill',
+  summary: 'Publish a package',
   description:
-    'Creates a new skill version and returns a signed upload URL for the tarball. Requires skills:publish scope.',
+    'Creates a new package version and returns a signed upload URL for the tarball. Requires skills:publish scope.',
   security: [{ BearerAuth: [] }],
   request: {
     body: {
@@ -32,7 +33,7 @@ const publishRoute = createRoute({
   },
   responses: {
     200: {
-      description: 'Skill version created, upload URL returned',
+      description: 'Package version created, upload URL returned',
       content: {
         'application/json': {
           schema: z.object({
@@ -290,6 +291,8 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
     ...manifest,
     ...(Array.isArray(files) && files.length > 0 ? { files } : {})
   } as Record<string, unknown>;
+  const atomKinds = extractAtomKinds(manifestWithFiles);
+  const atomKindsToStore = atomKinds.includes('skill') ? null : atomKinds;
   const [skillVersion] = await db
     .insert(skillVersions)
     .values({
@@ -303,7 +306,8 @@ export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async
       permissions: (manifest.permissions ?? {}) as Record<string, unknown>,
       auditStatus: 'pending-upload',
       publishedBy: verified.userId,
-      readme: typeof readme === 'string' ? readme : null
+      readme: typeof readme === 'string' ? readme : null,
+      atomKinds: atomKindsToStore
     })
     .returning();
 
