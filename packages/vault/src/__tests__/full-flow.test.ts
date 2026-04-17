@@ -99,9 +99,13 @@ describe('full E2E — credential vault lifecycle', () => {
     const awsMatch = fwdMsg.match(/AKIA\w+/);
     expect(stripeMatch).not.toBeNull();
     expect(awsMatch).not.toBeNull();
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(stripeMatch![0]).not.toBe(REAL_STRIPE);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(awsMatch![0]).not.toBe(REAL_AWS);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(stripeMatch![0]).toHaveLength(REAL_STRIPE.length);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(awsMatch![0]).toHaveLength(REAL_AWS.length);
 
     const stripeFake = stripeMatch![0]!;

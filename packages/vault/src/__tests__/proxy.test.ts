@@ -166,6 +166,7 @@ describe('proxy server — real HTTP', () => {
   it('restores fake credentials in response', async () => {
     vault.store(REAL_STRIPE_KEY, 'sk_live_FAKEFORTEST00000000000', 'stripe_secret');
 
+    // biome-ignore lint/correctness/noUnusedVariables: kept for clarity
     const _providerPort = mockProvider.port;
     const responseServer = createServer((req, res) => {
       let reqBody = '';
