@@ -50,23 +50,42 @@ def stage_token_analyze(ingest_result: IngestResult) -> StageResult:
         )
 
     # Check if tokenomics CLI is available
-    # Try: global binary → npx (local node_modules) → bunx
+    # Try: global binary → local node_modules/.bin → npx → bunx
     tokenomics_bin = shutil.which("tokenomics")
-    run_cmd: list[str] | None = None
-    if tokenomics_bin:
-        run_cmd = [tokenomics_bin]
-    elif shutil.which("npx"):
-        run_cmd = ["npx", "--yes", "tokenomics"]
-    elif shutil.which("bunx"):
-        run_cmd = ["bunx", "tokenomics"]
+    if not tokenomics_bin:
+        # Vercel installs package.json deps but doesn't put node_modules/.bin on PATH
+        # Check common locations relative to this file
+        candidates = [
+            os.path.join(os.getcwd(), "node_modules", ".bin", "tokenomics"),
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "node_modules", ".bin", "tokenomics"
+            ),
+        ]
+        for candidate in candidates:
+            if os.path.isfile(candidate):
+                tokenomics_bin = candidate
+                break
 
-    if not run_cmd:
+    if not tokenomics_bin and shutil.which("npx"):
+        tokenomics_bin = "npx"
+        run_via_npx = True
+    elif tokenomics_bin:
+        run_via_npx = tokenomics_bin == "npx"
+    else:
+        run_via_npx = False
+
+    if not tokenomics_bin:
         return StageResult(
             stage="stageT", status="skipped", findings=[], duration_ms=int((time.monotonic() - start) * 1000)
         )
 
-    # For npx/bunx invocations, skip version check (npx handles it)
-    needs_version_check = bool(tokenomics_bin)
+    # Build the command
+    if run_via_npx:
+        run_cmd: list[str] = ["npx", "--yes", "tokenomics", "--analyze-skill", temp_dir, "--json"]
+    else:
+        run_cmd = [tokenomics_bin, "--analyze-skill", temp_dir, "--json"]
+
+    needs_version_check = not run_via_npx
 
     # Check tokenomics version supports --analyze-skill (>=2.3.0)
     if needs_version_check:
@@ -88,7 +107,7 @@ def stage_token_analyze(ingest_result: IngestResult) -> StageResult:
     # Run tokenomics CLI
     try:
         result = subprocess.run(
-            [*run_cmd, "--analyze-skill", temp_dir, "--json"],
+            run_cmd,
             capture_output=True,
             text=True,
             timeout=TOKENOMICS_TIMEOUT,
