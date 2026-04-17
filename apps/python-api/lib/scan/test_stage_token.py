@@ -1,6 +1,7 @@
 """Tests for Stage T: Token Usage Analysis."""
 
 import json
+import os
 import subprocess
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -109,6 +110,45 @@ class TestNpxFallback:
                 ):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
+        assert result.status == "passed"
+        assert len(result.findings) > 0
+
+
+class TestLocalNodeModules:
+    """Scenario: tokenomics in local node_modules/.bin (Vercel)."""
+
+    def test_finds_local_binary(self, tmp_path):
+        """When global not on PATH but node_modules/.bin/tokenomics exists, use it."""
+        bin_dir = tmp_path / "node_modules" / ".bin"
+        bin_dir.mkdir(parents=True)
+        (bin_dir / "tokenomics").write_text("#!/bin/sh\necho test\n")
+        os.chmod(bin_dir / "tokenomics", 0o755)
+
+        mock_proc = MagicMock()
+        mock_proc.stdout = json.dumps(VALID_TOKENOMICS_JSON)
+        mock_proc.stderr = ""
+        mock_proc.returncode = 0
+
+        ver_proc = MagicMock()
+        ver_proc.stdout = "tokenomics v2.3.1\n"
+        ver_proc.stderr = ""
+        ver_proc.returncode = 0
+
+        skill_dir = tmp_path / "skill"
+        skill_dir.mkdir()
+
+        def run_side_effect(cmd, **kwargs):
+            if "--version" in cmd:
+                return ver_proc
+            return mock_proc
+
+        import lib.scan.stage_token as mod
+
+        with patch.object(mod, "__file__", str(tmp_path / "lib" / "scan" / "stage_token.py")):
+            with patch("lib.scan.stage_token.shutil.which", return_value=None):
+                with patch("os.path.isfile", side_effect=lambda p: "node_modules" in p or os.path.isfile(p)):
+                    with patch("lib.scan.stage_token.subprocess.run", side_effect=run_side_effect):
+                        result = stage_token_analyze(make_ingest(str(skill_dir)))
         assert result.status == "passed"
         assert len(result.findings) > 0
 
