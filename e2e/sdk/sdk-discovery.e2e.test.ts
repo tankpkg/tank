@@ -15,6 +15,7 @@ describeIfRegistry('SDK Discovery E2E — search, info, versions against seeded 
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
     client = new TankClient({
       token: ctx.token,

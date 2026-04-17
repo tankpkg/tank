@@ -34,6 +34,7 @@ describeIfRegistry('Producer E2E — publish skills to the Tank registry', () =>
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
   });
 

@@ -37,6 +37,7 @@ describeIfRegistry('Consumer E2E — install and manage skills', () => {
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
 
     // Publish a skill for consumer tests to install

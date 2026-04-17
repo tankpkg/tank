@@ -26,6 +26,7 @@ describeIfRegistry('Scan E2E — security scanning via the Tank registry', () =>
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
   });
 

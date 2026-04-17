@@ -51,6 +51,7 @@ describeIfRegistry('Integration E2E — agent linking workflows', () => {
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
 
     // Create fake agent config dirs (agent detection checks parent config dir)

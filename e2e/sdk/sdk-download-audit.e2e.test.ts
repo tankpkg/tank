@@ -14,6 +14,7 @@ describeIfRegistry('SDK Download & Audit E2E — download, audit against seeded 
   let hasStorage = false;
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
     client = new TankClient({
       token: ctx.token,

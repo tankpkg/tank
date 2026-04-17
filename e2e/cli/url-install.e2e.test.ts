@@ -39,6 +39,7 @@ describeIfRegistry('URL Install E2E — `tank install <url>` with real security 
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
   });
 

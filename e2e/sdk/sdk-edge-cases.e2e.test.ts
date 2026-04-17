@@ -18,6 +18,7 @@ describeIfRegistry('SDK Edge Cases E2E — security, error handling, concurrency
   let client: TankClient;
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
     client = new TankClient({
       token: ctx.token,
