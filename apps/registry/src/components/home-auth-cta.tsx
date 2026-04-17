@@ -14,6 +14,7 @@ function UserAvatar({ name, image }: { name?: string | null; image?: string | nu
   return (
     <Link to="/dashboard" className="shrink-0">
       {image ? (
+        {/* biome-ignore lint/performance/noImgElement: avatar image, no next/image in TanStack Start */}
         <img src={image} alt={name || 'User'} className="size-8 rounded-full object-cover ring-1 ring-border" />
       ) : (
         <div className="size-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium ring-1 ring-border">
