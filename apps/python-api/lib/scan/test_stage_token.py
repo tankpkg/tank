@@ -12,9 +12,11 @@ from lib.scan.stage_token import stage_token_analyze
 def make_ingest(tmpdir: str) -> IngestResult:
     """Helper to create an IngestResult for testing."""
     return IngestResult(
-        temp_dir=tmpdir, file_hashes={}, file_list=[],
+        temp_dir=tmpdir,
+        file_hashes={},
+        file_list=[],
         total_size=0,
-        stage_result=StageResult(stage="stage0", status="passed", findings=[], duration_ms=0)
+        stage_result=StageResult(stage="stage0", status="passed", findings=[], duration_ms=0),
     )
 
 
@@ -27,7 +29,7 @@ VALID_TOKENOMICS_JSON = {
         "sonnet_context_load": "~$0.18",
         "opus_context_load": "~$0.91",
         "token_count": 8500,
-        "pricing_note": "Based on input pricing: $3/M (Sonnet), $15/M (Opus)."
+        "pricing_note": "Based on input pricing: $3/M (Sonnet), $15/M (Opus).",
     },
     "what_this_means": "This skill is expensive to load on every turn.",
     "findings": [
@@ -37,19 +39,16 @@ VALID_TOKENOMICS_JSON = {
             "confidence": 0.9,
             "description": "Prompt file is ~4,200 tokens",
             "location": "SKILL.md",
-            "remediation": "Trim to under 2000 tokens"
+            "remediation": "Trim to under 2000 tokens",
         }
     ],
-    "summary": {
-        "total_findings": 1,
-        "estimated_tokens_per_invocation": 8500,
-        "efficiency_score": 72
-    }
+    "summary": {"total_findings": 1, "estimated_tokens_per_invocation": 8500, "efficiency_score": 72},
 }
 
 
 def _mock_subprocess_run(analyze_stdout: str | None = None):
     """Create a side_effect for subprocess.run that handles --version and --analyze-skill."""
+
     def run_side_effect(cmd, **kwargs):
         mock = MagicMock()
         if "--version" in cmd:
@@ -70,6 +69,7 @@ def _mock_subprocess_run(analyze_stdout: str | None = None):
             mock.stdout = ""
             mock.stderr = ""
         return mock
+
     return run_side_effect
 
 
@@ -126,6 +126,7 @@ class TestVersionCheckFails:
 
     def test_falls_through_when_version_check_errors(self):
         """If version check raises, stage should try --analyze-skill anyway."""
+
         def run_side_effect(cmd, **kwargs):
             mock = MagicMock()
             if "--version" in cmd:
@@ -161,8 +162,10 @@ class TestValidJsonOutput:
     def test_findings_converted(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
-                with patch("lib.scan.stage_token.subprocess.run",
-                           side_effect=_mock_subprocess_run(json.dumps(VALID_TOKENOMICS_JSON))):
+                with patch(
+                    "lib.scan.stage_token.subprocess.run",
+                    side_effect=_mock_subprocess_run(json.dumps(VALID_TOKENOMICS_JSON)),
+                ):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
         assert result.status == "passed"
@@ -178,8 +181,10 @@ class TestValidJsonOutput:
     def test_summary_stored_as_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
-                with patch("lib.scan.stage_token.subprocess.run",
-                           side_effect=_mock_subprocess_run(json.dumps(VALID_TOKENOMICS_JSON))):
+                with patch(
+                    "lib.scan.stage_token.subprocess.run",
+                    side_effect=_mock_subprocess_run(json.dumps(VALID_TOKENOMICS_JSON)),
+                ):
                     result = stage_token_analyze(make_ingest(tmpdir))
         summary_f = [f for f in result.findings if f.type == "token_summary"][0]
         assert summary_f.severity == "info"
@@ -194,8 +199,10 @@ class TestValidJsonOutput:
     def test_summary_description_format(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
-                with patch("lib.scan.stage_token.subprocess.run",
-                           side_effect=_mock_subprocess_run(json.dumps(VALID_TOKENOMICS_JSON))):
+                with patch(
+                    "lib.scan.stage_token.subprocess.run",
+                    side_effect=_mock_subprocess_run(json.dumps(VALID_TOKENOMICS_JSON)),
+                ):
                     result = stage_token_analyze(make_ingest(tmpdir))
         summary_f = [f for f in result.findings if f.type == "token_summary"][0]
         assert "72/100" in summary_f.description
@@ -209,8 +216,7 @@ class TestEmptyFindings:
         empty_json = json.dumps({"findings": [], "summary": {}})
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
-                with patch("lib.scan.stage_token.subprocess.run",
-                           side_effect=_mock_subprocess_run(empty_json)):
+                with patch("lib.scan.stage_token.subprocess.run", side_effect=_mock_subprocess_run(empty_json)):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
         assert result.status == "passed"
@@ -223,8 +229,9 @@ class TestMalformedJson:
     def test_errored_gracefully(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
-                with patch("lib.scan.stage_token.subprocess.run",
-                           side_effect=_mock_subprocess_run("not valid json {{{")):
+                with patch(
+                    "lib.scan.stage_token.subprocess.run", side_effect=_mock_subprocess_run("not valid json {{{")
+                ):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
         assert result.status == "errored"
@@ -237,6 +244,7 @@ class TestTimeout:
 
     def test_timeout_on_analyze_handled(self):
         """Timeout on --analyze-skill returns errored."""
+
         def run_side_effect(cmd, **kwargs):
             if "--version" in cmd:
                 mock = MagicMock()
@@ -262,8 +270,7 @@ class TestNonZeroExit:
     def test_nonzero_exit_handled(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
-                with patch("lib.scan.stage_token.subprocess.run",
-                           side_effect=_mock_subprocess_run(None)):
+                with patch("lib.scan.stage_token.subprocess.run", side_effect=_mock_subprocess_run(None)):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
         assert result.status == "errored"
@@ -275,14 +282,12 @@ class TestInvalidSeverity:
     """Scenario: CLI returns severity not in allowed list."""
 
     def test_invalid_severity_clamped_to_info(self):
-        bad_severity_json = json.dumps({
-            "findings": [{"rule": "test", "severity": "extreme", "description": "bad sev"}],
-            "summary": {}
-        })
+        bad_severity_json = json.dumps(
+            {"findings": [{"rule": "test", "severity": "extreme", "description": "bad sev"}], "summary": {}}
+        )
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
-                with patch("lib.scan.stage_token.subprocess.run",
-                           side_effect=_mock_subprocess_run(bad_severity_json)):
+                with patch("lib.scan.stage_token.subprocess.run", side_effect=_mock_subprocess_run(bad_severity_json)):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.findings[0].severity == "info"
 
