@@ -1,6 +1,7 @@
 """Tests for Stage T: Token Usage Analysis."""
 
 import json
+import os
 import subprocess
 import tempfile
 from unittest.mock import MagicMock, patch
@@ -74,21 +75,42 @@ def _mock_subprocess_run(analyze_stdout: str | None = None):
 
 
 class TestCLINotInstalled:
-    """Scenario: tokenomics CLI not on PATH."""
+    """Scenario: tokenomics CLI not on PATH — falls back to pure Python analyzer."""
 
-    def test_skipped_gracefully(self):
+    def test_pure_python_fallback_runs(self):
+        """When no CLI is available, pure Python analysis should produce findings."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a skill file large enough to be detected
+            with open(os.path.join(tmpdir, "SKILL.md"), "w") as f:
+                f.write("# Test Skill\n" + "x " * 10000)
             with patch("lib.scan.stage_token.shutil.which", return_value=None):
                 result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
-        assert result.status == "skipped"
-        assert result.findings == []
+        assert result.status == "passed"
+        assert len(result.findings) > 0
 
-    def test_duration_recorded(self):
+    def test_pure_python_provides_summary(self):
+        """Pure Python fallback should produce a token_summary finding with evidence."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, "SKILL.md"), "w") as f:
+                f.write("# Hello")
+            with patch("lib.scan.stage_token.shutil.which", return_value=None):
+                result = stage_token_analyze(make_ingest(tmpdir))
+        summary = [f for f in result.findings if f.type == "token_summary"]
+        assert len(summary) == 1
+        evidence = json.loads(summary[0].evidence)
+        assert "efficiency_score" in evidence
+        assert "estimated_tokens_per_invocation" in evidence
+        assert "grade" in evidence
+        assert "cost_per_use" in evidence
+
+    def test_pure_python_empty_dir(self):
+        """Empty temp dir should still produce summary with 0 tokens."""
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value=None):
                 result = stage_token_analyze(make_ingest(tmpdir))
-        assert result.duration_ms >= 0
+        assert result.status == "passed"
+        assert result.findings  # At least the summary
 
 
 class TestNpxFallback:
@@ -114,9 +136,9 @@ class TestNpxFallback:
 
 
 class TestVersionTooOld:
-    """Scenario: tokenomics installed but version < 2.3.1."""
+    """Scenario: tokenomics installed but version < 2.3.1 — falls back to pure Python."""
 
-    def test_skipped_on_old_version(self):
+    def test_falls_back_on_old_version(self):
         old_version_proc = MagicMock()
         old_version_proc.stdout = "tokenomics v2.2.2\n"
         old_version_proc.stderr = ""
@@ -127,10 +149,9 @@ class TestVersionTooOld:
                 with patch("lib.scan.stage_token.subprocess.run", return_value=old_version_proc):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
-        assert result.status == "skipped"
-        assert result.findings == []
+        assert result.status == "passed"  # Falls back to pure Python
 
-    def test_skipped_on_v1(self):
+    def test_falls_back_on_v1(self):
         old_version_proc = MagicMock()
         old_version_proc.stdout = "tokenomics v1.3.2\n"
         old_version_proc.stderr = ""
@@ -140,7 +161,7 @@ class TestVersionTooOld:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
                 with patch("lib.scan.stage_token.subprocess.run", return_value=old_version_proc):
                     result = stage_token_analyze(make_ingest(tmpdir))
-        assert result.status == "skipped"
+        assert result.status == "passed"  # Falls back to pure Python
 
 
 class TestVersionCheckFails:
@@ -246,9 +267,9 @@ class TestEmptyFindings:
 
 
 class TestMalformedJson:
-    """Scenario: CLI returns invalid JSON."""
+    """Scenario: CLI returns invalid JSON — falls back to pure Python."""
 
-    def test_errored_gracefully(self):
+    def test_falls_back_on_malformed_json(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
                 with patch(
@@ -256,17 +277,13 @@ class TestMalformedJson:
                 ):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
-        assert result.status == "errored"
-        assert "Invalid JSON" in result.error
-        assert result.findings == []
+        assert result.status == "passed"  # Falls back to pure Python
 
 
 class TestTimeout:
-    """Scenario: CLI exceeds timeout."""
+    """Scenario: CLI exceeds timeout — falls back to pure Python."""
 
-    def test_timeout_on_analyze_handled(self):
-        """Timeout on --analyze-skill returns errored."""
-
+    def test_timeout_falls_back_to_pure_python(self):
         def run_side_effect(cmd, **kwargs):
             if "--version" in cmd:
                 mock = MagicMock()
@@ -281,23 +298,19 @@ class TestTimeout:
                 with patch("lib.scan.stage_token.subprocess.run", side_effect=run_side_effect):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
-        assert result.status == "errored"
-        assert "timed out" in result.error
-        assert result.findings == []
+        assert result.status == "passed"  # Falls back to pure Python
 
 
 class TestNonZeroExit:
-    """Scenario: CLI exits with error code."""
+    """Scenario: CLI exits with error code — falls back to pure Python."""
 
-    def test_nonzero_exit_handled(self):
+    def test_nonzero_exit_falls_back(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("lib.scan.stage_token.shutil.which", return_value="/usr/bin/tokenomics"):
                 with patch("lib.scan.stage_token.subprocess.run", side_effect=_mock_subprocess_run(None)):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
-        assert result.status == "errored"
-        assert "code 1" in result.error
-        assert result.findings == []
+        assert result.status == "passed"  # Falls back to pure Python
 
 
 class TestInvalidSeverity:
@@ -315,9 +328,9 @@ class TestInvalidSeverity:
 
 
 class TestGenericException:
-    """Scenario: subprocess.run raises a generic exception."""
+    """Scenario: subprocess.run raises a generic exception — falls back to pure Python."""
 
-    def test_generic_exception_handled(self):
+    def test_generic_exception_falls_back(self):
         def run_side_effect(cmd, **kwargs):
             if "--version" in cmd:
                 mock = MagicMock()
@@ -332,6 +345,4 @@ class TestGenericException:
                 with patch("lib.scan.stage_token.subprocess.run", side_effect=run_side_effect):
                     result = stage_token_analyze(make_ingest(tmpdir))
         assert result.stage == "stageT"
-        assert result.status == "errored"
-        assert "tokenomics CLI failed" in result.error
-        assert result.findings == []
+        assert result.status == "passed"  # Falls back to pure Python
