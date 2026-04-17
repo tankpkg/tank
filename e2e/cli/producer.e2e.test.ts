@@ -16,7 +16,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { expectFailure, expectSuccess, runTank } from '../helpers/cli';
 import { bumpSkillVersion, cleanupFixture, createSkillFixture, type SkillFixture } from '../helpers/fixtures';
-import { cleanupE2E, countVersions, type E2EContext, hasRegistry, setupE2E, skillExists, versionExists } from '../helpers/setup';
+import {
+  cleanupE2E,
+  countVersions,
+  type E2EContext,
+  hasRegistry,
+  setupE2E,
+  skillExists,
+  versionExists
+} from '../helpers/setup';
 
 const describeIfRegistry = hasRegistry ? describe : describe.skip;
 
