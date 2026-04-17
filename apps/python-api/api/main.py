@@ -140,6 +140,40 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/debug/stageT")
+async def debug_stage_t():
+    """Diagnostic endpoint to check Stage T runtime environment."""
+    import shutil
+
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    vendor_path = os.path.join(project_root, "vendor", "tokenomics", "analyze.js")
+    node_modules_path = os.path.join(project_root, "node_modules", "tokenomics", "dist", "analyze.js")
+    node_bin = shutil.which("node")
+    node_candidates = ["/vercel/node-wrapper/node", "/usr/local/bin/node", "/opt/node/bin/node"]
+    found_node = None
+    for c in node_candidates:
+        if os.path.isfile(c):
+            found_node = c
+            break
+
+    return {
+        "__file__": __file__,
+        "project_root": project_root,
+        "cwd": os.getcwd(),
+        "vendor_path": vendor_path,
+        "vendor_exists": os.path.isfile(vendor_path),
+        "node_modules_path": node_modules_path,
+        "node_modules_exists": os.path.isfile(node_modules_path),
+        "node_on_path": node_bin,
+        "node_candidate_found": found_node,
+        "tokenomics_on_path": shutil.which("tokenomics"),
+        "dir_listing_vendor": os.listdir(os.path.join(project_root, "vendor", "tokenomics"))
+        if os.path.isdir(os.path.join(project_root, "vendor", "tokenomics"))
+        else "DIR_NOT_FOUND",
+        "dir_listing_project_root": [f for f in os.listdir(project_root) if not f.startswith(".")],
+    }
+
+
 @app.get("/health/llm")
 async def llm_health():
     """Check LLM provider health status.
