@@ -82,10 +82,14 @@ describe('pack()', () => {
       await expect(pack(tmpDir)).rejects.toThrow(/tank\.json/i);
     });
 
-    it('throws when SKILL.md is missing', async () => {
+    it('succeeds when SKILL.md is missing (optional for non-skill packages)', async () => {
       writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
 
-      await expect(pack(tmpDir)).rejects.toThrow(/SKILL\.md/i);
+      const result = await pack(tmpDir);
+
+      expect(result.tarball).toBeInstanceOf(Buffer);
+      expect(result.fileCount).toBe(1); // tank.json only
+      expect(result.readme).toBe('');
     });
 
     it('throws when tank.json is invalid', async () => {
@@ -104,31 +108,34 @@ describe('pack()', () => {
   });
 
   describe('security: symlinks', () => {
-    it('throws when directory contains a symlink', async () => {
+    it('skips symlinks instead of throwing', async () => {
       writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
       // Create a symlink
       fs.symlinkSync('/etc/passwd', path.join(tmpDir, 'evil-link'));
 
-      await expect(pack(tmpDir)).rejects.toThrow(/symlink/i);
+      const result = await pack(tmpDir);
+
+      // Symlink should be skipped, not cause an error
+      expect(result.tarball).toBeInstanceOf(Buffer);
+      expect(result.fileCount).toBe(2); // tank.json, SKILL.md — symlink skipped
     });
   });
 
   describe('security: path traversal', () => {
-    it('throws when a file path contains ..', async () => {
+    it('skips symlinks that would enable path traversal', async () => {
       writeFile(tmpDir, 'tank.json', VALID_SKILLS_JSON);
       writeFile(tmpDir, 'SKILL.md', VALID_SKILL_MD);
-      // Create a directory structure that could be used for traversal
-      // We can't actually create ../foo on the filesystem easily,
-      // but we can test that the validator catches paths with ..
-      // by creating a directory named literally ".." (which is the parent dir)
-      // Instead, we'll create a nested dir and a symlink that escapes
       const subDir = path.join(tmpDir, 'sub');
       fs.mkdirSync(subDir);
       // Create a symlink pointing outside the package root
       fs.symlinkSync(path.join(tmpDir, '..'), path.join(subDir, 'escape'));
 
-      await expect(pack(tmpDir)).rejects.toThrow(/symlink|traversal|outside/i);
+      const result = await pack(tmpDir);
+
+      // Symlink is skipped, not thrown
+      expect(result.tarball).toBeInstanceOf(Buffer);
+      expect(result.fileCount).toBe(2); // tank.json, SKILL.md (symlinked sub/escape skipped)
     });
   });
 
@@ -318,12 +325,16 @@ describe('packForScan()', () => {
       await expect(packForScan(tmpDir)).rejects.toThrow(/file count|too many files|1000/i);
     });
 
-    it('should reject symlinks', async () => {
+    it('should skip symlinks', async () => {
       writeFile(tmpDir, 'src/index.ts', 'export const x = 1;');
       // Create a symlink
       fs.symlinkSync('/etc/passwd', path.join(tmpDir, 'evil-link'));
 
-      await expect(packForScan(tmpDir)).rejects.toThrow(/symlink/i);
+      const result = await packForScan(tmpDir);
+
+      // Symlink should be skipped, not cause an error
+      expect(result.tarball).toBeInstanceOf(Buffer);
+      expect(result.fileCount).toBe(1); // src/index.ts only
     });
 
     it('should reject non-existent directory', async () => {
