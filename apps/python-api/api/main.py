@@ -140,48 +140,6 @@ async def health():
     return {"status": "healthy"}
 
 
-@app.get("/debug/stageT")
-async def debug_stage_t():
-    """Diagnostic endpoint to check Stage T runtime environment."""
-    import shutil
-
-    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    vendor_path = os.path.join(project_root, "vendor", "tokenomics", "analyze.js")
-    node_modules_path = os.path.join(project_root, "node_modules", "tokenomics", "dist", "analyze.js")
-    node_bin = shutil.which("node")
-    node_candidates = ["/vercel/node-wrapper/node", "/usr/local/bin/node", "/opt/node/bin/node"]
-    found_node = None
-    for c in node_candidates:
-        if os.path.isfile(c):
-            found_node = c
-            break
-
-    import subprocess
-
-    find_node = None
-    try:
-        result = subprocess.run(
-            ["find", "/", "-name", "node", "-type", "f", "-maxdepth", "5"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        find_node = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()] if result.stdout.strip() else []
-    except Exception as e:
-        find_node = f"error: {e}"
-
-    return {
-        "__file__": __file__,
-        "project_root": project_root,
-        "vendor_path": vendor_path,
-        "vendor_exists": os.path.isfile(vendor_path),
-        "node_on_path": node_bin,
-        "node_candidate_found": found_node,
-        "find_node_results": find_node,
-        "PATH": os.environ.get("PATH", "").split(":"),
-    }
-
-
 @app.get("/health/llm")
 async def llm_health():
     """Check LLM provider health status.
