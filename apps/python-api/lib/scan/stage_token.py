@@ -53,18 +53,17 @@ def stage_token_analyze(ingest_result: IngestResult) -> StageResult:
     # Try: global binary → node <local_module> → npx → bunx
     tokenomics_bin = shutil.which("tokenomics")
 
-    # Find the tokenomics JS module (installed via package.json)
+    # Find the tokenomics JS module (installed via package.json or vendored at build)
     tokenomics_module: str | None = None
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     if not tokenomics_bin:
         candidates = [
+            # Vendored copy (copied during Vercel build step)
+            os.path.join(project_root, "vendor", "tokenomics", "analyze.js"),
+            # Standard node_modules from project root
+            os.path.join(project_root, "node_modules", "tokenomics", "dist", "analyze.js"),
+            # CWD-relative node_modules
             os.path.join(os.getcwd(), "node_modules", "tokenomics", "dist", "analyze.js"),
-            os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-                "node_modules",
-                "tokenomics",
-                "dist",
-                "analyze.js",
-            ),
         ]
         for candidate in candidates:
             if os.path.isfile(candidate):
