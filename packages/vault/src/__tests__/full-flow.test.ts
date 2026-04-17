@@ -108,11 +108,14 @@ describe('full E2E — credential vault lifecycle', () => {
     // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(awsMatch![0]).toHaveLength(REAL_AWS.length);
 
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     const stripeFake = stripeMatch![0]!;
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     const awsFake = awsMatch![0]!;
 
     // Phase 4: response has fakes restored to real values
     const resBody1 = (await res1.json()) as { choices: Array<{ message: { content: string } }> };
+    // biome-ignore lint/style/noNonNullAssertion: array guaranteed to have element from valid API response
     const responseContent = resBody1.choices[0]!.message.content;
     expect(responseContent).toContain(REAL_STRIPE);
     expect(responseContent).toContain(REAL_AWS);
