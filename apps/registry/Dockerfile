@@ -12,6 +12,7 @@ COPY apps/registry/package.json ./apps/registry/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY packages/sdk/package.json ./packages/sdk/
+COPY packages/adapters/package.json ./packages/adapters/
 COPY packages/vault/package.json ./packages/vault/
 COPY bdd/package.json ./bdd/
 COPY e2e/package.json ./e2e/
@@ -27,6 +28,7 @@ COPY packages/internals-schemas ./packages/internals-schemas
 COPY packages/internals-helpers ./packages/internals-helpers
 COPY apps/registry ./apps/registry
 COPY packages/sdk ./packages/sdk
+COPY packages/adapters ./packages/adapters
 COPY packages/cli ./packages/cli
 COPY packages/mcp-server ./packages/mcp-server
 
@@ -34,12 +36,14 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/internals-schemas/node_modules ./packages/internals-schemas/node_modules
 COPY --from=deps /app/packages/internals-helpers/node_modules ./packages/internals-helpers/node_modules
 COPY --from=deps /app/packages/sdk/node_modules ./packages/sdk/node_modules
+COPY --from=deps /app/packages/adapters/node_modules ./packages/adapters/node_modules
 COPY --from=deps /app/apps/registry/node_modules ./apps/registry/node_modules
 COPY --from=deps /app/packages/cli/node_modules ./packages/cli/node_modules
 COPY --from=deps /app/packages/mcp-server/node_modules ./packages/mcp-server/node_modules
 
 RUN bun run --filter=@internals/schemas build && \
     bun run --filter=@internals/helpers build && \
+    bun run --filter=@internals/adapters build && \
     bun run --filter=@tankpkg/sdk build && \
     rm -rf apps/registry/.output && \
     bun run --filter=registry build && \
