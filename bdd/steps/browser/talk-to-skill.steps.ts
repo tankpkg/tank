@@ -143,3 +143,40 @@ Then('the page source does not contain {string}', async ({ page }) => {
   const content = await page.content();
   expect(content).not.toContain('prompt2botSecret');
 });
+
+When('the talk API is intercepted to return a 500 error', async ({ page }) => {
+  await page.route('**/api/v1/skills/*/talk', (route) =>
+    route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"Internal server error"}' })
+  );
+});
+
+When('the talk API is intercepted to return a null bot key', async ({ page }) => {
+  await page.route('**/api/v1/skills/*/talk', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ chatLink: 'https://example.com', botPublicKey: null })
+    })
+  );
+});
+
+When('I force-click the floating chat bubble', async ({ page }) => {
+  await page.getByTestId('talk-bubble').click({ force: true });
+  await page.waitForTimeout(1000);
+});
+
+Then('I see the talk error message', async ({ page }) => {
+  await expect(page.getByTestId('talk-error')).toBeVisible({ timeout: 5000 });
+});
+
+Then('I do not see the talk error message', async ({ page }) => {
+  await expect(page.getByTestId('talk-error')).not.toBeVisible();
+});
+
+Then('the talk error contains {string}', async ({ page }, text: string) => {
+  await expect(page.getByTestId('talk-error')).toContainText(text);
+});
+
+When('I dismiss the talk error', async ({ page }) => {
+  await page.getByTestId('talk-error-dismiss').click();
+});

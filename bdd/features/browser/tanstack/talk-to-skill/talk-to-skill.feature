@@ -50,3 +50,25 @@ Feature: Talk to this Skill
   Scenario: Bot secret is never exposed in skill detail response
     When I visit the talk skill detail page
     Then the page source does not contain "prompt2botSecret"
+
+  Scenario: Clicking talk button when API fails shows error feedback
+    When I visit the talk skill detail page
+    And the talk API is intercepted to return a 500 error
+    And I force-click the floating chat bubble
+    Then I see the talk error message
+    And the talk error contains "Unable to start chat"
+
+  Scenario: Clicking talk button when bot key is missing shows error feedback
+    When I visit the talk skill detail page
+    And the talk API is intercepted to return a null bot key
+    And I force-click the floating chat bubble
+    Then I see the talk error message
+    And the talk error contains "temporarily unavailable"
+
+  Scenario: Talk error can be dismissed
+    When I visit the talk skill detail page
+    And the talk API is intercepted to return a 500 error
+    And I force-click the floating chat bubble
+    Then I see the talk error message
+    When I dismiss the talk error
+    Then I do not see the talk error message

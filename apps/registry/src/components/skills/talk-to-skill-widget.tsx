@@ -1,4 +1,4 @@
-import { Loader2, MessageCircle } from 'lucide-react';
+import { Loader2, MessageCircle, X } from 'lucide-react';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 const WIDGET_SCRIPT_URL = 'https://storage.googleapis.com/alice-and-bot/widget/dist/widget.iife.js';
@@ -335,21 +335,30 @@ export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkill
     })();
   }, [skillName, resolvedBotKey]);
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleClick = useCallback(async () => {
     if (toggleWidgetOpen()) return;
 
+    setError(null);
     setLoading(true);
     try {
       let key = resolvedBotKey;
       if (!key) {
         const encoded = encodeURIComponent(skillName);
         const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: 'POST' });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setError('Unable to start chat. Please try again later.');
+          return;
+        }
         const data = (await res.json()) as { chatLink: string; botPublicKey: string | null };
         key = data.botPublicKey;
         if (key) setResolvedBotKey(key);
       }
-      if (!key) return;
+      if (!key) {
+        setError('Chat service is temporarily unavailable.');
+        return;
+      }
 
       if (!localStorage.getItem(CREDENTIALS_KEY)) {
         await loadWidget(key, skillName, false);
@@ -361,6 +370,8 @@ export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkill
       await loadWidget(key, skillName, true);
       await dismissNameDialog();
       await injectWidgetStyles();
+    } catch {
+      setError('Failed to load chat. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -369,14 +380,32 @@ export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkill
   useImperativeHandle(ref, () => ({ trigger: handleClick }), [handleClick]);
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={loading}
-      className="fixed bottom-6 right-6 z-[1000000] flex size-12 items-center justify-center rounded-full bg-[#10b981] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#0d9e6e] focus:outline-none focus:ring-2 focus:ring-[#10b981]/50 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50"
-      aria-label="Talk to this package"
-      data-testid="talk-bubble">
-      {loading ? <Loader2 className="size-5 animate-spin" /> : <MessageCircle className="size-5" />}
-    </button>
+    <>
+      {error && (
+        <div
+          role="alert"
+          data-testid="talk-error"
+          className="fixed bottom-20 right-6 z-[1000001] flex max-w-xs items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive shadow-lg backdrop-blur-sm">
+          <span className="flex-1">{error}</span>
+          <button
+            type="button"
+            data-testid="talk-error-dismiss"
+            onClick={() => setError(null)}
+            className="mt-0.5 shrink-0 rounded p-0.5 hover:bg-destructive/20"
+            aria-label="Dismiss error">
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={loading}
+        className="fixed bottom-6 right-6 z-[1000000] flex size-12 items-center justify-center rounded-full bg-[#10b981] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#0d9e6e] focus:outline-none focus:ring-2 focus:ring-[#10b981]/50 focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50"
+        aria-label="Talk to this package"
+        data-testid="talk-bubble">
+        {loading ? <Loader2 className="size-5 animate-spin" /> : <MessageCircle className="size-5" />}
+      </button>
+    </>
   );
 });
