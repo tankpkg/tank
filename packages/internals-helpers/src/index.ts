@@ -18,3 +18,12 @@ export {
   type CredentialPattern,
   type ScanOptions
 } from '~/credentials/index.js';
+export {
+  checkPermissionBudget,
+  collectPermissionViolations,
+  isDomainAllowed,
+  isPathAllowed,
+  PermissionBudgetError,
+  type PermissionsShape,
+  type PermissionViolation
+} from '~/permissions/index.js';
