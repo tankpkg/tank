@@ -23,6 +23,7 @@ export {
   collectPermissionViolations,
   isDomainAllowed,
   isPathAllowed,
+  isPathAllowedWithRealpath,
   PermissionBudgetError,
   type PermissionsShape,
   type PermissionViolation

@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   checkPermissionBudget,
   collectPermissionViolations,
   isDomainAllowed,
   isPathAllowed,
+  isPathAllowedWithRealpath,
   PermissionBudgetError,
   type PermissionsShape
 } from '~/permissions/index.js';
@@ -184,5 +188,56 @@ describe('collectPermissionViolations', () => {
   it('attributes violations to correct skillName', () => {
     const violations = collectPermissionViolations({ subprocess: false }, { subprocess: true }, 'pkg-xyz');
     expect(violations[0]?.skillName).toBe('pkg-xyz');
+  });
+});
+
+describe('isPathAllowedWithRealpath', () => {
+  let workDir: string;
+  let allowedDir: string;
+  let secretDir: string;
+  let escapeLink: string;
+  let normalFile: string;
+
+  beforeAll(async () => {
+    workDir = await mkdtemp(join(tmpdir(), 'tank-symlink-test-'));
+    allowedDir = join(workDir, 'allowed');
+    secretDir = join(workDir, 'secrets');
+    await mkdir(allowedDir, { recursive: true });
+    await mkdir(secretDir, { recursive: true });
+    normalFile = join(allowedDir, 'ok.txt');
+    await writeFile(normalFile, 'ok');
+    await writeFile(join(secretDir, 'leak.txt'), 'leak');
+    escapeLink = join(allowedDir, 'escape');
+    await symlink(secretDir, escapeLink, 'dir');
+  });
+
+  afterAll(async () => {
+    await rm(workDir, { recursive: true, force: true });
+  });
+
+  it('rejects symlink inside allowed dir that points outside (escape attack)', async () => {
+    const result = await isPathAllowedWithRealpath(escapeLink, [`${allowedDir}/**`]);
+    expect(result).toBe(false);
+  });
+
+  it('accepts real path inside allowed dir', async () => {
+    const result = await isPathAllowedWithRealpath(normalFile, [`${allowedDir}/**`]);
+    expect(result).toBe(true);
+  });
+
+  it('accepts exact allowed path with no symlink', async () => {
+    const result = await isPathAllowedWithRealpath(normalFile, [normalFile]);
+    expect(result).toBe(true);
+  });
+
+  it('rejects path containing .. even if realpath would resolve inside', async () => {
+    const result = await isPathAllowedWithRealpath(`${allowedDir}/../secrets`, [`${allowedDir}/**`]);
+    expect(result).toBe(false);
+  });
+
+  it('falls back to string-match when path does not exist on disk', async () => {
+    const ghost = join(allowedDir, 'does-not-exist.txt');
+    const result = await isPathAllowedWithRealpath(ghost, [`${allowedDir}/**`]);
+    expect(result).toBe(true);
   });
 });
