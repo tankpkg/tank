@@ -86,8 +86,8 @@ export {
 } from '~/schemas/permissions.js';
 export {
   type PerToolOverride,
-  perToolOverrideSchema,
   type ProxyPolicy,
+  perToolOverrideSchema,
   proxyPolicySchema
 } from '~/schemas/proxy-policy.js';
 export {
