@@ -127,19 +127,28 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   }
 
   function emitScannedToolsList(message: JsonRpcMessageRef, rawFallback: string): void {
-    const result = interceptToolsListResponse('tools/list', message, {
-      packageHash,
-      pinsDir,
-      blockOnMatch,
-      onAudit: (entry) => {
-        void logger.append({
-          method: entry.method,
-          verdict: entry.verdict,
-          ...(entry.toolName !== undefined ? { tool_name: entry.toolName } : {}),
-          ...(entry.reason !== undefined ? { reason: entry.reason } : {})
-        });
-      }
-    });
+    let result: ReturnType<typeof interceptToolsListResponse>;
+    try {
+      result = interceptToolsListResponse('tools/list', message, {
+        packageHash,
+        pinsDir,
+        blockOnMatch,
+        onAudit: (entry) => {
+          void logger.append({
+            method: entry.method,
+            verdict: entry.verdict,
+            ...(entry.toolName !== undefined ? { tool_name: entry.toolName } : {}),
+            ...(entry.reason !== undefined ? { reason: entry.reason } : {})
+          });
+        }
+      });
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      void logger.append({ method: 'tools/list', verdict: 'block', reason: 'pin_read_failed' });
+      const errorFrame = framingError(-32002, `tank: pin read failed (${reason})`, message.id ?? null);
+      agentStdout.write(errorFrame);
+      return;
+    }
     if (result.blockedTools.length === 0) {
       void logger.append({ method: 'tools/list', verdict: 'pass' });
       agentStdout.write(`${rawFallback}\n`);
