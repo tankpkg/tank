@@ -1,9 +1,9 @@
 ---
 title: CLI Reference
-description: Complete reference for all 21 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+description: Complete reference for all 22 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 ---
 
-The Tank CLI provides 21 commands for publishing, installing, and managing AI agent skills with security-first design.
+The Tank CLI provides 22 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
@@ -248,6 +248,28 @@ tank run <agent>
 | ----------- | --------------------------------- |
 | `--verbose` | Print verbose vault proxy details |
 
+## tank proxy
+
+Transparent MCP proxy — wraps an MCP server with runtime enforcement
+
+```bash
+tank proxy [command]
+```
+
+### Arguments
+
+| Name      | Description                                                          | Required |
+| --------- | -------------------------------------------------------------------- | -------- |
+| `command` | Child MCP server command to wrap (omit when using --reset-pins only) | No       |
+
+### Options
+
+| Flag                  | Description                                                            |
+| --------------------- | ---------------------------------------------------------------------- |
+| `--audit-path <path>` | JSONL audit log path (default: ~/.tank/proxy/audit.jsonl)              |
+| `--reset-pins`        | Delete all rug-pull schema pins under ~/.tank/proxy/pins/ and continue |
+| `--verbose`           | Print proxy diagnostic details to stderr                               |
+
 ## tank scan
 
 Scan a local skill for security issues without publishing
@@ -336,6 +358,7 @@ tank upgrade [version]
 | `tank info`          | `show`    | Show detailed information about a skill                                    |
 | `tank audit`         | —         | Display security audit results for installed skills                        |
 | `tank run`           | —         | Launch an agent with credential protection (vault proxy)                   |
+| `tank proxy`         | —         | Transparent MCP proxy — wraps an MCP server with runtime enforcement       |
 | `tank scan`          | —         | Scan a local skill for security issues without publishing                  |
 | `tank link`          | `ln`      | Link current skill directory to AI agent directories (for development)     |
 | `tank unlink`        | —         | Remove skill symlinks from AI agent directories                            |
