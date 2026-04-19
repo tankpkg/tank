@@ -197,7 +197,7 @@ jobs:
             platform: linux-aarch64
             target: aarch64-unknown-linux-gnu
             manylinux: "2_28"
-          - runner: macos-13
+          - runner: macos-14
             platform: darwin-x86_64
             target: x86_64-apple-darwin
             manylinux: "off"
