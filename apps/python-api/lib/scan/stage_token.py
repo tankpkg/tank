@@ -704,9 +704,9 @@ def _get_shortening_tip(section: dict) -> str | None:
 
     tree_line_count = 0
     for line in lines:
-        if re.match(r"^[\u2500-\u257f\u2502\u2514\u250c\u2510\u2518\u251c\u2524\u252c\u2534\u253c\s]+[a-z]", line):
-            tree_line_count += 1
-        elif re.match(r"^\s+[a-z_]+/\s*$", line, re.IGNORECASE):
+        if re.match(
+            r"^[\u2500-\u257f\u2502\u2514\u250c\u2510\u2518\u251c\u2524\u252c\u2534\u253c\s]+[a-z]", line
+        ) or re.match(r"^\s+[a-z_]+/\s*$", line, re.IGNORECASE):
             tree_line_count += 1
     if tree_line_count > 10:
         tips.append(
