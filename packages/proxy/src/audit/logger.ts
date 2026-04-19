@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { canonicalizeSchema } from '../scanner/canonicalize.ts';
+import { rotateIfNeeded } from './rotator.ts';
 
 export interface AuditEntry {
   timestamp: string;
@@ -49,15 +50,16 @@ export function createAuditLogger(logPath: string): AuditLogger {
   return {
     path: logPath,
     async append(partial) {
-      const entry: AuditEntry = {
-        timestamp: new Date().toISOString(),
-        prev_hash: previousHash,
-        ...partial
-      };
-      const line = `${JSON.stringify(entry)}\n`;
-
       try {
         await ensureDirectory();
+        rotateIfNeeded(logPath);
+        if (!existsSync(logPath)) previousHash = null;
+        const entry: AuditEntry = {
+          timestamp: new Date().toISOString(),
+          prev_hash: previousHash,
+          ...partial
+        };
+        const line = `${JSON.stringify(entry)}\n`;
         await appendFile(logPath, line, { encoding: 'utf8' });
         previousHash = hashEntry(entry);
       } catch (err) {
