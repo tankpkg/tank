@@ -1,6 +1,16 @@
 export type { AuditEntry, AuditLogger } from './audit/logger.ts';
 export { createAuditLogger } from './audit/logger.ts';
+export { PHASE_2_DEFAULTS } from './policy/defaults.ts';
+export type { EffectivePerTool, LoadPolicyOptions, ResolvedPolicy } from './policy/loader.ts';
+export { loadPolicy, resolvePerTool } from './policy/loader.ts';
 export type { ProxyHandle, ProxyOptions } from './proxy.ts';
 export { startProxy } from './proxy.ts';
+export { canonicalizeSchema, hashSchema } from './scanner/canonicalize.ts';
+export { computePinIdentity } from './scanner/pin-identity.ts';
+export { type PinFile, PinReadError, readPinFile, sweepStaleTemps, writePinFile } from './scanner/pin-io.ts';
+export type { Mismatch, PinOrCompareOptions, PinOrCompareResult, ToolSchema } from './scanner/rug-pull.ts';
+export { pinOrCompare, resetPins } from './scanner/rug-pull.ts';
+export type { ScanMatch, ScanResult } from './scanner/tool-poisoning.ts';
+export { scanToolDescription } from './scanner/tool-poisoning.ts';
 export type { FramingResult, JsonRpcMessage } from './transport/message-router.ts';
 export { framingError, parseJsonRpcMessage } from './transport/message-router.ts';

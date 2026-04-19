@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { hashSchema } from '~/scanner/canonicalize.js';
-import { type PinFile, readPinFile, writePinFile } from '~/scanner/pin-io.js';
+import { hashSchema } from './canonicalize.ts';
+import { type PinFile, readPinFile, writePinFile } from './pin-io.ts';
 
 export interface ToolSchema {
   name: string;

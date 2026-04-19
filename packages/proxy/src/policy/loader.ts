@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import { type PerToolOverride, type ProxyPolicy, proxyPolicySchema } from '@internals/schemas';
-import { PHASE_2_DEFAULTS } from '~/policy/defaults.js';
+import { PHASE_2_DEFAULTS } from './defaults.ts';
 
 export interface LoadPolicyOptions {
   userPolicyPath: string;
