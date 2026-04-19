@@ -1,3 +1,5 @@
+from tankpkg._native import has_native
+from tankpkg._version import __version__
 from tankpkg.client import TankClient
 from tankpkg.errors import (
     TankAuthError,
@@ -22,4 +24,6 @@ __all__ = [
     "SkillContent",
     "UserInfo",
     "VersionDetail",
+    "has_native",
+    "__version__",
 ]
