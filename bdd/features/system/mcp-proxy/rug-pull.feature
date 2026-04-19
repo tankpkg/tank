@@ -1,5 +1,5 @@
 # Intent: idd/modules/mcp-proxy/INTENT.md
-# Constraints covered: C12, C13, C14, C15
+# Constraints covered: C12, C13, C14, C14a, C14b, C14c, C15
 
 @mcp-proxy
 @rug-pull
@@ -18,11 +18,17 @@ Feature: Rug pull detection — tool schema changes after approval
   @happy-flow
   @C12
   @C14
+  @C14a
+  @C14b
+  @C14c
   Scenario: First connection — proxy pins tool schemas and allows all
     Given the MCP server registers tool "read_file" with description "Read a file" and input schema {"path": "string"}
+    And no pin file exists at "~/.tank/proxy/pins/<package-hash>.json" (ENOENT → benign first-run per C14c)
     When the agent sends a "tools/list" request for the first time
     Then the proxy computes SHA-256 over canonicalized JSON (sorted keys, no whitespace) of (name + description + inputSchema)
-    And stores the hashes in the pin file at "~/.tank/proxy/pins/<package-hash>.json"
+    And the package hash is derived per C14a from the resolved proxy argv
+    And the pin file is written atomically via unique-suffix temp + rename per C14b
+    And the pin file is stored at "~/.tank/proxy/pins/<package-hash>.json" inside a directory created with mode 0700 per C14
     And returns all tools to the agent
 
   @high
@@ -113,20 +119,63 @@ Feature: Rug pull detection — tool schema changes after approval
     Then all stored pin files under "~/.tank/proxy/pins/" are deleted
     And the next "tools/list" request establishes fresh pins
 
-  @medium
-  @C14
+  @high
+  @C14c
   @edge-case
-  Scenario: Pin file is corrupted — proxy re-pins from scratch
+  Scenario: Pin file contains invalid JSON — proxy fails closed
     Given the proxy's pin file contains invalid JSON
     When the agent sends a "tools/list" request
-    Then the proxy logs a warning about corrupted pins
-    And establishes fresh pins from the current response
+    Then the proxy returns JSON-RPC error -32002 "tank: pin read failed" to the agent
+    And does not return any tools (fail closed, not open)
+    And does not silently re-pin
+    And the audit log contains a "block" entry with reason "pin_read_failed"
 
-  @medium
-  @C14
+  @high
+  @C14c
   @edge-case
   Scenario: Pin file permissions prevent read — proxy fails closed
-    Given the proxy's pin file exists but is not readable
+    Given the proxy's pin file exists but is not readable (EACCES)
     When the agent sends a "tools/list" request
-    Then the proxy returns an error to the agent
+    Then the proxy returns JSON-RPC error -32002 "tank: pin read failed" to the agent
     And does not return any tools (fail closed, not open)
+    And does not silently re-pin
+
+  @high
+  @C14c
+  @happy-flow
+  Scenario: Pin file does not exist — first-run flow establishes pins
+    Given the proxy's pin file does not exist (ENOENT)
+    When the agent sends a "tools/list" request
+    Then the proxy establishes fresh pins from the current response
+    And returns all tools to the agent normally
+    And ENOENT is not treated as a read failure
+
+  @high
+  @C14a
+  @pin-identity
+  Scenario: Pin identity is stable across restarts of the same invocation
+    Given the proxy is launched with argv "tank proxy -- npx @org/mcp-server"
+    When the proxy computes its pin identity
+    Then the package hash equals SHA-256 of JSON.stringify(["npx", "@org/mcp-server"])
+    And the pin file path is "~/.tank/proxy/pins/<that-hash>.json"
+    And a second launch with the same argv uses the same pin file
+
+  @high
+  @C14b
+  @concurrency
+  Scenario: Two concurrent writers use unique temp filenames before rename
+    Given two proxy processes are writing the same pin file concurrently
+    When each writer serializes its pin bytes
+    Then each writer uses a temp filename of the form "<hash>.json.tmp.<pid>.<random8>"
+    And the two temp filenames are distinct
+    And both writers rename atomically onto "<hash>.json"
+    And the final file is valid JSON (one of the two writers' bytes, not interleaved)
+
+  @medium
+  @C14b
+  @edge-case
+  Scenario: Stale temp file from a crashed writer is swept on startup
+    Given a stale pin temp file "<hash>.json.tmp.9999.abcd1234" older than 1 hour exists
+    When the proxy starts up
+    Then pin-io sweepStaleTemps() deletes the stale temp file
+    And temp files younger than 1 hour are preserved

@@ -14,6 +14,25 @@ Methodology per phase: RED (write failing BDD scenarios) → GREEN (implement un
 All BDD scenarios in this module are tagged `@mcp-proxy` plus per-scenario `@C<N>`
 where `N` is the constraint ID from `INTENT.md`. Cross-reference: tags = constraints.
 
+## Proxy State Directory Layout
+
+All runtime state lives under `~/.tank/proxy/`. No other path is written to.
+Fresh-context agents should consult this table before touching any phase.
+
+| Path                                     | Owning phase                           | Format                      | Purpose                                                                                      |
+| ---------------------------------------- | -------------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------- |
+| `~/.tank/proxy/audit.jsonl`              | Phase 1 (minimal), Phase 4 (hardened)  | JSONL (append-only)         | Per-message audit trail; Phase 4 adds SHA-256 hash chaining + 10MB/5-ring rotation           |
+| `~/.tank/proxy/pins/<package-hash>.json` | Phase 2                                | JSON (one file per package) | Rug-pull schema pins; atomic-rename writes, fail-closed reads (see D14)                      |
+| `~/.tank/proxy/policy.json`              | Phase 2 (stub), Phases 3/4/7 (consume) | JSON (user-global)          | Per-tool policy overrides (see D16); deep-merged with project `tank.json`, project wins (D8) |
+| `~/.tank/proxy/registry.jsonl`           | Phase 8                                | JSONL (append-only)         | Cross-server tool registry for shadowing detection; 30-day TTL                               |
+
+Build-time sources (not runtime state):
+
+| Path                                                          | Owning phase | Notes                                                                                  |
+| ------------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------- |
+| `packages/internals-helpers/vendor/clawguard/`                | Phase 2      | Git submodule pinned to ref `4ec3e09` (MIT) (see D13)                                  |
+| `packages/internals-helpers/src/prompt-injection/patterns.ts` | Phase 2      | Generated from submodule by `scripts/codegen-clawguard.ts`; committed to git (see D17) |
+
 ## Phase 0: Canary `_meta` Compatibility Spike (half-day, no PR)
 
 **Goal:** Before locking canary placement in Phase 5, confirm `_meta.tank_canary`
@@ -81,41 +100,164 @@ tests still GREEN after the internals move.
 
 ---
 
-## Phase 2: Tool Poisoning + Rug Pull Detection (PR #2)
+## Phase 2: Tool Poisoning + Rug Pull Detection + Policy Stub (PR #2)
 
 **Goal:** Scan `tools/list` responses for hidden instructions and schema changes.
+Ship the policy schema + loader stub so per-tool overrides (C40) have a home
+before Phase 3 permission work starts.
 
-**BDD features:** `tool-poisoning.feature`, `rug-pull.feature` (all `@high`).
+**BDD features:** `tool-poisoning.feature`, `rug-pull.feature` (all `@high`);
+plus `@phase-2` rows added to `audit-trail.feature` and `tool-poisoning.feature`
+for policy-loader coverage.
 
 **Implementation:**
 
-1. Port ClawGuard 216 regex patterns to `src/scanner/tool-poisoning.ts`.
-2. `src/scanner/normalizer.ts` — zero-width strip, homoglyph decode, base64 decode.
-3. `src/scanner/rug-pull.ts` — SHA-256 pinning of tool schemas over **canonicalized JSON**
-   (sorted keys, no whitespace).
-4. `src/policy/defaults.ts` — detection thresholds.
-5. Pin storage: `~/.tank/proxy/pins/<package-hash>.json`.
-6. Hook into message-router: intercept `tools/list` responses before returning to agent.
-7. Audit entries for block/pass use the Phase 1 minimal writer.
+1. **ClawGuard submodule + codegen pipeline (see D13, D17):**
+   - Add `joergmichno/clawguard` as git submodule at
+     `packages/internals-helpers/vendor/clawguard/` pinned to ref `4ec3e09` (MIT).
+     Entry recorded in `.gitmodules`.
+   - Write `scripts/codegen-clawguard.ts` **fresh** (TDD: RED fixture test first,
+     then GREEN implementation). Parses ClawGuard's Python tuples from
+     `vendor/clawguard/src/clawguard_core/*.py`; emits TypeScript at
+     `packages/internals-helpers/src/prompt-injection/patterns.ts` with exactly
+     **55 patterns across 7 categories** (Prompt Injection 17, Code Obfuscation
+     11, Data Exfiltration 9, Dangerous Command 5, Shell Injection 5, Social
+     Engineering 5, Tool Manipulation 3). The historical "216" figure in upstream
+     docs counts internal pattern variants, not the TS-importable exported list.
+   - Generated `patterns.ts` is **committed to git**; submodule is optional at
+     runtime. CI regenerates before release to detect drift (see D17).
+   - `packages/internals-helpers/src/prompt-injection/types.ts` declares
+     `ClawGuardPattern`, `ClawGuardCategory`, `ClawGuardSeverity`.
+
+2. **Combined normalizer (see D15):**
+   `packages/internals-helpers/src/prompt-injection/normalizer.ts` exports
+   `normalizeForScan(text: string): string`. Pipeline order:
+   1. strip zero-width codepoints (U+200B/C/D, U+FEFF, U+2060)
+   2. NFKC Unicode normalization + homoglyph decode
+   3. detect + decode base64-embedded substrings
+   4. ClawGuard leet-speak reversal (`_normalize_leet` port)
+   5. whitespace collapse
+
+   Steps (1)–(3) are Tank's plan; (4)–(5) come from ClawGuard; both run every
+   scan because they cover disjoint evasion classes.
+
+3. `packages/proxy/src/scanner/tool-poisoning.ts` — imports `CLAWGUARD_PATTERNS`
+   - `normalizeForScan` from `@internals/helpers/prompt-injection`.
+     `scanToolDescription(text)` → `{ matched: boolean, matches: PatternMatch[] }`.
+
+4. `packages/proxy/src/scanner/rug-pull.ts`:
+   - `canonicalizeSchema(schema)` — sorted keys, no whitespace, UTF-8.
+   - `hashSchema(schema)` → SHA-256 hex of canonicalized form.
+   - `pinOrCompare(packageHash, tools)` — reads
+     `~/.tank/proxy/pins/<package-hash>.json`; if absent, write pin; if present,
+     compare and surface mismatches. **On read failure (corrupt JSON, permission
+     denied, I/O error), fail closed:** reject the `tools/list` call with a
+     JSON-RPC error rather than silently re-pinning. See D14.
+
+5. **Pin identity (see C14a, D19):** Phase 2 computes `<package-hash>` as
+   `sha256hex(JSON.stringify([resolvedExe, ...resolvedArgs]))` after
+   per-element whitespace-trim. Lives in
+   `packages/proxy/src/scanner/pin-identity.ts`. Phase 6 adapter rewriting
+   later upgrades to a package-manifest-derived hash and migrates pins (tracked
+   as a Phase 6 sub-task, not Phase 2 scope).
+
+6. **Pin file format + concurrency (see C14, C14b, C14c, D14):** one file per
+   package-hash at `~/.tank/proxy/pins/<package-hash>.json`:
+
+   ```json
+   {
+     "packageHash": "sha256:...",
+     "pinnedAt": "2026-04-19T12:00:00.000Z",
+     "tools": { "<tool-name>": "sha256:<hex>" }
+   }
+   ```
+
+   Writes use **atomic rename with a per-writer unique temp filename**:
+   `<hash>.json.tmp.<pid>.<random8>` (where `<random8>` = 4 bytes from
+   `crypto.randomBytes` rendered as hex) → `fs.rename()` onto `<hash>.json`.
+   Per-writer suffix eliminates the concurrent-writer race where two processes
+   would stomp a shared `<hash>.json.tmp`. On proxy startup, a sweep in
+   `packages/proxy/src/scanner/pin-io.ts#sweepStaleTemps()` deletes any
+   `<hash>.json.tmp.*` file older than 1 hour to reclaim temp files from
+   crashed writers. No advisory lockfile.
+
+   Reads follow **fail-closed semantics** (see C14c): `ENOENT` is treated as
+   first-run (benign); any other error (corrupt JSON, `EACCES`, `EIO`) rejects
+   the `tools/list` with JSON-RPC error `-32002` and does not silently re-pin.
+
+7. **`tank proxy --reset-pins` CLI flag:** global flag in
+   `packages/cli/src/commands/proxy.ts`. Deletes every file under
+   `~/.tank/proxy/pins/` (the directory itself is preserved). Prints count
+   deleted. Does not exit the proxy — allows CI/script usage before launching.
+
+8. **Policy schema stub + loader (see D16):**
+   - `packages/internals-schemas/src/schemas/proxy-policy.ts` — Zod schema for
+     `ProxyPolicy` (global defaults + `perTool: Record<string, PerToolOverride>`).
+     `PerToolOverride` has `scan: boolean`, `blockOnMatch: boolean`, with
+     placeholders for Phase-4+ fields (audit redaction, ML gating). `safeParse`
+     only.
+   - `packages/proxy/src/policy/loader.ts` — `loadPolicy()` reads
+     `~/.tank/proxy/policy.json` (user-global) + nearest `tank.json` (project),
+     `safeParse`s both, deep-merges with **project-wins-on-conflict** per D8.
+     Returns typed `ResolvedPolicy`. Phase 2 consumers use only `blockOnMatch`;
+     other fields wired in Phases 3/4/7.
+   - `packages/proxy/src/policy/defaults.ts` — `PHASE_2_DEFAULTS` const:
+     `perfBudgetMs: 5`, `blockOnMatch: true`, `resetPinsOnMismatch: false`.
+
+9. Hook into message-router: intercept `tools/list` responses; run scanner +
+   `pinOrCompare` before returning to agent; emit audit entries via the Phase 1
+   minimal writer with `reason` field populated (`"poisoning_detected"` or
+   `"rug_pull_detected"`).
+
+**TDD order (RED → GREEN). Every step uses real file system (`fs.mkdtemp` + cleanup) and real child processes for integration — no mock FS, no mock spawn:**
+
+1. `normalizer.test.ts` — 5 evasion stages exercised independently + combined; base64 recursion bounded at depth 3 and ≤64 KB decoded (per C9)
+2. `patterns.test.ts` — codegen output shape, exact 55-count assertion, each of 7 categories has ≥1 pattern
+3. `tool-poisoning.test.ts` — benign pass, each evasion class blocked, perf <5ms with full 55-pattern set
+4. `canonicalize.test.ts` — key-order invariance, whitespace invariance, nested-object ordering
+5. `pin-identity.test.ts` — argv hash determinism, whitespace-trim, `--remote` canonical form (C14a)
+6. `pin-io.test.ts` — unique-suffix temp filename, concurrent-writer determinism, startup sweep of stale `.tmp.*` >1h, fail-closed on corrupt/`EACCES`/`EIO`, `ENOENT` stays benign (C14b + C14c)
+7. `rug-pull.test.ts` — first-run pins, mismatch detected, new tool added is not a rug pull
+8. `policy-loader.test.ts` — project-wins deep merge, missing-file fallback, `safeParse` rejection of malformed JSON
+9. `reset-pins-cli.test.ts` — flag deletes files, prints count, preserves dir (C15)
+10. Integration: message-router wires all of the above (real stdio proxy, real child MCP)
+11. E2E BDD scenarios (see matrix)
 
 **Test matrix:**
 
-| Scenario                               | Feature                | Tag                  |
-| -------------------------------------- | ---------------------- | -------------------- |
-| Benign passes, poisoned blocked        | tool-poisoning.feature | @C7 @C11 @happy-flow |
-| Evasion: zero-width, homoglyph, base64 | tool-poisoning.feature | @C9                  |
-| Perf: <5ms per tools/list              | tool-poisoning.feature | @C10 @perf           |
-| First connection pins schemas          | rug-pull.feature       | @C12 @happy-flow     |
-| Description change triggers alert      | rug-pull.feature       | @C13                 |
-| Reset pins                             | rug-pull.feature       | @C15                 |
+| Scenario                                          | Feature                | Tag                  |
+| ------------------------------------------------- | ---------------------- | -------------------- |
+| Benign passes, poisoned blocked                   | tool-poisoning.feature | @C7 @C11 @happy-flow |
+| Evasion: zero-width + homoglyph + base64 + leet   | tool-poisoning.feature | @C9                  |
+| Category coverage: each of 7 categories trips     | tool-poisoning.feature | @C8                  |
+| Perf: <5ms per tools/list (55 patterns)           | tool-poisoning.feature | @C10 @perf           |
+| First connection pins schemas (atomic write)      | rug-pull.feature       | @C12 @happy-flow     |
+| Description change triggers alert                 | rug-pull.feature       | @C13                 |
+| Pin file corrupt → fail closed (no silent re-pin) | rug-pull.feature       | @C14 @edge-case      |
+| `tank proxy --reset-pins` clears directory        | rug-pull.feature       | @C15                 |
+| Concurrent write same tools/list converges        | rug-pull.feature       | @C14 @edge-case      |
+| Policy loader: project `blockOnMatch:false` wins  | tool-poisoning.feature | @C40 @D8             |
+| Policy loader: malformed policy.json → defaults   | tool-poisoning.feature | @C40 @edge-case      |
+| Policy loader: no policy.json → defaults          | tool-poisoning.feature | @C40 @happy-flow     |
+| Audit entry populated with `reason` field         | audit-trail.feature    | @phase-2 @C35        |
 
 **Port from OSS (MIT):**
 
-- ClawGuard → 216 regex patterns + normalization pipeline.
-- Aegis → SHA-256 hash pinning approach.
+- ClawGuard ref `4ec3e09` → 55 exported patterns (across 7 categories) +
+  leet/whitespace normalization. Our plan adds zero-width + homoglyph + base64
+  stripping on top (see D15).
+- Aegis → SHA-256 hash pinning approach (canonicalized JSON + atomic-rename
+  file persistence are Tank-originated).
 
-**Exit criteria:** Poisoned tools blocked by default. Schema changes detected.
-All `@high` poisoning + rug-pull scenarios GREEN.
+**Exit criteria:**
+
+- Poisoned tools blocked by default; each of 7 ClawGuard categories proven in tests.
+- Schema changes detected; pin file format round-trips across process restarts.
+- `tank proxy --reset-pins` works.
+- Policy schema + loader in place; per-tool override demonstrated end-to-end.
+- All `@high` poisoning + rug-pull + policy-loader scenarios GREEN.
+- Phase 1 transport + audit scenarios still GREEN.
+- Perf budget <5ms per tools/list validated with the 55-pattern set.
 
 ---
 
@@ -377,7 +519,7 @@ injection blocked. ML classifier downloadable. All scenarios GREEN.
 | --------- | --- | ------------------------------------------ | ------------- | --------------- |
 | 0         | —   | Canary `_meta` compat spike                | 0 (manual)    | 0.5 day         |
 | 1         | #1  | Transport + minimal audit + internals move | ~14           | 2-3 days        |
-| 2         | #2  | Tool poisoning + rug pull                  | ~12           | 3-4 days        |
+| 2         | #2  | Tool poisoning + rug pull + policy stub    | ~13           | 5-7 days        |
 | 3         | #3  | Runtime permission gate                    | ~10           | 2-3 days        |
 | 4         | #4  | Audit hardening                            | ~6            | 1-2 days        |
 | 5         | #5  | Canary tokens                              | ~7            | 2 days          |
@@ -385,10 +527,11 @@ injection blocked. ML classifier downloadable. All scenarios GREEN.
 | 7         | #7  | Response + resources/prompts               | ~10           | 2-3 days        |
 | 8         | #8  | Tool shadowing (cross-proxy)               | ~6            | 2-3 days        |
 | 9         | #9  | ML classifier opt-in                       | ~4            | 1-2 days        |
-| **Total** |     |                                            | **~77**       | **~18-22 days** |
+| **Total** |     |                                            | **~78**       | **~20-25 days** |
 
 ## Unresolved Questions
 
 None — all 6 original open questions are resolved in `decisions.md` (D7–D11)
-and the Phase 0 spike note. New questions raised during implementation should
-be added here and resolved before their dependent phase begins.
+and the Phase 0 spike note. Phase 2 amendment decisions are captured in D13–D18.
+New questions raised during implementation should be added here and resolved
+before their dependent phase begins.
