@@ -16,14 +16,25 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { expectFailure, expectSuccess, runTank } from '../helpers/cli';
 import { bumpSkillVersion, cleanupFixture, createSkillFixture, type SkillFixture } from '../helpers/fixtures';
-import { cleanupE2E, countVersions, type E2EContext, setupE2E, skillExists, versionExists } from '../helpers/setup';
+import {
+  cleanupE2E,
+  countVersions,
+  type E2EContext,
+  hasRegistry,
+  setupE2E,
+  skillExists,
+  versionExists
+} from '../helpers/setup';
 
-describe('Producer E2E — publish skills to the Tank registry', () => {
+const describeIfRegistry = hasRegistry ? describe : describe.skip;
+
+describeIfRegistry('Producer E2E — publish skills to the Tank registry', () => {
   let ctx: E2EContext;
   let skill: SkillFixture;
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
   });
 

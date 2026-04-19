@@ -16,6 +16,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 const QUALITY_GATE_DIR = path.resolve(__dirname, '../../../tank-skills/skills/quality-gate');
 
+const describeIfAvailable = fs.existsSync(QUALITY_GATE_DIR) ? describe : describe.skip;
+
 function loadQualityGate(): PackageIR {
   const raw = fs.readFileSync(path.join(QUALITY_GATE_DIR, 'tank.json'), 'utf-8');
   const result = packageIRSchema.safeParse(JSON.parse(raw));
@@ -33,7 +35,7 @@ function writeToTmpDir(prefix: string, files: Array<{ path: string; content: str
   return dir;
 }
 
-describe('E2E: quality-gate compiled through all 6 adapters — real files on real filesystem', () => {
+describeIfAvailable('E2E: quality-gate compiled through all 6 adapters — real files on real filesystem', () => {
   const tmpDirs: string[] = [];
   const pkg = loadQualityGate();
 

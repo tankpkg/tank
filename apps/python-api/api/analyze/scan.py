@@ -41,6 +41,7 @@ from lib.scan.stage2_static import stage2_analyze
 from lib.scan.stage3_injection import stage3_detect_injection
 from lib.scan.stage4_secrets import stage4_scan_secrets
 from lib.scan.stage5_supply import stage5_audit_deps
+from lib.scan.stage_token import stage_token_analyze
 from lib.scan.verdict import compute_verdict, get_stages_run, get_verdict_counts
 
 app = FastAPI(title="Tank Security Scan", version="2.0.0")
@@ -222,6 +223,18 @@ async def run_single_file_pipeline(request: ScanRequest) -> ScanResponse:
 
         # Stage 5: Supply Chain — skip for single files (no package.json)
         stage_results.append(StageResult(stage="stage5", status="skipped", findings=[], duration_ms=0))
+
+        # Stage T: Token Usage Analysis (optional, advisory-only)
+        elapsed = int((time.monotonic() - start) * 1000)
+        remaining_budget = MAX_SCAN_DURATION_MS - elapsed
+        if remaining_budget > 3000:
+            try:
+                result = stage_token_analyze(ingest_result)
+                stage_results.append(result)
+            except Exception as e:
+                stage_results.append(
+                    StageResult(stage="stageT", status="errored", findings=[], duration_ms=0, error=str(e))
+                )
 
     finally:
         cleanup_ingest(temp_dir)
@@ -469,6 +482,18 @@ async def run_scan_pipeline(request: ScanRequest) -> ScanResponse:
                         duration_ms=0,
                         error=str(e),
                     )
+                )
+
+        # Stage T: Token Usage Analysis (optional, advisory-only)
+        elapsed = int((time.monotonic() - start) * 1000)
+        remaining_budget = MAX_SCAN_DURATION_MS - elapsed
+        if remaining_budget > 3000:
+            try:
+                result = stage_token_analyze(ingest_result)
+                stage_results.append(result)
+            except Exception as e:
+                stage_results.append(
+                    StageResult(stage="stageT", status="errored", findings=[], duration_ms=0, error=str(e))
                 )
 
     finally:

@@ -81,10 +81,47 @@ EXAMPLE_PATH_PATTERNS: list[re.Pattern] = [
     re.compile(r"(setup|config|getting.started|quickstart)", re.IGNORECASE),
 ]
 
+# Dependency lock files contain public integrity hashes (SHA-256/512 base64),
+# not secrets. Supplements detect_secrets.filters.heuristic.is_lock_file,
+# which only covers a subset of ecosystems (misses deno, pnpm, bun, uv, etc.).
+LOCK_FILE_BASENAMES: frozenset[str] = frozenset(
+    {
+        # Covered by detect-secrets built-in filter (listed for custom-pattern stage):
+        "Brewfile.lock.json",
+        "Cartfile.resolved",
+        "composer.lock",
+        "Gemfile.lock",
+        "Package.resolved",
+        "package-lock.json",
+        "Podfile.lock",
+        "yarn.lock",
+        "Pipfile.lock",
+        "poetry.lock",
+        "Cargo.lock",
+        "packages.lock.json",
+        # Not covered by detect-secrets built-in — must be filtered here:
+        "deno.lock",
+        "pnpm-lock.yaml",
+        "bun.lockb",
+        "bun.lock",
+        "uv.lock",
+        "mix.lock",
+        "flake.lock",
+        "shrinkwrap.yaml",
+        "npm-shrinkwrap.json",
+        "go.sum",
+    }
+)
+
 
 def _is_example_path(file_path: str) -> bool:
     """Check if file is in an example/tutorial/documentation context."""
     return any(p.search(file_path) for p in EXAMPLE_PATH_PATTERNS)
+
+
+def _is_lock_file(file_path: str) -> bool:
+    """Check if file is a dependency lock file with public integrity hashes."""
+    return Path(file_path).name in LOCK_FILE_BASENAMES
 
 
 def _is_placeholder_value(matched_text: str) -> bool:
@@ -160,10 +197,13 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                 "plugins_used": plugins,
                 "filters_used": [
                     {"path": "detect_secrets.filters.allowlist.is_line_allowlisted"},
+                    {"path": "detect_secrets.filters.heuristic.is_lock_file"},
                 ],
             }
         ):
             for file_path in get_files_to_scan(temp_dir, should_scan_all_files=True, root=temp_dir):
+                if _is_lock_file(file_path):
+                    continue
                 abs_path = os.path.join(temp_dir, file_path)
                 try:
                     for secret in scan_file(abs_path):
@@ -239,6 +279,9 @@ def run_custom_patterns(temp_dir: str, file_list: list[str]) -> list[Finding]:
     for file_path in file_list:
         ext = Path(file_path).suffix.lower()
         if ext in SKIP_EXTENSIONS:
+            continue
+
+        if _is_lock_file(file_path):
             continue
 
         full_path = Path(temp_dir) / file_path

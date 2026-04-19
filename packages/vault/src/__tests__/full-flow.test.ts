@@ -99,16 +99,23 @@ describe('full E2E — credential vault lifecycle', () => {
     const awsMatch = fwdMsg.match(/AKIA\w+/);
     expect(stripeMatch).not.toBeNull();
     expect(awsMatch).not.toBeNull();
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(stripeMatch![0]).not.toBe(REAL_STRIPE);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(awsMatch![0]).not.toBe(REAL_AWS);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(stripeMatch![0]).toHaveLength(REAL_STRIPE.length);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     expect(awsMatch![0]).toHaveLength(REAL_AWS.length);
 
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     const stripeFake = stripeMatch![0]!;
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by toBeNull checks above
     const awsFake = awsMatch![0]!;
 
     // Phase 4: response has fakes restored to real values
     const resBody1 = (await res1.json()) as { choices: Array<{ message: { content: string } }> };
+    // biome-ignore lint/style/noNonNullAssertion: array guaranteed to have element from valid API response
     const responseContent = resBody1.choices[0]!.message.content;
     expect(responseContent).toContain(REAL_STRIPE);
     expect(responseContent).toContain(REAL_AWS);
@@ -116,12 +123,14 @@ describe('full E2E — credential vault lifecycle', () => {
     expect(responseContent).not.toContain(awsFake);
 
     // Phase 5: second request — same credentials reuse same fakes
-    const res2 = await sendChat(`Use ${REAL_STRIPE} for the refund endpoint`);
+    const _res2 = await sendChat(`Use ${REAL_STRIPE} for the refund endpoint`);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by providerLog having entries
     const providerBody2 = providerLog[providerLog.length - 1]!;
     expect(providerBody2).not.toContain(REAL_STRIPE);
     const parsed2 = JSON.parse(providerBody2);
     const fwdMsg2 = parsed2.messages[0].content as string;
     const stripeMatch2 = fwdMsg2.match(/sk_live_\w+/);
+    // biome-ignore lint/style/noNonNullAssertion: guaranteed by the regex matching
     expect(stripeMatch2![0]).toBe(stripeFake);
   });
 

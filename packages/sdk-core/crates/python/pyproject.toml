@@ -3,18 +3,39 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "tankpkg"
-version = "0.12.1"
-requires-python = ">=3.9"
-description = "Tank SDK core — Python bindings for the security-first AI skill package manager"
-license = {text = "MIT"}
+name = "tank-core"
+version = "0.14.1"
+requires-python = ">=3.11"
+description = "Native Rust primitives for the Tank SDK — integrity verification, tarball extraction, version resolution, permission checks"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Tank Contributors", email = "hi@tankpkg.dev" }]
+keywords = ["tank", "tankpkg", "ai-agents", "skills", "security", "pyo3"]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Rust",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Rust",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Archiving :: Packaging",
+    "Topic :: Security",
 ]
+
+[project.urls]
+Homepage = "https://tankpkg.dev"
+Documentation = "https://www.tankpkg.dev/docs/sdk-python"
+Repository = "https://github.com/tankpkg/tank"
+Issues = "https://github.com/tankpkg/tank/issues"
+Changelog = "https://github.com/tankpkg/tank/blob/main/CHANGELOG.md"
 
 [tool.maturin]
 manifest-path = "Cargo.toml"
+module-name = "tankpkg_core"
 features = ["pyo3/abi3-py39"]

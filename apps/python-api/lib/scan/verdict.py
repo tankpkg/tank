@@ -27,12 +27,15 @@ def compute_verdict(stage_results: list[StageResult]) -> ScanVerdict:
     for stage in stage_results:
         all_findings.extend(stage.findings)
 
+    # Filter out advisory findings (stageT) — they never affect verdict
+    security_findings = [f for f in all_findings if f.stage != "stageT"]
+
     # Count by severity (info excluded — not actionable)
-    critical_count = sum(1 for f in all_findings if f.severity == "critical")
-    high_count = sum(1 for f in all_findings if f.severity == "high")
-    medium_count = sum(1 for f in all_findings if f.severity == "medium")
-    low_count = sum(1 for f in all_findings if f.severity == "low")
-    sum(1 for f in all_findings if f.severity == "info")
+    critical_count = sum(1 for f in security_findings if f.severity == "critical")
+    high_count = sum(1 for f in security_findings if f.severity == "high")
+    medium_count = sum(1 for f in security_findings if f.severity == "medium")
+    low_count = sum(1 for f in security_findings if f.severity == "low")
+    sum(1 for f in security_findings if f.severity == "info")
 
     # Apply verdict rules
     if critical_count > 0:
@@ -70,6 +73,7 @@ def get_verdict_counts(stage_results: list[StageResult]) -> dict:
         "medium": sum(1 for f in all_findings if f.severity == "medium"),
         "low": sum(1 for f in all_findings if f.severity == "low"),
         "info": sum(1 for f in all_findings if f.severity == "info"),
+        "token": sum(1 for f in all_findings if f.stage == "stageT"),
     }
 
 

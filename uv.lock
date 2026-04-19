@@ -757,7 +757,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.82.1"
+version = "1.83.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -773,9 +773,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/34/bd/6251e9a965ae2d7bc3342ae6c1a2d25dd265d354c502e63225451b135016/litellm-1.82.1.tar.gz", hash = "sha256:bc8427cdccc99e191e08e36fcd631c93b27328d1af789839eb3ac01a7d281890", size = 17197496, upload-time = "2026-03-10T09:10:04.438Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/92/6ce9737554994ca8e536e5f4f6a87cc7c4774b656c9eb9add071caf7d54b/litellm-1.83.0.tar.gz", hash = "sha256:860bebc76c4bb27b4cf90b4a77acd66dba25aced37e3db98750de8a1766bfb7a", size = 17333062, upload-time = "2026-03-31T05:08:25.331Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/77/0c6eca2cb049793ddf8ce9cdcd5123a35666c4962514788c4fc90edf1d3b/litellm-1.82.1-py3-none-any.whl", hash = "sha256:a9ec3fe42eccb1611883caaf8b1bf33c9f4e12163f94c7d1004095b14c379eb2", size = 15341896, upload-time = "2026-03-10T09:10:00.702Z" },
+    { url = "https://files.pythonhosted.org/packages/19/2c/a670cc050fcd6f45c6199eb99e259c73aea92edba8d5c2fc1b3686d36217/litellm-1.83.0-py3-none-any.whl", hash = "sha256:88c536d339248f3987571493015784671ba3f193a328e1ea6780dbebaa2094a8", size = 15610306, upload-time = "2026-03-31T05:08:21.987Z" },
 ]
 
 [[package]]
@@ -1339,7 +1339,7 @@ wheels = [
 
 [[package]]
 name = "pytest"
-version = "9.0.2"
+version = "9.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -1348,9 +1348,9 @@ dependencies = [
     { name = "pluggy" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/db/7ef3487e0fb0049ddb5ce41d3a49c235bf9ad299b6a25d5780a89f19230f/pytest-9.0.2.tar.gz", hash = "sha256:75186651a92bd89611d1d9fc20f0b4345fd827c41ccd5c299a868a05d70edf11", size = 1568901, upload-time = "2025-12-06T21:30:51.014Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/0d/549bd94f1a0a402dc8cf64563a117c0f3765662e2e668477624baeec44d5/pytest-9.0.3.tar.gz", hash = "sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c", size = 1572165, upload-time = "2026-04-07T17:16:18.027Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3b/ab/b3226f0bd7cdcf710fbede2b3548584366da3b19b5021e74f5bde2a8fa3f/pytest-9.0.2-py3-none-any.whl", hash = "sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b", size = 374801, upload-time = "2025-12-06T21:30:49.154Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/24/a372aaf5c9b7208e7112038812994107bc65a84cd00e0354a88c2c77a617/pytest-9.0.3-py3-none-any.whl", hash = "sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9", size = 375249, upload-time = "2026-04-07T17:16:16.13Z" },
 ]
 
 [[package]]
@@ -1668,7 +1668,7 @@ wheels = [
 
 [[package]]
 name = "skill-scanner"
-version = "0.3.0"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1677,9 +1677,9 @@ dependencies = [
     { name = "rich" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/8b/46641fba4364059fed266358ab00769f17108dbce22c14a5733c2a476ba0/skill_scanner-0.3.0.tar.gz", hash = "sha256:caeb82ff78e52622dcc323a537cd96372689fec3dfc23fd7dc29886ea2a0ac3f", size = 43677, upload-time = "2026-03-15T14:28:48.075Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/55/921ba9dde0389a5811ebfee66e465c7486772283670644ffe3f48af05aed/skill_scanner-0.3.1.tar.gz", hash = "sha256:b0635056b23382afce334d5483a1019cbc8177eee363149832cf0a5db8b851cb", size = 43701, upload-time = "2026-04-07T19:46:35.235Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/8a/d748d3536c8f9e27d2e8110b1b6b380f9f6b2685aae7c77430f435f6db6b/skill_scanner-0.3.0-py3-none-any.whl", hash = "sha256:019206765e1c7bea1f456607f721757eda795d886ebb03e2c387599960e612ee", size = 41813, upload-time = "2026-03-15T14:28:47Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/0f/afa083c31921840a4ba7fa9f0b69af850a51703c34cd5d1e3ecda8ae754f/skill_scanner-0.3.1-py3-none-any.whl", hash = "sha256:4c98f3fc5dbfd8ba395eb4759dbb43b878786a5c95fdfd935cb70f0b375779fd", size = 41839, upload-time = "2026-04-07T19:46:34.194Z" },
 ]
 
 [[package]]
@@ -1732,6 +1732,7 @@ dependencies = [
     { name = "detect-secrets" },
     { name = "fastapi" },
     { name = "httpx" },
+    { name = "litellm" },
     { name = "pip-audit" },
     { name = "pydantic" },
     { name = "skill-scanner" },
@@ -1753,10 +1754,11 @@ requires-dist = [
     { name = "detect-secrets", specifier = ">=1.5.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.27.0" },
+    { name = "litellm", specifier = ">=1.83.0" },
     { name = "pip-audit", specifier = ">=2.7.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.0" },
     { name = "skill-scanner", specifier = ">=0.2.0" },

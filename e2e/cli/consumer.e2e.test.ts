@@ -26,15 +26,18 @@ import {
   createSkillFixture,
   type SkillFixture
 } from '../helpers/fixtures';
-import { cleanupE2E, type E2EContext, setupE2E } from '../helpers/setup';
+import { cleanupE2E, type E2EContext, hasRegistry, setupE2E } from '../helpers/setup';
 
-describe('Consumer E2E — install and manage skills', () => {
+const describeIfRegistry = hasRegistry ? describe : describe.skip;
+
+describeIfRegistry('Consumer E2E — install and manage skills', () => {
   let ctx: E2EContext;
   let skill: SkillFixture;
   let consumer: ConsumerFixture;
   const tempDirs: string[] = [];
 
   beforeAll(async () => {
+    if (!hasRegistry) return;
     ctx = await setupE2E();
 
     // Publish a skill for consumer tests to install

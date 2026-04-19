@@ -1,10 +1,10 @@
 [package]
 name = "sdk-python"
-version = "0.1.0"
+version = "0.14.1"
 edition.workspace = true
 
 [lib]
-name = "tankpkg"
+name = "tankpkg_core"
 crate-type = ["cdylib"]
 
 [dependencies]

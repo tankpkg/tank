@@ -17,6 +17,14 @@ const severityColor: Record<string, string> = {
   info: 'bg-muted text-muted-foreground'
 };
 
+const tokenSeverityColor: Record<string, string> = {
+  critical: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
+  high: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
+  medium: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
+  low: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
+  info: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400'
+};
+
 const severityDot: Record<string, string> = {
   critical: 'bg-red-500',
   high: 'bg-orange-500',
@@ -101,12 +109,14 @@ function CategoryGroup({ category, findings }: { category: string; findings: Sca
           <TableBody>
             {findings.map((f, i) => {
               const llmStyle = f.llm_verdict ? LLM_VERDICT_STYLES[f.llm_verdict] : null;
+              const isToken = f.stage === 'stageT';
+              const colorMap = isToken ? tokenSeverityColor : severityColor;
               return (
                 // biome-ignore lint/suspicious/noArrayIndexKey: findings can have duplicate stage+type
                 <TableRow key={`${f.stage}-${f.type}-${i}`} className="align-top">
                   <TableCell className="min-w-0">
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium ${severityColor[f.severity] ?? ''}`}>
+                      className={`inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium ${colorMap[f.severity] ?? ''}`}>
                       <span className={`inline-block size-1.5 rounded-full ${severityDot[f.severity] ?? ''}`} />
                       {f.severity}
                     </span>
@@ -175,7 +185,8 @@ const CATEGORY_MAP: Record<string, string> = {
   stage2: 'Static Analysis',
   stage3: 'Injection Detection',
   stage4: 'Secrets & Credentials',
-  stage5: 'Supply Chain'
+  stage5: 'Supply Chain',
+  stageT: 'Token Usage'
 };
 
 function categorize(findings: ScanFinding[]): Map<string, ScanFinding[]> {

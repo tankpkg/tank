@@ -5,7 +5,11 @@ import { describe, expect, it } from 'vitest';
 
 const QUALITY_GATE_DIR = path.resolve(__dirname, '../../../tank-skills/skills/quality-gate');
 
-describe('E2E: @tank/quality-gate — real skill package, real schemas, zero mocks', () => {
+// Skip entire suite when the quality-gate skill directory is not present
+// (e.g. in CI without the tank-skills submodule)
+const describeIfAvailable = fs.existsSync(QUALITY_GATE_DIR) ? describe : describe.skip;
+
+describeIfAvailable('E2E: @tank/quality-gate — real skill package, real schemas, zero mocks', () => {
   describe('Package validation against PackageIR', () => {
     it('tank.json exists and is valid JSON', () => {
       const manifestPath = path.join(QUALITY_GATE_DIR, 'tank.json');

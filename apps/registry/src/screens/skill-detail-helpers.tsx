@@ -5,7 +5,8 @@ import type { PipelineStage } from '~/components/skills/scan-pipeline';
 import { ScanPipeline } from '~/components/skills/scan-pipeline';
 import { buildScanningTools, type ScanningTool, ScanningToolsStrip } from '~/components/skills/scanning-tools-strip';
 import { SecurityOverview } from '~/components/skills/security-overview';
-import type { ScanDetails, SkillDetailResult } from '~/lib/skills/data';
+import { Card, CardContent } from '~/components/ui/card';
+import type { ScanDetails, ScanFinding, SkillDetailResult } from '~/lib/skills/data';
 
 function getScanningTools(scanDetails: ScanDetails): ScanningTool[] {
   return buildScanningTools({
@@ -81,7 +82,138 @@ function buildPipelineStages(scanDetails: ScanDetails): PipelineStage[] {
   ];
 }
 
-export function buildSecurityTab({ data, scanDetails }: { data: SkillDetailResult; scanDetails: ScanDetails }) {
+function TokenEfficiencyCard({ findings }: { findings: ScanFinding[] }) {
+  const summary = findings.find((f) => f.stage === 'stageT' && f.type === 'token_summary');
+  if (!summary?.evidence) return null;
+
+  let evidence: {
+    grade?: string;
+    efficiency_score?: number;
+    estimated_tokens_per_invocation?: number;
+    cost_per_use?: {
+      sonnet?: string;
+      opus?: string;
+      sonnet_context_load?: string;
+      opus_context_load?: string;
+    };
+    one_liner?: string;
+    comparison?: string;
+    what_this_means?: string;
+  };
+  try {
+    evidence = JSON.parse(summary.evidence);
+  } catch {
+    return null;
+  }
+
+  const grade = evidence.grade;
+  const score = evidence.efficiency_score;
+  const tokens = evidence.estimated_tokens_per_invocation;
+  const costSonnet = evidence.cost_per_use?.sonnet_context_load ?? evidence.cost_per_use?.sonnet;
+  const costOpus = evidence.cost_per_use?.opus_context_load ?? evidence.cost_per_use?.opus;
+
+  // Individual token findings (excluding the summary)
+  const tokenFindings = findings.filter((f) => f.stage === 'stageT' && f.type !== 'token_summary');
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 pt-6">
+        {evidence.one_liner && <p className="text-sm text-muted-foreground">{evidence.one_liner}</p>}
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {tokens != null && (
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Tokens per Invocation
+              </span>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">~{tokens.toLocaleString()}</p>
+              {evidence.comparison && <p className="mt-0.5 text-xs text-muted-foreground">{evidence.comparison}</p>}
+            </div>
+          )}
+          {(costSonnet || costOpus) && (
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Context Load Cost
+              </span>
+              <div className="mt-1 flex flex-col gap-0.5">
+                {costSonnet && (
+                  <span className="text-sm font-medium tabular-nums">
+                    {costSonnet} <span className="text-muted-foreground">Sonnet context</span>
+                  </span>
+                )}
+                {costOpus && (
+                  <span className="text-sm font-medium tabular-nums">
+                    {costOpus} <span className="text-muted-foreground">Opus context</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+          {grade && (
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Grade</span>
+              <p className="mt-1 text-2xl font-semibold">{grade}</p>
+            </div>
+          )}
+          {score != null && (
+            <div>
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Efficiency Score
+              </span>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">
+                {score}
+                <span className="text-sm font-normal text-muted-foreground">/100</span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {evidence.what_this_means && <p className="text-sm text-muted-foreground">{evidence.what_this_means}</p>}
+
+        {tokenFindings.length > 0 && (
+          <div className="space-y-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recommendations</span>
+            <ul className="space-y-1.5">
+              {tokenFindings.map((f, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: findings can have duplicate stage+type
+                <li key={`token-${f.type}-${i}`} className="flex items-start gap-2 text-sm">
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-teal-500" />
+                  <div>
+                    <span className="font-medium">{f.description}</span>
+                    {f.remediation && <p className="mt-0.5 text-muted-foreground">{f.remediation}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function buildTokenTab({ scanDetails }: { data: SkillDetailResult; scanDetails: ScanDetails }) {
+  const allFindings = scanDetails.findings ?? [];
+  const hasTokenFindings = allFindings.some((f) => f.stage === 'stageT');
+
+  if (!hasTokenFindings) return null;
+
+  return (
+    <div className="space-y-6" data-testid="token-root">
+      <div>
+        <h2 className="font-display text-xl font-semibold tracking-tight">Token Efficiency</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Estimated token usage and cost per invocation.</p>
+        <div className="mt-3">
+          <TokenEfficiencyCard findings={allFindings} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function buildSecurityTab({ data: _data, scanDetails }: { data: SkillDetailResult; scanDetails: ScanDetails }) {
+  const allFindings = (scanDetails.findings ?? []).filter((f) => f.stage !== 'stageT');
+
   return (
     <div className="space-y-6" data-testid="security-root">
       <SecurityOverview
@@ -103,18 +235,18 @@ export function buildSecurityTab({ data, scanDetails }: { data: SkillDetailResul
         </div>
       </div>
 
-      <div>
-        <div className="flex items-center gap-2">
-          <h2 className="font-display text-xl font-semibold tracking-tight">Findings</h2>
-          {scanDetails.findings && scanDetails.findings.length > 0 && (
-            <span className="text-sm text-muted-foreground">({scanDetails.findings.length} total)</span>
-          )}
+      {allFindings.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-xl font-semibold tracking-tight">Findings</h2>
+            <span className="text-sm text-muted-foreground">({allFindings.length})</span>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">Issues detected during the scan.</p>
+          <div className="mt-3">
+            <FindingsTable findings={allFindings} />
+          </div>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">Security issues detected during the scan.</p>
-        <div className="mt-3">
-          <FindingsTable findings={scanDetails.findings ?? []} />
-        </div>
-      </div>
+      )}
 
       <ScanPipeline stages={buildPipelineStages(scanDetails)} />
 

@@ -45,10 +45,43 @@ function loadManifest(skillDir: string) {
   return result.data;
 }
 
+function deepMerge(a: Record<string, unknown>, b: Record<string, unknown>): Record<string, unknown> {
+  const result = { ...a };
+  for (const [key, val] of Object.entries(b)) {
+    const existing = result[key];
+    if (
+      val !== null &&
+      typeof val === 'object' &&
+      !Array.isArray(val) &&
+      existing !== null &&
+      typeof existing === 'object' &&
+      !Array.isArray(existing)
+    ) {
+      result[key] = deepMerge(existing as Record<string, unknown>, val as Record<string, unknown>);
+    } else {
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
 function writeFiles(targetDir: string, compiled: CompileResult): number {
   for (const f of compiled.files) {
     const fullPath = path.join(targetDir, f.path);
     fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+
+    if (f.path.endsWith('.json') && fs.existsSync(fullPath)) {
+      try {
+        const existing = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+        const incoming = JSON.parse(f.content);
+        const merged = deepMerge(existing, incoming);
+        fs.writeFileSync(fullPath, JSON.stringify(merged, null, 2));
+        continue;
+      } catch {
+        // parse failure — fall through to overwrite
+      }
+    }
+
     fs.writeFileSync(fullPath, f.content);
   }
   return compiled.files.length;

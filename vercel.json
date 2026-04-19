@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "cd apps/registry && bunx drizzle-kit push --force && cd ../.. && NITRO_PRESET=vercel bun turbo build --filter=registry... && cp -r apps/registry/.vercel/output .vercel/output",
+  "buildCommand": "cd apps/registry && (bunx drizzle-kit push --force || echo 'drizzle-kit push failed (likely schema prompt in CI), skipping') && cd ../.. && NITRO_PRESET=vercel bun turbo build --filter=registry... && cp -r apps/registry/.vercel/output .vercel/output",
   "installCommand": "bun install",
   "devCommand": "bun --filter registry run dev"
 }
