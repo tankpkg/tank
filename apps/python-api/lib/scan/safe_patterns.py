@@ -123,6 +123,19 @@ TEST_PATH_PATTERNS: list[re.Pattern] = [
     re.compile(r"\.spec\.(js|ts|jsx|tsx)$", re.IGNORECASE),
 ]
 
+# Superset of test paths plus documentation and demo sites. A non-production
+# path is still shipped in the package but is not the skill's actual
+# runtime code — findings there are informational, not security-critical.
+NON_PRODUCTION_PATH_PATTERNS: list[re.Pattern] = [
+    *TEST_PATH_PATTERNS,
+    re.compile(r"(^|/)docs?/", re.IGNORECASE),
+    re.compile(r"(^|/)guides?/", re.IGNORECASE),
+    re.compile(r"(^|/)tutorials?/", re.IGNORECASE),
+    re.compile(r"(^|/)site/", re.IGNORECASE),
+    re.compile(r"(^|/)website/", re.IGNORECASE),
+    re.compile(r"(^|/)docsite/", re.IGNORECASE),
+]
+
 # Build/config file names that are expected to contain tooling commands
 BUILD_FILE_NAMES: set[str] = {
     "Makefile",
@@ -200,6 +213,23 @@ def is_test_file(file_path: str) -> bool:
         True if the path matches test/example patterns.
     """
     return any(pattern.search(file_path) for pattern in TEST_PATH_PATTERNS)
+
+
+def is_non_production_path(file_path: str) -> bool:
+    """Tests, examples, docs, demo sites — anything not runtime code."""
+    return any(pattern.search(file_path) for pattern in NON_PRODUCTION_PATH_PATTERNS)
+
+
+_NON_PRODUCTION_DOWNGRADE: dict[str, str] = {
+    "critical": "low",
+    "high": "info",
+    "medium": "info",
+}
+
+
+def downgrade_severity_for_non_production(severity: str) -> str:
+    """Map a severity to its downgraded value for non-production files."""
+    return _NON_PRODUCTION_DOWNGRADE.get(severity, severity)
 
 
 def is_build_file(file_path: str) -> bool:

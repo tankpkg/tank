@@ -35,16 +35,25 @@ SENSITIVE_PATHS = [
 ]
 
 
+PRODUCTION_SEVERITIES = {"critical", "high", "medium"}
+
+
 def cross_check_permissions(
     findings: list[Finding], permissions: dict[str, Any], manifest: dict[str, Any]
 ) -> list[Finding]:
-    """Check if code capabilities match declared permissions."""
+    """Check if code capabilities match declared permissions.
+
+    Only production-severity findings (critical/high/medium) count toward a
+    permission gap; findings already downgraded to info/low because they live
+    in tests/docs/demo sites do not trigger an 'undeclared X' escalation.
+    """
     additional_findings: list[Finding] = []
+    production_findings = [f for f in findings if f.severity in PRODUCTION_SEVERITIES]
 
     # Check for network usage without network permission
     network_findings = [
         f
-        for f in findings
+        for f in production_findings
         if f.type in ("network_access", "js_pattern")
         and any(p in f.description for p in ["fetch", "request", "http", "XMLHttpRequest"])
     ]
@@ -67,7 +76,7 @@ def cross_check_permissions(
     # Check for subprocess usage without subprocess permission
     subprocess_findings = [
         f
-        for f in findings
+        for f in production_findings
         if "shell" in f.type.lower()
         or "subprocess" in f.description.lower()
         or "child_process" in f.description.lower()

@@ -67,7 +67,10 @@ PLACEHOLDER_PATTERNS: list[re.Pattern] = [
     re.compile(r"<<[A-Z_]+>>", re.IGNORECASE),  # <<PLACEHOLDER>> patterns
 ]
 
-# File paths that indicate example/tutorial/documentation context
+# File paths that indicate example/tutorial/documentation/test context.
+# Findings here are downgraded to info — still reported, but never cause a
+# scan failure. Test files contain placeholder keys by convention
+# (e.g. privateKey: "key" in a unit test fixture).
 EXAMPLE_PATH_PATTERNS: list[re.Pattern] = [
     re.compile(r"(^|/)examples?/", re.IGNORECASE),
     re.compile(r"(^|/)docs?/", re.IGNORECASE),
@@ -75,6 +78,15 @@ EXAMPLE_PATH_PATTERNS: list[re.Pattern] = [
     re.compile(r"(^|/)tutorials?/", re.IGNORECASE),
     re.compile(r"(^|/)samples?/", re.IGNORECASE),
     re.compile(r"(^|/)demo/", re.IGNORECASE),
+    re.compile(r"(^|/)tests?/", re.IGNORECASE),
+    re.compile(r"(^|/)spec/", re.IGNORECASE),
+    re.compile(r"(^|/)__tests__/", re.IGNORECASE),
+    re.compile(r"(^|/)fixtures?/", re.IGNORECASE),
+    re.compile(r"(^|/)site/", re.IGNORECASE),
+    re.compile(r"(^|/)website/", re.IGNORECASE),
+    re.compile(r"_test\.(py|js|ts|go|rs)$", re.IGNORECASE),
+    re.compile(r"\.test\.(js|ts|jsx|tsx)$", re.IGNORECASE),
+    re.compile(r"\.spec\.(js|ts|jsx|tsx)$", re.IGNORECASE),
     re.compile(r"\.example(\.|$)", re.IGNORECASE),
     re.compile(r"\.sample(\.|$)", re.IGNORECASE),
     re.compile(r"\.template(\.|$)", re.IGNORECASE),
@@ -219,6 +231,11 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                         except Exception:
                             pass
 
+                        # Skip findings where the matched line is obviously a
+                        # placeholder (mirrors run_custom_patterns behavior).
+                        if evidence_text and _is_placeholder_value(evidence_text):
+                            continue
+
                         finding = Finding(
                             stage="stage4",
                             severity="critical",
@@ -233,6 +250,7 @@ def run_detect_secrets(temp_dir: str) -> list[Finding]:
                         # Downgrade severity for files in example/doc paths
                         if _is_example_path(rel_path):
                             finding.severity = "info"
+                            finding.confidence = min(finding.confidence, 0.4)
 
                         findings.append(finding)
                 except Exception as file_error:
