@@ -14,6 +14,10 @@ import hmac
 import logging
 import os
 
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from api.analyze.index import app as analyze_index_app
 from api.analyze.permissions import app as permissions_app
 from api.analyze.rescan import app as rescan_app
@@ -21,9 +25,6 @@ from api.analyze.rescan import app as rescan_app
 # Import individual API apps
 from api.analyze.scan import app as scan_app
 from api.analyze.security import app as security_app
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from lib.scan.llm_health import check_llm_health
 
 # Startup diagnostics: verify critical scanner dependencies are available

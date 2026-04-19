@@ -7,6 +7,7 @@ import time
 from typing import Any
 
 import httpx
+
 from lib.scan.llm_analyzer import LLMAnalyzer
 
 

@@ -23,6 +23,7 @@ import time
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+
 from lib.scan.dedup import deduplicate_findings
 from lib.scan.models import (
     Finding,

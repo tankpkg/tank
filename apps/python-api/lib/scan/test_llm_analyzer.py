@@ -4,6 +4,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+
 from lib.scan.llm_analyzer import (
     MAX_FINDINGS_PER_CALL,
     LLMAnalyzer,

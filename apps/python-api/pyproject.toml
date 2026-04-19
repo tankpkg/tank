@@ -53,6 +53,9 @@ ignore = [
     "B008",   # function call in default arg — FastAPI uses this pattern (Depends(), Body(), etc.)
 ]
 
+[tool.ruff.lint.isort]
+known-first-party = ["api", "lib"]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"

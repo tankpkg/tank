@@ -19,6 +19,7 @@ import time
 from pathlib import Path
 
 import httpx
+
 from lib.scan.llm_types import (
     DEFAULT_GROQ_8B_MODEL,
     DEFAULT_GROQ_70B_MODEL,

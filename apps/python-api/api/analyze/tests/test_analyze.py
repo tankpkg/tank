@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 # ---------------------------------------------------------------------------
 # Import the three FastAPI apps
@@ -16,7 +17,6 @@ import pytest
 from api.analyze.index import app as health_app
 from api.analyze.permissions import app as permissions_app
 from api.analyze.security import app as security_app
-from fastapi.testclient import TestClient
 
 # ---------------------------------------------------------------------------
 # Test clients

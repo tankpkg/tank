@@ -5,6 +5,7 @@ import shutil
 import tempfile
 
 import pytest
+
 from lib.scan.stage0_ingest import narrow_to_sub_path
 
 
