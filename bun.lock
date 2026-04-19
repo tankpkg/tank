@@ -180,6 +180,7 @@
         "@internals/adapters": "workspace:*",
         "@internals/helpers": "workspace:*",
         "@internals/schemas": "workspace:*",
+        "@tankpkg/proxy": "workspace:*",
         "@tankpkg/sdk": "workspace:*",
         "@tankpkg/vault": "workspace:*",
         "@types/node": "^25.5.0",
@@ -232,6 +233,19 @@
         "@types/node": "^25.5.0",
         "tsdown": "^0.21.3",
         "tsx": "^4.21.0",
+        "vitest": "^4.1.0",
+      },
+    },
+    "packages/proxy": {
+      "name": "@tankpkg/proxy",
+      "version": "0.1.0",
+      "dependencies": {
+        "@internals/helpers": "workspace:*",
+        "@modelcontextprotocol/sdk": "^1.29.0",
+      },
+      "devDependencies": {
+        "@types/node": "^25.5.0",
+        "tsdown": "^0.21.3",
         "vitest": "^4.1.0",
       },
     },
@@ -1087,6 +1101,8 @@
     "@tankpkg/cli": ["@tankpkg/cli@workspace:packages/cli"],
 
     "@tankpkg/mcp-server": ["@tankpkg/mcp-server@workspace:packages/mcp-server"],
+
+    "@tankpkg/proxy": ["@tankpkg/proxy@workspace:packages/proxy"],
 
     "@tankpkg/sdk": ["@tankpkg/sdk@workspace:packages/sdk"],
 

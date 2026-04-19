@@ -100,13 +100,17 @@ Feature: MCP proxy transport — transparent stdio wrapper
     And returns the response to the agent via stdout
 
   # ── JSON-RPC framing (C4) ──────────────────────────────────────────────
+  # MCP stdio transport uses newline-delimited JSON (NDJSON): each JSON-RPC
+  # message is serialized on a single line terminated by "\n". Messages MUST
+  # NOT contain embedded newlines. This is the official MCP stdio framing —
+  # Content-Length headers are only used by LSP and HTTP transports.
   @high
   @C4
   Scenario: Proxy handles JSON-RPC message framing correctly
-    When the agent sends a properly framed JSON-RPC 2.0 request via stdin
-    Then the proxy parses the Content-Length header
-    And reads exactly that many bytes for the message body
-    And forwards a properly framed JSON-RPC 2.0 message to the child
+    When the agent sends a newline-delimited JSON-RPC 2.0 request via stdin
+    Then the proxy splits stdin on newline boundaries
+    And parses each line as a single JSON-RPC message
+    And forwards a newline-delimited JSON-RPC 2.0 message to the child
 
   @medium
   @C4

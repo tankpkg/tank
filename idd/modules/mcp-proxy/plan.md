@@ -50,7 +50,7 @@ plus a minimal JSONL audit writer so later phases can assert audit entries.
 
 1. Scaffold `packages/proxy/` (package.json, tsconfig.json).
 2. `src/transport/stdio-wrapper.ts` — spawn child process, pipe stdin/stdout.
-3. `src/transport/message-router.ts` — parse JSON-RPC framing (Content-Length).
+3. `src/transport/message-router.ts` — parse JSON-RPC framing (NDJSON: newline-delimited JSON, one message per line, per MCP stdio transport spec).
 4. `packages/cli/src/commands/proxy.ts` — `tank proxy -- <command>` entry point.
 5. Process lifecycle: exit code forwarding, SIGTERM/SIGINT propagation.
 6. `src/audit/logger.ts` — **minimal** JSONL writer with the canonical minimal field set: `{timestamp, method, tool_name, verdict}`, plus optional `reason` field for blocked events (populated in Phase 2+ when scanners are wired in; empty/absent in Phase 1 pass-through). No hash chaining, no rotation, no canonicalization yet. Phase 4 hardens.

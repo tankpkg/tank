@@ -1,0 +1,30 @@
+{
+  "name": "@tankpkg/proxy",
+  "version": "0.1.0",
+  "description": "Transparent JSON-RPC proxy for MCP servers — security-first runtime enforcement",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/transport/stdio-wrapper": "./src/transport/stdio-wrapper.ts",
+    "./src/transport/message-router": "./src/transport/message-router.ts",
+    "./src/audit/logger": "./src/audit/logger.ts"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsdown": "^0.21.3",
+    "vitest": "^4.1.0"
+  },
+  "dependencies": {
+    "@internals/helpers": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}

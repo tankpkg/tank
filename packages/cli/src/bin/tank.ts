@@ -12,6 +12,7 @@ import { loginCommand } from '~/commands/login.js';
 import { logoutCommand } from '~/commands/logout.js';
 import { migrateCommand } from '~/commands/migrate.js';
 import { permissionsCommand } from '~/commands/permissions.js';
+import { proxyCommand } from '~/commands/proxy.js';
 import { publishCommand } from '~/commands/publish.js';
 import { removeCommand } from '~/commands/remove.js';
 import { runCommand } from '~/commands/run.js';
@@ -297,6 +298,28 @@ program
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Run failed: ${msg}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('proxy')
+  .description('Transparent MCP proxy — wraps an MCP server with runtime enforcement')
+  .argument('<command>', 'Child MCP server command to wrap')
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .option('--audit-path <path>', 'JSONL audit log path (default: ~/.tank/proxy/audit.jsonl)')
+  .option('--verbose', 'Print proxy diagnostic details to stderr')
+  .action(async (command: string, opts: { auditPath?: string; verbose?: boolean }, cmd: Command) => {
+    try {
+      const args = cmd.args.slice(1);
+      const proxyOpts: Parameters<typeof proxyCommand>[0] = { command, args };
+      if (opts.auditPath !== undefined) proxyOpts.auditPath = opts.auditPath;
+      if (opts.verbose !== undefined) proxyOpts.verbose = opts.verbose;
+      await proxyCommand(proxyOpts);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Proxy failed: ${msg}`);
       process.exit(1);
     }
   });
