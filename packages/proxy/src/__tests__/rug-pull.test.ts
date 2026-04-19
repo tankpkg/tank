@@ -138,3 +138,74 @@ describe('resetPins (C15)', () => {
     expect(fs.existsSync(path.join(dir, 'README'))).toBe(true);
   });
 });
+
+describe('pinOrCompare: canonical equivalence (edge-case)', () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-rug-pull-canonical-'));
+  });
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('tools with reversed top-level key order hash to the same pin', () => {
+    pinOrCompare('abc', TOOLS, { pinsDir: dir });
+    const reordered: ToolSchema[] = [
+      { inputSchema: { path: 'string' }, description: 'Read a file', name: 'read_file' } as unknown as ToolSchema,
+      {
+        inputSchema: { content: 'string', path: 'string' },
+        description: 'Write a file',
+        name: 'write_file'
+      } as unknown as ToolSchema
+    ];
+    expect(pinOrCompare('abc', reordered, { pinsDir: dir }).verdict).toBe('match');
+  });
+
+  it('deeply nested inputSchema key reordering does not trigger mismatch', () => {
+    const deep: ToolSchema[] = [
+      {
+        name: 'deep_tool',
+        description: 'Tool with deeply nested schema',
+        inputSchema: { outer: { middle: { inner: { a: 1, b: 2, c: 3 } } } }
+      }
+    ];
+    pinOrCompare('deep', deep, { pinsDir: dir });
+    const reversed: ToolSchema[] = [
+      {
+        name: 'deep_tool',
+        description: 'Tool with deeply nested schema',
+        inputSchema: { outer: { middle: { inner: { c: 3, b: 2, a: 1 } } } }
+      }
+    ];
+    expect(pinOrCompare('deep', reversed, { pinsDir: dir }).verdict).toBe('match');
+  });
+
+  it('array elements in inputSchema retain order (array reordering IS a mismatch)', () => {
+    const arr: ToolSchema[] = [{ name: 't', description: 'd', inputSchema: { items: ['a', 'b', 'c'] } }];
+    pinOrCompare('arr', arr, { pinsDir: dir });
+    const reordered: ToolSchema[] = [{ name: 't', description: 'd', inputSchema: { items: ['c', 'b', 'a'] } }];
+    expect(pinOrCompare('arr', reordered, { pinsDir: dir }).verdict).toBe('mismatch');
+  });
+
+  it('trailing whitespace in description causes mismatch (exact canonical match)', () => {
+    pinOrCompare('ws', TOOLS, { pinsDir: dir });
+    const modified: ToolSchema[] = [
+      { name: 'read_file', description: 'Read a file ', inputSchema: { path: 'string' } },
+      { name: 'write_file', description: 'Write a file', inputSchema: { path: 'string', content: 'string' } }
+    ];
+    expect(pinOrCompare('ws', modified, { pinsDir: dir }).verdict).toBe('mismatch');
+  });
+
+  it('completely empty tools[] is treated as first-run if no prior pin exists', () => {
+    const result = pinOrCompare('empty', [], { pinsDir: dir });
+    expect(result.verdict).toBe('first_run');
+    expect(result.mismatches).toEqual([]);
+  });
+
+  it('second call with empty tools[] after previous non-empty → every tool listed as removed', () => {
+    pinOrCompare('drift', TOOLS, { pinsDir: dir });
+    const result = pinOrCompare('drift', [], { pinsDir: dir });
+    expect(result.verdict).toBe('match');
+    expect(result.removed.sort()).toEqual(['read_file', 'write_file']);
+  });
+});

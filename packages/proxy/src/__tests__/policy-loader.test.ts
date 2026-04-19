@@ -118,3 +118,80 @@ describe('resolvePerTool (C40)', () => {
     expect(effective.scan).toBe(false);
   });
 });
+
+describe('loadPolicy + resolvePerTool: prototype pollution resistance (edge-case)', () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-policy-proto-'));
+  });
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('rejects a policy file that tries to set __proto__ (Zod strict mode)', () => {
+    const userPath = path.join(dir, 'user.json');
+    fs.writeFileSync(userPath, JSON.stringify({ __proto__: { blockOnMatch: false } }));
+    const resolved = loadPolicy({ userPolicyPath: userPath, projectPolicyPath: path.join(dir, 'missing.json') });
+    expect(resolved.blockOnMatch).toBe(true);
+  });
+
+  it('handles perTool entries with keys that shadow Object.prototype methods', () => {
+    const userPath = path.join(dir, 'user.json');
+    fs.writeFileSync(
+      userPath,
+      JSON.stringify({ perTool: { hasOwnProperty: { scan: false }, toString: { blockOnMatch: false } } })
+    );
+    const resolved = loadPolicy({ userPolicyPath: userPath, projectPolicyPath: path.join(dir, 'missing.json') });
+    expect(resolved.perTool?.hasOwnProperty?.scan).toBe(false);
+    const effective = resolvePerTool(resolved, 'toString');
+    expect(effective.blockOnMatch).toBe(false);
+  });
+
+  it('returns defaults when a lookup key is "__proto__" (no prototype walk)', () => {
+    const resolved = loadPolicy({
+      userPolicyPath: path.join(dir, 'missing-1.json'),
+      projectPolicyPath: path.join(dir, 'missing-2.json')
+    });
+    const effective = resolvePerTool(resolved, '__proto__');
+    expect(effective.scan).toBe(true);
+    expect(effective.blockOnMatch).toBe(true);
+  });
+
+  it('treats unknown tool names as defaults, not lookups on Object.prototype', () => {
+    const resolved = loadPolicy({
+      userPolicyPath: path.join(dir, 'missing-1.json'),
+      projectPolicyPath: path.join(dir, 'missing-2.json')
+    });
+    const effective = resolvePerTool(resolved, 'constructor');
+    expect(effective.scan).toBe(true);
+  });
+
+  it('handles a very large policy.json (10k per-tool entries) without blowup', () => {
+    const userPath = path.join(dir, 'user.json');
+    const perTool: Record<string, { scan: boolean }> = {};
+    for (let i = 0; i < 10_000; i++) {
+      perTool[`tool_${i}`] = { scan: i % 2 === 0 };
+    }
+    fs.writeFileSync(userPath, JSON.stringify({ perTool }));
+    const start = performance.now();
+    const resolved = loadPolicy({ userPolicyPath: userPath, projectPolicyPath: path.join(dir, 'missing.json') });
+    const elapsed = performance.now() - start;
+    expect(elapsed).toBeLessThan(500);
+    expect(resolved.perTool?.tool_42?.scan).toBe(true);
+    expect(resolved.perTool?.tool_43?.scan).toBe(false);
+  });
+
+  it('falls back to defaults when JSON is null', () => {
+    const userPath = path.join(dir, 'user.json');
+    fs.writeFileSync(userPath, 'null');
+    const resolved = loadPolicy({ userPolicyPath: userPath, projectPolicyPath: path.join(dir, 'missing.json') });
+    expect(resolved.blockOnMatch).toBe(true);
+  });
+
+  it('falls back to defaults when JSON is an array, not an object', () => {
+    const userPath = path.join(dir, 'user.json');
+    fs.writeFileSync(userPath, '[1,2,3]');
+    const resolved = loadPolicy({ userPolicyPath: userPath, projectPolicyPath: path.join(dir, 'missing.json') });
+    expect(resolved.blockOnMatch).toBe(true);
+  });
+});

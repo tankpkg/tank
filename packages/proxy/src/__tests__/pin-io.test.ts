@@ -130,4 +130,94 @@ describe('sweepStaleTemps: startup cleanup (C14b)', () => {
   it('is a no-op when the pins directory does not exist', () => {
     expect(() => sweepStaleTemps(path.join(dir, 'does-not-exist'))).not.toThrow();
   });
+
+  it('ignores non-matching temp filenames (e.g. .tmp without pid suffix)', () => {
+    const wrongShape = path.join(dir, 'a.json.tmp');
+    fs.writeFileSync(wrongShape, 'x');
+    const oneHourAgo = Date.now() / 1000 - 3700;
+    fs.utimesSync(wrongShape, oneHourAgo, oneHourAgo);
+    sweepStaleTemps(dir);
+    expect(fs.existsSync(wrongShape)).toBe(true);
+  });
+});
+
+describe('readPinFile: filesystem hostile conditions (edge-case)', () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-pin-io-hostile-'));
+  });
+  afterEach(() => {
+    if (process.platform !== 'win32' && fs.existsSync(dir)) {
+      fs.chmodSync(dir, 0o700);
+    }
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('throws PinReadError when the target path is a directory, not a file', () => {
+    const target = path.join(dir, 'abc.json');
+    fs.mkdirSync(target);
+    expect(() => readPinFile(target)).toThrow(PinReadError);
+  });
+
+  it.skipIf(process.platform === 'win32')(
+    'throws PinReadError when the pin file exists but is not readable (EACCES)',
+    () => {
+      const target = path.join(dir, 'abc.json');
+      writePinFile(target, SAMPLE_PIN);
+      fs.chmodSync(target, 0o000);
+      try {
+        expect(() => readPinFile(target)).toThrow(PinReadError);
+      } finally {
+        fs.chmodSync(target, 0o600);
+      }
+    }
+  );
+
+  it('throws PinReadError when the JSON payload is an array, not an object', () => {
+    const target = path.join(dir, 'abc.json');
+    fs.writeFileSync(target, '[1,2,3]');
+    expect(() => readPinFile(target)).toThrow(PinReadError);
+  });
+
+  it('throws PinReadError when the JSON payload is null', () => {
+    const target = path.join(dir, 'abc.json');
+    fs.writeFileSync(target, 'null');
+    expect(() => readPinFile(target)).toThrow(PinReadError);
+  });
+
+  it('throws PinReadError when tools field is missing from a valid JSON object', () => {
+    const target = path.join(dir, 'abc.json');
+    fs.writeFileSync(target, JSON.stringify({ packageHash: 'x', pinnedAt: 'y' }));
+    expect(() => readPinFile(target)).toThrow(PinReadError);
+  });
+});
+
+describe('writePinFile: filesystem hostile conditions (edge-case)', () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-pin-io-write-hostile-'));
+  });
+  afterEach(() => {
+    if (process.platform !== 'win32' && fs.existsSync(dir)) {
+      fs.chmodSync(dir, 0o700);
+    }
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it.skipIf(process.platform === 'win32')(
+    'surfaces the write error when parent directory is read-only (EACCES)',
+    () => {
+      fs.chmodSync(dir, 0o500);
+      const target = path.join(dir, 'abc.json');
+      expect(() => writePinFile(target, SAMPLE_PIN)).toThrow();
+    }
+  );
+
+  it('leaves no stale temp file when the rename step fails (target is a directory)', () => {
+    const target = path.join(dir, 'abc.json');
+    fs.mkdirSync(target);
+    expect(() => writePinFile(target, SAMPLE_PIN)).toThrow();
+    const leftovers = fs.readdirSync(dir).filter((f) => f.includes('.tmp.'));
+    expect(leftovers).toEqual([]);
+  });
 });
