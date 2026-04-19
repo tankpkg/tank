@@ -1,9 +1,9 @@
+export { DEFAULT_ENTROPY_THRESHOLD_BITS_PER_CHAR, shannonEntropy } from '~/credentials/entropy.js';
 export {
   ALPHANUMERIC,
   ALPHANUMERIC_UPPER,
   CREDENTIAL_PATTERNS,
-  HEX_LOWER,
-  type CredentialPattern
+  type CredentialPattern,
+  HEX_LOWER
 } from '~/credentials/patterns.js';
-export { scan, type CredentialMatch, type ScanMode, type ScanOptions } from '~/credentials/scanner.js';
-export { DEFAULT_ENTROPY_THRESHOLD_BITS_PER_CHAR, shannonEntropy } from '~/credentials/entropy.js';
+export { type CredentialMatch, type ScanMode, type ScanOptions, scan } from '~/credentials/scanner.js';

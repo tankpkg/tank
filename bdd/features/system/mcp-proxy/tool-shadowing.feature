@@ -20,7 +20,9 @@
 # partial JSON lines. Reads do not require the lock — jsonl tolerates concurrent
 # readers as long as writers append whole lines atomically.
 
-@mcp-proxy @tool-shadowing @phase-8
+@mcp-proxy
+@tool-shadowing
+@phase-8
 Feature: Tool shadowing detection — cross-server tool name and description collisions
 
   Background:
@@ -32,7 +34,6 @@ Feature: Tool shadowing detection — cross-server tool name and description col
   # -----------------------------------------------------------------------------
   # C43 — Registry append on every tools/list
   # -----------------------------------------------------------------------------
-
   @C43
   Scenario: First tools/list from a server appends entries to the registry
     Given the registry file does not exist
@@ -41,12 +42,12 @@ Feature: Tool shadowing detection — cross-server tool name and description col
     And the proxy appends 2 lines to "~/.tank/proxy/registry.jsonl"
     And each line is a complete JSON object terminated by "\n"
     And each entry contains the fields:
-      | field         | type    |
-      | server        | string  |
-      | tool_name     | string  |
-      | description   | string  |
-      | schema_hash   | string  |
-      | last_observed | string  |
+      | field         | type   |
+      | server        | string |
+      | tool_name     | string |
+      | description   | string |
+      | schema_hash   | string |
+      | last_observed | string |
     And the proxy releases the advisory lock
 
   @C43
@@ -66,13 +67,13 @@ Feature: Tool shadowing detection — cross-server tool name and description col
     Then schema_hash is computed over the canonicalized tool definition
     And schema_hash is stable across JSON key-order permutations
     And schema_hash is stable across whitespace differences
-    # Hash reuses the pure helper from @internals/helpers established in C12/rug-pull.feature
 
+  # Hash reuses the pure helper from @internals/helpers established in C12/rug-pull.feature
   # -----------------------------------------------------------------------------
   # C43 — Concurrent writes from independent proxies
   # -----------------------------------------------------------------------------
-
-  @C43 @concurrency
+  @C43
+  @concurrency
   Scenario: Two proxies appending simultaneously serialize via advisory lock
     Given the proxy for "server-a" is about to append 1 entry
     And the proxy for "server-b" is about to append 1 entry at the same instant
@@ -83,7 +84,8 @@ Feature: Tool shadowing detection — cross-server tool name and description col
     And no line is partially written or interleaved
     And both proxies release the lock after appending
 
-  @C43 @concurrency
+  @C43
+  @concurrency
   Scenario: Stale lock from a crashed proxy is reclaimable
     Given a lock file exists but the owning PID is no longer running
     When a new proxy attempts to acquire the advisory lock
@@ -94,8 +96,8 @@ Feature: Tool shadowing detection — cross-server tool name and description col
   # -----------------------------------------------------------------------------
   # C44 — Name collision detection (E26)
   # -----------------------------------------------------------------------------
-
-  @C44 @E26
+  @C44
+  @E26
   Scenario: E26 — two servers register the same tool name
     Given the registry contains ("server-a", "read_file") observed 1 hour ago
     When "server-b" responds to "tools/list" with tool "read_file"
@@ -110,13 +112,13 @@ Feature: Tool shadowing detection — cross-server tool name and description col
     Given the registry contains ("server-a", "read_file")
     When "server-b" registers "Read_File"
     Then the proxy does not flag this as a name collision
-    # MCP tool names are case-sensitive per spec; do not introduce Tank-specific normalization
 
+  # MCP tool names are case-sensitive per spec; do not introduce Tank-specific normalization
   # -----------------------------------------------------------------------------
   # C44 — Description cross-reference detection (E27)
   # -----------------------------------------------------------------------------
-
-  @C44 @E27
+  @C44
+  @E27
   Scenario: E27 — server-b's description references server-a's tool by name
     Given the registry contains ("server-a", "read_file") with description "Read file contents"
     When "server-b" responds to "tools/list" with a tool whose description is:
@@ -140,25 +142,24 @@ Feature: Tool shadowing detection — cross-server tool name and description col
     And the registry contains ("server-a", "read_file_batch")
     When "server-a" publishes "read_file_batch" with description "batched version of read_file"
     Then the proxy does NOT flag "read_file_batch" as shadowed
-    # Same-server self-reference is legitimate
 
+  # Same-server self-reference is legitimate
   # -----------------------------------------------------------------------------
   # C45 — Block-by-default posture + dual-server audit entry
   # -----------------------------------------------------------------------------
-
   @C45
   Scenario: Shadowed tool is blocked and audit entry names both servers
     Given the registry contains ("server-a", "read_file")
     When "server-b" registers a colliding "read_file"
     Then the proxy returns a JSON-RPC error with code -32000 and message "shadowed_tool_blocked"
     And the audit entry contains:
-      | field                | value                                                 |
-      | verdict              | block                                                 |
-      | reason               | tool_shadow_name_collision                            |
-      | offending_server     | server-b                                              |
-      | offending_tool_name  | read_file                                             |
-      | shadowed_server      | server-a                                              |
-      | shadowed_tool_name   | read_file                                             |
+      | field               | value                      |
+      | verdict             | block                      |
+      | reason              | tool_shadow_name_collision |
+      | offending_server    | server-b                   |
+      | offending_tool_name | read_file                  |
+      | shadowed_server     | server-a                   |
+      | shadowed_tool_name  | read_file                  |
     And both servers are named in the audit entry per C45
 
   @C45
@@ -167,8 +168,8 @@ Feature: Tool shadowing detection — cross-server tool name and description col
     When the agent calls "tools/list" against "server-b"
     Then the response returned to the agent does not include "read_file"
     And the agent receives the non-shadowed remaining tools
-    # Block posture: agent never sees the shadowed tool; preserves C11 default-deny
 
+  # Block posture: agent never sees the shadowed tool; preserves C11 default-deny
   @C45
   Scenario: Shadowed tool cannot be invoked via tools/call even if the agent knows its name
     Given "server-b" has a shadowed "read_file"
@@ -179,7 +180,6 @@ Feature: Tool shadowing detection — cross-server tool name and description col
   # -----------------------------------------------------------------------------
   # C46 — 30-day TTL eviction
   # -----------------------------------------------------------------------------
-
   @C46
   Scenario: Entries older than 30 days are evicted on registry read
     Given the registry contains an entry for ("server-c", "old_tool") with last_observed 31 days ago
@@ -212,10 +212,11 @@ Feature: Tool shadowing detection — cross-server tool name and description col
   # -----------------------------------------------------------------------------
   # Performance contract (tool-shadowing operates on the same hot path as tools/list)
   # -----------------------------------------------------------------------------
-
-  @C43 @perf
+  @C43
+  @perf
   Scenario: Registry read and collision check stays within the <5ms per-message budget
     Given the registry contains 500 entries across 10 servers
     When a proxy processes a tools/list response with 20 tools
     Then the total registry read + collision check + description scan completes in under 5 ms
-    # Aligns with C10/C18 global proxy performance contract
+
+# Aligns with C10/C18 global proxy performance contract

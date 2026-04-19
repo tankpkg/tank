@@ -1,4 +1,4 @@
-import { scan as internalScan, type CredentialMatch } from '@internals/helpers';
+import { type CredentialMatch, scan as internalScan } from '@internals/helpers';
 
 export type { CredentialMatch };
 

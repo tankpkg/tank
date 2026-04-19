@@ -104,13 +104,13 @@ Feature: Adapter config rewriting — inject proxy wrapper into agent configs
     And the entry command is "tank" with args ["proxy", "--", "npx", "@org/mcp-tool"]
 
     Examples:
-      | agent     | config_file                                |
-      | claude    | .claude/settings.json                      |
-      | cursor    | ~/.cursor/mcp.json                         |
-      | opencode  | ~/.config/opencode/mcp.json                |
-      | codex     | ~/.codex/config.json                       |
-      | openclaw  | ~/.openclaw/mcp.json                       |
-      | universal | ~/.config/mcp/servers.json                 |
+      | agent     | config_file                 |
+      | claude    | .claude/settings.json       |
+      | cursor    | ~/.cursor/mcp.json          |
+      | opencode  | ~/.config/opencode/mcp.json |
+      | codex     | ~/.codex/config.json        |
+      | openclaw  | ~/.openclaw/mcp.json        |
+      | universal | ~/.config/mcp/servers.json  |
 
   # ── Edge cases ─────────────────────────────────────────────────────────
   @medium

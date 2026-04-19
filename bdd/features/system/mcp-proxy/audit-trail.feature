@@ -18,7 +18,6 @@ Feature: Audit trail — append-only tamper-evident logging
   # ══════════════════════════════════════════════════════════════════════════
   # Phase 1: Minimal pass-through logging (no chaining yet)
   # ══════════════════════════════════════════════════════════════════════════
-
   @high
   @happy-flow
   @phase-1
@@ -66,7 +65,6 @@ Feature: Audit trail — append-only tamper-evident logging
   # ══════════════════════════════════════════════════════════════════════════
   # Phase 4: Hash chaining, canonicalization, tamper detection, rotation
   # ══════════════════════════════════════════════════════════════════════════
-
   @high
   @phase-4
   @C36

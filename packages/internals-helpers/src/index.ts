@@ -1,3 +1,15 @@
+export {
+  ALPHANUMERIC,
+  ALPHANUMERIC_UPPER,
+  CREDENTIAL_PATTERNS,
+  type CredentialMatch,
+  type CredentialPattern,
+  DEFAULT_ENTROPY_THRESHOLD_BITS_PER_CHAR,
+  HEX_LOWER,
+  type ScanOptions,
+  scan,
+  shannonEntropy
+} from '~/credentials/index.js';
 export { resolve, sortVersions } from '~/lib/resolver.js';
 export { encodeSkillName } from '~/lib/url.js';
 export {
@@ -6,18 +18,6 @@ export {
   type EscalationViolation,
   type VersionPermissions
 } from '~/permission-escalation.js';
-export {
-  ALPHANUMERIC,
-  ALPHANUMERIC_UPPER,
-  CREDENTIAL_PATTERNS,
-  DEFAULT_ENTROPY_THRESHOLD_BITS_PER_CHAR,
-  HEX_LOWER,
-  scan,
-  shannonEntropy,
-  type CredentialMatch,
-  type CredentialPattern,
-  type ScanOptions
-} from '~/credentials/index.js';
 export {
   checkPermissionBudget,
   collectPermissionViolations,
