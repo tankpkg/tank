@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@internals/helpers": "workspace:*",
+    "@internals/schemas": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0"
   }
 }

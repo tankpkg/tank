@@ -85,6 +85,12 @@ export {
   userStatusSchema
 } from '~/schemas/permissions.js';
 export {
+  type PerToolOverride,
+  perToolOverrideSchema,
+  type ProxyPolicy,
+  proxyPolicySchema
+} from '~/schemas/proxy-policy.js';
+export {
   type PublishManifest,
   publishManifestSchema,
   type SkillsJson,
