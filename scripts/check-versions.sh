@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Check that all package.json version fields and Chart.yaml appVersion are identical
-# Exit non-zero if versions differ
+# Check that all package version fields are identical across the monorepo.
+# Covers: package.json (npm), Chart.yaml (Helm), pyproject.toml (PyPI),
+# Cargo.toml (Rust), and _version.py (tank-sdk single source).
 
 set -euo pipefail
 
-# Files to check
 declare -a FILES=(
   "packages/cli/package.json"
   "apps/registry/package.json"
@@ -13,26 +13,48 @@ declare -a FILES=(
   "packages/internals-helpers/package.json"
   "packages/sdk/package.json"
   "infra/helm/tank/Chart.yaml"
+  "packages/sdk-python/pyproject.toml"
+  "packages/sdk-python/tankpkg/_version.py"
+  "packages/sdk-core/crates/python/pyproject.toml"
+  "packages/sdk-core/crates/python/Cargo.toml"
 )
 
-# Extract versions and check they all match
+extract_version() {
+  local file=$1
+  case "$file" in
+    *.json)
+      jq -r '.version' "$file"
+      ;;
+    *Chart.yaml)
+      grep "^appVersion:" "$file" | sed 's/appVersion: "\(.*\)"/\1/' | tr -d ' '
+      ;;
+    */sdk-python/pyproject.toml)
+      python3 -c "import sys, tomllib; data = tomllib.load(open('$file', 'rb')); print(data['project'].get('version', 'dynamic'))"
+      ;;
+    *_version.py)
+      grep "^__version__" "$file" | sed 's/__version__ = "\(.*\)"/\1/'
+      ;;
+    *pyproject.toml|*Cargo.toml)
+      grep "^version" "$file" | head -1 | sed 's/version = "\(.*\)"/\1/' | tr -d ' '
+      ;;
+  esac
+}
+
 versions=()
 first_version=""
 all_match=true
 
 for file in "${FILES[@]}"; do
-  if [[ "$file" == *.json ]]; then
-    version=$(jq -r '.version' "$file" 2>/dev/null || echo "")
-    if [[ -z "$version" ]]; then
-      echo "Failed to extract version from $file"
-      exit 1
-    fi
-  else
-    version=$(grep "^appVersion:" "$file" | sed 's/appVersion: "\(.*\)"/\1/' | tr -d ' ')
-    if [[ -z "$version" ]]; then
-      echo "Failed to extract appVersion from $file"
-      exit 1
-    fi
+  version=$(extract_version "$file" || echo "")
+  if [[ -z "$version" ]]; then
+    echo "Failed to extract version from $file"
+    exit 1
+  fi
+
+  # sdk-python/pyproject.toml is dynamic (reads from _version.py) — skip comparison
+  if [[ "$version" == "dynamic" ]]; then
+    versions+=("$file:dynamic (reads _version.py)")
+    continue
   fi
 
   versions+=("$file:$version")
@@ -46,6 +68,16 @@ for file in "${FILES[@]}"; do
 done
 
 if [[ "$all_match" == true ]]; then
+  # Also verify the tank-sdk [native] extra pins the matching tank-core version
+  native_pin=$(grep '^native = \["tank-core==' packages/sdk-python/pyproject.toml | sed 's/native = \["tank-core==\(.*\)"\]/\1/')
+  if [[ -z "$native_pin" ]]; then
+    echo "Failed to extract [native] pin from packages/sdk-python/pyproject.toml"
+    exit 1
+  fi
+  if [[ "$native_pin" != "$first_version" ]]; then
+    echo "Version mismatch: tank-sdk [native] pins tank-core==$native_pin (expected $first_version)"
+    exit 1
+  fi
   echo "All versions match: $first_version"
   exit 0
 else

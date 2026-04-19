@@ -11,6 +11,8 @@ from urllib.parse import quote, urlparse
 
 import httpx
 
+from tankpkg._native import native_verify_integrity
+from tankpkg._version import __version__ as SDK_VERSION
 from tankpkg.errors import (
     TankAuthError,
     TankIntegrityError,
@@ -20,7 +22,6 @@ from tankpkg.errors import (
 )
 from tankpkg.types import SkillContent, UserInfo, VersionDetail
 
-SDK_VERSION = "0.10.6"
 DEFAULT_REGISTRY_URL = "https://www.tankpkg.dev"
 DEFAULT_CONFIG_DIR = "~/.tank"
 DEFAULT_MAX_RETRIES = 3
@@ -201,9 +202,19 @@ class TankClient:
 
         data = b"".join(chunks)
 
-        computed = "sha512-" + base64.b64encode(hashlib.sha512(data).digest()).decode()
-        if detail.integrity and detail.integrity != "pending" and computed != detail.integrity:
-            raise TankIntegrityError("Integrity verification failed", expected=detail.integrity, actual=computed)
+        if detail.integrity and detail.integrity != "pending":
+            try:
+                native_result = native_verify_integrity(data, detail.integrity)
+            except ValueError as exc:
+                raise TankIntegrityError(str(exc), expected=detail.integrity, actual="") from exc
+            if native_result is None:
+                computed = "sha512-" + base64.b64encode(hashlib.sha512(data).digest()).decode()
+                if computed != detail.integrity:
+                    raise TankIntegrityError(
+                        "Integrity verification failed",
+                        expected=detail.integrity,
+                        actual=computed,
+                    )
 
         if dest:
             dest_path = Path(dest).expanduser().resolve()
