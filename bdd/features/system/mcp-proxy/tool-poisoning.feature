@@ -216,13 +216,12 @@ Feature: Tool poisoning detection — hidden instructions in tool descriptions a
     When the proxy scans a tool response
     Then the proxy imports scan() from @internals/helpers/credentials/detector
     And does NOT duplicate patterns from packages/vault/src/detector
-    And both Vault and Proxy use the same credential-pattern set plus the same
-      Shannon entropy gate (≥ 4.5 bits/char)
-    # NOTE: This credential-pattern set is DISTINCT from the ClawGuard
-    # 216-pattern prompt-injection set used in C8/C16/C32/C33/C34. Credential
-    # detection and prompt-injection detection are separate pipelines, sharing
-    # only the C9 input normalization stage.
+    And both Vault and Proxy use the same credential-pattern set plus the same Shannon entropy gate (≥ 4.5 bits/char)
 
+  # NOTE: This credential-pattern set is DISTINCT from the ClawGuard
+  # 216-pattern prompt-injection set used in C8/C16/C32/C33/C34. Credential
+  # detection and prompt-injection detection are separate pipelines, sharing
+  # only the C9 input normalization stage.
   # ── Edge cases ─────────────────────────────────────────────────────────
   @medium
   @phase-2

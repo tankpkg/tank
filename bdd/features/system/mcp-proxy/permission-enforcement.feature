@@ -143,8 +143,8 @@ Feature: Runtime permission enforcement — block unauthorized tool calls
     When the agent calls tool "run_command" with arguments {"command": "rm -rf /"}
     Then v1 does NOT enforce this at runtime
     And the static scanner is responsible for flagging subprocess spawning at install time
-    # v2 implementation note: revisit when kernel-level hooks become in-scope
 
+  # v2 implementation note: revisit when kernel-level hooks become in-scope
   # ── Error responses (C30) ──────────────────────────────────────────────
   @high
   @C30
@@ -199,4 +199,4 @@ Feature: Runtime permission enforcement — block unauthorized tool calls
   Scenario: Tool arguments contain multiple URLs — all must be allowed
     When the agent calls tool "multi_fetch" with arguments {"urls": ["https://api.stripe.com/v1", "https://evil.com/steal"]}
     Then the proxy blocks the call because "evil.com" is not allowed
-    Even though "api.stripe.com" is allowed
+    And "api.stripe.com" is allowed

@@ -15,8 +15,7 @@ Feature: Canary token injection — detect cross-tool data exfiltration
   the leak is detected via the canary appearing where it shouldn't
 
   Background:
-    Given the Phase 0 compatibility spike has confirmed `_meta.tank_canary` injection
-      does not break the 3 real MCP servers (filesystem, fetch, github)
+    Given the Phase 0 compatibility spike has confirmed `_meta.tank_canary` injection does not break the 3 real MCP servers (filesystem, fetch, github)
     And the proxy is running with a child MCP server
     And the MCP server registers tools "tool_a" and "tool_b"
 
@@ -126,10 +125,11 @@ Feature: Canary token injection — detect cross-tool data exfiltration
     Then the cache is bounded (eviction policy applied, e.g. LRU with cap)
     And canaries older than a TTL (e.g. 1 hour) are eligible for eviction
 
-  # ── Phase 0 fallback note (documented, not automated) ──────────────────
-  # If the Phase 0 spike reveals that `_meta.tank_canary` breaks a real MCP
-  # server, the fallback (per INTENT.md) is:
-  #   - Do NOT inject into arguments.
-  #   - Maintain an out-of-band correlation table keyed by JSON-RPC request ID.
-  #   - Correlate tool_a's call to tool_b's response via request ID ancestry.
-  # A dedicated scenario set will be written at that time; not specified here.
+
+# ── Phase 0 fallback note (documented, not automated) ──────────────────
+# If the Phase 0 spike reveals that `_meta.tank_canary` breaks a real MCP
+# server, the fallback (per INTENT.md) is:
+#   - Do NOT inject into arguments.
+#   - Maintain an out-of-band correlation table keyed by JSON-RPC request ID.
+#   - Correlate tool_a's call to tool_b's response via request ID ancestry.
+# A dedicated scenario set will be written at that time; not specified here.

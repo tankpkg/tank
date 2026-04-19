@@ -219,4 +219,5 @@ Feature: Tool shadowing detection — cross-server tool name and description col
     When a proxy processes a tools/list response with 20 tools
     Then the total registry read + collision check + description scan completes in under 5 ms
 
+
 # Aligns with C10/C18 global proxy performance contract
