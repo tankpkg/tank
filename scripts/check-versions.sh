@@ -29,7 +29,11 @@ extract_version() {
       grep "^appVersion:" "$file" | sed 's/appVersion: "\(.*\)"/\1/' | tr -d ' '
       ;;
     */sdk-python/pyproject.toml)
-      python3 -c "import sys, tomllib; data = tomllib.load(open('$file', 'rb')); print(data['project'].get('version', 'dynamic'))"
+      if grep -qE '^dynamic\s*=\s*\[.*"version"' "$file"; then
+        echo "dynamic"
+      else
+        grep "^version" "$file" | head -1 | sed 's/version = "\(.*\)"/\1/' | tr -d ' '
+      fi
       ;;
     *_version.py)
       grep "^__version__" "$file" | sed 's/__version__ = "\(.*\)"/\1/'
