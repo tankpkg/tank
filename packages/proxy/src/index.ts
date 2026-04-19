@@ -1,5 +1,8 @@
 export type { AuditEntry, AuditLogger } from './audit/logger.ts';
 export { createAuditLogger } from './audit/logger.ts';
+export { MAX_RING_SIZE, ROTATION_THRESHOLD_BYTES, rotateIfNeeded } from './audit/rotator.ts';
+export type { ChainVerificationResult } from './audit/verifier.ts';
+export { verifyAuditChain } from './audit/verifier.ts';
 export type { BudgetResult, EnforcementBudget } from './enforcer/manifest-loader.ts';
 export { loadEnforcementBudget } from './enforcer/manifest-loader.ts';
 export type { GateResult, ToolCall, Verdict, Violation } from './enforcer/permission-gate.ts';

@@ -40,6 +40,7 @@ function readLastEntryHash(logPath: string): string | null {
 export function createAuditLogger(logPath: string): AuditLogger {
   let directoryReady = false;
   let previousHash: string | null = readLastEntryHash(logPath);
+  let writeChain: Promise<void> = Promise.resolve();
 
   async function ensureDirectory(): Promise<void> {
     if (directoryReady) return;
@@ -47,24 +48,29 @@ export function createAuditLogger(logPath: string): AuditLogger {
     directoryReady = true;
   }
 
+  async function appendOne(partial: Omit<AuditEntry, 'timestamp' | 'prev_hash'>): Promise<void> {
+    try {
+      await ensureDirectory();
+      rotateIfNeeded(logPath);
+      if (!existsSync(logPath)) previousHash = null;
+      const entry: AuditEntry = {
+        timestamp: new Date().toISOString(),
+        prev_hash: previousHash,
+        ...partial
+      };
+      const line = `${JSON.stringify(entry)}\n`;
+      await appendFile(logPath, line, { encoding: 'utf8' });
+      previousHash = hashEntry(entry);
+    } catch (err) {
+      process.stderr.write(`[tank-proxy] audit write failed: ${(err as Error).message}\n`);
+    }
+  }
+
   return {
     path: logPath,
-    async append(partial) {
-      try {
-        await ensureDirectory();
-        rotateIfNeeded(logPath);
-        if (!existsSync(logPath)) previousHash = null;
-        const entry: AuditEntry = {
-          timestamp: new Date().toISOString(),
-          prev_hash: previousHash,
-          ...partial
-        };
-        const line = `${JSON.stringify(entry)}\n`;
-        await appendFile(logPath, line, { encoding: 'utf8' });
-        previousHash = hashEntry(entry);
-      } catch (err) {
-        process.stderr.write(`[tank-proxy] audit write failed: ${(err as Error).message}\n`);
-      }
+    append(partial) {
+      writeChain = writeChain.then(() => appendOne(partial));
+      return writeChain;
     }
   };
 }
