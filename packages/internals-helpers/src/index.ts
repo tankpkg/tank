@@ -13,16 +13,6 @@ export {
 export { resolve, sortVersions } from '~/lib/resolver.js';
 export { encodeSkillName } from '~/lib/url.js';
 export {
-  BASE64_MAX_DECODED_BYTES,
-  BASE64_MAX_RECURSION_DEPTH,
-  collapseWhitespace,
-  decodeBase64Substrings,
-  decodeHomoglyphs,
-  normalizeForScan,
-  reverseLeet,
-  stripZeroWidth
-} from '~/prompt-injection/index.js';
-export {
   checkPermissionEscalation,
   type EscalationResult,
   type EscalationViolation,
@@ -38,3 +28,18 @@ export {
   type PermissionsShape,
   type PermissionViolation
 } from '~/permissions/index.js';
+export {
+  BASE64_MAX_DECODED_BYTES,
+  BASE64_MAX_RECURSION_DEPTH,
+  CLAWGUARD_PATTERN_COUNT,
+  CLAWGUARD_PATTERNS,
+  type ClawGuardCategory,
+  type ClawGuardPattern,
+  type ClawGuardSeverity,
+  collapseWhitespace,
+  decodeBase64Substrings,
+  decodeHomoglyphs,
+  normalizeForScan,
+  reverseLeet,
+  stripZeroWidth
+} from '~/prompt-injection/index.js';

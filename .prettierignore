@@ -13,3 +13,4 @@ bun.lock
 .git
 .claude
 infra/helm
+packages/internals-helpers/vendor

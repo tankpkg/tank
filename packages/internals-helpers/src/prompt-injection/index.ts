@@ -8,3 +8,5 @@ export {
   reverseLeet,
   stripZeroWidth
 } from '~/prompt-injection/normalizer.js';
+export { CLAWGUARD_PATTERN_COUNT, CLAWGUARD_PATTERNS } from '~/prompt-injection/patterns.js';
+export type { ClawGuardCategory, ClawGuardPattern, ClawGuardSeverity } from '~/prompt-injection/types.js';
