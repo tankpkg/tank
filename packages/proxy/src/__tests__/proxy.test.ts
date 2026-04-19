@@ -88,6 +88,7 @@ describe('startProxy — Phase 1 stdio pass-through + audit', () => {
       command: 'node',
       args: ['-e', mockChildScript],
       auditPath,
+      permissionBudget: null,
       stdin: agentIn,
       stdout: agentOut
     });

@@ -2,6 +2,8 @@ import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { isPathAllowedWithRealpath } from '@internals/helpers';
 import { type AuditLogger, createAuditLogger } from './audit/logger.ts';
+import { type EnforcementBudget, loadEnforcementBudget } from './enforcer/manifest-loader.ts';
+import { evaluatePermissionGate } from './enforcer/permission-gate.ts';
 import { computePinIdentity } from './scanner/pin-identity.ts';
 import { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
 import { resolveCommandPath } from './transport/resolve-command.ts';
@@ -17,6 +19,8 @@ export interface ProxyOptions {
   allowlist?: string[];
   pinsDir?: string;
   blockOnMatch?: boolean;
+  manifestCwd?: string;
+  permissionBudget?: EnforcementBudget | null;
 }
 
 export interface ProxyHandle {
@@ -26,6 +30,12 @@ export interface ProxyHandle {
 
 const DEFAULT_AUDIT_PATH = join(homedir(), '.tank', 'proxy', 'audit.jsonl');
 const DEFAULT_PINS_DIR = join(homedir(), '.tank', 'proxy', 'pins');
+
+function resolveBudget(options: ProxyOptions): EnforcementBudget | null {
+  if (options.permissionBudget !== undefined) return options.permissionBudget;
+  const cwd = options.manifestCwd ?? process.cwd();
+  return loadEnforcementBudget(cwd).budget;
+}
 
 function defaultAllowlist(): string[] {
   const pathDirs = (process.env.PATH ?? '').split(delimiter).filter(Boolean);
@@ -44,6 +54,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   const pinsDir = options.pinsDir ?? DEFAULT_PINS_DIR;
   const blockOnMatch = options.blockOnMatch ?? true;
   const packageHash = computePinIdentity([options.command, ...options.args]);
+  const budget = resolveBudget(options);
 
   const resolvedCommand = resolveCommandPath(options.command);
   const allowlist = options.allowlist ?? defaultAllowlist();
@@ -87,6 +98,10 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   });
 
   function handleInbound(line: string): void {
+    void handleInboundAsync(line);
+  }
+
+  async function handleInboundAsync(line: string): Promise<void> {
     const parsed = parseJsonRpcMessage(line);
     if (!parsed.ok) {
       agentStdout.write(framingError(parsed.code, parsed.message, parsed.id));
@@ -95,6 +110,10 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     }
     const method = parsed.message.method ?? 'unknown';
     const toolName = extractToolName(parsed.message);
+    if (method === 'tools/call' && toolName !== undefined) {
+      const blocked = await enforceToolCallPermissions(parsed.message, toolName);
+      if (blocked) return;
+    }
     const entry: { method: string; verdict: 'pass' | 'block'; tool_name?: string } = {
       method,
       verdict: 'pass'
@@ -105,6 +124,22 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
       pendingRequests.set(parsed.message.id, method);
     }
     child.write(parsed.raw);
+  }
+
+  async function enforceToolCallPermissions(
+    message: { id?: string | number | null; params?: unknown },
+    toolName: string
+  ): Promise<boolean> {
+    const args = extractToolArguments(message);
+    const gate = await evaluatePermissionGate({ toolName, arguments: args }, budget);
+    if (gate.verdict === 'allow') return false;
+    const violation = gate.violation;
+    const reason = violation?.type ?? 'permission_denied';
+    const value = violation?.value ?? 'unknown';
+    void logger.append({ method: 'tools/call', verdict: 'block', tool_name: toolName, reason });
+    const errorMessage = `tank: permission denied (${reason}: ${value})`;
+    agentStdout.write(framingError(-32001, errorMessage, message.id ?? null));
+    return true;
   }
 
   function handleOutbound(line: string): void {
@@ -172,4 +207,9 @@ function extractToolName(msg: { method?: string; params?: unknown }): string | u
   if (typeof msg.params !== 'object' || msg.params === null) return undefined;
   const name = (msg.params as { name?: unknown }).name;
   return typeof name === 'string' ? name : undefined;
+}
+
+function extractToolArguments(msg: { params?: unknown }): unknown {
+  if (typeof msg.params !== 'object' || msg.params === null) return null;
+  return (msg.params as { arguments?: unknown }).arguments ?? null;
 }
