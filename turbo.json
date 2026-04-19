@@ -3,6 +3,7 @@
   "tasks": {
     "build": {
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["VITE_*", "NITRO_PRESET", "NODE_ENV"],
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", ".output/**", ".tanstack", ".vercel/output/**", "build/**"]
     },
