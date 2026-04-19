@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PinReadError, readPinFile, sweepStaleTemps, writePinFile, type PinFile } from '~/scanner/pin-io.js';
+import { type PinFile, PinReadError, readPinFile, sweepStaleTemps, writePinFile } from '~/scanner/pin-io.js';
 
 const SAMPLE_PIN: PinFile = {
   packageHash: 'sha256:abc123',
