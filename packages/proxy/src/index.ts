@@ -1,5 +1,9 @@
 export type { AuditEntry, AuditLogger } from './audit/logger.ts';
 export { createAuditLogger } from './audit/logger.ts';
+export type { BudgetResult, EnforcementBudget } from './enforcer/manifest-loader.ts';
+export { loadEnforcementBudget } from './enforcer/manifest-loader.ts';
+export type { GateResult, ToolCall, Verdict, Violation } from './enforcer/permission-gate.ts';
+export { evaluatePermissionGate } from './enforcer/permission-gate.ts';
 export { PHASE_2_DEFAULTS } from './policy/defaults.ts';
 export type { EffectivePerTool, LoadPolicyOptions, ResolvedPolicy } from './policy/loader.ts';
 export { loadPolicy, resolvePerTool } from './policy/loader.ts';

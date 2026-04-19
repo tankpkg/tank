@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_TRAVERSAL_DEPTH, extractPathReferences, extractUrlReferences } from '~/enforcer/arg-extractors.js';
+import { extractPathReferences, extractUrlReferences, MAX_TRAVERSAL_DEPTH } from '~/enforcer/arg-extractors.js';
 
 describe('extractUrlReferences (C27, C31)', () => {
   it('finds an http URL at top level', () => {
