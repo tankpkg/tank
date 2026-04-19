@@ -10,7 +10,6 @@ import asyncio
 from pathlib import Path
 
 import pytest
-
 from lib.scan.dedup import deduplicate_findings
 from lib.scan.models import Finding
 from lib.scan.stage2_static import stage2_analyze

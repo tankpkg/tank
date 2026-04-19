@@ -14,7 +14,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
-
 from lib.scan.models import Finding, IngestResult, StageResult
 
 # Configuration

@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-
 from lib.scan.models import Finding, IngestResult, StageResult
 from lib.scan.stage5_helpers import (
     POPULAR_NPM_PACKAGES,

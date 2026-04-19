@@ -13,7 +13,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
 from lib.scan.markdown_utils import is_inside_html_comment
 from lib.scan.models import Finding, IngestResult, StageResult
 from lib.scan.remediation import enrich_finding

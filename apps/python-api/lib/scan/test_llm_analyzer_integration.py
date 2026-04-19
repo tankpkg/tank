@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-
 from lib.scan.llm_analyzer import LLMAnalyzer
 from lib.scan.llm_health import check_llm_health
 from lib.scan.models import Finding
