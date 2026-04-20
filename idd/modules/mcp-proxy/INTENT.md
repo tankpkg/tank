@@ -394,6 +394,16 @@ to a separate out-of-band correlation table keyed by JSON-RPC request ID.
 | E33c | `resources/read` returns the AWS example `AKIAIOSFODNN7EXAMPLE` (entropy < 4.5)              | Not flagged; response forwarded unchanged                                       |
 | E33d | `prompts/get` returns a prompt containing a real GitHub PAT `ghp_...` (entropy ≥ 4.5)        | Blocked; audit "credential_leak_in_prompt"                                      |
 
+### ML Classifier (Opt-in)
+
+| #   | Input                                                                                  | Expected Output                                                                                                    |
+| --- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| E34 | `tank proxy -- node server.js` with no `--enable-ml` flag                              | ML classifier is NOT loaded; regex-only pipeline runs; no model download prompt                                    |
+| E35 | `tank proxy --enable-ml -- node server.js` and model file is absent                    | Proxy exits with actionable stderr: "ML model not installed; run `tank proxy download-ml-model` to install"        |
+| E36 | `tank proxy download-ml-model` invoked interactively                                   | Prints ~500MB size warning; prompts for y/N confirmation; creates `~/.tank/models/` on consent                     |
+| E37 | `tank proxy download-ml-model --yes` in a CI/script context                            | Skips prompt, proceeds with download stub (Phase 9 scaffold prints "not yet shipped"; full inference in follow-up) |
+| E38 | `scanForPromptInjection("benign text", { enableMl: true })` after a model is installed | Runs regex AND ML; returns matched=false when both agree no-injection; Phase 9 stub reports matched=false          |
+
 ---
 
 ## Open Questions
