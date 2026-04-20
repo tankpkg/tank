@@ -10,6 +10,7 @@ type StartProxyFn = (options: {
   args: string[];
   auditPath?: string;
   pinsDir?: string;
+  registryPath?: string;
   permissionBudget?: unknown;
   stdin?: NodeJS.ReadableStream;
   stdout?: NodeJS.WritableStream;
@@ -50,6 +51,7 @@ async function runCalls(startProxy: StartProxyFn, auditPath: string, toolNames: 
     args: ['-e', PASS_THROUGH_CHILD],
     auditPath,
     pinsDir: join(tmpDir, 'pins'),
+    registryPath: join(tmpDir, 'registry.jsonl'),
     permissionBudget: null,
     stdin: agentIn,
     stdout: agentOut,

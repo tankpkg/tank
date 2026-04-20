@@ -9,6 +9,7 @@ type StartProxyFn = (options: {
   args: string[];
   auditPath?: string;
   pinsDir?: string;
+  registryPath?: string;
   blockOnMatch?: boolean;
   stdin?: NodeJS.ReadableStream;
   stdout?: NodeJS.WritableStream;
@@ -76,6 +77,7 @@ async function runProxyWithScript(
   const tmpDir = mkdtempSync(join(tmpdir(), 'tank-bdd-phase2-'));
   const auditPath = options.auditPath ?? join(tmpDir, 'audit.jsonl');
   const pinsDir = options.pinsDir ?? join(tmpDir, 'pins');
+  const registryPath = join(tmpDir, 'registry.jsonl');
   const agentIn = new PassThrough();
   const agentOut = new PassThrough();
 
@@ -84,6 +86,7 @@ async function runProxyWithScript(
     args: ['-e', script],
     auditPath,
     pinsDir,
+    registryPath,
     blockOnMatch: options.blockOnMatch ?? true,
     stdin: agentIn,
     stdout: agentOut,

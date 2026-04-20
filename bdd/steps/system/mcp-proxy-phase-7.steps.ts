@@ -9,6 +9,7 @@ type StartProxyFn = (options: {
   args: string[];
   auditPath?: string;
   pinsDir?: string;
+  registryPath?: string;
   permissionBudget?: unknown;
   stdin?: NodeJS.ReadableStream;
   stdout?: NodeJS.WritableStream;
@@ -47,6 +48,7 @@ async function runScenario(
     command: 'node',
     args: ['-e', SCRIPTED_CHILD],
     auditPath,
+    registryPath: `${auditPath}.registry.jsonl`,
     permissionBudget: null,
     stdin: agentIn,
     stdout: agentOut

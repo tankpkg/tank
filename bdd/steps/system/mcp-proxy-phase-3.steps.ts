@@ -16,6 +16,7 @@ type StartProxyFn = (options: {
   args: string[];
   auditPath?: string;
   pinsDir?: string;
+  registryPath?: string;
   blockOnMatch?: boolean;
   permissionBudget?: EnforcementBudget | null;
   stdin?: NodeJS.ReadableStream;
@@ -56,6 +57,7 @@ async function runToolCall(
   const tmpDir = mkdtempSync(join(tmpdir(), 'tank-bdd-phase3-'));
   const auditPath = join(tmpDir, 'audit.jsonl');
   const pinsDir = join(tmpDir, 'pins');
+  const registryPath = join(tmpDir, 'registry.jsonl');
   const agentIn = new PassThrough();
   const agentOut = new PassThrough();
 
@@ -64,6 +66,7 @@ async function runToolCall(
     args: ['-e', PASS_THROUGH_CHILD_SCRIPT],
     auditPath,
     pinsDir,
+    registryPath,
     permissionBudget: budget,
     stdin: agentIn,
     stdout: agentOut,
