@@ -23,6 +23,7 @@ export interface BddState {
   lastResult?: CliResult;
   lastResponse?: Response;
   lastResponseBody?: Record<string, unknown>;
+  lastResponseStatus?: number;
   lastActor?: string;
   skill?: SkillFixture;
   skillName?: string;

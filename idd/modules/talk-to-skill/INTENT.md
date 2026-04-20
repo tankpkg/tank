@@ -30,6 +30,12 @@ Embedded AI chat on every skill detail page. Users can ask questions about a ski
 - `prompt2botSecret` (Remote Tools Secret) stored in DB but NEVER included in any client-facing query result or API response
 - Only `chatLink` and `botPublicKey` are exposed to the browser
 
+### Upstream API tolerance
+
+- `createSkillBot()` requires only `botId` + `chatLink` from the prompt2bot response
+- `secret` is optional: only issued for bots with custom tools. Our current usage has none, so the field is expected to be absent. Stored as `NULL` when missing.
+- On upstream failure, the error log MUST enumerate the specific missing/falsy fields — never log a generic "unknown" reason
+
 ### Attribution
 
 - "Powered by prompt2bot · alice&bot" visible whenever the chat widget is open
@@ -55,3 +61,5 @@ Embedded AI chat on every skill detail page. Users can ask questions about a ski
 | Bot creation API fails                                   | Error shown to user; skill page continues to work normally              |
 | Attacker inspects network responses                      | `prompt2botSecret` never appears in any response body                   |
 | First-time anonymous visitor opens chat                  | Alice&Bot credentials are pre-seeded and no display-name dialog appears |
+| prompt2bot response omits `secret`                       | Bot creation succeeds; DB row has `prompt2bot_secret = NULL`            |
+| prompt2bot response omits `botId` or `chatLink`          | Bot creation fails; log lists the specific missing fields               |
