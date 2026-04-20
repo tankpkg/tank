@@ -80,8 +80,11 @@ describe('verifyAuditChain (C36)', () => {
 
   it('returns ok=false when a line is malformed JSON', async () => {
     await writeEntries(3);
-    const raw = readFileSync(auditPath, 'utf-8');
-    writeFileSync(auditPath, raw.replace('}', 'X}'));
+    const lines = readFileSync(auditPath, 'utf-8')
+      .split('\n')
+      .filter((l) => l.length > 0);
+    lines[1] = `${lines[1]}!!not-json!!`;
+    writeFileSync(auditPath, `${lines.join('\n')}\n`);
     const result = verifyAuditChain(auditPath);
     expect(result.ok).toBe(false);
     expect(result.brokenAtIndex).toBeGreaterThanOrEqual(0);
