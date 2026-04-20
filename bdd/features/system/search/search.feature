@@ -1,5 +1,5 @@
 # Intent: idd/modules/search/INTENT.md
-# Layer: Examples (E1–E10), Constraints (C1–C6)
+# Layer: Examples (E1–E15), Constraints (C1–C11)
 
 @search
 @real-db
@@ -78,6 +78,19 @@ Feature: Skill discovery via hybrid search
   Scenario: Org name search is case-insensitive (E13)
     When I search for the org name in mixed case
     Then the results contain all 5 seeded skills
+
+  # ── Full-text search on README / SKILL.md content (C11) ───────────
+  @high
+  Scenario: README body content is searchable via full-text (E14)
+    Given a skill "@{org}/data-pipes" whose README mentions "quicksortxyz"
+    When I search for "quicksortxyz"
+    Then the results contain "@{org}/data-pipes"
+
+  @medium
+  Scenario: README-only match ranks below name/description match (E15)
+    Given a skill "@{org}/data-pipes" whose README mentions "react"
+    When I search for "react"
+    Then "@{org}/react" ranks above "@{org}/data-pipes"
 
   # ── Safety & edge cases (C4) ───────────────────────────────────────
   @high
