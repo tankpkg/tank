@@ -174,7 +174,11 @@ program
     ) => {
       try {
         if (name && isUrl(name)) {
-          await installFromUrl(name, { global: opts.global, yes: opts.yes });
+          await installFromUrl(name, {
+            global: opts.global,
+            yes: opts.yes,
+            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+          });
         } else if (name) {
           await installCommand({
             name,

@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "description": "Transparent JSON-RPC proxy for MCP servers — security-first runtime enforcement",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./src/transport/stdio-wrapper": "./src/transport/stdio-wrapper.ts",
-    "./src/transport/message-router": "./src/transport/message-router.ts",
-    "./src/audit/logger": "./src/audit/logger.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "tsdown",

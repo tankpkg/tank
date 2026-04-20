@@ -372,11 +372,15 @@ to a separate out-of-band correlation table keyed by JSON-RPC request ID.
 
 ### Adapter Rewriting
 
-| #   | Input                                                | Expected Output                                                                                                                    |
-| --- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| E28 | `tank install @org/tool` (default)                   | Agent config: `{ "command": "tank", "args": ["proxy", "--", "npx", "@org/mcp-server"] }`                                           |
-| E29 | `tank install @org/tool --dangerously-no-tank-proxy` | Agent config: `{ "command": "npx", "args": ["@org/mcp-server"] }` (no proxy)                                                       |
-| E30 | `tank install @org/remote-tool` (remote MCP)         | Agent config: `{ "command": "tank", "args": ["proxy", "--remote", "https://..."], "env": { "TANK_MCP_AUTH_REMOTE_TOOL": "..." } }` |
+| #    | Input                                                                  | Expected Output                                                                                                                    |
+| ---- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| E28  | `tank install @org/tool` (default)                                     | Agent config: `{ "command": "tank", "args": ["proxy", "--", "npx", "@org/mcp-server"] }`                                           |
+| E29  | `tank install @org/tool --dangerously-no-tank-proxy`                   | Agent config: `{ "command": "npx", "args": ["@org/mcp-server"] }` (no proxy)                                                       |
+| E30  | `tank install @org/remote-tool` (remote MCP)                           | Agent config: `{ "command": "tank", "args": ["proxy", "--remote", "https://..."], "env": { "TANK_MCP_AUTH_REMOTE_TOOL": "..." } }` |
+| E30a | `tank install <URL-to-skill-with-mcp-server>` (URL install path)       | Agent config wrapped with `tank proxy` (C42 applies to ALL install paths, including URL installs)                                  |
+| E30b | `tank install` with `tank.lock` present (lockfile install path)        | Agent config wrapped with `tank proxy` for every locked skill that declares `mcp_server`                                           |
+| E30c | `tank proxy --remote <url> --requires-auth` with env var missing       | Exit code 2, stderr `tank proxy: required auth env var TANK_MCP_AUTH_<SLUG> not set` — real binary, not just the helper function   |
+| E30d | `tank proxy --remote <url> --requires-auth` with env var set correctly | Exit code 0, upstream not connected yet (Phase 7), stderr reports transport stub — real binary, not just the helper function       |
 
 ### Resources and Prompts
 

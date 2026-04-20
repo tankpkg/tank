@@ -14,7 +14,7 @@ import { pipeline } from 'node:stream/promises';
 
 import { logger } from './logger.js';
 
-export type UrlSourceType = 'github' | 'clawhub' | 'skills_sh' | 'agentskills_il' | 'npm' | 'unknown';
+export type UrlSourceType = 'github' | 'clawhub' | 'skills_sh' | 'agentskills_il' | 'npm' | 'file' | 'unknown';
 
 export interface FetchResult {
   /** Local directory containing the fetched skill files */
@@ -47,6 +47,7 @@ const HOST_MAP: Array<[RegExp, UrlSourceType]> = [
 ];
 
 function detectSourceType(url: string): UrlSourceType {
+  if (url.startsWith('file://')) return 'file';
   for (const [pattern, sourceType] of HOST_MAP) {
     if (pattern.test(url)) return sourceType;
   }
@@ -55,7 +56,7 @@ function detectSourceType(url: string): UrlSourceType {
 
 /** Returns true if the input looks like a URL rather than a package name. */
 export function isUrl(input: string): boolean {
-  if (input.startsWith('http://') || input.startsWith('https://')) return true;
+  if (input.startsWith('http://') || input.startsWith('https://') || input.startsWith('file://')) return true;
   for (const [pattern] of HOST_MAP) {
     if (pattern.test(input)) return true;
   }
@@ -441,6 +442,23 @@ async function fetchFromGenericUrl(url: string, tempDir: string): Promise<FetchR
   };
 }
 
+async function fetchFromFileUrl(url: string, tempDir: string): Promise<FetchResult> {
+  const sourcePath = new URL(url).pathname;
+  const destDir = join(tempDir, 'skill');
+  const { cp } = await import('node:fs/promises');
+  await mkdir(destDir, { recursive: true });
+  await cp(sourcePath, destDir, { recursive: true, errorOnExist: false });
+  const inferredName = sourcePath.replace(/\/$/, '').split('/').pop() ?? null;
+  return {
+    localPath: destDir,
+    sourceType: 'file',
+    sourceUrl: url,
+    commitSha: null,
+    inferredName,
+    cleanup: () => cleanupDir(tempDir)
+  };
+}
+
 /** Fetch a skill from a URL to a local temp directory. */
 export async function fetchFromUrl(url: string): Promise<FetchOutput> {
   const sourceType = detectSourceType(url);
@@ -460,6 +478,9 @@ export async function fetchFromUrl(url: string): Promise<FetchOutput> {
         break;
       case 'skills_sh':
         result = await fetchFromSkillsSh(url, tempDir);
+        break;
+      case 'file':
+        result = await fetchFromFileUrl(url, tempDir);
         break;
       default:
         result = await fetchFromGenericUrl(url, tempDir);

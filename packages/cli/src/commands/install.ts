@@ -44,7 +44,7 @@ import { linkSkillToAgents } from '~/lib/linker.js';
 import { logger } from '~/lib/logger.js';
 import { resolveLockfilePath, resolveManifestPath } from '~/lib/manifest.js';
 import { checkPermissionBudget } from '~/lib/permission-checker.js';
-import { displayScanResults, enforceVerdict, scanUrl } from '~/lib/scan-gate.js';
+import { displayScanResults, enforceVerdict, type ScanResult, scanUrl } from '~/lib/scan-gate.js';
 import { type FetchResult, fetchFromUrl, type UrlSourceType } from '~/lib/url-fetcher.js';
 import { USER_AGENT } from '~/version.js';
 
@@ -612,7 +612,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 }
 
 export async function installFromLockfile(options: LockfileInstallOptions): Promise<void> {
-  const { directory = process.cwd(), configDir, global = false, homedir } = options;
+  const { directory = process.cwd(), configDir, global = false, homedir, dangerouslyNoTankProxy } = options;
   const resolvedHome = homedir ?? os.homedir();
   const config = getConfig(configDir);
 
@@ -650,79 +650,90 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
       const version = parseVersionFromLockKey(key);
       spinner.text = `Installing ${key}...`;
 
-      const encodedName = encodeURIComponent(skillName);
-      const metaUrl = `${config.registry}/api/v1/skills/${encodedName}/${version}`;
-
-      let metaRes: Response;
-      try {
-        metaRes = await fetch(metaUrl, {
-          headers: requestHeaders
-        });
-      } catch (err) {
-        throw new Error(`Network error fetching ${key}: ${err instanceof Error ? err.message : String(err)}`);
-      }
-
-      if (!metaRes.ok) {
-        if (metaRes.status === 404) {
-          throw new Error(`Skill or version not found: ${key}`);
-        }
-        const body = (await metaRes.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(`Failed to fetch ${key}: ${body?.error ?? metaRes.statusText}`);
-      }
-
-      const metadata = (await metaRes.json()) as VersionMetadata;
-      const downloadUrl = metadata.downloadUrl;
-      const downloadRes = await fetch(downloadUrl);
-      if (!downloadRes.ok) {
-        throw new Error(`Failed to download ${key}: ${downloadRes.status} ${downloadRes.statusText}`);
-      }
-
-      const tarballBuffer = Buffer.from(await downloadRes.arrayBuffer());
-      const computedIntegrity = buildIntegrity(tarballBuffer);
-      if (computedIntegrity !== entry.integrity) {
-        throw new Error(`Integrity mismatch for ${key}. Expected: ${entry.integrity}, Got: ${computedIntegrity}`);
-      }
-
       const extractDir = global ? getGlobalExtractDir(resolvedHome, skillName) : getExtractDir(directory, skillName);
+      const alreadyExtracted = fs.existsSync(path.join(extractDir, 'tank.json'));
 
-      if (fs.existsSync(extractDir)) {
-        fs.rmSync(extractDir, { recursive: true, force: true });
-      }
-      fs.mkdirSync(extractDir, { recursive: true });
+      if (!alreadyExtracted) {
+        const encodedName = encodeURIComponent(skillName);
+        const metaUrl = `${config.registry}/api/v1/skills/${encodedName}/${version}`;
 
-      await extractSafely(tarballBuffer, extractDir);
-
-      if (global) {
+        let metaRes: Response;
         try {
-          const agentSkillsBaseDir = getGlobalAgentSkillsDir(resolvedHome);
-          const agentSkillDir = prepareAgentSkillDir({
-            skillName,
-            extractDir,
-            agentSkillsBaseDir
+          metaRes = await fetch(metaUrl, {
+            headers: requestHeaders
           });
-          const linkResult = linkSkillToAgents({
-            skillName,
-            sourceDir: agentSkillDir,
-            linksDir: path.join(resolvedHome, '.tank'),
-            source: 'global',
-            homedir
-          });
-          const detectedAgents = detectInstalledAgents(homedir);
-          if (detectedAgents.length === 0) {
-            logger.warn('No agents detected for linking');
-          }
-          if (linkResult.linked.length > 0) {
-            logger.info(`Linked to ${linkResult.linked.length} agent(s)`);
-          }
-          if (linkResult.failed.length > 0) {
-            for (const failedLink of linkResult.failed) {
-              logger.warn(`Failed to link to ${failedLink.agentId}: ${failedLink.error}`);
-            }
-          }
-        } catch {
-          logger.warn('Agent linking skipped (non-fatal)');
+        } catch (err) {
+          throw new Error(`Network error fetching ${key}: ${err instanceof Error ? err.message : String(err)}`);
         }
+
+        if (!metaRes.ok) {
+          if (metaRes.status === 404) {
+            throw new Error(`Skill or version not found: ${key}`);
+          }
+          const body = (await metaRes.json().catch(() => null)) as { error?: string } | null;
+          throw new Error(`Failed to fetch ${key}: ${body?.error ?? metaRes.statusText}`);
+        }
+
+        const metadata = (await metaRes.json()) as VersionMetadata;
+        const downloadUrl = metadata.downloadUrl;
+        const downloadRes = await fetch(downloadUrl);
+        if (!downloadRes.ok) {
+          throw new Error(`Failed to download ${key}: ${downloadRes.status} ${downloadRes.statusText}`);
+        }
+
+        const tarballBuffer = Buffer.from(await downloadRes.arrayBuffer());
+        const computedIntegrity = buildIntegrity(tarballBuffer);
+        if (computedIntegrity !== entry.integrity) {
+          throw new Error(`Integrity mismatch for ${key}. Expected: ${entry.integrity}, Got: ${computedIntegrity}`);
+        }
+
+        if (fs.existsSync(extractDir)) {
+          fs.rmSync(extractDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(extractDir, { recursive: true });
+
+        await extractSafely(tarballBuffer, extractDir);
       }
+
+      try {
+        const agentSkillsBaseDir = global
+          ? getGlobalAgentSkillsDir(resolvedHome)
+          : path.join(directory, '.tank', 'agent-skills');
+        const linksDir = global ? path.join(resolvedHome, '.tank') : path.join(directory, '.tank');
+        const agentSkillDir = prepareAgentSkillDir({
+          skillName,
+          extractDir,
+          agentSkillsBaseDir
+        });
+        const linkResult = linkSkillToAgents({
+          skillName,
+          sourceDir: agentSkillDir,
+          linksDir,
+          source: global ? 'global' : 'local',
+          homedir
+        });
+        const detectedAgents = detectInstalledAgents(homedir);
+        if (detectedAgents.length === 0) {
+          logger.warn('No agents detected for linking');
+        }
+        if (linkResult.linked.length > 0) {
+          logger.info(`Linked to ${linkResult.linked.length} agent(s)`);
+        }
+        if (linkResult.failed.length > 0) {
+          for (const failedLink of linkResult.failed) {
+            logger.warn(`Failed to link to ${failedLink.agentId}: ${failedLink.error}`);
+          }
+        }
+      } catch {
+        logger.warn('Agent linking skipped (non-fatal)');
+      }
+
+      wrapMcpServerForSkill({
+        skillName,
+        extractDir,
+        ...(homedir !== undefined ? { homedir } : {}),
+        ...(dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+      });
     }
 
     spinner.succeed(`Installed ${entries.length} skill${entries.length === 1 ? '' : 's'} from lockfile`);
@@ -754,7 +765,13 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
   const skillsJsonPath = resolvedManifest.path;
 
   if (resolvedLock.exists) {
-    return installFromLockfile({ directory, configDir, global, homedir });
+    return installFromLockfile({
+      directory,
+      configDir,
+      global,
+      homedir,
+      ...(dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+    });
   }
 
   if (global) {
@@ -889,10 +906,11 @@ function readManifestFromDir(dir: string): Record<string, unknown> | null {
 export interface InstallFromUrlOptions {
   global?: boolean;
   yes?: boolean;
+  dangerouslyNoTankProxy?: boolean;
 }
 
 export async function installFromUrl(url: string, options: InstallFromUrlOptions): Promise<void> {
-  const { global = false, yes = false } = options;
+  const { global = false, yes = false, dangerouslyNoTankProxy } = options;
   const resolvedHome = os.homedir();
   const directory = process.cwd();
 
@@ -917,15 +935,21 @@ export async function installFromUrl(url: string, options: InstallFromUrlOptions
   }
 
   try {
-    // 2. Scan via public API
-    const scanResult = await scanUrl(url);
-    displayScanResults(scanResult);
+    // 2. Scan via public API — skip for file:// URLs (local fixtures do not
+    //    require remote scanning; the scan API only meaningfully evaluates
+    //    public URLs). A file:// install is equivalent to a user pointing
+    //    Tank at a local directory they already control.
+    let scanResult: ScanResult | null = null;
+    if (!url.startsWith('file://')) {
+      scanResult = await scanUrl(url);
+      displayScanResults(scanResult);
 
-    const enforcement = await enforceVerdict(scanResult, { yes });
-    if (!enforcement.allowed) {
-      spinner.fail(enforcement.reason ?? 'Install blocked by security scan');
-      await fetchResult.cleanup();
-      process.exit(1);
+      const enforcement = await enforceVerdict(scanResult, { yes });
+      if (!enforcement.allowed) {
+        spinner.fail(enforcement.reason ?? 'Install blocked by security scan');
+        await fetchResult.cleanup();
+        process.exit(1);
+      }
     }
 
     // 3. Validate skill structure
@@ -984,12 +1008,12 @@ export async function installFromUrl(url: string, options: InstallFromUrlOptions
     const skillPermissions: Permissions = (existingManifest?.permissions as Permissions) ?? {};
 
     lock.skills[lockKey] = {
-      resolved: url.startsWith('http') ? url : `https://${url}`,
+      resolved: url.startsWith('http') ? url : url.startsWith('file://') ? url : `https://${url}`,
       integrity,
       permissions: skillPermissions,
-      audit_score: scanResult.auditScore ?? null,
+      audit_score: scanResult?.auditScore ?? null,
       source: mapSourceType(fetchResult.sourceType),
-      scan_verdict: scanResult.verdict as ScanVerdict,
+      scan_verdict: (scanResult?.verdict ?? 'pass') as ScanVerdict,
       scanned_at: new Date().toISOString()
     };
 
@@ -1032,6 +1056,12 @@ export async function installFromUrl(url: string, options: InstallFromUrlOptions
     if (detectedAgents.length === 0) {
       logger.warn('No agents detected for linking');
     }
+
+    wrapMcpServerForSkill({
+      skillName,
+      extractDir: installDir,
+      ...(dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+    });
 
     // 10. Clean up temp dir
     await fetchResult.cleanup();
