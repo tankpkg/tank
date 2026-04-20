@@ -51,7 +51,8 @@ Feature: Talk to this Skill
     When I visit the talk skill detail page
     Then the page source does not contain "prompt2botSecret"
 
-  @regression @gh-issue-post-0.14.2
+  @regression
+  @gh-issue-post-0.14.2
   Scenario: Talk API tolerates prompt2bot response without `secret` field
     # Regression guard for the 2026-04-20 prompt2bot contract change:
     # `secret` is only issued for bots with custom tools. Our bots have
