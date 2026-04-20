@@ -27,3 +27,5 @@ export type { CanaryInterceptorContext, CanaryInterceptResult } from './transpor
 export { interceptToolCallResponse } from './transport/canary-interceptor.ts';
 export type { FramingResult, JsonRpcMessage } from './transport/message-router.ts';
 export { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
+export type { RemoteProxyEnvInput, RemoteProxyEnvResult } from './transport/remote-transport.ts';
+export { deriveAuthEnvVarFromUrl, validateRemoteProxyEnv } from './transport/remote-transport.ts';

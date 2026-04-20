@@ -320,22 +320,38 @@ program
 program
   .command('proxy')
   .description('Transparent MCP proxy — wraps an MCP server with runtime enforcement')
-  .argument('[command]', 'Child MCP server command to wrap (omit when using --reset-pins only)')
+  .argument('[command]', 'Child MCP server command to wrap (omit when using --reset-pins or --remote)')
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .option('--audit-path <path>', 'JSONL audit log path (default: ~/.tank/proxy/audit.jsonl)')
   .option('--reset-pins', 'Delete all rug-pull schema pins under ~/.tank/proxy/pins/ and continue')
+  .option('--remote <url>', 'Connect to a remote MCP server over SSE/HTTP instead of spawning a child')
+  .option('--requires-auth', 'Require TANK_MCP_AUTH_<SLUG> env var before connecting to the remote')
   .option('--verbose', 'Print proxy diagnostic details to stderr')
   .action(
     async (
       command: string | undefined,
-      opts: { auditPath?: string; resetPins?: boolean; verbose?: boolean },
+      opts: {
+        auditPath?: string;
+        resetPins?: boolean;
+        verbose?: boolean;
+        remote?: string;
+        requiresAuth?: boolean;
+      },
       cmd: Command
     ) => {
       try {
         if (opts.resetPins) {
           const { proxyResetPinsCommand } = await import('~/commands/proxy-reset-pins.js');
           proxyResetPinsCommand();
+        }
+        if (opts.remote) {
+          const { proxyRemoteCommand } = await import('~/commands/proxy-remote.js');
+          await proxyRemoteCommand({
+            url: opts.remote,
+            requiresAuth: opts.requiresAuth === true
+          });
+          return;
         }
         if (!command) return;
         const args = cmd.args.slice(1);
