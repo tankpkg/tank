@@ -9,6 +9,7 @@ export * from './auth-schema';
 import {
   boolean,
   check,
+  customType,
   date,
   index,
   integer,
@@ -21,6 +22,12 @@ import {
   uniqueIndex,
   uuid
 } from 'drizzle-orm/pg-core';
+
+const tsvector = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return 'tsvector';
+  }
+});
 
 // Import auth tables for relations
 import { organization, user } from './auth-schema';
@@ -163,6 +170,7 @@ export const skillVersions = pgTable(
     auditScore: real('audit_score'),
     auditStatus: text('audit_status').notNull().default('pending'),
     readme: text('readme'),
+    readmeTsv: tsvector('readme_tsv').generatedAlwaysAs(sql`to_tsvector('english', coalesce(readme, ''))`),
     prompt2botBotId: text('prompt2bot_bot_id'),
     prompt2botChatLink: text('prompt2bot_chat_link'),
     prompt2botBotPublicKey: text('prompt2bot_bot_public_key'),
@@ -176,7 +184,8 @@ export const skillVersions = pgTable(
     // No duplicate versions per skill
     unique('skill_versions_skill_version_uniq').on(table.skillId, table.version),
     // Composite: covers MAX(created_at) subquery in search + ORDER BY created_at DESC in detail/versions
-    index('skill_versions_skill_id_created_at_idx').on(table.skillId, table.createdAt)
+    index('skill_versions_skill_id_created_at_idx').on(table.skillId, table.createdAt),
+    index('skill_versions_readme_tsv_idx').using('gin', table.readmeTsv)
   ]
 );
 

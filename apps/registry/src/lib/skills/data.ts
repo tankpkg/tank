@@ -654,6 +654,7 @@ export async function searchSkills(
       OR similarity(split_part(s.name, '/', 2), ${q}) > 0.15
       OR to_tsvector('english', s.name || ' ' || coalesce(s.description, ''))
          @@ plainto_tsquery('english', ${q})
+      OR sv.readme_tsv @@ plainto_tsquery('english', ${q})
     )
     AND ${visClause}
     ${visibilityFilterClause}
@@ -672,6 +673,7 @@ export async function searchSkills(
           to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
           plainto_tsquery('english', ${q})
         ) * 100)::int
+      + (ts_rank(sv.readme_tsv, plainto_tsquery('english', ${q})) * 50)::int
     ) DESC, s.updated_at DESC, s.id ASC
     OFFSET ${offset}
     LIMIT ${resolvedLimit}

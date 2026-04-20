@@ -7,12 +7,18 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 const ORG = `e2e-srch-${Date.now()}`;
 const SEARCH_TEST_USER_ID = `e2e-search-user-${ORG}`;
 
-const SEED_SKILLS = [
+const SEED_SKILLS: Array<{ suffix: string; desc: string; readme?: string }> = [
   { suffix: 'react', desc: 'React patterns for production apps' },
   { suffix: 'react-hooks', desc: 'Custom React hooks collection' },
   { suffix: 'clean-code', desc: 'Code quality and refactoring patterns' },
   { suffix: 'seo-audit', desc: 'SEO audit and optimization tools' },
-  { suffix: 'auth-patterns', desc: 'Authentication and authorization helpers' }
+  { suffix: 'auth-patterns', desc: 'Authentication and authorization helpers' },
+  {
+    suffix: 'data-pipes',
+    desc: 'Data transformation utilities',
+    readme:
+      '# Data Pipes\n\nImplements quicksortxyz partition strategy with SIMD acceleration. Also mentions react for ranking tests.\n'
+  }
 ];
 
 function skillName(suffix: string) {
@@ -44,14 +50,20 @@ async function hybridSearch(
             to_tsvector('english', s.name || ' ' || coalesce(s.description, '')),
             plainto_tsquery('english', ${q})
           ) * 100)::int
+        + (ts_rank(coalesce(sv.readme_tsv, ''::tsvector), plainto_tsquery('english', ${q})) * 50)::int
       ) AS score
     FROM skills s
+    LEFT JOIN skill_versions sv ON sv.skill_id = s.id
+      AND sv.created_at = (
+        SELECT MAX(sv2.created_at) FROM skill_versions sv2 WHERE sv2.skill_id = s.id
+      )
     WHERE (
       s.name ILIKE ${`%${escaped}%`}
       OR similarity(s.name, ${q}) > 0.15
       OR similarity(split_part(s.name, '/', 2), ${q}) > 0.15
       OR to_tsvector('english', s.name || ' ' || coalesce(s.description, ''))
          @@ plainto_tsquery('english', ${q})
+      OR sv.readme_tsv @@ plainto_tsquery('english', ${q})
     )
     AND s.visibility = 'public'
     ORDER BY score DESC, s.updated_at DESC
@@ -113,6 +125,15 @@ describe('Hybrid search (real DB)', () => {
       CREATE INDEX IF NOT EXISTS skills_name_trgm_idx
       ON skills USING gin (name gin_trgm_ops)
     `;
+    await sql`
+      ALTER TABLE skill_versions
+      ADD COLUMN IF NOT EXISTS readme_tsv tsvector
+      GENERATED ALWAYS AS (to_tsvector('english', coalesce(readme, ''))) STORED
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS skill_versions_readme_tsv_idx
+      ON skill_versions USING gin (readme_tsv)
+    `;
 
     const now = new Date();
     await sql`
@@ -126,7 +147,19 @@ describe('Hybrid search (real DB)', () => {
         VALUES (${skillName(s.suffix)}, ${s.desc}, ${SEARCH_TEST_USER_ID}, 'public', 'active')
         RETURNING id
       `;
-      insertedIds.push(row.id as string);
+      const skillId = row.id as string;
+      insertedIds.push(skillId);
+
+      await sql`
+        INSERT INTO skill_versions (
+          skill_id, version, integrity, tarball_path, tarball_size, file_count,
+          manifest, permissions, readme, published_by
+        )
+        VALUES (
+          ${skillId}, '1.0.0', 'sha512-test', ${`path/${s.suffix}.tgz`}, 100, 1,
+          '{}'::jsonb, '{}'::jsonb, ${s.readme ?? null}, ${SEARCH_TEST_USER_ID}
+        )
+      `;
     }
   }, 30_000);
 
@@ -206,6 +239,22 @@ describe('Hybrid search (real DB)', () => {
     for (const q of ['@', '/', '%', '_', "'; DROP TABLE skills;--", '🚀']) {
       const results = await hybridSearch(getSql(), q);
       expect(Array.isArray(results)).toBe(true);
+    }
+  });
+
+  it('finds skills via README full-text content ("quicksortxyz")', async () => {
+    const results = await hybridSearch(getSql(), 'quicksortxyz');
+    const names = results.map((r) => r.name);
+    expect(names).toContain(skillName('data-pipes'));
+  });
+
+  it('README-only match ranks below name/description matches', async () => {
+    const results = await hybridSearch(getSql(), 'react');
+    const reactIdx = results.findIndex((r) => r.name === skillName('react'));
+    const dataPipesIdx = results.findIndex((r) => r.name === skillName('data-pipes'));
+    expect(reactIdx).toBe(0);
+    if (dataPipesIdx >= 0) {
+      expect(dataPipesIdx).toBeGreaterThan(reactIdx);
     }
   });
 });
