@@ -91,6 +91,13 @@ export {
   proxyPolicySchema
 } from '~/schemas/proxy-policy.js';
 export {
+  isRemoteMcpServer,
+  type McpServer,
+  type McpServerLocal,
+  type McpServerRemote,
+  mcpServerSchema
+} from '~/schemas/mcp-server.js';
+export {
   type PublishManifest,
   publishManifestSchema,
   type SkillsJson,
