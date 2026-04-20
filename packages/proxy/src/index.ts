@@ -7,6 +7,10 @@ export type { BudgetResult, EnforcementBudget } from './enforcer/manifest-loader
 export { loadEnforcementBudget } from './enforcer/manifest-loader.ts';
 export type { GateResult, ToolCall, Verdict, Violation } from './enforcer/permission-gate.ts';
 export { evaluatePermissionGate } from './enforcer/permission-gate.ts';
+export type { ClassifierHandle, ClassifierVerdict, LoadClassifierOptions } from './ml/classifier.ts';
+export { getModelPath, isModelInstalled, loadClassifier } from './ml/classifier.ts';
+export type { DownloadModelOptions, DownloadOutcome, DownloadStatus } from './ml/download.ts';
+export { downloadModel, MODEL_DOWNLOAD_SIZE_MB } from './ml/download.ts';
 export { PHASE_2_DEFAULTS } from './policy/defaults.ts';
 export type { EffectivePerTool, LoadPolicyOptions, ResolvedPolicy } from './policy/loader.ts';
 export { loadPolicy, resolvePerTool } from './policy/loader.ts';
