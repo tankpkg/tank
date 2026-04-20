@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { downloadModel, type DownloadOutcome, MODEL_DOWNLOAD_SIZE_MB } from '~/ml/download.js';
+import { type DownloadOutcome, downloadModel, MODEL_DOWNLOAD_SIZE_MB } from '~/ml/download.js';
 
 let sandbox: string;
 let modelsDir: string;

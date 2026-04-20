@@ -1949,7 +1949,7 @@ tank proxy [command]
 
 | Name | Description | Required |
 |---|---|---|
-| `command` | Child MCP server command to wrap (omit when using --reset-pins or --remote) | No |
+| `command` | Child MCP server command to wrap (omit when using --reset-pins, --remote, or download-ml-model) | No |
 
 ### Options
 
@@ -1959,6 +1959,7 @@ tank proxy [command]
 | `--reset-pins` | Delete all rug-pull schema pins under ~/.tank/proxy/pins/ and continue |
 | `--remote <url>` | Connect to a remote MCP server over SSE/HTTP instead of spawning a child |
 | `--requires-auth` | Require TANK_MCP_AUTH_<SLUG> env var before connecting to the remote |
+| `--enable-ml` | Enable the opt-in ML-based prompt-injection classifier (requires ~500MB model; run `tank proxy download-ml-model` first) |
 | `--verbose` | Print proxy diagnostic details to stderr |
 
 
