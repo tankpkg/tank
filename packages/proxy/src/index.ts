@@ -12,6 +12,10 @@ export type { EffectivePerTool, LoadPolicyOptions, ResolvedPolicy } from './poli
 export { loadPolicy, resolvePerTool } from './policy/loader.ts';
 export type { ProxyHandle, ProxyOptions } from './proxy.ts';
 export { startProxy } from './proxy.ts';
+export { mintCanary } from './scanner/canary.ts';
+export { injectCanary } from './scanner/canary-inject.ts';
+export type { CanaryLeak, CanarySessionOptions } from './scanner/canary-session.ts';
+export { CanarySession } from './scanner/canary-session.ts';
 export { canonicalizeSchema, hashSchema } from './scanner/canonicalize.ts';
 export { computePinIdentity } from './scanner/pin-identity.ts';
 export { type PinFile, PinReadError, readPinFile, sweepStaleTemps, writePinFile } from './scanner/pin-io.ts';
@@ -19,5 +23,7 @@ export type { Mismatch, PinOrCompareOptions, PinOrCompareResult, ToolSchema } fr
 export { pinOrCompare, resetPins } from './scanner/rug-pull.ts';
 export type { ScanMatch, ScanResult } from './scanner/tool-poisoning.ts';
 export { scanToolDescription } from './scanner/tool-poisoning.ts';
+export type { CanaryInterceptorContext, CanaryInterceptResult } from './transport/canary-interceptor.ts';
+export { interceptToolCallResponse } from './transport/canary-interceptor.ts';
 export type { FramingResult, JsonRpcMessage } from './transport/message-router.ts';
 export { framingError, parseJsonRpcMessage } from './transport/message-router.ts';

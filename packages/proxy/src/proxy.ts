@@ -4,7 +4,10 @@ import { isPathAllowedWithRealpath } from '@internals/helpers';
 import { type AuditLogger, createAuditLogger } from './audit/logger.ts';
 import { type EnforcementBudget, loadEnforcementBudget } from './enforcer/manifest-loader.ts';
 import { evaluatePermissionGate } from './enforcer/permission-gate.ts';
+import { injectCanary } from './scanner/canary-inject.ts';
+import { CanarySession } from './scanner/canary-session.ts';
 import { computePinIdentity } from './scanner/pin-identity.ts';
+import { interceptToolCallResponse } from './transport/canary-interceptor.ts';
 import { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
 import { resolveCommandPath } from './transport/resolve-command.ts';
 import { interceptToolsListResponse } from './transport/scan-interceptor.ts';
@@ -64,7 +67,8 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   }
 
   const child: StdioChildHandle = spawnChild(resolvedCommand, options.args);
-  const pendingRequests = new Map<string | number, string>();
+  const pendingRequests = new Map<string | number, { method: string; toolName?: string }>();
+  const canarySession = new CanarySession();
 
   let exitResolve: (code: number) => void = () => {};
   const exitCode = new Promise<number>((resolve) => {
@@ -121,9 +125,27 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     if (toolName !== undefined) entry.tool_name = toolName;
     void logger.append(entry);
     if (parsed.message.id !== undefined && parsed.message.id !== null) {
-      pendingRequests.set(parsed.message.id, method);
+      const pending: { method: string; toolName?: string } = { method };
+      if (toolName !== undefined) pending.toolName = toolName;
+      pendingRequests.set(parsed.message.id, pending);
     }
-    child.write(parsed.raw);
+    const outboundToChild = rewriteWithCanary(parsed.message, parsed.raw, method, toolName);
+    child.write(outboundToChild);
+  }
+
+  function rewriteWithCanary(
+    message: JsonRpcMessageRef,
+    raw: string,
+    method: string,
+    toolName: string | undefined
+  ): string {
+    if (method !== 'tools/call' || toolName === undefined) return raw;
+    const canary = canarySession.mint(toolName);
+    const params = (message.params as { arguments?: unknown } & Record<string, unknown>) ?? {};
+    const injected = injectCanary(params.arguments, canary);
+    const nextParams = { ...params, arguments: injected };
+    const nextMessage = { ...message, params: nextParams };
+    return `${JSON.stringify(nextMessage)}\n`;
   }
 
   async function enforceToolCallPermissions(
@@ -150,15 +172,38 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
       return;
     }
     const id = parsed.message.id;
-    const requestMethod = id !== undefined && id !== null ? pendingRequests.get(id) : undefined;
+    const pending = id !== undefined && id !== null ? pendingRequests.get(id) : undefined;
     if (id !== undefined && id !== null) pendingRequests.delete(id);
-    const method = requestMethod ?? parsed.message.method ?? 'response';
+    const method = pending?.method ?? parsed.message.method ?? 'response';
     if (method === 'tools/list') {
       emitScannedToolsList(parsed.message, line);
       return;
     }
+    if (method === 'tools/call' && pending?.toolName !== undefined) {
+      const blocked = emitScannedToolCall(parsed.message, line, pending.toolName);
+      if (blocked) return;
+    }
     void logger.append({ method, verdict: 'pass' });
     agentStdout.write(`${line}\n`);
+  }
+
+  function emitScannedToolCall(message: JsonRpcMessageRef, rawFallback: string, toolName: string): boolean {
+    const result = interceptToolCallResponse(toolName, message, { session: canarySession });
+    if (!result.blocked) {
+      agentStdout.write(`${rawFallback}\n`);
+      return true;
+    }
+    const leak = result.leaks[0];
+    const sourceTool = leak?.source ?? 'unknown';
+    void logger.append({
+      method: 'tools/call',
+      verdict: 'block',
+      tool_name: toolName,
+      reason: 'canary_leak_detected',
+      source_tool: sourceTool
+    });
+    agentStdout.write(framingError(-32003, `tank: canary_leak_detected (source: ${sourceTool})`, message.id ?? null));
+    return true;
   }
 
   function emitScannedToolsList(message: JsonRpcMessageRef, rawFallback: string): void {

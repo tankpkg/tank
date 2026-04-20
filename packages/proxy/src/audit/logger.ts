@@ -11,6 +11,7 @@ export interface AuditEntry {
   tool_name?: string;
   verdict: 'pass' | 'block';
   reason?: string;
+  source_tool?: string;
   prev_hash: string | null;
 }
 
