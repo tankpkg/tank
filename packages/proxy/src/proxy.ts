@@ -8,6 +8,12 @@ import { injectCanary } from './scanner/canary-inject.ts';
 import { CanarySession } from './scanner/canary-session.ts';
 import { computePinIdentity } from './scanner/pin-identity.ts';
 import { interceptToolCallResponse } from './transport/canary-interceptor.ts';
+import {
+  interceptPromptGetResponse,
+  interceptPromptsListResponse,
+  interceptResourceReadResponse,
+  interceptResourcesListResponse
+} from './transport/resources-prompts-interceptor.ts';
 import { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
 import { resolveCommandPath } from './transport/resolve-command.ts';
 import { interceptToolsListResponse } from './transport/scan-interceptor.ts';
@@ -183,8 +189,64 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
       const blocked = emitScannedToolCall(parsed.message, line, pending.toolName);
       if (blocked) return;
     }
+    if (method === 'resources/list') {
+      emitScannedResourcesList(parsed.message);
+      return;
+    }
+    if (method === 'resources/read') {
+      if (emitScannedResourceRead(parsed.message, line)) return;
+    }
+    if (method === 'prompts/list') {
+      emitScannedPromptsList(parsed.message);
+      return;
+    }
+    if (method === 'prompts/get') {
+      if (emitScannedPromptGet(parsed.message, line)) return;
+    }
     void logger.append({ method, verdict: 'pass' });
     agentStdout.write(`${line}\n`);
+  }
+
+  function emitScannedResourcesList(message: JsonRpcMessageRef): void {
+    const result = interceptResourcesListResponse(message);
+    for (const b of result.blocked) {
+      void logger.append({ method: 'resources/list', verdict: 'block', reason: b.reason });
+    }
+    agentStdout.write(`${JSON.stringify(result.outbound)}\n`);
+  }
+
+  function emitScannedResourceRead(message: JsonRpcMessageRef, rawFallback: string): boolean {
+    const result = interceptResourceReadResponse(message);
+    if (!result.blocked) {
+      void logger.append({ method: 'resources/read', verdict: 'pass' });
+      agentStdout.write(`${rawFallback}\n`);
+      return true;
+    }
+    const reason = result.reason ?? 'resource_poisoning_detected';
+    void logger.append({ method: 'resources/read', verdict: 'block', reason });
+    agentStdout.write(framingError(-32004, `tank: ${reason}`, message.id ?? null));
+    return true;
+  }
+
+  function emitScannedPromptsList(message: JsonRpcMessageRef): void {
+    const result = interceptPromptsListResponse(message);
+    for (const b of result.blocked) {
+      void logger.append({ method: 'prompts/list', verdict: 'block', reason: b.reason });
+    }
+    agentStdout.write(`${JSON.stringify(result.outbound)}\n`);
+  }
+
+  function emitScannedPromptGet(message: JsonRpcMessageRef, rawFallback: string): boolean {
+    const result = interceptPromptGetResponse(message);
+    if (!result.blocked) {
+      void logger.append({ method: 'prompts/get', verdict: 'pass' });
+      agentStdout.write(`${rawFallback}\n`);
+      return true;
+    }
+    const reason = result.reason ?? 'prompt_poisoning_detected';
+    void logger.append({ method: 'prompts/get', verdict: 'block', reason });
+    agentStdout.write(framingError(-32005, `tank: ${reason}`, message.id ?? null));
+    return true;
   }
 
   function emitScannedToolCall(message: JsonRpcMessageRef, rawFallback: string, toolName: string): boolean {

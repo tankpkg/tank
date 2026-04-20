@@ -17,7 +17,10 @@ export { injectCanary } from './scanner/canary-inject.ts';
 export type { CanaryLeak, CanarySessionOptions } from './scanner/canary-session.ts';
 export { CanarySession } from './scanner/canary-session.ts';
 export { canonicalizeSchema, hashSchema } from './scanner/canonicalize.ts';
+export type { CredentialLeakMatch, CredentialLeakResult } from './scanner/credential-leak.ts';
+export { scanForCredentialLeak } from './scanner/credential-leak.ts';
 export { computePinIdentity } from './scanner/pin-identity.ts';
+export { scanForPromptInjection } from './scanner/prompt-injection.ts';
 export { type PinFile, PinReadError, readPinFile, sweepStaleTemps, writePinFile } from './scanner/pin-io.ts';
 export type { Mismatch, PinOrCompareOptions, PinOrCompareResult, ToolSchema } from './scanner/rug-pull.ts';
 export { pinOrCompare, resetPins } from './scanner/rug-pull.ts';
@@ -29,3 +32,15 @@ export type { FramingResult, JsonRpcMessage } from './transport/message-router.t
 export { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
 export type { RemoteProxyEnvInput, RemoteProxyEnvResult } from './transport/remote-transport.ts';
 export { deriveAuthEnvVarFromUrl, validateRemoteProxyEnv } from './transport/remote-transport.ts';
+export type {
+  ListInterceptResult,
+  PromptGetInterceptResult,
+  ReadInterceptResult,
+  StrippedItem
+} from './transport/resources-prompts-interceptor.ts';
+export {
+  interceptPromptGetResponse,
+  interceptPromptsListResponse,
+  interceptResourceReadResponse,
+  interceptResourcesListResponse
+} from './transport/resources-prompts-interceptor.ts';
