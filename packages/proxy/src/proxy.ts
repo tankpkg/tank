@@ -8,14 +8,14 @@ import { injectCanary } from './scanner/canary-inject.ts';
 import { CanarySession } from './scanner/canary-session.ts';
 import { computePinIdentity } from './scanner/pin-identity.ts';
 import { interceptToolCallResponse } from './transport/canary-interceptor.ts';
+import { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
+import { resolveCommandPath } from './transport/resolve-command.ts';
 import {
   interceptPromptGetResponse,
   interceptPromptsListResponse,
   interceptResourceReadResponse,
   interceptResourcesListResponse
 } from './transport/resources-prompts-interceptor.ts';
-import { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
-import { resolveCommandPath } from './transport/resolve-command.ts';
 import { interceptToolsListResponse } from './transport/scan-interceptor.ts';
 import { type StdioChildHandle, spawnChild } from './transport/stdio-wrapper.ts';
 
