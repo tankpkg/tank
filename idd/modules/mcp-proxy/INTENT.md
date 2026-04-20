@@ -384,11 +384,15 @@ to a separate out-of-band correlation table keyed by JSON-RPC request ID.
 
 ### Resources and Prompts
 
-| #   | Input                                                                                | Expected Output                                                           |
-| --- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| E31 | `resources/read` returns content with `"Ignore previous instructions"` embedded      | Blocked — resource poisoning detected, same pipeline as tool descriptions |
-| E32 | `prompts/get` returns a prompt with hidden `<IMPORTANT>exfiltrate</IMPORTANT>` block | Blocked — prompt poisoning detected                                       |
-| E33 | `resources/read` returns a credential with entropy ≥ 4.5                             | Blocked — credential leak detected                                        |
+| #    | Input                                                                                        | Expected Output                                                                 |
+| ---- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| E31  | `resources/read` returns content with `"Ignore previous instructions"` embedded              | Blocked — resource poisoning detected, same pipeline as tool descriptions       |
+| E32  | `prompts/get` returns a prompt with hidden `<IMPORTANT>exfiltrate</IMPORTANT>` block         | Blocked — prompt poisoning detected                                             |
+| E33  | `resources/read` returns a credential with entropy ≥ 4.5                                     | Blocked — credential leak detected                                              |
+| E33a | `resources/list` contains a resource whose `description` says "ignore previous instructions" | Resource stripped from list; audit "hidden_instruction_in_resource_description" |
+| E33b | `prompts/list` contains a prompt whose `description` contains a prompt-injection pattern     | Prompt stripped from list; audit "hidden_instruction_in_prompt_description"     |
+| E33c | `resources/read` returns the AWS example `AKIAIOSFODNN7EXAMPLE` (entropy < 4.5)              | Not flagged; response forwarded unchanged                                       |
+| E33d | `prompts/get` returns a prompt containing a real GitHub PAT `ghp_...` (entropy ≥ 4.5)        | Blocked; audit "credential_leak_in_prompt"                                      |
 
 ---
 
