@@ -324,13 +324,20 @@ program
 program
   .command('proxy')
   .description('Transparent MCP proxy — wraps an MCP server with runtime enforcement')
-  .argument('[command]', 'Child MCP server command to wrap (omit when using --reset-pins or --remote)')
+  .argument(
+    '[command]',
+    'Child MCP server command to wrap (omit when using --reset-pins, --remote, or download-ml-model)'
+  )
   .allowUnknownOption(true)
   .allowExcessArguments(true)
   .option('--audit-path <path>', 'JSONL audit log path (default: ~/.tank/proxy/audit.jsonl)')
   .option('--reset-pins', 'Delete all rug-pull schema pins under ~/.tank/proxy/pins/ and continue')
   .option('--remote <url>', 'Connect to a remote MCP server over SSE/HTTP instead of spawning a child')
   .option('--requires-auth', 'Require TANK_MCP_AUTH_<SLUG> env var before connecting to the remote')
+  .option(
+    '--enable-ml',
+    'Enable the opt-in ML-based prompt-injection classifier (requires ~500MB model; run `tank proxy download-ml-model` first)'
+  )
   .option('--verbose', 'Print proxy diagnostic details to stderr')
   .action(
     async (
@@ -341,10 +348,18 @@ program
         verbose?: boolean;
         remote?: string;
         requiresAuth?: boolean;
+        enableMl?: boolean;
       },
       cmd: Command
     ) => {
       try {
+        if (command === 'download-ml-model') {
+          const { proxyDownloadMlCommand } = await import('~/commands/proxy-download-ml.js');
+          const downloadOpts: Parameters<typeof proxyDownloadMlCommand>[0] = {};
+          if (process.argv.includes('--yes') || process.argv.includes('-y')) downloadOpts.yes = true;
+          await proxyDownloadMlCommand(downloadOpts);
+          return;
+        }
         if (opts.resetPins) {
           const { proxyResetPinsCommand } = await import('~/commands/proxy-reset-pins.js');
           proxyResetPinsCommand();
@@ -362,6 +377,7 @@ program
         const proxyOpts: Parameters<typeof proxyCommand>[0] = { command, args };
         if (opts.auditPath !== undefined) proxyOpts.auditPath = opts.auditPath;
         if (opts.verbose !== undefined) proxyOpts.verbose = opts.verbose;
+        if (opts.enableMl === true) proxyOpts.enableMl = true;
         await proxyCommand(proxyOpts);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

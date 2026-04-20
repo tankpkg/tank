@@ -4,6 +4,7 @@ import { isPathAllowedWithRealpath } from '@internals/helpers';
 import { type AuditLogger, createAuditLogger } from './audit/logger.ts';
 import { type EnforcementBudget, loadEnforcementBudget } from './enforcer/manifest-loader.ts';
 import { evaluatePermissionGate } from './enforcer/permission-gate.ts';
+import { type ClassifierHandle, loadClassifier } from './ml/classifier.ts';
 import { injectCanary } from './scanner/canary-inject.ts';
 import { CanarySession } from './scanner/canary-session.ts';
 import { hashSchema } from './scanner/canonicalize.ts';
@@ -35,11 +36,14 @@ export interface ProxyOptions {
   manifestCwd?: string;
   permissionBudget?: EnforcementBudget | null;
   registryPath?: string;
+  enableMl?: boolean;
+  modelsDir?: string;
 }
 
 export interface ProxyHandle {
   exitCode: Promise<number>;
   kill(signal?: NodeJS.Signals): void;
+  classifier: ClassifierHandle | null;
 }
 
 const DEFAULT_AUDIT_PATH = join(homedir(), '.tank', 'proxy', 'audit.jsonl');
@@ -85,6 +89,18 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   const serverIdentity = packageHash;
   const shadowedTools = new Set<string>();
   let pendingShadowScan: Promise<void> = Promise.resolve();
+  const classifier: ClassifierHandle | null = (() => {
+    if (options.enableMl !== true) return null;
+    try {
+      const loadOpts: Parameters<typeof loadClassifier>[0] = { enableMl: true };
+      if (options.modelsDir !== undefined) loadOpts.modelsDir = options.modelsDir;
+      return loadClassifier(loadOpts);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`tank proxy: ${msg}\n`);
+      throw err;
+    }
+  })();
 
   let exitResolve: (code: number) => void = () => {};
   const exitCode = new Promise<number>((resolve) => {
@@ -386,6 +402,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
 
   return {
     exitCode,
+    classifier,
     kill(signal = 'SIGTERM') {
       child.kill(signal);
     }

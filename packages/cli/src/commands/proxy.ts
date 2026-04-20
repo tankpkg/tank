@@ -5,6 +5,7 @@ export interface ProxyCommandOptions {
   args: string[];
   auditPath?: string;
   verbose?: boolean;
+  enableMl?: boolean;
 }
 
 interface ProxyHandleLike {
@@ -16,6 +17,7 @@ interface StartProxyOptions {
   command: string;
   args: string[];
   auditPath?: string;
+  enableMl?: boolean;
 }
 
 type StartProxyFn = (opts: StartProxyOptions) => Promise<ProxyHandleLike>;
@@ -39,6 +41,7 @@ export async function proxyCommand(options: ProxyCommandOptions): Promise<void> 
     args: options.args
   };
   if (options.auditPath !== undefined) startOptions.auditPath = options.auditPath;
+  if (options.enableMl === true) startOptions.enableMl = true;
 
   const handle = await startProxy(startOptions);
 
