@@ -10,7 +10,7 @@ import { hashSchema } from './scanner/canonicalize.ts';
 import { computePinIdentity } from './scanner/pin-identity.ts';
 import { withRegistryLock } from './scanner/registry-lock.ts';
 import { detectShadowing, type ShadowFinding, type ToolShape } from './scanner/shadow-detector.ts';
-import { appendRegistryEntry, readActiveRegistry, type RegistryEntry } from './scanner/shadow-registry.ts';
+import { appendRegistryEntry, type RegistryEntry, readActiveRegistry } from './scanner/shadow-registry.ts';
 import { interceptToolCallResponse } from './transport/canary-interceptor.ts';
 import { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
 import { resolveCommandPath } from './transport/resolve-command.ts';

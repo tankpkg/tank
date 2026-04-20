@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   appendRegistryEntry,
   compactRegistry,
-  readActiveRegistry,
-  type RegistryEntry
+  type RegistryEntry,
+  readActiveRegistry
 } from '~/scanner/shadow-registry.js';
 
 let dir: string;
