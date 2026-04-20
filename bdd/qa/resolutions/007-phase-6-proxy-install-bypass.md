@@ -104,12 +104,12 @@ the same spread pattern used for `installCommand` / `installAll`.
       locked skill with `mcp_server` (@C42 @E30b)
 - [x] `tank proxy --remote <url> --requires-auth` with env var missing
       exits 2, stderr contains `tank proxy: required auth env var
-    TANK_MCP_AUTH_<SLUG> not set` (@C48 @E30c)
+  TANK_MCP_AUTH_<SLUG> not set` (@C48 @E30c)
 - [x] `tank proxy --remote <url> --requires-auth` with env var set exits
       0, stderr explains remote transport is Phase 7, secret never
       appears in stdout or stderr (@C47 @E30d)
 - [x] Agent config command+args actually form a valid `tank proxy --
-    <child>` invocation (@C42 @cross-phase)
+  <child>` invocation (@C42 @cross-phase)
 - [x] All 59 mcp-proxy BDD scenarios green (14 P2 + 13 P3 + 6 P4 + 6 P5 + 14 P6 library + 6 P6 E2E)
 - [x] 270 proxy unit tests green
 - [x] 480 CLI unit tests green
