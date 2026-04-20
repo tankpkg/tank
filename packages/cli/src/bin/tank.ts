@@ -165,21 +165,36 @@ program
   .argument('[version-range]', 'Semver range (default: *)', '*')
   .option('-g, --global', 'Install skill globally (available to all projects)')
   .option('-y, --yes', 'Auto-accept flagged scan verdicts')
-  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean; yes?: boolean }) => {
-    try {
-      if (name && isUrl(name)) {
-        await installFromUrl(name, { global: opts.global, yes: opts.yes });
-      } else if (name) {
-        await installCommand({ name, versionRange, global: opts.global });
-      } else {
-        await installAll({ global: opts.global });
+  .option('--dangerously-no-tank-proxy', 'Skip wrapping MCP servers with the tank proxy (no scanning, no enforcement)')
+  .action(
+    async (
+      name: string | undefined,
+      versionRange: string,
+      opts: { global?: boolean; yes?: boolean; dangerouslyNoTankProxy?: boolean }
+    ) => {
+      try {
+        if (name && isUrl(name)) {
+          await installFromUrl(name, { global: opts.global, yes: opts.yes });
+        } else if (name) {
+          await installCommand({
+            name,
+            versionRange,
+            global: opts.global,
+            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+          });
+        } else {
+          await installAll({
+            global: opts.global,
+            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+          });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Install failed: ${msg}`);
+        process.exit(1);
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Install failed: ${msg}`);
-      process.exit(1);
     }
-  });
+  );
 
 program
   .command('remove')

@@ -17,6 +17,7 @@ import {
 import ora from 'ora';
 
 import { detectInstalledAgents, getGlobalAgentSkillsDir, getGlobalSkillsDir } from '~/lib/agents.js';
+import { applyProxyWrapping } from '~/lib/apply-proxy-wrapping.js';
 import { getConfig } from '~/lib/config.js';
 import {
   buildSkillKey,
@@ -55,6 +56,7 @@ export interface InstallOptions {
   global?: boolean;
   homedir?: string;
   isTransitive?: boolean;
+  dangerouslyNoTankProxy?: boolean;
 }
 
 export interface LockfileInstallOptions {
@@ -62,6 +64,7 @@ export interface LockfileInstallOptions {
   configDir?: string;
   global?: boolean;
   homedir?: string;
+  dangerouslyNoTankProxy?: boolean;
 }
 
 export interface InstallAllOptions {
@@ -69,6 +72,7 @@ export interface InstallAllOptions {
   configDir?: string;
   global?: boolean;
   homedir?: string;
+  dangerouslyNoTankProxy?: boolean;
 }
 
 interface VersionMetadata {
@@ -97,6 +101,7 @@ interface ExecuteInstallPipelineOptions {
   projectPermissions?: Permissions;
   auditMinScore?: number;
   spinner: ReturnType<typeof ora>;
+  dangerouslyNoTankProxy?: boolean;
 }
 
 function createRegistryFetcher(registry: string, headers: Record<string, string>): RegistryFetcher {
@@ -294,6 +299,32 @@ function installToolDependencies(extractDir: string, skillName: string): void {
   }
 }
 
+function wrapMcpServerForSkill(options: {
+  skillName: string;
+  extractDir: string;
+  homedir?: string;
+  dangerouslyNoTankProxy?: boolean;
+}): void {
+  try {
+    const agents = detectInstalledAgents(options.homedir);
+    if (agents.length === 0) return;
+    const result = applyProxyWrapping({
+      skillName: options.skillName,
+      skillDir: options.extractDir,
+      agentIds: agents.map((a) => a.id),
+      ...(options.homedir !== undefined ? { homedir: options.homedir } : {}),
+      ...(options.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+    });
+    if (result.wrapped.length > 0) {
+      const mode = options.dangerouslyNoTankProxy ? 'registered (proxy disabled)' : 'proxy-wrapped';
+      logger.info(`${options.skillName}: ${mode} in ${result.wrapped.length} agent config(s)`);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn(`MCP proxy wrapping skipped for ${options.skillName}: ${msg}`);
+  }
+}
+
 async function linkInstalledRoots(options: {
   rootSkillNames: string[];
   resolvedNodeByName: Map<string, ResolvedNode>;
@@ -302,8 +333,18 @@ async function linkInstalledRoots(options: {
   global: boolean;
   resolvedHome: string;
   homedir?: string;
+  dangerouslyNoTankProxy?: boolean;
 }): Promise<void> {
-  const { rootSkillNames, resolvedNodeByName, extractDirForSkill, directory, global, resolvedHome, homedir } = options;
+  const {
+    rootSkillNames,
+    resolvedNodeByName,
+    extractDirForSkill,
+    directory,
+    global,
+    resolvedHome,
+    homedir,
+    dangerouslyNoTankProxy
+  } = options;
 
   const agentSkillsBaseDir = global
     ? getGlobalAgentSkillsDir(resolvedHome)
@@ -339,6 +380,13 @@ async function linkInstalledRoots(options: {
           logger.warn(`Failed to link to ${failedLink.agentId}: ${failedLink.error}`);
         }
       }
+
+      wrapMcpServerForSkill({
+        skillName,
+        extractDir: extractDirForSkill(skillName),
+        homedir,
+        dangerouslyNoTankProxy
+      });
     } catch {
       if (rootSkillNames.length === 1) {
         logger.warn('Agent linking skipped (non-fatal)');
@@ -446,7 +494,8 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
     directory,
     global,
     resolvedHome,
-    homedir
+    homedir,
+    ...(options.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
   });
 
   return updatedLock;
@@ -460,7 +509,8 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     configDir,
     global = false,
     homedir,
-    isTransitive = false
+    isTransitive = false,
+    dangerouslyNoTankProxy
   } = options;
 
   const config = getConfig(configDir);
@@ -543,7 +593,8 @@ export async function installCommand(options: InstallOptions): Promise<void> {
       rootSkillNames: [name],
       projectPermissions,
       auditMinScore,
-      spinner
+      spinner,
+      ...(dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
     });
 
     if (!global && !isTransitive) {
@@ -685,7 +736,7 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
 }
 
 export async function installAll(options: InstallAllOptions): Promise<void> {
-  const { directory = process.cwd(), configDir, global = false, homedir } = options;
+  const { directory = process.cwd(), configDir, global = false, homedir, dangerouslyNoTankProxy } = options;
   const resolvedHome = homedir ?? os.homedir();
   const config = getConfig(configDir);
   const requestHeaders: Record<string, string> = { 'User-Agent': USER_AGENT };
@@ -755,7 +806,8 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
       rootSkillNames: skillEntries.map(([skillName]) => skillName),
       projectPermissions,
       auditMinScore,
-      spinner
+      spinner,
+      ...(dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
     });
 
     spinner.succeed(`Installed ${skillEntries.length} root skill${skillEntries.length === 1 ? '' : 's'}`);
