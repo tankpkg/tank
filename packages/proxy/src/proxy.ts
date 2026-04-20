@@ -82,6 +82,19 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     throw new Error(`proxy: command path not allowed: ${options.command}`);
   }
 
+  let classifier: ClassifierHandle | null = null;
+  if (options.enableMl === true) {
+    try {
+      const loadOpts: Parameters<typeof loadClassifier>[0] = { enableMl: true };
+      if (options.modelsDir !== undefined) loadOpts.modelsDir = options.modelsDir;
+      classifier = loadClassifier(loadOpts);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`tank proxy: ${msg}\n`);
+      throw err;
+    }
+  }
+
   const child: StdioChildHandle = spawnChild(resolvedCommand, options.args);
   const pendingRequests = new Map<string | number, { method: string; toolName?: string }>();
   const canarySession = new CanarySession();
@@ -89,18 +102,6 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   const serverIdentity = packageHash;
   const shadowedTools = new Set<string>();
   let pendingShadowScan: Promise<void> = Promise.resolve();
-  const classifier: ClassifierHandle | null = (() => {
-    if (options.enableMl !== true) return null;
-    try {
-      const loadOpts: Parameters<typeof loadClassifier>[0] = { enableMl: true };
-      if (options.modelsDir !== undefined) loadOpts.modelsDir = options.modelsDir;
-      return loadClassifier(loadOpts);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      process.stderr.write(`tank proxy: ${msg}\n`);
-      throw err;
-    }
-  })();
 
   let exitResolve: (code: number) => void = () => {};
   const exitCode = new Promise<number>((resolve) => {
