@@ -12,6 +12,10 @@ export interface AuditEntry {
   verdict: 'pass' | 'block';
   reason?: string;
   source_tool?: string;
+  offending_server?: string;
+  offending_tool_name?: string;
+  shadowed_server?: string;
+  shadowed_tool_name?: string;
   prev_hash: string | null;
 }
 

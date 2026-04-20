@@ -6,7 +6,11 @@ import { type EnforcementBudget, loadEnforcementBudget } from './enforcer/manife
 import { evaluatePermissionGate } from './enforcer/permission-gate.ts';
 import { injectCanary } from './scanner/canary-inject.ts';
 import { CanarySession } from './scanner/canary-session.ts';
+import { hashSchema } from './scanner/canonicalize.ts';
 import { computePinIdentity } from './scanner/pin-identity.ts';
+import { withRegistryLock } from './scanner/registry-lock.ts';
+import { detectShadowing, type ShadowFinding, type ToolShape } from './scanner/shadow-detector.ts';
+import { appendRegistryEntry, readActiveRegistry, type RegistryEntry } from './scanner/shadow-registry.ts';
 import { interceptToolCallResponse } from './transport/canary-interceptor.ts';
 import { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
 import { resolveCommandPath } from './transport/resolve-command.ts';
@@ -30,6 +34,7 @@ export interface ProxyOptions {
   blockOnMatch?: boolean;
   manifestCwd?: string;
   permissionBudget?: EnforcementBudget | null;
+  registryPath?: string;
 }
 
 export interface ProxyHandle {
@@ -39,6 +44,7 @@ export interface ProxyHandle {
 
 const DEFAULT_AUDIT_PATH = join(homedir(), '.tank', 'proxy', 'audit.jsonl');
 const DEFAULT_PINS_DIR = join(homedir(), '.tank', 'proxy', 'pins');
+const DEFAULT_REGISTRY_PATH = join(homedir(), '.tank', 'proxy', 'registry.jsonl');
 
 function resolveBudget(options: ProxyOptions): EnforcementBudget | null {
   if (options.permissionBudget !== undefined) return options.permissionBudget;
@@ -75,6 +81,10 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   const child: StdioChildHandle = spawnChild(resolvedCommand, options.args);
   const pendingRequests = new Map<string | number, { method: string; toolName?: string }>();
   const canarySession = new CanarySession();
+  const registryPath = options.registryPath ?? DEFAULT_REGISTRY_PATH;
+  const serverIdentity = packageHash;
+  const shadowedTools = new Set<string>();
+  let pendingShadowScan: Promise<void> = Promise.resolve();
 
   let exitResolve: (code: number) => void = () => {};
   const exitCode = new Promise<number>((resolve) => {
@@ -120,6 +130,17 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     }
     const method = parsed.message.method ?? 'unknown';
     const toolName = extractToolName(parsed.message);
+    if (method === 'tools/call') await pendingShadowScan;
+    if (method === 'tools/call' && toolName !== undefined && shadowedTools.has(toolName)) {
+      void logger.append({
+        method: 'tools/call',
+        verdict: 'block',
+        tool_name: toolName,
+        reason: 'shadowed_tool_blocked'
+      });
+      agentStdout.write(framingError(-32000, `tank: shadowed_tool_blocked (${toolName})`, parsed.message.id ?? null));
+      return;
+    }
     if (method === 'tools/call' && toolName !== undefined) {
       const blocked = await enforceToolCallPermissions(parsed.message, toolName);
       if (blocked) return;
@@ -182,7 +203,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     if (id !== undefined && id !== null) pendingRequests.delete(id);
     const method = pending?.method ?? parsed.message.method ?? 'response';
     if (method === 'tools/list') {
-      emitScannedToolsList(parsed.message, line);
+      pendingShadowScan = emitScannedToolsList(parsed.message, line).catch(() => undefined);
       return;
     }
     if (method === 'tools/call' && pending?.toolName !== undefined) {
@@ -268,7 +289,7 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     return true;
   }
 
-  function emitScannedToolsList(message: JsonRpcMessageRef, rawFallback: string): void {
+  async function emitScannedToolsList(message: JsonRpcMessageRef, rawFallback: string): Promise<void> {
     let result: ReturnType<typeof interceptToolsListResponse>;
     try {
       result = interceptToolsListResponse('tools/list', message, {
@@ -291,12 +312,76 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
       agentStdout.write(errorFrame);
       return;
     }
-    if (result.blockedTools.length === 0) {
+
+    const toolsAfterPhase2 = extractToolsFromResult(result.outbound.result);
+    const shadowResult = await scanForShadowing(toolsAfterPhase2, message);
+
+    const finalTools = toolsAfterPhase2.filter((t) => !shadowResult.shadowedNames.has(t.name));
+    const finalMessage =
+      shadowResult.shadowedNames.size > 0
+        ? { ...result.outbound, result: { ...(result.outbound.result as object), tools: finalTools } }
+        : result.outbound;
+
+    const emittedBlock = result.blockedTools.length > 0 || shadowResult.shadowedNames.size > 0;
+    if (!emittedBlock) {
       void logger.append({ method: 'tools/list', verdict: 'pass' });
       agentStdout.write(`${rawFallback}\n`);
       return;
     }
-    agentStdout.write(`${JSON.stringify(result.outbound)}\n`);
+    agentStdout.write(`${JSON.stringify(finalMessage)}\n`);
+  }
+
+  async function scanForShadowing(
+    tools: ToolShape[],
+    _message: JsonRpcMessageRef
+  ): Promise<{ shadowedNames: Set<string> }> {
+    if (tools.length === 0) return { shadowedNames: new Set() };
+    const shadowedNames = new Set<string>();
+    try {
+      await withRegistryLock(registryPath, async () => {
+        const registryBefore = readActiveRegistry(registryPath);
+        const findings = detectShadowing({
+          currentServer: serverIdentity,
+          tools,
+          registry: registryBefore
+        });
+        for (const f of findings) shadowedNames.add(f.offending_tool_name);
+        for (const f of findings) void emitShadowAudit(f);
+        const now = new Date().toISOString();
+        for (const tool of tools) {
+          if (shadowedNames.has(tool.name)) continue;
+          const entry: RegistryEntry = {
+            server: serverIdentity,
+            tool_name: tool.name,
+            description: tool.description,
+            schema_hash: hashSchema(tool),
+            last_observed: now
+          };
+          await appendRegistryEntry(registryPath, entry);
+        }
+      });
+    } catch (err) {
+      void logger.append({
+        method: 'tools/list',
+        verdict: 'pass',
+        reason: `shadow_scan_skipped:${err instanceof Error ? err.message : String(err)}`
+      });
+    }
+    for (const name of shadowedNames) shadowedTools.add(name);
+    return { shadowedNames };
+  }
+
+  function emitShadowAudit(f: ShadowFinding): Promise<void> {
+    return logger.append({
+      method: 'tools/list',
+      verdict: 'block',
+      tool_name: f.offending_tool_name,
+      reason: f.reason,
+      offending_server: f.offending_server,
+      offending_tool_name: f.offending_tool_name,
+      shadowed_server: f.shadowed_server,
+      shadowed_tool_name: f.shadowed_tool_name
+    });
   }
 
   return {
@@ -308,6 +393,21 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
 }
 
 type JsonRpcMessageRef = Parameters<typeof interceptToolsListResponse>[1];
+
+function extractToolsFromResult(result: unknown): ToolShape[] {
+  if (result === null || typeof result !== 'object') return [];
+  const tools = (result as { tools?: unknown }).tools;
+  if (!Array.isArray(tools)) return [];
+  const out: ToolShape[] = [];
+  for (const item of tools) {
+    if (item === null || typeof item !== 'object') continue;
+    const name = (item as { name?: unknown }).name;
+    const description = (item as { description?: unknown }).description;
+    if (typeof name !== 'string') continue;
+    out.push({ name, description: typeof description === 'string' ? description : '' });
+  }
+  return out;
+}
 
 function extractToolName(msg: { method?: string; params?: unknown }): string | undefined {
   if (msg.method !== 'tools/call') return undefined;
