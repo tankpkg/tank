@@ -24,7 +24,12 @@ export interface CreateSkillBotParams {
 
 export interface CreateSkillBotResult {
   botId: string;
-  secret: string;
+  /**
+   * Remote Tools secret. Only issued by prompt2bot when the bot is
+   * configured with custom tools that call back into our API. `null`
+   * for plain chat bots (our current usage).
+   */
+  secret: string | null;
   chatLink: string;
   botPublicKey: string | null;
 }
@@ -93,15 +98,20 @@ export async function createSkillBot(params: CreateSkillBotParams): Promise<Crea
       error?: string;
     };
 
-    if (!data.success || !data.botId || !data.secret || !data.chatLink) {
+    // Required fields: botId + chatLink. `secret` is only issued for bots
+    // with custom tools; we don't request any, so it is expected to be absent.
+    if (!data.success || !data.botId || !data.chatLink) {
+      const missing = [!data.success && 'success=false', !data.botId && 'botId', !data.chatLink && 'chatLink']
+        .filter(Boolean)
+        .join(',');
       // biome-ignore lint/suspicious/noConsole: intentional — server-side diagnostic for bot creation failures
-      console.error(`[prompt2bot] create-bot-api returned error:`, data.error ?? 'unknown');
+      console.error(`[prompt2bot] create-bot-api rejected: ${data.error ?? `missing=${missing}`}`);
       return null;
     }
 
     return {
       botId: data.botId,
-      secret: data.secret,
+      secret: data.secret ?? null,
       chatLink: data.chatLink,
       botPublicKey: data.aliceAndBotPublicId ?? null
     };
