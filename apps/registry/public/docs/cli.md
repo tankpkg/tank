@@ -115,10 +115,11 @@ tank install [name] [version-range]
 
 ### Options
 
-| Flag           | Description                                        |
-| -------------- | -------------------------------------------------- |
-| `-g, --global` | Install skill globally (available to all projects) |
-| `-y, --yes`    | Auto-accept flagged scan verdicts                  |
+| Flag                          | Description                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| `-g, --global`                | Install skill globally (available to all projects)                          |
+| `-y, --yes`                   | Auto-accept flagged scan verdicts                                           |
+| `--dangerously-no-tank-proxy` | Skip wrapping MCP servers with the tank proxy (no scanning, no enforcement) |
 
 ## tank remove
 
@@ -258,17 +259,19 @@ tank proxy [command]
 
 ### Arguments
 
-| Name      | Description                                                          | Required |
-| --------- | -------------------------------------------------------------------- | -------- |
-| `command` | Child MCP server command to wrap (omit when using --reset-pins only) | No       |
+| Name      | Description                                                                 | Required |
+| --------- | --------------------------------------------------------------------------- | -------- |
+| `command` | Child MCP server command to wrap (omit when using --reset-pins or --remote) | No       |
 
 ### Options
 
-| Flag                  | Description                                                            |
-| --------------------- | ---------------------------------------------------------------------- |
-| `--audit-path <path>` | JSONL audit log path (default: ~/.tank/proxy/audit.jsonl)              |
-| `--reset-pins`        | Delete all rug-pull schema pins under ~/.tank/proxy/pins/ and continue |
-| `--verbose`           | Print proxy diagnostic details to stderr                               |
+| Flag                  | Description                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| `--audit-path <path>` | JSONL audit log path (default: ~/.tank/proxy/audit.jsonl)                |
+| `--reset-pins`        | Delete all rug-pull schema pins under ~/.tank/proxy/pins/ and continue   |
+| `--remote <url>`      | Connect to a remote MCP server over SSE/HTTP instead of spawning a child |
+| `--requires-auth`     | Require TANK*MCP_AUTH*<SLUG> env var before connecting to the remote     |
+| `--verbose`           | Print proxy diagnostic details to stderr                                 |
 
 ## tank scan
 

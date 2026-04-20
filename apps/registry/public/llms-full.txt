@@ -1710,7 +1710,10 @@ tank init
 | `--private` | Make skill private |
 | `--force` | Overwrite existing tank.json |
 
+
 ## tank build <skill>
+
+
 
 ```bash
 tank build <skill>
@@ -1725,6 +1728,7 @@ tank build <skill>
 | `--dry-run` | Preview files without writing |
 | `--list-platforms` | List available platforms and exit |
 
+
 ## tank login
 
 Authenticate with the Tank registry via browser
@@ -1732,6 +1736,7 @@ Authenticate with the Tank registry via browser
 ```bash
 tank login
 ```
+
 
 ## tank whoami
 
@@ -1741,6 +1746,7 @@ Show the currently logged-in user
 tank whoami
 ```
 
+
 ## tank logout
 
 Remove authentication token from config
@@ -1748,6 +1754,7 @@ Remove authentication token from config
 ```bash
 tank logout
 ```
+
 
 ## tank publish
 
@@ -1762,10 +1769,11 @@ tank publish
 ### Options
 
 | Flag | Description |
-|---|---|---|
+|---|---|
 | `--dry-run` | Validate and pack without uploading |
 | `--private` | Publish skill as private |
 | `--visibility <mode>` | Skill visibility (public | private) |
+
 
 ## tank install
 
@@ -1782,7 +1790,7 @@ tank install [name] [version-range]
 | Name | Description | Required |
 |---|---|---|
 | `name` | Skill name or URL (e.g., @org/skill-name or https://github.com/owner/repo). Omit to install from lockfile. | No |
-| `version-range` | Semver range (default: \*) | No |
+| `version-range` | Semver range (default: *) | No |
 
 ### Options
 
@@ -1790,6 +1798,8 @@ tank install [name] [version-range]
 |---|---|
 | `-g, --global` | Install skill globally (available to all projects) |
 | `-y, --yes` | Auto-accept flagged scan verdicts |
+| `--dangerously-no-tank-proxy` | Skip wrapping MCP servers with the tank proxy (no scanning, no enforcement) |
+
 
 ## tank remove
 
@@ -1813,6 +1823,7 @@ tank remove <name>
 |---|---|
 | `-g, --global` | Remove a globally installed skill |
 
+
 ## tank update
 
 Update skills to latest versions within their ranges
@@ -1835,6 +1846,7 @@ tank update [name]
 |---|---|
 | `-g, --global` | Update globally installed skills |
 
+
 ## tank verify
 
 Verify installed skills match the lockfile
@@ -1842,6 +1854,7 @@ Verify installed skills match the lockfile
 ```bash
 tank verify
 ```
+
 
 ## tank permissions
 
@@ -1852,6 +1865,7 @@ Display resolved permission summary for installed skills
 ```bash
 tank permissions
 ```
+
 
 ## tank search
 
@@ -1869,6 +1883,7 @@ tank search <query>
 |---|---|---|
 | `query` | Search query | Yes |
 
+
 ## tank info
 
 Show detailed information about a skill
@@ -1885,6 +1900,7 @@ tank info <name>
 |---|---|---|
 | `name` | Skill name (e.g., @org/skill-name) | Yes |
 
+
 ## tank audit
 
 Display security audit results for installed skills
@@ -1898,6 +1914,7 @@ tank audit [name]
 | Name | Description | Required |
 |---|---|---|
 | `name` | Skill name to audit (omit to audit all) | No |
+
 
 ## tank run
 
@@ -1919,6 +1936,7 @@ tank run <agent>
 |---|---|
 | `--verbose` | Print verbose vault proxy details |
 
+
 ## tank proxy
 
 Transparent MCP proxy — wraps an MCP server with runtime enforcement
@@ -1931,7 +1949,7 @@ tank proxy [command]
 
 | Name | Description | Required |
 |---|---|---|
-| `command` | Child MCP server command to wrap (omit when using --reset-pins only) | No |
+| `command` | Child MCP server command to wrap (omit when using --reset-pins or --remote) | No |
 
 ### Options
 
@@ -1939,7 +1957,10 @@ tank proxy [command]
 |---|---|
 | `--audit-path <path>` | JSONL audit log path (default: ~/.tank/proxy/audit.jsonl) |
 | `--reset-pins` | Delete all rug-pull schema pins under ~/.tank/proxy/pins/ and continue |
+| `--remote <url>` | Connect to a remote MCP server over SSE/HTTP instead of spawning a child |
+| `--requires-auth` | Require TANK_MCP_AUTH_<SLUG> env var before connecting to the remote |
 | `--verbose` | Print proxy diagnostic details to stderr |
+
 
 ## tank scan
 
@@ -1955,6 +1976,7 @@ tank scan
 |---|---|
 | `-d, --directory <path>` | Directory to scan (default: current directory) |
 
+
 ## tank link
 
 Link current skill directory to AI agent directories (for development)
@@ -1965,6 +1987,7 @@ Link current skill directory to AI agent directories (for development)
 tank link
 ```
 
+
 ## tank unlink
 
 Remove skill symlinks from AI agent directories
@@ -1972,6 +1995,7 @@ Remove skill symlinks from AI agent directories
 ```bash
 tank unlink
 ```
+
 
 ## tank doctor
 
@@ -1981,6 +2005,7 @@ Diagnose agent integration health
 tank doctor
 ```
 
+
 ## tank migrate
 
 Migrate skills.json → tank.json and skills.lock → tank.lock
@@ -1988,6 +2013,7 @@ Migrate skills.json → tank.json and skills.lock → tank.lock
 ```bash
 tank migrate
 ```
+
 
 ## tank upgrade
 
@@ -2009,6 +2035,7 @@ tank upgrade [version]
 |---|---|
 | `--dry-run` | Check for updates without installing |
 | `--force` | Reinstall even if already on the target version |
+
 
 ## Quick Reference
 
