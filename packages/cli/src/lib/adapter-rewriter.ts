@@ -1,4 +1,4 @@
-import { type McpServer, type McpServerRemote, isRemoteMcpServer } from '@internals/schemas';
+import { isRemoteMcpServer, type McpServer, type McpServerRemote } from '@internals/schemas';
 
 export interface RewrittenMcpEntry {
   command: string;
