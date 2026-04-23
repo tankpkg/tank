@@ -58,11 +58,21 @@ function resolveBudget(options: ProxyOptions): EnforcementBudget | null {
 
 function defaultAllowlist(): string[] {
   const pathDirs = (process.env.PATH ?? '').split(delimiter).filter(Boolean);
-  return [
-    ...pathDirs.map((d) => `${d}/**`),
-    `${join(homedir(), '.tank')}/**`,
-    `${join(process.cwd(), 'node_modules', '.bin')}/**`
-  ];
+  const allowed: string[] = [];
+  for (const dir of pathDirs) {
+    allowed.push(`${dir}/**`);
+    if (dir.endsWith('/bin')) {
+      const prefix = dir.slice(0, -4);
+      allowed.push(`${prefix}/lib/**`);
+      allowed.push(`${prefix}/libexec/**`);
+    }
+  }
+  allowed.push(`${join(homedir(), '.tank')}/**`);
+  allowed.push(`${join(process.cwd(), 'node_modules', '.bin')}/**`);
+  allowed.push(`${join(homedir(), '.nvm')}/**`);
+  allowed.push(`/opt/homebrew/**`);
+  allowed.push(`/usr/local/Cellar/**`);
+  return allowed;
 }
 
 export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
