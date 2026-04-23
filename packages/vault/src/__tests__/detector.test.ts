@@ -21,51 +21,51 @@ describe('detector', () => {
     it('detects Stripe secret key', () => {
       const matches = scan('Use this key: sk_live_4eC39HqLyjWDarjtT1zdp7dc');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('stripe_secret');
-      expect(matches[0]!.start).toBe(15);
-      expect(matches[0]!.end).toBe(47);
+      expect(matches[0]?.patternId).toBe('stripe_secret');
+      expect(matches[0]?.start).toBe(15);
+      expect(matches[0]?.end).toBe(47);
     });
 
     it('detects Stripe test key', () => {
       const matches = scan('Test key: sk_test_51OeR2LjTyQwGUvn');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('stripe_secret');
+      expect(matches[0]?.patternId).toBe('stripe_secret');
     });
 
     it('detects Stripe publishable key', () => {
       const matches = scan('pk_live_TYooMQauvdEDq54NiTphI7jx');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('stripe_publishable');
+      expect(matches[0]?.patternId).toBe('stripe_publishable');
     });
 
     it('detects AWS access key', () => {
       const matches = scan('My key is AKIAIOSFODNN7EXAMPLE');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('aws_access_key');
+      expect(matches[0]?.patternId).toBe('aws_access_key');
     });
 
     it('detects GitHub personal access token', () => {
       const matches = scan('Token: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef1234');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('github_pat');
+      expect(matches[0]?.patternId).toBe('github_pat');
     });
 
     it('detects GitHub OAuth token', () => {
       const matches = scan('gho_16C7e42F292c6912E7710c838347Ae178B4a');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('github_oauth');
+      expect(matches[0]?.patternId).toBe('github_oauth');
     });
 
     it('detects OpenAI API key', () => {
       const matches = scan('sk-proj-abc123def456ghi789jkl012mno345pqr678');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('openai_key');
+      expect(matches[0]?.patternId).toBe('openai_key');
     });
 
     it('detects ElevenLabs API key', () => {
       const matches = scan('elvn_a1b2c3d4e5f6g7h8i9j0k1l2m3n4');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('elevenlabs_key');
+      expect(matches[0]?.patternId).toBe('elevenlabs_key');
     });
 
     it('detects JWT token', () => {
@@ -73,19 +73,19 @@ describe('detector', () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U'
       );
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('jwt_token');
+      expect(matches[0]?.patternId).toBe('jwt_token');
     });
 
     it('detects database connection string', () => {
       const matches = scan('postgresql://admin:s3cretP@ss@db.example.com:5432/mydb');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('database_url');
+      expect(matches[0]?.patternId).toBe('database_url');
     });
 
     it('detects Slack webhook URL', () => {
       const matches = scan('https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('slack_webhook');
+      expect(matches[0]?.patternId).toBe('slack_webhook');
     });
   });
 
@@ -111,14 +111,14 @@ describe('detector', () => {
     it('detects multiple credentials in the same text', () => {
       const matches = scan('Two keys: sk_live_abc123def456ghi789 and elvn_xyz789uvw456rst123opq');
       expect(matches).toHaveLength(2);
-      expect(matches[0]!.patternId).toBe('stripe_secret');
-      expect(matches[1]!.patternId).toBe('elevenlabs_key');
+      expect(matches[0]?.patternId).toBe('stripe_secret');
+      expect(matches[1]?.patternId).toBe('elevenlabs_key');
     });
 
     it('detects two identical credentials at different positions', () => {
       const matches = scan('First: sk_live_4eC39HqLyjWDarjtT1zdp7dc and again: sk_live_4eC39HqLyjWDarjtT1zdp7dc');
       expect(matches).toHaveLength(2);
-      expect(matches[0]!.start).not.toBe(matches[1]!.start);
+      expect(matches[0]?.start).not.toBe(matches[1]?.start);
     });
   });
 
@@ -126,7 +126,7 @@ describe('detector', () => {
     it('detects credential embedded in JSON', () => {
       const matches = scan('{"api_key": "sk_live_4eC39HqLyjWDarjtT1zdp7dc", "model": "gpt-4"}');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('stripe_secret');
+      expect(matches[0]?.patternId).toBe('stripe_secret');
     });
 
     it('detects credential concatenated in code without whitespace', () => {
@@ -142,20 +142,20 @@ describe('detector', () => {
     it('detects credential in URL query parameter', () => {
       const matches = scan('https://api.example.com/webhook?token=ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef1234');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.patternId).toBe('github_pat');
+      expect(matches[0]?.patternId).toBe('github_pat');
     });
 
     it('detects credential at the start of text', () => {
       const matches = scan('sk_live_4eC39HqLyjWDarjtT1zdp7dc is the key');
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.start).toBe(0);
+      expect(matches[0]?.start).toBe(0);
     });
 
     it('detects credential at the end of text', () => {
       const text = 'The key is sk_live_4eC39HqLyjWDarjtT1zdp7dc';
       const matches = scan(text);
       expect(matches).toHaveLength(1);
-      expect(matches[0]!.end).toBe(text.length);
+      expect(matches[0]?.end).toBe(text.length);
     });
 
     it('detects credential surrounded by unicode', () => {
