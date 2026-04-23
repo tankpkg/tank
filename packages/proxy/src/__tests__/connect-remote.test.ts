@@ -43,6 +43,7 @@ function buildDeps(opts: { streamableFailsOnStart?: boolean; sseFailsOnStart?: b
       createdUrls.push(`sse:${url.toString()}`);
       return sse;
     },
+    isReachable: async () => true,
     createdUrlsView: () => createdUrls
   };
 }

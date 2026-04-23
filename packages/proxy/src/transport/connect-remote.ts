@@ -5,6 +5,7 @@ import type { UpstreamTransport } from './upstream-transport.ts';
 export interface TransportFactoryDeps {
   createStreamableTransport(url: URL, headers?: Record<string, string>): SdkLikeTransport;
   createSseTransport(url: URL, headers?: Record<string, string>): SdkLikeTransport;
+  isReachable?(url: URL, headers: Record<string, string>): Promise<boolean>;
   createdUrlsView?(): string[];
 }
 
@@ -71,6 +72,23 @@ async function tryConnect(sdk: SdkLikeTransport): Promise<boolean> {
   }
 }
 
+async function isReachable(url: URL, headers: Record<string, string>, timeoutMs = 3000): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    await fetch(url, {
+      method: 'OPTIONS',
+      headers,
+      signal: controller.signal
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function connectRemote(options: ConnectRemoteOptions): Promise<ConnectResult> {
   const parsed = parseHttpUrl(options.url);
   if (!parsed) {
@@ -95,6 +113,15 @@ export async function connectRemote(options: ConnectRemoteOptions): Promise<Conn
     env: options.env
   });
   if (!authResult.ok) return { ok: false, exitCode: authResult.exitCode, message: authResult.message };
+
+  const reachCheck = options.deps.isReachable ?? isReachable;
+  if (!(await reachCheck(parsed, authResult.headers))) {
+    return {
+      ok: false,
+      exitCode: 1,
+      message: `tank proxy: remote ${options.url} unreachable (network error or host refused connection)`
+    };
+  }
 
   const streamable = options.deps.createStreamableTransport(parsed, authResult.headers);
   if (await tryConnect(streamable)) {
