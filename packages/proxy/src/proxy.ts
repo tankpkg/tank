@@ -21,8 +21,17 @@ import {
   interceptResourceReadResponse,
   interceptResourcesListResponse
 } from './transport/resources-prompts-interceptor.ts';
+import { connectRemote } from './transport/connect-remote.ts';
+import { createSdkSseTransport, createSdkStreamableTransport } from './transport/remote-transport-factory.ts';
 import { interceptToolsListResponse } from './transport/scan-interceptor.ts';
-import { type StdioChildHandle, spawnChild } from './transport/stdio-wrapper.ts';
+import { spawnChild } from './transport/stdio-wrapper.ts';
+import { stdioUpstreamFromChild, type UpstreamTransport } from './transport/upstream-transport.ts';
+
+export interface RemoteUpstreamOptions {
+  url: string;
+  requiresAuth?: boolean;
+  env?: Record<string, string | undefined>;
+}
 
 export interface ProxyOptions {
   command: string;
@@ -38,6 +47,7 @@ export interface ProxyOptions {
   registryPath?: string;
   enableMl?: boolean;
   modelsDir?: string;
+  remote?: RemoteUpstreamOptions;
 }
 
 export interface ProxyHandle {
@@ -75,15 +85,24 @@ function defaultAllowlist(): string[] {
   return allowed;
 }
 
-export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
-  const auditPath = options.auditPath ?? DEFAULT_AUDIT_PATH;
-  const logger: AuditLogger = createAuditLogger(auditPath);
-  const agentStdin: NodeJS.ReadableStream = options.stdin ?? process.stdin;
-  const agentStdout: NodeJS.WritableStream = options.stdout ?? process.stdout;
-  const pinsDir = options.pinsDir ?? DEFAULT_PINS_DIR;
-  const blockOnMatch = options.blockOnMatch ?? true;
-  const packageHash = computePinIdentity([options.command, ...options.args]);
-  const budget = resolveBudget(options);
+async function buildUpstream(options: ProxyOptions): Promise<{ upstream: UpstreamTransport; packageHash: string }> {
+  if (options.remote) {
+    const result = await connectRemote({
+      url: options.remote.url,
+      requiresAuth: options.remote.requiresAuth === true,
+      env: options.remote.env ?? process.env,
+      deps: {
+        createStreamableTransport: (url, headers) => createSdkStreamableTransport(url, headers),
+        createSseTransport: (url, headers) => createSdkSseTransport(url, headers)
+      }
+    });
+    if (!result.ok) {
+      process.stderr.write(`${result.message}\n`);
+      throw new Error(result.message);
+    }
+    const packageHash = computePinIdentity(['remote', options.remote.url]);
+    return { upstream: result.upstream, packageHash };
+  }
 
   const resolvedCommand = resolveCommandPath(options.command);
   const allowlist = options.allowlist ?? defaultAllowlist();
@@ -91,6 +110,19 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   if (!allowed) {
     throw new Error(`proxy: command path not allowed: ${options.command}`);
   }
+  const child = spawnChild(resolvedCommand, options.args);
+  const packageHash = computePinIdentity([options.command, ...options.args]);
+  return { upstream: stdioUpstreamFromChild(child), packageHash };
+}
+
+export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
+  const auditPath = options.auditPath ?? DEFAULT_AUDIT_PATH;
+  const logger: AuditLogger = createAuditLogger(auditPath);
+  const agentStdin: NodeJS.ReadableStream = options.stdin ?? process.stdin;
+  const agentStdout: NodeJS.WritableStream = options.stdout ?? process.stdout;
+  const pinsDir = options.pinsDir ?? DEFAULT_PINS_DIR;
+  const blockOnMatch = options.blockOnMatch ?? true;
+  const budget = resolveBudget(options);
 
   let classifier: ClassifierHandle | null = null;
   if (options.enableMl === true) {
@@ -105,7 +137,8 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
     }
   }
 
-  const child: StdioChildHandle = spawnChild(resolvedCommand, options.args);
+  const { upstream: child, packageHash } = await buildUpstream(options);
+  await child.start();
   const pendingRequests = new Map<string | number, { method: string; toolName?: string }>();
   const canarySession = new CanarySession();
   const registryPath = options.registryPath ?? DEFAULT_REGISTRY_PATH;
@@ -414,8 +447,8 @@ export async function startProxy(options: ProxyOptions): Promise<ProxyHandle> {
   return {
     exitCode,
     classifier,
-    kill(signal = 'SIGTERM') {
-      child.kill(signal);
+    kill(_signal = 'SIGTERM') {
+      void child.close();
     }
   };
 }

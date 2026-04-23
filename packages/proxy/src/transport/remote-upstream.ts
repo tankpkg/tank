@@ -14,10 +14,11 @@ export interface RemoteUpstreamHandle extends UpstreamTransport {
   sessionId?: () => string | undefined;
 }
 
-export function remoteUpstreamFromSdkTransport(sdk: SdkLikeTransport): RemoteUpstreamHandle {
+export function remoteUpstreamFromSdkTransport(sdk: SdkLikeTransport, alreadyStarted = false): RemoteUpstreamHandle {
   const messageHandlers: Array<(line: string) => void> = [];
   const exitHandlers: Array<(code: number) => void> = [];
   let closed = false;
+  let started = alreadyStarted;
 
   sdk.onmessage = (message) => {
     if (closed) return;
@@ -68,6 +69,8 @@ export function remoteUpstreamFromSdkTransport(sdk: SdkLikeTransport): RemoteUps
 
   return {
     async start(): Promise<void> {
+      if (started) return;
+      started = true;
       await sdk.start();
     },
     write,
