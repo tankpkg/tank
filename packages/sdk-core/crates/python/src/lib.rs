@@ -143,7 +143,7 @@ fn write_lockfile(path: &str, json_content: &str) -> PyResult<()> {
 }
 
 #[pymodule]
-fn tankpkg(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn tankpkg_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Permissions>()?;
     m.add_class::<PermissionViolation>()?;
     m.add_function(wrap_pyfunction!(check_permission_budget, m)?)?;

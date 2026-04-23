@@ -85,6 +85,65 @@ build target='all':
         *) echo "Unknown target: {{target}}. Use: registry, cli, mcp, sdk, internals-schemas, internals-helpers, adapters, binary, all" && exit 1 ;;
     esac
 
+# just sdk-python build          - build tank-sdk wheel + sdist into packages/sdk-python/dist
+# just sdk-python publish-test   - upload tank-sdk to TestPyPI (needs TWINE_* env vars)
+# just sdk-python publish        - upload tank-sdk to PyPI (local fallback; prefer CI via OIDC)
+[group('build')]
+sdk-python action='build':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{action}}" in
+        build)
+            python -m pip install --upgrade build twine
+            rm -rf packages/sdk-python/dist
+            python -m build packages/sdk-python
+            python -m twine check packages/sdk-python/dist/*
+            ;;
+        publish-test)
+            python -m pip install --upgrade twine
+            python -m twine upload --repository testpypi packages/sdk-python/dist/*
+            ;;
+        publish)
+            python -m pip install --upgrade twine
+            python -m twine upload packages/sdk-python/dist/*
+            ;;
+        *) echo "Unknown action: {{action}}. Use: build, publish-test, publish" && exit 1 ;;
+    esac
+
+# just sdk-core-python build         - build tank-core wheel for the current host
+# just sdk-core-python develop       - maturin develop (install into current venv for local dev)
+# just sdk-core-python sdist         - build tank-core sdist only
+# just sdk-core-python publish-test  - upload tank-core to TestPyPI
+# just sdk-core-python publish       - upload tank-core to PyPI (local fallback; prefer CI)
+[group('build')]
+sdk-core-python action='build':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd packages/sdk-core/crates/python
+    case "{{action}}" in
+        build)
+            python -m pip install --upgrade maturin
+            maturin build --release --out dist --compatibility pypi
+            ;;
+        develop)
+            python -m pip install --upgrade maturin
+            maturin develop --release
+            ;;
+        sdist)
+            python -m pip install --upgrade maturin
+            maturin sdist --out dist
+            ;;
+        publish-test)
+            python -m pip install --upgrade twine
+            python -m twine upload --repository testpypi dist/*
+            ;;
+        publish)
+            python -m pip install --upgrade twine
+            python -m twine upload dist/*
+            ;;
+        *) echo "Unknown action: {{action}}. Use: build, develop, sdist, publish-test, publish" && exit 1 ;;
+    esac
+
 # just fmt        - format all code (TypeScript + Python)
 # just fmt ts     - Biome format + Prettier for non-Biome files
 # just fmt python - Ruff format + autofix on apps/python-api
@@ -189,8 +248,18 @@ bump VERSION:
     jq ".version = \"{{VERSION}}\"" packages/internals-helpers/package.json > packages/internals-helpers/package.json.tmp && mv packages/internals-helpers/package.json.tmp packages/internals-helpers/package.json
     jq ".version = \"{{VERSION}}\"" packages/sdk/package.json > packages/sdk/package.json.tmp && mv packages/sdk/package.json.tmp packages/sdk/package.json
 
-    # Update SDK core version (Python pyproject.toml)
+    # Update SDK core version (Python pyproject.toml + Rust Cargo.toml)
     sed -i.bak "s/^version = .*/version = \"{{VERSION}}\"/" packages/sdk-core/crates/python/pyproject.toml && rm -f packages/sdk-core/crates/python/pyproject.toml.bak
+    sed -i.bak "s/^version = .*/version = \"{{VERSION}}\"/" packages/sdk-core/crates/python/Cargo.toml && rm -f packages/sdk-core/crates/python/Cargo.toml.bak
+
+    # Update tank-sdk Python SDK version (single source: _version.py)
+    printf '__version__ = "%s"\n' "{{VERSION}}" > packages/sdk-python/tankpkg/_version.py
+
+    # Pin the [native] extra to the matching tank-core version
+    sed -i.bak 's/^native = \["tank-core==.*"\]/native = ["tank-core=={{VERSION}}"]/' packages/sdk-python/pyproject.toml && rm -f packages/sdk-python/pyproject.toml.bak
+
+    # Keep Cargo.lock in sync with the bumped Rust crate version (ignore if cargo missing)
+    cargo update -p sdk-python --manifest-path packages/sdk-core/Cargo.toml --precise "{{VERSION}}" 2>/dev/null || true
 
     # Update Chart.yaml
     sed -i.bak "s/^appVersion: .*/appVersion: \"{{VERSION}}\"/" infra/helm/tank/Chart.yaml && rm -f infra/helm/tank/Chart.yaml.bak
@@ -387,13 +456,32 @@ ci-publish-npm VERSION:
     (cd packages/sdk && npm publish --no-git-checks --access public)
 
 [group('ci')]
-ci-publish-pypi:
+ci-build-pypi-sdk VERSION:
     #!/usr/bin/env bash
     set -euo pipefail
+    python -m pip install --upgrade build twine packaging
+    rm -rf packages/sdk-python/dist
+    python -m build packages/sdk-python
+    python -m twine check packages/sdk-python/dist/*
+    ACTUAL=$(python -c "import os, glob; from packaging.utils import parse_wheel_filename; w = glob.glob('packages/sdk-python/dist/*.whl')[0]; print(parse_wheel_filename(os.path.basename(w))[1].public)")
+    if [ "${ACTUAL}" != "{{VERSION}}" ]; then echo "Built version ${ACTUAL} != expected {{VERSION}}" >&2; exit 1; fi
+    echo "tank-sdk ${ACTUAL} built"
+
+[group('ci')]
+ci-build-pypi-core-wheel TARGET:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    python -m pip install --upgrade maturin
     cd packages/sdk-core/crates/python
-    pip install maturin
-    maturin build --release
-    maturin publish
+    maturin build --release --out dist --target "{{TARGET}}" --compatibility pypi
+
+[group('ci')]
+ci-build-pypi-core-sdist:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    python -m pip install --upgrade maturin
+    cd packages/sdk-core/crates/python
+    maturin sdist --out dist
 
 [group('ci')]
 ci-release-tag VERSION:

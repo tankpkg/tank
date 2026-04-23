@@ -75,11 +75,11 @@ Non-obvious:
 
 ### Environments
 
-| Environment | Web                 | Scanner                     | CLI                             | Docker                             |
-| ----------- | ------------------- | --------------------------- | ------------------------------- | ---------------------------------- |
-| **Stable**  | www.tankpkg.dev     | scanner.tankpkg.dev         | `npm i -g @tankpkg/cli`         | `ghcr.io/tankpkg/tank-web:latest`  |
-| **Nightly** | nightly.tankpkg.dev | nightly-scanner.tankpkg.dev | `npm i -g @tankpkg/cli@nightly` | `ghcr.io/tankpkg/tank-web:nightly` |
-| **On-prem** | customer domain     | customer scanner            | served from web container       | `docker-compose.onprem.yml`        |
+| Environment | Web                 | Scanner                     | CLI                             | Python SDK             | Docker                             |
+| ----------- | ------------------- | --------------------------- | ------------------------------- | ---------------------- | ---------------------------------- |
+| **Stable**  | www.tankpkg.dev     | scanner.tankpkg.dev         | `npm i -g @tankpkg/cli`         | `pip install tank-sdk` | `ghcr.io/tankpkg/tank-web:latest`  |
+| **Nightly** | nightly.tankpkg.dev | nightly-scanner.tankpkg.dev | `npm i -g @tankpkg/cli@nightly` | (see follow-up)        | `ghcr.io/tankpkg/tank-web:nightly` |
+| **On-prem** | customer domain     | customer scanner            | served from web container       | `pip install tank-sdk` | `docker-compose.onprem.yml`        |
 
 ### Branches
 
@@ -122,15 +122,16 @@ just ci-merge-stable
 
 ```
 v0.11.0 tag push
-├─ release.yml  → CLI binaries (5 platforms) + GitHub Release + npm + Homebrew + .deb (~4 min)
-│   ├─ build-linux-x64        ─┐
-│   ├─ build-linux-arm64       │ parallel binary compilation
-│   ├─ build-darwin-x64        │ (bun build --compile per platform)
-│   ├─ build-darwin-arm64      │
-│   ├─ build-windows-x64      ─┘
+├─ release.yml  → CLI binaries + GitHub Release + npm + Homebrew + .deb + PyPI (~4-8 min)
+│   ├─ build (matrix: linux-x64/arm64, darwin-x64/arm64, windows-x64)
 │   ├─ publish-npm            → `npm publish` to @tankpkg/cli@X.Y.Z
 │   ├─ release                → GitHub Release with binaries + .deb + SHA256SUMS
-│   └─ update-homebrew        → PR to homebrew-tap repo
+│   ├─ update-homebrew        → PR to homebrew-tap repo
+│   ├─ build-pypi-sdk         → build tank-sdk wheel + sdist (pure Python)
+│   ├─ build-pypi-core-wheels → build tank-core wheels (matrix: 5 platforms via maturin)
+│   ├─ build-pypi-core-sdist  → build tank-core sdist
+│   ├─ publish-pypi-sdk       → Trusted Publishing → pypi.org/project/tank-sdk (env: pypi)
+│   └─ publish-pypi-core      → Trusted Publishing → pypi.org/project/tank-core (env: pypi)
 └─ publish.yml  → Docker images + Helm chart (~15-20 min)
     ├─ docker-tank-scanner  (~1 min)
     ├─ docker-tank-web      (~15 min, multi-arch + CLI binary compilation)
@@ -138,7 +139,13 @@ v0.11.0 tag push
     └─ smoke-test-compose   (runs after docker-tank-web)
 ```
 
-**All artifacts share the same version from the same tag push.** CLI, npm, Docker, Helm — all `0.11.0`.
+**All artifacts share the same version from the same tag push.** CLI, npm, Docker, Helm, tank-sdk, tank-core — all `0.11.0`.
+
+**PyPI publish notes:**
+
+- `publish-pypi-sdk` and `publish-pypi-core` run in the GitHub Actions environment `pypi`. If the environment has "Required reviewers" enabled, the jobs pause until an approver clicks "Approve and deploy" in the Actions UI.
+- Authentication uses [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/) via OIDC — no long-lived tokens. Pending publishers must be registered on pypi.org before the first release (owner: `tankpkg`, repo: `tank`, workflow: `release.yml`, environment: `pypi`).
+- Filenames on PyPI are immutable. If a PyPI publish fails partway, **cut a new patch version** — do not delete the tag and re-push (that recipe does not work for PyPI).
 
 **CLI release artifacts** (attached to GitHub Release):
 
@@ -162,6 +169,14 @@ v0.11.0 tag push
 | Binary   | Download from GitHub Release    | release.yml → release                 |
 | .deb     | `dpkg -i tank_X.Y.Z_amd64.deb`  | release.yml → release                 |
 | On-prem  | `/install-cli` page on instance | publish.yml → baked into Docker image |
+
+**Python SDK install channels:**
+
+| Channel       | Command                          | Source                               |
+| ------------- | -------------------------------- | ------------------------------------ |
+| PyPI          | `pip install tank-sdk`           | release.yml → publish-pypi-sdk       |
+| PyPI (native) | `pip install "tank-sdk[native]"` | pulls `tank-core` (Rust-accelerated) |
+| PyPI (core)   | `pip install tank-core`          | release.yml → publish-pypi-core      |
 
 **Docker image tags produced** (semver pattern strips `v` prefix):
 

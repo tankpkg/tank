@@ -50,3 +50,15 @@ Feature: Talk to this Skill
   Scenario: Bot secret is never exposed in skill detail response
     When I visit the talk skill detail page
     Then the page source does not contain "prompt2botSecret"
+
+  @regression
+  @gh-issue-post-0.14.2
+  Scenario: Talk API tolerates prompt2bot response without `secret` field
+    # Regression guard for the 2026-04-20 prompt2bot contract change:
+    # `secret` is only issued for bots with custom tools. Our bots have
+    # none, so the field is absent and that must not fail bot creation.
+    When I call the talk API for the skill
+    Then the talk API returns HTTP 200
+    And the talk API returns a chat link
+    And the talk API returns a bot public key
+    And the stored prompt2bot_secret is either null or a non-empty string

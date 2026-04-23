@@ -107,7 +107,27 @@ When('I call the talk API for the skill', async ({ e2eContext, bddState }) => {
   const res = await fetch(`${e2eContext.registry}/api/v1/skills/${encoded}/talk`, { method: 'POST' });
   const body = (await res.json()) as Record<string, unknown>;
   bddState.lastResponseBody = body;
+  bddState.lastResponseStatus = res.status;
   cachedChatLink = body.chatLink as string;
+});
+
+Then('the talk API returns HTTP {int}', async ({ bddState }, status: number) => {
+  expect(bddState.lastResponseStatus).toBe(status);
+});
+
+Then('the stored prompt2bot_secret is either null or a non-empty string', async ({ e2eContext }) => {
+  if (!talkSkillName) throw new Error('No skill name resolved');
+  const rows = await e2eContext.sql`
+    SELECT sv.prompt2bot_secret AS secret
+    FROM skill_versions sv
+    JOIN skills s ON s.id = sv.skill_id
+    WHERE s.name = ${talkSkillName}
+    ORDER BY sv.created_at DESC
+    LIMIT 1
+  `;
+  expect(rows.length).toBeGreaterThan(0);
+  const secret = rows[0].secret as string | null;
+  expect(secret === null || (typeof secret === 'string' && secret.length > 0)).toBe(true);
 });
 
 Then('the talk API returns a chat link', async ({ bddState }) => {

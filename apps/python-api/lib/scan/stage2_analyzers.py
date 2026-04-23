@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 
 from lib.scan.models import Finding
+from lib.scan.safe_patterns import downgrade_severity_for_non_production, is_non_production_path
 
 # Python extensions to scan
 PYTHON_EXTENSIONS = {".py"}
@@ -223,6 +224,7 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
         severity_map = {"HIGH": "high", "MEDIUM": "medium", "LOW": "low"}
         confidence_map = {"HIGH": 0.9, "MEDIUM": 0.7, "LOW": 0.5}
 
+        temp_dir_path = Path(temp_dir).resolve()
         for issue in results:
             severity = severity_map.get(issue.severity, "medium")
 
@@ -233,13 +235,22 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
             # Bandit confidence is a string ("HIGH", "MEDIUM", "LOW")
             confidence = confidence_map.get(str(issue.confidence), 0.7) if issue.confidence else 0.8
 
+            try:
+                rel_path = str(Path(issue.fname).resolve().relative_to(temp_dir_path))
+            except ValueError:
+                rel_path = issue.fname
+
+            if is_non_production_path(rel_path):
+                severity = downgrade_severity_for_non_production(severity)
+                confidence = min(confidence, 0.4)
+
             findings.append(
                 Finding(
                     stage="stage2",
                     severity=severity,
                     type=f"bandit_{issue.test_id}",
                     description=issue.text,
-                    location=f"{issue.fname}:{issue.lineno}",
+                    location=f"{rel_path}:{issue.lineno}",
                     confidence=confidence,
                     tool="bandit",
                 )
@@ -260,6 +271,17 @@ def run_bandit_scan(temp_dir: str, python_files: list[str]) -> list[Finding]:
             )
         )
 
+    return findings
+
+
+def _downgrade_if_non_production(findings: list[Finding], file_path: str) -> list[Finding]:
+    if not is_non_production_path(file_path):
+        return findings
+    for f in findings:
+        if f.type == "analysis_error":
+            continue
+        f.severity = downgrade_severity_for_non_production(f.severity)
+        f.confidence = min(f.confidence, 0.4)
     return findings
 
 
@@ -300,7 +322,7 @@ def analyze_python_file(temp_dir: str, file_path: str) -> list[Finding]:
             )
         )
 
-    return findings
+    return _downgrade_if_non_production(findings, file_path)
 
 
 def detect_obfuscation(source: str, file_path: str) -> list[Finding]:
@@ -341,6 +363,7 @@ def detect_obfuscation(source: str, file_path: str) -> list[Finding]:
 def analyze_js_file(temp_dir: str, file_path: str) -> list[Finding]:
     """Analyze a JS/TS file for dangerous patterns using regex."""
     findings: list[Finding] = []
+    non_production = is_non_production_path(file_path)
 
     full_path = Path(temp_dir) / file_path
     try:
@@ -350,16 +373,17 @@ def analyze_js_file(temp_dir: str, file_path: str) -> list[Finding]:
         lines = source.split("\n")
 
         for pattern, severity, description in JS_DANGEROUS_PATTERNS:
+            effective_severity = downgrade_severity_for_non_production(severity) if non_production else severity
             for line_num, line in enumerate(lines, 1):
                 if re.search(pattern, line):
                     findings.append(
                         Finding(
                             stage="stage2",
-                            severity=severity,
+                            severity=effective_severity,
                             type="js_pattern",
                             description=description,
                             location=f"{file_path}:{line_num}",
-                            confidence=0.8,
+                            confidence=0.8 if not non_production else 0.4,
                             tool="stage2_js_regex",
                         )
                     )
@@ -383,6 +407,7 @@ def analyze_js_file(temp_dir: str, file_path: str) -> list[Finding]:
 def analyze_shell_file(temp_dir: str, file_path: str) -> list[Finding]:
     """Analyze a shell script for dangerous patterns."""
     findings: list[Finding] = []
+    non_production = is_non_production_path(file_path)
 
     full_path = Path(temp_dir) / file_path
     try:
@@ -392,16 +417,17 @@ def analyze_shell_file(temp_dir: str, file_path: str) -> list[Finding]:
         lines = source.split("\n")
 
         for pattern, severity, description in SHELL_DANGEROUS_PATTERNS:
+            effective_severity = downgrade_severity_for_non_production(severity) if non_production else severity
             for line_num, line in enumerate(lines, 1):
                 if re.search(pattern, line):
                     findings.append(
                         Finding(
                             stage="stage2",
-                            severity=severity,
+                            severity=effective_severity,
                             type="shell_pattern",
                             description=description,
                             location=f"{file_path}:{line_num}",
-                            confidence=0.8,
+                            confidence=0.8 if not non_production else 0.4,
                             tool="stage2_shell_regex",
                         )
                     )

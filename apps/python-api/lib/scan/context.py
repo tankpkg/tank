@@ -18,7 +18,13 @@ from typing import Any
 
 from lib.scan.markdown_utils import is_inside_code_block, is_inside_heading
 from lib.scan.models import Finding
-from lib.scan.safe_patterns import is_build_file, is_safe_env_var, is_safe_subprocess_call, is_test_file
+from lib.scan.safe_patterns import (
+    is_build_file,
+    is_non_production_path,
+    is_safe_env_var,
+    is_safe_subprocess_call,
+    is_test_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +84,14 @@ class ContextEvaluator:
         """Check if finding should be escalated or kept at current severity.
 
         Returns (finding, is_resolved). If resolved, skip LLM.
+
+        Non-production paths (tests/, docs/, site/, examples/) are never
+        escalated — their findings are informational even when permissions
+        are undeclared, because the code is not the skill's runtime surface.
         """
+        if file_path and is_non_production_path(file_path):
+            return finding, False
+
         # Undeclared network access
         if self._is_network_finding(finding) and not self._network_outbound:
             # Network access without permission — keep high or escalate
