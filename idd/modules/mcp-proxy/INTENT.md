@@ -394,6 +394,17 @@ to a separate out-of-band correlation table keyed by JSON-RPC request ID.
 | E33c | `resources/read` returns the AWS example `AKIAIOSFODNN7EXAMPLE` (entropy < 4.5)              | Not flagged; response forwarded unchanged                                       |
 | E33d | `prompts/get` returns a prompt containing a real GitHub PAT `ghp_...` (entropy ≥ 4.5)        | Blocked; audit "credential_leak_in_prompt"                                      |
 
+### Remote MCP Transport (Phase 10)
+
+| #   | Input                                                                                              | Expected Output                                                                                                                      |
+| --- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| E39 | `tank proxy --remote https://mcp.deepwiki.com/mcp` with no child command                           | Opens StreamableHTTP client upstream; forwards agent stdio JSON-RPC bidirectionally; all Phase 2–8 scanners still run on every frame |
+| E40 | Remote server returns `initialize` response over SSE (`event: message`, `data: {...}`)             | Proxy parses SSE frames, emits single JSON-RPC line to agent stdout; audit records `method=initialize verdict=pass`                  |
+| E41 | Remote server's `tools/list` contains a tool with a ClawGuard injection pattern                    | Proxy strips the tool from the outbound list, audits `tool_shadow`/`poisoning_detected`, agent never sees the tool                   |
+| E42 | Remote server returns `resources/read` content with a credential leak (GitHub PAT)                 | Proxy blocks with JSON-RPC -32004 `credential_leak_in_resource`, exactly as local case                                               |
+| E43 | StreamableHTTP server unreachable (connection refused or 404)                                      | Proxy tries SSE fallback URL at same base; if both fail, emits actionable stderr and exits 1                                         |
+| E44 | `tank proxy --remote https://x --requires-auth` with `TANK_MCP_AUTH_X` env var set to `Bearer abc` | Proxy adds `Authorization: Bearer abc` header on every upstream request; secret never appears in stdout or stderr or audit           |
+
 ### ML Classifier (Opt-in)
 
 | #   | Input                                                                                  | Expected Output                                                                                                    |
