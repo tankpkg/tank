@@ -123,13 +123,11 @@ describe('readActiveRegistry — C43 latest-wins per (server, tool_name)', () =>
   it('evicts entries older than 30 days (C46)', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-20T12:00:00Z'));
-    writeFileSync(
-      file,
-      [
-        JSON.stringify(entry('a', 'old', '2026-03-20T11:59:59Z')),
-        JSON.stringify(entry('a', 'fresh', '2026-04-20T00:00:00Z'))
-      ].join('\n') + '\n'
-    );
+    const payload = [
+      JSON.stringify(entry('a', 'old', '2026-03-20T11:59:59Z')),
+      JSON.stringify(entry('a', 'fresh', '2026-04-20T00:00:00Z'))
+    ].join('\n');
+    writeFileSync(file, `${payload}\n`);
     const active = readActiveRegistry(file);
     expect(active.map((e) => e.tool_name)).toEqual(['fresh']);
   });

@@ -281,7 +281,7 @@ class FilesystemStorageProvider implements StorageProvider {
 
   verifyToken(path: string, expires: string, token: string): boolean {
     const expiresAt = Number.parseInt(expires, 10);
-    if (isNaN(expiresAt) || Date.now() / 1000 > expiresAt) return false;
+    if (Number.isNaN(expiresAt) || Date.now() / 1000 > expiresAt) return false;
     return this.generateToken(path, expiresAt) === token;
   }
 

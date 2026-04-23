@@ -206,7 +206,11 @@ export class TankClient {
     return this.json('GET', `/skills/${encodeURIComponent(name)}/versions`);
   }
 
-  async download(name: string, version: string, options?: DownloadOptions): Promise<ReadableStream | Buffer | void> {
+  async download(
+    name: string,
+    version: string,
+    options?: DownloadOptions
+  ): Promise<ReadableStream | Buffer | undefined> {
     const detail = await this.json<VersionDetail>('GET', `/skills/${encodeURIComponent(name)}/${version}`);
 
     const dlUrl = new URL(detail.downloadUrl);
