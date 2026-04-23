@@ -13,7 +13,9 @@ import { withRegistryLock } from './scanner/registry-lock.ts';
 import { detectShadowing, type ShadowFinding, type ToolShape } from './scanner/shadow-detector.ts';
 import { appendRegistryEntry, type RegistryEntry, readActiveRegistry } from './scanner/shadow-registry.ts';
 import { interceptToolCallResponse } from './transport/canary-interceptor.ts';
+import { connectRemote } from './transport/connect-remote.ts';
 import { framingError, parseJsonRpcMessage } from './transport/message-router.ts';
+import { createSdkSseTransport, createSdkStreamableTransport } from './transport/remote-transport-factory.ts';
 import { resolveCommandPath } from './transport/resolve-command.ts';
 import {
   interceptPromptGetResponse,
@@ -21,8 +23,6 @@ import {
   interceptResourceReadResponse,
   interceptResourcesListResponse
 } from './transport/resources-prompts-interceptor.ts';
-import { connectRemote } from './transport/connect-remote.ts';
-import { createSdkSseTransport, createSdkStreamableTransport } from './transport/remote-transport-factory.ts';
 import { interceptToolsListResponse } from './transport/scan-interceptor.ts';
 import { spawnChild } from './transport/stdio-wrapper.ts';
 import { stdioUpstreamFromChild, type UpstreamTransport } from './transport/upstream-transport.ts';

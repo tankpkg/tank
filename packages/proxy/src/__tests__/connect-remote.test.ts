@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { connectRemote, type TransportFactoryDeps, validateAuthHeaders } from '~/transport/connect-remote.js';
 
 function okTransport(label: string) {

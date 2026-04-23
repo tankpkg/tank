@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -111,7 +111,9 @@ describe('Feature: Phase 10 — real remote MCP proxy (@phase-10 @C3)', { timeou
         expect(result.stdout).toContain('"id":1');
         expect(result.stdout).toContain('"serverInfo"');
         const lines = result.stdout.split('\n').filter((l) => l.length > 0);
-        const initResponse = lines.map((l) => safeJson(l)).find((p) => p?.id === 1);
+        const initResponse = lines
+          .map((l) => safeJson(l))
+          .find((p): p is { id: number; result: unknown } => p !== null && p.id === 1);
         expect(initResponse?.result).toBeDefined();
       } finally {
         close();
@@ -123,18 +125,32 @@ describe('Feature: Phase 10 — real remote MCP proxy (@phase-10 @C3)', { timeou
     it.skipIf(!LIVE)('tools/list returns the three DeepWiki tools through the proxy', async () => {
       const result = await runTankRemoteAgainst('https://mcp.deepwiki.com/mcp', home);
       const lines = result.stdout.split('\n').filter((l) => l.length > 0);
-      const listResponse = lines.map((l) => safeJson(l)).find((p) => p?.id === 2);
+      const listResponse = lines
+        .map((l) => safeJson(l))
+        .find(
+          (p): p is { id: number; result: { tools: Array<{ name: string }> } } =>
+            p !== null &&
+            p.id === 2 &&
+            typeof p.result === 'object' &&
+            p.result !== null &&
+            Array.isArray((p.result as { tools?: unknown }).tools)
+        );
       expect(listResponse?.result?.tools).toBeDefined();
-      const toolNames = (listResponse?.result?.tools ?? []).map((t: { name: string }) => t.name);
+      const toolNames = listResponse?.result.tools.map((t) => t.name) ?? [];
       expect(toolNames).toContain('read_wiki_structure');
       expect(toolNames).toContain('ask_question');
     });
   });
 });
 
-function safeJson(line: string): unknown | null {
+interface ParsedJsonRpc {
+  id?: number | string;
+  [k: string]: unknown;
+}
+
+function safeJson(line: string): ParsedJsonRpc | null {
   try {
-    return JSON.parse(line);
+    return JSON.parse(line) as ParsedJsonRpc;
   } catch {
     return null;
   }
