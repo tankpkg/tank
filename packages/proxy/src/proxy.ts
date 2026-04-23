@@ -98,7 +98,9 @@ async function buildUpstream(options: ProxyOptions): Promise<{ upstream: Upstrea
     });
     if (!result.ok) {
       process.stderr.write(`${result.message}\n`);
-      throw new Error(result.message);
+      const err = new Error(result.message) as Error & { exitCode?: number };
+      err.exitCode = result.exitCode;
+      throw err;
     }
     const packageHash = computePinIdentity(['remote', options.remote.url]);
     return { upstream: result.upstream, packageHash };
