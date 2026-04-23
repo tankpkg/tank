@@ -142,7 +142,7 @@
       }
     },
     {
-      "includes": ["packages/cli/**", "scripts/**"],
+      "includes": ["packages/cli/**", "scripts/**", "apps/registry/scripts/**"],
       "linter": {
         "rules": {
           "suspicious": {
