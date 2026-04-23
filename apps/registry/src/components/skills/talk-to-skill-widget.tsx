@@ -1,25 +1,32 @@
-import { Loader2, MessageCircle } from 'lucide-react';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Loader2, MessageCircle } from "lucide-react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
-const WIDGET_SCRIPT_URL = 'https://storage.googleapis.com/alice-and-bot/widget/dist/widget.iife.js';
-const WIDGET_ROOT_ID = 'alice-and-bot-widget-root';
-const CREDENTIALS_KEY = 'aliceAndBotCredentials';
+const WIDGET_SCRIPT_URL = "https://storage.googleapis.com/alice-and-bot/widget/dist/widget.iife.js";
+const WIDGET_ROOT_ID = "alice-and-bot-widget-root";
+const CREDENTIALS_KEY = "aliceAndBotCredentials";
 
 const TANK_WIDGET_CSS = `
   :host {
     font-family: 'Inter Variable', Inter, ui-sans-serif, system-ui, sans-serif !important;
   }
 
-  /* Chat panel container */
-  div[style*="position: absolute"][style*="border-radius: 12px"] {
+  /* Chat panel container (outer floating panel) - legacy + no-space fallbacks */
+  div[style*="position: absolute"][style*="border-radius: 12px"],
+  div[style*="position:absolute"][style*="border-radius:12px"] {
     border: 1px solid oklch(0.25 0.01 155) !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
     width: min(480px, 92vw) !important;
     height: min(85dvh, 800px) !important;
   }
 
+  /* Chat container (inner shell) */
+  [data-testid="chat-container"] {
+    background: oklch(0.05 0.003 155) !important;
+    color: oklch(0.93 0.01 155) !important;
+  }
+
   /* Header bar */
-  div[style*="font-weight: bold"][style*="font-size: 1.2em"] {
+  [data-testid="title-bar"] {
     font-family: 'Space Grotesk Variable', 'Space Grotesk', sans-serif !important;
     font-size: 0.875rem !important;
     font-weight: 600 !important;
@@ -27,20 +34,25 @@ const TANK_WIDGET_CSS = `
     padding: 12px 16px !important;
     background: oklch(0.08 0.005 155) !important;
     border-bottom: 1px solid oklch(0.2 0.01 155) !important;
+    color: oklch(0.93 0.01 155) !important;
+  }
+  [data-testid="title-text"] {
+    color: oklch(0.93 0.01 155) !important;
   }
 
-  /* Chat area background */
-  div[style*="flex-grow: 1"][style*="min-height: 0"] {
+  /* Message list area */
+  [data-testid="message-list"] {
     background: oklch(0.05 0.003 155) !important;
   }
 
   /* Message list inner padding */
-  div[style*="padding: 4px 4px"] {
+  [data-content-inner] {
     padding: 12px 8px 72px !important;
   }
 
   /* User message bubbles */
-  .msg-bubble[style*="rgb(16, 185, 129)"] {
+  .msg-bubble[style*="rgb(16, 185, 129)"],
+  .msg-bubble[style*="rgb(16,185,129)"] {
     background: #10b981 !important;
     border-radius: 12px 12px 4px 12px !important;
     padding: 10px 14px !important;
@@ -49,7 +61,8 @@ const TANK_WIDGET_CSS = `
   }
 
   /* Bot message bubbles */
-  .msg-bubble[style*="rgb(42, 42, 42)"] {
+  .msg-bubble[style*="rgb(42, 42, 42)"],
+  .msg-bubble[style*="rgb(42,42,42)"] {
     background: oklch(0.12 0.005 155) !important;
     border: 1px solid oklch(0.2 0.01 155) !important;
     border-radius: 12px 12px 12px 4px !important;
@@ -60,7 +73,8 @@ const TANK_WIDGET_CSS = `
   }
 
   /* Bot name label */
-  .msg-bubble b[style*="font-size: 11px"] {
+  .msg-bubble b[style*="font-size: 11px"],
+  .msg-bubble b[style*="font-size:11px"] {
     color: #10b981 !important;
     font-size: 0.6875rem !important;
     font-family: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace !important;
@@ -78,24 +92,30 @@ const TANK_WIDGET_CSS = `
   }
 
   /* Timestamps */
-  span[style*="font-size: 10px"] {
+  span[style*="font-size: 10px"],
+  span[style*="font-size:10px"] {
     font-size: 0.625rem !important;
     opacity: 0.5 !important;
   }
 
   /* Avatar */
-  div[style*="border-radius: 50%"][style*="width: 32px"] {
+  div[style*="border-radius: 50%"][style*="width: 32px"],
+  div[style*="border-radius:50%"][style*="width:32px"] {
     background: #10b981 !important;
     box-shadow: 0 0 0 2px oklch(0.08 0.005 155) !important;
   }
 
-  /* Input wrapper */
-  div[style*="position: absolute"][style*="bottom: 0"] {
+  /* Input wrapper (new: data-input-area; legacy style fallbacks) */
+  [data-input-area],
+  div[style*="position: absolute"][style*="bottom: 0"],
+  div[style*="position:absolute"][style*="bottom:0"] {
     padding: 8px 12px !important;
     background: oklch(0.05 0.003 155) !important;
     border-top: 1px solid oklch(0.2 0.01 155) !important;
   }
 
+  /* Textarea (new: message-input testid; fallback: bare textarea) */
+  [data-testid="message-input"],
   textarea {
     background: oklch(0.1 0.005 155) !important;
     border: 1px solid oklch(0.22 0.01 155) !important;
@@ -105,19 +125,31 @@ const TANK_WIDGET_CSS = `
     color: oklch(0.93 0.01 155) !important;
     transition: border-color 0.15s !important;
   }
+  [data-testid="message-input"]:focus,
   textarea:focus {
     border-color: #10b981 !important;
     outline: none !important;
     box-shadow: none !important;
   }
+  [data-testid="message-input"]::placeholder,
   textarea::placeholder {
     color: oklch(0.45 0.01 155) !important;
   }
 
-  /* Mic button */
+  /* Send button */
+  [data-testid="send-button"] {
+    background: oklch(0.1 0.005 155) !important;
+    color: oklch(0.93 0.01 155) !important;
+  }
+  [data-testid="send-button"]:hover {
+    background: oklch(0.15 0.005 155) !important;
+  }
+
+  /* Mic button (legacy fallback - new widget uses send-button testid) */
   button[title="Record audio"] {
     background: oklch(0.1 0.005 155) !important;
     border: 1px solid oklch(0.22 0.01 155) !important;
+    color: oklch(0.93 0.01 155) !important;
   }
   button[title="Record audio"]:hover {
     background: oklch(0.15 0.005 155) !important;
@@ -139,6 +171,7 @@ const TANK_WIDGET_CSS = `
   }
 
   /* Scrollbar */
+  [data-scrollable],
   div[data-scrollable="true"] {
     scrollbar-color: oklch(0.25 0.01 155) transparent !important;
     scrollbar-width: thin !important;
@@ -148,12 +181,27 @@ const TANK_WIDGET_CSS = `
   .msg-kebab { opacity: 0 !important; }
   .msg-bubble:hover .msg-kebab { opacity: 0.4 !important; }
 
-  /* Attach */
-  button[title="Attach"] { color: oklch(0.45 0.01 155) !important; }
-  button[title="Attach"]:hover { color: oklch(0.7 0.01 155) !important; }
+  /* Attach button (new: attach-button testid; legacy title fallback) */
+  [data-testid="attach-button"],
+  button[title="Attach"] {
+    color: oklch(0.45 0.01 155) !important;
+  }
+  [data-testid="attach-button"]:hover,
+  button[title="Attach"]:hover {
+    color: oklch(0.7 0.01 155) !important;
+  }
 
-  /* Hide alice-and-bot blue button */
-  button[style*="border-radius: 999px"] { display: none !important; }
+  /* Hide alice-and-bot blue button (legacy + no-space) */
+  button[style*="border-radius: 999px"],
+  button[style*="border-radius:999px"] {
+    display: none !important;
+  }
+
+  /* Leave room for the attribution bar above the input */
+  #tank-attribution + div,
+  #tank-attribution {
+    pointer-events: auto;
+  }
 `;
 
 interface TalkToSkillWidgetProps {
@@ -181,15 +229,30 @@ function getShadowRoot(): ShadowRoot | null {
   return (host as HTMLElement)?.shadowRoot ?? null;
 }
 
+function findInputWrapper(shadow: ShadowRoot): Element | null {
+  return (
+    shadow.querySelector("[data-input-area]") ??
+    shadow.querySelector('div[style*="position: absolute"][style*="bottom: 0"]') ??
+    shadow.querySelector('div[style*="position:absolute"][style*="bottom:0"]')
+  );
+}
+
+function findToggleButton(shadow: ShadowRoot): HTMLElement | null {
+  return (
+    (shadow.querySelector('button[style*="border-radius: 999px"]') as HTMLElement | null) ??
+    (shadow.querySelector('button[style*="border-radius:999px"]') as HTMLElement | null)
+  );
+}
+
 function injectAttribution(): void {
   const shadow = getShadowRoot();
-  if (!shadow || shadow.querySelector('#tank-attribution')) return;
-  const inputWrapper = shadow.querySelector('div[style*="position: absolute"][style*="bottom: 0"]');
+  if (!shadow || shadow.querySelector("#tank-attribution")) return;
+  const inputWrapper = findInputWrapper(shadow);
   if (!inputWrapper) return;
-  const bar = document.createElement('div');
-  bar.id = 'tank-attribution';
+  const bar = document.createElement("div");
+  bar.id = "tank-attribution";
   bar.style.cssText =
-    'text-align:center;font-size:10px;color:oklch(0.4 0.01 155);padding:4px 0 2px;pointer-events:auto;';
+    "text-align:center;font-size:10px;color:oklch(0.4 0.01 155);padding:4px 0 2px;pointer-events:auto;";
   bar.innerHTML =
     'Powered by <a href="https://prompt2bot.com" target="_blank" rel="noopener noreferrer" style="color:oklch(0.5 0.01 155);text-decoration:underline;text-underline-offset:2px">prompt2bot</a> · <a href="https://aliceandbot.com" target="_blank" rel="noopener noreferrer" style="color:oklch(0.5 0.01 155);text-decoration:underline;text-underline-offset:2px">alice&bot</a>';
   inputWrapper.prepend(bar);
@@ -210,16 +273,16 @@ function injectWidgetStyles(maxMs = 10000): Promise<void> {
     const start = Date.now();
     const check = () => {
       const shadow = getShadowRoot();
-      if (shadow && !shadow.querySelector('#tank-widget-overrides')) {
-        const style = document.createElement('style');
-        style.id = 'tank-widget-overrides';
+      if (shadow && !shadow.querySelector("#tank-widget-overrides")) {
+        const style = document.createElement("style");
+        style.id = "tank-widget-overrides";
         style.textContent = TANK_WIDGET_CSS;
         shadow.appendChild(style);
         watchForAttribution();
         resolve();
         return;
       }
-      if (shadow?.querySelector('#tank-widget-overrides') || Date.now() - start > maxMs) {
+      if (shadow?.querySelector("#tank-widget-overrides") || Date.now() - start > maxMs) {
         resolve();
         return;
       }
@@ -233,7 +296,7 @@ function loadWidget(botPublicKey: string, skillName: string, startOpen: boolean)
   return new Promise((resolve, reject) => {
     document.getElementById(WIDGET_ROOT_ID)?.remove();
 
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = WIDGET_SCRIPT_URL;
     script.async = true;
     script.onload = () => {
@@ -243,13 +306,13 @@ function loadWidget(botPublicKey: string, skillName: string, startOpen: boolean)
           participants: [botPublicKey],
           initialMessage: `Hi! Tell me about the ${skillName} package.`,
           startOpen,
-          defaultName: 'Visitor',
-          colorScheme: { dark: { primary: '#10b981', background: '#1a1a1a' } }
+          defaultName: "Visitor",
+          colorScheme: { dark: { primary: "#10b981", background: "#1a1a1a" } },
         });
       }
       resolve();
     };
-    script.onerror = () => reject(new Error('Failed to load chat widget'));
+    script.onerror = () => reject(new Error("Failed to load chat widget"));
     document.body.appendChild(script);
   });
 }
@@ -272,7 +335,7 @@ function dismissNameDialog(maxMs = 3000): Promise<void> {
   return new Promise((resolve) => {
     const start = Date.now();
     const check = () => {
-      const cancel = Array.from(document.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Cancel');
+      const cancel = Array.from(document.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Cancel");
       if (cancel) {
         (cancel as HTMLElement).click();
         resolve();
@@ -291,17 +354,17 @@ function dismissNameDialog(maxMs = 3000): Promise<void> {
 function toggleWidgetOpen(): boolean {
   const shadow = getShadowRoot();
   if (!shadow) return false;
-  const chatButton = shadow.querySelector('button[style*="border-radius: 999px"]') as HTMLElement | null;
+  const chatButton = findToggleButton(shadow);
   if (!chatButton) return false;
-  chatButton.style.setProperty('display', 'inline-block', 'important');
+  chatButton.style.setProperty("display", "inline-block", "important");
   chatButton.click();
-  requestAnimationFrame(() => chatButton.style.setProperty('display', 'none', 'important'));
+  requestAnimationFrame(() => chatButton.style.setProperty("display", "none", "important"));
   return true;
 }
 
 export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkillWidgetProps>(function TalkToSkillWidget(
   { skillName, botPublicKey },
-  ref
+  ref,
 ) {
   const [resolvedBotKey, setResolvedBotKey] = useState<string | null>(botPublicKey);
   const [loading, setLoading] = useState(false);
@@ -315,7 +378,7 @@ export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkill
       let key = resolvedBotKey;
       if (!key) {
         const encoded = encodeURIComponent(skillName);
-        const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: 'POST' }).catch(() => null);
+        const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: "POST" }).catch(() => null);
         if (!res?.ok) return;
         const data = (await res.json()) as { chatLink: string; botPublicKey: string | null };
         key = data.botPublicKey;
@@ -343,7 +406,7 @@ export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkill
       let key = resolvedBotKey;
       if (!key) {
         const encoded = encodeURIComponent(skillName);
-        const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: 'POST' });
+        const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: "POST" });
         if (!res.ok) return;
         const data = (await res.json()) as { chatLink: string; botPublicKey: string | null };
         key = data.botPublicKey;
