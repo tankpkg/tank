@@ -10,7 +10,10 @@ function ensureInitialized() {
   if (_db) return;
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL is not configured. Complete the setup wizard first.');
-  _sql = postgres(url, { max: 1 });
+  // DATABASE_URL must use the Supabase pooler in transaction mode (port 6543).
+  // `prepare: false` is required — PgBouncer transaction mode does not support
+  // prepared statements (postgres-js uses them by default).
+  _sql = postgres(url, { max: 1, prepare: false });
   _db = drizzle(_sql, { schema });
 }
 
