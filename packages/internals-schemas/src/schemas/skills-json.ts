@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from '~/constants/registry.js';
 
+import { mcpServerSchema } from './mcp-server.js';
 import { permissionsSchema } from './permissions.js';
 
 const NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
@@ -27,7 +28,8 @@ const baseManifestFields = {
       min_score: z.number().min(0).max(10)
     })
     .strict()
-    .optional()
+    .optional(),
+  mcp_server: mcpServerSchema.optional()
 };
 
 /** Legacy skills.json schema — strict, no atoms. Used for backward-compatible consumers. */

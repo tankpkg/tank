@@ -1,6 +1,6 @@
 {
   "name": "@tankpkg/cli",
-  "version": "0.14.4",
+  "version": "0.15.0",
   "description": "Security-first package manager for AI agent skills",
   "type": "module",
   "bin": {
@@ -26,6 +26,7 @@
     "@internals/adapters": "workspace:*",
     "@internals/helpers": "workspace:*",
     "@internals/schemas": "workspace:*",
+    "@tankpkg/proxy": "workspace:*",
     "@tankpkg/sdk": "workspace:*",
     "@tankpkg/vault": "workspace:*",
     "@types/node": "^25.5.0",

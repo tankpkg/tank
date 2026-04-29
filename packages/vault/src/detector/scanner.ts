@@ -1,60 +1,15 @@
-import { CREDENTIAL_PATTERNS } from './patterns.ts';
+import { type CredentialMatch, scan as internalScan } from '@internals/helpers';
 
-export interface CredentialMatch {
-  start: number;
-  end: number;
-  patternId: string;
-}
+export type { CredentialMatch };
 
+/**
+ * Vault scanner — permissive mode.
+ *
+ * Vault redacts credentials from agent→tool message flows. False negatives
+ * (leaked secrets) are far costlier than false positives (redundant fake
+ * tokens). Permissive mode skips the entropy gate and placeholder denylist
+ * so any regex-matched shape is redacted. See D7 / INTENT C25d.
+ */
 export function scan(text: string): CredentialMatch[] {
-  if (text.length === 0) {
-    return [];
-  }
-
-  const matches: CredentialMatch[] = [];
-
-  for (const pattern of CREDENTIAL_PATTERNS) {
-    const regex = new RegExp(
-      pattern.regex.source,
-      pattern.regex.flags.includes('g') ? pattern.regex.flags : `${pattern.regex.flags}g`
-    );
-    let result: RegExpExecArray | null = regex.exec(text);
-
-    while (result) {
-      const value = result[0];
-      const rawStart = result.index;
-      const start = rawStart > 1 && text[rawStart - 1] === ' ' && text[rawStart - 2] === ':' ? rawStart + 1 : rawStart;
-      const end = rawStart + value.length + (start === rawStart ? 0 : 1);
-
-      matches.push({
-        start,
-        end,
-        patternId: pattern.id
-      });
-
-      result = regex.exec(text);
-    }
-  }
-
-  matches.sort((a, b) => {
-    if (a.start !== b.start) {
-      return a.start - b.start;
-    }
-    if (a.end !== b.end) {
-      return a.end - b.end;
-    }
-    return a.patternId.localeCompare(b.patternId);
-  });
-
-  const deduped: CredentialMatch[] = [];
-
-  for (const match of matches) {
-    const prev = deduped[deduped.length - 1];
-    if (prev && prev.start === match.start && prev.end === match.end && prev.patternId === match.patternId) {
-      continue;
-    }
-    deduped.push(match);
-  }
-
-  return deduped;
+  return internalScan(text, { mode: 'permissive' });
 }
