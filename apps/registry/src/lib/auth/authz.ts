@@ -29,9 +29,10 @@ function parseScopes(rawPermissions: unknown): string[] {
         return [];
       }
 
+      const prefix = `${resource}:`;
       return permissions
         .filter((permission): permission is string => typeof permission === 'string' && permission.trim().length > 0)
-        .map((permission) => `${resource}:${permission}`);
+        .map((permission) => (permission.startsWith(prefix) ? permission : `${prefix}${permission}`));
     });
   }
 
@@ -68,7 +69,7 @@ async function resolveApiKeyOwnerId(key: {
   return rows[0]?.userId ?? null;
 }
 
-function hasRequiredScopes(grantedScopes: string[], requiredScopes: string[]): boolean {
+export function hasRequiredScopes(grantedScopes: string[], requiredScopes: string[]): boolean {
   if (requiredScopes.length === 0) {
     return true;
   }
@@ -118,7 +119,15 @@ export async function isAdmin(userId: string): Promise<boolean> {
   return dbUser[0]?.role === 'admin';
 }
 
-export async function verifyCliAuth(request: Request, requiredScopes: string[] = []): Promise<VerifiedApiKey | null> {
+/**
+ * Authenticates a CLI/API request via Bearer token. Returns the verified key
+ * (with parsed scopes) on success, or null if the token is missing/invalid/
+ * disabled/blocked. Callers that need to enforce scopes MUST do so explicitly
+ * via `hasRequiredScopes(verified.scopes, [...])` and return 403 (NOT 401) on
+ * scope failure — those are different concerns and the CLI surfaces them as
+ * different user errors ("log in again" vs "your token can't do that").
+ */
+export async function verifyCliAuth(request: Request): Promise<VerifiedApiKey | null> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
@@ -159,15 +168,10 @@ export async function verifyCliAuth(request: Request, requiredScopes: string[] =
       // DB error checking service account status — don't block auth for regular users.
     }
 
-    const scopes = parseScopes(result.key.permissions);
-    if (!hasRequiredScopes(scopes, requiredScopes)) {
-      return null;
-    }
-
     return {
       userId: ownerId,
       keyId: result.key.id,
-      scopes
+      scopes: parseScopes(result.key.permissions)
     };
   } catch {
     return null;
