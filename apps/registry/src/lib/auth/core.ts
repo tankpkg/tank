@@ -10,6 +10,20 @@ import { getFromAddress, getProvider, sendEmail } from '~/services/email/service
 
 function createAuth() {
   const isSelfHosted = process.env.TANK_MODE === 'selfhosted';
+  const emailBackendConfigured = !!process.env.RESEND_API_KEY || !!process.env.SMTP_HOST;
+  const credentialsEnabled = enabledProviders.has('credentials');
+  // Email verification only meaningful when there's a real backend to send from.
+  // Without one, sendEmail's `console` provider returns success without sending,
+  // leaving the user permanently unverified. Auto-verify in that case (matches
+  // self-hosted behavior) and warn loudly so ops can fix the misconfig.
+  const requireEmailVerification = credentialsEnabled && !isSelfHosted && emailBackendConfigured;
+  if (credentialsEnabled && !isSelfHosted && !emailBackendConfigured) {
+    // biome-ignore lint/suspicious/noConsole: startup misconfig warning — must be visible
+    console.warn(
+      '[auth] No email backend configured (RESEND_API_KEY or SMTP_HOST). Email verification SKIPPED. ' +
+        'Configure email to enable verification at sign-up.'
+    );
+  }
 
   return betterAuth({
     database: drizzleAdapter(db, {
@@ -19,11 +33,11 @@ function createAuth() {
     basePath: '/api/auth',
     secret: process.env.BETTER_AUTH_SECRET || env.BETTER_AUTH_SECRET,
     emailAndPassword: {
-      enabled: enabledProviders.has('credentials'),
-      requireEmailVerification: enabledProviders.has('credentials') && !isSelfHosted
+      enabled: credentialsEnabled,
+      requireEmailVerification
     },
     emailVerification: {
-      sendOnSignUp: enabledProviders.has('credentials') && !isSelfHosted,
+      sendOnSignUp: requireEmailVerification,
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, url }) => {
         const rateLimit = await checkVerificationRateLimit(user.email);
