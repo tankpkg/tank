@@ -24,7 +24,7 @@
     },
     "apps/registry": {
       "name": "registry",
-      "version": "0.12.1",
+      "version": "0.13.1",
       "dependencies": {
         "@alice-and-bot/core": "npm:@jsr/alice-and-bot__core",
         "@aws-sdk/client-s3": "^3.1013.0",
@@ -116,6 +116,7 @@
       "dependencies": {
         "@internals/helpers": "workspace:*",
         "@internals/schemas": "workspace:*",
+        "@tankpkg/proxy": "workspace:*",
         "postgres": "^3.4.8",
         "semver": "^7.7.4",
       },
@@ -159,7 +160,7 @@
     },
     "packages/cli": {
       "name": "@tankpkg/cli",
-      "version": "0.12.1",
+      "version": "0.13.1",
       "bin": {
         "tank": "dist/bin/tank.js",
       },
@@ -180,6 +181,7 @@
         "@internals/adapters": "workspace:*",
         "@internals/helpers": "workspace:*",
         "@internals/schemas": "workspace:*",
+        "@tankpkg/proxy": "workspace:*",
         "@tankpkg/sdk": "workspace:*",
         "@tankpkg/vault": "workspace:*",
         "@types/node": "^25.5.0",
@@ -191,7 +193,7 @@
     },
     "packages/internals-helpers": {
       "name": "@internals/helpers",
-      "version": "0.12.1",
+      "version": "0.13.1",
       "dependencies": {
         "semver": "^7.7.4",
       },
@@ -203,7 +205,7 @@
     },
     "packages/internals-schemas": {
       "name": "@internals/schemas",
-      "version": "0.12.1",
+      "version": "0.13.1",
       "dependencies": {
         "zod": "^4.3.6",
       },
@@ -214,7 +216,7 @@
     },
     "packages/mcp-server": {
       "name": "@tankpkg/mcp-server",
-      "version": "0.12.1",
+      "version": "0.13.1",
       "bin": {
         "tank-mcp": "dist/index.js",
       },
@@ -235,9 +237,23 @@
         "vitest": "^4.1.0",
       },
     },
+    "packages/proxy": {
+      "name": "@tankpkg/proxy",
+      "version": "0.1.0",
+      "dependencies": {
+        "@internals/helpers": "workspace:*",
+        "@internals/schemas": "workspace:*",
+        "@modelcontextprotocol/sdk": "^1.29.0",
+      },
+      "devDependencies": {
+        "@types/node": "^25.5.0",
+        "tsdown": "^0.21.3",
+        "vitest": "^4.1.0",
+      },
+    },
     "packages/sdk": {
       "name": "@tankpkg/sdk",
-      "version": "0.12.1",
+      "version": "0.13.1",
       "dependencies": {
         "@internals/helpers": "workspace:*",
         "tar": "^7.5.11",
@@ -260,6 +276,9 @@
     "packages/vault": {
       "name": "@tankpkg/vault",
       "version": "0.1.0",
+      "dependencies": {
+        "@internals/helpers": "workspace:*",
+      },
       "devDependencies": {
         "@types/node": "^25.5.0",
         "tsdown": "^0.21.3",
@@ -1084,6 +1103,8 @@
     "@tankpkg/cli": ["@tankpkg/cli@workspace:packages/cli"],
 
     "@tankpkg/mcp-server": ["@tankpkg/mcp-server@workspace:packages/mcp-server"],
+
+    "@tankpkg/proxy": ["@tankpkg/proxy@workspace:packages/proxy"],
 
     "@tankpkg/sdk": ["@tankpkg/sdk@workspace:packages/sdk"],
 

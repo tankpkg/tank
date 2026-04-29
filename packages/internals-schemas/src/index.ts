@@ -68,6 +68,13 @@ export {
   toolIRSchema
 } from '~/schemas/atoms/index.js';
 export {
+  isRemoteMcpServer,
+  type McpServer,
+  type McpServerLocal,
+  type McpServerRemote,
+  mcpServerSchema
+} from '~/schemas/mcp-server.js';
+export {
   type AdminAction,
   adminActionSchema,
   type FilesystemPermissions,
@@ -84,6 +91,12 @@ export {
   userRoleSchema,
   userStatusSchema
 } from '~/schemas/permissions.js';
+export {
+  type PerToolOverride,
+  type ProxyPolicy,
+  perToolOverrideSchema,
+  proxyPolicySchema
+} from '~/schemas/proxy-policy.js';
 export {
   type PublishManifest,
   publishManifestSchema,

@@ -2,7 +2,7 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { publishManifestSchema } from '@internals/schemas';
 import { and, desc, eq } from 'drizzle-orm';
 
-import { verifyCliAuth } from '~/lib/auth/authz';
+import { hasRequiredScopes, verifyCliAuth } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { account, member, organization, user } from '~/lib/db/auth-schema';
 import { skills, skillVersions } from '~/lib/db/schema';
@@ -61,7 +61,7 @@ const publishRoute = createRoute({
       }
     },
     403: {
-      description: 'Not a member of the org',
+      description: 'Token lacks skills:publish scope, or user is not a member of the org',
       content: {
         'application/json': {
           schema: z.object({ error: z.string() })
@@ -96,9 +96,12 @@ const publishRoute = createRoute({
 });
 
 export const skillsPublishRoutes = new OpenAPIHono().openapi(publishRoute, async (c) => {
-  const verified = await verifyCliAuth(c.req.raw, ['skills:publish']);
+  const verified = await verifyCliAuth(c.req.raw);
   if (!verified) {
-    return c.json({ error: 'Unauthorized. Valid API key with skills:publish scope required.' }, 401);
+    return c.json({ error: 'Unauthorized. Valid API key required.' }, 401);
+  }
+  if (!hasRequiredScopes(verified.scopes, ['skills:publish'])) {
+    return c.json({ error: 'Forbidden. Token lacks required scope: skills:publish (or skills:admin).' }, 403);
   }
 
   let body: unknown;

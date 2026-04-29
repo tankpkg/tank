@@ -1,9 +1,9 @@
-import { Loader2, MessageCircle } from "lucide-react";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { Loader2, MessageCircle } from 'lucide-react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
-const WIDGET_SCRIPT_URL = "https://storage.googleapis.com/alice-and-bot/widget/dist/widget.iife.js";
-const WIDGET_ROOT_ID = "alice-and-bot-widget-root";
-const CREDENTIALS_KEY = "aliceAndBotCredentials";
+const WIDGET_SCRIPT_URL = 'https://storage.googleapis.com/alice-and-bot/widget/dist/widget.iife.js';
+const WIDGET_ROOT_ID = 'alice-and-bot-widget-root';
+const CREDENTIALS_KEY = 'aliceAndBotCredentials';
 
 const TANK_WIDGET_CSS = `
   :host {
@@ -231,7 +231,7 @@ function getShadowRoot(): ShadowRoot | null {
 
 function findInputWrapper(shadow: ShadowRoot): Element | null {
   return (
-    shadow.querySelector("[data-input-area]") ??
+    shadow.querySelector('[data-input-area]') ??
     shadow.querySelector('div[style*="position: absolute"][style*="bottom: 0"]') ??
     shadow.querySelector('div[style*="position:absolute"][style*="bottom:0"]')
   );
@@ -246,13 +246,13 @@ function findToggleButton(shadow: ShadowRoot): HTMLElement | null {
 
 function injectAttribution(): void {
   const shadow = getShadowRoot();
-  if (!shadow || shadow.querySelector("#tank-attribution")) return;
+  if (!shadow || shadow.querySelector('#tank-attribution')) return;
   const inputWrapper = findInputWrapper(shadow);
   if (!inputWrapper) return;
-  const bar = document.createElement("div");
-  bar.id = "tank-attribution";
+  const bar = document.createElement('div');
+  bar.id = 'tank-attribution';
   bar.style.cssText =
-    "text-align:center;font-size:10px;color:oklch(0.4 0.01 155);padding:4px 0 2px;pointer-events:auto;";
+    'text-align:center;font-size:10px;color:oklch(0.4 0.01 155);padding:4px 0 2px;pointer-events:auto;';
   bar.innerHTML =
     'Powered by <a href="https://prompt2bot.com" target="_blank" rel="noopener noreferrer" style="color:oklch(0.5 0.01 155);text-decoration:underline;text-underline-offset:2px">prompt2bot</a> · <a href="https://aliceandbot.com" target="_blank" rel="noopener noreferrer" style="color:oklch(0.5 0.01 155);text-decoration:underline;text-underline-offset:2px">alice&bot</a>';
   inputWrapper.prepend(bar);
@@ -273,16 +273,16 @@ function injectWidgetStyles(maxMs = 10000): Promise<void> {
     const start = Date.now();
     const check = () => {
       const shadow = getShadowRoot();
-      if (shadow && !shadow.querySelector("#tank-widget-overrides")) {
-        const style = document.createElement("style");
-        style.id = "tank-widget-overrides";
+      if (shadow && !shadow.querySelector('#tank-widget-overrides')) {
+        const style = document.createElement('style');
+        style.id = 'tank-widget-overrides';
         style.textContent = TANK_WIDGET_CSS;
         shadow.appendChild(style);
         watchForAttribution();
         resolve();
         return;
       }
-      if (shadow?.querySelector("#tank-widget-overrides") || Date.now() - start > maxMs) {
+      if (shadow?.querySelector('#tank-widget-overrides') || Date.now() - start > maxMs) {
         resolve();
         return;
       }
@@ -296,7 +296,7 @@ function loadWidget(botPublicKey: string, skillName: string, startOpen: boolean)
   return new Promise((resolve, reject) => {
     document.getElementById(WIDGET_ROOT_ID)?.remove();
 
-    const script = document.createElement("script");
+    const script = document.createElement('script');
     script.src = WIDGET_SCRIPT_URL;
     script.async = true;
     script.onload = () => {
@@ -306,13 +306,13 @@ function loadWidget(botPublicKey: string, skillName: string, startOpen: boolean)
           participants: [botPublicKey],
           initialMessage: `Hi! Tell me about the ${skillName} package.`,
           startOpen,
-          defaultName: "Visitor",
-          colorScheme: { dark: { primary: "#10b981", background: "#1a1a1a" } },
+          defaultName: 'Visitor',
+          colorScheme: { dark: { primary: '#10b981', background: '#1a1a1a' } }
         });
       }
       resolve();
     };
-    script.onerror = () => reject(new Error("Failed to load chat widget"));
+    script.onerror = () => reject(new Error('Failed to load chat widget'));
     document.body.appendChild(script);
   });
 }
@@ -335,7 +335,7 @@ function dismissNameDialog(maxMs = 3000): Promise<void> {
   return new Promise((resolve) => {
     const start = Date.now();
     const check = () => {
-      const cancel = Array.from(document.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Cancel");
+      const cancel = Array.from(document.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Cancel');
       if (cancel) {
         (cancel as HTMLElement).click();
         resolve();
@@ -356,15 +356,15 @@ function toggleWidgetOpen(): boolean {
   if (!shadow) return false;
   const chatButton = findToggleButton(shadow);
   if (!chatButton) return false;
-  chatButton.style.setProperty("display", "inline-block", "important");
+  chatButton.style.setProperty('display', 'inline-block', 'important');
   chatButton.click();
-  requestAnimationFrame(() => chatButton.style.setProperty("display", "none", "important"));
+  requestAnimationFrame(() => chatButton.style.setProperty('display', 'none', 'important'));
   return true;
 }
 
 export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkillWidgetProps>(function TalkToSkillWidget(
   { skillName, botPublicKey },
-  ref,
+  ref
 ) {
   const [resolvedBotKey, setResolvedBotKey] = useState<string | null>(botPublicKey);
   const [loading, setLoading] = useState(false);
@@ -378,7 +378,7 @@ export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkill
       let key = resolvedBotKey;
       if (!key) {
         const encoded = encodeURIComponent(skillName);
-        const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: "POST" }).catch(() => null);
+        const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: 'POST' }).catch(() => null);
         if (!res?.ok) return;
         const data = (await res.json()) as { chatLink: string; botPublicKey: string | null };
         key = data.botPublicKey;
@@ -406,7 +406,7 @@ export const TalkToSkillWidget = forwardRef<TalkToSkillWidgetHandle, TalkToSkill
       let key = resolvedBotKey;
       if (!key) {
         const encoded = encodeURIComponent(skillName);
-        const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: "POST" });
+        const res = await fetch(`/api/v1/skills/${encoded}/talk`, { method: 'POST' });
         if (!res.ok) return;
         const data = (await res.json()) as { chatLink: string; botPublicKey: string | null };
         key = data.botPublicKey;

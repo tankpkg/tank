@@ -13,3 +13,7 @@ bun.lock
 .git
 .claude
 infra/helm
+packages/internals-helpers/vendor
+apps/registry/public/docs/cli.md
+apps/registry/public/llms-full.txt
+apps/registry/public/llms.txt

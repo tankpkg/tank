@@ -1,0 +1,3 @@
+[submodule "clawguard"]
+	path = packages/internals-helpers/vendor/clawguard
+	url = https://github.com/joergmichno/clawguard.git

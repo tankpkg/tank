@@ -12,6 +12,7 @@ import { loginCommand } from '~/commands/login.js';
 import { logoutCommand } from '~/commands/logout.js';
 import { migrateCommand } from '~/commands/migrate.js';
 import { permissionsCommand } from '~/commands/permissions.js';
+import { proxyCommand } from '~/commands/proxy.js';
 import { publishCommand } from '~/commands/publish.js';
 import { removeCommand } from '~/commands/remove.js';
 import { runCommand } from '~/commands/run.js';
@@ -164,21 +165,40 @@ program
   .argument('[version-range]', 'Semver range (default: *)', '*')
   .option('-g, --global', 'Install skill globally (available to all projects)')
   .option('-y, --yes', 'Auto-accept flagged scan verdicts')
-  .action(async (name: string | undefined, versionRange: string, opts: { global?: boolean; yes?: boolean }) => {
-    try {
-      if (name && isUrl(name)) {
-        await installFromUrl(name, { global: opts.global, yes: opts.yes });
-      } else if (name) {
-        await installCommand({ name, versionRange, global: opts.global });
-      } else {
-        await installAll({ global: opts.global });
+  .option('--dangerously-no-tank-proxy', 'Skip wrapping MCP servers with the tank proxy (no scanning, no enforcement)')
+  .action(
+    async (
+      name: string | undefined,
+      versionRange: string,
+      opts: { global?: boolean; yes?: boolean; dangerouslyNoTankProxy?: boolean }
+    ) => {
+      try {
+        if (name && isUrl(name)) {
+          await installFromUrl(name, {
+            global: opts.global,
+            yes: opts.yes,
+            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+          });
+        } else if (name) {
+          await installCommand({
+            name,
+            versionRange,
+            global: opts.global,
+            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+          });
+        } else {
+          await installAll({
+            global: opts.global,
+            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
+          });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Install failed: ${msg}`);
+        process.exit(1);
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Install failed: ${msg}`);
-      process.exit(1);
     }
-  });
+  );
 
 program
   .command('remove')
@@ -300,6 +320,72 @@ program
       process.exit(1);
     }
   });
+
+program
+  .command('proxy')
+  .description('Transparent MCP proxy — wraps an MCP server with runtime enforcement')
+  .argument(
+    '[command]',
+    'Child MCP server command to wrap (omit when using --reset-pins, --remote, or download-ml-model)'
+  )
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .option('--audit-path <path>', 'JSONL audit log path (default: ~/.tank/proxy/audit.jsonl)')
+  .option('--reset-pins', 'Delete all rug-pull schema pins under ~/.tank/proxy/pins/ and continue')
+  .option('--remote <url>', 'Connect to a remote MCP server over SSE/HTTP instead of spawning a child')
+  .option('--requires-auth', 'Require TANK_MCP_AUTH_<SLUG> env var before connecting to the remote')
+  .option(
+    '--enable-ml',
+    'Enable the opt-in ML-based prompt-injection classifier (requires ~500MB model; run `tank proxy download-ml-model` first)'
+  )
+  .option('--verbose', 'Print proxy diagnostic details to stderr')
+  .action(
+    async (
+      command: string | undefined,
+      opts: {
+        auditPath?: string;
+        resetPins?: boolean;
+        verbose?: boolean;
+        remote?: string;
+        requiresAuth?: boolean;
+        enableMl?: boolean;
+      },
+      cmd: Command
+    ) => {
+      try {
+        if (command === 'download-ml-model') {
+          const { proxyDownloadMlCommand } = await import('~/commands/proxy-download-ml.js');
+          const downloadOpts: Parameters<typeof proxyDownloadMlCommand>[0] = {};
+          if (process.argv.includes('--yes') || process.argv.includes('-y')) downloadOpts.yes = true;
+          await proxyDownloadMlCommand(downloadOpts);
+          return;
+        }
+        if (opts.resetPins) {
+          const { proxyResetPinsCommand } = await import('~/commands/proxy-reset-pins.js');
+          proxyResetPinsCommand();
+        }
+        if (opts.remote) {
+          const { proxyRemoteCommand } = await import('~/commands/proxy-remote.js');
+          await proxyRemoteCommand({
+            url: opts.remote,
+            requiresAuth: opts.requiresAuth === true
+          });
+          return;
+        }
+        if (!command) return;
+        const args = cmd.args.slice(1);
+        const proxyOpts: Parameters<typeof proxyCommand>[0] = { command, args };
+        if (opts.auditPath !== undefined) proxyOpts.auditPath = opts.auditPath;
+        if (opts.verbose !== undefined) proxyOpts.verbose = opts.verbose;
+        if (opts.enableMl === true) proxyOpts.enableMl = true;
+        await proxyCommand(proxyOpts);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`Proxy failed: ${msg}`);
+        process.exit(1);
+      }
+    }
+  );
 
 program
   .command('scan')

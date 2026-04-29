@@ -25,5 +25,7 @@
     "tsdown": "^0.21.3",
     "vitest": "^4.1.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@internals/helpers": "workspace:*"
+  }
 }

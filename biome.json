@@ -30,6 +30,7 @@
       "!**/.astro",
       "!**/.features-gen",
       "!**/generated",
+      "!**/vendor",
       "!**/test-results",
       "!e2e/bdd/e2e/bdd/reports/report.html",
       "!**/next-env.d.ts",
@@ -141,7 +142,7 @@
       }
     },
     {
-      "includes": ["packages/cli/**", "scripts/**"],
+      "includes": ["packages/cli/**", "scripts/**", "apps/registry/scripts/**"],
       "linter": {
         "rules": {
           "suspicious": {

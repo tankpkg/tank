@@ -241,4 +241,31 @@ describe('skillsJsonSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('accepts an mcp_server (local) block', () => {
+    const result = skillsJsonSchema.safeParse({
+      name: '@org/mcp-tool',
+      version: '1.0.0',
+      mcp_server: { command: 'npx', args: ['@org/mcp-tool'] }
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts an mcp_server (remote) block', () => {
+    const result = skillsJsonSchema.safeParse({
+      name: '@org/remote-tool',
+      version: '1.0.0',
+      mcp_server: { remote: 'https://remote.example.com/sse', requires_auth: true }
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects an mcp_server with both command and remote', () => {
+    const result = skillsJsonSchema.safeParse({
+      name: '@org/invalid',
+      version: '1.0.0',
+      mcp_server: { command: 'npx', remote: 'https://x.example.com' }
+    });
+    expect(result.success).toBe(false);
+  });
 });
