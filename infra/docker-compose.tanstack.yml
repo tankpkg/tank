@@ -139,6 +139,7 @@ services:
 
       # First Admin
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy
