@@ -115,7 +115,7 @@ services:
       AUTH_PROVIDERS: ${AUTH_PROVIDERS:-credentials}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-}
+      OIDC_PROVIDER_ID: ${OIDC_PROVIDER_ID:-enterprise-oidc}
       OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
@@ -130,6 +130,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@tank.local}
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:-}
       TANK_MODE: selfhosted
     depends_on:
       postgres:

@@ -90,7 +90,9 @@ RUN addgroup --system --gid 1001 bunjs && \
 
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/.output ./.output
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/scripts/entrypoint.sh ./entrypoint.sh
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/scripts/bootstrap-headless.ts ./scripts/bootstrap-headless.ts
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/scripts/load-settings-from-db.ts ./scripts/load-settings-from-db.ts
+COPY --chown=tanstack:bunjs scripts/ensure-pg-trgm.mjs ./scripts/ensure-pg-trgm.mjs
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/drizzle.config.js ./drizzle.config.js
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/schema.js ./src/lib/db/schema.js
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/src/lib/crypto.ts ./src/lib/crypto.ts
