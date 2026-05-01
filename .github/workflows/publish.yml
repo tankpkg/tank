@@ -192,6 +192,7 @@ jobs:
             echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)"
             echo "TANK_IMAGE_TAG=${{ steps.version.outputs.version }}"
             echo "FIRST_ADMIN_EMAIL=smoke@test.local"
+            echo "FIRST_ADMIN_PASSWORD=smoke-password-123"
           } >> .env
 
       - name: Login to GitHub Container Registry
@@ -218,24 +219,36 @@ jobs:
           echo "Postgres is ready."
 
           echo "Waiting for scanner health..."
+          scanner_ready=false
           for i in $(seq 1 30); do
-            if docker compose exec -T scanner wget -q --spider http://127.0.0.1:8000/health 2>/dev/null; then
+            if docker compose exec -T scanner python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()" 2>/dev/null; then
               echo "Scanner is healthy."
+              scanner_ready=true
               break
             fi
             echo "  attempt $i/30..."
             sleep 5
           done
+          if [ "$scanner_ready" != "true" ]; then
+            echo "Scanner did not become healthy."
+            exit 1
+          fi
 
           echo "Waiting for web health..."
+          web_ready=false
           for i in $(seq 1 30); do
             if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
               echo "Web is healthy."
+              web_ready=true
               break
             fi
             echo "  attempt $i/30..."
             sleep 5
           done
+          if [ "$web_ready" != "true" ]; then
+            echo "Web did not become healthy."
+            exit 1
+          fi
 
       - name: Verify health endpoints
         working-directory: /tmp/tank-smoke
@@ -244,7 +257,7 @@ jobs:
           curl -sf http://localhost:3000/api/health | jq .
 
           echo "=== Scanner health ==="
-          docker compose exec -T scanner wget -qO- http://127.0.0.1:8000/health | jq .
+          docker compose exec -T scanner python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8000/health').read().decode())" | jq .
 
           echo "=== Container status ==="
           docker compose ps
@@ -255,16 +268,8 @@ jobs:
         run: |
           echo "=== docker compose ps ==="
           docker compose ps -a
-          echo "=== web logs ==="
-          docker compose logs web --tail=100
-          echo "=== scanner logs ==="
-          docker compose logs scanner --tail=100
-          echo "=== postgres logs ==="
-          docker compose logs postgres --tail=50
-          echo "=== redis logs ==="
-          docker compose logs redis --tail=50
-          echo "=== minio logs ==="
-          docker compose logs minio --tail=50
+          echo "=== compose logs ==="
+          docker compose logs --tail=100 || true
 
       - name: Teardown
         if: always()
