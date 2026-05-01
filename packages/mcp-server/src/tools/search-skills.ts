@@ -5,9 +5,9 @@ import { TankApiClient } from '~/lib/api-client.js';
 
 interface SearchResult {
   name: string;
-  version: string;
+  latestVersion?: string | null;
   description: string | null;
-  auditScore: number | null;
+  auditScore?: number | null;
   downloads: number;
   publisher: string;
 }
@@ -57,7 +57,8 @@ export function registerSearchSkillsTool(server: McpServer): void {
       // Format as markdown table
       const header = '| Skill | Score | Downloads | Description |\n|-------|-------|-----------|-------------|';
       const rows = results.map((skill) => {
-        const score = skill.auditScore !== null ? skill.auditScore.toFixed(1) : '-';
+        const score =
+          typeof skill.auditScore === 'number' && Number.isFinite(skill.auditScore) ? skill.auditScore.toFixed(1) : '-';
         const downloads =
           skill.downloads > 1000 ? `${(skill.downloads / 1000).toFixed(1)}k` : skill.downloads.toString();
         const desc = skill.description?.slice(0, 50) ?? 'No description';

@@ -169,6 +169,7 @@ export interface SkillSearchResult {
   description: string | null;
   visibility: 'public' | 'private';
   latestVersion: string | null;
+  auditScore: number | null;
   scanVerdict: string | null;
   publisher: string;
   downloads: number;
@@ -588,6 +589,7 @@ export async function searchSkills(
         s.visibility,
         s.updated_at AS "updatedAt",
         sv.version AS "latestVersion",
+        sv.audit_score AS "auditScore",
         sr.verdict AS "scanVerdict",
         coalesce(u.name, '') AS publisher,
         ${downloadsSql} AS downloads,
@@ -630,6 +632,7 @@ export async function searchSkills(
       s.visibility,
       s.updated_at AS "updatedAt",
       sv.version AS "latestVersion",
+      sv.audit_score AS "auditScore",
       sr.verdict AS "scanVerdict",
       coalesce(u.name, '') AS publisher,
       ${downloadsSql} AS downloads,
@@ -691,6 +694,7 @@ function mapSearchResults(rows: Record<string, unknown>[], page: number, limit: 
       description: row.description as string | null,
       visibility: (row.visibility as 'public' | 'private') ?? 'public',
       latestVersion: (row.latestVersion as string) ?? null,
+      auditScore: row.auditScore != null ? Number(row.auditScore) : null,
       scanVerdict: (row.scanVerdict as string) ?? null,
       publisher: (row.publisher as string) ?? '',
       downloads: Number(row.downloads) || 0,
