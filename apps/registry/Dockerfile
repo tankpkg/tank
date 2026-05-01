@@ -13,6 +13,7 @@ COPY packages/cli/package.json ./packages/cli/
 COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/adapters/package.json ./packages/adapters/
+COPY packages/proxy/package.json ./packages/proxy/
 COPY packages/vault/package.json ./packages/vault/
 COPY bdd/package.json ./bdd/
 COPY e2e/package.json ./e2e/
@@ -29,6 +30,8 @@ COPY packages/internals-helpers ./packages/internals-helpers
 COPY apps/registry ./apps/registry
 COPY packages/sdk ./packages/sdk
 COPY packages/adapters ./packages/adapters
+COPY packages/proxy ./packages/proxy
+COPY packages/vault ./packages/vault
 COPY packages/cli ./packages/cli
 COPY packages/mcp-server ./packages/mcp-server
 
@@ -37,6 +40,8 @@ COPY --from=deps /app/packages/internals-schemas/node_modules ./packages/interna
 COPY --from=deps /app/packages/internals-helpers/node_modules ./packages/internals-helpers/node_modules
 COPY --from=deps /app/packages/sdk/node_modules ./packages/sdk/node_modules
 COPY --from=deps /app/packages/adapters/node_modules ./packages/adapters/node_modules
+COPY --from=deps /app/packages/proxy/node_modules ./packages/proxy/node_modules
+COPY --from=deps /app/packages/vault/node_modules ./packages/vault/node_modules
 COPY --from=deps /app/apps/registry/node_modules ./apps/registry/node_modules
 COPY --from=deps /app/packages/cli/node_modules ./packages/cli/node_modules
 COPY --from=deps /app/packages/mcp-server/node_modules ./packages/mcp-server/node_modules
@@ -61,7 +66,8 @@ export default defineConfig({
 DRIZZLE_EOF
 
 # Build CLI binaries for on-prem distribution
-RUN bun run --filter=@tankpkg/cli build && \
+RUN bun run --filter=@tankpkg/proxy build && \
+    bun run --filter=@tankpkg/cli build && \
     bun run --filter=@tankpkg/cli build:bundle && \
 mkdir -p /app/cli-binaries && \
 bun build --compile packages/cli/build/tank-bundle.mjs --target bun-linux-x64 --outfile /app/cli-binaries/tank-linux-x64 && \
