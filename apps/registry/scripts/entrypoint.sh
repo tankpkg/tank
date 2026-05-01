@@ -16,6 +16,12 @@ fi
 if [ "$AUTO_MIGRATE" = "true" ]; then
   echo "[Tank] AUTO_MIGRATE=true — running headless setup..."
 
+  echo "[Tank] Ensuring pg_trgm extension..."
+  bun ./scripts/ensure-pg-trgm.mjs 2>&1 || {
+    echo "[Tank] ERROR: Failed to enable pg_trgm. Is DATABASE_URL correct and extension creation allowed?"
+    exit 1
+  }
+
   echo "[Tank] Pushing database schema..."
   bun ./node_modules/drizzle-kit/bin.cjs push --force --config=drizzle.config.js 2>&1 || {
     echo "[Tank] ERROR: Schema push failed. Is DATABASE_URL correct?"
