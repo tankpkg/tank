@@ -202,6 +202,67 @@ describe('searchCommand', () => {
     expect(output).toContain('2.0');
   });
 
+  it('shows N/A instead of undefined when audit score is missing', async () => {
+    const { searchCommand } = await import('~/commands/search.js');
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              name: '@org/unscored',
+              description: 'Score has not been computed yet',
+              latestVersion: '1.0.0',
+              publisher: 'org',
+              downloads: 10
+            }
+          ],
+          page: 1,
+          limit: 20,
+          total: 1
+        }),
+        { status: 200 }
+      )
+    );
+
+    await searchCommand({ query: 'unscored', configDir });
+
+    const output = getAllOutput();
+    expect(output).toContain('N/A');
+    expect(output).not.toContain('undefined');
+  });
+
+  it('shows N/A when audit score is null', async () => {
+    const { searchCommand } = await import('~/commands/search.js');
+
+    mockFetch.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              name: '@org/pending',
+              description: 'Score is pending',
+              latestVersion: '1.0.0',
+              auditScore: null,
+              publisher: 'org',
+              downloads: 10
+            }
+          ],
+          page: 1,
+          limit: 20,
+          total: 1
+        }),
+        { status: 200 }
+      )
+    );
+
+    await searchCommand({ query: 'pending', configDir });
+
+    const output = getAllOutput();
+    expect(output).toContain('N/A');
+    expect(output).not.toContain('undefined');
+  });
+
   it('includes auth token when present in config', async () => {
     const { searchCommand } = await import('~/commands/search.js');
 

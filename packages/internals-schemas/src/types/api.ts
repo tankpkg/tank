@@ -40,9 +40,16 @@ export interface SearchResult {
   name: string;
   description: string | null;
   visibility?: SkillVisibility;
-  version: string;
+  latestVersion: string | null;
+  /** @deprecated Use latestVersion. Search API responses do not include this alias. */
+  version?: string | null;
   auditScore: number | null;
+  publisher: string;
   downloads: number;
+  stars: number;
+  updatedAt?: string;
+  atomKinds?: string[];
+  scanVerdict?: string | null;
 }
 
 export interface SearchResponse {
