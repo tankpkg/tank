@@ -113,6 +113,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@tank.local}
       FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:-}
       TANK_MODE: selfhosted
       AUTO_MIGRATE: "true"
     depends_on:
