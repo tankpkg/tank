@@ -231,6 +231,27 @@ function mkdirSafeNoSymlinks(targetDir: string): void {
   }
 }
 
+function isDirNonEmpty(dir: string): boolean {
+  try {
+    return fs.readdirSync(dir).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+function moveEntryAcrossDevices(src: string, dst: string): void {
+  try {
+    fs.renameSync(src, dst);
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
+      fs.cpSync(src, dst, { recursive: true });
+      fs.rmSync(src, { recursive: true, force: true });
+      return;
+    }
+    throw err;
+  }
+}
+
 export async function extractSafely(tarball: Buffer, destDir: string): Promise<void> {
   if (tarball.length > MAX_DOWNLOAD_BYTES) {
     throw new TankIntegrityError(`Tarball exceeds ${MAX_DOWNLOAD_BYTES} byte limit`);
@@ -242,6 +263,8 @@ export async function extractSafely(tarball: Buffer, destDir: string): Promise<v
 
   let entryCount = 0;
   let totalBytes = 0;
+  let backupDir: string | null = null;
+
   try {
     await extract({
       file: tmpTarball,
@@ -275,21 +298,33 @@ export async function extractSafely(tarball: Buffer, destDir: string): Promise<v
 
     mkdirSafeNoSymlinks(destDir);
 
+    if (isDirNonEmpty(destDir)) {
+      backupDir = `${destDir}.tank-old-${crypto.randomUUID()}`;
+      fs.renameSync(destDir, backupDir);
+      mkdirSafeNoSymlinks(destDir);
+    }
+
     for (const entry of fs.readdirSync(tmpDir)) {
       if (entry === path.basename(tmpTarball)) continue;
       const src = path.join(tmpDir, entry);
       const dst = path.join(destDir, entry);
+      moveEntryAcrossDevices(src, dst);
+    }
+
+    if (backupDir !== null) {
+      fs.rmSync(backupDir, { recursive: true, force: true });
+      backupDir = null;
+    }
+  } catch (err) {
+    if (backupDir !== null && fs.existsSync(backupDir)) {
       try {
-        fs.renameSync(src, dst);
-      } catch (err: unknown) {
-        if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
-          fs.cpSync(src, dst, { recursive: true });
-          fs.rmSync(src, { recursive: true, force: true });
-        } else {
-          throw err;
-        }
+        fs.rmSync(destDir, { recursive: true, force: true });
+        fs.renameSync(backupDir, destDir);
+      } catch {
+        /* best-effort rollback; surface the original failure */
       }
     }
+    throw err;
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
