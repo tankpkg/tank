@@ -202,7 +202,7 @@ program
 
 program
   .command('remove')
-  .aliases(['rm', 'r'])
+  .aliases(['rm', 'r', 'uninstall'])
   .description('Remove an installed skill')
   .argument('<name>', 'Skill name (e.g., @org/skill-name)')
   .option('-g, --global', 'Remove a globally installed skill')
