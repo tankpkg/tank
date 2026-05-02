@@ -1,6 +1,6 @@
 {
   "name": "@tankpkg/mcp-server",
-  "version": "0.15.4",
+  "version": "0.15.5",
   "description": "MCP server for Tank - scan and publish AI agent skills from your editor",
   "type": "module",
   "bin": {
