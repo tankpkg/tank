@@ -45,6 +45,16 @@ jobs:
         with:
           node-version: 24
 
+      - name: Prefer IPv4 for database host
+        run: |
+          DB_HOST="$(node -e 'try { process.stdout.write(new URL(process.env.DATABASE_URL).hostname) } catch { process.exit(1) }')"
+          DB_IPV4="$(getent ahostsv4 "$DB_HOST" | awk '{ print $1; exit }')"
+          if [ -z "$DB_IPV4" ]; then
+            echo "No IPv4 address found for database host"
+            exit 1
+          fi
+          printf '%s %s\n' "$DB_IPV4" "$DB_HOST" | sudo tee -a /etc/hosts >/dev/null
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
