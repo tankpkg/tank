@@ -27,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NODE_OPTIONS: --dns-result-order=ipv4first
 
     steps:
       - name: Validate DATABASE_URL secret
