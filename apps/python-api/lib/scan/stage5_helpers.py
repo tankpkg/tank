@@ -159,31 +159,27 @@ def levenshtein_distance(s1: str, s2: str) -> int:
 def check_typosquatting(package_name: str, popular_packages: set[str]) -> tuple[str, int] | None:
     """Check if package name is a typosquat of a popular package.
 
-    Returns (original_package, distance) if potential typosquat found.
+    Returns ``(original_package, distance)`` if a potential typosquat is found,
+    else ``None``.
+
+    A package that itself belongs to ``popular_packages`` (case-insensitive) is
+    never a typosquat, even if it sits within edit distance 1-2 of another
+    popular name. This prevents false positives like ``react`` vs ``preact``,
+    ``next`` vs ``nuxt``, or ``redis`` vs ``redux``.
+
+    Iteration is deterministic (sorted) so the chosen match is stable across
+    Python versions and process restarts.
     """
     name_lower = package_name.lower()
+    popular_lower: set[str] = {p.lower() for p in popular_packages}
 
-    # Check for common typosquat patterns
-    for popular in popular_packages:
-        popular_lower = popular.lower()
+    if name_lower in popular_lower:
+        return None
 
-        # Exact match
-        if name_lower == popular_lower:
-            return None
-
-        # Levenshtein distance check
-        distance = levenshtein_distance(name_lower, popular_lower)
-
-        # Flag if distance is 1-2 and package is not the same length
+    for popular in sorted(popular_packages):
+        distance = levenshtein_distance(name_lower, popular.lower())
         if 1 <= distance <= 2:
             return (popular, distance)
-
-        # Check for common substitutions
-        # e.g., "reqeusts" vs "requests"
-        if len(name_lower) == len(popular_lower):
-            diffs = sum(1 for a, b in zip(name_lower, popular_lower, strict=False) if a != b)
-            if diffs == 1:
-                return (popular, 1)
 
     return None
 

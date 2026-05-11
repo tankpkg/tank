@@ -5,7 +5,9 @@ description: Protect API keys and secrets from AI agent exfiltration with Tank's
 
 # Credential Vault
 
-Tank Vault is a **format-preserving tokenization proxy** that sits between your AI agent and the LLM provider. It intercepts outgoing requests, replaces real credentials with structurally identical fakes, and restores them in responses — so the model never sees your actual API keys, database URLs, or tokens.
+**Tank Vault prevents your real API keys, database URLs, and tokens from ever reaching LLM providers.** Your AI agent runs normally — but every outgoing request is silently swapped to use look-alike fakes before it leaves your machine, then swapped back on the way home so your code still works.
+
+Real credentials never enter provider logs. A prompt-injected skill cannot exfiltrate them. An LLM-provider breach reveals nothing useful from your infrastructure.
 
 <svg viewBox="0 0 800 250" xmlns="http://www.w3.org/2000/svg" class="max-w-full" style="font-family: 'Space Grotesk', sans-serif;">
   <defs>
@@ -82,6 +84,8 @@ Tank Vault eliminates this entire attack class. Real credentials never leave you
 ---
 
 ## How It Works
+
+Tank Vault is implemented as a **format-preserving tokenization proxy** — a transparent intermediary that sits between your agent and any HTTP endpoint. It detects credentials in outgoing traffic, swaps them for structurally identical placeholders, and restores the originals when the provider responds.
 
 ### 1. Credential Detection
 
