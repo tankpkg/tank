@@ -46,12 +46,19 @@ COMPILED_SECRET_PATTERNS = [
     (re.compile(pattern), severity, description) for pattern, severity, description in CUSTOM_SECRET_PATTERNS
 ]
 
-# Placeholder values that indicate example/tutorial content, not real secrets
+# Suffixes that mark a token as describing the kind of secret it stands in for,
+# rather than being one. Used to recognize env-var-name placeholders like
+# ``RAPIDAPI_KEY`` or ``BRIGHTDATA_TOKEN``.
+_SECRET_SUFFIX = "key|token|secret|password|pass|pwd|auth|api|credential|cred|webhook|url|host|user|id|uri|dsn"
+_SECRET_PREFIX = "api|secret|access|private|public|auth|bearer|jwt|oauth|client|service|admin|app"
+
+# Placeholder values that indicate example/tutorial content, not real secrets.
+# All patterns are matched against the lower-cased text (see _is_placeholder_value).
 PLACEHOLDER_PATTERNS: list[re.Pattern] = [
     re.compile(r"\b(user|username|admin|root|password|pass|pwd|secret|token|key|value|your[_-]?)\b", re.IGNORECASE),
     re.compile(r"\b(example|sample|demo|test|placeholder|dummy|fake|todo|changeme|default)\b", re.IGNORECASE),
     re.compile(r"\b(localhost|127\.0\.0\.1|0\.0\.0\.0|host|hostname)\b", re.IGNORECASE),
-    re.compile(r"\bxxx+\b|\babc+\b|\b123+\b"),
+    re.compile(r"\bxxx+\b|\babc\d*\b|\b\d{3,}\b"),
     # Additional placeholder patterns for common documentation examples
     re.compile(r"\b(your[_-]?api[_-]?key[_-]?here|your[_-]?secret[_-]?here)\b", re.IGNORECASE),
     re.compile(r"\bsk[_-]?placeholder\b", re.IGNORECASE),
@@ -65,6 +72,14 @@ PLACEHOLDER_PATTERNS: list[re.Pattern] = [
     # Common template strings
     re.compile(r"\$\{[A-Z_]+\}", re.IGNORECASE),  # ${ENV_VAR} template patterns
     re.compile(r"<<[A-Z_]+>>", re.IGNORECASE),  # <<PLACEHOLDER>> patterns
+    # Env-var-name style placeholders. Real secrets are random base64 / hex blobs;
+    # values that look like ``RAPIDAPI_KEY`` or ``BRIGHTDATA_TOKEN`` (snake_case
+    # ending in a secret-suffix word) are documentation stand-ins, never live keys.
+    # Quoted form (matches after .lower()).
+    re.compile(rf"['\"][a-z0-9]+(_[a-z0-9]+)*_({_SECRET_SUFFIX})['\"]"),
+    re.compile(rf"['\"]({_SECRET_PREFIX})_({_SECRET_SUFFIX})['\"]"),
+    # Naked form (e.g. YAML values without quotes).
+    re.compile(rf"\b[a-z0-9]+(_[a-z0-9]+)*_({_SECRET_SUFFIX})\b"),
 ]
 
 # File paths that indicate example/tutorial/documentation/test context.
@@ -91,6 +106,10 @@ EXAMPLE_PATH_PATTERNS: list[re.Pattern] = [
     re.compile(r"\.sample(\.|$)", re.IGNORECASE),
     re.compile(r"\.template(\.|$)", re.IGNORECASE),
     re.compile(r"(setup|config|getting.started|quickstart)", re.IGNORECASE),
+    re.compile(
+        r"(^|/)(SKILL|README|CHANGELOG|CONTRIBUTING|HISTORY|AUTHORS|NOTICE|MAINTAINERS|CODE_OF_CONDUCT|SECURITY|SUPPORT)\.(md|markdown|rst|txt)$",
+        re.IGNORECASE,
+    ),
 ]
 
 # Dependency lock files contain public integrity hashes (SHA-256/512 base64),
