@@ -16,6 +16,7 @@ import { sql } from 'drizzle-orm';
 import { db } from '~/lib/db';
 import { visibilityClause } from '~/lib/db/visibility';
 import { extractAtomKinds } from '~/lib/skills/atoms';
+import { computeSecurityCounts } from '~/lib/skills/security-counts';
 
 function resolveAtomKinds(column: unknown, manifest: unknown): string[] {
   if (Array.isArray(column) && column.length > 0) return column as string[];
@@ -330,18 +331,25 @@ export async function getSkillDetail(
     }
   }
 
+  const findingsForScanDetails = Array.isArray(scanFindingsJson) ? scanFindingsJson : [];
+  // Recompute severity counts from the actual findings array, excluding
+  // advisory stages (e.g. stageT). The pre-computed counts on scan_results
+  // include all findings, which causes the Security tab to render badges that
+  // do not match its filtered findings list. See security-counts.ts.
+  const securityCounts = computeSecurityCounts(findingsForScanDetails);
+
   const scanDetails: ScanDetails = scanResultJson
     ? {
         verdict: scanResultJson.verdict as string | null,
         stagesRun: Array.isArray(scanResultJson.stagesRun) ? (scanResultJson.stagesRun as string[]) : [],
         durationMs: typeof scanResultJson.durationMs === 'number' ? scanResultJson.durationMs : null,
         scannedAt,
-        findings: Array.isArray(scanFindingsJson) ? scanFindingsJson : [],
-        criticalCount: Number(scanResultJson.criticalCount) || 0,
-        highCount: Number(scanResultJson.highCount) || 0,
-        mediumCount: Number(scanResultJson.mediumCount) || 0,
-        lowCount: Number(scanResultJson.lowCount) || 0,
-        infoCount: Number(scanResultJson.infoCount) || 0,
+        findings: findingsForScanDetails,
+        criticalCount: securityCounts.critical,
+        highCount: securityCounts.high,
+        mediumCount: securityCounts.medium,
+        lowCount: securityCounts.low,
+        infoCount: securityCounts.info,
         llm_analysis:
           scanResultJson.llm_analysis && typeof scanResultJson.llm_analysis === 'object'
             ? (scanResultJson.llm_analysis as LLMAnalysisInfo)
