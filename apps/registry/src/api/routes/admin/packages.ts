@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { db } from '~/lib/db';
 import { user } from '~/lib/db/auth-schema';
 import { auditEvents, skills, skillVersions } from '~/lib/db/schema';
+import { runBulkRescan } from '~/lib/skills/bulk-rescan-db';
 import { runRescan } from '~/lib/skills/rescan';
 
 export const packagesRoutes = new Hono()
@@ -172,6 +173,65 @@ export const packagesRoutes = new Hono()
 
     try {
       const result = await runRescan(skill.id, adminUser.id);
+      return c.json(result);
+    } catch (err) {
+      return c.json({ error: (err as Error).message }, 502);
+    }
+  })
+
+  .post('/rescan-many', async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as {
+      status?: unknown;
+      beforeScannedAt?: unknown;
+      limit?: unknown;
+      concurrency?: unknown;
+      dryRun?: unknown;
+    };
+
+    const status = Array.isArray(body.status)
+      ? (body.status.filter((s) => typeof s === 'string') as string[])
+      : typeof body.status === 'string'
+        ? [body.status]
+        : undefined;
+
+    let beforeScannedAt: Date | undefined;
+    if (typeof body.beforeScannedAt === 'string') {
+      const parsed = new Date(body.beforeScannedAt);
+      if (Number.isNaN(parsed.getTime())) {
+        return c.json({ error: 'beforeScannedAt must be a valid ISO 8601 date' }, 400);
+      }
+      beforeScannedAt = parsed;
+    }
+
+    const adminUser = c.get('adminUser' as never) as { id: string };
+
+    try {
+      const result = await runBulkRescan(
+        {
+          status,
+          beforeScannedAt,
+          limit: typeof body.limit === 'number' ? body.limit : undefined,
+          concurrency: typeof body.concurrency === 'number' ? body.concurrency : undefined,
+          dryRun: body.dryRun === true
+        },
+        adminUser.id
+      );
+
+      if (!result.dryRun) {
+        await db.insert(auditEvents).values({
+          action: 'admin.package.rescan_many',
+          actorId: adminUser.id,
+          targetType: 'skill',
+          targetId: null,
+          metadata: {
+            matched: result.matched,
+            rescanned: result.rescanned,
+            remaining: result.remaining,
+            filter: { status, beforeScannedAt: beforeScannedAt?.toISOString() ?? null }
+          }
+        });
+      }
+
       return c.json(result);
     } catch (err) {
       return c.json({ error: (err as Error).message }, 502);
