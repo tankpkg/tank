@@ -1,6 +1,6 @@
 {
   "name": "@tankpkg/cli",
-  "version": "0.15.7",
+  "version": "0.15.8",
   "description": "Security-first package manager for AI agent skills",
   "type": "module",
   "homepage": "https://github.com/tankpkg/tank",
