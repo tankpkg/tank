@@ -40,6 +40,9 @@ apps/registry/src/lib/skills/audit-score.ts              # Audit score computati
 | C10 | Step 2 is a direct PUT to signed URL (not proxied through API)                                                    | Avoids proxying large tarballs through Next.js                       | Architecture |
 | C11 | `POST /confirm` only succeeds if version is `pending-upload` status                                               | Idempotency guard: prevents double-confirm                           | BDD scenario |
 | C12 | Scan is triggered synchronously inside confirm; on scan failure → `scan-failed` status but publish still succeeds | Graceful degradation: registry must not go down when scanner is slow | Code review  |
+| C13 | When `publish.build` is set in the manifest, the CLI runs it before packing; non-zero exit aborts publish before any upload                                              | Compiled packages (TS → dist) need a guaranteed pre-pack build step             | BDD scenario |
+| C14 | When `publish.files` is set (non-empty array), the packer ignores `.tankignore`/`.gitignore` and packs ONLY files matching those globs, plus the manifest + readme always | Explicit allow-list mirrors npm's `files` field; eliminates `.tankignore` traps | BDD scenario |
+| C15 | The `publish` block is stripped from the manifest body sent to `/api/v1/skills` — it is a CLI-only concern                                                               | Server has no business knowing how the client built or selected files           | Code review  |
 
 ---
 
@@ -57,3 +60,6 @@ apps/registry/src/lib/skills/audit-score.ts              # Audit score computati
 | E8  | `tank publish --dry-run`                                         | Prints size/file count, does NOT create a version record     |
 | E9  | `tank publish --private`                                         | Skill created with `visibility = 'private'`                  |
 | E10 | Duplicate confirm call (confirm called twice for same versionId) | 400: "Version is already confirmed or published"             |
+| E11 | `tank publish` with `publish.build = "exit 1"` in `tank.json`    | Build hook fails, publish aborts before pack; no upload, exit code non-zero |
+| E12 | `tank publish` with `publish.files = ["dist/**","SKILL.md"]`     | Tarball contains only `dist/**`, `SKILL.md`, and the manifest — even if `.gitignore` excludes `dist/` |
+| E13 | `tank publish` with both `publish.build` and `publish.files`     | Build runs first; on success, packer applies `files` allow-list; outgoing manifest body has no `publish` key |
