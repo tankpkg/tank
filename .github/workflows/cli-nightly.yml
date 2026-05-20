@@ -6,10 +6,21 @@ on:
   push:
     branches: [main]
     paths: ["packages/**"]
+    tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "nightly (default) or release (publishes versioned tag without -nightly suffix)"
+        required: false
+        default: nightly
+        type: choice
+        options:
+          - nightly
+          - release
 
 permissions:
   contents: read
+  id-token: write
 
 jobs:
   publish:
@@ -23,6 +34,12 @@ jobs:
           registry-url: https://registry.npmjs.org
       - uses: extractions/setup-just@v2
       - run: bun install --frozen-lockfile
-      - run: just ci-publish-npm-nightly
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm install -g npm@latest
+
+      - name: Publish nightly
+        if: github.event_name != 'push' || startsWith(github.ref, 'refs/heads/')
+        run: just ci-publish-npm-nightly
+
+      - name: Publish release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        run: just ci-publish-npm "${GITHUB_REF_NAME#v}"
