@@ -1,5 +1,7 @@
 import type { AdapterCapabilities, AtomIR, PlatformAdapter, PlatformOutput } from '@internals/schemas';
 
+import { resolveMcpCommand } from './_mcp-resolution.js';
+
 function emitInstruction(atom: AtomIR & { kind: 'instruction' }): PlatformOutput {
   const globs = atom.globs?.length ? atom.globs.join(', ') : undefined;
   const alwaysApply = !globs && atom.scope !== 'directory';
@@ -103,7 +105,8 @@ function emitAgent(atom: AtomIR & { kind: 'agent' }): PlatformOutput {
 }
 
 function emitTool(atom: AtomIR & { kind: 'tool' }): PlatformOutput {
-  if (!atom.mcp) {
+  const resolved = resolveMcpCommand(atom, 'cursor');
+  if (!resolved) {
     return {
       files: [],
       warnings: [{ level: 'skipped', atomKind: 'tool', message: `Tool "${atom.name}" has no MCP config` }]
@@ -113,9 +116,9 @@ function emitTool(atom: AtomIR & { kind: 'tool' }): PlatformOutput {
   const config = {
     mcpServers: {
       [atom.name]: {
-        command: atom.mcp.command,
-        args: atom.mcp.args ?? [],
-        ...(atom.mcp.env ? { env: atom.mcp.env } : {})
+        command: resolved.command,
+        args: resolved.args,
+        ...(resolved.env ? { env: resolved.env } : {})
       }
     }
   };
