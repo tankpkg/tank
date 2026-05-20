@@ -10,6 +10,7 @@ import { promptIRSchema } from './prompt.js';
 import { resourceIRSchema } from './resource.js';
 import { ruleIRSchema } from './rule.js';
 import { toolIRSchema } from './tool.js';
+import { publishConfigSchema } from '../skills-json.js';
 
 const NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
@@ -44,7 +45,8 @@ export const packageIRSchema = z
     audit: z
       .object({ min_score: z.number().min(0).max(10) })
       .strict()
-      .optional()
+      .optional(),
+    publish: publishConfigSchema.optional()
   })
   .strict();
 

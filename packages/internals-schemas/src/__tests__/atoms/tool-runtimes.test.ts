@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { packageIRSchema } from '~/schemas/atoms/package.js';
 import { toolIRSchema } from '~/schemas/atoms/tool.js';
 import { publishManifestSchema } from '~/schemas/skills-json.js';
 
@@ -92,6 +93,28 @@ describe('publishManifestSchema — publish lifecycle block (issue #454)', () =>
 
   it('rejects non-string entries in publish.files', () => {
     const r = publishManifestSchema.safeParse({ ...base, publish: { files: ['ok', 42] } });
+    expect(r.success).toBe(false);
+  });
+});
+
+describe('packageIRSchema accepts publish field (regression: tank build broke when both atoms and publish present)', () => {
+  it('accepts an atom-bearing package with a publish block', () => {
+    const r = packageIRSchema.safeParse({
+      name: '@org/p',
+      version: '1.0.0',
+      atoms: [{ kind: 'instruction', content: './SKILL.md' }],
+      publish: { build: 'npm run build', files: ['dist/**'] }
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('still rejects unknown top-level keys', () => {
+    const r = packageIRSchema.safeParse({
+      name: '@org/p',
+      version: '1.0.0',
+      atoms: [{ kind: 'instruction', content: './SKILL.md' }],
+      rogue: true
+    });
     expect(r.success).toBe(false);
   });
 });
