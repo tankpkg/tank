@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from '~/constants/registry.js';
 import { permissionsSchema } from '~/schemas/permissions.js';
-
+import { publishConfigSchema } from '../skills-json.js';
 import { agentIRSchema } from './agent.js';
 import { hookIRSchema } from './hook.js';
 import { instructionIRSchema } from './instruction.js';
@@ -10,7 +10,6 @@ import { promptIRSchema } from './prompt.js';
 import { resourceIRSchema } from './resource.js';
 import { ruleIRSchema } from './rule.js';
 import { toolIRSchema } from './tool.js';
-import { publishConfigSchema } from '../skills-json.js';
 
 const NAME_PATTERN = /^@[a-z0-9-]+\/[a-z0-9][a-z0-9-]*$/;
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
