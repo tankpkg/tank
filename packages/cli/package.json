@@ -3,6 +3,16 @@
   "version": "0.15.7",
   "description": "Security-first package manager for AI agent skills",
   "type": "module",
+  "homepage": "https://github.com/tankpkg/tank",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tankpkg/tank.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/tankpkg/tank/issues"
+  },
+  "license": "MIT",
   "bin": {
     "tank": "dist/bin/tank.js"
   },
