@@ -134,7 +134,7 @@ tank install [name] [version-range]
 
 Remove an installed skill
 
-**Aliases:** `rm`, `r`
+**Aliases:** `rm`, `r`, `uninstall`
 
 ```bash
 tank remove <name>
@@ -378,7 +378,7 @@ tank upgrade [version]
 | `tank logout` | — | Remove authentication token from config |
 | `tank publish` | `pub` | Pack and publish a skill to the Tank registry |
 | `tank install` | `i` | Install a skill from the Tank registry, a URL, or all skills from lockfile |
-| `tank remove` | `rm`, `r` | Remove an installed skill |
+| `tank remove` | `rm`, `r`, `uninstall` | Remove an installed skill |
 | `tank update` | `up` | Update skills to latest versions within their ranges |
 | `tank verify` | — | Verify installed skills match the lockfile |
 | `tank permissions` | `perms` | Display resolved permission summary for installed skills |

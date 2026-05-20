@@ -117,12 +117,12 @@ packages/
 
 ### Tool Atom Runtimes & Extension Fallback (issue #453)
 
-| #   | Input                                                                                                                                       | Expected Output                                                                          |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| E24 | `{ kind: 'tool', name: 'web-search', mcp: { runtime: 'uvx', package: 'web-search-mcp' } }` + opencode adapter                              | `.opencode/mcp/web-search.json` with `command: ["uvx","web-search-mcp"]`                 |
-| E25 | `{ kind: 'tool', name: 'web-search', mcp: { runtime: 'npx', package: 'my-mcp', args: ['--flag'] } }` + claude-code adapter                  | `.mcp.json` with `command: 'npx'`, `args: ['-y','my-mcp','--flag']`                      |
+| #   | Input                                                                                                                                     | Expected Output                                                                          |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| E24 | `{ kind: 'tool', name: 'web-search', mcp: { runtime: 'uvx', package: 'web-search-mcp' } }` + opencode adapter                             | `.opencode/mcp/web-search.json` with `command: ["uvx","web-search-mcp"]`                 |
+| E25 | `{ kind: 'tool', name: 'web-search', mcp: { runtime: 'npx', package: 'my-mcp', args: ['--flag'] } }` + claude-code adapter                | `.mcp.json` with `command: 'npx'`, `args: ['-y','my-mcp','--flag']`                      |
 | E26 | `{ kind: 'tool', name: 'memory', extensions: { opencode: { command: 'uvx', args: ['mem-mcp'], env: { KEY: 'x' } } } }` + opencode adapter | `.opencode/mcp/memory.json` built from `extensions.opencode`; NO skip warning            |
-| E27 | `{ kind: 'tool', name: 'memory' }` (no `mcp`, no `extensions.<adapter>`) + any adapter                                                      | No files; one `skipped` warning per current behavior — preserves clear-failure semantics |
+| E27 | `{ kind: 'tool', name: 'memory' }` (no `mcp`, no `extensions.<adapter>`) + any adapter                                                    | No files; one `skipped` warning per current behavior — preserves clear-failure semantics |
 
 ### Legacy Normalization
 
