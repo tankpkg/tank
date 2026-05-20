@@ -4,6 +4,7 @@ import path from 'node:path';
 import { MANIFEST_FILENAME } from '@internals/schemas';
 import ora from 'ora';
 
+import { runBuildHook } from '~/lib/build-hook.js';
 import { getConfig } from '~/lib/config.js';
 import { logger } from '~/lib/logger.js';
 import { resolveManifestPath } from '~/lib/manifest.js';
@@ -74,16 +75,24 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
 
   const name = manifest.name as string;
   const version = manifest.version as string;
+  const publishConfig = (manifest.publish as { build?: string; files?: string[] } | undefined) ?? undefined;
 
-  // 3. Pack
+  if (publishConfig?.build) {
+    logger.info(`Running build: ${publishConfig.build}`);
+    await runBuildHook(directory, publishConfig.build);
+  }
+
   const spinner = ora('Packing...').start();
   let packResult: Awaited<ReturnType<typeof pack>>;
   try {
-    packResult = await pack(directory);
+    packResult = await pack(directory, publishConfig?.files ? { files: publishConfig.files } : {});
   } catch (err) {
     spinner.fail('Packing failed');
     throw err;
   }
+
+  const outboundManifest: Record<string, unknown> = { ...manifest };
+  delete outboundManifest.publish;
 
   const { tarball, integrity, fileCount, totalSize, readme, files } = packResult;
 
@@ -132,7 +141,7 @@ export async function publishCommand(options: PublishOptions = {}): Promise<void
   const step1Res = await fetch(`${config.registry}/api/v1/skills`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ manifest, readme, files })
+    body: JSON.stringify({ manifest: outboundManifest, readme, files })
   });
 
   if (!step1Res.ok) {

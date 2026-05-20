@@ -22,25 +22,18 @@ const IGNORE_FILES = ['.tankignore', '.gitignore'];
 
 export interface PackResult {
   tarball: Buffer;
-  integrity: string; // "sha512-{base64}"
+  integrity: string;
   fileCount: number;
   totalSize: number;
   readme: string;
   files: string[];
 }
 
-/**
- * Pack a skill directory into a .tgz tarball with integrity hashing.
- *
- * Validates:
- * - tank.json (or skills.json) exists and is valid
- * - No symlinks or hardlinks
- * - No path traversal (.. components)
- * - No absolute paths
- * - File count <= 1000
- * - Tarball size <= 50MB
- */
-export async function pack(directory: string): Promise<PackResult> {
+export interface PackOptions {
+  files?: string[];
+}
+
+export async function pack(directory: string, options: PackOptions = {}): Promise<PackResult> {
   const absDir = path.resolve(directory);
 
   // 1. Verify directory exists
@@ -102,11 +95,10 @@ export async function pack(directory: string): Promise<PackResult> {
     }
   }
 
-  // 4. Build ignore filter
-  const ig = buildIgnoreFilter(absDir);
-
-  // 5. Collect files with validation
-  const files = collectFiles(absDir, absDir, ig);
+  const files =
+    options.files && options.files.length > 0
+      ? collectFromAllowList(absDir, options.files, manifestFilename)
+      : collectFiles(absDir, absDir, buildIgnoreFilter(absDir));
 
   // 6. Enforce file count limit
   if (files.length > MAX_FILE_COUNT) {
@@ -232,9 +224,18 @@ export async function packForScan(directory: string): Promise<PackResult> {
   };
 }
 
-/**
- * Build an ignore filter from .tankignore, .gitignore, or defaults.
- */
+function collectFromAllowList(baseDir: string, globs: string[], manifestFilename: string): string[] {
+  const securityFilter = ignore().add(ALWAYS_IGNORED);
+  const allowMatcher = ignore().add(globs);
+  const all = collectFiles(baseDir, baseDir, securityFilter);
+
+  const always = new Set<string>([manifestFilename]);
+  if (fs.existsSync(path.join(baseDir, 'SKILL.md'))) always.add('SKILL.md');
+  if (fs.existsSync(path.join(baseDir, 'README.md'))) always.add('README.md');
+
+  return all.filter((rel) => always.has(rel) || allowMatcher.ignores(rel));
+}
+
 function buildIgnoreFilter(dir: string): ReturnType<typeof ignore> {
   const ig = ignore();
 

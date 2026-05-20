@@ -37,16 +37,27 @@ export const skillsJsonSchema = z.object(baseManifestFields).strict();
 
 export type SkillsJson = z.infer<typeof skillsJsonSchema>;
 
+export const publishConfigSchema = z
+  .object({
+    build: z.string().min(1, 'publish.build must be a non-empty shell command').optional(),
+    files: z.array(z.string().min(1)).optional()
+  })
+  .strict();
+
+export type PublishConfig = z.infer<typeof publishConfigSchema>;
+
 /**
  * Publish manifest schema — accepts both legacy skills.json AND atom-enriched tank.json.
  * The `atoms` and `includes` fields are passed through as opaque JSON arrays,
  * validated only at surface level. Full atom IR validation happens at build time.
+ * The `publish` block is a CLI-only lifecycle config (build hook + files allow-list).
  */
 export const publishManifestSchema = z
   .object({
     ...baseManifestFields,
     atoms: z.array(z.record(z.string(), z.unknown())).optional(),
-    includes: z.array(z.string()).optional()
+    includes: z.array(z.string()).optional(),
+    publish: publishConfigSchema.optional()
   })
   .strict();
 
