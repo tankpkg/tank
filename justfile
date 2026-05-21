@@ -438,12 +438,15 @@ ci-publish-npm-nightly:
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build internals-schemas
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build internals-helpers
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build adapters
+    TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build sdk
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build cli
     TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build mcp
-    TANK_REGISTRY_URL=https://nightly.tankpkg.dev just build sdk
-    (cd packages/cli && npm publish --no-git-checks --access public --tag nightly)
-    (cd packages/mcp-server && npm publish --no-git-checks --access public --tag nightly)
-    (cd packages/sdk && npm publish --no-git-checks --access public --tag nightly)
+    bash scripts/justfile/rewrite-workspace-deps.sh packages/cli "${NIGHTLY_VERSION}"
+    bash scripts/justfile/rewrite-workspace-deps.sh packages/mcp-server "${NIGHTLY_VERSION}"
+    bash scripts/justfile/rewrite-workspace-deps.sh packages/sdk "${NIGHTLY_VERSION}"
+    (cd packages/cli && npm publish --no-git-checks --access public --tag nightly --provenance)
+    (cd packages/mcp-server && npm publish --no-git-checks --access public --tag nightly --provenance)
+    (cd packages/sdk && npm publish --no-git-checks --access public --tag nightly --provenance)
 
 [group('ci')]
 ci-publish-npm VERSION:
@@ -451,9 +454,12 @@ ci-publish-npm VERSION:
     set -euo pipefail
     just ci-build-cli {{VERSION}}
     (cd packages/sdk && bun run build)
-    (cd packages/cli && npm publish --no-git-checks --access public)
-    (cd packages/mcp-server && npm publish --no-git-checks --access public)
-    (cd packages/sdk && npm publish --no-git-checks --access public)
+    bash scripts/justfile/rewrite-workspace-deps.sh packages/cli "{{VERSION}}"
+    bash scripts/justfile/rewrite-workspace-deps.sh packages/mcp-server "{{VERSION}}"
+    bash scripts/justfile/rewrite-workspace-deps.sh packages/sdk "{{VERSION}}"
+    (cd packages/cli && npm publish --no-git-checks --access public --provenance)
+    (cd packages/mcp-server && npm publish --no-git-checks --access public --provenance)
+    (cd packages/sdk && npm publish --no-git-checks --access public --provenance)
 
 [group('ci')]
 ci-build-pypi-sdk VERSION:

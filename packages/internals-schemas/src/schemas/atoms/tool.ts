@@ -8,12 +8,13 @@ export const mcpServerConfigSchema = z
     args: z.array(z.string()).optional(),
     env: z.record(z.string(), z.string()).optional(),
     runtime: z.string().min(1).optional(),
-    entry: z.string().min(1).optional()
+    entry: z.string().min(1).optional(),
+    package: z.string().min(1).optional()
   })
   .strict()
   .refine(
-    (data) => data.command || (data.runtime && data.entry),
-    'MCP config must have either "command" or both "runtime" and "entry"'
+    (data) => Boolean(data.command) || Boolean(data.runtime && (data.entry || data.package)),
+    'MCP config must have either "command" or "runtime" plus one of "entry"/"package"'
   );
 
 export const toolIRSchema = z

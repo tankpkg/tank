@@ -128,7 +128,7 @@ describe('publishCommand', () => {
     await publishCommand({ directory: tmpDir, configDir });
 
     // Verify pack was called with the directory
-    expect(mockPack).toHaveBeenCalledWith(tmpDir);
+    expect(mockPack).toHaveBeenCalledWith(tmpDir, {});
 
     // Verify 3 fetch calls were made
     expect(mockFetch).toHaveBeenCalledTimes(3);
@@ -171,7 +171,7 @@ describe('publishCommand', () => {
 
     await publishCommand({ directory: tmpDir, configDir, dryRun: true });
 
-    expect(mockPack).toHaveBeenCalledWith(tmpDir);
+    expect(mockPack).toHaveBeenCalledWith(tmpDir, {});
 
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, opts] = mockFetch.mock.calls[0];

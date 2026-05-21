@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { MAX_DESCRIPTION_LENGTH, MAX_NAME_LENGTH } from '~/constants/registry.js';
 import { permissionsSchema } from '~/schemas/permissions.js';
-
+import { publishConfigSchema } from '../skills-json.js';
 import { agentIRSchema } from './agent.js';
 import { hookIRSchema } from './hook.js';
 import { instructionIRSchema } from './instruction.js';
@@ -44,7 +44,8 @@ export const packageIRSchema = z
     audit: z
       .object({ min_score: z.number().min(0).max(10) })
       .strict()
-      .optional()
+      .optional(),
+    publish: publishConfigSchema.optional()
   })
   .strict();
 

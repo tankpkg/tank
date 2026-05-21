@@ -1,5 +1,7 @@
 import type { AdapterCapabilities, AtomIR, PlatformAdapter, PlatformOutput } from '@internals/schemas';
 
+import { resolveMcpCommand } from './_mcp-resolution.js';
+
 function emitInstruction(atom: AtomIR & { kind: 'instruction' }): PlatformOutput {
   return {
     files: [
@@ -103,7 +105,8 @@ function emitAgent(atom: AtomIR & { kind: 'agent' }): PlatformOutput {
 }
 
 function emitTool(atom: AtomIR & { kind: 'tool' }): PlatformOutput {
-  if (!atom.mcp) {
+  const resolved = resolveMcpCommand(atom, 'opencode');
+  if (!resolved) {
     return {
       files: [],
       warnings: [
@@ -119,8 +122,8 @@ function emitTool(atom: AtomIR & { kind: 'tool' }): PlatformOutput {
   const config = {
     [atom.name]: {
       type: 'local' as const,
-      command: [atom.mcp.command, ...(atom.mcp.args ?? [])],
-      ...(atom.mcp.env ? { environment: atom.mcp.env } : {})
+      command: [resolved.command, ...resolved.args],
+      ...(resolved.env ? { environment: resolved.env } : {})
     }
   };
 

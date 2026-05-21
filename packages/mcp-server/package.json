@@ -1,8 +1,18 @@
 {
   "name": "@tankpkg/mcp-server",
-  "version": "0.15.7",
+  "version": "0.15.8",
   "description": "MCP server for Tank - scan and publish AI agent skills from your editor",
   "type": "module",
+  "homepage": "https://github.com/tankpkg/tank",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tankpkg/tank.git",
+    "directory": "packages/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/tankpkg/tank/issues"
+  },
+  "license": "MIT",
   "bin": {
     "tank-mcp": "dist/index.js"
   },
@@ -45,11 +55,5 @@
     "claude",
     "cursor",
     "copilot"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/tankpkg/tank.git",
-    "directory": "packages/mcp-server"
-  },
-  "license": "MIT"
+  ]
 }

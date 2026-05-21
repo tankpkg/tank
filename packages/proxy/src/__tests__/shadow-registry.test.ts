@@ -15,6 +15,8 @@ let file: string;
 beforeEach(() => {
   dir = mkdtempSync(path.join(tmpdir(), 'tank-shadow-reg-'));
   file = path.join(dir, 'registry.jsonl');
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-04-20T12:00:00Z'));
 });
 
 afterEach(() => {

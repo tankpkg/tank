@@ -96,21 +96,11 @@ jobs:
           generate_release_notes: true
           files: release/*
 
-  publish-npm:
-    runs-on: ubuntu-22.04
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          registry-url: https://registry.npmjs.org
-      - uses: extractions/setup-just@v2
-      - run: bun install --frozen-lockfile
-      - run: just ci-publish-npm "${GITHUB_REF_NAME#v}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  # npm publish lives in cli-nightly.yml (tag-push trigger). DO NOT add an
+  # `npm publish` job here: npm Trusted Publishing binds each package to ONE
+  # workflow filename, and cli-nightly.yml is the registered publisher for
+  # @tankpkg/cli, @tankpkg/mcp-server, @tankpkg/sdk. Adding a publish job
+  # here would silently 404 on every release.
 
   update-homebrew:
     runs-on: ubuntu-22.04
