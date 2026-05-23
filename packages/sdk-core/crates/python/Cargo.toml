@@ -1,6 +1,6 @@
 [package]
 name = "sdk-python"
-version = "0.15.8"
+version = "0.16.0"
 edition.workspace = true
 
 [lib]
