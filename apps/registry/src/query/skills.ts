@@ -1,8 +1,10 @@
 import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
+import { sql } from 'drizzle-orm';
 import { env } from '~/consts/env';
 import { auth } from '~/lib/auth/core';
+import { db } from '~/lib/db';
 import {
   type FreshnessBucket,
   getSkillDetail,
@@ -72,3 +74,91 @@ export function skillDetailQueryOptions(name: string) {
 export const isTalkEnabledFn = createServerFn({ method: 'GET' }).handler(async (): Promise<boolean> => {
   return !!env.PROMPT2BOT_API_TOKEN;
 });
+
+export interface SimilarSkillSuggestion {
+  name: string;
+  description: string | null;
+}
+
+/**
+ * Fuzzy-match a (likely mistyped) skill name to public published skills.
+ * Uses Postgres `pg_trgm` similarity. Threshold 0.2 keeps obvious typos in,
+ * filters out unrelated matches. Returns top 5 by similarity DESC.
+ */
+export interface RecentSkill {
+  name: string;
+  description: string | null;
+  publishedAt: string;
+  publisher: string;
+  scanVerdict: string | null;
+}
+
+export const recentSkillsFn = createServerFn({ method: 'GET' }).handler(async (): Promise<RecentSkill[]> => {
+  try {
+    const rows = await db.execute<{
+      name: string;
+      description: string | null;
+      publishedAt: string;
+      publisher: string;
+      verdict: string | null;
+    }>(sql`
+      SELECT
+        s.name,
+        s.description,
+        sv.created_at::text AS "publishedAt",
+        u.name AS publisher,
+        sr.verdict
+      FROM skills s
+      JOIN skill_versions sv ON sv.id = (
+        SELECT id FROM skill_versions WHERE skill_id = s.id ORDER BY created_at DESC LIMIT 1
+      )
+      JOIN "user" u ON u.id = s.publisher_id
+      LEFT JOIN LATERAL (
+        SELECT verdict FROM scan_results WHERE version_id = sv.id ORDER BY created_at DESC LIMIT 1
+      ) sr ON true
+      WHERE s.visibility = 'public' AND s.status = 'active'
+      ORDER BY sv.created_at DESC
+      LIMIT 6
+    `);
+    const list = (rows as unknown as { rows?: RecentSkill[] }).rows ?? rows;
+    const arr = Array.isArray(list) ? (list as RecentSkill[]) : [];
+    return arr.map((r) => ({
+      name: r.name,
+      description: r.description,
+      publishedAt: r.publishedAt,
+      publisher: r.publisher,
+      scanVerdict: r.scanVerdict ?? null
+    }));
+  } catch {
+    return [];
+  }
+});
+
+export function recentSkillsQueryOptions() {
+  return queryOptions({
+    queryKey: ['skills', 'recent'],
+    queryFn: () => recentSkillsFn(),
+    staleTime: 60_000
+  });
+}
+
+export const suggestSimilarSkillsFn = createServerFn({ method: 'GET' })
+  .inputValidator((input: string) => input)
+  .handler(async ({ data: name }): Promise<SimilarSkillSuggestion[]> => {
+    try {
+      const rows = await db.execute<{ name: string; description: string | null; sim: number }>(sql`
+        SELECT s.name, s.description, similarity(s.name, ${name}) AS sim
+        FROM skills s
+        WHERE s.visibility = 'public'
+          AND s.status = 'active'
+          AND similarity(s.name, ${name}) > 0.2
+        ORDER BY sim DESC
+        LIMIT 5
+      `);
+      const list = (rows as unknown as { rows?: Array<{ name: string; description: string | null }> }).rows ?? rows;
+      const arr = Array.isArray(list) ? list : [];
+      return arr.map((r) => ({ name: r.name, description: r.description }));
+    } catch {
+      return [];
+    }
+  });

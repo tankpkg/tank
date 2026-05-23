@@ -8,11 +8,13 @@ import {
   CloudIcon,
   FileTextIcon,
   GithubIcon,
+  HelpCircleIcon,
   KeyIcon,
   LayoutDashboardIcon,
   LogInIcon,
   PackageSearchIcon,
   RocketIcon,
+  ScanIcon,
   ServerIcon,
   ShieldCheckIcon,
   TerminalIcon,
@@ -51,6 +53,12 @@ const DOC_PAGES = [
   { title: 'Self-Hosting', slug: 'self-hosting', icon: ServerIcon },
   { title: 'Self-Host Quickstart', slug: 'self-host-quickstart', icon: KeyIcon },
   { title: 'Documentation Home', slug: '', icon: BookIcon }
+] as const;
+
+const LEARN = [
+  { title: 'What is Tank?', href: '/docs/overview', icon: HelpCircleIcon },
+  { title: 'How does scanning work?', href: '/docs/security', icon: ScanIcon },
+  { title: 'How does the Vault work?', href: '/docs/vault', icon: ShieldCheckIcon }
 ] as const;
 
 const QUICK_LINKS = [
@@ -155,6 +163,17 @@ export function CommandMenu() {
             ))}
           </CommandGroup>
         )}
+
+        <CommandGroup heading="Learn">
+          {LEARN.map((item) => (
+            <CommandItem key={item.href} value={`learn-${item.title}`} onSelect={() => handleNavigate(item.href)}>
+              <item.icon className="text-tank" />
+              <span>{item.title}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+
+        <CommandSeparator />
 
         <CommandGroup heading="Documentation">
           {DOC_PAGES.map((doc) => (

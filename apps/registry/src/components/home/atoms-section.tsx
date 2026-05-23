@@ -15,7 +15,7 @@ const PLATFORMS = ['Claude Code', 'Cursor', 'OpenCode', 'Windsurf', 'Cline', 'Ro
 
 export function AtomsSection() {
   return (
-    <section className="relative z-[1] border-t border-border" aria-label="Atoms architecture">
+    <section id="atoms" className="relative z-[1] border-t border-border" aria-label="Atoms architecture">
       <div className="mx-auto max-w-[1000px] px-4 sm:px-6 lg:px-8 py-20">
         <motion.div
           className="text-center mb-12"

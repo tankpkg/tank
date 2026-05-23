@@ -3,10 +3,13 @@ import { Link } from '@tanstack/react-router';
 import { Download, Lock, ShieldAlert, ShieldCheck, Star } from 'lucide-react';
 
 import { AtomKindBadges } from '~/components/skills/atom-kind-badge';
+import { GettingStarted } from '~/components/skills/getting-started';
+import { InstallSnippet } from '~/components/skills/install-snippet';
 import { MobileSkillsFilters } from '~/components/skills/mobile-skills-filters';
 import { SearchBar } from '~/components/skills/search-bar';
 import { SkillsFilters } from '~/components/skills/skills-filters';
 import { SkillsSort } from '~/components/skills/skills-sort';
+import { ValueBanner } from '~/components/skills/value-banner';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
@@ -64,6 +67,8 @@ export function SkillsListScreen({
 
       <SearchBar defaultValue={query} />
 
+      <ValueBanner />
+
       <MobileSkillsFilters
         currentVisibility={visibility}
         currentSecurityVerdict={securityVerdict}
@@ -74,8 +79,8 @@ export function SkillsListScreen({
         currentAtomKind={atomKind}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-        <div className="hidden lg:block">
+      <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="hidden lg:block space-y-4">
           <SkillsFilters
             currentVisibility={visibility}
             currentSecurityVerdict={securityVerdict}
@@ -85,6 +90,7 @@ export function SkillsListScreen({
             isLoggedIn={isLoggedIn}
             currentAtomKind={atomKind}
           />
+          <GettingStarted />
         </div>
 
         <div className="space-y-4">
@@ -184,20 +190,58 @@ function SkillCard({ skill, isLoggedIn }: { skill: SkillSearchResult; isLoggedIn
         <div className="relative z-10 mt-1.5">
           <AtomKindBadges kinds={skill.atomKinds ?? ['skill']} size="xs" asLinks />
         </div>
+        <div className="relative z-10 mt-2">
+          <InstallSnippet skillName={skill.name} testId="skill-card-install-snippet" />
+        </div>
       </CardContent>
     </Card>
   );
 }
 
 function EmptyState({ query }: { query: string }) {
+  if (query) {
+    return (
+      <div
+        data-testid="skills-empty-state"
+        className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/40 py-12 px-6 text-center">
+        <p className="text-lg font-medium">No packages found</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          No results for <span className="font-mono text-foreground/80">"{query}"</span>. Try a different term or
+          publish your own.
+        </p>
+        <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-md">
+          <code className="flex-1 rounded border bg-muted/50 px-3 py-1.5 font-mono text-xs">tank search {query}</code>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm">
+          <Link to="/skills" search={{} as never} className="text-tank hover:underline font-medium">
+            Browse all packages →
+          </Link>
+          <span className="text-border">·</span>
+          <Link to="/docs/$" params={{ _splat: 'publishing' }} className="text-tank hover:underline font-medium">
+            Publish your own →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/40 py-16 text-center">
-      <p className="text-lg font-medium">{query ? 'No packages found' : 'No packages published yet'}</p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {query
-          ? `No results for "${query}". Try a different search term or adjust filters.`
-          : 'Be the first to publish a package!'}
-      </p>
+    <div
+      data-testid="skills-empty-state"
+      className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/40 py-12 px-6 text-center">
+      <p className="text-lg font-medium">No packages published yet</p>
+      <p className="mt-1 text-sm text-muted-foreground">Be the first to publish a verified AI agent package.</p>
+      <div className="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-md">
+        <code className="flex-1 rounded border bg-muted/50 px-3 py-1.5 font-mono text-xs">
+          npm i -g @tankpkg/cli && tank publish
+        </code>
+      </div>
+      <Link
+        to="/docs/$"
+        params={{ _splat: 'publishing' }}
+        className="mt-4 text-tank hover:underline text-sm font-medium">
+        Read the publishing guide →
+      </Link>
     </div>
   );
 }

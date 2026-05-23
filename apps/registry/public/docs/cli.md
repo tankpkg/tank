@@ -106,28 +106,90 @@ tank publish
 
 ## tank install
 
-Install a skill from the Tank registry, a URL, or all skills from lockfile
+Install one or more skills from the Tank registry, URLs, or all skills from lockfile.
 
 **Aliases:** `i`
 
 ```bash
-tank install [name] [version-range]
+tank install [targets...]
 ```
+
+### Examples
+
+```bash
+# Install a single skill
+tank install @org/skill
+
+# Install with a version range (npm-style spec)
+tank install @org/skill@^1.0.0
+
+# Install multiple skills in one command
+tank install -g @org/a @org/b@^1.0.0 https://github.com/owner/repo
+
+# Install all skills from tank.lock
+tank install
+```
+
+If one target fails, others still attempt to install. The exit code is non-zero
+if any failed. When a name isn't found, the CLI prints "Did you mean:" with
+fuzzy-matched suggestions.
 
 ### Arguments
 
 | Name | Description | Required |
 |------|-------------|----------|
-| `name` | Skill name or URL (e.g., @org/skill-name or https://github.com/owner/repo). Omit to install from lockfile. | No |
-| `version-range` | Semver range (default: *) | No |
+| `targets` | One or more skill specs (`@org/skill`, `@org/skill@^1.0.0`) or URLs. Omit to install from lockfile. | No |
 
 ### Options
 
 | Flag | Description |
 |------|-------------|
-| `-g, --global` | Install skill globally (available to all projects) |
+| `-g, --global` | Install skill(s) globally (available to all projects) |
 | `-y, --yes` | Auto-accept flagged scan verdicts |
 | `--dangerously-no-tank-proxy` | Skip wrapping MCP servers with the tank proxy (no scanning, no enforcement) |
+
+### Back-compat: legacy positional form
+
+The previous syntax `tank install @org/skill ^1.0.0` (positional version range)
+is still supported via a back-compat shim. The shim detects this form and
+rewrites it as `@org/skill@^1.0.0` internally.
+
+
+## tank telemetry
+
+Manage anonymous, opt-in usage telemetry.
+
+Telemetry is **disabled by default** and **never silently enabled**. The CLI
+asks once on first `tank init` or `tank login` (interactive only — never in
+CI). Decisions are persisted to `~/.tank/config.json` and never re-prompted.
+
+```bash
+tank telemetry <action>
+```
+
+### Examples
+
+```bash
+tank telemetry on       # opt in
+tank telemetry off      # opt out
+tank telemetry status   # show current state and reason
+```
+
+### Behavior
+
+- **Strictly opt-in.** No telemetry is sent until you run `tank telemetry on`
+  or accept the first-run prompt.
+- **No sensitive data.** Events contain command names, CLI version, OS
+  platform, and a random per-install UUID. Package names, file paths, repo
+  URLs, and API keys are never sent.
+- **Fire-and-forget.** Telemetry never blocks a command. Network failures are
+  swallowed silently with a 2-second timeout.
+- **Disabled on-prem.** `TANK_MODE=selfhosted` hard-disables telemetry.
+- **Env override.** `TANK_TELEMETRY=0` forces off; `TANK_TELEMETRY=1` forces
+  on — even if config says otherwise.
+
+To see what gets sent in production, run `tank doctor` — the diagnostics
+report includes the current telemetry state and reason.
 
 
 ## tank remove

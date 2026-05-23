@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Conversion Improvements (Issue #462)
+
+End-to-end overhaul of the discovery → install funnel, driven by analytics showing 73% of homepage visitors never reach docs and 41% of traffic lands directly on `/skills`.
+
+**Homepage**
+- Hero now shows 4 scannable differentiator pills (Scanning · Vault · Permissions · Integrity) linking to their respective sections
+- Hero CTAs upgraded from tiny muted links to proper `<Button>` elements (Browse Packages, View Docs)
+- Hero stats row: package count · GitHub stars · MIT license (auto-hides on empty registries)
+- Sticky section nav appears after scrolling past hero (Stripe Docs / Linear pattern)
+- Section order reflows so Vault and Atoms appear in the first 5 sections (was buried at positions 8–10)
+- "Built with Tank" section featuring real production users (prompt2bot, Skills-IL)
+- "Recently published" feed showing the 6 newest verified packages
+- "Stay in the loop" community section linking to GitHub stars, releases, discussions, contributing
+
+**Skills list**
+- Dismissible value-proposition banner explaining the 6-stage security pipeline (localStorage persisted)
+- "Getting Started" CLI flow card in the desktop filter sidebar
+- Every skill card now shows a copyable `tank install -g <name>` snippet
+- Empty-state recovery: "No results for 'foo'" now includes copyable `tank search foo`, browse-all link, and publish guide link
+
+**Skill detail**
+- Install command (`tank install -g <name>`) now visible on desktop (was mobile-only)
+- "Trust summary" card above the tabs shows scan verdict at a glance
+- "View details →" button on the trust card jumps to the security tab
+- 404 page shows fuzzy-matched suggestions (`pg_trgm` similarity > 0.2) when a skill name doesn't exist
+
+**Docs**
+- Bottom CTA on every doc page: copyable install command + "Browse Packages" button
+- Command palette adds a "Learn" group with "What is Tank?" / "How does scanning work?" / "How does the Vault work?"
+
+**CLI**
+- `tank install` now accepts multiple targets in one invocation (`tank install -g @org/a @org/b@^1.0.0 https://x.com/c.tgz`)
+- npm-style `name@version` spec syntax
+- Back-compat shim preserves legacy `tank install @org/skill ^1.0.0` positional form
+- One failing target no longer aborts the rest; aggregated exit code
+- Failed install with "not found" now prints "Did you mean:" with fuzzy suggestions
+- `tank telemetry on|off|status` subcommand for managing opt-in usage analytics
+- First-run consent prompt on `tank init` and `tank login` (TTY only, never twice)
+- `tank doctor` now reports current telemetry state
+- All telemetry strictly opt-in; respects `TANK_TELEMETRY` env var and `TANK_MODE=selfhosted`
+
+**Infrastructure**
+- OG images now serve as PNG (was SVG — many social platforms don't render SVG previews)
+- Lazy-loaded `node:fs/promises` import in `@internals/helpers` so the package can be safely imported in browser bundles
+
 #### Universal Atom Architecture (Issue #352)
 
 Multi-atom skill packages that compile to native AI agent configs. Write once in `tank.json`, build for any platform.

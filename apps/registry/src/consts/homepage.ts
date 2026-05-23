@@ -73,7 +73,8 @@ export const features: Array<{ icon: LucideIcon; title: string; description: str
 ];
 
 export const cliCommands = [
-  { cmd: 'tank install @vercel/next-skill', desc: 'Install with integrity verification' },
+  { cmd: 'tank install -g @vercel/next-skill', desc: 'Install globally with integrity verification' },
+  { cmd: 'tank install -g @org/a @org/b@^1.0.0', desc: 'Install multiple skills in one command' },
   { cmd: 'tank run claude', desc: 'Launch agent with Credential Vault protection' },
   { cmd: 'tank build', desc: 'Compile atoms for Claude Code, Cursor, OpenCode, and more' },
   { cmd: 'tank search "react hooks"', desc: 'Search the registry' },
