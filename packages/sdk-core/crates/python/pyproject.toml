@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "tank-core"
-version = "0.16.0"
+version = "0.16.1"
 requires-python = ">=3.11"
 description = "Native Rust primitives for the Tank SDK — integrity verification, tarball extraction, version resolution, permission checks"
 readme = "README.md"
