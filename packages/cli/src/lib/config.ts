@@ -6,6 +6,8 @@ export interface TankConfig {
   token?: string;
   user?: { name: string; email: string };
   registry: string;
+  telemetry?: boolean;
+  telemetryDistinctId?: string;
 }
 
 const DEFAULT_CONFIG: TankConfig = {

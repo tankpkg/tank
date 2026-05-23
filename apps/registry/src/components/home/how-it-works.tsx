@@ -42,7 +42,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="relative z-[1]" aria-label="How Tank works">
+    <section id="how-it-works" className="relative z-[1]" aria-label="How Tank works">
       <div className="mx-auto max-w-[1000px] px-4 sm:px-6 lg:px-8 py-20">
         <motion.div
           className="text-center mb-12"

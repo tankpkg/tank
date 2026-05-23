@@ -1,6 +1,6 @@
 {
   "name": "registry",
-  "version": "0.15.8",
+  "version": "0.16.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -28,6 +28,7 @@
     "@internals/helpers": "workspace:*",
     "@internals/schemas": "workspace:*",
     "@monaco-editor/react": "^4.7.0",
+    "@resvg/resvg-wasm": "^2.6.2",
     "@shikijs/rehype": "^4.0.2",
     "@supabase/supabase-js": "^2.99.3",
     "@tanstack/react-form": "^1.28.5",

@@ -8,6 +8,7 @@ import { detectInstalledAgents, getGlobalSkillsDir, getSupportedAgents } from '~
 import { type AgentLinkStatus, getSkillLinkStatus } from '~/lib/linker.js';
 import { readGlobalLinks } from '~/lib/links.js';
 import { resolveLockfilePath, resolveManifestPath } from '~/lib/manifest.js';
+import { describeTelemetryState } from '~/lib/telemetry.js';
 
 export interface DoctorOptions {
   directory?: string;
@@ -186,6 +187,9 @@ export async function doctorCommand(options?: DoctorOptions): Promise<void> {
     if (localSkills.length === 0 && uniqueGlobal.length === 0 && devLinks.length === 0) {
       suggestions.add('Run `tank install @tank/typescript` to add your first skill');
     }
+
+    printSectionHeader('Telemetry');
+    console.log(`  ${describeTelemetryState()}`);
 
     printSectionHeader('Suggestions');
     if (suggestions.size === 0) {

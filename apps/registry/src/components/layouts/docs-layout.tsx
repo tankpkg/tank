@@ -115,7 +115,9 @@ function DocNavigation({ currentSlug }: { currentSlug: string | null }) {
   const nextTo = next ? (next.slug === 'index' ? '/docs' : `/docs/${next.slug}`) : null;
 
   return (
-    <div className="flex justify-between items-center mt-12 pt-6 border-t border-border/50">
+    <div
+      data-testid="doc-navigation"
+      className="flex justify-between items-center mt-12 pt-6 border-t border-border/50">
       {prev && prevTo ? (
         <a
           href={prevTo}

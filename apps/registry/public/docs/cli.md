@@ -1,9 +1,9 @@
 ---
 title: CLI Reference
-description: Complete reference for all 22 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
+description: Complete reference for all 23 Tank CLI commands — install, publish, search, audit, and manage AI agent skills with security-first design.
 ---
 
-The Tank CLI provides 22 commands for publishing, installing, and managing AI agent skills with security-first design.
+The Tank CLI provides 23 commands for publishing, installing, and managing AI agent skills with security-first design.
 
 ## Installation
 
@@ -106,20 +106,19 @@ tank publish
 
 ## tank install
 
-Install a skill from the Tank registry, a URL, or all skills from lockfile
+Install one or more skills from the Tank registry, URLs, or all skills from lockfile
 
 **Aliases:** `i`
 
 ```bash
-tank install [name] [version-range]
+tank install [targets...]
 ```
 
 ### Arguments
 
 | Name | Description | Required |
 |------|-------------|----------|
-| `name` | Skill name or URL (e.g., @org/skill-name or https://github.com/owner/repo). Omit to install from lockfile. | No |
-| `version-range` | Semver range (default: *) | No |
+| `targets...` | One or more skill specs or URLs (e.g. @org/skill, @org/skill@^1.0.0, https://github.com/owner/repo). Omit to install from lockfile. | No |
 
 ### Options
 
@@ -367,6 +366,15 @@ tank upgrade [version]
 | `--force` | Reinstall even if already on the target version |
 
 
+## tank telemetry <action>
+
+Manage anonymous usage telemetry (on | off | status). Opt-in only, never enabled by default.
+
+```bash
+tank telemetry <action>
+```
+
+
 ## Quick Reference
 
 | Command | Alias(es) | Description |
@@ -377,7 +385,7 @@ tank upgrade [version]
 | `tank whoami` | — | Show the currently logged-in user |
 | `tank logout` | — | Remove authentication token from config |
 | `tank publish` | `pub` | Pack and publish a skill to the Tank registry |
-| `tank install` | `i` | Install a skill from the Tank registry, a URL, or all skills from lockfile |
+| `tank install` | `i` | Install one or more skills from the Tank registry, URLs, or all skills from lockfile |
 | `tank remove` | `rm`, `r`, `uninstall` | Remove an installed skill |
 | `tank update` | `up` | Update skills to latest versions within their ranges |
 | `tank verify` | — | Verify installed skills match the lockfile |
@@ -393,6 +401,7 @@ tank upgrade [version]
 | `tank doctor` | — | Diagnose agent integration health |
 | `tank migrate` | — | Migrate skills.json → tank.json and skills.lock → tank.lock |
 | `tank upgrade` | — | Update tank to the latest version |
+| `tank telemetry <action>` | — | Manage anonymous usage telemetry (on | off | status). Opt-in only, never enabled by default. |
 
 ---
 

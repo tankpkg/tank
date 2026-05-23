@@ -1,5 +1,3 @@
-import { realpath } from 'node:fs/promises';
-
 export function isPathAllowed(requestedPath: string, allowedPaths: string[]): boolean {
   const norm = (p: string) => p.replaceAll('\\', '/');
   const req = norm(requestedPath);
@@ -19,6 +17,7 @@ export function isPathAllowed(requestedPath: string, allowedPaths: string[]): bo
 
 async function resolveRealpathSafely(path: string): Promise<string> {
   try {
+    const { realpath } = await import('node:fs/promises');
     return await realpath(path);
   } catch {
     return path;
@@ -30,6 +29,7 @@ export async function isPathAllowedWithRealpath(requestedPath: string, allowedPa
 
   let resolvedRequested: string;
   try {
+    const { realpath } = await import('node:fs/promises');
     resolvedRequested = await realpath(requestedPath);
   } catch {
     // Path does not exist yet (ENOENT). Non-existent paths cannot be symlink

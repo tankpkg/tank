@@ -1,3 +1,4 @@
+import { Resvg, initWasm } from '@resvg/resvg-wasm';
 import { Hono } from 'hono';
 import type { ReactNode } from 'react';
 import satori from 'satori';
@@ -14,13 +15,42 @@ async function loadFonts() {
   return font.byteLength > 0 ? [{ name: 'Geist', data: font, weight: 400 as const, style: 'normal' as const }] : [];
 }
 
+let wasmReady: Promise<void> | null = null;
+function ensureWasm(): Promise<void> {
+  if (!wasmReady) {
+    wasmReady = fetch('https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm')
+      .then((r) => r.arrayBuffer())
+      .then((bytes) => initWasm(bytes))
+      .catch((err) => {
+        wasmReady = null;
+        throw err;
+      });
+  }
+  return wasmReady;
+}
+
+async function svgToPngResponse(svg: string): Promise<Response> {
+  try {
+    await ensureWasm();
+    const png = new Resvg(svg, { fitTo: { mode: 'width', value: 1200 } }).render().asPng();
+    return new Response(png as unknown as BodyInit, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400'
+      }
+    });
+  } catch {
+    return new Response(svg, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400'
+      }
+    });
+  }
+}
+
 function svgResponse(svg: string) {
-  return new Response(svg, {
-    headers: {
-      'Content-Type': 'image/svg+xml',
-      'Cache-Control': 'public, max-age=86400, s-maxage=86400'
-    }
-  });
+  return svgToPngResponse(svg);
 }
 
 export const ogRoutes = new Hono()

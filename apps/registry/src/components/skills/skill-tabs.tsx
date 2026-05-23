@@ -79,6 +79,7 @@ export function SkillTabs({
       <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
         <TabsTrigger
           value="readme"
+          data-testid="tab-readme"
           className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2">
           Readme
         </TabsTrigger>
@@ -103,6 +104,7 @@ export function SkillTabs({
         {hasSecurityData && (
           <TabsTrigger
             value="security"
+            data-testid="tab-security"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 pb-2">
             Security
           </TabsTrigger>

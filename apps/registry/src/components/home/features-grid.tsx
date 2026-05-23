@@ -6,7 +6,7 @@ import { features } from '~/consts/homepage';
 
 export function FeaturesGrid() {
   return (
-    <section className="relative z-[1] border-t border-border" aria-label="Security features">
+    <section id="features" className="relative z-[1] border-t border-border" aria-label="Security features">
       <div className="mx-auto max-w-[1000px] px-4 sm:px-6 lg:px-8 py-20">
         <motion.div
           className="text-center mb-12"
