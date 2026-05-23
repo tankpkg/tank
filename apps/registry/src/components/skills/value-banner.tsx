@@ -15,16 +15,13 @@ export function ValueBanner() {
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    const persisted =
-      localStorage.getItem(STORAGE_KEY) === '1' || readDismissedCookie();
+    const persisted = localStorage.getItem(STORAGE_KEY) === '1' || readDismissedCookie();
     setDismissed(persisted);
     setMounted(true);
   }, []);
 
   if (!mounted || dismissed) {
-    return (
-      <div data-testid="value-banner-slot" hidden aria-hidden="true" />
-    );
+    return <div data-testid="value-banner-slot" hidden aria-hidden="true" />;
   }
 
   return (

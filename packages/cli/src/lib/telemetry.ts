@@ -4,8 +4,8 @@ import { createInterface } from 'node:readline';
 import { getConfig, setConfig } from '~/lib/config.js';
 import { VERSION } from '~/version.js';
 
-const POSTHOG_PROJECT_KEY = process.env.TANK_POSTHOG_KEY ?? '';
-const POSTHOG_DEFAULT_HOST = 'https://us.i.posthog.com';
+const POSTHOG_PROJECT_KEY = process.env.TANK_POSTHOG_KEY ?? 'phc_j9KjoTTYWsM4k40f2h61x8TRe8cx4ZhIMIKIVri0G7Z';
+const POSTHOG_DEFAULT_HOST = 'https://eu.i.posthog.com';
 
 interface TelemetryStatus {
   enabled: boolean;

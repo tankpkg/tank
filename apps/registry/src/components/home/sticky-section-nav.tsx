@@ -71,9 +71,7 @@ export function StickySectionNav() {
               key={section.id}
               href={`#${section.id}`}
               className={`shrink-0 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors whitespace-nowrap ${
-                activeSection === section.id
-                  ? 'bg-tank/10 text-tank'
-                  : 'text-muted-foreground hover:text-foreground'
+                activeSection === section.id ? 'bg-tank/10 text-tank' : 'text-muted-foreground hover:text-foreground'
               }`}>
               {section.label}
             </a>
