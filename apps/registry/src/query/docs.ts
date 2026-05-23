@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 
 import docsData from '~/generated/docs.json';
+import { setEdgeCache } from '~/lib/edge-cache';
 
 export interface DocEntry {
   title: string;
@@ -15,11 +16,13 @@ const docs: DocEntry[] = docsData as DocEntry[];
 export const getDocBySlug = createServerFn({ method: 'GET' })
   .inputValidator((slug: string) => slug)
   .handler(async ({ data: slug }) => {
+    setEdgeCache(86400);
     const normalized = slug === '' || slug === 'index' ? '' : slug;
     const doc = docs.find((d) => d.slug === normalized);
     return doc ?? null;
   });
 
 export const getAllDocs = createServerFn({ method: 'GET' }).handler(async () => {
+  setEdgeCache(86400);
   return docs.map(({ title, description, slug }) => ({ title, description, slug }));
 });
