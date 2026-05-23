@@ -3,6 +3,7 @@ import { getRequestHeaders } from '@tanstack/react-start/server';
 import { enabledProviders, env } from '~/consts/env';
 import { isAdmin as checkIsAdmin } from '~/lib/auth/authz';
 import { auth } from '~/lib/auth/core';
+import { setEdgeCache } from '~/lib/edge-cache';
 
 export const getSession = createServerFn({ method: 'GET' }).handler(async () => {
   const headers = getRequestHeaders();
@@ -20,6 +21,7 @@ export const getAdminSession = createServerFn({ method: 'GET' }).handler(async (
 });
 
 export const getAuthProviders = createServerFn({ method: 'GET' }).handler(async () => {
+  setEdgeCache(3600);
   return {
     providers: [...enabledProviders],
     oidcProviderId: env.OIDC_PROVIDER_ID,

@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm';
 import { env } from '~/consts/env';
 import { auth } from '~/lib/auth/core';
 import { db } from '~/lib/db';
+import { setEdgeCache } from '~/lib/edge-cache';
 import {
   type FreshnessBucket,
   getSkillDetail,
@@ -44,6 +45,7 @@ export const getSkillsList = createServerFn({ method: 'GET' })
   .inputValidator((input: SkillsListParams) => input)
   .handler(async ({ data }): Promise<SkillSearchResponse> => {
     const viewerUserId = await getViewerUserId();
+    if (!viewerUserId) setEdgeCache(60);
     const params: SkillsSearchParams = { ...data, requesterUserId: viewerUserId };
     return searchSkills(params);
   });
@@ -52,6 +54,7 @@ export const getSkillDetailFn = createServerFn({ method: 'GET' })
   .inputValidator((input: string) => input)
   .handler(async ({ data: name }): Promise<SkillDetailResult | null> => {
     const viewerUserId = await getViewerUserId();
+    if (!viewerUserId) setEdgeCache(300);
     return getSkillDetail(name, viewerUserId);
   });
 
@@ -72,6 +75,7 @@ export function skillDetailQueryOptions(name: string) {
 }
 
 export const isTalkEnabledFn = createServerFn({ method: 'GET' }).handler(async (): Promise<boolean> => {
+  setEdgeCache(3600);
   return !!env.PROMPT2BOT_API_TOKEN;
 });
 
@@ -94,6 +98,7 @@ export interface RecentSkill {
 }
 
 export const recentSkillsFn = createServerFn({ method: 'GET' }).handler(async (): Promise<RecentSkill[]> => {
+  setEdgeCache(300);
   try {
     const rows = await db.execute<{
       name: string;
@@ -145,6 +150,7 @@ export function recentSkillsQueryOptions() {
 export const suggestSimilarSkillsFn = createServerFn({ method: 'GET' })
   .inputValidator((input: string) => input)
   .handler(async ({ data: name }): Promise<SimilarSkillSuggestion[]> => {
+    setEdgeCache(600);
     try {
       const rows = await db.execute<{ name: string; description: string | null; sim: number }>(sql`
         SELECT s.name, s.description, similarity(s.name, ${name}) AS sim

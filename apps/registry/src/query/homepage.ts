@@ -4,8 +4,10 @@ import { count, eq } from 'drizzle-orm';
 
 import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
+import { setEdgeCache } from '~/lib/edge-cache';
 
 export const getHomepageStats = createServerFn({ method: 'GET' }).handler(async () => {
+  setEdgeCache(300);
   try {
     const [row] = await db.select({ count: count() }).from(skills).where(eq(skills.visibility, 'public'));
 
