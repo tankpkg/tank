@@ -3,11 +3,13 @@ import { useMemo, useRef, useState } from 'react';
 
 import { AtomKindBadges } from '~/components/skills/atom-kind-badge';
 import { DownloadButton } from '~/components/skills/download-button';
+import { InstallSnippet } from '~/components/skills/install-snippet';
 import { SkillSidebar } from '~/components/skills/skill-sidebar';
 import { SkillTabs } from '~/components/skills/skill-tabs';
 import { StarButton } from '~/components/skills/star-button';
 import { TalkToSkillWidget, type TalkToSkillWidgetHandle } from '~/components/skills/talk-to-skill-widget';
 import { TrustBadge } from '~/components/skills/trust-badge';
+import { TrustSummary } from '~/components/skills/trust-summary';
 
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -58,7 +60,7 @@ function MobileActionBar({
   talkEnabled: boolean;
   onTalkClick: () => void;
 }) {
-  const installCmd = `tank install ${data.name}`;
+  const installCmd = `tank install -g ${data.name}`;
   const { copied, copy } = useCopyToClipboard();
 
   return (
@@ -103,9 +105,6 @@ function MobileActionBar({
 }
 
 export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps) {
-  const [activeTab, setActiveTab] = useState('readme');
-  const [triggersExpanded, setTriggersExpanded] = useState(false);
-  const talkWidgetRef = useRef<TalkToSkillWidgetHandle>(null);
   const latestManifest = safeParseJson(data.latestVersion?.manifest);
   const fileList: string[] = Array.isArray(latestManifest?.files) ? (latestManifest.files as string[]) : [];
   const license = typeof latestManifest?.license === 'string' ? latestManifest.license : null;
@@ -119,7 +118,7 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
 
   const readmeContent = data.latestVersion?.readme;
   const scanDetails = data.latestVersion?.scanDetails;
-  const hasSecurityData = scanDetails != null;
+  const hasSecurityData = scanDetails != null && scanDetails.verdict !== null;
 
   const securityTab = hasSecurityData && scanDetails ? buildSecurityTab({ data, scanDetails }) : null;
   const tokenTab = hasSecurityData && scanDetails ? buildTokenTab({ data, scanDetails }) : null;
@@ -127,6 +126,10 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
   const desc = useMemo(() => parseDescription(data.description), [data.description]);
   const atomKinds = extractAtomKinds(latestManifest);
   const atomsList = Array.isArray(latestManifest?.atoms) ? (latestManifest.atoms as Record<string, unknown>[]) : [];
+
+  const [activeTab, setActiveTab] = useState('readme');
+  const [triggersExpanded, setTriggersExpanded] = useState(false);
+  const talkWidgetRef = useRef<TalkToSkillWidgetHandle>(null);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="skill-detail-root">
@@ -160,6 +163,12 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
             </Button>
           )}
         </div>
+        {/* Desktop install — always visible, not just mobile */}
+        {data.latestVersion && (
+          <div className="mt-4 hidden lg:block" data-testid="desktop-install-snippet">
+            <InstallSnippet skillName={data.name} testId="desktop-install-snippet" />
+          </div>
+        )}
         {desc.summary && (
           <div className="mt-4">
             <h3 className="text-xs font-semibold text-muted-foreground mb-1.5">Description</h3>
@@ -214,6 +223,12 @@ export function SkillDetailScreen({ data, talkEnabled }: SkillDetailScreenProps)
           chatLink={data.latestVersion?.prompt2botChatLink ?? null}
           botPublicKey={data.latestVersion?.prompt2botBotPublicKey ?? null}
         />
+      )}
+
+      {hasSecurityData && scanDetails && (
+        <div className="mb-6">
+          <TrustSummary scanDetails={scanDetails} onViewDetails={() => setActiveTab('security')} />
+        </div>
       )}
 
       <SkillTabs

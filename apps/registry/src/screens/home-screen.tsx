@@ -4,7 +4,9 @@ import { motion } from 'motion/react';
 import { useMemo } from 'react';
 
 import { AtomsSection } from '~/components/home/atoms-section';
+import { BuiltWithTank } from '~/components/home/built-with-tank';
 import { CliPreview } from '~/components/home/cli-preview';
+import { Community } from '~/components/home/community';
 import { ComparisonTable } from '~/components/home/comparison-table';
 import { EditorIntegration } from '~/components/home/editor-integration';
 import { EnterpriseSection } from '~/components/home/enterprise-section';
@@ -12,16 +14,20 @@ import { FaqSection } from '~/components/home/faq-section';
 import { FeaturesGrid } from '~/components/home/features-grid';
 import { HeroSection } from '~/components/home/hero-section';
 import { HowItWorks } from '~/components/home/how-it-works';
+import { RecentlyPublished } from '~/components/home/recently-published';
+import { StickySectionNav } from '~/components/home/sticky-section-nav';
 import { VaultSection } from '~/components/home/vault-section';
 import { WhyTankExists } from '~/components/home/why-tank-exists';
 import { WorksWith } from '~/components/home/works-with';
 import { Button } from '~/components/ui/button';
 import { GITHUB_ICON_PATH } from '~/consts/brand';
 import { faqItems } from '~/consts/homepage';
+import type { RecentSkill } from '~/query/skills';
 
 interface HomeScreenProps {
   publicSkillCount: number;
   starCount: number | null;
+  recentSkills?: RecentSkill[];
   selfhostedAppUrl?: string;
 }
 
@@ -67,30 +73,36 @@ function JsonLdScript({ data }: { data: ReturnType<typeof buildHomepageJsonLd> }
   return <script type="application/ld+json">{JSON.stringify(data)}</script>;
 }
 
-export function HomeScreen({ publicSkillCount, starCount, selfhostedAppUrl }: HomeScreenProps) {
+export function HomeScreen({ publicSkillCount, starCount, recentSkills = [], selfhostedAppUrl }: HomeScreenProps) {
   const jsonLd = useMemo(() => buildHomepageJsonLd(publicSkillCount), [publicSkillCount]);
 
   return (
     <>
       <JsonLdScript data={jsonLd} />
 
-      <HeroSection starCount={starCount} selfhostedAppUrl={selfhostedAppUrl} />
+      <StickySectionNav />
+
+      <HeroSection starCount={starCount} publicSkillCount={publicSkillCount} selfhostedAppUrl={selfhostedAppUrl} />
 
       <WorksWith />
 
-      <ComparisonTable />
+      <BuiltWithTank />
+
+      <RecentlyPublished skills={recentSkills} />
 
       <WhyTankExists />
 
-      <HowItWorks />
+      <VaultSection />
 
-      <FeaturesGrid />
+      <HowItWorks />
 
       <AtomsSection />
 
-      <TankJsonExample />
+      <ComparisonTable />
 
-      <VaultSection />
+      <FeaturesGrid />
+
+      <TankJsonExample />
 
       <CliPreview />
 
@@ -99,6 +111,8 @@ export function HomeScreen({ publicSkillCount, starCount, selfhostedAppUrl }: Ho
       <EnterpriseSection />
 
       <ContributorsSection />
+
+      <Community starCount={starCount} />
 
       <FaqSection />
 

@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { DocsBottomCta } from '~/components/docs-bottom-cta';
 import { DocsLayout } from '~/components/layouts/docs-layout';
 import { routeHead } from '~/consts/seo';
 import { getDocBySlug } from '~/query/docs';
@@ -96,6 +97,7 @@ function DocPage() {
             Edit this page on GitHub
           </a>
         </div>
+        <DocsBottomCta />
       </article>
     </DocsLayout>
   );

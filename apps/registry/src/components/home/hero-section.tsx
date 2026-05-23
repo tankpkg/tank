@@ -1,20 +1,29 @@
 import { Link } from '@tanstack/react-router';
-import { Shield } from 'lucide-react';
+import { ArrowRight, Lock, Scan, Shield, Vault } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useCallback } from 'react';
 
 import { InstallSelector } from '~/components/home/install-selector';
+import { Button } from '~/components/ui/button';
 import { GITHUB_ICON_PATH } from '~/consts/brand';
 
 const spring = { type: 'spring' as const, stiffness: 400, damping: 30 };
 const controlBars = ['left', 'center', 'right'] as const;
 
+const DIFFERENTIATOR_PILLS = [
+  { label: '6-Stage Scanning', icon: Scan, href: '#how-it-works' },
+  { label: 'Credential Vault', icon: Vault, href: '#vault' },
+  { label: 'Permission Budgets', icon: Shield, href: '#why-tank' },
+  { label: 'SHA-512 Integrity', icon: Lock, href: '#features' }
+];
+
 interface HeroSectionProps {
   starCount: number | null;
+  publicSkillCount?: number;
   selfhostedAppUrl?: string;
 }
 
-export function HeroSection({ starCount, selfhostedAppUrl }: HeroSectionProps) {
+export function HeroSection({ starCount, publicSkillCount, selfhostedAppUrl }: HeroSectionProps) {
   const videoRef = useCallback((el: HTMLVideoElement | null) => {
     if (!el) return;
     el.playbackRate = 0.9;
@@ -63,44 +72,90 @@ export function HeroSection({ starCount, selfhostedAppUrl }: HeroSectionProps) {
               agents.
             </motion.p>
 
+            {/* Differentiator pills — scannable value props */}
+            <motion.div
+              className="mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-2"
+              data-testid="hero-differentiator-pills"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.12 }}>
+              {DIFFERENTIATOR_PILLS.map((pill) => (
+                <a
+                  key={pill.label}
+                  href={pill.href}
+                  data-testid="hero-differentiator-pill"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card/50 hover:bg-card hover:border-tank/30 transition-colors text-[12px] font-medium text-muted-foreground hover:text-foreground no-underline">
+                  <pill.icon className="w-3 h-3 text-tank" />
+                  {pill.label}
+                </a>
+              ))}
+            </motion.div>
+
+            {/* Stats row — social proof. Hidden entirely on an empty registry to avoid a "ghost town" impression. */}
+            {((publicSkillCount && publicSkillCount > 0) || (starCount && starCount > 0)) && (
+              <motion.div
+                className="mt-3 flex items-center justify-center lg:justify-start gap-4 text-[13px] text-muted-foreground/50"
+                data-testid="hero-stats"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: 0.14 }}>
+                {publicSkillCount !== undefined && publicSkillCount > 0 && (
+                  <>
+                    <span>
+                      <span className="text-foreground/80 font-semibold">{publicSkillCount.toLocaleString()}</span>{' '}
+                      packages scanned
+                    </span>
+                    <span className="text-border">·</span>
+                  </>
+                )}
+                {starCount !== null && starCount > 0 && (
+                  <>
+                    <span>
+                      <span className="text-foreground/80 font-semibold">{starCount.toLocaleString()}</span> GitHub
+                      stars
+                    </span>
+                    <span className="text-border">·</span>
+                  </>
+                )}
+                <span>MIT Licensed</span>
+              </motion.div>
+            )}
+
             {/* Install method selector — biggest CTA */}
             <motion.div
-              className="mt-8 max-w-[560px] lg:mx-0 mx-auto w-full"
+              className="mt-6 max-w-[560px] lg:mx-0 mx-auto w-full"
               initial={{ opacity: 0, y: 10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ ...spring, delay: 0.15 }}>
               <InstallSelector appUrl={selfhostedAppUrl} />
             </motion.div>
 
-            {/* Secondary links */}
+            {/* CTAs — proper Buttons instead of tiny text links */}
             <motion.div
-              className="mt-6 flex items-center justify-center lg:justify-start gap-4 text-[13px]"
+              className="mt-4 flex items-center justify-center lg:justify-start gap-3"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2, delay: 0.2 }}>
-              <Link
-                to="/docs/$"
-                params={{ _splat: '' }}
-                className="text-muted-foreground/60 hover:text-foreground transition-colors">
-                View Docs
-              </Link>
-              <span className="text-muted-foreground/20">·</span>
-              <Link
-                to="/skills"
-                search={{} as never}
-                className="text-muted-foreground/60 hover:text-foreground transition-colors">
-                Browse Packages
-              </Link>
-              <span className="text-muted-foreground/20">·</span>
+              <Button size="lg" asChild data-testid="home-primary-cta">
+                <Link to="/skills" search={{} as never}>
+                  Browse Packages
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+              </Button>
+              <Button variant="outline" size="lg" data-testid="home-secondary-cta" asChild>
+                <Link to="/docs/$" params={{ _splat: '' }}>
+                  View Docs
+                </Link>
+              </Button>
               <a
                 href="https://github.com/tankpkg/tank"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-muted-foreground/60 hover:text-foreground transition-colors">
-                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path fillRule="evenodd" d={GITHUB_ICON_PATH} clipRule="evenodd" />
                 </svg>
-                Star on GitHub{starCount !== null ? ` (${starCount})` : ''}
+                Star{starCount !== null ? ` ${starCount}` : ''}
               </a>
             </motion.div>
           </div>

@@ -105,7 +105,7 @@ function StatusIcon({ status }: { status: 'yes' | 'partial' | 'no' }) {
 
 export function ComparisonTable() {
   return (
-    <section className="relative z-[1] border-t border-border" aria-label="Feature comparison">
+    <section id="comparison-table" className="relative z-[1] border-t border-border" aria-label="Feature comparison">
       <div className="mx-auto max-w-[1000px] px-4 sm:px-6 lg:px-8 py-20">
         <motion.div
           className="text-center mb-12"

@@ -5,7 +5,7 @@ import { faqItems } from '~/consts/homepage';
 
 export function FaqSection() {
   return (
-    <section className="relative z-[1] border-t border-border" aria-label="FAQ">
+    <section id="faq" className="relative z-[1] border-t border-border" aria-label="FAQ">
       <div className="mx-auto max-w-[1000px] px-4 sm:px-6 lg:px-8 py-20">
         <motion.div
           className="text-center mb-12"

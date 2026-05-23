@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-
 import { auditCommand } from '~/commands/audit.js';
 import { buildCommand } from '~/commands/build.js';
 import { doctorCommand } from '~/commands/doctor.js';
@@ -18,19 +17,28 @@ import { removeCommand } from '~/commands/remove.js';
 import { runCommand } from '~/commands/run.js';
 import { scanCommand } from '~/commands/scan.js';
 import { searchCommand } from '~/commands/search.js';
+import { type TelemetryAction, telemetryCommand } from '~/commands/telemetry.js';
 import { unlinkCommand } from '~/commands/unlink.js';
 import { updateCommand } from '~/commands/update.js';
 import { upgradeCommand } from '~/commands/upgrade.js';
 import { verifyCommand } from '~/commands/verify.js';
 import { whoamiCommand } from '~/commands/whoami.js';
 import { flushLogs } from '~/lib/debug-logger.js';
+import { fetchSimilarSkillNames, formatInstallSuggestions } from '~/lib/install-suggestions.js';
+import { looksLikeVersionRange, parseInstallTarget } from '~/lib/install-target.js';
+import { captureEvent } from '~/lib/telemetry.js';
 import { checkForUpgrade } from '~/lib/upgrade-check.js';
-import { isUrl } from '~/lib/url-fetcher.js';
 import { VERSION } from '~/version.js';
 
 const program = new Command();
 
 program.name('tank').description('Security-first package manager for AI agent skills').version(VERSION);
+
+program.hook('preAction', (_thisCommand, actionCommand) => {
+  const name = actionCommand.name();
+  if (name === 'telemetry') return;
+  captureEvent({ event: 'cli_command', properties: { command: name } });
+});
 
 program
   .command('init')
@@ -157,48 +165,63 @@ program
 program
   .command('install')
   .alias('i')
-  .description('Install a skill from the Tank registry, a URL, or all skills from lockfile')
+  .description('Install one or more skills from the Tank registry, URLs, or all skills from lockfile')
   .argument(
-    '[name]',
-    'Skill name or URL (e.g., @org/skill-name or https://github.com/owner/repo). Omit to install from lockfile.'
+    '[targets...]',
+    'One or more skill specs or URLs (e.g. @org/skill, @org/skill@^1.0.0, https://github.com/owner/repo). Omit to install from lockfile.'
   )
-  .argument('[version-range]', 'Semver range (default: *)', '*')
   .option('-g, --global', 'Install skill globally (available to all projects)')
   .option('-y, --yes', 'Auto-accept flagged scan verdicts')
   .option('--dangerously-no-tank-proxy', 'Skip wrapping MCP servers with the tank proxy (no scanning, no enforcement)')
-  .action(
-    async (
-      name: string | undefined,
-      versionRange: string,
-      opts: { global?: boolean; yes?: boolean; dangerouslyNoTankProxy?: boolean }
-    ) => {
+  .action(async (targets: string[], opts: { global?: boolean; yes?: boolean; dangerouslyNoTankProxy?: boolean }) => {
+    const proxyOpt = opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true as const } : {};
+
+    if (targets.length === 0) {
       try {
-        if (name && isUrl(name)) {
-          await installFromUrl(name, {
-            global: opts.global,
-            yes: opts.yes,
-            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
-          });
-        } else if (name) {
-          await installCommand({
-            name,
-            versionRange,
-            global: opts.global,
-            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
-          });
-        } else {
-          await installAll({
-            global: opts.global,
-            ...(opts.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
-          });
-        }
+        await installAll({ global: opts.global, ...proxyOpt });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`Install failed: ${msg}`);
         process.exit(1);
       }
+      return;
     }
-  );
+
+    const effectiveTargets =
+      targets.length === 2 && looksLikeVersionRange(targets[1]) ? [`${targets[0]}@${targets[1]}`] : targets;
+
+    const failures: Array<{ target: string; error: string; parsedName?: string }> = [];
+    for (const target of effectiveTargets) {
+      const parsed = parseInstallTarget(target);
+      try {
+        if (parsed.kind === 'url') {
+          await installFromUrl(parsed.url, { global: opts.global, yes: opts.yes, ...proxyOpt });
+        } else {
+          await installCommand({
+            name: parsed.name,
+            versionRange: parsed.versionRange ?? '*',
+            global: opts.global,
+            ...proxyOpt
+          });
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        failures.push({ target, error: msg, parsedName: parsed.kind === 'name' ? parsed.name : undefined });
+        console.error(`Install failed for ${target}: ${msg}`);
+      }
+    }
+
+    for (const failure of failures) {
+      if (!failure.parsedName || !/not found/i.test(failure.error)) continue;
+      const suggestions = await fetchSimilarSkillNames(failure.parsedName);
+      console.error(`\n${formatInstallSuggestions(failure.parsedName, suggestions)}`);
+    }
+
+    if (failures.length > 0) {
+      console.error(`\nInstall finished with ${failures.length}/${effectiveTargets.length} failure(s).`);
+      process.exit(1);
+    }
+  });
 
 program
   .command('remove')
@@ -470,6 +493,24 @@ program
       process.exit(1);
     }
     await flushLogs();
+  });
+
+program
+  .command('telemetry <action>')
+  .description('Manage anonymous usage telemetry (on | off | status). Opt-in only, never enabled by default.')
+  .action(async (action: string) => {
+    try {
+      const normalized = action.toLowerCase() as TelemetryAction;
+      if (normalized !== 'on' && normalized !== 'off' && normalized !== 'status') {
+        console.error(`Unknown telemetry action: ${action}. Use: on | off | status.`);
+        process.exit(1);
+      }
+      await telemetryCommand({ action: normalized });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Telemetry command failed: ${msg}`);
+      process.exit(1);
+    }
   });
 
 checkForUpgrade().catch(() => {});
