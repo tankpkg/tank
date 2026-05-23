@@ -2,8 +2,10 @@ import { queryOptions } from '@tanstack/react-query';
 import { createServerFn } from '@tanstack/react-start';
 
 import { GITHUB_REPO } from '~/consts/brand';
+import { setEdgeCache } from '~/lib/edge-cache';
 
 export const getGitHubStars = createServerFn({ method: 'GET' }).handler(async () => {
+  setEdgeCache(300, 3600);
   try {
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}`, {
       headers: { Accept: 'application/vnd.github.v3+json' }
