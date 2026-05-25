@@ -11,7 +11,6 @@ Feature: Skills list conversion improvements
     Given public skills have been published
 
   # ── Value proposition banner ─────────────────────────────────
-
   @conversion
   @banner
   Scenario: Skills page shows a value proposition banner for first visit
@@ -29,7 +28,6 @@ Feature: Skills list conversion improvements
     Then the banner is not shown
 
   # ── Getting started sidebar ──────────────────────────────────
-
   @conversion
   @sidebar
   Scenario: Desktop shows getting-started card in filter sidebar
@@ -44,7 +42,6 @@ Feature: Skills list conversion improvements
     Then the getting-started card is not visible
 
   # ── Skill card install snippets ──────────────────────────────
-
   @conversion
   @cards
   Scenario: Each skill card shows copyable install command

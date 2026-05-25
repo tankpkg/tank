@@ -11,7 +11,6 @@ Feature: Skill detail conversion improvements
     Given a public skill has been published
 
   # ── Desktop install command ──────────────────────────────────
-
   @conversion
   @install
   Scenario: Install command is visible on desktop
@@ -27,7 +26,6 @@ Feature: Skill detail conversion improvements
     Then the command is copied to clipboard
 
   # ── Default tab ──────────────────────────────────────────────
-
   @conversion
   @tabs
   Scenario: README tab is default for scanned skills
@@ -41,7 +39,6 @@ Feature: Skill detail conversion improvements
     Then the readme tab is active by default
 
   # ── Trust summary card ───────────────────────────────────────
-
   @conversion
   @trust
   Scenario: Trust summary card appears above tabs when scan data exists

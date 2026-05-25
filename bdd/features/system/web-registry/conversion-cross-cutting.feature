@@ -8,7 +8,6 @@ Feature: Cross-cutting conversion improvements
   So that I can discover Tank's value from anywhere in the product
 
   # ── Docs bottom CTA ─────────────────────────────────────────
-
   @docs
   @cta
   Scenario: Every docs page has a bottom CTA after the article
@@ -23,7 +22,6 @@ Feature: Cross-cutting conversion improvements
     Then the CTA should appear before the document navigation links
 
   # ── Command palette suggestions ──────────────────────────────
-
   @command-menu
   Scenario: Command menu includes educational suggestions
     When I inspect the command menu source
@@ -31,7 +29,6 @@ Feature: Cross-cutting conversion improvements
     And the suggestion should link to the docs overview
 
   # ── Section anchors on homepage ─────────────────────────────
-
   @homepage
   @anchors
   Scenario: Key homepage sections have scroll targets
@@ -42,7 +39,6 @@ Feature: Cross-cutting conversion improvements
     And the HTML should contain an element with id "why-tank"
 
   # ── CLI telemetry opt-in ────────────────────────────────────
-
   @cli
   @telemetry
   Scenario: Telemetry is disabled by default for new installations
