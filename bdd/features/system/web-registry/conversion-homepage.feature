@@ -8,7 +8,6 @@ Feature: Homepage conversion improvements
   So that I can decide whether Tank solves my problem
 
   # ── Hero: Differentiator pills ──────────────────────────────
-
   @conversion
   @hero
   Scenario: Hero subtitle is followed by scannable differentiator pills
@@ -35,7 +34,6 @@ Feature: Homepage conversion improvements
     Then one of the differentiator pills should link to "#how-it-works"
 
   # ── Hero: Visible CTAs ──────────────────────────────────────
-
   @conversion
   @hero
   @cta
@@ -51,7 +49,6 @@ Feature: Homepage conversion improvements
     Then the HTML should contain a secondary CTA linking to documentation
 
   # ── Hero: Social proof stats ─────────────────────────────────
-
   @conversion
   @hero
   @stats
@@ -60,7 +57,6 @@ Feature: Homepage conversion improvements
     Then the HTML should contain a hero stats row with package count or GitHub stars
 
   # ── Section ordering ────────────────────────────────────────
-
   @conversion
   @sections
   Scenario: Differentiating sections appear before comparison table
@@ -75,7 +71,6 @@ Feature: Homepage conversion improvements
     Then the "Why Tank Exists" section should appear before the comparison table
 
   # ── Section anchors for pill links ──────────────────────────
-
   @conversion
   @sections
   Scenario: Key sections have id attributes for scroll navigation
@@ -86,7 +81,6 @@ Feature: Homepage conversion improvements
     And the HTML should contain an element with id "why-tank"
 
   # ── Sticky section navigation ───────────────────────────────
-
   @conversion
   @nav
   Scenario: Sticky section nav component is rendered

@@ -2,6 +2,7 @@ import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import { eq } from 'drizzle-orm';
 import { env } from '~/consts/env';
 import { verifyCliAuth } from '~/lib/auth/authz';
+import { purgeSkillCache } from '~/lib/cache-purge';
 import { db } from '~/lib/db';
 import { scanFindings, scanResults, skills, skillVersions } from '~/lib/db/schema';
 import { depAuditService } from '~/lib/dep-audit/service';
@@ -283,6 +284,10 @@ export const skillsConfirmRoutes = new OpenAPIHono().openapi(confirmRoute, async
   }
 
   depAuditService.runAudit(versionId, manifest).catch(() => {});
+
+  if (skill?.name) {
+    purgeSkillCache(skill.name).catch(() => {});
+  }
 
   return c.json(
     {

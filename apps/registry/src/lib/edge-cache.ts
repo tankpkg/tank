@@ -12,7 +12,10 @@ import { setResponseHeader } from '@tanstack/react-start/server';
  */
 export function setEdgeCache(sMaxAge: number, staleWhileRevalidate: number = sMaxAge * 12): void {
   try {
-    setResponseHeader('CDN-Cache-Control', `public, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`);
+    setResponseHeader(
+      'CDN-Cache-Control',
+      `public, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`
+    );
     setResponseHeader('Cache-Control', 'public, max-age=0, must-revalidate');
   } catch {
     // Outside a request context (e.g. test-time) — no-op.

@@ -36,11 +36,11 @@ All Tank API keys begin with `tank_`. Tokens without this prefix are rejected wi
 
 **Scopes**
 
-| Scope | Grants |
-|---|---|
-| `skills:read` | Read skill metadata, versions, files, stars |
-| `skills:publish` | Publish new skills and new versions |
-| `skills:admin` | Administrative actions (moderation, user management) |
+| Scope            | Grants                                               |
+| ---------------- | ---------------------------------------------------- |
+| `skills:read`    | Read skill metadata, versions, files, stars          |
+| `skills:publish` | Publish new skills and new versions                  |
+| `skills:admin`   | Administrative actions (moderation, user management) |
 
 <Callout type="info">
   Tokens inherit the minimum scope needed. A token with only `skills:read` cannot publish; you will receive a `403` if you try.
@@ -52,11 +52,11 @@ All Tank API keys begin with `tank_`. Tokens without this prefix are rejected wi
 
 Rate limits are applied per IP for anonymous requests and per token for authenticated requests.
 
-| Tier | Requests / hour |
-|---|---|
-| Anonymous | 100 |
-| Authenticated | 1,000 |
-| Pro | 10,000 |
+| Tier          | Requests / hour |
+| ------------- | --------------- |
+| Anonymous     | 100             |
+| Authenticated | 1,000           |
+| Pro           | 10,000          |
 
 When you exceed your limit, the API returns `429 Too Many Requests`. The response includes a `Retry-After` header indicating how many seconds to wait before retrying.
 
@@ -75,14 +75,14 @@ All errors follow a consistent envelope. The `error` field contains a machine-re
 
 **Common HTTP status codes**
 
-| Status | Error Code | When it occurs |
-|---|---|---|
-| `401` | `UNAUTHORIZED` | Token missing, malformed, or revoked |
-| `403` | `FORBIDDEN` | Token valid but lacks the required scope |
-| `404` | `NOT_FOUND` | Skill, version, or resource does not exist |
-| `409` | `VERSION_EXISTS` | You attempted to publish an already-existing version |
-| `422` | `VALIDATION_ERROR` | Request body failed Zod schema validation |
-| `429` | `RATE_LIMITED` | Hourly request limit exceeded |
+| Status | Error Code         | When it occurs                                       |
+| ------ | ------------------ | ---------------------------------------------------- |
+| `401`  | `UNAUTHORIZED`     | Token missing, malformed, or revoked                 |
+| `403`  | `FORBIDDEN`        | Token valid but lacks the required scope             |
+| `404`  | `NOT_FOUND`        | Skill, version, or resource does not exist           |
+| `409`  | `VERSION_EXISTS`   | You attempted to publish an already-existing version |
+| `422`  | `VALIDATION_ERROR` | Request body failed Zod schema validation            |
+| `429`  | `RATE_LIMITED`     | Hourly request limit exceeded                        |
 
 **Validation error shape**
 
@@ -113,11 +113,11 @@ Full-text search across all public skills. Uses a hybrid strategy: `ILIKE` for e
 
 **Query parameters**
 
-| Parameter | Type | Default | Description |
-|---|---|---|---|
-| `q` | string | — | Search query. Matched against skill name, description, and author. |
-| `page` | number | `1` | Page number. Minimum `1`. |
-| `limit` | number | `20` | Results per page. Range `1`–`50`. |
+| Parameter | Type   | Default | Description                                                        |
+| --------- | ------ | ------- | ------------------------------------------------------------------ |
+| `q`       | string | —       | Search query. Matched against skill name, description, and author. |
+| `page`    | number | `1`     | Page number. Minimum `1`.                                          |
+| `limit`   | number | `20`    | Results per page. Range `1`–`50`.                                  |
 
 **Response**
 
@@ -178,16 +178,16 @@ Initiates skill publication. The response includes a pre-signed `uploadUrl`; you
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `manifest.name` | string | Yes | Scoped or unscoped skill name. Scoped names (`@org/name`) require org membership. |
-| `manifest.version` | string | Yes | Semver string. Must not already exist for this skill. |
-| `manifest.description` | string | Yes | Short description shown in search results. |
-| `manifest.visibility` | `"public"` \| `"private"` | Yes | Public skills are visible to everyone. Private skills require auth. |
-| `manifest.permissions` | object | Yes | Declared permission budget. Validated against Zod schema. |
-| `manifest.repository` | string | No | Source repository URL for provenance display. |
-| `readme` | string | No | Markdown content for the skill's registry page. |
-| `files` | string[] | No | List of file paths included in the tarball. |
+| Field                  | Type                      | Required | Description                                                                       |
+| ---------------------- | ------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `manifest.name`        | string                    | Yes      | Scoped or unscoped skill name. Scoped names (`@org/name`) require org membership. |
+| `manifest.version`     | string                    | Yes      | Semver string. Must not already exist for this skill.                             |
+| `manifest.description` | string                    | Yes      | Short description shown in search results.                                        |
+| `manifest.visibility`  | `"public"` \| `"private"` | Yes      | Public skills are visible to everyone. Private skills require auth.               |
+| `manifest.permissions` | object                    | Yes      | Declared permission budget. Validated against Zod schema.                         |
+| `manifest.repository`  | string                    | No       | Source repository URL for provenance display.                                     |
+| `readme`               | string                    | No       | Markdown content for the skill's registry page.                                   |
+| `files`                | string[]                  | No       | List of file paths included in the tarball.                                       |
 
 **Validation rules**
 
@@ -234,9 +234,9 @@ Returns top-level metadata for a skill plus its latest published version.
 
 **Path parameters**
 
-| Parameter | Description |
-|---|---|
-| `name` | Skill name, URL-encoded. Scoped names use `@org%2Fskill` or `@org/skill` (both accepted). |
+| Parameter | Description                                                                               |
+| --------- | ----------------------------------------------------------------------------------------- |
+| `name`    | Skill name, URL-encoded. Scoped names use `@org%2Fskill` or `@org/skill` (both accepted). |
 
 **Response `200 OK`**
 
@@ -307,9 +307,9 @@ Returns full metadata for a specific published version, including its permission
 
 **Path parameters**
 
-| Parameter | Description |
-|---|---|
-| `name` | Skill name. |
+| Parameter | Description                         |
+| --------- | ----------------------------------- |
+| `name`    | Skill name.                         |
 | `version` | Exact semver string (e.g. `2.3.1`). |
 
 **Response `200 OK`**
@@ -349,11 +349,11 @@ Returns the raw content of a specific file within a skill version's tarball. Use
 
 **Path parameters**
 
-| Parameter | Description |
-|---|---|
-| `name` | Skill name. |
-| `version` | Exact semver string. |
-| `path` | File path within the tarball (e.g. `SKILL.md`, `src/index.ts`). |
+| Parameter | Description                                                     |
+| --------- | --------------------------------------------------------------- |
+| `name`    | Skill name.                                                     |
+| `version` | Exact semver string.                                            |
+| `path`    | File path within the tarball (e.g. `SKILL.md`, `src/index.ts`). |
 
 **Response**
 
@@ -383,11 +383,11 @@ After uploading the tarball to the `uploadUrl` returned by `POST /api/v1/skills`
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `skillId` | string | Yes | `skillId` from the publish initiation response. |
-| `versionId` | string | Yes | `versionId` from the publish initiation response. |
-| `integrity` | string | Yes | SHA-512 hash of the tarball in the format `sha512-<base64>`. |
+| Field       | Type   | Required | Description                                                  |
+| ----------- | ------ | -------- | ------------------------------------------------------------ |
+| `skillId`   | string | Yes      | `skillId` from the publish initiation response.              |
+| `versionId` | string | Yes      | `versionId` from the publish initiation response.            |
+| `integrity` | string | Yes      | SHA-512 hash of the tarball in the format `sha512-<base64>`. |
 
 **Response `200 OK`**
 
@@ -538,23 +538,23 @@ curl -X POST https://tankpkg.dev/api/v1/scan \
 
 **Verdict rules**
 
-| Verdict | Condition |
-|---|---|
-| `PASS` | Zero findings, or only informational notes. |
-| `PASS_WITH_NOTES` | Low-severity findings only. |
-| `FLAGGED` | 1–3 high-severity findings. |
-| `FAIL` | Any critical finding, or 4+ high-severity findings. |
+| Verdict           | Condition                                           |
+| ----------------- | --------------------------------------------------- |
+| `PASS`            | Zero findings, or only informational notes.         |
+| `PASS_WITH_NOTES` | Low-severity findings only.                         |
+| `FLAGGED`         | 1–3 high-severity findings.                         |
+| `FAIL`            | Any critical finding, or 4+ high-severity findings. |
 
 **Pipeline stages**
 
-| Stage | Name | What it checks |
-|---|---|---|
-| `stage0` | Ingest | Tarball structure, SHA-512 hashing, extraction safety (no symlinks, no path traversal, no absolute paths) |
-| `stage1` | Structure | Required files (`SKILL.md`, manifest), file count (under 100), total size (under 50 MB) |
-| `stage2` | Static | AST analysis — eval, exec, obfuscated code, suspicious imports |
-| `stage3` | Injection | Prompt injection patterns in Markdown and skill definition files |
-| `stage4` | Secrets | Hardcoded credentials, API keys, tokens using entropy analysis |
-| `stage5` | Supply chain | Dependency tree analysis, known-malicious package hashes |
+| Stage    | Name         | What it checks                                                                                            |
+| -------- | ------------ | --------------------------------------------------------------------------------------------------------- |
+| `stage0` | Ingest       | Tarball structure, SHA-512 hashing, extraction safety (no symlinks, no path traversal, no absolute paths) |
+| `stage1` | Structure    | Required files (`SKILL.md`, manifest), file count (under 100), total size (under 50 MB)                   |
+| `stage2` | Static       | AST analysis — eval, exec, obfuscated code, suspicious imports                                            |
+| `stage3` | Injection    | Prompt injection patterns in Markdown and skill definition files                                          |
+| `stage4` | Secrets      | Hardcoded credentials, API keys, tokens using entropy analysis                                            |
+| `stage5` | Supply chain | Dependency tree analysis, known-malicious package hashes                                                  |
 
 <Callout type="info">
   Each stage is independent. A failure in one stage does not prevent subsequent stages from running. All findings are aggregated into the final verdict.
@@ -606,9 +606,9 @@ This URL is opened in the user's browser (not called directly by the CLI). The u
 
 **Query parameters**
 
-| Parameter | Description |
-|---|---|
-| `token` | The `pollToken` from the start response. |
+| Parameter | Description                              |
+| --------- | ---------------------------------------- |
+| `token`   | The `pollToken` from the start response. |
 
 After the user approves, the browser is redirected back to the CLI callback and the poll token transitions to an authorized state. The CLI can now exchange it.
 
@@ -672,21 +672,21 @@ Returns an SVG badge displaying a skill's current audit score. Designed to embed
 
 **Path parameters**
 
-| Parameter | Description |
-|---|---|
-| `name` | Skill name, URL-encoded (e.g. `@vercel%2Fnext-skill`). |
+| Parameter | Description                                            |
+| --------- | ------------------------------------------------------ |
+| `name`    | Skill name, URL-encoded (e.g. `@vercel%2Fnext-skill`). |
 
 **Response**
 
 Returns `image/svg+xml` content. The badge color encodes the score tier:
 
-| Score | Color | Meaning |
-|---|---|---|
-| 9–10 | Green | Excellent |
-| 7–8 | Yellow-green | Good |
-| 5–6 | Yellow | Fair |
-| 3–4 | Orange | Poor |
-| 0–2 | Red | Failing |
+| Score | Color        | Meaning   |
+| ----- | ------------ | --------- |
+| 9–10  | Green        | Excellent |
+| 7–8   | Yellow-green | Good      |
+| 5–6   | Yellow       | Fair      |
+| 3–4   | Orange       | Poor      |
+| 0–2   | Red          | Failing   |
 
 **Usage in Markdown**
 

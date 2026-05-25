@@ -4,7 +4,7 @@
 import { encodeSkillName } from '@internals/helpers';
 import { expect } from '@playwright/test';
 
-import { Given, Then, When } from './fixtures';
+import { Then, When } from './fixtures';
 
 // ── Desktop install command ──────────────────────────────────────────
 
@@ -66,10 +66,9 @@ Then('there is visible spacing between the trust summary and the tabs', async ({
   const trustBox = await trustCard.boundingBox();
   const readmeTab = page.getByTestId('tab-readme');
   const tabBox = await readmeTab.boundingBox();
-  expect(trustBox).not.toBeNull();
-  expect(tabBox).not.toBeNull();
+  if (!trustBox || !tabBox) throw new Error('expected bounding boxes to exist');
   // At least 16px of vertical gap between bottom of trust card and top of tabs
-  const gap = (tabBox!.y) - (trustBox!.y + trustBox!.height);
+  const gap = tabBox.y - (trustBox.y + trustBox.height);
   expect(gap).toBeGreaterThanOrEqual(16);
 });
 
