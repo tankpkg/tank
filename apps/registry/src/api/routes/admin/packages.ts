@@ -1,6 +1,7 @@
 import { and, count, desc, eq, ilike, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 
+import { purgeSkillCache } from '~/lib/cache-purge';
 import { db } from '~/lib/db';
 import { user } from '~/lib/db/auth-schema';
 import { auditEvents, skills, skillVersions } from '~/lib/db/schema';
@@ -133,6 +134,8 @@ export const packagesRoutes = new Hono()
       metadata: { name, updates: body }
     });
 
+    purgeSkillCache(name).catch(() => {});
+
     return c.json({ success: true });
   })
 
@@ -157,6 +160,8 @@ export const packagesRoutes = new Hono()
       metadata: { name }
     });
 
+    purgeSkillCache(name).catch(() => {});
+
     return c.json({ success: true });
   })
 
@@ -173,6 +178,7 @@ export const packagesRoutes = new Hono()
 
     try {
       const result = await runRescan(skill.id, adminUser.id);
+      purgeSkillCache(name).catch(() => {});
       return c.json(result);
     } catch (err) {
       return c.json({ error: (err as Error).message }, 502);

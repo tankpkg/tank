@@ -54,7 +54,7 @@ export const getSkillDetailFn = createServerFn({ method: 'GET' })
   .inputValidator((input: string) => input)
   .handler(async ({ data: name }): Promise<SkillDetailResult | null> => {
     const viewerUserId = await getViewerUserId();
-    if (!viewerUserId) setEdgeCache(300);
+    if (!viewerUserId) setEdgeCache(60);
     return getSkillDetail(name, viewerUserId);
   });
 

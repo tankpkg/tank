@@ -64,6 +64,12 @@ export const zEnv = z.object({
   // ── KV Store (Redis) ──
   REDIS_URL: zOptStr,
 
+  // ── Edge Cache (Cloudflare) ──
+  // API token needs `Zone:Cache Purge` permission on the zone.
+  // Without both, purges are no-ops (acceptable in dev / self-hosted).
+  CLOUDFLARE_API_TOKEN: zOptStr,
+  CLOUDFLARE_ZONE_ID: zOptStr,
+
   // ── Admin ──
   FIRST_ADMIN_EMAIL: zOptStr,
   FIRST_ADMIN_PASSWORD: zOptStr

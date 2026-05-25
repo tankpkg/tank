@@ -1,10 +1,9 @@
 // Feature: bdd/features/browser/tanstack/skills/conversion-skills.feature
 // Intent: idd/modules/conversion-skills-list/INTENT.md
 
-import { encodeSkillName } from '@internals/helpers';
 import { expect } from '@playwright/test';
 
-import { Given, Then, When } from './fixtures';
+import { Then, When } from './fixtures';
 
 // ── Value proposition banner ──────────────────────────────────────────
 
@@ -20,7 +19,7 @@ When('I revisit the skills page', async ({ page }) => {
   await page.waitForLoadState('networkidle');
 });
 
-Then('I see a banner explaining Tank\'s security value', async ({ page }) => {
+Then("I see a banner explaining Tank's security value", async ({ page }) => {
   const banner = page.getByTestId('value-banner');
   await expect(banner).toBeVisible();
 });
