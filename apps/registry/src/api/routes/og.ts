@@ -1,4 +1,4 @@
-import { Resvg, initWasm } from '@resvg/resvg-wasm';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import { Hono } from 'hono';
 import type { ReactNode } from 'react';
 import satori from 'satori';

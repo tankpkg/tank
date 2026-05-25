@@ -25,7 +25,8 @@ if (fs.existsSync(envPath)) {
 
 const testDir = defineBddConfig({
   features: 'features/browser/tanstack/**/conversion-*.feature',
-  steps: 'steps/browser/{fixtures,conversion-skills,conversion-detail,search-ui,skill-detail,skills-browse-mobile}.steps.ts',
+  steps:
+    'steps/browser/{fixtures,conversion-skills,conversion-detail,search-ui,skill-detail,skills-browse-mobile}.steps.ts',
   importTestFrom: 'steps/browser/fixtures.ts',
   outputDir: '../test-results/bdd-browser-conversion/generated'
 });
