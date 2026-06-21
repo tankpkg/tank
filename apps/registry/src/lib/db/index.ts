@@ -3,6 +3,14 @@ import postgres from 'postgres';
 
 import * as schema from './schema';
 
+const POSTGRES_OPTIONS = {
+  max: 1,
+  prepare: false,
+  connect_timeout: 5,
+  idle_timeout: 20,
+  max_lifetime: 60 * 30
+} as const;
+
 let _sql: ReturnType<typeof postgres> | null = null;
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
@@ -13,12 +21,13 @@ function ensureInitialized() {
   // DATABASE_URL must use the Supabase pooler in transaction mode (port 6543).
   // `prepare: false` is required — PgBouncer transaction mode does not support
   // prepared statements (postgres-js uses them by default).
-  _sql = postgres(url, { max: 1, prepare: false });
+  _sql = postgres(url, POSTGRES_OPTIONS);
   _db = drizzle(_sql, { schema });
 }
 
 export function reinitializeDb(url: string) {
   process.env.DATABASE_URL = url;
+  void _sql?.end({ timeout: 1 }).catch(() => undefined);
   _sql = null;
   _db = null;
 }
