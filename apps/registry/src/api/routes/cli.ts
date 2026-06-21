@@ -12,7 +12,7 @@ const PLATFORMS: Record<string, string> = {
   'linux-arm64': 'tank-linux-arm64',
   'darwin-x64': 'tank-darwin-x64',
   'darwin-arm64': 'tank-darwin-arm64',
-  'win-x64': 'tank-win-x64.exe'
+  'win-x64': 'tank-windows-x64.exe'
 };
 
 /**

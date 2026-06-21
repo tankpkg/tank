@@ -30,6 +30,16 @@ function resolveCurrentBinary(): string {
   }
 }
 
+function replaceBinary(tmpBin: string, currentBinaryPath: string): void {
+  if (process.platform !== 'win32') {
+    fs.renameSync(tmpBin, currentBinaryPath);
+    fs.chmodSync(currentBinaryPath, 0o755);
+    return;
+  }
+
+  fs.copyFileSync(tmpBin, currentBinaryPath);
+}
+
 export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
   const currentBinaryPath = resolveCurrentBinary();
   if (
@@ -134,10 +144,7 @@ export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
       fs.chmodSync(tmpBin, 0o755);
     }
 
-    fs.copyFileSync(tmpBin, currentBinaryPath);
-    if (process.platform !== 'win32') {
-      fs.chmodSync(currentBinaryPath, 0o755);
-    }
+    replaceBinary(tmpBin, currentBinaryPath);
 
     console.log(chalk.green(`✓ Upgraded tank ${VERSION} → ${targetVersion}`));
     console.log(chalk.gray(`Release notes: https://github.com/tankpkg/tank/releases/tag/v${targetVersion}`));
