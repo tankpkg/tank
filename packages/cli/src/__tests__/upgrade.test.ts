@@ -220,6 +220,49 @@ describe('upgradeCommand', () => {
     }
   });
 
+  it('does not copy over the running POSIX binary', async () => {
+    if (process.platform === 'win32') return;
+
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-etxtbsy-'));
+    const copySpy = vi.spyOn(fs, 'copyFileSync').mockImplementation(() => {
+      const error = new Error('ETXTBSY: text file is busy') as NodeJS.ErrnoException;
+      error.code = 'ETXTBSY';
+      throw error;
+    });
+
+    try {
+      const fakeBinPath = path.join(tmpDir, 'tank');
+      fs.writeFileSync(fakeBinPath, 'old-binary');
+      process.argv[1] = fakeBinPath;
+
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+
+      const fakeBinary = new Uint8Array([0xca, 0xfe, 0xba, 0xbe]);
+      const actualHash = crypto.createHash('sha256').update(fakeBinary).digest('hex');
+      const platform = process.platform === 'darwin' ? 'darwin' : 'linux';
+      const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+      const binaryName = `tank-${platform}-${arch}`;
+
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ tag_name: 'v99.0.0' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      );
+      mockFetch.mockResolvedValueOnce(new Response(fakeBinary, { status: 200 }));
+      mockFetch.mockResolvedValueOnce(new Response(`${actualHash}  ${binaryName}\n`, { status: 200 }));
+
+      await upgradeCommand();
+
+      expect(copySpy).not.toHaveBeenCalled();
+      expect(Buffer.from(fakeBinary).equals(fs.readFileSync(fakeBinPath))).toBe(true);
+    } finally {
+      copySpy.mockRestore();
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
   it('force flag bypasses version check', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-force-'));
     try {
