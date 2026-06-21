@@ -1,19 +1,19 @@
 class Tank < Formula
   desc "Security-first package manager for AI agent skills"
   homepage "https://tankpkg.dev"
-  version "0.15.8"
+  version "0.16.3"
   if OS.mac? && Hardware::CPU.arm?
     url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-darwin-arm64.tar.gz"
-    sha256 "a1ba992692d363fa7e4a74f028da60f0869c3388f1c9314d7846b0cedf8e4c88"
+    sha256 "1214b47bba3e198fb010d9768cfd1afc3fb09b5485eb6e6a4718bfb2ab5fb675"
   elsif OS.mac?
     url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-darwin-x64.tar.gz"
-    sha256 "5ceac4aae1ebb71ce8569ee464d80a4a66c5c4f7950b8836401539e4f63b01cd"
+    sha256 "033d2e7bdb535d2ff2002881d69f56d2286ca6217d6b6b04559cdcccfddd8dda"
   elsif OS.linux? && Hardware::CPU.arm?
     url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-linux-arm64.tar.gz"
-    sha256 "a14892bd79002041f74b2466c8b36ee85c6b08150bc28a4496ded4af523470cc"
+    sha256 "c830ee7bed5d6ddefc12997b0eee5eb53051b1ec4a60a1bfb9a5351629418edd"
   else
     url "https://github.com/tankpkg/tank/releases/download/v#{version}/tank-linux-x64.tar.gz"
-    sha256 "090bac98e677fadb57f6f404c93039c61b0709718baf7de4c2cb26d165e9486d"
+    sha256 "56615fd3cbf41df7ccdea240f3a341c71e8bdcf97cacb4edabaf948df37520ed"
   end
   def install
     bin.install Dir["tank-*"].first => "tank"
