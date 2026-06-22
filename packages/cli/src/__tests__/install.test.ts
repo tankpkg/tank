@@ -1946,3 +1946,115 @@ describe('installCommand — transitive dependency resolution', () => {
     expect(mockFetch).toHaveBeenCalledTimes(3);
   });
 });
+
+describe('installCommand — transitive dependency linking', () => {
+  let tmpDir: string;
+  let configDir: string;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+
+  let fakeTarball: Buffer;
+  let fakeTarballIntegrity: string;
+
+  const rootVersionsResponse = {
+    name: '@test-org/my-skill',
+    versions: [
+      {
+        version: '1.0.0',
+        integrity: 'sha512-root',
+        auditScore: 9.0,
+        auditStatus: 'published',
+        publishedAt: '2026-01-01T00:00:00Z'
+      }
+    ]
+  };
+
+  const depVersionsResponse = {
+    name: '@dep/helper',
+    versions: [
+      {
+        version: '1.0.0',
+        integrity: 'sha512-dep',
+        auditScore: 9.0,
+        auditStatus: 'published',
+        publishedAt: '2026-01-01T00:00:00Z'
+      }
+    ]
+  };
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-translink-test-'));
+    configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-translink-config-'));
+    fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ registry: 'https://tankpkg.dev' }));
+    fs.writeFileSync(
+      path.join(tmpDir, 'tank.json'),
+      JSON.stringify({ name: 'my-project', version: '1.0.0', skills: {} }, null, 2)
+    );
+
+    fakeTarball = Buffer.from('fake-tarball-translink-test');
+    const hash = crypto.createHash('sha512').update(fakeTarball).digest('base64');
+    fakeTarballIntegrity = `sha512-${hash}`;
+
+    mockFetch.mockReset();
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(configDir, { recursive: true, force: true });
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+    vi.resetModules();
+    vi.doUnmock('~/lib/frontmatter.js');
+    vi.doUnmock('~/lib/linker.js');
+  });
+
+  function makeMeta(name: string, version: string, dependencies: Record<string, string> = {}) {
+    return {
+      name,
+      version,
+      description: `Test skill ${name}`,
+      integrity: fakeTarballIntegrity,
+      permissions: {},
+      auditScore: 9.0,
+      auditStatus: 'published',
+      downloadUrl: `https://storage.example.com/${name}-${version}.tgz`,
+      publishedAt: '2026-01-01T00:00:00Z',
+      dependencies
+    };
+  }
+
+  it('links transitive deps declared in registry metadata, not just the root', async () => {
+    vi.resetModules();
+    const prepareAgentSkillDir = vi.fn().mockReturnValue('/mock/agent-skills/skill');
+    const linkSkillToAgents = vi.fn().mockReturnValue({ linked: ['claude'], skipped: [], failed: [] });
+    vi.doMock('~/lib/frontmatter.js', () => ({ prepareAgentSkillDir }));
+    vi.doMock('~/lib/linker.js', () => ({ linkSkillToAgents }));
+
+    const { installCommand } = await import('~/commands/install.js');
+
+    // Modern resolver path: the dependency comes from registry metadata
+    // (not from the extracted tank.json legacy fallback).
+    mockFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify(rootVersionsResponse)))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(makeMeta('@test-org/my-skill', '1.0.0', { '@dep/helper': '^1.0.0' })))
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify(depVersionsResponse)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(makeMeta('@dep/helper', '1.0.0'))))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)))
+      .mockResolvedValueOnce(new Response(new Uint8Array(fakeTarball)));
+
+    await installCommand({
+      name: '@test-org/my-skill',
+      directory: tmpDir,
+      configDir,
+      homedir: tmpDir
+    });
+
+    const linkedSkillNames = linkSkillToAgents.mock.calls.map((call) => call[0]?.skillName);
+    expect(linkedSkillNames).toContain('@test-org/my-skill');
+    expect(linkedSkillNames).toContain('@dep/helper');
+  });
+});

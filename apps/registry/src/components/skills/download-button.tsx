@@ -67,8 +67,7 @@ export function DownloadButton({ skillName, version }: DownloadButtonProps) {
         className="gap-1.5"
         onClick={handleClick}
         disabled={isLoading}
-        aria-busy={isLoading}
-      >
+        aria-busy={isLoading}>
         <Download className="size-3.5" />
         <span className="text-xs">{isLoading ? 'Downloading…' : 'Download'}</span>
       </Button>
