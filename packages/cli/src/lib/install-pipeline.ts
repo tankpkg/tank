@@ -6,6 +6,7 @@ export {
   getResolvedNodesInOrder,
   parseLockKey,
   parseVersionFromLockKey,
+  planMkdirSegments,
   readExtractedDependencies,
   verifyExtractedDependencies,
   writeLockfileWithResolvedGraph

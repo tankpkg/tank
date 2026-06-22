@@ -24,6 +24,7 @@ import { upgradeCommand } from '~/commands/upgrade.js';
 import { verifyCommand } from '~/commands/verify.js';
 import { whoamiCommand } from '~/commands/whoami.js';
 import { flushLogs } from '~/lib/debug-logger.js';
+import { describeError } from '~/lib/describe-error.js';
 import { fetchSimilarSkillNames, formatInstallSuggestions } from '~/lib/install-suggestions.js';
 import { looksLikeVersionRange, parseInstallTarget } from '~/lib/install-target.js';
 import { captureEvent } from '~/lib/telemetry.js';
@@ -180,7 +181,7 @@ program
       try {
         await installAll({ global: opts.global, ...proxyOpt });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = describeError(err);
         console.error(`Install failed: ${msg}`);
         process.exit(1);
       }
@@ -205,7 +206,7 @@ program
           });
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        const msg = describeError(err);
         failures.push({ target, error: msg, parsedName: parsed.kind === 'name' ? parsed.name : undefined });
         console.error(`Install failed for ${target}: ${msg}`);
       }
