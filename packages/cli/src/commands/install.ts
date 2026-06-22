@@ -325,8 +325,8 @@ function wrapMcpServerForSkill(options: {
   }
 }
 
-async function linkInstalledRoots(options: {
-  rootSkillNames: string[];
+async function linkInstalledSkills(options: {
+  skillNames: string[];
   resolvedNodeByName: Map<string, ResolvedNode>;
   extractDirForSkill: (skillName: string) => string;
   directory: string;
@@ -336,7 +336,7 @@ async function linkInstalledRoots(options: {
   dangerouslyNoTankProxy?: boolean;
 }): Promise<void> {
   const {
-    rootSkillNames,
+    skillNames,
     resolvedNodeByName,
     extractDirForSkill,
     directory,
@@ -351,7 +351,7 @@ async function linkInstalledRoots(options: {
     : path.join(directory, '.tank', 'agent-skills');
   const linksDir = global ? path.join(resolvedHome, '.tank') : path.join(directory, '.tank');
 
-  for (const skillName of rootSkillNames) {
+  for (const skillName of skillNames) {
     try {
       const node = resolvedNodeByName.get(skillName);
       if (!node) {
@@ -388,7 +388,7 @@ async function linkInstalledRoots(options: {
         dangerouslyNoTankProxy
       });
     } catch {
-      if (rootSkillNames.length === 1) {
+      if (skillNames.length === 1) {
         logger.warn('Agent linking skipped (non-fatal)');
       } else {
         logger.warn(`Agent linking skipped for ${skillName} (non-fatal)`);
@@ -410,7 +410,7 @@ async function linkInstalledRoots(options: {
   };
   const platforms = new Set(detectedAgents.map((a) => agentToPlatform[a.id]).filter(Boolean));
 
-  for (const skillName of rootSkillNames) {
+  for (const skillName of skillNames) {
     const node = resolvedNodeByName.get(skillName);
     if (!node) continue;
     const skillDir = extractDirForSkill(skillName);
@@ -487,8 +487,8 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
     homedir
   });
 
-  await linkInstalledRoots({
-    rootSkillNames,
+  await linkInstalledSkills({
+    skillNames: nodesToInstall.map((node) => node.name),
     resolvedNodeByName,
     extractDirForSkill,
     directory,
