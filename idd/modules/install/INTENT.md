@@ -56,6 +56,8 @@ apps/registry/src/api/routes/v1/skills-read.ts  # GET — list versions, fetch m
 | C14 | One failing target does NOT abort installs of subsequent targets; exit code is non-zero if any failed  | Best-effort install across a list — user sees what succeeded and what didn't  | Unit test     |
 | C15 | Legacy `tank install <name> <semver-range>` (2 positional args) still works as back-compat shim        | Avoid breaking existing scripts; detected when 2nd arg matches a bare semver  | Unit test     |
 | C16 | `-g`/`--global` flag is propagated to every target in multi-install                                    | All-or-nothing scope; never partial-global                                    | Unit test     |
+| C17 | Install-path directory creation resolves the real filesystem root (`/` POSIX, `C:\` or `\\server\share\` Windows); dirs are created at absolute locations, never drive-relative (`C:foo`) | Cross-platform installs — Windows `tank install -g` was building `C:Users\…` and failing | Unit test     |
+| C18 | When an install target fails, the printed error is always non-empty and actionable (includes `code`/`syscall`/`path` when present); it never renders as empty or `<none>`              | Windows users saw `Install failed for X: <none>` — a useless message that hid the real cause | Unit test     |
 
 ---
 
@@ -81,3 +83,5 @@ apps/registry/src/api/routes/v1/skills-read.ts  # GET — list versions, fetch m
 | E16 | `tank install @org/a @org/b` (no semver-shaped 2nd arg)      | Treated as TWO targets, not legacy form (shim does NOT fire)                     |
 | E17 | `looksLikeVersionRange("^1.0.0")` / `("latest")` / `("1.x")` | `true`                                                                           |
 | E18 | `looksLikeVersionRange("@org/skill")` / `("https://x.com")`  | `false`                                                                          |
+| E19 | `planMkdirSegments("C:\\Users\\u\\.tank\\skills\\@org\\s", path.win32)` | `["C:\\Users","C:\\Users\\u",…,"C:\\Users\\u\\.tank\\skills\\@org\\s"]` — absolute; never `C:.`/`C:Users` |
+| E20 | `describeError(new Error(""))` / `describeError({})` / `describeError(null)` | non-empty actionable string; never `""` or `<none>`                              |

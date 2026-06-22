@@ -5,7 +5,7 @@ import path from 'node:path';
 import * as tar from 'tar';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { extractSafely } from '~/lib/install-pipeline.js';
+import { extractSafely, planMkdirSegments } from '~/lib/install-pipeline.js';
 
 interface FileSpec {
   path: string;
@@ -148,5 +148,55 @@ describe('extractSafely (atomic install/update)', () => {
     expect(readFileText(destDir, 'SKILL.md')).toBe('previous version');
     expect(readFileText(destDir, 'tank.json')).toBe('{"name":"@tank/sample-skill","version":"1.0.0"}');
     expect(listStaleBackupSiblings(destDir)).toEqual([]);
+  });
+});
+
+// Regression: Windows `tank install -g` failed with a useless "<none>" error because
+// mkdirSafeNoSymlinks detected the root with a POSIX-only `startsWith('/')` check.
+// On Windows that produced malformed drive-relative segments ("C:.", "C:Users", …),
+// so the real install dir was never created and the file move threw.
+// Validates: idd/modules/install/INTENT.md C17, E19.
+describe('planMkdirSegments (cross-platform ancestor planning)', () => {
+  it('builds absolute Windows segments from a drive-rooted path', () => {
+    const segments = planMkdirSegments('C:\\Users\\t_str\\.tank\\skills\\@tank\\bulletproof', path.win32);
+
+    expect(segments).toEqual([
+      'C:\\Users',
+      'C:\\Users\\t_str',
+      'C:\\Users\\t_str\\.tank',
+      'C:\\Users\\t_str\\.tank\\skills',
+      'C:\\Users\\t_str\\.tank\\skills\\@tank',
+      'C:\\Users\\t_str\\.tank\\skills\\@tank\\bulletproof'
+    ]);
+    // The drive root itself is never created, and no malformed drive-relative paths leak.
+    expect(segments).not.toContain('C:\\');
+    for (const seg of segments) {
+      expect(path.win32.isAbsolute(seg)).toBe(true);
+    }
+  });
+
+  it('builds absolute POSIX segments (regression guard for macOS/Linux)', () => {
+    const segments = planMkdirSegments('/home/u/.tank/skills/@tank/x', path.posix);
+
+    expect(segments).toEqual([
+      '/home',
+      '/home/u',
+      '/home/u/.tank',
+      '/home/u/.tank/skills',
+      '/home/u/.tank/skills/@tank',
+      '/home/u/.tank/skills/@tank/x'
+    ]);
+    expect(segments).not.toContain('/');
+  });
+
+  it('keeps Windows UNC segments absolute and never emits the share root', () => {
+    const segments = planMkdirSegments('\\\\server\\share\\.tank\\skills\\@tank\\x', path.win32);
+
+    expect(segments.length).toBeGreaterThan(0);
+    expect(segments).not.toContain('\\\\server\\share\\');
+    for (const seg of segments) {
+      expect(path.win32.isAbsolute(seg)).toBe(true);
+    }
+    expect(segments[segments.length - 1]).toBe('\\\\server\\share\\.tank\\skills\\@tank\\x');
   });
 });
