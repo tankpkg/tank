@@ -25,6 +25,20 @@ Endpoint map:
 - `POST /api/analyze/permissions → permission extraction path`
 - `POST /api/analyze/rescan → rescan an existing package`
 
+## Safe URL Examples
+
+Scanner requests should use fetchable source or registry URLs instead of
+browser-only package pages. Common accepted shapes:
+
+- scoped npm registry metadata:
+  `https://registry.npmjs.org/@xquik%2ftweetclaw`
+- GitHub skill or plugin folders:
+  `https://github.com/Xquik-dev/tweetclaw/tree/master/skills/tweetclaw`
+- ClawHub package pages:
+  `https://clawhub.ai/plugins/@xquik/tweetclaw`
+
+Use percent-encoding for the slash in scoped npm package names.
+
 ## Stages
 
 Stage map:

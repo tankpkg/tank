@@ -213,6 +213,10 @@ describe('detectURLType', () => {
     expect(detectURLType('https://example.com/package.tar.gz')).toBe('tarball');
   });
 
+  it('detects scoped npm registry metadata URLs as tarballs', () => {
+    expect(detectURLType('https://registry.npmjs.org/@xquik%2ftweetclaw')).toBe('tarball');
+  });
+
   it('detects clawhub.ai skill URLs', () => {
     expect(detectURLType('https://clawhub.ai/pskoett/self-improving-agent')).toBe('clawhub');
     expect(detectURLType('https://www.clawhub.ai/pskoett/self-improving-agent')).toBe('clawhub');
