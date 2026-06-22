@@ -1,6 +1,6 @@
 {
   "name": "@tankpkg/sdk",
-  "version": "0.16.3",
+  "version": "0.16.4",
   "description": "Official TypeScript SDK for the Tank registry — search, download, install, and audit AI agent skills programmatically",
   "type": "module",
   "homepage": "https://github.com/tankpkg/tank",
