@@ -30,7 +30,7 @@ dependencies = ["httpx>=0.27"]
 [project.optional-dependencies]
 # Optional Rust acceleration; SDK falls back to pure-Python if tank-core import fails at runtime.
 # Version pinned by `just bump` to match the monorepo — keeps ABI and wire-format aligned.
-native = ["tank-core==0.16.3"]
+native = ["tank-core==0.16.5"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "openai"]
 
 [project.urls]

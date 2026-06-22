@@ -210,13 +210,30 @@ export function writeLockfileWithResolvedGraph(
   return lock;
 }
 
-function mkdirSafeNoSymlinks(targetDir: string): void {
-  const resolved = path.resolve(targetDir);
-  const segments = resolved.split(path.sep).filter(Boolean);
-  let current = resolved.startsWith('/') ? '/' : '';
+/**
+ * Plan the ordered list of ancestor directories to create for `targetDir`,
+ * from just below the filesystem root down to the leaf (the root itself is
+ * never returned — it always exists and must not be `mkdir`'d).
+ *
+ * The path module is injectable so Windows drive/UNC root handling can be
+ * verified on any host via `path.win32` without a real Windows machine.
+ */
+export function planMkdirSegments(targetDir: string, pathMod: typeof path = path): string[] {
+  const resolved = pathMod.resolve(targetDir);
+  const { root } = pathMod.parse(resolved);
+  const dirs: string[] = [];
+  let current = root;
 
-  for (const seg of segments) {
-    current = path.join(current, seg);
+  for (const seg of resolved.slice(root.length).split(pathMod.sep).filter(Boolean)) {
+    current = pathMod.join(current, seg);
+    dirs.push(current);
+  }
+
+  return dirs;
+}
+
+function mkdirSafeNoSymlinks(targetDir: string): void {
+  for (const current of planMkdirSegments(targetDir)) {
     if (fs.existsSync(current)) {
       const stat = fs.lstatSync(current);
       if (stat.isSymbolicLink()) {
