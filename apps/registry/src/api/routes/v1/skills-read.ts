@@ -5,7 +5,7 @@ import { resolveRequestUserId } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
 import { visibilityClause } from '~/lib/db/visibility';
-import { publicSkillReadCacheControl } from '~/lib/skills/public-read-cache';
+import { publicSkillReadCacheHeaders } from '~/lib/skills/public-read-cache';
 import { apiLog } from '~/services/logger';
 import { getStorageProvider } from '~/services/storage/provider';
 import { extractFileFromTarball, listFilesInTarball } from './tarball-utils';
@@ -175,8 +175,10 @@ export const skillsReadRoutes = new OpenAPIHono()
     // Anonymous reads are public and identical for every caller — let shared caches
     // (Vercel edge; Cloudflare with a cache rule) absorb repeated + retried fetches
     // instead of hitting Postgres. Never shared-cache authenticated (per-visibility) reads.
-    const cacheControl = publicSkillReadCacheControl(requesterUserId);
-    if (cacheControl) c.header('Cache-Control', cacheControl);
+    const cacheHeaders = publicSkillReadCacheHeaders(requesterUserId);
+    if (cacheHeaders) {
+      for (const [key, value] of Object.entries(cacheHeaders)) c.header(key, value);
+    }
 
     return c.json(
       {
@@ -220,8 +222,10 @@ export const skillsReadRoutes = new OpenAPIHono()
 
     const skillName = (rows[0] as Record<string, unknown>).name as string;
 
-    const cacheControl = publicSkillReadCacheControl(requesterUserId);
-    if (cacheControl) c.header('Cache-Control', cacheControl);
+    const cacheHeaders = publicSkillReadCacheHeaders(requesterUserId);
+    if (cacheHeaders) {
+      for (const [key, value] of Object.entries(cacheHeaders)) c.header(key, value);
+    }
 
     return c.json(
       {
