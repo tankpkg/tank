@@ -43,3 +43,22 @@ export function publicSkillReadCacheHeaders(requesterUserId: string | null | und
     'Cloudflare-CDN-Cache-Control': PUBLIC_SKILL_READ_CDN_CACHE_CONTROL
   };
 }
+
+/**
+ * True when a request carries no credential at all — no `Authorization: Bearer`
+ * token and no auth session/CSRF cookie. Such requests can only ever see public
+ * data, so read routes can serve them a shared-cacheable response WITHOUT first
+ * resolving a user id (which itself queries the DB/auth). Under a retry storm,
+ * skipping that resolution keeps anonymous reads off the exhausted pooler.
+ *
+ * Conservative by design: if any cookie or Authorization header is present we
+ * treat the request as potentially authenticated and fall back to real
+ * resolution, so we never leak private data into a shared cache.
+ */
+export function requestIsAnonymous(request: Request): boolean {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.trim().length > 0) return false;
+  const cookie = request.headers.get('cookie');
+  if (cookie && cookie.trim().length > 0) return false;
+  return true;
+}

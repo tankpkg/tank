@@ -501,6 +501,28 @@ docker exec tank-web env | grep REDIS_URL
 # Set SESSION_STORE=redis and REDIS_URL=redis://redis:6379
 ```
 
+#### Registry: "Tank network error after N attempts" on `/api/v1/skills/*`
+
+**Symptoms**: SDK/bot clients (e.g. Othello) report `Tank network error after 6 attempts` fetching `https://www.tankpkg.dev/api/v1/skills/<name>`, `/versions`, `/<version>`, or `/<version>/files`. The skill is healthy; every one of the 6 retries times out.
+
+**Root cause**: The public skill-read routes are anonymous and identical for every caller, but repeated + retried fetches all reached Postgres and exhausted the Supabase transaction pooler (`EMAXCONN`, limit 200), causing statement/function timeouts. Two amplifiers: (1) uncached routes (`/<version>` and `/<version>/files*`) fanned out concurrently, and (2) Cloudflare never cached `/api/*` because no cache rule existed — so the `Cloudflare-CDN-Cache-Control` header the origin emits was ignored.
+
+**Fix (already in code)**: All five read handlers emit `Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=300` + `Cloudflare-CDN-Cache-Control` for anonymous requests, and skip auth/DB resolution when the request carries no credential. Vercel's edge honors `s-maxage` automatically.
+
+**Required operator action (the missing half)**: Cloudflare only caches `/api/*` with an explicit cache rule. Create it once per zone:
+
+```bash
+CLOUDFLARE_API_TOKEN=<Zone:Cache Rules:Edit> CLOUDFLARE_ZONE_ID=<zone> just cf-cache-rule
+```
+
+**Verify**:
+
+```bash
+# Second request should show x-vercel-cache: HIT and (after the CF rule) cf-cache-status: HIT
+curl -sSI 'https://www.tankpkg.dev/api/v1/skills/%40uriva%2Fsafescript' | grep -iE 'cache-control|x-vercel-cache|cf-cache-status'
+curl -sSI 'https://www.tankpkg.dev/api/v1/skills/%40uriva%2Fsafescript/0.1.23/files' | grep -iE 'cache-control|x-vercel-cache|cf-cache-status'
+```
+
 ### Log Collection
 
 ```bash

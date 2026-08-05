@@ -519,3 +519,28 @@ ci-merge-stable:
 clean:
     rm -rf dist build .next .turbo coverage .tanstack .output
     bun turbo clean 2>/dev/null || true
+
+# Create the Cloudflare cache rule that makes public skill reads (/api/v1/skills/*)
+# CDN-cacheable. The registry already emits Cloudflare-CDN-Cache-Control on
+# anonymous reads, but Cloudflare ignores it without a matching cache rule — so
+# retry storms hit Postgres and exhaust the Supabase pooler ("Tank network error
+# after 6 attempts"). Idempotent-ish: creating a duplicate rule is safe to skip.
+# Requires CLOUDFLARE_API_TOKEN (Zone > Cache Rules: Edit) and CLOUDFLARE_ZONE_ID.
+[group('ops')]
+cf-cache-rule:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    : "${CLOUDFLARE_API_TOKEN:?set CLOUDFLARE_API_TOKEN}"
+    : "${CLOUDFLARE_ZONE_ID:?set CLOUDFLARE_ZONE_ID}"
+    RULESET_PHASE="http_request_cache_settings"
+    api() { curl -sS -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json" "$@"; }
+    BASE="https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/rulesets"
+    RULESET_ID=$(api "${BASE}/phases/${RULESET_PHASE}/entrypoint" | bun -e 'const d=await Bun.stdin.json(); process.stdout.write(d?.result?.id ?? "")' || true)
+    RULE_BODY='{"expression":"(starts_with(http.request.uri.path, \"/api/v1/skills/\") and http.request.method eq \"GET\")","description":"tank: cache public skill reads","action":"set_cache_settings","action_parameters":{"cache":true,"edge_ttl":{"mode":"respect_origin"},"browser_ttl":{"mode":"respect_origin"}},"enabled":true}'
+    if [ -z "${RULESET_ID}" ]; then
+        echo "Creating cache ruleset + rule..."
+        api -X POST "${BASE}" --data "{\"name\":\"Tank cache\",\"kind\":\"zone\",\"phase\":\"${RULESET_PHASE}\",\"rules\":[${RULE_BODY}]}" | bun -e 'const d=await Bun.stdin.json(); console.log(d.success ? "created" : JSON.stringify(d.errors))'
+    else
+        echo "Appending rule to ruleset ${RULESET_ID}..."
+        api -X POST "${BASE}/${RULESET_ID}/rules" --data "${RULE_BODY}" | bun -e 'const d=await Bun.stdin.json(); console.log(d.success ? "added" : JSON.stringify(d.errors))'
+    fi
