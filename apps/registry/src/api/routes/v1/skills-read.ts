@@ -5,10 +5,29 @@ import { resolveRequestUserId } from '~/lib/auth/authz';
 import { db } from '~/lib/db';
 import { skills } from '~/lib/db/schema';
 import { visibilityClause } from '~/lib/db/visibility';
-import { publicSkillReadCacheHeaders } from '~/lib/skills/public-read-cache';
+import { publicSkillReadCacheHeaders, requestIsAnonymous } from '~/lib/skills/public-read-cache';
 import { apiLog } from '~/services/logger';
 import { getStorageProvider } from '~/services/storage/provider';
 import { extractFileFromTarball, listFilesInTarball } from './tarball-utils';
+
+type CacheableContext = { header: (name: string, value: string) => void };
+
+function applyPublicReadCache(c: CacheableContext, requesterUserId: string | null | undefined): void {
+  const cacheHeaders = publicSkillReadCacheHeaders(requesterUserId);
+  if (!cacheHeaders) return;
+  for (const [key, value] of Object.entries(cacheHeaders)) c.header(key, value);
+}
+
+/**
+ * Resolve the requester id for a public read, skipping auth/DB resolution when
+ * the request carries no credential. Under a retry storm this keeps anonymous
+ * reads (the vast majority of registry traffic) off the exhausted Postgres
+ * pooler and lets shared caches serve them.
+ */
+async function resolveReaderId(request: Request): Promise<string | null> {
+  if (requestIsAnonymous(request)) return null;
+  return resolveRequestUserId(request);
+}
 
 async function recordDownload(skillId: string): Promise<void> {
   await db.execute(sql`
@@ -142,7 +161,7 @@ const getVersionDetailRoute = createRoute({
 export const skillsReadRoutes = new OpenAPIHono()
 
   .openapi(getSkillRoute, async (c) => {
-    const requesterUserId = await resolveRequestUserId(c.req.raw);
+    const requesterUserId = await resolveReaderId(c.req.raw);
     const { name: rawName } = c.req.valid('param');
     const name = decodeURIComponent(rawName);
     const visClause = visibilityClause(requesterUserId);
@@ -172,13 +191,7 @@ export const skillsReadRoutes = new OpenAPIHono()
 
     const row = results[0] as Record<string, unknown>;
 
-    // Anonymous reads are public and identical for every caller — let shared caches
-    // (Vercel edge; Cloudflare with a cache rule) absorb repeated + retried fetches
-    // instead of hitting Postgres. Never shared-cache authenticated (per-visibility) reads.
-    const cacheHeaders = publicSkillReadCacheHeaders(requesterUserId);
-    if (cacheHeaders) {
-      for (const [key, value] of Object.entries(cacheHeaders)) c.header(key, value);
-    }
+    applyPublicReadCache(c, requesterUserId);
 
     return c.json(
       {
@@ -197,7 +210,7 @@ export const skillsReadRoutes = new OpenAPIHono()
   })
 
   .openapi(getVersionsRoute, async (c) => {
-    const requesterUserId = await resolveRequestUserId(c.req.raw);
+    const requesterUserId = await resolveReaderId(c.req.raw);
     const { name: rawName } = c.req.valid('param');
     const name = decodeURIComponent(rawName);
     const visClause = visibilityClause(requesterUserId);
@@ -222,10 +235,7 @@ export const skillsReadRoutes = new OpenAPIHono()
 
     const skillName = (rows[0] as Record<string, unknown>).name as string;
 
-    const cacheHeaders = publicSkillReadCacheHeaders(requesterUserId);
-    if (cacheHeaders) {
-      for (const [key, value] of Object.entries(cacheHeaders)) c.header(key, value);
-    }
+    applyPublicReadCache(c, requesterUserId);
 
     return c.json(
       {
@@ -249,7 +259,7 @@ export const skillsReadRoutes = new OpenAPIHono()
 
   .openapi(getVersionDetailRoute, async (c) => {
     try {
-      const requesterUserId = await resolveRequestUserId(c.req.raw);
+      const requesterUserId = await resolveReaderId(c.req.raw);
       const { name: rawName, version } = c.req.valid('param');
       const name = decodeURIComponent(rawName);
       const visClause = visibilityClause(requesterUserId);
@@ -339,6 +349,8 @@ export const skillsReadRoutes = new OpenAPIHono()
 
       const dependencies = (row.dependencies as Record<string, string> | null) ?? {};
 
+      applyPublicReadCache(c, requesterUserId);
+
       return c.json(
         {
           name: row.name as string,
@@ -369,7 +381,7 @@ export const skillsReadRoutes = new OpenAPIHono()
     try {
       const name = decodeURIComponent(c.req.param('name'));
       const version = c.req.param('version');
-      const requesterId = await resolveRequestUserId(c.req.raw);
+      const requesterId = await resolveReaderId(c.req.raw);
 
       const rows = await db.execute(sql`
         SELECT sv.tarball_path AS "tarballPath"
@@ -393,6 +405,7 @@ export const skillsReadRoutes = new OpenAPIHono()
       }
 
       const files = await listFilesInTarball(tarballBytes);
+      applyPublicReadCache(c, requesterId);
       return c.json({ name, version, files }, 200);
     } catch (error) {
       apiLog.error({ error }, 'file listing failed');
@@ -420,7 +433,7 @@ export const skillsReadRoutes = new OpenAPIHono()
       const segments = nameVersionPath.split('/');
       const version = segments[segments.length - 1];
       const name = decodeURIComponent(segments.slice(0, -1).join('/'));
-      const requesterId = await resolveRequestUserId(c.req.raw);
+      const requesterId = await resolveReaderId(c.req.raw);
 
       const rows = await db.execute(sql`
         SELECT sv.tarball_path AS "tarballPath"
@@ -458,6 +471,7 @@ export const skillsReadRoutes = new OpenAPIHono()
         return c.json({ error: 'File not found in package' }, 404);
       }
 
+      applyPublicReadCache(c, requesterId);
       return c.text(fileContent);
     } catch (error) {
       apiLog.error({ error }, 'file extraction failed');
