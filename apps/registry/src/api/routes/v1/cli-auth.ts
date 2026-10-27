@@ -48,6 +48,14 @@ const startRoute = createRoute({
           schema: z.object({ error: z.string() })
         }
       }
+    },
+    500: {
+      description: 'Unable to start an authentication session',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
     }
   }
 });
@@ -193,7 +201,7 @@ export const cliAuthRoutes = new OpenAPIHono()
         },
         'CLI auth start failed'
       );
-      return c.json({ error: 'Invalid request body' }, 400);
+      return c.json({ error: 'Unable to start authentication session. Please try again later.' }, 500);
     }
   })
 

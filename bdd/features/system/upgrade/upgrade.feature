@@ -32,6 +32,32 @@ Feature: Self-upgrade Tank CLI binary
     Then the output contains "Checksum mismatch. Aborting"
     And the original binary is not replaced
 
+  @high
+  @posix
+  Scenario: Upgrade works across filesystems (E7)
+    Given the download directory and installed binary are on different filesystems
+    And a newer binary with a valid checksum is available
+    When I run upgrade
+    Then the installed binary is replaced with the verified executable
+
+  @high
+  @posix
+  Scenario: An unsuccessful replacement preserves the original binary (E8)
+    Given a newer binary with a valid checksum is available
+    But the installed binary cannot be replaced
+    When I run upgrade
+    Then the original binary is not replaced
+    And upgrade temporary files are cleaned up
+
+  @high
+  @posix
+  Scenario: A cleanup failure does not hide the original upgrade error (E9)
+    Given an upgrade has begun staging files
+    And the install directory becomes unwritable
+    When the upgrade fails
+    Then the original upgrade error is reported
+    And the user is told the remaining staging path
+
   # ── Homebrew detection (C7) ───────────────────────────────────────────
   @medium
   Scenario: Homebrew-installed binary redirects to brew upgrade (E5)

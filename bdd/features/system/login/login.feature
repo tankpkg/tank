@@ -17,6 +17,26 @@ Feature: CLI OAuth login flow via browser handshake
     And the response contains "sessionCode"
 
   @high
+  Scenario: A supported CLI can start browser login (E12)
+    When a supported CLI initiates a browser login with its generated request
+    Then the response is 200
+    And the response contains "authUrl"
+    And the response contains "sessionCode"
+
+  @high
+  Scenario: A session store outage is not reported as an invalid request (E13)
+    Given the registry session store is unavailable
+    When a supported CLI initiates a browser login with its generated request
+    Then the response indicates a server error
+    And the error does not expose internal connection details
+
+  @high
+  Scenario: An expired PostgreSQL email rate limit starts a new window (E14)
+    Given an email rate-limit counter has expired in the PostgreSQL store
+    When the counter is incremented
+    Then the new counter value is 1
+
+  @high
   Scenario: Start without state returns 400 (E2)
     When I initiate a CLI login session without providing a state
     Then the response is 400

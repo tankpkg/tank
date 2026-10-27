@@ -54,7 +54,8 @@ export function createPostgresStore(connectionString: string): KVStore {
       const rows = await sql`
         INSERT INTO kv_store (key, value, expires_at) VALUES (${key}, '1', ${expiresAt})
         ON CONFLICT (key) DO UPDATE
-          SET value = (COALESCE(kv_store.value, '0')::int + 1)::text,
+          SET value = CASE WHEN kv_store.expires_at > NOW()
+            THEN (COALESCE(kv_store.value, '0')::int + 1)::text ELSE '1' END,
               expires_at = CASE WHEN kv_store.expires_at > NOW() THEN kv_store.expires_at ELSE ${expiresAt} END
         RETURNING value
       `;

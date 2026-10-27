@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `tank upgrade` can replace a binary when the system temporary directory is on a different filesystem.
+- CLI login reports server-side session failures as server errors rather than invalid requests.
+- PostgreSQL-backed rate limits reset expired counters when a new window starts.
+
+### Security
+
+- Updated TanStack Start and its router integrations to address CVE-2026-102989.
+
 ### Added
 
 #### Conversion Improvements (Issue #462)

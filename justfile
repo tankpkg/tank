@@ -303,6 +303,42 @@ test target='all':
         *) echo "Unknown target: {{target}}. Use: registry, registry-e2e, cli, mcp, internals-schemas, internals-helpers, scanner, e2e, e2e-onprem, bdd, bdd-system, bdd-browser, all" && exit 1 ;;
     esac
 
+# Test a published binary on separate real filesystems; CI uses Linux /dev/shm.
+[group('test')]
+ci-test-upgrade-filesystem:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bun run --filter @tankpkg/cli build:binary
+    os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    case "$(uname -m)" in
+      x86_64) arch=x64 ;;
+      arm64|aarch64) arch=arm64 ;;
+      *) echo "Unsupported test architecture" >&2; exit 1 ;;
+    esac
+    TANK_UPGRADE_TEST_BINARY="$PWD/packages/cli/build/tank-$os-$arch" \
+      TANK_UPGRADE_CROSS_DEVICE_TMPDIR="${TANK_UPGRADE_CROSS_DEVICE_TMPDIR:-/dev/shm}" \
+      bun run --filter @internal/bdd test:system steps/system/upgrade-filesystem.steps.ts
+
+# Verify the PostgreSQL-backed login store against an isolated test database.
+[group('test')]
+ci-test-login-store:
+    E2E_LOGIN_DATABASE_URL="${DATABASE_URL:?DATABASE_URL must point to a local test database}" bun run --filter @internal/bdd test:system steps/system/login-store.steps.ts
+
+# Verify the resolved server-function packages include the CVE-2026-102989 fix.
+[group('test')]
+ci-test-server-function-security:
+    bun run --filter @internal/bdd test:system steps/system/server-function-security.steps.ts
+
+# Exercise server rendering against the built registry and isolated PostgreSQL.
+[group('test')]
+ci-test-registry-render:
+    E2E_PRODUCTION_RENDER=1 bun run --filter @internal/bdd test:system steps/system/registry-render.steps.ts
+
+# Exercise the CLI login flow against an owned production-build registry.
+[group('test')]
+ci-test-cli-login:
+    E2E_FULL_LOGIN=1 E2E_LOGIN_DATABASE_URL="${DATABASE_URL:?DATABASE_URL must point to a local test database}" bun run --filter @internal/e2e test:run cli/login-flow.e2e.test.ts
+
 # just db <action> - database and data operations
 # just db generate          - create a new Drizzle migration SQL file (registry)
 # just db push              - apply current schema directly to Postgres (no migration file)

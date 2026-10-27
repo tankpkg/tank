@@ -104,6 +104,23 @@ jobs:
       - name: Run JavaScript/TypeScript tests
         run: bunx turbo run test --filter='!@internal/e2e' --filter='!@internal/bdd'
 
+      - uses: extractions/setup-just@v2
+
+      - name: Test cross-filesystem CLI upgrades
+        run: just ci-test-upgrade-filesystem
+
+      - name: Test PostgreSQL login store
+        run: just ci-test-login-store
+
+      - name: Verify patched server-function dependencies
+        run: just ci-test-server-function-security
+
+      - name: Test production registry rendering
+        run: just ci-test-registry-render
+
+      - name: Test CLI login end to end
+        run: just ci-test-cli-login
+
       - name: Install UV
         uses: astral-sh/setup-uv@v6
 
