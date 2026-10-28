@@ -10,6 +10,7 @@ import { promisify } from 'node:util';
 import { expect, it } from 'vitest';
 
 import { upgradeCommand } from '../../../packages/cli/src/commands/upgrade.js';
+import { startUpgradePermissionProxy } from './upgrade-connect-proxy.js';
 
 const downloadFilesystem = process.env.TANK_UPGRADE_CROSS_DEVICE_TMPDIR;
 const builtBinary = process.env.TANK_UPGRADE_TEST_BINARY;
@@ -26,6 +27,102 @@ function cliEnvironment(home: string, tmpdir: string): NodeJS.ProcessEnv {
     TANK_LOKI_URL: 'http://127.0.0.1:0'
   };
 }
+
+function binaryName(): string {
+  const platform = process.platform === 'darwin' ? 'darwin' : 'linux';
+  const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+  return `tank-${platform}-${arch}`;
+}
+
+function sha256(bytes: Uint8Array): string {
+  return crypto.createHash('sha256').update(bytes).digest('hex');
+}
+
+async function releaseFile(version: string, name: string): Promise<Response> {
+  const response = await fetch(`https://github.com/tankpkg/tank/releases/download/v${version}/${name}`, {
+    signal: AbortSignal.timeout(120_000)
+  });
+  if (!response.ok) throw new Error(`Could not download ${version}/${name}: ${response.status}`);
+  return response;
+}
+
+async function releaseChecksum(version: string, name: string): Promise<string> {
+  const sums = await (await releaseFile(version, 'SHA256SUMS')).text();
+  const match = sums
+    .split('\n')
+    .map((line) => line.trim().split(/\s+/))
+    .find((parts) => parts[1] === name);
+  if (!match || !/^[a-f0-9]{64}$/.test(match[0])) throw new Error(`No valid checksum for ${version}/${name}`);
+  return match[0];
+}
+
+async function installReleasedBinary(version: string, binary: string): Promise<void> {
+  const name = binaryName();
+  const [response, expected] = await Promise.all([releaseFile(version, name), releaseChecksum(version, name)]);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (sha256(bytes) !== expected) throw new Error(`Checksum mismatch for ${version}/${name}`);
+  fs.writeFileSync(binary, bytes, { mode: 0o755 });
+  fs.chmodSync(binary, 0o755);
+}
+
+function proxyEnvironment(home: string, tmpdir: string, proxy: string): NodeJS.ProcessEnv {
+  return { ...cliEnvironment(home, tmpdir), HTTPS_PROXY: proxy, https_proxy: proxy };
+}
+
+it.skipIf(!downloadFilesystem || process.platform === 'win32')(
+  'recovers an older standalone binary after a real cross-filesystem EXDEV',
+  async () => {
+    if (!downloadFilesystem) throw new Error('TANK_UPGRADE_CROSS_DEVICE_TMPDIR is required');
+    const installation = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-recovery-'));
+    const binary = path.join(installation, 'tank');
+    const home = path.join(installation, 'home');
+    let foreignTmpdir: string | undefined;
+    try {
+      foreignTmpdir = fs.mkdtempSync(path.join(downloadFilesystem, 'tank-upgrade-foreign-'));
+      expect(fs.statSync(installation).dev).not.toBe(fs.statSync(foreignTmpdir).dev);
+      await installReleasedBinary('0.16.3', binary);
+      fs.mkdirSync(path.join(home, '.tank'), { recursive: true });
+      fs.writeFileSync(path.join(home, '.tank', 'config.json'), JSON.stringify({ telemetry: false }));
+      const originalHash = sha256(fs.readFileSync(binary));
+      const env = cliEnvironment(home, foreignTmpdir);
+      expect((await execFileAsync(binary, ['--version'], { env, timeout: 10_000 })).stdout.trim()).toBe('0.16.3');
+
+      const failure = await execFileAsync(binary, ['upgrade', '0.16.5'], { env, timeout: 120_000 }).then(
+        () => null,
+        (error: { stderr: string }) => error
+      );
+      expect(failure).not.toBeNull();
+      expect(failure?.stderr).toContain('EXDEV');
+      expect(sha256(fs.readFileSync(binary))).toBe(originalHash);
+      expect(fs.readdirSync(foreignTmpdir)).toEqual([]);
+
+      const recoveryEnv = cliEnvironment(home, installation);
+      const recovery = await execFileAsync(binary, ['upgrade', '0.16.5'], { env: recoveryEnv, timeout: 120_000 });
+      expect(recovery.stdout).toContain('Upgraded tank');
+      const recoveredHash = await releaseChecksum('0.16.5', binaryName());
+      expect(sha256(fs.readFileSync(binary))).toBe(recoveredHash);
+      expect((await execFileAsync(binary, ['--version'], { env: recoveryEnv, timeout: 10_000 })).stdout.trim()).toBe(
+        '0.16.5'
+      );
+
+      // The published recovery target predates the fix; it still needs the workaround.
+      const repeatFailure = await execFileAsync(binary, ['upgrade', '0.16.5', '--force'], {
+        env,
+        timeout: 120_000
+      }).then(
+        () => null,
+        (error: { stderr: string }) => error
+      );
+      expect(repeatFailure?.stderr).toContain('EXDEV');
+      expect(sha256(fs.readFileSync(binary))).toBe(recoveredHash);
+      expect(fs.readdirSync(foreignTmpdir)).toEqual([]);
+    } finally {
+      if (foreignTmpdir) fs.rmSync(foreignTmpdir, { recursive: true, force: true });
+      fs.rmSync(installation, { recursive: true, force: true });
+    }
+  },
+  420_000
+);
 
 it.skipIf(!downloadFilesystem || !builtBinary)(
   'replaces the running compiled CLI across real filesystems',
@@ -109,27 +206,41 @@ it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
   }
 );
 
-it.skipIf(!downloadFilesystem || process.platform === 'win32' || process.getuid?.() === 0)(
+it.skipIf(!downloadFilesystem || !builtBinary || process.platform === 'win32' || process.getuid?.() === 0)(
   'preserves the original error if permissions prevent cleanup after staging',
   async () => {
+    if (!downloadFilesystem || !builtBinary) throw new Error('Cross-device test paths are required');
     const installation = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-cleanup-'));
     const binary = path.join(installation, 'tank');
-    const oldArgv = process.argv[1];
-    fs.writeFileSync(binary, 'original executable');
-    process.argv[1] = binary;
-    const watcher = fs.watch(installation, (_event, name) => {
-      if (name?.toString().startsWith('.tank-upgrade-')) fs.chmodSync(installation, 0o555);
-    });
+    const home = path.join(installation, 'home');
+    let proxy: Awaited<ReturnType<typeof startUpgradePermissionProxy>> | undefined;
 
     try {
-      await expect(upgradeCommand({ version: '999.999.999', force: true })).rejects.toThrow(
-        'Failed to download binary: 404'
+      fs.copyFileSync(builtBinary, binary);
+      fs.chmodSync(binary, 0o755);
+      fs.mkdirSync(path.join(home, '.tank'), { recursive: true });
+      fs.writeFileSync(path.join(home, '.tank', 'config.json'), JSON.stringify({ telemetry: false }));
+      const originalHash = sha256(fs.readFileSync(binary));
+      proxy = await startUpgradePermissionProxy(installation);
+      const env = proxyEnvironment(home, downloadFilesystem, proxy.url);
+      const failure = await execFileAsync(binary, ['upgrade', '999.999.999', '--force'], {
+        env,
+        timeout: 120_000
+      }).then(
+        () => null,
+        (error: { stderr: string }) => error
       );
-      expect(fs.readFileSync(binary, 'utf8')).toBe('original executable');
+      expect(proxy.error()).toBeUndefined();
+      expect(proxy.wasGated()).toBe(true);
+      expect(failure).not.toBeNull();
+      expect(failure?.stderr).toContain('Failed to download binary: 404');
+      expect(failure?.stderr).toContain(
+        `Could not remove temporary upgrade files at ${fs.realpathSync(installation)}/.tank-upgrade-`
+      );
+      expect(sha256(fs.readFileSync(binary))).toBe(originalHash);
       expect(fs.readdirSync(installation).some((name) => name.startsWith('.tank-upgrade-'))).toBe(true);
     } finally {
-      watcher.close();
-      process.argv[1] = oldArgv;
+      if (proxy) await proxy.close();
       fs.chmodSync(installation, 0o755);
       fs.rmSync(installation, { recursive: true, force: true });
     }
@@ -144,35 +255,31 @@ it.skipIf(!downloadFilesystem || !builtBinary || process.platform === 'win32' ||
     const installation = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-rename-'));
     const binary = path.join(installation, 'tank');
     const home = path.join(installation, 'home');
-    fs.copyFileSync(builtBinary, binary);
-    fs.chmodSync(binary, 0o755);
-    fs.mkdirSync(path.join(home, '.tank'), { recursive: true });
-    fs.writeFileSync(path.join(home, '.tank', 'config.json'), JSON.stringify({ telemetry: false }));
-    const originalHash = crypto.createHash('sha256').update(fs.readFileSync(binary)).digest('hex');
-    let madeReadOnly = false;
-    const watcher = fs.watch(installation, (_event, name) => {
-      if (name?.toString().startsWith('.tank-upgrade-')) {
-        fs.chmodSync(installation, 0o555);
-        madeReadOnly = true;
-      }
-    });
+    let proxy: Awaited<ReturnType<typeof startUpgradePermissionProxy>> | undefined;
 
     try {
-      const env = cliEnvironment(home, downloadFilesystem);
+      fs.copyFileSync(builtBinary, binary);
+      fs.chmodSync(binary, 0o755);
+      fs.mkdirSync(path.join(home, '.tank'), { recursive: true });
+      fs.writeFileSync(path.join(home, '.tank', 'config.json'), JSON.stringify({ telemetry: false }));
+      const originalHash = sha256(fs.readFileSync(binary));
+      proxy = await startUpgradePermissionProxy(installation);
+      const env = proxyEnvironment(home, downloadFilesystem, proxy.url);
       const failure = await execFileAsync(binary, ['upgrade', '0.16.5', '--force'], { env, timeout: 180_000 }).then(
         () => null,
         (error: { stderr: string }) => error
       );
-      expect(madeReadOnly).toBe(true);
+      expect(proxy.error()).toBeUndefined();
+      expect(proxy.wasGated()).toBe(true);
       expect(failure).not.toBeNull();
       expect(failure?.stderr).toContain('Upgrade failed: EACCES');
       expect(failure?.stderr).toContain('rename');
       expect(failure?.stderr).toContain(
         `Could not remove temporary upgrade files at ${fs.realpathSync(installation)}/.tank-upgrade-`
       );
-      expect(crypto.createHash('sha256').update(fs.readFileSync(binary)).digest('hex')).toBe(originalHash);
+      expect(sha256(fs.readFileSync(binary))).toBe(originalHash);
     } finally {
-      watcher.close();
+      if (proxy) await proxy.close();
       fs.chmodSync(installation, 0o755);
       fs.rmSync(installation, { recursive: true, force: true });
     }

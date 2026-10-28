@@ -203,6 +203,30 @@ You are ready to use Tank in production when all of the following are true:
 
 ## Troubleshooting
 
+### Standalone binary upgrade fails with `EXDEV`
+
+Some older standalone binaries cannot upgrade when the temporary directory and the installed binary are on different filesystems. Retry with `TMPDIR` set to a **writable directory on the same filesystem as the actual binary**. The existing upgrade command still verifies the release checksum; do not bypass that check.
+
+Version 0.16.5 also needs this workaround. Upgrading to it does not fix later cross-filesystem upgrades; keep using the workaround until you install a release that includes the fix.
+
+For example, if your standalone binary is a regular file at `$HOME/.local/bin/tank` and you own that directory:
+
+```bash
+TMPDIR="$HOME/.local/bin" "$HOME/.local/bin/tank" upgrade
+"$HOME/.local/bin/tank" --version
+```
+
+If a trusted standalone binary is a regular file at root-owned `/usr/local/bin/tank`, an administrator can instead run:
+
+```bash
+sudo env TMPDIR=/usr/local/bin /usr/local/bin/tank upgrade
+/usr/local/bin/tank --version
+```
+
+Use the root-owned example only after confirming the binary and its directory are trusted; do not run a binary from a directory writable by untrusted users with `sudo`. If the command is a symlink, identify its actual target first and use a writable temporary directory on that target's filesystem. Write permission to the installation directory is also required for replacement.
+
+This recovery applies to standalone binaries, not package-manager installations. For npm use `npm update -g @tankpkg/cli`; for Homebrew use `brew upgrade tank`. For Debian packages, download and verify the newer `.deb` release, then install it with your package manager.
+
 ### `tank login` opens the browser but never completes
 
 The CLI polls the exchange endpoint for up to 5 minutes. If it times out:

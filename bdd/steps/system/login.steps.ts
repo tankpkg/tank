@@ -7,6 +7,8 @@
  * Runs against REAL registry HTTP — zero mocks.
  * Requires E2E_REGISTRY_URL in environment (defaults to http://localhost:3003).
  * Seeds sessions via HTTP (start endpoint), validates exchange behavior.
+ * E12 is exercised by e2e/cli/login-flow.e2e.test.ts; E13 and E25 are
+ * exercised by apps/registry/src/api/routes/v1/__tests__/cli-auth-failure.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -47,17 +49,6 @@ async function givenAPendingLoginSessionExists(): Promise<void> {
 
 async function whenIInitiateACliLoginSession(): Promise<void> {
   world.state = `bdd-state-${Date.now()}`;
-  const res = await fetch(`${world.registry}/api/v1/cli-auth/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state: world.state })
-  });
-  world.lastStatus = res.status;
-  world.lastBody = (await res.json()) as Record<string, unknown>;
-}
-
-async function whenACliInitiatesLogin(): Promise<void> {
-  world.state = crypto.randomUUID();
   const res = await fetch(`${world.registry}/api/v1/cli-auth/start`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -131,32 +122,6 @@ describe('Feature: CLI OAuth login flow via browser handshake', () => {
       thenBodyContainsKey('authUrl');
       thenBodyContainsKey('sessionCode');
     });
-  });
-
-  describe('Scenario: A supported CLI can start browser login (E12)', () => {
-    it.skipIf(!hasRegistry)('runs Given/When/Then with a generated UUID', async () => {
-      await whenACliInitiatesLogin();
-      thenStatusIs(200);
-      thenBodyContainsKey('authUrl');
-      thenBodyContainsKey('sessionCode');
-    });
-  });
-
-  describe('Scenario: A session store outage is not reported as an invalid request (E13)', () => {
-    it.skipIf(!process.env.E2E_UNAVAILABLE_REGISTRY_URL)(
-      'reports a server error without connection details',
-      async () => {
-        const response = await fetch(`${process.env.E2E_UNAVAILABLE_REGISTRY_URL}/api/v1/cli-auth/start`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ state: crypto.randomUUID() })
-        });
-        const body = await response.json();
-        expect(response.status).toBe(500);
-        expect(body.error).toMatch(/unable to start|unavailable/i);
-        expect(JSON.stringify(body)).not.toMatch(/ECONNREFUSED|postgres|15433/i);
-      }
-    );
   });
 
   describe('Scenario: Start without state returns 400 (E2)', () => {

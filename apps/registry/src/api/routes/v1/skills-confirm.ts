@@ -145,6 +145,10 @@ const confirmRoute = createRoute({
           schema: z.object({ error: z.string() })
         }
       }
+    },
+    503: {
+      description: 'Authentication temporarily unavailable; retry the request',
+      content: { 'application/json': { schema: z.object({ error: z.string() }) } }
     }
   }
 });
