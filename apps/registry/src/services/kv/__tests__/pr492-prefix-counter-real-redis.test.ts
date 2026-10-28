@@ -2,6 +2,46 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { type OwnedServices, startOwnedServices } from './pr492-owned-services';
 
+// Shared by the slot test and its real-Redis MONITOR startup regression.
+const monitorSupport = `
+  async function withTimeout(promise, message) {
+    let timer;
+    try {
+      return await Promise.race([promise, new Promise((_, reject) => {
+        timer = setTimeout(() => reject(Error(message)), 10_000);
+      })]);
+    } finally { clearTimeout(timer); }
+  }
+  async function closeMonitor(client) {
+    if (client.status === 'end') return;
+    const ended = new Promise((resolve) => client.once('end', resolve));
+    client.disconnect();
+    await withTimeout(ended, 'MONITOR connection did not close');
+  }
+  async function startMonitor(url, onMonitor, prepareStream) {
+    const client = new Redis(url, { lazyConnect: true, retryStrategy: null });
+    const errors = [];
+    client.on('error', (error) => errors.push(String(error)));
+    client.on('monitor', onMonitor);
+    try {
+      await withTimeout(client.connect(), 'MONITOR connection timed out');
+      prepareStream?.(client.stream);
+      const reply = client.call('MONITOR');
+      // ioredis 5.10.1 normally changes this internal state in a promise
+      // callback after +OK. A monitor event in the same parser read would
+      // arrive first. This fixture intentionally relies on that internal state.
+      client.status = 'monitoring';
+      const acknowledgement = await withTimeout(reply, 'MONITOR acknowledgement timed out');
+      if (acknowledgement !== 'OK') throw Error('Unexpected MONITOR acknowledgement: ' + acknowledgement);
+      return { client, errors, acknowledgement };
+    } catch (error) {
+      try { await closeMonitor(client); }
+      catch (cleanup) { throw new AggregateError([error, cleanup], 'MONITOR startup and cleanup failed'); }
+      throw error;
+    }
+  }
+`;
+
 describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('Redis prefix slots and rate-counter expiry', () => {
   let services: OwnedServices;
   beforeAll(async () => {
@@ -281,6 +321,170 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('Redis prefix slots a
     }
   }, 50_000);
 
+  it('captures a real INFO event coalesced with the MONITOR acknowledgement', async () => {
+    const script = String.raw`
+      import { createConnection, createServer } from 'node:net';
+      import Redis from 'ioredis';
+      ${monitorSupport}
+      async function main() {
+        const url = new URL(process.env.REDIS_URL);
+        const admin = new Redis(url.toString());
+        const adminErrors = [];
+        admin.on('error', (error) => adminErrors.push(String(error)));
+        const proxyErrors = [];
+        const sockets = new Set();
+        const infoMarker = Buffer.from('"info" "server"\r\n');
+        let infoRequest;
+        let proxyFrame;
+        let parserFrame;
+        let monitorPeer;
+        let delayed = [];
+        let proxyWrites = 0;
+        let parserDeliveries = 0;
+        let restoreParsing = () => {};
+        let resolveInfo;
+        const infoSeen = new Promise((resolve) => { resolveInfo = resolve; });
+        const proxy = createServer((client) => {
+          monitorPeer = client;
+          const upstream = createConnection({ host: url.hostname, port: Number(url.port) });
+          for (const socket of [client, upstream]) {
+            sockets.add(socket);
+            socket.once('close', () => sockets.delete(socket));
+            socket.on('error', (error) => proxyErrors.push(String(error)));
+          }
+          client.once('close', () => upstream.destroy());
+          upstream.once('close', () => client.destroy());
+          let requestTail = '';
+          let holding = false;
+          let monitorSent = false;
+          let response = Buffer.alloc(0);
+          client.on('data', (data) => {
+            if (!monitorSent) {
+              requestTail = (requestTail + data.toString()).slice(-512);
+              if (requestTail.toLowerCase().includes('\r\nmonitor\r\n')) {
+                monitorSent = true;
+                holding = true;
+              }
+            }
+            upstream.write(data);
+          });
+          upstream.on('data', (data) => {
+            if (!holding) {
+              if (proxyFrame && !parserFrame) return delayed.push(data);
+              return client.write(data);
+            }
+            response = Buffer.concat([response, data]);
+            if (!infoRequest && response.length >= 5) {
+              if (response.subarray(0, 5).toString() !== '+OK\r\n') {
+                proxyErrors.push('MONITOR did not start with +OK');
+                client.destroy();
+                return;
+              }
+              infoRequest = admin.info('server');
+              infoRequest.catch((error) => proxyErrors.push('INFO: ' + String(error)));
+            }
+            if (!response.includes(infoMarker)) return;
+            holding = false;
+            proxyFrame = response;
+            proxyWrites++;
+            client.write(response);
+          });
+        });
+        proxy.on('error', (error) => proxyErrors.push(String(error)));
+        // TCP can split even one proxy write. Feed the unchanged bytes to the
+        // existing ioredis data listeners once, ensuring one parser invocation.
+        function combineParserReads(stream) {
+          const listeners = stream.rawListeners('data');
+          if (!listeners.length) throw Error('Missing ioredis data handler');
+          for (const listener of listeners) stream.removeListener('data', listener);
+          let buffered = Buffer.alloc(0);
+          let restored = false;
+          function restore() {
+            if (restored) return;
+            restored = true;
+            stream.removeListener('data', collect);
+            for (const listener of listeners) stream.on('data', listener);
+          }
+          function collect(data) {
+            buffered = Buffer.concat([buffered, data]);
+            if (!proxyFrame || buffered.length < proxyFrame.length) return;
+            parserFrame = buffered;
+            parserDeliveries++;
+            restore();
+            stream.emit('data', buffered);
+            if (delayed.length) monitorPeer.write(Buffer.concat(delayed));
+            delayed = [];
+          }
+          restoreParsing = restore;
+          stream.on('data', collect);
+        }
+        let monitor;
+        let infoReply;
+        let infoArgs;
+        try {
+          await withTimeout(admin.ping(), 'Redis admin connection timed out');
+          await withTimeout(new Promise((resolve, reject) => {
+            const onError = (error) => reject(error);
+            proxy.once('error', onError);
+            proxy.listen(0, '127.0.0.1', () => { proxy.removeListener('error', onError); resolve(); });
+          }), 'MONITOR proxy listen timed out');
+          const address = proxy.address();
+          if (!address || typeof address === 'string' || address.address !== '127.0.0.1') throw Error('Proxy is not loopback');
+          const proxied = new URL(url);
+          proxied.port = String(address.port);
+          monitor = await startMonitor(proxied.toString(), (_time, args) => {
+            if (args[0].toLowerCase() === 'info' && args[1] === 'server') resolveInfo(args);
+          }, combineParserReads);
+          if (!infoRequest) throw Error('Proxy did not issue INFO');
+          infoReply = await withTimeout(infoRequest, 'Redis INFO timed out');
+          infoArgs = await withTimeout(infoSeen, 'MONITOR did not capture INFO');
+        } finally {
+          restoreParsing();
+          try { if (monitor) await closeMonitor(monitor.client); }
+          finally {
+            try { await closeMonitor(admin); }
+            finally {
+              for (const socket of sockets) socket.destroy();
+              if (proxy.listening) await withTimeout(new Promise((resolve, reject) => {
+                proxy.close((error) => error ? reject(error) : resolve());
+              }), 'MONITOR proxy did not close');
+            }
+          }
+        }
+        console.log(JSON.stringify({ acknowledgement: monitor.acknowledgement, errors: monitor.errors, adminErrors,
+          proxyErrors, infoArgs, infoReplyValid: infoReply.includes('redis_version:'), proxyWrites, parserDeliveries,
+          startsWithAck: proxyFrame?.subarray(0, 5).toString() === '+OK\r\n',
+          containsInfo: proxyFrame?.includes(infoMarker), sameFrame: proxyFrame?.equals(parserFrame) }));
+      }
+      main().then(() => process.exit(0), (error) => { console.error(error); process.exit(1); });
+    `;
+    const { stdout } = await services.runBun(script, 45_000);
+    const result = JSON.parse(stdout.trim()) as {
+      acknowledgement: string;
+      errors: string[];
+      adminErrors: string[];
+      proxyErrors: string[];
+      infoArgs: string[];
+      infoReplyValid: boolean;
+      proxyWrites: number;
+      parserDeliveries: number;
+      startsWithAck: boolean;
+      containsInfo: boolean;
+      sameFrame: boolean;
+    };
+    expect(result.acknowledgement).toBe('OK');
+    expect(result.errors).toEqual([]);
+    expect(result.adminErrors).toEqual([]);
+    expect(result.proxyErrors).toEqual([]);
+    expect(result.infoArgs).toEqual(['info', 'server']);
+    expect(result.infoReplyValid).toBe(true);
+    expect(result.proxyWrites).toBe(1);
+    expect(result.parserDeliveries).toBe(1);
+    expect(result.startsWithAck).toBe(true);
+    expect(result.containsInfo).toBe(true);
+    expect(result.sameFrame).toBe(true);
+  }, 60_000);
+
   it('puts the actual prefixed session and receipt keys in the same Redis Cluster slot', async () => {
     const script = String.raw`
       import { execFile, spawn } from 'node:child_process';
@@ -292,6 +496,7 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('Redis prefix slots a
       import { promisify } from 'node:util';
       import Redis from 'ioredis';
       import { createRedisStore } from './src/services/kv/redis.ts';
+      ${monitorSupport}
       async function main() {
         const exec = promisify(execFile);
         const token = (await readFile(join(process.env.HOME, 'lease'), 'utf8')).trim();
@@ -328,6 +533,7 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('Redis prefix slots a
           '--cluster-enabled', 'yes', '--cluster-config-file', oracleNodes, '--save', '', '--appendonly', 'no'], {
           cwd: process.env.HOME, env: process.env, stdio: ['ignore', 'pipe', 'pipe']
         });
+        const oracleExited = new Promise((resolve) => oracle.once('close', resolve));
         let oracleLog = '';
         let oracleReady = false;
         const ready = new Promise((resolve, reject) => {
@@ -354,8 +560,6 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('Redis prefix slots a
         };
         const url = new URL(process.env.REDIS_URL);
         const admin = new Redis(url.toString());
-        const monitorClient = new Redis(url.toString());
-        const monitor = await monitorClient.monitor();
         const events = [];
         const id = randomUUID();
         const cases = [
@@ -377,12 +581,16 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('Redis prefix slots a
         ];
         let barrierResolve;
         const barrier = new Promise((resolve) => { barrierResolve = resolve; });
-        monitor.on('monitor', (_time, args) => {
-          if (args[0].toLowerCase() === 'eval') events.push(args);
-          if (args[0].toLowerCase() === 'ping' && args[1] === id) barrierResolve();
-        });
+        let monitor;
+        let results;
+        let started = false;
         try {
           await ready;
+          monitor = await startMonitor(url.toString(), (_time, args) => {
+            if (args[0].toLowerCase() === 'eval') events.push(args);
+            if (args[0].toLowerCase() === 'ping' && args[1] === id) barrierResolve();
+          });
+          started = true;
           for (const entry of cases) {
             const prefixed = new URL(url);
             if (entry.prefix) prefixed.searchParams.set('keyPrefix', entry.prefix);
@@ -393,11 +601,11 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('Redis prefix slots a
             if ((await store.incr(entry.key + ':counter', 60_000)) !== 1) throw Error('counter failed');
           }
           await admin.ping(id);
-          await Promise.race([barrier, new Promise((_, reject) => setTimeout(() => reject(Error('MONITOR barrier timed out')), 10_000))]);
+          await withTimeout(barrier, 'MONITOR barrier timed out');
           const keySlot = createRequire(import.meta.resolve('ioredis'))('cluster-key-slot');
           const decode = (value) => Buffer.from(value.replace(/\\x([0-9a-f]{2})/gi,
             (_, hex) => String.fromCharCode(Number.parseInt(hex, 16))), 'latin1').toString('utf8');
-          const results = [];
+          results = [];
           for (const { prefix, key } of cases) {
             const physical = prefix + key;
             const matches = events.filter((args) => decode(args[3]) === physical);
@@ -411,30 +619,50 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('Redis prefix slots a
             results.push({ prefix, key, count: matches.length, counterTtl: await admin.pttl(physical + ':counter'),
               libraryDisagrees: physicalSlot !== keySlot(physical), receipts });
           }
-          console.log(JSON.stringify(results));
         } finally {
-          const decode = (value) => Buffer.from(value.replace(/\\x([0-9a-f]{2})/gi,
-            (_, hex) => String.fromCharCode(Number.parseInt(hex, 16))), 'latin1').toString('utf8');
-          for (const event of events.filter((args) => args[2] === '2')) await admin.del(decode(event[3]), decode(event[4]));
-          for (const { prefix, key } of cases) await admin.del(prefix + key + ':counter');
-          monitor.disconnect();
-          await monitorClient.quit();
-          await admin.quit();
-          if (oracleReady) await docker(['exec', container.Id, 'redis-cli', '-s', oracleSocket, 'SHUTDOWN', 'NOSAVE']);
-          if (oracle.exitCode === null && oracle.signalCode === null) oracle.kill('SIGTERM');
+          try {
+            if (started) {
+              const decode = (value) => Buffer.from(value.replace(/\\x([0-9a-f]{2})/gi,
+                (_, hex) => String.fromCharCode(Number.parseInt(hex, 16))), 'latin1').toString('utf8');
+              for (const event of events.filter((args) => args[2] === '2')) await admin.del(decode(event[3]), decode(event[4]));
+              for (const { prefix, key } of cases) await admin.del(prefix + key + ':counter');
+            }
+          } finally {
+            try { if (monitor) await closeMonitor(monitor.client); }
+            finally {
+              try { await withTimeout(admin.quit(), 'Redis admin cleanup timed out'); }
+              finally {
+                admin.disconnect();
+                try {
+                  if (oracleReady) await docker(['exec', container.Id, 'redis-cli', '-s', oracleSocket, 'SHUTDOWN', 'NOSAVE']);
+                } finally {
+                  if (oracle.exitCode === null && oracle.signalCode === null) oracle.kill('SIGTERM');
+                  await withTimeout(oracleExited, 'Cluster oracle did not exit');
+                }
+              }
+            }
+          }
         }
+        console.log(JSON.stringify({ acknowledgement: monitor.acknowledgement, errors: monitor.errors, results }));
       }
       main().then(() => process.exit(0), (error) => { console.error(error); process.exit(1); });
     `;
     const { stdout } = await services.runBun(script, 60_000);
-    const results = JSON.parse(stdout.trim()) as {
-      prefix: string;
-      key: string;
-      count: number;
-      counterTtl: number;
-      libraryDisagrees: boolean;
-      receipts: { prefixed: boolean; equalSlot: boolean; libraryEqualSlot: boolean }[];
-    }[];
+    const output = JSON.parse(stdout.trim()) as {
+      acknowledgement: string;
+      errors: string[];
+      results: {
+        prefix: string;
+        key: string;
+        count: number;
+        counterTtl: number;
+        libraryDisagrees: boolean;
+        receipts: { prefixed: boolean; equalSlot: boolean; libraryEqualSlot: boolean }[];
+      }[];
+    };
+    expect(output.acknowledgement).toBe('OK');
+    expect(output.errors).toEqual([]);
+    const { results } = output;
     expect(results).toHaveLength(15);
     for (const result of results) {
       expect(result.count, `${result.prefix}|${result.key}`).toBe(2);

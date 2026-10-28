@@ -178,7 +178,7 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('CLI session cutover 
       import { execFile } from 'node:child_process';
       import { randomUUID } from 'node:crypto';
       import { mkdir, readFile, rm, rmdir } from 'node:fs/promises';
-      import { join, resolve } from 'node:path';
+      import { basename, join, resolve } from 'node:path';
       import { promisify } from 'node:util';
       import postgres from 'postgres';
       import { drizzle } from 'drizzle-orm/postgres-js';
@@ -228,7 +228,7 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('CLI session cutover 
             const response = await app.fetch(request);
             if (new URL(request.url).pathname === '/api/v1/cli-auth/start' && response.ok && onStart) {
               const body = await response.clone().json();
-              onStart(body.sessionCode);
+              onStart(body);
             }
             if (new URL(request.url).pathname === '/api/v1/cli-auth/exchange' && exchangeResponses.length < 5) {
               exchangeResponses.push({ status: response.status, body: await response.clone().text() });
@@ -245,7 +245,23 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('CLI session cutover 
           const configDir = join(process.env.HOME, 'cli-config-' + randomUUID());
           const configFile = join(configDir, 'config.json');
           const start = new Promise((resolve) => { onStart = resolve; });
-          const cliScript = "import { loginCommand } from './src/commands/login.ts'; await loginCommand({ configDir: process.env.TEST_CONFIG_DIR, timeout: 5000, pollInterval: 50 }); process.exit(0);";
+          // The opener can spawn its bundled xdg-open by absolute path, even when
+          // PATH is empty. Guard the real opener's process boundary before
+          // loading the historical login implementation; never launch a browser.
+          const cliScript = \`
+            import childProcess from 'node:child_process';
+            import { syncBuiltinESMExports } from 'node:module';
+            const attempts = [];
+            childProcess.spawn = (command, args) => {
+              attempts.push({ command, args });
+              throw Error('Browser launches are disabled in this isolated test');
+            };
+            syncBuiltinESMExports();
+            const { loginCommand } = await import('./src/commands/login.ts');
+            await loginCommand({ configDir: process.env.TEST_CONFIG_DIR, timeout: 5000, pollInterval: 50 });
+            console.log('PR492_SPAWN_ATTEMPTS ' + JSON.stringify(attempts));
+            process.exit(0);
+          \`;
           const cli = Bun.spawn([process.execPath, '--no-env-file', '--no-install', '-e', cliScript], {
             cwd: cliDir,
             env: { HOME: process.env.HOME, TMPDIR: process.env.TMPDIR, PATH: emptyPath, NODE_ENV: 'test',
@@ -256,21 +272,27 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('CLI session cutover 
           const cliOut = new Response(cli.stdout).text();
           const cliErr = new Response(cli.stderr).text();
           try {
-            const code = await Promise.race([start, cli.exited.then((status) => { throw Error('CLI exited early: ' + status); }),
+            const started = await Promise.race([start, cli.exited.then((status) => { throw Error('CLI exited early: ' + status); }),
               new Promise((_, reject) => setTimeout(() => reject(Error('CLI did not start a session')), 20_000))]);
             const authorization = await fetch(base + '/api/v1/cli-auth/authorize', {
               method: 'POST', headers: { 'content-type': 'application/json', origin: base, cookie },
-              body: JSON.stringify({ sessionCode: code })
+              body: JSON.stringify({ sessionCode: started.sessionCode })
             });
             if (!authorization.ok) throw Error('Authorization failed: ' + authorization.status + ' ' + await authorization.text());
             const status = await cli.exited;
             const output = await cliOut;
             const errors = await cliErr;
             if (status !== 0) throw Error('CLI failed: ' + status + ' ' + output + ' ' + errors + ' exchanges=' + JSON.stringify(exchangeResponses) + ' apikey.user_id nullable=' + columns[0]?.is_nullable);
+            const attemptsLine = output.split('\\n').find((line) => line.startsWith('PR492_SPAWN_ATTEMPTS '));
+            const attempts = JSON.parse(attemptsLine?.slice('PR492_SPAWN_ATTEMPTS '.length) ?? 'null');
             const config = JSON.parse(await readFile(configFile, 'utf8'));
             const verification = await auth.api.verifyApiKey({ body: { key: config.token } });
             console.log('PR492_RESULT ' + JSON.stringify({ historicalTagsMatch: true, tokenVerified: verification.valid === true,
-              user: config.user?.email, browserWasNotOpened: (output + errors).includes('Could not open browser') }));
+              user: config.user?.email,
+              browserWasNotOpened: Array.isArray(attempts) && attempts.length === 1 &&
+                ['open', 'xdg-open'].includes(basename(attempts[0].command)) &&
+                JSON.stringify(attempts[0].args) === JSON.stringify([started.authUrl]) &&
+                (output + errors).includes('Could not open browser') && (output + errors).includes(started.authUrl) }));
           } finally {
             if (cli.exitCode === null) cli.kill('SIGKILL');
             await rm(configFile, { force: true });

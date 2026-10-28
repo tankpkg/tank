@@ -301,16 +301,20 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('PostgreSQL connectio
   it('retains PostgreSQL TLS negotiation through the owned socket', async () => {
     const script = `
       import { execFileSync } from 'node:child_process';
-      import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+      import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
       import { createConnection, createServer } from 'node:net';
       import { join } from 'node:path';
-      import { createSecureContext, TLSSocket } from 'node:tls';
+      import { createSecureContext, getCACertificates, setDefaultCACertificates, TLSSocket } from 'node:tls';
       import { createPostgresStore } from './src/services/kv/postgres.ts';
       const directory = mkdtempSync(join(process.env.TMPDIR, 'pr492-tls-'));
       const key = join(directory, 'key.pem');
       const cert = join(directory, 'cert.pem');
-      execFileSync('/usr/bin/openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-subj', '/CN=localhost', '-keyout', key, '-out', cert], { stdio: 'ignore' });
+      const config = join(directory, 'openssl.cnf');
+      writeFileSync(config, '[req]\\ndistinguished_name=dn\\nx509_extensions=v3\\nprompt=no\\n[dn]\\nCN=localhost\\n[v3]\\nsubjectAltName=IP:127.0.0.1,DNS:localhost\\nbasicConstraints=critical,CA:TRUE\\n');
+      execFileSync('/usr/bin/openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '1', '-config', config, '-keyout', key, '-out', cert], { stdio: 'ignore' });
       const context = createSecureContext({ key: readFileSync(key), cert: readFileSync(cert) });
+      const originalRoots = getCACertificates('default');
+      setDefaultCACertificates([...originalRoots, readFileSync(cert, 'utf8')]);
       const target = new URL(process.env.DATABASE_URL);
       const sockets = new Set();
       const proxy = createServer((client) => {
@@ -341,6 +345,7 @@ describe.skipIf(process.env.PR492_ISOLATED_CONFIG !== '1')('PostgreSQL connectio
         await store.set('review:tls', 'ok', 60_000);
         console.log(JSON.stringify({ value: await store.get('review:tls') }));
       } finally {
+        setDefaultCACertificates(originalRoots);
         for (const socket of sockets) socket.destroy();
         await new Promise((resolve) => proxy.close(resolve));
         rmSync(directory, { recursive: true, force: true });

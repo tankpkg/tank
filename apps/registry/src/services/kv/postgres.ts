@@ -1,5 +1,5 @@
 import { createConnection, isIP, type Socket } from 'node:net';
-import { type ConnectionOptions, connect as connectTls, type TLSSocket } from 'node:tls';
+import { type ConnectionOptions, checkServerIdentity, connect as connectTls, type TLSSocket } from 'node:tls';
 import postgres from 'postgres';
 
 import type { KVStore } from './store';
@@ -178,6 +178,30 @@ interface CachedClientOptions extends postgres.ParsedOptions {
   sslnegotiation: string | null;
 }
 
+function configuredSsl(connectionString: string, parsed: CachedClientOptions['ssl']): CachedClientOptions['ssl'] {
+  // Use the same URL normalization as postgres.js, without parsing its
+  // potentially multi-host authority as a WHATWG URL.
+  const queryStart = connectionString.search(/[?#]/);
+  const suffix = queryStart < 0 ? '' : connectionString.slice(queryStart);
+  const query = new URL(`http://localhost/${suffix}`).searchParams;
+  for (const name of ['sslmode', 'ssl']) {
+    if (query.has(name) && !query.getAll(name).at(-1)) throw new Error(`PostgreSQL ${name} cannot be empty`);
+  }
+  if (query.has('sslmode') || query.has('ssl') || query.getAll('sslrootcert').at(-1) === 'system') return parsed;
+  const mode = process.env.PGSSLMODE;
+  if (!mode) return parsed;
+  if (mode === 'disable') {
+    if (parsed && !['disable', 'false'].includes(process.env.PGSSL ?? '')) {
+      throw new Error('Conflicting PostgreSQL TLS settings');
+    }
+    return false;
+  }
+  if (!['allow', 'prefer', 'require', 'verify-ca', 'verify-full'].includes(mode)) {
+    throw new Error('Unsupported PostgreSQL TLS mode');
+  }
+  return 'verify-full';
+}
+
 interface TransactionCheck {
   (): void;
   markCommitPending(): void;
@@ -331,8 +355,11 @@ class PostgresSlot {
       // already-negotiated socket and must not wrap it in another TLSSocket.
       const parser = postgres(this.connectionString, { ...options, max: 0 });
       this.options = parser.options as unknown as CachedClientOptions;
-      this.ssl = this.options.ssl;
+      this.ssl = configuredSsl(this.connectionString, this.options.ssl);
       this.sslNegotiation = this.options.sslnegotiation;
+      if (this.sslNegotiation === 'direct' && !this.ssl) {
+        throw new Error('PostgreSQL direct TLS negotiation requires TLS to be enabled');
+      }
       this.targetSessionAttrs = this.options.target_session_attrs;
       this.options.ssl = false;
       this.options.max = 1;
@@ -458,19 +485,26 @@ class PostgresSlot {
     try {
       if (this.sslNegotiation !== 'direct') {
         const response = await this.sslResponse(socket, options.connect_timeout, signal);
-        if (response !== 83 && this.ssl === 'prefer') return socket;
         if (response !== 83) throw new Error('PostgreSQL server does not support TLS');
       }
       const host = options.host[index];
-      const settings: ConnectionOptions = { socket, servername: isIP(host) ? undefined : host };
+      const settings: ConnectionOptions = {
+        ...(typeof this.ssl === 'object' ? this.ssl : {}),
+        socket,
+        host,
+        servername: isIP(host) ? undefined : host,
+        rejectUnauthorized: true,
+        checkServerIdentity
+      };
       if (this.sslNegotiation === 'direct') settings.ALPNProtocols = ['postgresql'];
-      if (this.ssl === 'require' || this.ssl === 'allow' || this.ssl === 'prefer') settings.rejectUnauthorized = false;
-      else if (typeof this.ssl === 'object') Object.assign(settings, this.ssl);
       const tlsSocket = connectTls(settings);
       this.tlsSocket = tlsSocket;
       Object.assign(tlsSocket, { host, port: options.port[index] });
       this.guardTransport(tlsSocket, signal);
       await this.tlsReady(tlsSocket, options.connect_timeout, signal);
+      if (this.sslNegotiation === 'direct' && tlsSocket.alpnProtocol !== 'postgresql') {
+        throw new Error('PostgreSQL server did not negotiate the PostgreSQL TLS protocol');
+      }
       return tlsSocket;
     } catch (error) {
       this.tlsSocket?.destroy();

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- PostgreSQL-backed login sessions and rate counters require a trusted, host-matching certificate whenever TLS is enabled, including through `PGSSLMODE`; `prefer` and `allow` no longer fall back to plaintext, and direct negotiation requires the PostgreSQL ALPN protocol.
 - Updated TanStack Start and its router integrations to address CVE-2026-102989.
 - Equivalent duplicate API keys can exceed configured usage limits when their historical counters were consumed independently. Operators should inspect and resolve duplicate hashes explicitly.
 

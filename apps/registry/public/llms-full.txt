@@ -8331,6 +8331,12 @@ helm upgrade tank infra/helm/tank/ \
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
 | `PYTHON_API_URL` | Security scanner base URL |
 
+### PostgreSQL TLS for the login store
+
+When `REDIS_URL` is unset, Tank uses PostgreSQL for CLI login sessions and email rate counters. If TLS is enabled for this store through `DATABASE_URL`, `PGSSLMODE`, or `PGSSL`, the server must support TLS and present a certificate trusted by the runtime whose DNS name or IP address matches the database host. The store does not fall back to plaintext for `sslmode=prefer` or `sslmode=allow`. This also applies to `sslmode=require`; installations that previously used an untrusted or self-signed certificate must configure a trusted CA before upgrading. If direct TLS negotiation is selected, TLS must be enabled and the server must negotiate the `postgresql` ALPN protocol.
+
+For Node.js deployments using a private CA, set `NODE_EXTRA_CA_CERTS` to the PEM CA bundle before starting the registry. Confirm the bundle is available to every registry instance. The PostgreSQL driver does not load a CA file from the `sslrootcert` URL parameter. Explicitly configure TLS, for example with `sslmode=verify-full`; connections with TLS disabled remain unencrypted. This policy applies to the PostgreSQL login store and does not configure TLS for the separate application database client.
+
 ### Self-Hosted Mode
 
 | Variable | Description | Default |
