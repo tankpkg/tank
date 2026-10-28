@@ -8331,11 +8331,17 @@ helm upgrade tank infra/helm/tank/ \
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
 | `PYTHON_API_URL` | Security scanner base URL |
 
-### PostgreSQL TLS for the login store
+### PostgreSQL TLS
 
 When `REDIS_URL` is unset, Tank uses PostgreSQL for CLI login sessions and email rate counters. If TLS is enabled for this store through `DATABASE_URL`, `PGSSLMODE`, or `PGSSL`, the server must support TLS and present a certificate trusted by the runtime whose DNS name or IP address matches the database host. The store does not fall back to plaintext for `sslmode=prefer` or `sslmode=allow`. This also applies to `sslmode=require`; installations that previously used an untrusted or self-signed certificate must configure a trusted CA before upgrading. If direct TLS negotiation is selected, TLS must be enabled and the server must negotiate the `postgresql` ALPN protocol.
 
-For Node.js deployments using a private CA, set `NODE_EXTRA_CA_CERTS` to the PEM CA bundle before starting the registry. Confirm the bundle is available to every registry instance. The PostgreSQL driver does not load a CA file from the `sslrootcert` URL parameter. Explicitly configure TLS, for example with `sslmode=verify-full`; connections with TLS disabled remain unencrypted. This policy applies to the PostgreSQL login store and does not configure TLS for the separate application database client.
+To secure both the application database and the PostgreSQL login store with a private CA, set `DATABASE_SSL_CA` to the full PEM CA certificate or bundle. This requires TLS and validates the database hostname or IP address, even if the connection URL disables TLS. The bundle replaces the default trust roots for these database connections, must contain only CA certificates, and must include at least one self-signed root CA; an intermediate CA alone is insufficient. This setting requires exactly one TCP database host and rejects direct TLS negotiation (`sslnegotiation=direct` or `PGSSLNEGOTIATION=direct`); invalid configuration fails closed. Ensure every registry instance receives the bundle.
+
+`DATABASE_SSL_CA` is also used by the registry setup connection checks, settings loader, admin bootstrap, and pg_trgm setup. It is **not** automatically applied to the scanner, unrelated maintenance scripts, or GitHub Actions. Drizzle Kit does not safely accept this CA with its URL configuration, so Tank rejects Drizzle Kit commands when it is set. Plan and run schema migrations separately using a verified TLS connection; do not simply unset the CA and reuse an unverified URL.
+
+The supplied Compose and Helm defaults do not forward `DATABASE_SSL_CA` to the web service. For a custom deployment, explicitly pass the bundle to each web container and disable automatic schema pushes (`AUTO_MIGRATE=false` for Compose; `dbMigration.enabled=false` for Helm) after arranging the separately verified migration. A Compose override can set the variable in the web service's `environment`; a Helm deployment can use an existing Kubernetes Secret containing it. Do not set an empty value: omit it entirely when a custom CA is not used.
+
+For Node.js deployments without `DATABASE_SSL_CA`, `NODE_EXTRA_CA_CERTS` can add a PEM bundle to the runtime trust roots before startup. The PostgreSQL driver does not load a CA file from the `sslrootcert` URL parameter. Configure TLS explicitly, for example with `sslmode=verify-full`; connections with TLS disabled remain unencrypted. Without `DATABASE_SSL_CA`, the stricter no-downgrade policy described above applies to the login store and does not configure the separate application database client.
 
 ### Self-Hosted Mode
 
