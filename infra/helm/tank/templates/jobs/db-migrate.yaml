@@ -52,6 +52,7 @@ spec:
             - sh
             - -c
             - |
+              set -e
               echo "Running database migrations..."
               npx drizzle-kit push {{ if .Values.dbMigration.force }}--force{{ end }}
               echo "Migrations complete."

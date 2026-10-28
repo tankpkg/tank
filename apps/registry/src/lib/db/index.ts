@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
 import * as schema from './schema';
+import { postgresTlsOptions } from './tls';
 
 const POSTGRES_OPTIONS = {
   max: 1,
@@ -21,7 +22,8 @@ function ensureInitialized() {
   // DATABASE_URL must use the Supabase pooler in transaction mode (port 6543).
   // `prepare: false` is required — PgBouncer transaction mode does not support
   // prepared statements (postgres-js uses them by default).
-  _sql = postgres(url, POSTGRES_OPTIONS);
+  const ssl = postgresTlsOptions(url);
+  _sql = postgres(url, { ...POSTGRES_OPTIONS, ...(ssl ? { ssl } : {}) });
   _db = drizzle(_sql, { schema });
 }
 
