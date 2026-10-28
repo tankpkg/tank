@@ -15,6 +15,8 @@ import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
+import { postgresTlsOptions } from '../src/lib/db/tls';
+
 const email = process.env.FIRST_ADMIN_EMAIL;
 const password = process.env.FIRST_ADMIN_PASSWORD;
 const dbUrl = process.env.DATABASE_URL;
@@ -29,7 +31,8 @@ if (password.length < 8) {
   process.exit(1);
 }
 
-const client = postgres(dbUrl);
+const ssl = postgresTlsOptions(dbUrl);
+const client = postgres(dbUrl, ssl ? { ssl } : {});
 const db = drizzle(client);
 
 try {

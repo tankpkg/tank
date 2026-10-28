@@ -7,6 +7,8 @@
  * Runs against REAL registry HTTP — zero mocks.
  * Requires E2E_REGISTRY_URL in environment (defaults to http://localhost:3003).
  * Seeds sessions via HTTP (start endpoint), validates exchange behavior.
+ * E12 is exercised by e2e/cli/login-flow.e2e.test.ts; E13 and E25 are
+ * exercised by apps/registry/src/api/routes/v1/__tests__/cli-auth-failure.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 

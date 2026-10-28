@@ -9,48 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SetupRouteImport } from './routes/setup'
-import { Route as InstallCliRouteImport } from './routes/install-cli'
-import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
-import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SkillsIndexRouteImport } from './routes/skills/index'
-import { Route as ScanIndexRouteImport } from './routes/scan/index'
-import { Route as DocsIndexRouteImport } from './routes/docs/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as SkillsSplatRouteImport } from './routes/skills/$'
-import { Route as ScanTopSkillsRouteImport } from './routes/scan/top-skills'
-import { Route as DocsSplatRouteImport } from './routes/docs/$'
-import { Route as DashboardTokensRouteImport } from './routes/dashboard/tokens'
-import { Route as ApiSplatRouteImport } from './routes/api.$'
-import { Route as AdminUsersRouteImport } from './routes/admin/users'
-import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
-import { Route as AdminServiceAccountsRouteImport } from './routes/admin/service-accounts'
-import { Route as AdminPackagesRouteImport } from './routes/admin/packages'
-import { Route as AdminOrgsRouteImport } from './routes/admin/orgs'
-import { Route as AdminAuditLogsRouteImport } from './routes/admin/audit-logs'
-import { Route as SeoSitemapDotxmlRouteImport } from './routes/_seo/sitemap[.]xml'
-import { Route as SeoLlmsFullDottxtRouteImport } from './routes/_seo/llms-full[.]txt'
-import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as InstallCliRouteImport } from './routes/install-cli'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as AuthCliLoginRouteImport } from './routes/_auth/cli-login'
+import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as SeoLlmsFullDottxtRouteImport } from './routes/_seo/llms-full[.]txt'
+import { Route as SeoSitemapDotxmlRouteImport } from './routes/_seo/sitemap[.]xml'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAuditLogsRouteImport } from './routes/admin/audit-logs'
+import { Route as AdminOrgsRouteImport } from './routes/admin/orgs'
+import { Route as AdminPackagesRouteImport } from './routes/admin/packages'
+import { Route as AdminServiceAccountsRouteImport } from './routes/admin/service-accounts'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as ApiSplatRouteImport } from './routes/api.$'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardTokensRouteImport } from './routes/dashboard/tokens'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
+import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as ScanIndexRouteImport } from './routes/scan/index'
+import { Route as ScanTopSkillsRouteImport } from './routes/scan/top-skills'
+import { Route as SkillsIndexRouteImport } from './routes/skills/index'
+import { Route as SkillsSplatRouteImport } from './routes/skills/$'
+import { Route as AuthOrgsAcceptInvitationRouteImport } from './routes/_auth/orgs.accept-invitation'
 import { Route as DashboardOrgsIndexRouteImport } from './routes/dashboard/orgs.index'
 import { Route as DashboardOrgsSlugRouteImport } from './routes/dashboard/orgs.$slug'
-import { Route as AuthOrgsAcceptInvitationRouteImport } from './routes/_auth/orgs.accept-invitation'
 
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InstallCliRoute = InstallCliRouteImport.update({
-  id: '/install-cli',
-  path: '/install-cli',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRouteRoute = DashboardRouteRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRouteRoute = AdminRouteRouteImport.update({
@@ -58,104 +48,19 @@ const AdminRouteRoute = AdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SkillsIndexRoute = SkillsIndexRouteImport.update({
-  id: '/skills/',
-  path: '/skills/',
+const InstallCliRoute = InstallCliRouteImport.update({
+  id: '/install-cli',
+  path: '/install-cli',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ScanIndexRoute = ScanIndexRouteImport.update({
-  id: '/scan/',
-  path: '/scan/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsIndexRoute = DocsIndexRouteImport.update({
-  id: '/docs/',
-  path: '/docs/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const SkillsSplatRoute = SkillsSplatRouteImport.update({
-  id: '/skills/$',
-  path: '/skills/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ScanTopSkillsRoute = ScanTopSkillsRouteImport.update({
-  id: '/scan/top-skills',
-  path: '/scan/top-skills',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: '/docs/$',
-  path: '/docs/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardTokensRoute = DashboardTokensRouteImport.update({
-  id: '/tokens',
-  path: '/tokens',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const ApiSplatRoute = ApiSplatRouteImport.update({
-  id: '/api/$',
-  path: '/api/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminServiceAccountsRoute = AdminServiceAccountsRouteImport.update({
-  id: '/service-accounts',
-  path: '/service-accounts',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminPackagesRoute = AdminPackagesRouteImport.update({
-  id: '/packages',
-  path: '/packages',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminOrgsRoute = AdminOrgsRouteImport.update({
-  id: '/orgs',
-  path: '/orgs',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminAuditLogsRoute = AdminAuditLogsRouteImport.update({
-  id: '/audit-logs',
-  path: '/audit-logs',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const SeoSitemapDotxmlRoute = SeoSitemapDotxmlRouteImport.update({
-  id: '/_seo/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SeoLlmsFullDottxtRoute = SeoLlmsFullDottxtRouteImport.update({
-  id: '/_seo/llms-full.txt',
-  path: '/llms-full.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/_auth/login',
-  path: '/login',
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCliLoginRoute = AuthCliLoginRouteImport.update({
@@ -163,6 +68,107 @@ const AuthCliLoginRoute = AuthCliLoginRouteImport.update({
   path: '/cli-login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/_auth/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SeoLlmsFullDottxtRoute = SeoLlmsFullDottxtRouteImport.update({
+  id: '/_seo/llms-full.txt',
+  path: '/llms-full.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SeoSitemapDotxmlRoute = SeoSitemapDotxmlRouteImport.update({
+  id: '/_seo/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAuditLogsRoute = AdminAuditLogsRouteImport.update({
+  id: '/audit-logs',
+  path: '/audit-logs',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminOrgsRoute = AdminOrgsRouteImport.update({
+  id: '/orgs',
+  path: '/orgs',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPackagesRoute = AdminPackagesRouteImport.update({
+  id: '/packages',
+  path: '/packages',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminServiceAccountsRoute = AdminServiceAccountsRouteImport.update({
+  id: '/service-accounts',
+  path: '/service-accounts',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardTokensRoute = DashboardTokensRouteImport.update({
+  id: '/tokens',
+  path: '/tokens',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DocsIndexRoute = DocsIndexRouteImport.update({
+  id: '/docs/',
+  path: '/docs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsSplatRoute = DocsSplatRouteImport.update({
+  id: '/docs/$',
+  path: '/docs/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanIndexRoute = ScanIndexRouteImport.update({
+  id: '/scan/',
+  path: '/scan/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanTopSkillsRoute = ScanTopSkillsRouteImport.update({
+  id: '/scan/top-skills',
+  path: '/scan/top-skills',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SkillsIndexRoute = SkillsIndexRouteImport.update({
+  id: '/skills/',
+  path: '/skills/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SkillsSplatRoute = SkillsSplatRouteImport.update({
+  id: '/skills/$',
+  path: '/skills/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthOrgsAcceptInvitationRoute =
+  AuthOrgsAcceptInvitationRouteImport.update({
+    id: '/_auth/orgs/accept-invitation',
+    path: '/orgs/accept-invitation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DashboardOrgsIndexRoute = DashboardOrgsIndexRouteImport.update({
   id: '/orgs/',
   path: '/orgs/',
@@ -173,12 +179,6 @@ const DashboardOrgsSlugRoute = DashboardOrgsSlugRouteImport.update({
   path: '/orgs/$slug',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const AuthOrgsAcceptInvitationRoute =
-  AuthOrgsAcceptInvitationRouteImport.update({
-    id: '/_auth/orgs/accept-invitation',
-    path: '/orgs/accept-invitation',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -382,25 +382,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/install-cli': {
-      id: '/install-cli'
-      path: '/install-cli'
-      fullPath: '/install-cli'
-      preLoaderRoute: typeof InstallCliRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -410,137 +396,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/skills/': {
-      id: '/skills/'
-      path: '/skills'
-      fullPath: '/skills/'
-      preLoaderRoute: typeof SkillsIndexRouteImport
+    '/install-cli': {
+      id: '/install-cli'
+      path: '/install-cli'
+      fullPath: '/install-cli'
+      preLoaderRoute: typeof InstallCliRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/scan/': {
-      id: '/scan/'
-      path: '/scan'
-      fullPath: '/scan/'
-      preLoaderRoute: typeof ScanIndexRouteImport
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs/': {
-      id: '/docs/'
-      path: '/docs'
-      fullPath: '/docs/'
-      preLoaderRoute: typeof DocsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/skills/$': {
-      id: '/skills/$'
-      path: '/skills/$'
-      fullPath: '/skills/$'
-      preLoaderRoute: typeof SkillsSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/scan/top-skills': {
-      id: '/scan/top-skills'
-      path: '/scan/top-skills'
-      fullPath: '/scan/top-skills'
-      preLoaderRoute: typeof ScanTopSkillsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs/$': {
-      id: '/docs/$'
-      path: '/docs/$'
-      fullPath: '/docs/$'
-      preLoaderRoute: typeof DocsSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard/tokens': {
-      id: '/dashboard/tokens'
-      path: '/tokens'
-      fullPath: '/dashboard/tokens'
-      preLoaderRoute: typeof DashboardTokensRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/api/$': {
-      id: '/api/$'
-      path: '/api/$'
-      fullPath: '/api/$'
-      preLoaderRoute: typeof ApiSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/service-accounts': {
-      id: '/admin/service-accounts'
-      path: '/service-accounts'
-      fullPath: '/admin/service-accounts'
-      preLoaderRoute: typeof AdminServiceAccountsRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/packages': {
-      id: '/admin/packages'
-      path: '/packages'
-      fullPath: '/admin/packages'
-      preLoaderRoute: typeof AdminPackagesRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/orgs': {
-      id: '/admin/orgs'
-      path: '/orgs'
-      fullPath: '/admin/orgs'
-      preLoaderRoute: typeof AdminOrgsRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/audit-logs': {
-      id: '/admin/audit-logs'
-      path: '/audit-logs'
-      fullPath: '/admin/audit-logs'
-      preLoaderRoute: typeof AdminAuditLogsRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/_seo/sitemap.xml': {
-      id: '/_seo/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SeoSitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_seo/llms-full.txt': {
-      id: '/_seo/llms-full.txt'
-      path: '/llms-full.txt'
-      fullPath: '/llms-full.txt'
-      preLoaderRoute: typeof SeoLlmsFullDottxtRouteImport
+    '/_auth/cli-login': {
+      id: '/_auth/cli-login'
+      path: '/cli-login'
+      fullPath: '/cli-login'
+      preLoaderRoute: typeof AuthCliLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/login': {
@@ -550,11 +431,137 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/cli-login': {
-      id: '/_auth/cli-login'
-      path: '/cli-login'
-      fullPath: '/cli-login'
-      preLoaderRoute: typeof AuthCliLoginRouteImport
+    '/_seo/llms-full.txt': {
+      id: '/_seo/llms-full.txt'
+      path: '/llms-full.txt'
+      fullPath: '/llms-full.txt'
+      preLoaderRoute: typeof SeoLlmsFullDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_seo/sitemap.xml': {
+      id: '/_seo/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SeoSitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/audit-logs': {
+      id: '/admin/audit-logs'
+      path: '/audit-logs'
+      fullPath: '/admin/audit-logs'
+      preLoaderRoute: typeof AdminAuditLogsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/orgs': {
+      id: '/admin/orgs'
+      path: '/orgs'
+      fullPath: '/admin/orgs'
+      preLoaderRoute: typeof AdminOrgsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/packages': {
+      id: '/admin/packages'
+      path: '/packages'
+      fullPath: '/admin/packages'
+      preLoaderRoute: typeof AdminPackagesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/service-accounts': {
+      id: '/admin/service-accounts'
+      path: '/service-accounts'
+      fullPath: '/admin/service-accounts'
+      preLoaderRoute: typeof AdminServiceAccountsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/tokens': {
+      id: '/dashboard/tokens'
+      path: '/tokens'
+      fullPath: '/dashboard/tokens'
+      preLoaderRoute: typeof DashboardTokensRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/docs/': {
+      id: '/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof DocsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/$': {
+      id: '/docs/$'
+      path: '/docs/$'
+      fullPath: '/docs/$'
+      preLoaderRoute: typeof DocsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan/': {
+      id: '/scan/'
+      path: '/scan'
+      fullPath: '/scan/'
+      preLoaderRoute: typeof ScanIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan/top-skills': {
+      id: '/scan/top-skills'
+      path: '/scan/top-skills'
+      fullPath: '/scan/top-skills'
+      preLoaderRoute: typeof ScanTopSkillsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/skills/': {
+      id: '/skills/'
+      path: '/skills'
+      fullPath: '/skills/'
+      preLoaderRoute: typeof SkillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/skills/$': {
+      id: '/skills/$'
+      path: '/skills/$'
+      fullPath: '/skills/$'
+      preLoaderRoute: typeof SkillsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/orgs/accept-invitation': {
+      id: '/_auth/orgs/accept-invitation'
+      path: '/orgs/accept-invitation'
+      fullPath: '/orgs/accept-invitation'
+      preLoaderRoute: typeof AuthOrgsAcceptInvitationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/orgs/': {
@@ -570,13 +577,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/orgs/$slug'
       preLoaderRoute: typeof DashboardOrgsSlugRouteImport
       parentRoute: typeof DashboardRouteRoute
-    }
-    '/_auth/orgs/accept-invitation': {
-      id: '/_auth/orgs/accept-invitation'
-      path: '/orgs/accept-invitation'
-      fullPath: '/orgs/accept-invitation'
-      preLoaderRoute: typeof AuthOrgsAcceptInvitationRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }

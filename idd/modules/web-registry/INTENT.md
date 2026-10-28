@@ -24,14 +24,16 @@ apps/registry/src/api/routes/v1/skills-read.ts   # GET — skill metadata, versi
 
 ## Layer 2: Constraints
 
-| #   | Rule                                                                                          | Rationale                                              | Verified by  |
-| --- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------ |
-| C1  | `GET /skills/[name]` returns 404 for unknown or private-to-others skills                      | Privacy must not leak existence of private skills      | BDD scenario |
-| C2  | `GET /skills/[name]` returns `latestVersion` derived from the most recently created version   | Consumers need the current version without listing all | BDD scenario |
-| C3  | `GET /skills/[name]/[version]` includes `permissions`, `auditScore`, `integrity`              | Installers use these to verify safety before install   | BDD scenario |
-| C4  | `GET /skills/[name]/versions` returns all versions in descending creation order               | Version list must be stable and paginated              | BDD scenario |
-| C5  | Unauthenticated requests can read public skills; private skills require the publisher's token | Visibility enforcement at the API layer                | BDD scenario |
-| C6  | Skill name is URL-decoded before DB lookup                                                    | `@org/skill` must survive URL encoding in path params  | BDD scenario |
+| #   | Rule                                                                                          | Rationale                                                         | Verified by              |
+| --- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------ |
+| C1  | `GET /skills/[name]` returns 404 for unknown or private-to-others skills                      | Privacy must not leak existence of private skills                 | BDD scenario             |
+| C2  | `GET /skills/[name]` returns `latestVersion` derived from the most recently created version   | Consumers need the current version without listing all            | BDD scenario             |
+| C3  | `GET /skills/[name]/[version]` includes `permissions`, `auditScore`, `integrity`              | Installers use these to verify safety before install              | BDD scenario             |
+| C4  | `GET /skills/[name]/versions` returns all versions in descending creation order               | Version list must be stable and paginated                         | BDD scenario             |
+| C5  | Unauthenticated requests can read public skills; private skills require the publisher's token | Visibility enforcement at the API layer                           | BDD scenario             |
+| C6  | Skill name is URL-decoded before DB lookup                                                    | `@org/skill` must survive URL encoding in path params             | BDD scenario             |
+| C7  | Server-function transport uses versions patched against CVE-2026-102989                       | Unauthenticated input must not become executable same-origin HTML | Dependency version guard |
+| C8  | Public and login pages render with the production build                                       | Visitors must be able to browse and authorize CLI logins          | Production-server test   |
 
 ---
 
@@ -44,6 +46,7 @@ apps/registry/src/api/routes/v1/skills-read.ts   # GET — skill metadata, versi
 | E3  | `GET /api/v1/skills/@org/react/1.0.0`                   | 200: `{ version, permissions, auditScore, integrity, downloadUrl }` |
 | E4  | `GET /api/v1/skills/@org/react/versions`                | 200: array of version objects                                       |
 | E5  | `GET /api/v1/skills/@org/private-skill` unauthenticated | 404 (same as not found)                                             |
+| E6  | Anonymous requests to public and login pages            | 200 HTML from the production server                                 |
 
 ---
 
