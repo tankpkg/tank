@@ -42,6 +42,7 @@ it.skipIf(process.env.E2E_PRODUCTION_RENDER !== '1')(
         TANK_MODE: 'cloud',
         DATABASE_URL: databaseUrl,
         REDIS_URL: '',
+        LOKI_URL: 'http://127.0.0.1:0',
         APP_URL: base,
         BETTER_AUTH_URL: base,
         BETTER_AUTH_SECRET: 'local-production-render-test-secret-12345',

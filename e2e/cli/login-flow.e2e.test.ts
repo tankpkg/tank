@@ -2,6 +2,7 @@
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -36,7 +37,7 @@ async function withinDeadline<T>(operation: Promise<T>, signal: AbortSignal): Pr
   }
 }
 
-async function startRegistry(databaseUrl: string) {
+async function startRegistry(databaseUrl: string, lokiUrl: string) {
   const probe = net.createServer();
   await new Promise<void>((resolve, reject) => probe.once('error', reject).listen(0, '127.0.0.1', resolve));
   const address = probe.address();
@@ -51,6 +52,7 @@ async function startRegistry(databaseUrl: string) {
       TANK_MODE: 'cloud',
       DATABASE_URL: databaseUrl,
       REDIS_URL: '',
+      LOKI_URL: lokiUrl,
       APP_URL: base,
       BETTER_AUTH_URL: base,
       BETTER_AUTH_SECRET: 'local-full-login-test-secret-123456789',
@@ -90,24 +92,38 @@ async function startRegistry(databaseUrl: string) {
   }
 }
 
-function waitForAuthUrl(child: ChildProcessWithoutNullStreams): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let output = '';
-    const timeout = setTimeout(() => reject(new Error(`CLI did not print an auth URL: ${output}`)), 20_000);
-    child.stdout.on('data', (chunk: Buffer) => {
-      output += chunk.toString();
-      const match = output.match(/https?:\/\/[^\s]+\/cli-login\?session=[\w-]+/);
-      if (match) {
-        clearTimeout(timeout);
-        resolve(match[0]);
+async function startLogSink() {
+  let captureUrl: (url: string) => void = () => {};
+  const authUrl = new Promise<string>((resolve) => {
+    captureUrl = resolve;
+  });
+  const server = http.createServer((request, response) => {
+    let body = '';
+    request.on('data', (chunk: Buffer) => {
+      body += chunk.toString();
+    });
+    request.on('end', () => {
+      try {
+        const payload = JSON.parse(body) as {
+          streams: Array<{ stream: { app?: string }; values: Array<[string, string]> }>;
+        };
+        for (const stream of payload.streams) {
+          if (stream.stream.app !== 'tank-cli') continue;
+          for (const [, line] of stream.values) {
+            const entry = JSON.parse(line) as { authUrl?: unknown };
+            if (typeof entry.authUrl === 'string') captureUrl(entry.authUrl);
+          }
+        }
+        response.writeHead(204).end();
+      } catch {
+        response.writeHead(400).end();
       }
     });
-    child.once('error', reject);
-    child.once('close', (code) => {
-      clearTimeout(timeout);
-      reject(new Error(`CLI exited before printing an auth URL (${code}): ${output}`));
-    });
   });
+  await new Promise<void>((resolve, reject) => server.once('error', reject).listen(0, '127.0.0.1', resolve));
+  const address = server.address();
+  if (!address || typeof address === 'string') throw new Error('Could not allocate a local log sink');
+  return { server, authUrl, base: `http://127.0.0.1:${address.port}` };
 }
 
 async function verifyFullLogin(): Promise<void> {
@@ -135,12 +151,14 @@ async function verifyFullLogin(): Promise<void> {
   let child: ChildProcessWithoutNullStreams | undefined;
   let exit: Promise<number | null> | undefined;
   let registryProcess: Awaited<ReturnType<typeof startRegistry>> | undefined;
+  let logSink: Awaited<ReturnType<typeof startLogSink>> | undefined;
   let sessionCode: string | null = null;
   let probeCode: string | null = null;
   let databaseVerified = false;
 
   try {
-    registryProcess = await startRegistry(databaseUrl);
+    logSink = await startLogSink();
+    registryProcess = await startRegistry(databaseUrl, logSink.base);
     const registry = registryProcess.base;
     fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ registry, telemetry: false }));
     const state = randomUUID();
@@ -172,7 +190,7 @@ async function verifyFullLogin(): Promise<void> {
       .join('; ');
     expect(cookie).not.toBe('');
 
-    // Disable desktop launchers without replacing the CLI's real open() implementation.
+    // Capture the URL from the real CLI's logs, whether or not open() reports success.
     child = spawn(process.execPath, [path.resolve(__dirname, '../../packages/cli/dist/bin/tank.js'), 'login'], {
       env: {
         HOME: home,
@@ -186,11 +204,11 @@ async function verifyFullLogin(): Promise<void> {
         TANK_NO_UPDATE_CHECK: '1',
         TANK_TELEMETRY: '0',
         TANK_TELEMETRY_HOST: registry,
-        TANK_LOKI_URL: registry
+        TANK_LOKI_URL: logSink.base
       }
     });
     exit = new Promise<number | null>((resolve) => child?.once('close', resolve));
-    const authUrl = await withinDeadline(waitForAuthUrl(child), deadline);
+    const authUrl = await withinDeadline(logSink.authUrl, deadline);
     sessionCode = new URL(authUrl).searchParams.get('session');
     if (!sessionCode) throw new Error('CLI auth URL did not include a session code');
     expect(new URL(authUrl).origin).toBe(registry);
@@ -229,6 +247,7 @@ async function verifyFullLogin(): Promise<void> {
     if (registryProcess) {
       await stopProcess(registryProcess.server, registryProcess.exited);
     }
+    if (logSink) await new Promise<void>((resolve) => logSink?.server.close(() => resolve()));
     if (databaseVerified) {
       const rows = await sql`SELECT id FROM "user" WHERE email = ${email}`;
       for (const row of rows) {
