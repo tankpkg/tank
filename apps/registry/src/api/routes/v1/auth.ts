@@ -1,9 +1,6 @@
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
-import { eq } from 'drizzle-orm';
 
 import { verifyCliAuth } from '~/lib/auth/authz';
-import { db } from '~/lib/db';
-import { user } from '~/lib/db/auth-schema';
 
 const whoamiRoute = createRoute({
   method: 'get',
@@ -40,6 +37,10 @@ const whoamiRoute = createRoute({
           schema: z.object({ error: z.string() })
         }
       }
+    },
+    503: {
+      description: 'Authentication temporarily unavailable; retry the request',
+      content: { 'application/json': { schema: z.object({ error: z.string() }) } }
     }
   }
 });
@@ -50,16 +51,6 @@ export const authRoutes = new OpenAPIHono().openapi(whoamiRoute, async (c) => {
     return c.json({ error: 'Unauthorized. Valid API key required.' }, 401);
   }
 
-  const rows = await db
-    .select({ id: user.id, name: user.name, email: user.email })
-    .from(user)
-    .where(eq(user.id, verified.userId))
-    .limit(1);
-
-  if (rows.length === 0) {
-    return c.json({ error: 'User not found' }, 404);
-  }
-
-  const row = rows[0];
+  const row = verified.owner;
   return c.json({ userId: row.id, name: row.name, email: row.email }, 200);
 });

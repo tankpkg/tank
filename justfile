@@ -303,6 +303,157 @@ test target='all':
         *) echo "Unknown target: {{target}}. Use: registry, registry-e2e, cli, mcp, internals-schemas, internals-helpers, scanner, e2e, e2e-onprem, bdd, bdd-system, bdd-browser, all" && exit 1 ;;
     esac
 
+# Test a published binary on separate real filesystems; CI uses Linux /dev/shm.
+[group('test')]
+ci-test-upgrade-filesystem:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    bun run --filter @tankpkg/cli build:binary
+    os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    case "$(uname -m)" in
+      x86_64) arch=x64 ;;
+      arm64|aarch64) arch=arm64 ;;
+      *) echo "Unsupported test architecture" >&2; exit 1 ;;
+    esac
+    TANK_UPGRADE_TEST_BINARY="$PWD/packages/cli/build/tank-$os-$arch" \
+      TANK_UPGRADE_CROSS_DEVICE_TMPDIR="${TANK_UPGRADE_CROSS_DEVICE_TMPDIR:-/dev/shm}" \
+      bun run --filter @internal/bdd test:system steps/system/upgrade-filesystem.steps.ts --no-passWithNoTests
+
+# Verify the PostgreSQL-backed login store against an isolated test database.
+[group('test')]
+ci-test-login-store:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="$(just --quiet ci-test-docker-host)"
+    env -i PATH="$PATH" HOME="${HOME:?}" TMPDIR="${TMPDIR:-}" CI="${CI:-}" NO_COLOR="${NO_COLOR:-}" \
+      DOCKER_HOST="$host" E2E_AUTH_TEST_POSTGRES_IMAGE="${E2E_AUTH_TEST_POSTGRES_IMAGE:-postgres:17-alpine}" \
+      E2E_LOGIN_DATABASE_URL="${DATABASE_URL:?DATABASE_URL must point to a local test database}" \
+      bun --no-env-file --no-install --config=/dev/null run --filter @internal/bdd test:system steps/system/login-store.steps.ts --no-passWithNoTests
+
+# Verify concurrent CLI authentication against isolated PostgreSQL and Redis.
+[group('test')]
+ci-test-login-atomic:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="$(just --quiet ci-test-docker-host)"
+    for test in cli/cli-auth-atomic.e2e.test.ts cli/postgres-rate-window.e2e.test.ts; do
+      env -i PATH="$PATH" HOME="${HOME:?}" TMPDIR="${TMPDIR:-}" CI="${CI:-}" NO_COLOR="${NO_COLOR:-}" \
+        DOCKER_HOST="$host" E2E_AUTH_TEST_POSTGRES_IMAGE="${E2E_AUTH_TEST_POSTGRES_IMAGE:-postgres:17-alpine}" \
+        E2E_ATOMIC_LOGIN=1 E2E_AUTH_DATABASE_URL="${DATABASE_URL:?DATABASE_URL must point to a local test database}" \
+        E2E_AUTH_REDIS_URL="${E2E_AUTH_REDIS_URL:?E2E_AUTH_REDIS_URL must point to an isolated local Redis instance}" \
+        bun --no-env-file --no-install --config=/dev/null run --filter @internal/e2e test:run "$test" --no-passWithNoTests
+    done
+
+# Pin login fixtures to the trusted default daemon. The socket path itself cannot attest its daemon.
+[group('test')]
+ci-test-docker-host:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "$(uname -s)" in
+      Darwin)
+        account_home="$(env -i PATH="$PATH" HOME="${HOME:?}" node -e 'process.stdout.write(require("node:os").userInfo().homedir)')"
+        socket="$account_home/.colima/default/docker.sock"
+        ;;
+      Linux) socket='/var/run/docker.sock' ;;
+      *) echo 'Login tests require the default Colima or Linux Docker socket' >&2; exit 1 ;;
+    esac
+    if [[ "$socket" == *$'\n'* || "$socket" == *$'\r'* || "$socket" == *'%'* || "$socket" == *'?'* || "$socket" == *'#'* || "$socket" == *'\'* ]]; then
+      echo 'The trusted Docker socket path is invalid' >&2
+      exit 1
+    fi
+    resolved="$(cd -P "$(dirname "$socket")" && pwd -P)/$(basename "$socket")"
+    if [[ ! -S "$resolved" || -L "$resolved" ]]; then
+      echo 'The trusted Docker socket is unavailable or not a Unix socket' >&2
+      exit 1
+    fi
+    host="${DOCKER_HOST:-unix://$socket}"
+    if [[ "$host" != "unix://$socket" && "$host" != "unix://$resolved" ]]; then
+      echo 'Login tests require the trusted default Docker socket' >&2
+      exit 1
+    fi
+    printf '%s' "$host"
+
+# Prepare the images used by the owned login-test services.
+[group('test')]
+ci-prepare-login-images:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="$(just --quiet ci-test-docker-host)"
+    config="$(mktemp -d "${TMPDIR:-/tmp}/tank-login-docker-config-XXXXXXXX")"
+    trap 'rm -rf -- "$config"' EXIT
+    for image in postgres:16 postgres:17-alpine redis:7-alpine; do
+      env -i PATH="$PATH" HOME="${HOME:?}" DOCKER_HOST="$host" DOCKER_CONFIG="$config" docker image inspect "$image" >/dev/null 2>&1 || \
+        env -i PATH="$PATH" HOME="$HOME" DOCKER_HOST="$host" DOCKER_CONFIG="$config" docker pull "$image"
+    done
+# Exercise deadline and rate-window races against owned PostgreSQL and Redis.
+[group('test')]
+ci-test-login-deadline:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="$(just --quiet ci-test-docker-host)"
+    if [[ -n "${TANK_AUTH_DEADLINE_DOCKER_HOST:-}" && "$TANK_AUTH_DEADLINE_DOCKER_HOST" != "$host" ]]; then
+      echo 'The deadline test must use the prepared local Docker daemon' >&2
+      exit 1
+    fi
+    env -i PATH="$PATH" HOME="${HOME:?}" TMPDIR="${TMPDIR:-}" CI="${CI:-}" NO_COLOR="${NO_COLOR:-}" \
+      DOCKER_HOST="$host" TANK_AUTH_DEADLINE_DOCKER_HOST="$host" TANK_AUTH_DEADLINE_RACE_TEST=1 \
+      bun --no-env-file --no-install --config=/dev/null run --filter registry test src/lib/auth/__tests__/cli-store-deadline-race.test.ts --no-passWithNoTests
+
+# Exercise retry, clock and counter behavior against independently owned services.
+[group('test')]
+ci-test-login-reliability:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just --quiet ci-test-docker-host >/dev/null
+    cd apps/registry
+    env -i PATH="$PATH" HOME="${HOME:?}" TMPDIR="${TMPDIR:-}" CI="${CI:-}" NO_COLOR="${NO_COLOR:-}" \
+      NODE_ENV=test BUN_CONFIG_NO_DOTENV=1 BUN_RUNTIME_TRANSPILER_CACHE_PATH=0 \
+      bun --no-env-file --no-install ./node_modules/vitest/vitest.mjs run \
+      --config src/services/kv/__tests__/pr492-isolated.vitest.config.ts --no-passWithNoTests
+
+# Verify API-key ownership against both migrated and schema-pushed databases.
+[group('test')]
+ci-test-api-key-ownership:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="$(just --quiet ci-test-docker-host)"
+    env -i PATH="$PATH" HOME="${HOME:?}" TMPDIR="${TMPDIR:-}" CI="${CI:-}" NO_COLOR="${NO_COLOR:-}" \
+      DOCKER_HOST="$host" E2E_AUTH_TEST_POSTGRES_IMAGE="${E2E_AUTH_TEST_POSTGRES_IMAGE:-postgres:17-alpine}" \
+      E2E_MIGRATED_API_KEYS=1 bun --no-env-file --no-install --config=/dev/null run --filter @internal/e2e test:run \
+      cli/pr492-migrated-api-keys.e2e.test.ts --no-passWithNoTests
+
+# Verify the resolved server-function packages include the CVE-2026-102989 fix.
+[group('test')]
+ci-test-server-function-security:
+    bun run --filter @internal/bdd test:system steps/system/server-function-security.steps.ts --no-passWithNoTests
+
+# Exercise server rendering against the built registry and isolated PostgreSQL.
+[group('test')]
+ci-test-registry-render:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="$(just --quiet ci-test-docker-host)"
+    env -i PATH="$PATH" HOME="${HOME:?}" TMPDIR="${TMPDIR:-}" CI="${CI:-}" NO_COLOR="${NO_COLOR:-}" \
+      DOCKER_HOST="$host" E2E_AUTH_TEST_POSTGRES_IMAGE="${E2E_AUTH_TEST_POSTGRES_IMAGE:-postgres:17-alpine}" E2E_PRODUCTION_RENDER=1 \
+      bun --no-env-file --no-install --config=/dev/null run --filter @internal/bdd test:system steps/system/registry-render.steps.ts --no-passWithNoTests
+
+# Install a dedicated, pinned Chrome Headless Shell for the browser login test.
+[group('test')]
+ci-install-cli-login-browser:
+    env -i PATH="$PATH" HOME="${HOME:?}" node e2e/helpers/browser-binary.mjs --install
+
+# Exercise the CLI login flow against an owned production-build registry.
+[group('test')]
+ci-test-cli-login:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    host="$(just --quiet ci-test-docker-host)"
+    browser="${TANK_TEST_BROWSER_PATH:-$(env -i PATH="$PATH" HOME="${HOME:?}" node e2e/helpers/browser-binary.mjs --path)}"
+    env -i PATH="$PATH" HOME="${HOME:?}" TMPDIR="${TMPDIR:-}" CI="${CI:-}" NO_COLOR="${NO_COLOR:-}" \
+      DOCKER_HOST="$host" E2E_AUTH_TEST_POSTGRES_IMAGE="${E2E_AUTH_TEST_POSTGRES_IMAGE:-postgres:17-alpine}" \
+      E2E_FULL_LOGIN=1 E2E_LOGIN_DATABASE_URL="${DATABASE_URL:?DATABASE_URL must point to a local test database}" \
+      TANK_TEST_BROWSER_PATH="$browser" bun --no-env-file --no-install --config=/dev/null run --filter @internal/e2e test:run cli/login-flow.e2e.test.ts --no-passWithNoTests
+
 # just db <action> - database and data operations
 # just db generate          - create a new Drizzle migration SQL file (registry)
 # just db push              - apply current schema directly to Postgres (no migration file)
