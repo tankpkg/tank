@@ -2,6 +2,7 @@ import { createConnection, isIP, type Socket } from 'node:net';
 import { type ConnectionOptions, checkServerIdentity, connect as connectTls, type TLSSocket } from 'node:tls';
 import postgres from 'postgres';
 
+import { postgresTlsOptions } from '../../lib/db/tls.ts';
 import type { KVStore } from './store';
 
 const COUNTER_LOCK_TIMEOUT_MS = 250;
@@ -355,7 +356,7 @@ class PostgresSlot {
       // already-negotiated socket and must not wrap it in another TLSSocket.
       const parser = postgres(this.connectionString, { ...options, max: 0 });
       this.options = parser.options as unknown as CachedClientOptions;
-      this.ssl = configuredSsl(this.connectionString, this.options.ssl);
+      this.ssl = postgresTlsOptions(this.connectionString) ?? configuredSsl(this.connectionString, this.options.ssl);
       this.sslNegotiation = this.options.sslnegotiation;
       if (this.sslNegotiation === 'direct' && !this.ssl) {
         throw new Error('PostgreSQL direct TLS negotiation requires TLS to be enabled');

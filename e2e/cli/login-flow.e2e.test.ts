@@ -26,6 +26,7 @@ import {
   validateTestDatabaseUrl,
   verifyTestDatabase
 } from '../helpers/isolated-test-database.js';
+import { createOwnedPostgresTls } from '../helpers/owned-postgres-tls.js';
 import {
   closeOwnedDatabase,
   replaceEnvironment,
@@ -68,7 +69,14 @@ async function withinDeadline<T>(operation: Promise<T>, signal: AbortSignal): Pr
   }
 }
 
-async function startRegistry(databaseUrl: string, lokiUrl: string, redisUrl = '') {
+async function startRegistry(
+  databaseUrl: string,
+  lokiUrl: string,
+  redisUrl = '',
+  databaseCa?: string,
+  insecureTlsDefault = false,
+  tankMode: 'cloud' | 'selfhosted' = 'cloud'
+) {
   const probe = net.createServer();
   await new Promise<void>((resolve, reject) => probe.once('error', reject).listen(0, '127.0.0.1', resolve));
   const address = probe.address();
@@ -81,8 +89,10 @@ async function startRegistry(databaseUrl: string, lokiUrl: string, redisUrl = ''
       PATH: process.env.PATH,
       DOTENV_CONFIG_PATH: '/dev/null',
       NODE_ENV: 'production',
-      TANK_MODE: 'cloud',
+      TANK_MODE: tankMode,
       DATABASE_URL: databaseUrl,
+      DATABASE_SSL_CA: databaseCa,
+      NODE_TLS_REJECT_UNAUTHORIZED: insecureTlsDefault ? '0' : undefined,
       REDIS_URL: redisUrl,
       LOKI_URL: lokiUrl,
       APP_URL: base,
@@ -119,6 +129,71 @@ async function startRegistry(databaseUrl: string, lokiUrl: string, redisUrl = ''
   } catch (error) {
     await stopProcess(server, exited);
     throw error;
+  }
+}
+
+async function verifyEntrypoint(
+  tls: Awaited<ReturnType<typeof createOwnedPostgresTls>>,
+  sandbox: string,
+  shouldStart: boolean
+): Promise<void> {
+  const probe = net.createServer();
+  await new Promise<void>((resolve, reject) => probe.once('error', reject).listen(0, '127.0.0.1', resolve));
+  const address = probe.address();
+  if (!address || typeof address === 'string') throw new Error('Could not allocate a local port');
+  await new Promise<void>((resolve, reject) => probe.close((error) => (error ? reject(error) : resolve())));
+  const base = `http://127.0.0.1:${address.port}`;
+  const child = spawn('sh', ['scripts/entrypoint.sh'], {
+    cwd: path.resolve(__dirname, '../../apps/registry'),
+    env: {
+      PATH: process.env.PATH,
+      HOME: sandbox,
+      TMPDIR: sandbox,
+      DOTENV_CONFIG_PATH: '/dev/null',
+      BUN_CONFIG_NO_DOTENV: '1',
+      NODE_ENV: 'production',
+      NODE_TLS_REJECT_UNAUTHORIZED: '0',
+      DATABASE_URL: tls.url,
+      DATABASE_SSL_CA: tls.certificate,
+      BETTER_AUTH_SECRET: 'local-startup-test-secret-123456789',
+      SUPABASE_URL: 'https://fake.supabase.co',
+      APP_URL: base,
+      BETTER_AUTH_URL: base,
+      AUTO_MIGRATE: 'false',
+      HOST: '127.0.0.1',
+      PORT: String(address.port)
+    }
+  });
+  let output = '';
+  const ready = new Promise<void>((resolve) => {
+    child.stdout.on('data', (chunk: Buffer) => {
+      output += chunk.toString();
+      if (output.includes(`Listening on: ${base}/`)) resolve();
+    });
+  });
+  child.stderr.resume();
+  const exited = new Promise<number | null>((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', resolve);
+  });
+  try {
+    if (shouldStart) {
+      await withinDeadline(
+        Promise.race([ready, exited.then((code) => Promise.reject(new Error(`Entrypoint exited early: ${code}`)))]),
+        AbortSignal.timeout(20_000)
+      );
+      const response = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(5_000) });
+      expect(response.status).toBe(200);
+    } else {
+      const code = await withinDeadline(exited, AbortSignal.timeout(20_000));
+      if (code === null) throw new Error('Entrypoint exited on a signal');
+      expect(code).toBeGreaterThan(0);
+    }
+  } finally {
+    await stopProcess(
+      child,
+      exited.catch(() => undefined)
+    );
   }
 }
 
@@ -269,7 +344,7 @@ async function authorizeInBrowser(
   }
 }
 
-async function verifyFullLogin(): Promise<void> {
+async function verifyFullLogin(usePostgresTls = false): Promise<void> {
   const browserPath = process.env.TANK_TEST_BROWSER_PATH;
   if (!browserPath) throw new Error('TANK_TEST_BROWSER_PATH must point to a dedicated Chrome Headless Shell');
   await withPrivateEnvironment(async (sandbox) => {
@@ -285,6 +360,7 @@ async function verifyFullLogin(): Promise<void> {
     let child: ChildProcessWithoutNullStreams | undefined;
     let exit: Promise<number | null> | undefined;
     let registryProcess: Awaited<ReturnType<typeof startRegistry>> | undefined;
+    let postgresTls: Awaited<ReturnType<typeof createOwnedPostgresTls>> | undefined;
     let logSink: Awaited<ReturnType<typeof startLogSink>> | undefined;
     let operationError: unknown;
     let operationFailed = false;
@@ -300,7 +376,13 @@ async function verifyFullLogin(): Promise<void> {
       fs.mkdirSync(binDir);
       fs.mkdirSync(configDir);
       logSink = await startLogSink();
-      registryProcess = await startRegistry(database.url, logSink.base);
+      if (usePostgresTls) postgresTls = await createOwnedPostgresTls(database, sandbox);
+      registryProcess = await startRegistry(
+        postgresTls?.url ?? database.url,
+        logSink.base,
+        '',
+        postgresTls?.certificate
+      );
       const registry = registryProcess.base;
       fs.writeFileSync(path.join(configDir, 'config.json'), JSON.stringify({ registry, telemetry: false }));
       const state = randomUUID();
@@ -379,13 +461,19 @@ async function verifyFullLogin(): Promise<void> {
         headers: { Authorization: `Bearer ${config.token}` }
       });
       expect(identity.status).toBe(200);
+      if (postgresTls) {
+        expect(postgresTls.counts.plaintext).toBe(0);
+        expect(postgresTls.counts.encrypted).toBeGreaterThanOrEqual(2);
+      }
     } catch (error) {
       operationFailed = true;
       operationError = error;
     }
     const cleanup = await Promise.allSettled([
       child && exit ? stopProcess(child, exit) : Promise.resolve(),
-      registryProcess ? stopProcess(registryProcess.server, registryProcess.exited) : Promise.resolve(),
+      registryProcess
+        ? stopProcess(registryProcess.server, registryProcess.exited).then(() => postgresTls?.close())
+        : postgresTls?.close(),
       logSink ? stopLogSink(logSink.server) : Promise.resolve(),
       sql ? sql.end({ timeout: 3 }) : Promise.resolve()
     ]);
@@ -453,6 +541,174 @@ it.skipIf(!enabled || process.platform === 'win32')(
 it.skipIf(!enabled || process.platform === 'win32')(
   'logs in with a real CLI and verifies the issued token',
   verifyFullLoginUnderHostileEnvironment,
+  0
+);
+
+it.skipIf(!enabled || process.platform === 'win32')(
+  'logs in through a real browser with verified PostgreSQL TLS',
+  () => verifyFullLogin(true),
+  0
+);
+
+it.skipIf(!enabled || process.platform === 'win32')(
+  'rejects a wrong-host PostgreSQL certificate before either login database sends credentials',
+  async () => {
+    await withPrivateEnvironment(async (sandbox) => {
+      const database = await createOwnedTestDatabase(false);
+      let tls: Awaited<ReturnType<typeof createOwnedPostgresTls>> | undefined;
+      let registry: Awaited<ReturnType<typeof startRegistry>> | undefined;
+      try {
+        tls = await createOwnedPostgresTls(database, sandbox, true);
+        registry = await startRegistry(tls.url, 'http://127.0.0.1:0', '', tls.certificate, true);
+        const headers = { 'Content-Type': 'application/json', Origin: registry.base };
+        const start = await fetch(`${registry.base}/api/v1/cli-auth/start`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ state: randomUUID() }),
+          signal: AbortSignal.timeout(20_000)
+        });
+        const attemptsAfterStart = tls.counts.attempted;
+        const signin = await fetch(`${registry.base}/api/auth/sign-in/email`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ email: 'isolated@example.test', password: 'test-password' }),
+          signal: AbortSignal.timeout(20_000)
+        });
+        expect(start.status).toBe(500);
+        expect(signin.ok).toBe(false);
+        expect(attemptsAfterStart).toBeGreaterThan(0);
+        expect(tls.counts.attempted).toBeGreaterThan(attemptsAfterStart);
+        await stopProcess(registry.server, registry.exited);
+        registry = undefined;
+        registry = await startRegistry(tls.url, 'http://127.0.0.1:0', '', tls.certificate, true, 'selfhosted');
+        const selfhostStart = await fetch(`${registry.base}/api/v1/cli-auth/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Origin: registry.base },
+          body: JSON.stringify({ state: randomUUID() }),
+          redirect: 'manual',
+          signal: AbortSignal.timeout(20_000)
+        });
+        expect(selfhostStart.status).toBe(302);
+        expect(selfhostStart.headers.get('location')).toBe('/setup');
+        for (const endpoint of ['test-db', 'check-db']) {
+          const before = tls.counts.attempted;
+          const setup = await fetch(`${registry.base}/api/setup/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Origin: registry.base },
+            body: JSON.stringify({ useEnv: true }),
+            signal: AbortSignal.timeout(20_000)
+          });
+          expect(setup.status, endpoint).toBe(400);
+          expect(tls.counts.attempted, endpoint).toBeGreaterThan(before);
+        }
+        expect(tls.counts.plaintext).toBe(0);
+        expect(tls.counts.decryptedBytes).toBe(0);
+      } finally {
+        try {
+          if (registry) await stopProcess(registry.server, registry.exited);
+        } finally {
+          try {
+            if (tls) await tls.close();
+          } finally {
+            await closeOwnedDatabase(database);
+          }
+        }
+      }
+    });
+  },
+  0
+);
+
+it.skipIf(!enabled || process.platform === 'win32')(
+  'never lets startup or schema tooling bypass a configured PostgreSQL CA',
+  async () => {
+    await withPrivateEnvironment(async (sandbox) => {
+      const database = await createOwnedTestDatabase(true);
+      let tls: Awaited<ReturnType<typeof createOwnedPostgresTls>> | undefined;
+      const root = path.resolve(__dirname, '../..');
+      const runScript = async (args: string[], cwd = root, command: 'bun' | 'sh' = 'bun'): Promise<number> => {
+        if (!tls) throw new Error('TLS relay is unavailable');
+        const child = spawn(command, command === 'bun' ? isolatedBunArguments(args) : args, {
+          cwd,
+          env: {
+            PATH: process.env.PATH,
+            HOME: sandbox,
+            TMPDIR: sandbox,
+            DOTENV_CONFIG_PATH: '/dev/null',
+            BUN_CONFIG_NO_DOTENV: '1',
+            DATABASE_URL: tls.url,
+            DATABASE_SSL_CA: tls.certificate,
+            NODE_TLS_REJECT_UNAUTHORIZED: '0',
+            BETTER_AUTH_SECRET: 'local-startup-test-secret-123456789',
+            FIRST_ADMIN_EMAIL: 'startup-test@example.test',
+            FIRST_ADMIN_PASSWORD: 'local-startup-test-password',
+            AUTO_MIGRATE: 'true'
+          }
+        });
+        child.stdout.resume();
+        child.stderr.resume();
+        const exited = new Promise<number | null>((resolve, reject) => {
+          child.once('error', reject);
+          child.once('close', resolve);
+        });
+        try {
+          const code = await withinDeadline(exited, AbortSignal.timeout(8_000));
+          if (code === null) throw new Error('Startup script exited on a signal');
+          return code;
+        } finally {
+          await stopProcess(
+            child,
+            exited.catch(() => undefined)
+          );
+        }
+      };
+      try {
+        tls = await createOwnedPostgresTls(database, sandbox);
+        const extensionStatus = await runScript(['scripts/ensure-pg-trgm.mjs']);
+        expect(tls.counts.plaintext).toBe(0);
+        expect(extensionStatus).toBe(0);
+        expect(tls.counts.encrypted).toBeGreaterThan(0);
+        let encrypted = tls.counts.encrypted;
+        expect(await runScript(['apps/registry/scripts/load-settings-from-db.ts'])).toBe(0);
+        expect(tls.counts.encrypted).toBeGreaterThan(encrypted);
+        encrypted = tls.counts.encrypted;
+        expect(await runScript(['apps/registry/scripts/bootstrap-headless.ts'])).toBe(0);
+        expect(tls.counts.encrypted).toBeGreaterThan(encrypted);
+        encrypted = tls.counts.encrypted;
+        await verifyEntrypoint(tls, sandbox, true);
+        expect(tls.counts.encrypted).toBeGreaterThan(encrypted);
+        const attempts = tls.counts.attempted;
+        expect(
+          await runScript(['./node_modules/drizzle-kit/bin.cjs', 'push', '--force'], path.join(root, 'apps/registry'))
+        ).toBeGreaterThan(0);
+        expect(tls.counts.attempted).toBe(attempts);
+        expect(tls.counts.plaintext).toBe(0);
+        await tls.close();
+        tls = undefined;
+        tls = await createOwnedPostgresTls(database, sandbox, true);
+        const beforeLoader = tls.counts.attempted;
+        await verifyEntrypoint(tls, sandbox, false);
+        expect(tls.counts.attempted).toBeGreaterThan(beforeLoader);
+        for (const [args, cwd, command] of [
+          [['scripts/ensure-pg-trgm.mjs'], root, 'bun'],
+          [['apps/registry/scripts/load-settings-from-db.ts'], root, 'bun'],
+          [['apps/registry/scripts/bootstrap-headless.ts'], root, 'bun'],
+          [['./node_modules/drizzle-kit/bin.cjs', 'push', '--force'], path.join(root, 'apps/registry'), 'bun'],
+          [['apps/registry/scripts/entrypoint.sh'], root, 'sh']
+        ] as [string[], string, 'bun' | 'sh'][]) {
+          expect(await runScript(args, cwd, command)).toBeGreaterThan(0);
+        }
+        expect(tls.counts.plaintext).toBe(0);
+        expect(tls.counts.decryptedBytes).toBe(0);
+      } finally {
+        try {
+          if (tls) await tls.close();
+        } finally {
+          await closeOwnedDatabase(database);
+        }
+      }
+    });
+  },
   0
 );
 
