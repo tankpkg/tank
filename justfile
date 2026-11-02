@@ -595,9 +595,9 @@ ci-publish-npm-nightly:
     bash scripts/justfile/rewrite-workspace-deps.sh packages/cli "${NIGHTLY_VERSION}"
     bash scripts/justfile/rewrite-workspace-deps.sh packages/mcp-server "${NIGHTLY_VERSION}"
     bash scripts/justfile/rewrite-workspace-deps.sh packages/sdk "${NIGHTLY_VERSION}"
-    (cd packages/cli && npm publish --no-git-checks --access public --tag nightly --provenance)
-    (cd packages/mcp-server && npm publish --no-git-checks --access public --tag nightly --provenance)
-    (cd packages/sdk && npm publish --no-git-checks --access public --tag nightly --provenance)
+    (cd packages/cli && npm publish --access public --tag nightly --provenance)
+    (cd packages/mcp-server && npm publish --access public --tag nightly --provenance)
+    (cd packages/sdk && npm publish --access public --tag nightly --provenance)
 
 [group('ci')]
 ci-publish-npm VERSION:
@@ -608,9 +608,9 @@ ci-publish-npm VERSION:
     bash scripts/justfile/rewrite-workspace-deps.sh packages/cli "{{VERSION}}"
     bash scripts/justfile/rewrite-workspace-deps.sh packages/mcp-server "{{VERSION}}"
     bash scripts/justfile/rewrite-workspace-deps.sh packages/sdk "{{VERSION}}"
-    (cd packages/cli && npm publish --no-git-checks --access public --provenance)
-    (cd packages/mcp-server && npm publish --no-git-checks --access public --provenance)
-    (cd packages/sdk && npm publish --no-git-checks --access public --provenance)
+    (cd packages/cli && npm publish --access public --provenance)
+    (cd packages/mcp-server && npm publish --access public --provenance)
+    (cd packages/sdk && npm publish --access public --provenance)
 
 [group('ci')]
 ci-build-pypi-sdk VERSION:
