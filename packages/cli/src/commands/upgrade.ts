@@ -33,7 +33,6 @@ function resolveCurrentBinary(): string {
 function replaceBinary(tmpBin: string, currentBinaryPath: string): void {
   if (process.platform !== 'win32') {
     fs.renameSync(tmpBin, currentBinaryPath);
-    fs.chmodSync(currentBinaryPath, 0o755);
     return;
   }
 
@@ -90,7 +89,10 @@ export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
 
   console.log(chalk.cyan(`Upgrading tank ${VERSION} → ${targetVersion}...`));
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-'));
+  // POSIX rename must stay on the installation filesystem and requires write
+  // access to its directory. Stage there so replacement remains atomic.
+  const stagingDir = process.platform === 'win32' ? os.tmpdir() : path.dirname(currentBinaryPath);
+  const tmpDir = fs.mkdtempSync(path.join(stagingDir, '.tank-upgrade-'));
 
   try {
     const binaryUrl = `https://github.com/tankpkg/tank/releases/download/v${targetVersion}/${binaryName}`;
@@ -149,6 +151,12 @@ export async function upgradeCommand(opts?: UpgradeOptions): Promise<void> {
     console.log(chalk.green(`✓ Upgraded tank ${VERSION} → ${targetVersion}`));
     console.log(chalk.gray(`Release notes: https://github.com/tankpkg/tank/releases/tag/v${targetVersion}`));
   } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch (err) {
+      console.error(
+        `Could not remove temporary upgrade files at ${tmpDir}: ${err instanceof Error ? err.message : err}`
+      );
+    }
   }
 }

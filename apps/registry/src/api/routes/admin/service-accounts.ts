@@ -1,6 +1,16 @@
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 
+import {
+  ApiKeyDeletionConflict,
+  assertUserDeletionSafe,
+  isApiKeyLockTimeout,
+  lockServiceAccounts,
+  revokeOwnedApiKey,
+  ServiceAccountDeletionConflict,
+  ServiceAccountSafetyUnavailable,
+  withApiKeyWriteLock
+} from '~/lib/auth/api-key-safety';
 import { auth } from '~/lib/auth/core';
 import { db } from '~/lib/db';
 import { apikey, user } from '~/lib/db/auth-schema';
@@ -60,24 +70,26 @@ export const serviceAccountsRoutes = new Hono()
     const serviceUserId = crypto.randomUUID();
     const serviceEmail = `sa-${serviceUserId.slice(0, 8)}@service.internal`;
 
-    await db.insert(user).values({
-      id: serviceUserId,
-      name: body.displayName,
-      email: serviceEmail,
-      emailVerified: true,
-      role: 'user'
+    const account = await db.transaction(async (tx) => {
+      await tx.insert(user).values({
+        id: serviceUserId,
+        name: body.displayName,
+        email: serviceEmail,
+        emailVerified: true,
+        role: 'user'
+      });
+      const [created] = await tx
+        .insert(serviceAccounts)
+        .values({
+          userId: serviceUserId,
+          ownerUserId: adminUser.id,
+          orgId: body.orgId ?? null,
+          displayName: body.displayName,
+          description: body.description ?? null
+        })
+        .returning();
+      return created;
     });
-
-    const [account] = await db
-      .insert(serviceAccounts)
-      .values({
-        userId: serviceUserId,
-        ownerUserId: adminUser.id,
-        orgId: body.orgId ?? null,
-        displayName: body.displayName,
-        description: body.description ?? null
-      })
-      .returning();
 
     const apiKeyResult = await auth.api.createApiKey({
       body: {
@@ -143,30 +155,52 @@ export const serviceAccountsRoutes = new Hono()
 
   .delete('/:id', async (c) => {
     const id = c.req.param('id');
-
-    const existing = await db
-      .select({ id: serviceAccounts.id, userId: serviceAccounts.userId, displayName: serviceAccounts.displayName })
-      .from(serviceAccounts)
-      .where(eq(serviceAccounts.id, id))
-      .limit(1);
-
-    if (existing.length === 0) {
-      return c.json({ error: 'Service account not found' }, 404);
-    }
-
-    // Delete service account (cascade will clean up). User record deletion cascades apikeys.
-    await db.delete(serviceAccounts).where(eq(serviceAccounts.id, id));
-    await db.delete(user).where(eq(user.id, existing[0].userId));
-
     const adminUser = c.get('adminUser' as never) as { id: string };
-    await db.insert(auditEvents).values({
-      action: 'admin.service_account.delete',
-      actorId: adminUser.id,
-      targetType: 'service_account',
-      targetId: id,
-      metadata: { displayName: existing[0].displayName }
-    });
-
+    try {
+      const deleted = await withApiKeyWriteLock(
+        async (tx) => {
+          const [existing] = await tx
+            .select({
+              id: serviceAccounts.id,
+              userId: serviceAccounts.userId,
+              displayName: serviceAccounts.displayName
+            })
+            .from(serviceAccounts)
+            .where(eq(serviceAccounts.id, id))
+            .for('update');
+          if (!existing) return false;
+          await assertUserDeletionSafe(tx, existing.userId);
+          const removedAccount = await tx
+            .delete(serviceAccounts)
+            .where(eq(serviceAccounts.id, id))
+            .returning({ id: serviceAccounts.id });
+          if (removedAccount.length !== 1) throw new Error('Service-account deletion did not complete');
+          const removedUser = await tx.delete(user).where(eq(user.id, existing.userId)).returning({ id: user.id });
+          if (removedUser.length !== 1) throw new Error('Service-account user deletion did not complete');
+          await tx.insert(auditEvents).values({
+            action: 'admin.service_account.delete',
+            actorId: adminUser.id,
+            targetType: 'service_account',
+            targetId: id,
+            metadata: { displayName: existing.displayName }
+          });
+          return true;
+        },
+        c.req.raw.signal,
+        lockServiceAccounts
+      );
+      if (!deleted) return c.json({ error: 'Service account not found' }, 404);
+    } catch (error) {
+      if (error instanceof ApiKeyDeletionConflict)
+        return c.json({ error: error.message, code: 'API_KEY_OWNERSHIP_CONFLICT' }, 409);
+      if (error instanceof ServiceAccountDeletionConflict)
+        return c.json({ error: error.message, code: 'SERVICE_ACCOUNT_OWNERSHIP_CONFLICT' }, 409);
+      if (error instanceof ServiceAccountSafetyUnavailable)
+        return c.json({ error: error.message, code: 'SERVICE_ACCOUNT_SAFETY_UNAVAILABLE' }, 503);
+      if (isApiKeyLockTimeout(error))
+        return c.json({ error: 'Please retry deletion.', code: 'API_KEY_LOCK_TIMEOUT' }, 503);
+      throw error;
+    }
     return c.json({ success: true });
   })
 
@@ -207,34 +241,37 @@ export const serviceAccountsRoutes = new Hono()
   .delete('/:id/keys/:keyId', async (c) => {
     const id = c.req.param('id');
     const keyId = c.req.param('keyId');
-
-    const existing = await db
-      .select({ id: serviceAccounts.id, userId: serviceAccounts.userId })
-      .from(serviceAccounts)
-      .where(eq(serviceAccounts.id, id))
-      .limit(1);
-
-    if (existing.length === 0) {
-      return c.json({ error: 'Service account not found' }, 404);
-    }
-
-    // Verify the key belongs to this service account's user
-    const keyRows = await db.select({ id: apikey.id }).from(apikey).where(eq(apikey.id, keyId)).limit(1);
-
-    if (keyRows.length === 0) {
-      return c.json({ error: 'API key not found' }, 404);
-    }
-
-    await auth.api.deleteApiKey({ body: { keyId } });
-
     const adminUser = c.get('adminUser' as never) as { id: string };
-    await db.insert(auditEvents).values({
-      action: 'admin.service_account.key_revoke',
-      actorId: adminUser.id,
-      targetType: 'service_account',
-      targetId: id,
-      metadata: { keyId }
-    });
-
+    try {
+      const result = await withApiKeyWriteLock(
+        async (tx) => {
+          const [existing] = await tx
+            .select({ userId: serviceAccounts.userId })
+            .from(serviceAccounts)
+            .where(eq(serviceAccounts.id, id))
+            .for('update');
+          if (!existing) return 'account-not-found';
+          if (!(await revokeOwnedApiKey(tx, { keyId, ownerId: existing.userId }))) return 'key-not-found';
+          await tx.insert(auditEvents).values({
+            action: 'admin.service_account.key_revoke',
+            actorId: adminUser.id,
+            targetType: 'service_account',
+            targetId: id,
+            metadata: { keyId }
+          });
+          return 'deleted';
+        },
+        c.req.raw.signal,
+        lockServiceAccounts
+      );
+      if (result === 'account-not-found') return c.json({ error: 'Service account not found' }, 404);
+      if (result === 'key-not-found') return c.json({ error: 'API key not found' }, 404);
+    } catch (error) {
+      if (error instanceof ServiceAccountSafetyUnavailable)
+        return c.json({ error: error.message, code: 'SERVICE_ACCOUNT_SAFETY_UNAVAILABLE' }, 503);
+      if (isApiKeyLockTimeout(error))
+        return c.json({ error: 'Please retry revocation.', code: 'API_KEY_LOCK_TIMEOUT' }, 503);
+      throw error;
+    }
     return c.json({ success: true });
   });

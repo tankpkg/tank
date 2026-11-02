@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `tank upgrade` can replace a binary when the system temporary directory is on a different filesystem.
+- CLI login reports server-side session failures as server errors rather than invalid requests.
+- CLI login asks users to restart when authorization or exchange fails unexpectedly instead of blaming the request or silently polling.
+- PostgreSQL-backed rate limits reset expired counters using the database clock when a new window starts.
+- Redis-backed rate counters retain an expiry even when a connection drops during an increment.
+- Concurrent CLI login requests cannot consume a session twice on a consistent store primary. Redis failover can restore a consumed session from a stale replica.
+- New CLI sessions use a separate namespace so older registry replicas cannot resurrect them.
+- Newly issued API keys retain their owner on both migrated and schema-pushed databases.
+- API keys with conflicting stored owners are rejected instead of authenticating as the wrong user.
+- Deleting a user who owns a separate service account is blocked until that account is resolved, preventing disabled service-account keys from being reactivated by a cascade.
+- API-key authentication and guarded account deletion fail closed if the required `service_accounts` table is missing; administrators must investigate and restore it before retrying.
+- In-progress CLI logins created before the store-clock cutover must be restarted; unambiguous saved API tokens remain usable. Non-default reference-only keys with unverifiable ownership must be replaced.
+
+### Security
+
+- PostgreSQL-backed login sessions and rate counters require a trusted, host-matching certificate whenever TLS is enabled, including through `PGSSLMODE`; `prefer` and `allow` no longer fall back to plaintext, and direct negotiation requires the PostgreSQL ALPN protocol.
+- Updated TanStack Start and its router integrations to address CVE-2026-102989.
+- Equivalent duplicate API keys can exceed configured usage limits when their historical counters were consumed independently. Operators should inspect and resolve duplicate hashes explicitly.
+
 ### Added
 
 #### Conversion Improvements (Issue #462)

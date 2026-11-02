@@ -4,6 +4,7 @@ import postgres from 'postgres';
 
 import { decrypt } from '../src/lib/crypto';
 import { systemConfig } from '../src/lib/db/schema';
+import { postgresTlsOptions } from '../src/lib/db/tls';
 
 function sanitize(value: string): string {
   return value.replace(/[`$\\"\n\r]/g, '');
@@ -16,7 +17,8 @@ let masterKey = process.env.BETTER_AUTH_SECRET;
 if (!masterKey) process.exit(0);
 
 try {
-  const client = postgres(dbUrl);
+  const ssl = postgresTlsOptions(dbUrl);
+  const client = postgres(dbUrl, ssl ? { ssl } : {});
   const db = drizzle(client, { schema: { systemConfig } });
 
   const [config] = await db.select().from(systemConfig).where(eq(systemConfig.id, 1)).limit(1);
@@ -115,5 +117,9 @@ try {
     console.log(line);
   }
 } catch {
+  if (process.env.DATABASE_SSL_CA !== undefined) {
+    console.error('[Tank] Could not load settings through verified PostgreSQL TLS.');
+    process.exit(1);
+  }
   process.exit(0);
 }

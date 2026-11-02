@@ -21,6 +21,12 @@ vi.mock('chalk', () => ({
 const collectOutput = (spy: ReturnType<typeof vi.spyOn>): string =>
   spy.mock.calls.map((call: unknown[]) => call.join(' ')).join('\n');
 
+function releaseBinaryName(): string {
+  const platform = process.platform === 'win32' ? 'windows' : process.platform === 'darwin' ? 'darwin' : 'linux';
+  const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+  return `tank-${platform}-${arch}${process.platform === 'win32' ? '.exe' : ''}`;
+}
+
 describe('upgradeCommand', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -86,7 +92,7 @@ describe('upgradeCommand', () => {
     }
   });
 
-  it('detects Homebrew installation and warns', async () => {
+  it.skipIf(process.platform === 'win32')('detects Homebrew installation and warns', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-test-'));
     try {
       const fakeBrewBin = path.join(tmpDir, 'Cellar', 'tank', 'bin', 'tank');
@@ -143,34 +149,64 @@ describe('upgradeCommand', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects on checksum mismatch', async () => {
-    const mockFetch = vi.fn();
-    globalThis.fetch = mockFetch as unknown as typeof fetch;
+  it.each(['native', 'win32'] as const)('rejects on checksum mismatch (%s staging)', async (platform) => {
+    const systemTempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tank-upgrade-system-temp-'));
+    const tmpdirSpy = vi.spyOn(os, 'tmpdir').mockReturnValue(systemTempDir);
+    const stagingSpy = vi.spyOn(fs, 'mkdtempSync');
+    if (platform === 'win32') {
+      const nativeProcess = process;
+      vi.stubGlobal(
+        'process',
+        new Proxy(nativeProcess, {
+          get(target, property, receiver) {
+            return property === 'platform' ? 'win32' : Reflect.get(target, property, receiver);
+          }
+        })
+      );
+    }
+    try {
+      const mockFetch = vi.fn();
+      globalThis.fetch = mockFetch as unknown as typeof fetch;
+      const binaryPath = path.join(defaultBinDir, 'tank');
+      const originalBinary = fs.readFileSync(binaryPath);
 
-    const fakeBinary = new Uint8Array([0x00, 0x01, 0x02, 0x03]);
-    const wrongHash = 'deadbeef'.repeat(8);
-    const platform = process.platform === 'darwin' ? 'darwin' : 'linux';
-    const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
-    const binaryName = `tank-${platform}-${arch}`;
+      const fakeBinary = new Uint8Array([0x00, 0x01, 0x02, 0x03]);
+      const wrongHash = 'deadbeef'.repeat(8);
+      const binaryName = releaseBinaryName();
 
-    // 1. Latest version response
-    mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ tag_name: 'v99.0.0' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    );
+      // 1. Latest version response
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ tag_name: 'v99.0.0' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      );
 
-    // 2. Binary download
-    mockFetch.mockResolvedValueOnce(new Response(fakeBinary, { status: 200 }));
+      // 2. Binary download
+      mockFetch.mockResolvedValueOnce(new Response(fakeBinary, { status: 200 }));
 
-    // 3. SHA256SUMS with wrong hash
-    mockFetch.mockResolvedValueOnce(new Response(`${wrongHash}  ${binaryName}\n`, { status: 200 }));
+      // 3. SHA256SUMS with wrong hash
+      mockFetch.mockResolvedValueOnce(new Response(`${wrongHash}  ${binaryName}\n`, { status: 200 }));
 
-    await upgradeCommand();
+      await upgradeCommand();
 
-    const output = collectOutput(logSpy);
-    expect(output).toContain('Checksum mismatch');
+      const output = collectOutput(logSpy);
+      expect(output).toContain('Checksum mismatch');
+      expect(fs.readFileSync(binaryPath)).toEqual(originalBinary);
+      const staging = stagingSpy.mock.calls
+        .map(([prefix]) => String(prefix))
+        .filter((prefix) => path.basename(prefix).startsWith('.tank-upgrade-'));
+      expect(staging).toHaveLength(1);
+      const expectedDir = process.platform === 'win32' ? systemTempDir : defaultBinDir;
+      expect(fs.realpathSync(path.dirname(staging[0]))).toBe(fs.realpathSync(expectedDir));
+      expect(fs.readdirSync(defaultBinDir)).toEqual(['tank']);
+      expect(fs.readdirSync(systemTempDir)).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+      stagingSpy.mockRestore();
+      tmpdirSpy.mockRestore();
+      fs.rmSync(systemTempDir, { recursive: true, force: true });
+    }
   });
 
   it('successfully upgrades with valid checksum', async () => {
@@ -187,9 +223,7 @@ describe('upgradeCommand', () => {
 
       const fakeBinary = new Uint8Array([0xca, 0xfe, 0xba, 0xbe]);
       const actualHash = crypto.createHash('sha256').update(fakeBinary).digest('hex');
-      const platform = process.platform === 'darwin' ? 'darwin' : 'linux';
-      const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
-      const binaryName = `tank-${platform}-${arch}`;
+      const binaryName = releaseBinaryName();
 
       // 1. Latest version response
       mockFetch.mockResolvedValueOnce(
@@ -240,9 +274,7 @@ describe('upgradeCommand', () => {
 
       const fakeBinary = new Uint8Array([0xca, 0xfe, 0xba, 0xbe]);
       const actualHash = crypto.createHash('sha256').update(fakeBinary).digest('hex');
-      const platform = process.platform === 'darwin' ? 'darwin' : 'linux';
-      const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
-      const binaryName = `tank-${platform}-${arch}`;
+      const binaryName = releaseBinaryName();
 
       mockFetch.mockResolvedValueOnce(
         new Response(JSON.stringify({ tag_name: 'v99.0.0' }), {
@@ -276,9 +308,7 @@ describe('upgradeCommand', () => {
 
       const fakeBinary = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
       const actualHash = crypto.createHash('sha256').update(fakeBinary).digest('hex');
-      const platform = process.platform === 'darwin' ? 'darwin' : 'linux';
-      const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
-      const binaryName = `tank-${platform}-${arch}`;
+      const binaryName = releaseBinaryName();
 
       // Return current version — without force, this would short-circuit
       mockFetch.mockResolvedValueOnce(

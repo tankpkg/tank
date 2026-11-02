@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { auth } from '~/lib/auth/core';
 import { db } from '~/lib/db';
 import { systemConfig, user } from '~/lib/db/schema';
+import { postgresTlsOptions } from '~/lib/db/tls';
 import { decryptSecret, encryptSecret, getSystemConfig, isSetupCompleted, upsertSystemConfig } from '~/lib/setup';
 
 export const setupRoutes = new Hono()
@@ -72,7 +73,8 @@ export const setupRoutes = new Hono()
     const databaseUrl = body.useEnv ? process.env.DATABASE_URL : body.databaseUrl;
     if (!databaseUrl) return c.json({ ok: false, error: 'No database URL provided' }, 400);
     try {
-      const testClient = (await import('postgres')).default(databaseUrl);
+      const ssl = postgresTlsOptions(databaseUrl);
+      const testClient = (await import('postgres')).default(databaseUrl, ssl ? { ssl } : {});
       await testClient`SELECT 1`;
       await testClient.end();
       if (!body.useEnv) {
@@ -96,7 +98,8 @@ export const setupRoutes = new Hono()
     const databaseUrl = body.useEnv ? process.env.DATABASE_URL : body.databaseUrl;
     if (!databaseUrl) return c.json({ ok: false, error: 'No database URL provided' }, 400);
     try {
-      const pg = (await import('postgres')).default(databaseUrl);
+      const ssl = postgresTlsOptions(databaseUrl);
+      const pg = (await import('postgres')).default(databaseUrl, ssl ? { ssl } : {});
       const tables = await pg`
         SELECT tablename FROM pg_catalog.pg_tables
         WHERE schemaname = 'public'

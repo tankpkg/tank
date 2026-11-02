@@ -13,6 +13,7 @@ export const zEnv = z.object({
 
   // ── Database ──
   DATABASE_URL: zOptStr,
+  DATABASE_SSL_CA: z.string().optional(),
 
   // ── Auth ──
   BETTER_AUTH_SECRET: zOptStr,

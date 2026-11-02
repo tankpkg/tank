@@ -56,8 +56,18 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     env:
       DATABASE_URL: postgresql://tank:tank@localhost:5432/tank_test
+      E2E_AUTH_REDIS_URL: redis://127.0.0.1:6379/15
       SUPABASE_URL: https://fake.supabase.co
       BETTER_AUTH_SECRET: ci-test-secret-not-real
       APP_URL: http://localhost:5555
@@ -65,6 +75,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -103,6 +115,41 @@ jobs:
 
       - name: Run JavaScript/TypeScript tests
         run: bunx turbo run test --filter='!@internal/e2e' --filter='!@internal/bdd'
+
+      - uses: extractions/setup-just@v2
+
+      - name: Test cross-filesystem CLI upgrades
+        run: just ci-test-upgrade-filesystem
+
+      - name: Prepare isolated login-test services
+        run: just ci-prepare-login-images
+
+      - name: Test PostgreSQL login store
+        run: just ci-test-login-store
+
+      - name: Test single-use CLI sessions and rate windows
+        run: just ci-test-login-atomic
+
+      - name: Test login deadlines and rate-window races
+        run: just ci-test-login-deadline
+
+      - name: Test login store reliability
+        run: just ci-test-login-reliability
+
+      - name: Test API-key ownership across database schemas
+        run: just ci-test-api-key-ownership
+
+      - name: Verify patched server-function dependencies
+        run: just ci-test-server-function-security
+
+      - name: Test production registry rendering
+        run: just ci-test-registry-render
+
+      - name: Install isolated login browser
+        run: just ci-install-cli-login-browser
+
+      - name: Test CLI login end to end
+        run: just ci-test-cli-login
 
       - name: Install UV
         uses: astral-sh/setup-uv@v6

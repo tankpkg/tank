@@ -58,6 +58,7 @@ RUN bun run --filter=@internals/schemas build && \
 import { defineConfig } from "drizzle-kit";
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) throw new Error("DATABASE_URL is required");
+if (process.env.DATABASE_SSL_CA !== undefined) throw new Error("DATABASE_SSL_CA is not supported by drizzle-kit; use a separately verified migration procedure");
 export default defineConfig({
   dialect: "postgresql",
   schema: ["./src/lib/db/schema.js"],
@@ -96,6 +97,8 @@ COPY --chown=tanstack:bunjs scripts/ensure-pg-trgm.mjs ./scripts/ensure-pg-trgm.
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/drizzle.config.js ./drizzle.config.js
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/dist-db/schema.js ./src/lib/db/schema.js
 COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/src/lib/crypto.ts ./src/lib/crypto.ts
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/src/lib/db/tls.ts ./src/lib/db/tls.ts
+COPY --from=builder --chown=tanstack:bunjs /app/apps/registry/src/lib/db/tls.ts ./apps/registry/src/lib/db/tls.ts
 COPY --from=deps --chown=tanstack:bunjs /app/apps/registry/node_modules/drizzle-orm ./node_modules/drizzle-orm
 COPY --from=deps --chown=tanstack:bunjs /app/apps/registry/node_modules/drizzle-kit ./node_modules/drizzle-kit
 

@@ -1,18 +1,46 @@
+import { defaultKeyHasher } from '@better-auth/api-key';
 import { and, desc, eq, sql } from 'drizzle-orm';
+import { HTTPException } from 'hono/http-exception';
+import {
+  type ApiKeyTransaction,
+  apiKeyOwner,
+  deferApiKeyVerification,
+  finishApiKeyVerification,
+  withApiKeyReadTimeout,
+  withFreshApiKeyRequest
+} from '~/lib/auth/api-key-safety';
 import { auth } from '~/lib/auth/core';
 import { db } from '~/lib/db';
 import { apikey, member, user } from '~/lib/db/auth-schema';
-import { serviceAccounts, skillAccess, userStatus } from '~/lib/db/schema';
+import { skillAccess, userStatus } from '~/lib/db/schema';
 
 export interface VerifiedApiKey {
   userId: string;
   keyId: string;
   scopes: string[];
+  owner: { id: string; name: string; email: string };
 }
 
 export type SessionData = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
 const ADMIN_SCOPE = 'skills:admin';
+
+function authenticationUnavailable(): HTTPException {
+  return new HTTPException(503, {
+    res: Response.json(
+      { error: 'API-key verification temporarily unavailable. Please retry or contact an administrator.' },
+      { status: 503 }
+    )
+  });
+}
+
+export async function readAuthenticationData<T>(read: () => PromiseLike<T>): Promise<T> {
+  try {
+    return await withApiKeyReadTimeout(read);
+  } catch {
+    throw authenticationUnavailable();
+  }
+}
 
 function parseScopes(rawPermissions: unknown): string[] {
   if (!rawPermissions) {
@@ -47,26 +75,24 @@ function parseScopes(rawPermissions: unknown): string[] {
   }
 }
 
-async function resolveApiKeyOwnerId(key: {
-  id?: unknown;
-  referenceId?: unknown;
-  userId?: unknown;
-}): Promise<string | null> {
-  if (typeof key.referenceId === 'string' && key.referenceId.length > 0) {
-    return key.referenceId;
-  }
-
-  if (typeof key.userId === 'string' && key.userId.length > 0) {
-    return key.userId;
-  }
-
-  if (typeof key.id !== 'string' || key.id.length === 0) {
-    return null;
-  }
-
-  const rows = await db.select({ userId: apikey.userId }).from(apikey).where(eq(apikey.id, key.id)).limit(1);
-
-  return rows[0]?.userId ?? null;
+async function hasConflictingApiKey(keyHash: string): Promise<boolean> {
+  // Better Auth can select any row when duplicate hashes exist.
+  const rows = await withApiKeyReadTimeout(() =>
+    db
+      .select({ id: apikey.id })
+      .from(apikey)
+      .where(
+        and(
+          eq(apikey.key, keyHash),
+          sql`${apikey.key} COLLATE "C" = ${keyHash} COLLATE "C"`,
+          sql`${apikey.userId} IS NOT NULL AND octet_length(${apikey.userId}) > 0
+          AND ${apikey.referenceId} IS NOT NULL AND octet_length(${apikey.referenceId}) > 0
+          AND ${apikey.userId} COLLATE "C" <> ${apikey.referenceId} COLLATE "C"`
+        )
+      )
+      .limit(1)
+  );
+  return rows.length > 0;
 }
 
 export function hasRequiredScopes(grantedScopes: string[], requiredScopes: string[]): boolean {
@@ -106,6 +132,15 @@ export async function isUserBlocked(userId: string): Promise<boolean> {
   return status === 'banned' || status === 'suspended';
 }
 
+async function readOwnerInTransaction(tx: ApiKeyTransaction, ownerId: string): Promise<VerifiedApiKey['owner'] | null> {
+  const [owner] = await tx
+    .select({ id: user.id, name: user.name, email: user.email })
+    .from(user)
+    .where(and(eq(user.id, ownerId), sql`${user.id} COLLATE "C" = ${ownerId} COLLATE "C"`))
+    .limit(1);
+  return owner ?? null;
+}
+
 export async function getSessionFromRequest(request: Request): Promise<SessionData | null> {
   try {
     return await auth.api.getSession({ headers: request.headers });
@@ -138,44 +173,57 @@ export async function verifyCliAuth(request: Request): Promise<VerifiedApiKey | 
     return null;
   }
 
-  try {
-    const result = await auth.api.verifyApiKey({ body: { key: token } });
-
-    if (!result.valid || !result.key) {
-      return null;
-    }
-
-    const ownerId = await resolveApiKeyOwnerId(result.key);
-    if (!ownerId) {
-      return null;
-    }
-
-    if (await isUserBlocked(ownerId)) {
-      return null;
-    }
-
+  return withFreshApiKeyRequest(async () => {
     try {
-      const serviceAccount = await db
-        .select({ disabled: serviceAccounts.disabled })
-        .from(serviceAccounts)
-        .where(eq(serviceAccounts.userId, ownerId))
-        .limit(1);
+      // Better Auth updates usage fields during verification. Reject conflicts first
+      // so an unauthorized request cannot mutate the conflicting key row.
+      const keyHash = await defaultKeyHasher(token);
+      if (await hasConflictingApiKey(keyHash)) return null;
+      if (request.signal.aborted) return null;
 
-      if (serviceAccount[0]?.disabled) {
+      deferApiKeyVerification();
+      const result = await auth.api.verifyApiKey({ body: { key: token } });
+
+      if (result.error?.code === 'API_KEY_LOCK_TIMEOUT' || result.error?.code === 'API_KEY_VERIFICATION_UNAVAILABLE') {
+        throw authenticationUnavailable();
+      }
+      if (!result.valid || !result.key) {
         return null;
       }
-    } catch {
-      // DB error checking service account status — don't block auth for regular users.
-    }
 
-    return {
-      userId: ownerId,
-      keyId: result.key.id,
-      scopes: parseScopes(result.key.permissions)
-    };
-  } catch {
-    return null;
-  }
+      const verifiedKey = result.key;
+      const rows = await withApiKeyReadTimeout(() =>
+        db
+          .select({ key: apikey.key, userId: apikey.userId, referenceId: apikey.referenceId })
+          .from(apikey)
+          .where(eq(apikey.id, verifiedKey.id))
+          .limit(1)
+      );
+      const storedKey = rows[0];
+      if (!storedKey || storedKey.key !== keyHash) return null;
+      const ownerId = apiKeyOwner(storedKey);
+      if (!ownerId || ownerId !== verifiedKey.referenceId) return null;
+
+      if (request.signal.aborted) return null;
+      const validated: { owner: VerifiedApiKey['owner'] | null } = { owner: null };
+      const finalized = await finishApiKeyVerification(async (tx, owner) => {
+        validated.owner = await readOwnerInTransaction(tx, owner);
+        return !!validated.owner;
+      });
+      if (!finalized || finalized.id !== verifiedKey.id || finalized.referenceId !== ownerId || !validated.owner) {
+        return null;
+      }
+      return {
+        userId: ownerId,
+        keyId: verifiedKey.id,
+        scopes: parseScopes(verifiedKey.permissions),
+        owner: validated.owner
+      };
+    } catch (error) {
+      if (error instanceof HTTPException) throw error;
+      throw authenticationUnavailable();
+    }
+  }, request.signal);
 }
 
 export interface SkillAccessSubject {
@@ -190,6 +238,7 @@ export async function resolveRequestUserId(request: Request): Promise<string | n
   if (cliVerified) {
     return cliVerified.userId;
   }
+  if (request.signal.aborted) return null;
 
   try {
     const session = await auth.api.getSession({ headers: request.headers });

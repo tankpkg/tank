@@ -48,6 +48,14 @@ const startRoute = createRoute({
           schema: z.object({ error: z.string() })
         }
       }
+    },
+    500: {
+      description: 'Unable to start an authentication session',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
     }
   }
 });
@@ -106,6 +114,14 @@ const authorizeRoute = createRoute({
           schema: z.object({ error: z.string() })
         }
       }
+    },
+    500: {
+      description: 'Unable to authorize the authentication session',
+      content: {
+        'application/json': {
+          schema: z.object({ error: z.string() })
+        }
+      }
     }
   }
 });
@@ -155,7 +171,7 @@ const exchangeRoute = createRoute({
       }
     },
     500: {
-      description: 'Failed to create API key',
+      description: 'Unable to complete the authentication session',
       content: {
         'application/json': {
           schema: z.object({ error: z.string() })
@@ -169,7 +185,12 @@ export const cliAuthRoutes = new OpenAPIHono()
 
   .openapi(startRoute, async (c) => {
     try {
-      const { state } = c.req.valid('json');
+      // Hono skips optional-body validation when the content type is missing or unsupported.
+      const parsed = startSchema.safeParse(c.req.valid('json'));
+      if (!parsed.success) {
+        return c.json({ error: 'Invalid request body' }, 400);
+      }
+      const { state } = parsed.data;
 
       authLog.info({ action: 'start', state: `${state.slice(0, 8)}...` }, 'CLI auth start request received');
 
@@ -193,7 +214,7 @@ export const cliAuthRoutes = new OpenAPIHono()
         },
         'CLI auth start failed'
       );
-      return c.json({ error: 'Invalid request body' }, 400);
+      return c.json({ error: 'Unable to start authentication session. Please try again later.' }, 500);
     }
   })
 
@@ -214,7 +235,11 @@ export const cliAuthRoutes = new OpenAPIHono()
         return c.json({ error: 'Account is suspended or banned' }, 403);
       }
 
-      const { sessionCode } = c.req.valid('json');
+      const parsed = authorizeSchema.safeParse(c.req.valid('json'));
+      if (!parsed.success) {
+        return c.json({ error: 'Invalid request body' }, 400);
+      }
+      const { sessionCode } = parsed.data;
 
       authLog.info(
         { action: 'authorize', sessionCode: `${sessionCode.slice(0, 8)}...` },
@@ -257,7 +282,7 @@ export const cliAuthRoutes = new OpenAPIHono()
         },
         'CLI auth authorize failed'
       );
-      return c.json({ error: 'Invalid request body' }, 400);
+      return c.json({ error: 'Unable to authorize authentication session. Please start login again.' }, 500);
     }
   })
 
@@ -265,7 +290,11 @@ export const cliAuthRoutes = new OpenAPIHono()
     try {
       authLog.info({ action: 'exchange' }, 'CLI auth exchange request received');
 
-      const { sessionCode, state } = c.req.valid('json');
+      const parsed = exchangeSchema.safeParse(c.req.valid('json'));
+      if (!parsed.success) {
+        return c.json({ error: 'Invalid request body' }, 400);
+      }
+      const { sessionCode, state } = parsed.data;
 
       const session = await consumeSession(sessionCode, state);
       authLog.info(
@@ -346,6 +375,6 @@ export const cliAuthRoutes = new OpenAPIHono()
         },
         'CLI auth exchange failed'
       );
-      return c.json({ error: 'Invalid request body' }, 400);
+      return c.json({ error: 'Unable to complete authentication session. Please start login again.' }, 500);
     }
   });

@@ -2,6 +2,7 @@
 set -e
 
 TANK_CONFIG="/app/data/.tank-bootstrap"
+TANK_ENV_FILE="${TMPDIR:-/tmp}/tank-env.txt"
 
 if [ -z "$DATABASE_URL" ] && [ -f "$TANK_CONFIG" ]; then
   . "$TANK_CONFIG"
@@ -43,11 +44,18 @@ if [ "$AUTO_MIGRATE" = "true" ]; then
 fi
 
 if [ -n "$DATABASE_URL" ]; then
-  bun run scripts/load-settings-from-db.ts > /tmp/tank-env.txt 2>/dev/null || true
+  if [ "${DATABASE_SSL_CA+x}" = "x" ]; then
+    bun run scripts/load-settings-from-db.ts > "$TANK_ENV_FILE" 2>/dev/null || {
+      echo "[Tank] ERROR: Could not load settings with verified PostgreSQL TLS."
+      exit 1
+    }
+  else
+    bun run scripts/load-settings-from-db.ts > "$TANK_ENV_FILE" 2>/dev/null || true
+  fi
 fi
 
-if [ -f /tmp/tank-env.txt ] && [ -s /tmp/tank-env.txt ]; then
-  exec env $(cat /tmp/tank-env.txt | grep -E '^[A-Z_]+=' | tr '\n' ' ') bun .output/server/index.mjs
+if [ -f "$TANK_ENV_FILE" ] && [ -s "$TANK_ENV_FILE" ]; then
+  exec env $(cat "$TANK_ENV_FILE" | grep -E '^[A-Z_]+=' | tr '\n' ' ') bun .output/server/index.mjs
 else
   exec bun .output/server/index.mjs
 fi

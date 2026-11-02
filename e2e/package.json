@@ -10,10 +10,12 @@
   "devDependencies": {
     "@internals/adapters": "workspace:*",
     "@internals/schemas": "workspace:*",
+    "@puppeteer/browsers": "3.2.6",
     "@tankpkg/sdk": "workspace:*",
     "@types/semver": "^7.7.0",
     "cipher-kit": "^3.0.0",
     "postgres": "^3.4.8",
+    "puppeteer-core": "25.16.0",
     "semver": "^7.7.4",
     "vitest": "^4.1.0"
   },
