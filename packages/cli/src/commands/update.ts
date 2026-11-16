@@ -6,8 +6,15 @@ import { resolve } from '@internals/helpers';
 import { LOCKFILE_FILENAME, MANIFEST_FILENAME, type SkillsLock } from '@internals/schemas';
 
 import { getConfig } from '~/lib/config.js';
+import { splitSkillSpecs } from '~/lib/local-skills.js';
 import { logger } from '~/lib/logger.js';
-import { resolveLockfilePath, resolveManifestPath } from '~/lib/manifest.js';
+import {
+  projectManifestSchema,
+  readJsonFile,
+  readLockfileAt,
+  resolveLockfilePath,
+  resolveManifestPath
+} from '~/lib/manifest.js';
 import { USER_AGENT } from '~/version.js';
 
 import { installCommand } from './install.js';
@@ -48,22 +55,21 @@ export async function updateCommand(options: UpdateOptions): Promise<void> {
     throw new Error(`No ${MANIFEST_FILENAME} found in ${directory}. Run: tank init`);
   }
 
-  let skillsJson: Record<string, unknown>;
-  try {
-    const raw = fs.readFileSync(resolvedManifest.path, 'utf-8');
-    skillsJson = JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    throw new Error(`Failed to read or parse ${path.basename(resolvedManifest.path)}`);
-  }
+  const skillsJson = readJsonFile(resolvedManifest.path, projectManifestSchema);
+  // Local `link:` skills live in the project; there is nothing to update in the registry.
+  const specs = splitSkillSpecs(skillsJson.skills ?? {});
 
-  const skills = (skillsJson.skills ?? {}) as Record<string, string>;
+  if (name && specs.local[name] !== undefined) {
+    logger.info(`${name} is a local skill (${specs.local[name]}); nothing to update`);
+    return;
+  }
 
   if (name) {
     // Update single skill
-    await updateSingle(name, skills, directory, configDir, global, homedir);
+    await updateSingle(name, specs.registry, directory, configDir, global, homedir);
   } else {
     // Update all skills
-    await updateAll(skills, directory, configDir, global, homedir);
+    await updateAll(specs.registry, directory, configDir, global, homedir);
   }
 }
 
@@ -78,8 +84,7 @@ function readLockfile(lockPath: string): SkillsLock | null {
     return null;
   }
   try {
-    const raw = fs.readFileSync(lockPath, 'utf-8');
-    return JSON.parse(raw) as SkillsLock;
+    return readLockfileAt(lockPath);
   } catch {
     return null;
   }
@@ -89,12 +94,7 @@ function readLockfileStrict(lockPath: string): SkillsLock {
   if (!fs.existsSync(lockPath)) {
     throw new Error(`Global ${LOCKFILE_FILENAME} not found at ${lockPath}`);
   }
-  try {
-    const raw = fs.readFileSync(lockPath, 'utf-8');
-    return JSON.parse(raw) as SkillsLock;
-  } catch {
-    throw new Error(`Failed to read or parse global ${LOCKFILE_FILENAME}`);
-  }
+  return readLockfileAt(lockPath);
 }
 
 function getGlobalLockPath(homedir?: string): string {
