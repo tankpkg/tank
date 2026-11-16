@@ -29,6 +29,7 @@ packages/
     install-pipeline.ts                # downloadAllParallel(), extractSafely(), writeLockfileWithResolvedGraph()
     dependency-resolver.ts             # resolveDependencyTree(), buildSkillKey()
     permission-checker.ts              # checkPermissionBudget()
+    local-skills.ts                    # link: specs — read, validate, resolve deps, lock entries
     packer.ts                          # (used by publish, not install)
   mcp-server/src/tools/install-skill.ts  # MCP wrapper
 apps/registry/src/api/routes/v1/skills-read.ts  # GET — list versions, fetch metadata + downloadUrl
@@ -58,6 +59,15 @@ apps/registry/src/api/routes/v1/skills-read.ts  # GET — list versions, fetch m
 | C16 | `-g`/`--global` flag is propagated to every target in multi-install                                                                                                                       | All-or-nothing scope; never partial-global                                                   | Unit test     |
 | C17 | Install-path directory creation resolves the real filesystem root (`/` POSIX, `C:\` or `\\server\share\` Windows); dirs are created at absolute locations, never drive-relative (`C:foo`) | Cross-platform installs — Windows `tank install -g` was building `C:Users\…` and failing     | Unit test     |
 | C18 | When an install target fails, the printed error is always non-empty and actionable (includes `code`/`syscall`/`path` when present); it never renders as empty or `<none>`                 | Windows users saw `Install failed for X: <none>` — a useless message that hid the real cause | Unit test     |
+| C19 | A `skills` entry `"<name>": "link:<relative path>"` is a project-local skill. The path must resolve strictly inside the project root: absolute paths, `..` escapes and symlinks out of the root are rejected before anything is linked or fetched | One manifest for public + private skills; a manifest can't link arbitrary disk locations | Unit + integration test |
+| C20 | The local folder needs `SKILL.md` and a valid `tank.json` whose `name` equals the key; a mismatch fails and shows both names | Prevents linking the wrong skill under a trusted name | Unit + integration test |
+| C21 | Local skills are never requested from or sent to the registry (`tank install`, lockfile install, `tank update`) | Private skills stay private | Integration test |
+| C22 | Registry deps declared by a local skill join the root resolution: semver, conflict detection, SHA-512, budget, `audit.min_score`. A local skill may not declare `link:` deps itself — list it in the root manifest instead | Local skills get the same supply-chain checks for what they pull in | Unit + integration test |
+| C23 | Local skills' declared permissions are checked against the project budget; `audit.min_score` does not apply to them (not scanned). A local skill's `mcp_server` is never registered in user-level agent config — install warns instead | Budget is the project's trust boundary; an unscanned repo command must not become active in every project | Integration test |
+| C24 | Lock entry for a local skill: `source: "local"`, `resolved: "link:./…"` (POSIX), `integrity: null`, declared `permissions`, declared dependency ranges | Content changes per commit, so no hash; permission changes still show up in lockfile review | Unit + schema test |
+| C25 | Lockfile install links local entries from disk and fails before any network call if a local skill's version/path/permissions/deps differ from the lock, or `tank.json` `link:` specs and the lock's local entries disagree in either direction. `tank install <name>` drops local lock entries that are no longer `link:` in `tank.json` | A committed lockfile stays the reviewed source of truth; a published skill can't stay linked from disk | Integration test |
+| C26 | A `file://` lock entry whose files are not already extracted fails with a message pointing to `link:`; the registry is never queried for it | Those entries are machine-local; asking the registry gave a misleading "not found" | Integration test |
+| C27 | `link:` is project-only (rejected in a global lockfile). `tank update` skips local skills, `tank verify` checks path, name and lock drift instead of integrity, `tank permissions` marks them `(local)`, `tank remove` unlinks without deleting the folder | Consistent handling across commands | Integration test |
 
 ---
 

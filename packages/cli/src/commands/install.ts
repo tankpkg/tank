@@ -6,15 +6,19 @@ import path from 'node:path';
 
 import { resolve } from '@internals/helpers';
 import {
+  isLocalLinkLockEntry,
   LOCKFILE_FILENAME,
   LOCKFILE_VERSION,
+  type LockedSkill,
   MANIFEST_FILENAME,
   type Permissions,
+  permissionsSchema,
   type ScanVerdict,
   type SkillSource,
   type SkillsLock
 } from '@internals/schemas';
 import ora from 'ora';
+import { z } from 'zod';
 
 import { detectInstalledAgents, getGlobalAgentSkillsDir, getGlobalSkillsDir } from '~/lib/agents.js';
 import { applyProxyWrapping } from '~/lib/apply-proxy-wrapping.js';
@@ -27,7 +31,7 @@ import {
   type ResolvedNode,
   resolveDependencyTree
 } from '~/lib/dependency-resolver.js';
-import { prepareAgentSkillDir } from '~/lib/frontmatter.js';
+import { hasFrontmatter, prepareAgentSkillDir } from '~/lib/frontmatter.js';
 import {
   downloadAllParallel,
   extractSafely,
@@ -40,9 +44,30 @@ import {
   verifyExtractedDependencies,
   writeLockfileWithResolvedGraph
 } from '~/lib/install-pipeline.js';
-import { linkSkillToAgents } from '~/lib/linker.js';
+import { type LinkResult, linkSkillToAgents } from '~/lib/linker.js';
+import {
+  createLocalAwareFetcher,
+  diffLocalLockEntry,
+  dropStaleLocalEntries,
+  isLinkSpec,
+  type LocalSkill,
+  localRootDependencies,
+  mergeLocalLockEntries,
+  readLocalSkill,
+  readLocalSkills,
+  resolveLinkSpec,
+  splitSkillSpecs
+} from '~/lib/local-skills.js';
 import { logger } from '~/lib/logger.js';
-import { resolveLockfilePath, resolveManifestPath } from '~/lib/manifest.js';
+import {
+  type ProjectManifest,
+  projectManifestSchema,
+  readJsonFile,
+  readLockfileAt,
+  resolveLockfilePath,
+  resolveManifestPath,
+  writeManifestSkill
+} from '~/lib/manifest.js';
 import { checkPermissionBudget } from '~/lib/permission-checker.js';
 import { displayScanResults, enforceVerdict, type ScanResult, scanUrl } from '~/lib/scan-gate.js';
 import { type FetchResult, fetchFromUrl, type UrlSourceType } from '~/lib/url-fetcher.js';
@@ -102,6 +127,8 @@ interface ExecuteInstallPipelineOptions {
   auditMinScore?: number;
   spinner: ReturnType<typeof ora>;
   dangerouslyNoTankProxy?: boolean;
+  /** Project-local `link:` skills. Budget-checked and linked; never downloaded or audited. */
+  localSkills?: LocalSkill[];
 }
 
 function createRegistryFetcher(registry: string, headers: Record<string, string>): RegistryFetcher {
@@ -166,18 +193,13 @@ function createRegistryFetcher(registry: string, headers: Record<string, string>
   };
 }
 
-function readSkillsJson(skillsJsonPath: string): Record<string, unknown> {
-  try {
-    const raw = fs.readFileSync(skillsJsonPath, 'utf-8');
-    return JSON.parse(raw) as Record<string, unknown>;
-  } catch {
-    throw new Error(`Failed to read or parse ${path.basename(skillsJsonPath)}`);
-  }
+function readSkillsJson(skillsJsonPath: string): ProjectManifest {
+  return readJsonFile(skillsJsonPath, projectManifestSchema);
 }
 
-function readOrCreateSkillsJson(skillsJsonPath: string): Record<string, unknown> {
+function readOrCreateSkillsJson(skillsJsonPath: string): ProjectManifest {
   if (!fs.existsSync(skillsJsonPath)) {
-    const skillsJson: Record<string, unknown> = { skills: {} };
+    const skillsJson: ProjectManifest = { skills: {} };
     fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
     logger.info(`Created ${MANIFEST_FILENAME}`);
     return skillsJson;
@@ -186,17 +208,22 @@ function readOrCreateSkillsJson(skillsJsonPath: string): Record<string, unknown>
   return readSkillsJson(skillsJsonPath);
 }
 
+/** Missing lockfile → fresh one. An unreadable or invalid one is replaced with a warning (it gets rewritten). */
 function readLockOrFresh(lockPath: string): SkillsLock {
   if (!fs.existsSync(lockPath)) {
     return { lockfileVersion: LOCKFILE_VERSION, skills: {} };
   }
-
   try {
-    const raw = fs.readFileSync(lockPath, 'utf-8');
-    return JSON.parse(raw) as SkillsLock;
-  } catch {
+    return readLockfileAt(lockPath);
+  } catch (err) {
+    logger.warn(`${err instanceof Error ? err.message : String(err)} — starting from an empty lockfile`);
     return { lockfileVersion: LOCKFILE_VERSION, skills: {} };
   }
+}
+
+function writeLock(lockPath: string, lock: SkillsLock): void {
+  fs.mkdirSync(path.dirname(lockPath), { recursive: true });
+  fs.writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
 }
 
 function buildLockedVersionByName(lock: SkillsLock): Map<string, string> {
@@ -216,30 +243,62 @@ function createExtractDirResolver(
     global ? getGlobalExtractDir(resolvedHome, skillName) : getExtractDir(directory, skillName);
 }
 
-function validateResolvedNodes(
-  resolvedNodes: ResolvedNode[],
-  projectPermissions: Permissions | undefined,
-  auditMinScore: number | undefined
-): void {
+interface InstallPolicy {
+  projectPermissions?: Permissions;
+  auditMinScore?: number;
+}
+
+function checkAuditScore(node: ResolvedNode, auditMinScore: number): void {
+  const score = node.meta.auditScore;
+  if (score === null || score === undefined) {
+    logger.warn(`Audit score not yet available for ${node.name}. Install proceeding without audit score check.`);
+    return;
+  }
+  if (score < auditMinScore) {
+    throw new Error(
+      `Audit score ${score} for ${node.name} is below minimum threshold ${auditMinScore} defined in ${MANIFEST_FILENAME}`
+    );
+  }
+}
+
+/** Budget applies to every skill; the audit threshold only to registry skills (local ones are never scanned). */
+function validateResolvedNodes(registryNodes: ResolvedNode[], localSkills: LocalSkill[], policy: InstallPolicy): void {
+  const { projectPermissions, auditMinScore } = policy;
   if (!projectPermissions) {
     logger.warn(`No permission budget defined in ${MANIFEST_FILENAME}. Install proceeding without permission checks.`);
   }
-
-  for (const node of resolvedNodes) {
+  for (const node of registryNodes) {
     if (projectPermissions) {
       checkPermissionBudget(projectPermissions, node.meta.permissions as Permissions, node.name);
     }
-
-    if (auditMinScore !== undefined) {
-      if (node.meta.auditScore === null || node.meta.auditScore === undefined) {
-        logger.warn(`Audit score not yet available for ${node.name}. Install proceeding without audit score check.`);
-      } else if (node.meta.auditScore < auditMinScore) {
-        throw new Error(
-          `Audit score ${node.meta.auditScore} for ${node.name} is below minimum threshold ${auditMinScore} defined in ${MANIFEST_FILENAME}`
-        );
-      }
-    }
+    if (auditMinScore !== undefined) checkAuditScore(node, auditMinScore);
   }
+  if (!projectPermissions) return;
+  for (const local of localSkills) {
+    checkPermissionBudget(projectPermissions, local.permissions, local.name);
+  }
+}
+
+interface RegistryPartition {
+  /** Resolved registry nodes (local skills removed). */
+  nodes: ResolvedNode[];
+  /** Registry nodes that still need download + extract. */
+  toInstall: ResolvedNode[];
+  rootNames: string[];
+}
+
+/**
+ * Split local skills out of the resolved graph once. Local nodes carry placeholder
+ * metadata (see `localSkillToMeta`) and must never reach download or the registry lock writer.
+ */
+function partitionRegistryNodes(options: ExecuteInstallPipelineOptions, localSkills: LocalSkill[]): RegistryPartition {
+  const localNames = new Set(localSkills.map((local) => local.name));
+  const isRegistry = (name: string): boolean => !localNames.has(name);
+  return {
+    nodes: options.resolvedNodes.filter((node) => isRegistry(node.name)),
+    toInstall: options.nodesToInstall.filter((node) => isRegistry(node.name)),
+    rootNames: options.rootSkillNames.filter(isRegistry)
+  };
 }
 
 async function runLegacyFallback(options: {
@@ -438,25 +497,29 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
     resolvedHome,
     lock,
     lockPath,
-    resolvedNodes,
-    nodesToInstall,
-    rootSkillNames,
     projectPermissions,
     auditMinScore,
-    spinner
+    spinner,
+    localSkills = []
   } = options;
 
+  const registry = partitionRegistryNodes(options, localSkills);
   if (!global) {
-    validateResolvedNodes(resolvedNodes, projectPermissions, auditMinScore);
+    validateResolvedNodes(registry.nodes, localSkills, {
+      ...(projectPermissions !== undefined ? { projectPermissions } : {}),
+      ...(auditMinScore !== undefined ? { auditMinScore } : {})
+    });
   }
 
+  const registryNodes = registry.nodes;
+  const registryNodesToInstall = registry.toInstall;
   const extractDirForSkill = createExtractDirResolver(directory, global, resolvedHome);
-  const resolvedNodeByName = new Map(resolvedNodes.map((node) => [node.name, node]));
-  const downloaded = await downloadAllParallel(nodesToInstall, (msg) => {
+  const resolvedNodeByName = new Map(registryNodes.map((node) => [node.name, node]));
+  const downloaded = await downloadAllParallel(registryNodesToInstall, (msg) => {
     spinner.text = msg;
   });
 
-  for (const node of nodesToInstall) {
+  for (const node of registryNodesToInstall) {
     const payload = downloaded.get(node.name);
     if (!payload) {
       throw new Error(`Missing downloaded tarball for ${node.name}@${node.version}`);
@@ -473,12 +536,15 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
   }
 
   lock.lockfileVersion = LOCKFILE_VERSION;
-  const updatedLock = writeLockfileWithResolvedGraph(lock, resolvedNodes, downloaded);
+  const updatedLock = mergeLocalLockEntries(
+    writeLockfileWithResolvedGraph(lock, registryNodes, downloaded),
+    localSkills
+  );
   fs.mkdirSync(path.dirname(lockPath), { recursive: true });
   fs.writeFileSync(lockPath, `${JSON.stringify(updatedLock, null, 2)}\n`);
 
   await runLegacyFallback({
-    rootSkillNames,
+    rootSkillNames: registry.rootNames,
     resolvedNodeByName,
     extractDirForSkill,
     directory,
@@ -488,7 +554,7 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
   });
 
   await linkInstalledSkills({
-    skillNames: nodesToInstall.map((node) => node.name),
+    skillNames: registryNodesToInstall.map((node) => node.name),
     resolvedNodeByName,
     extractDirForSkill,
     directory,
@@ -498,7 +564,69 @@ async function executeInstallPipeline(options: ExecuteInstallPipelineOptions): P
     ...(options.dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
   });
 
+  linkLocalSkills(localSkills, { directory, ...(homedir !== undefined ? { homedir } : {}) });
+
   return updatedLock;
+}
+
+interface LocalLinkOptions {
+  directory: string;
+  homedir?: string;
+}
+
+function reportLinkResult(skillName: string, result: LinkResult): void {
+  if (result.linked.length > 0) {
+    logger.info(`${skillName}: linked to ${result.linked.length} agent(s)`);
+  }
+  for (const failedLink of result.failed) {
+    logger.warn(`Failed to link ${skillName} to ${failedLink.agentId}: ${failedLink.error}`);
+  }
+}
+
+/**
+ * Agents read the local folder directly when SKILL.md already has frontmatter, so edits are live
+ * (same rule as `tank link`). Otherwise a copy with generated frontmatter goes to .tank/agent-skills.
+ */
+function localAgentSourceDir(local: LocalSkill, directory: string): string {
+  const content = fs.readFileSync(path.join(local.dir, 'SKILL.md'), 'utf-8');
+  if (hasFrontmatter(content)) {
+    return local.dir;
+  }
+  return prepareAgentSkillDir({
+    skillName: local.name,
+    extractDir: local.dir,
+    agentSkillsBaseDir: path.join(directory, '.tank', 'agent-skills'),
+    ...(local.description !== undefined ? { description: local.description } : {})
+  });
+}
+
+function linkLocalSkills(localSkills: LocalSkill[], options: LocalLinkOptions): void {
+  for (const local of localSkills) {
+    try {
+      const result = linkSkillToAgents({
+        skillName: local.name,
+        sourceDir: localAgentSourceDir(local, options.directory),
+        linksDir: path.join(options.directory, '.tank'),
+        source: 'local',
+        homedir: options.homedir
+      });
+      reportLinkResult(local.name, result);
+    } catch (err) {
+      logger.warn(`Agent linking skipped for ${local.name}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    warnIfLocalMcpServer(local);
+  }
+}
+
+/**
+ * Local skills are never scanned, so their `mcp_server` is NOT registered in user-level agent
+ * config (which would make a repo-supplied command active in every project). Tell the user instead.
+ */
+function warnIfLocalMcpServer(local: LocalSkill): void {
+  if (!local.hasMcpServer) return;
+  logger.warn(
+    `${local.name}: mcp_server not registered — local skills are not scanned. Register it manually if trusted.`
+  );
 }
 
 export async function installCommand(options: InstallOptions): Promise<void> {
@@ -522,7 +650,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
   const resolvedManifest = resolveManifestPath(directory);
   const skillsJsonPath = resolvedManifest.exists ? resolvedManifest.path : path.join(directory, MANIFEST_FILENAME);
-  const skillsJson = global ? { skills: {} } : readOrCreateSkillsJson(skillsJsonPath);
+  const skillsJson: ProjectManifest = global ? { skills: {} } : readOrCreateSkillsJson(skillsJsonPath);
   const resolvedLock = global ? resolveLockfilePath(path.join(resolvedHome, '.tank')) : resolveLockfilePath(directory);
   const lockPath = resolvedLock.exists
     ? resolvedLock.path
@@ -533,6 +661,16 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   const spinner = ora('Resolving dependency graph...').start();
 
   try {
+    const specs = splitSkillSpecs(global ? {} : (skillsJson.skills ?? {}));
+    // A skill that left `link:` in tank.json (e.g. now published) must not keep its stale local lock entry.
+    const staleLocalKeys = dropStaleLocalEntries(lock, specs.local);
+    const requestedSpec = skillsJson.skills?.[name];
+    if (isLinkSpec(requestedSpec)) {
+      throw new Error(
+        `${name} is a local skill (${requestedSpec}) in ${MANIFEST_FILENAME}. Run "tank install" with no arguments to link it.`
+      );
+    }
+
     const fetcher = createRegistryFetcher(config.registry, requestHeaders);
     const requestedVersions = await fetcher.fetchVersions(name);
     const requestedAvailableVersions = requestedVersions.map((versionInfo) => versionInfo.version);
@@ -545,27 +683,26 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
     const requestedLockKey = buildSkillKey(name, requestedResolvedVersion);
     if (lock.skills[requestedLockKey]) {
+      if (staleLocalKeys.length > 0) writeLock(lockPath, lock);
       logger.info(`${name}@${requestedResolvedVersion} is already installed`);
       spinner.succeed(`${name}@${requestedResolvedVersion} is already installed`);
       return;
     }
 
     const rootDependencies: Record<string, string> = {};
+    let localSkills: LocalSkill[] = [];
     if (!global && !isTransitive) {
-      const existingSkills = (skillsJson.skills ?? {}) as Record<string, string>;
+      localSkills = readLocalSkills(specs.local, path.dirname(skillsJsonPath));
       const lockedVersionByName = buildLockedVersionByName(lock);
 
-      for (const [skillName, range] of Object.entries(existingSkills)) {
-        if (typeof range !== 'string') {
-          continue;
-        }
-
+      for (const [skillName, range] of Object.entries(specs.registry)) {
         rootDependencies[skillName] = lockedVersionByName.get(skillName) ?? range;
       }
+      Object.assign(rootDependencies, localRootDependencies(localSkills));
     }
     rootDependencies[name] = versionRange;
 
-    const resolvedGraph = await resolveDependencyTree(rootDependencies, fetcher);
+    const resolvedGraph = await resolveDependencyTree(rootDependencies, createLocalAwareFetcher(fetcher, localSkills));
     const resolvedNodes = getResolvedNodesInOrder(resolvedGraph.nodes, resolvedGraph.installOrder);
     const rootNode = resolvedGraph.nodes.get(name);
     if (!rootNode) {
@@ -577,8 +714,8 @@ export async function installCommand(options: InstallOptions): Promise<void> {
       return !lock.skills[lockKey];
     });
 
-    const projectPermissions = global ? undefined : (skillsJson.permissions as Permissions | undefined);
-    const auditMinScore = global ? undefined : (skillsJson.audit as { min_score?: number } | undefined)?.min_score;
+    const projectPermissions = global ? undefined : skillsJson.permissions;
+    const auditMinScore = global ? undefined : skillsJson.audit?.min_score;
 
     await executeInstallPipeline({
       directory,
@@ -594,14 +731,12 @@ export async function installCommand(options: InstallOptions): Promise<void> {
       projectPermissions,
       auditMinScore,
       spinner,
+      localSkills,
       ...(dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
     });
 
     if (!global && !isTransitive) {
-      const skills = (skillsJson.skills ?? {}) as Record<string, string>;
-      skills[name] = versionRange === '*' ? `^${rootNode.version}` : versionRange;
-      skillsJson.skills = skills;
-      fs.writeFileSync(skillsJsonPath, `${JSON.stringify(skillsJson, null, 2)}\n`);
+      writeManifestSkill(skillsJsonPath, name, versionRange === '*' ? `^${rootNode.version}` : versionRange);
     }
 
     spinner.succeed(`Installed ${name}@${rootNode.version}`);
@@ -627,13 +762,8 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
     throw new Error(`No ${LOCKFILE_FILENAME} found in ${directory}`);
   }
 
-  let lock: SkillsLock;
-  try {
-    const raw = fs.readFileSync(lockPath, 'utf-8');
-    lock = JSON.parse(raw) as SkillsLock;
-  } catch {
-    throw new Error(`Failed to read or parse ${path.basename(lockPath)}`);
-  }
+  // Validated: local entries are trusted to point inside the project only after the schema check.
+  const lock = readLockfileAt(lockPath);
 
   const entries = Object.entries(lock.skills);
   if (entries.length === 0) {
@@ -641,17 +771,33 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
     return;
   }
 
+  // Validate every local entry (path, name, drift, budget) before any download or link.
+  const localSkills = readLockedLocalSkills(entries, directory, global);
+  if (!global) {
+    assertLocalSkillsMatchManifest(localSkills, directory);
+  }
+
   const spinner = ora('Installing from lockfile...').start();
   const skillsDir = global ? getGlobalSkillsDir(resolvedHome) : path.join(directory, '.tank', 'skills');
 
   try {
     for (const [key, entry] of entries) {
+      if (isLocalLinkLockEntry(entry)) {
+        continue;
+      }
       const skillName = parseLockKey(key);
       const version = parseVersionFromLockKey(key);
       spinner.text = `Installing ${key}...`;
 
       const extractDir = global ? getGlobalExtractDir(resolvedHome, skillName) : getExtractDir(directory, skillName);
       const alreadyExtracted = fs.existsSync(path.join(extractDir, 'tank.json'));
+
+      if (!alreadyExtracted && entry.source === 'local') {
+        throw new Error(
+          `${key} was installed from a path on another machine (${entry.resolved}) and cannot be restored from ${LOCKFILE_FILENAME}. ` +
+            `To share a local skill, add it to ${MANIFEST_FILENAME} as "${skillName}": "link:./path/to/skill".`
+        );
+      }
 
       if (!alreadyExtracted) {
         const encodedName = encodeURIComponent(skillName);
@@ -736,6 +882,8 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
       });
     }
 
+    linkLocalSkills(localSkills, { directory, ...(homedir !== undefined ? { homedir } : {}) });
+
     spinner.succeed(`Installed ${entries.length} skill${entries.length === 1 ? '' : 's'} from lockfile`);
   } catch (err) {
     spinner.fail('Install from lockfile failed');
@@ -743,6 +891,71 @@ export async function installFromLockfile(options: LockfileInstallOptions): Prom
       fs.rmSync(skillsDir, { recursive: true, force: true });
     }
     throw err;
+  }
+}
+
+const LOCKFILE_REFRESH_HINT = `Delete ${LOCKFILE_FILENAME} and run "tank install" to re-resolve, then review the diff.`;
+
+function readLockedLocalSkills(
+  entries: Array<[string, LockedSkill]>,
+  projectRoot: string,
+  global: boolean
+): LocalSkill[] {
+  const localEntries = entries.filter(([, entry]) => isLocalLinkLockEntry(entry));
+  if (localEntries.length > 0 && global) {
+    throw new Error(`Global ${LOCKFILE_FILENAME} has "link:" entries; local skills are project-only.`);
+  }
+  return localEntries.map(([key, entry]) => {
+    const local = readLocalSkill(parseLockKey(key), entry.resolved, projectRoot);
+    const changed = diffLocalLockEntry(parseVersionFromLockKey(key), entry, local);
+    if (changed.length > 0) {
+      throw new Error(
+        `Local skill ${key} changed since ${LOCKFILE_FILENAME} was written (${changed.join(', ')}). ${LOCKFILE_REFRESH_HINT}`
+      );
+    }
+    return local;
+  });
+}
+
+/** tank.json `link:` specs and the lock's local entries must agree in both directions, at the same paths. */
+function assertLockMatchesManifestLinks(
+  lockedLocals: LocalSkill[],
+  manifestLinks: Record<string, string>,
+  directory: string
+): void {
+  const lockedByName = new Map(lockedLocals.map((skill) => [skill.name, skill]));
+  for (const [name, spec] of Object.entries(manifestLinks)) {
+    const locked = lockedByName.get(name);
+    if (!locked) {
+      throw new Error(`Local skill ${name} (${spec}) is not in ${LOCKFILE_FILENAME}. ${LOCKFILE_REFRESH_HINT}`);
+    }
+    const manifestSpec = resolveLinkSpec(name, spec, directory).spec;
+    if (manifestSpec !== locked.spec) {
+      throw new Error(
+        `Local skill ${name}: ${MANIFEST_FILENAME} links ${manifestSpec} but ${LOCKFILE_FILENAME} has ${locked.spec}. ${LOCKFILE_REFRESH_HINT}`
+      );
+    }
+  }
+  assertNoUnlistedLocalEntries(lockedLocals, manifestLinks);
+}
+
+function assertNoUnlistedLocalEntries(lockedLocals: LocalSkill[], manifestLinks: Record<string, string>): void {
+  const unlisted = lockedLocals.filter((skill) => manifestLinks[skill.name] === undefined).map((skill) => skill.name);
+  if (unlisted.length === 0) return;
+  throw new Error(
+    `${LOCKFILE_FILENAME} has local skills that are no longer "link:" entries in ${MANIFEST_FILENAME}: ${unlisted.join(', ')}. ${LOCKFILE_REFRESH_HINT}`
+  );
+}
+
+/** Lockfile install: local entries must match tank.json's `link:` specs and fit the project budget. */
+function assertLocalSkillsMatchManifest(lockedLocals: LocalSkill[], directory: string): void {
+  const resolvedManifest = resolveManifestPath(directory);
+  const manifest: ProjectManifest = resolvedManifest.exists ? readSkillsJson(resolvedManifest.path) : {};
+  assertLockMatchesManifestLinks(lockedLocals, splitSkillSpecs(manifest.skills ?? {}).local, directory);
+  const budget = manifest.permissions;
+  if (!budget) return;
+  for (const skill of lockedLocals) {
+    checkPermissionBudget(budget, skill.permissions, skill.name);
   }
 }
 
@@ -785,7 +998,7 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
   }
 
   const skillsJson = readSkillsJson(skillsJsonPath);
-  const skills = (skillsJson.skills ?? {}) as Record<string, string>;
+  const skills = skillsJson.skills ?? {};
   const skillEntries = Object.entries(skills);
 
   if (skillEntries.length === 0) {
@@ -796,19 +1009,16 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
   const spinner = ora('Resolving dependency graph...').start();
 
   try {
-    const rootDependencies: Record<string, string> = {};
-    for (const [skillName, range] of skillEntries) {
-      if (typeof range === 'string') {
-        rootDependencies[skillName] = range;
-      }
-    }
+    const specs = splitSkillSpecs(skills);
+    const localSkills = readLocalSkills(specs.local, path.dirname(skillsJsonPath));
+    const rootDependencies = { ...specs.registry, ...localRootDependencies(localSkills) };
 
-    const fetcher = createRegistryFetcher(config.registry, requestHeaders);
+    const fetcher = createLocalAwareFetcher(createRegistryFetcher(config.registry, requestHeaders), localSkills);
     const resolvedGraph = await resolveDependencyTree(rootDependencies, fetcher);
     const resolvedNodes = getResolvedNodesInOrder(resolvedGraph.nodes, resolvedGraph.installOrder);
     const lock: SkillsLock = { lockfileVersion: LOCKFILE_VERSION, skills: {} };
-    const projectPermissions = skillsJson.permissions as Permissions | undefined;
-    const auditMinScore = (skillsJson.audit as { min_score?: number } | undefined)?.min_score;
+    const projectPermissions = skillsJson.permissions;
+    const auditMinScore = skillsJson.audit?.min_score;
 
     await executeInstallPipeline({
       directory,
@@ -820,10 +1030,11 @@ export async function installAll(options: InstallAllOptions): Promise<void> {
       lockPath,
       resolvedNodes,
       nodesToInstall: resolvedNodes,
-      rootSkillNames: skillEntries.map(([skillName]) => skillName),
+      rootSkillNames: Object.keys(specs.registry),
       projectPermissions,
       auditMinScore,
       spinner,
+      localSkills,
       ...(dangerouslyNoTankProxy ? { dangerouslyNoTankProxy: true } : {})
     });
 
@@ -903,6 +1114,23 @@ function readManifestFromDir(dir: string): Record<string, unknown> | null {
   return null;
 }
 
+const urlSkillManifestSchema = z.looseObject({ permissions: permissionsSchema.optional() });
+
+/**
+ * A URL-installed skill's tank.json is third-party input: validate its permissions before they
+ * reach tank.lock (whose schema is strict). Invalid permissions abort the install rather than
+ * being recorded as "none".
+ */
+function readUrlSkillPermissions(skillDir: string, skillName: string): Permissions {
+  const manifestPath = resolveManifestPath(skillDir);
+  if (!manifestPath.exists) return {};
+  try {
+    return readJsonFile(manifestPath.path, urlSkillManifestSchema).permissions ?? {};
+  } catch (err) {
+    throw new Error(`${skillName}: ${err instanceof Error ? err.message : String(err)}`);
+  }
+}
+
 export interface InstallFromUrlOptions {
   global?: boolean;
   yes?: boolean;
@@ -978,6 +1206,8 @@ export async function installFromUrl(url: string, options: InstallFromUrlOptions
       logger.info('Generated tank.json (no manifest found in source)');
     }
 
+    // Validate before anything is copied, so invalid permissions leave no partial install.
+    const skillPermissions = readUrlSkillPermissions(fetchResult.localPath, skillName);
     spinner.text = `Installing ${skillName}...`;
 
     // 5. Determine install location + 6. Copy files
@@ -1005,7 +1235,6 @@ export async function installFromUrl(url: string, options: InstallFromUrlOptions
 
     const lock = readLockOrFresh(lockPath);
     const lockKey = `${skillName}@${skillVersion}`;
-    const skillPermissions: Permissions = (existingManifest?.permissions as Permissions) ?? {};
 
     lock.skills[lockKey] = {
       resolved: url.startsWith('http') ? url : url.startsWith('file://') ? url : `https://${url}`,

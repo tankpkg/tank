@@ -104,6 +104,8 @@ export {
   skillsJsonSchema
 } from '~/schemas/skills-json.js';
 export {
+  isLocalLinkLockEntry,
+  LOCAL_LINK_PREFIX,
   type LockedSkill,
   type LockedSkillV1,
   lockedSkillSchema,

@@ -2,11 +2,11 @@ import fs from 'node:fs';
 
 import type { Permissions, SkillsLock } from '@internals/schemas';
 
-import { resolveLockfilePath } from './manifest.js';
+import { readLockfileAt, resolveLockfilePath } from './manifest.js';
 
 /**
- * Read and parse the lockfile from the given directory.
- * Returns null if the file doesn't exist or is corrupt.
+ * Read and schema-validate the lockfile from the given directory.
+ * Returns null if the file doesn't exist, is corrupt, or fails validation.
  */
 export function readLockfile(directory?: string): SkillsLock | null {
   const resolved = resolveLockfilePath(directory);
@@ -16,8 +16,7 @@ export function readLockfile(directory?: string): SkillsLock | null {
   }
 
   try {
-    const raw = fs.readFileSync(resolved.path, 'utf-8');
-    return JSON.parse(raw) as SkillsLock;
+    return readLockfileAt(resolved.path);
   } catch {
     return null;
   }

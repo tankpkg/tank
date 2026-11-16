@@ -5,8 +5,12 @@ import {
   LEGACY_LOCKFILE_FILENAME,
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
-  MANIFEST_FILENAME
+  MANIFEST_FILENAME,
+  permissionsSchema,
+  type SkillsLock,
+  skillsLockSchema
 } from '@internals/schemas';
+import { z } from 'zod';
 
 import { logger } from './logger.js';
 
@@ -109,4 +113,57 @@ export function getManifestWritePath(directory?: string): string {
 export function getLockfileWritePath(directory?: string): string {
   const resolved = resolveLockfilePath(directory);
   return resolved.path;
+}
+
+/**
+ * The parts of a project manifest that install reads. Read-only view: Zod moves
+ * known keys first and strips unknown nested keys, so never write this back —
+ * use `writeManifestSkill`, which edits the original JSON.
+ */
+export const projectManifestSchema = z.looseObject({
+  skills: z.record(z.string(), z.string()).optional(),
+  permissions: permissionsSchema.optional(),
+  audit: z.object({ min_score: z.number().min(0).max(10) }).optional()
+});
+
+export type ProjectManifest = z.infer<typeof projectManifestSchema>;
+
+function formatIssues(error: z.ZodError): string {
+  return error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`).join('; ');
+}
+
+/** Read a JSON file and validate it against `schema`. Throws a readable error naming the file. */
+export function readJsonFile<T>(filePath: string, schema: z.ZodType<T>): T {
+  let text: string;
+  try {
+    text = fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    throw new Error(`Failed to read ${path.basename(filePath)}`);
+  }
+  let parsed: z.ZodSafeParseResult<T>;
+  try {
+    parsed = schema.safeParse(JSON.parse(text));
+  } catch {
+    throw new Error(`Failed to parse ${path.basename(filePath)}: invalid JSON`);
+  }
+  if (!parsed.success) {
+    throw new Error(`Invalid ${path.basename(filePath)}: ${formatIssues(parsed.error)}`);
+  }
+  return parsed.data;
+}
+
+/** Any JSON object, key order and nested fields preserved exactly. */
+const rawJsonObjectSchema = z.record(z.string(), z.json());
+
+/** Set `skills[name] = spec` in a manifest, leaving every other key, its order and nested fields untouched. */
+export function writeManifestSkill(filePath: string, name: string, spec: string): void {
+  const raw = readJsonFile(filePath, rawJsonObjectSchema);
+  const skills = readJsonFile(filePath, projectManifestSchema).skills ?? {};
+  raw.skills = { ...skills, [name]: spec };
+  fs.writeFileSync(filePath, `${JSON.stringify(raw, null, 2)}\n`);
+}
+
+/** Read and validate a lockfile. Throws (naming the file) when it is unreadable or invalid. */
+export function readLockfileAt(filePath: string): SkillsLock {
+  return readJsonFile(filePath, skillsLockSchema);
 }

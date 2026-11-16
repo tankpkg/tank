@@ -53,6 +53,54 @@ describe('skillsLockSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('accepts a local link: entry with null integrity', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@acme/pr-description@1.0.0': {
+          source: 'local',
+          resolved: 'link:./skills/pr-description',
+          integrity: null,
+          permissions: { subprocess: false },
+          audit_score: null,
+          dependencies: { '@tank/crystal-clear-docs': '^1.1.0' }
+        }
+      }
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects null integrity on a registry entry', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@tank/clean-code@3.1.0': {
+          resolved: 'https://tankpkg.dev/v1/skills/@tank/clean-code/3.1.0',
+          integrity: null,
+          permissions: {},
+          audit_score: null
+        }
+      }
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects null integrity on a local file:// entry', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        'my-skill@0.0.0': {
+          source: 'local',
+          resolved: 'file:///tmp/my-skill',
+          integrity: null,
+          permissions: {},
+          audit_score: null
+        }
+      }
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('rejects missing lockfileVersion', () => {
     const result = skillsLockSchema.safeParse({
       skills: {}
