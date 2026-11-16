@@ -6,9 +6,9 @@ import {
   LEGACY_MANIFEST_FILENAME,
   LOCKFILE_FILENAME,
   MANIFEST_FILENAME,
-  permissionsSchema,
+  permissionsReadSchema,
   type SkillsLock,
-  skillsLockSchema
+  skillsLockReadSchema
 } from '@internals/schemas';
 import { z } from 'zod';
 
@@ -122,7 +122,8 @@ export function getLockfileWritePath(directory?: string): string {
  */
 export const projectManifestSchema = z.looseObject({
   skills: z.record(z.string(), z.string()).optional(),
-  permissions: permissionsSchema.optional(),
+  // Read-side: budgets may carry documented keys the strict schema lacks (e.g. "environment").
+  permissions: permissionsReadSchema.optional(),
   audit: z.object({ min_score: z.number().min(0).max(10) }).optional()
 });
 
@@ -163,7 +164,10 @@ export function writeManifestSkill(filePath: string, name: string, spec: string)
   fs.writeFileSync(filePath, `${JSON.stringify(raw, null, 2)}\n`);
 }
 
-/** Read and validate a lockfile. Throws (naming the file) when it is unreadable or invalid. */
+/**
+ * Read and validate a lockfile. Throws (naming the file) when it is unreadable or invalid.
+ * Uses the read-side schema so lockfiles from older CLIs and the MCP tools stay installable.
+ */
 export function readLockfileAt(filePath: string): SkillsLock {
-  return readJsonFile(filePath, skillsLockSchema);
+  return readJsonFile(filePath, skillsLockReadSchema);
 }

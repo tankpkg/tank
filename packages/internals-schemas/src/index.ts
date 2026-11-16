@@ -83,6 +83,7 @@ export {
   type NetworkPermissions,
   networkPermissionsSchema,
   type Permissions,
+  permissionsReadSchema,
   permissionsSchema,
   type SkillStatus,
   skillStatusSchema,
@@ -115,6 +116,7 @@ export {
   SKILL_SOURCES,
   type SkillSource,
   type SkillsLock,
+  skillsLockReadSchema,
   skillsLockSchema,
   skillsLockV1Schema
 } from '~/schemas/skills-lock.js';

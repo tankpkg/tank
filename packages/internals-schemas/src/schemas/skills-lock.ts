@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { permissionsSchema } from './permissions.js';
+import { permissionsReadSchema, permissionsSchema } from './permissions.js';
 
 export const SKILL_SOURCES = ['registry', 'github', 'clawhub', 'skills_sh', 'agentskills_il', 'npm', 'local'] as const;
 export type SkillSource = (typeof SKILL_SOURCES)[number];
@@ -46,19 +46,52 @@ export const lockedSkillSchema = z
     scan_verdict: z.enum(SCAN_VERDICTS).optional(),
     scanned_at: z.string().optional()
   })
-  .superRefine((entry, ctx) => {
-    if (entry.integrity === null && !isLocalLinkLockEntry(entry)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['integrity'],
-        message: `Integrity may only be null for source "local" entries resolved via ${LOCAL_LINK_PREFIX}`
-      });
-    }
-  });
+  .superRefine(refineNullIntegrity);
+
+function refineNullIntegrity(
+  entry: { integrity: string | null; source?: SkillSource; resolved: string },
+  ctx: z.RefinementCtx
+): void {
+  if (entry.integrity === null && !isLocalLinkLockEntry(entry)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['integrity'],
+      message: `Integrity may only be null for source "local" entries resolved via ${LOCAL_LINK_PREFIX}`
+    });
+  }
+}
 
 export const skillsLockSchema = z.object({
   lockfileVersion: z.union([z.literal(1), z.literal(2)]),
   skills: z.record(z.string(), lockedSkillSchema)
+});
+
+/**
+ * Read-side lock entry for lockfiles users already have. Older writers (pre-0.17 CLI URL
+ * installs, the MCP install/update tools) copied registry permissions verbatim and could
+ * omit `audit_score`. Types are still checked and the null-integrity rule still holds;
+ * unknown keys pass through so a rewrite preserves them.
+ */
+const lockedSkillReadSchema = z
+  .looseObject({
+    resolved: z.string().min(1),
+    integrity: z.string().min(1).nullable(),
+    permissions: permissionsReadSchema,
+    audit_score: z
+      .number()
+      .nullable()
+      .optional()
+      .transform((score) => score ?? null),
+    dependencies: z.record(z.string(), z.string()).optional(),
+    source: z.enum(SKILL_SOURCES).optional(),
+    scan_verdict: z.enum(SCAN_VERDICTS).optional(),
+    scanned_at: z.string().optional()
+  })
+  .superRefine(refineNullIntegrity);
+
+export const skillsLockReadSchema = z.object({
+  lockfileVersion: z.union([z.literal(1), z.literal(2)]),
+  skills: z.record(z.string(), lockedSkillReadSchema)
 });
 
 export type LockedSkillV1 = z.infer<typeof lockedSkillV1Schema>;

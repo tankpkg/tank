@@ -12,7 +12,7 @@ import {
   type LockedSkill,
   MANIFEST_FILENAME,
   type Permissions,
-  permissionsSchema,
+  permissionsReadSchema,
   type ScanVerdict,
   type SkillSource,
   type SkillsLock
@@ -1114,7 +1114,7 @@ function readManifestFromDir(dir: string): Record<string, unknown> | null {
   return null;
 }
 
-const urlSkillManifestSchema = z.looseObject({ permissions: permissionsSchema.optional() });
+const urlSkillManifestSchema = z.looseObject({ permissions: permissionsReadSchema.optional() });
 
 /**
  * A URL-installed skill's tank.json is third-party input: validate its permissions before they

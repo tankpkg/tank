@@ -513,7 +513,7 @@ describe('review regressions', () => {
     expect(requests.some((r) => r.url.includes('pr-description'))).toBe(false);
   });
 
-  it('lockfile install rejects a lock with invalid permissions and names the field', async () => {
+  it('lockfile install rejects a lock whose permission field has the wrong type and names it', async () => {
     writeProject({});
     writeJson(path.join(root, 'tank.lock'), {
       lockfileVersion: 2,
@@ -522,12 +522,53 @@ describe('review regressions', () => {
           source: 'github',
           resolved: 'https://github.com/o/x',
           integrity: 'sha512-abc',
-          permissions: { network: { outbound: [], inbound: ['*'] } },
+          permissions: { subprocess: 'yes' },
           audit_score: null
         }
       }
     });
-    await expect(runInstallAll()).rejects.toThrow(/Invalid tank\.lock: skills\.x@1\.0\.0\.permissions\.network/);
+    await expect(runInstallAll()).rejects.toThrow(/Invalid tank\.lock: skills\.x@1\.0\.0\.permissions\.subprocess/);
     expect(requests).toEqual([]);
+  });
+});
+
+describe('backward compatibility with files users already have', () => {
+  it('accepts a tank.json budget with the documented "environment" key (released 0.16.6 did)', async () => {
+    writeProject({ '@tank/clean-code': '3.1.0' });
+    const manifestPath = path.join(root, 'tank.json');
+    writeJson(manifestPath, {
+      skills: { '@tank/clean-code': '3.1.0' },
+      permissions: { subprocess: false, environment: ['NODE_ENV'] }
+    });
+    await runInstallAll();
+    expect(Object.keys(readLock().skills)).toEqual(['@tank/clean-code@3.1.0']);
+  });
+
+  it('installs from a lock written by the MCP tools (extra permission keys, no audit_score) and keeps the extras', async () => {
+    const cleanCode = REGISTRY_SKILLS[0];
+    writeProject({ '@tank/clean-code': '3.1.0' });
+    writeJson(path.join(root, 'tank.lock'), {
+      lockfileVersion: 2,
+      skills: {
+        '@tank/clean-code@3.1.0': {
+          resolved: `https://storage.test/${encodeURIComponent(cleanCode.name)}-${cleanCode.version}.tgz`,
+          integrity: integrityOf(cleanCode.tarball),
+          permissions: { environment: ['NODE_ENV'] }
+        }
+      }
+    });
+    await runInstallAll();
+    expect(claudeLinkTarget('tank--clean-code')).not.toBeNull();
+
+    const { installCommand } = await import('~/commands/install.js');
+    await installCommand({
+      name: '@tank/crystal-clear-docs',
+      versionRange: '1.1.0',
+      directory: root,
+      configDir,
+      homedir: home
+    });
+    const rewritten = JSON.parse(fs.readFileSync(path.join(root, 'tank.lock'), 'utf-8'));
+    expect(rewritten.skills['@tank/clean-code@3.1.0'].permissions).toEqual({ environment: ['NODE_ENV'] });
   });
 });
