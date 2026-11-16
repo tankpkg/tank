@@ -22,6 +22,19 @@ export const permissionsSchema = z
   .strict();
 
 export type Permissions = z.infer<typeof permissionsSchema>;
+
+/**
+ * Read-side permissions: same field types, but unknown keys (e.g. a documented "environment"
+ * list, or anything an older writer copied from registry metadata) pass through instead of
+ * failing. Budget checks only look at network/filesystem/subprocess, so extras are inert.
+ * Use for files users already have (tank.json budgets, existing tank.lock entries); keep
+ * `permissionsSchema` for anything Tank validates before publishing or writing.
+ */
+export const permissionsReadSchema = z.looseObject({
+  network: networkPermissionsSchema.loose().optional(),
+  filesystem: filesystemPermissionsSchema.loose().optional(),
+  subprocess: z.boolean().optional()
+});
 export type NetworkPermissions = z.infer<typeof networkPermissionsSchema>;
 export type FilesystemPermissions = z.infer<typeof filesystemPermissionsSchema>;
 

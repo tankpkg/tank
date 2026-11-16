@@ -83,6 +83,7 @@ export {
   type NetworkPermissions,
   networkPermissionsSchema,
   type Permissions,
+  permissionsReadSchema,
   permissionsSchema,
   type SkillStatus,
   skillStatusSchema,
@@ -104,6 +105,8 @@ export {
   skillsJsonSchema
 } from '~/schemas/skills-json.js';
 export {
+  isLocalLinkLockEntry,
+  LOCAL_LINK_PREFIX,
   type LockedSkill,
   type LockedSkillV1,
   lockedSkillSchema,
@@ -113,6 +116,7 @@ export {
   SKILL_SOURCES,
   type SkillSource,
   type SkillsLock,
+  skillsLockReadSchema,
   skillsLockSchema,
   skillsLockV1Schema
 } from '~/schemas/skills-lock.js';

@@ -4626,7 +4626,7 @@ Individual skill permissions declare what a skill _claims_ to need. The permissi
   "skills": {
     "@vercel/next-skill": "^2.1.0",
     "@community/seo-audit": "3.0.0",
-    "@team/internal-linter": "workspace:*"
+    "@team/internal-linter": "link:./skills/internal-linter"
   },
   "permissions": {
     "network": {
@@ -4641,6 +4641,8 @@ Individual skill permissions declare what a skill _claims_ to need. The permissi
   }
 }
 ```
+
+`link:` entries are skills that live in the project itself. `tank install` links them from their folder (the path must stay inside the project, and the folder's `tank.json` `name` must match the key). They are never sent to the registry, and they are checked against this budget like any other skill. Their own registry dependencies are resolved and locked with the rest. In `tank.lock` they appear with `"source": "local"` and `"integrity": null`. If a local skill's version, permissions or dependencies change, `tank install` fails until you regenerate the lockfile.
 
 This budget tells Tank:
 

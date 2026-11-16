@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { LOCKFILE_FILENAME } from '@internals/schemas';
+import { isLocalLinkLockEntry, LOCKFILE_FILENAME, type LockedSkill } from '@internals/schemas';
 
+import { parseVersionFromLockKey } from '~/lib/install-pipeline.js';
+import { diffLocalLockEntry, readLocalSkill } from '~/lib/local-skills.js';
 import { readLockfile } from '~/lib/lockfile.js';
 import { logger } from '~/lib/logger.js';
 
@@ -27,6 +29,10 @@ export interface VerifyResult {
  * 2. Check that the skill directory exists in .tank/skills/
  * 3. Check that the directory is not empty
  *
+ * Local `link:` entries have no integrity hash: check the folder exists inside
+ * the project, holds SKILL.md + tank.json, declares the locked name, and still
+ * matches the locked version, path, permissions and dependencies.
+ *
  * Throws on failure (exit code 1). Prints success message on pass.
  */
 export async function verifyCommand(options?: VerifyOptions): Promise<void> {
@@ -45,8 +51,13 @@ export async function verifyCommand(options?: VerifyOptions): Promise<void> {
 
   const issues: string[] = [];
 
-  for (const [key] of entries) {
+  for (const [key, entry] of entries) {
     const skillName = parseLockKey(key);
+    if (isLocalLinkLockEntry(entry)) {
+      const issue = verifyLocalEntry(key, entry, directory);
+      if (issue) issues.push(issue);
+      continue;
+    }
     const skillDir = getExtractDir(directory, skillName);
 
     if (!fs.existsSync(skillDir)) {
@@ -70,6 +81,16 @@ export async function verifyCommand(options?: VerifyOptions): Promise<void> {
 
   const count = entries.length;
   logger.success(`All ${count} skill${count === 1 ? '' : 's'} verified`);
+}
+
+function verifyLocalEntry(key: string, entry: LockedSkill, directory: string): string | null {
+  try {
+    const local = readLocalSkill(parseLockKey(key), entry.resolved, directory);
+    const changed = diffLocalLockEntry(parseVersionFromLockKey(key), entry, local);
+    return changed.length > 0 ? `${key}: changed since ${LOCKFILE_FILENAME} was written (${changed.join(', ')})` : null;
+  } catch (err) {
+    return `${key}: ${err instanceof Error ? err.message : String(err)}`;
+  }
 }
 
 function parseLockKey(key: string): string {

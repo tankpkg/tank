@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { skillsLockSchema } from '~/schemas/skills-lock.js';
+import { skillsLockReadSchema, skillsLockSchema } from '~/schemas/skills-lock.js';
 
 describe('skillsLockSchema', () => {
   const validLockfile = {
@@ -51,6 +51,54 @@ describe('skillsLockSchema', () => {
       }
     });
     expect(result.success).toBe(true);
+  });
+
+  it('accepts a local link: entry with null integrity', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@acme/pr-description@1.0.0': {
+          source: 'local',
+          resolved: 'link:./skills/pr-description',
+          integrity: null,
+          permissions: { subprocess: false },
+          audit_score: null,
+          dependencies: { '@tank/crystal-clear-docs': '^1.1.0' }
+        }
+      }
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects null integrity on a registry entry', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        '@tank/clean-code@3.1.0': {
+          resolved: 'https://tankpkg.dev/v1/skills/@tank/clean-code/3.1.0',
+          integrity: null,
+          permissions: {},
+          audit_score: null
+        }
+      }
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects null integrity on a local file:// entry', () => {
+    const result = skillsLockSchema.safeParse({
+      lockfileVersion: 2,
+      skills: {
+        'my-skill@0.0.0': {
+          source: 'local',
+          resolved: 'file:///tmp/my-skill',
+          integrity: null,
+          permissions: {},
+          audit_score: null
+        }
+      }
+    });
+    expect(result.success).toBe(false);
   });
 
   it('rejects missing lockfileVersion', () => {
@@ -266,5 +314,33 @@ describe('skillsLockSchema', () => {
       }
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('skillsLockReadSchema (existing lockfiles)', () => {
+  const mcpWrittenEntry = {
+    resolved: 'https://tankpkg.dev/v1/skills/@org/x/1.0.0',
+    integrity: 'sha512-abc',
+    permissions: { network: { outbound: ['a.com'] }, environment: ['NODE_ENV'] }
+  };
+
+  it('accepts extra permission keys and a missing audit_score, normalizing it to null', () => {
+    const result = skillsLockReadSchema.safeParse({ lockfileVersion: 2, skills: { '@org/x@1.0.0': mcpWrittenEntry } });
+    expect(result.success).toBe(true);
+    expect(result.data?.skills['@org/x@1.0.0']?.audit_score).toBeNull();
+    expect(result.data?.skills['@org/x@1.0.0']?.permissions).toEqual(mcpWrittenEntry.permissions);
+  });
+
+  it('the strict write schema still rejects the same entry', () => {
+    expect(
+      skillsLockSchema.safeParse({ lockfileVersion: 2, skills: { '@org/x@1.0.0': mcpWrittenEntry } }).success
+    ).toBe(false);
+  });
+
+  it('still enforces field types and the null-integrity rule', () => {
+    const badType = { ...mcpWrittenEntry, permissions: { subprocess: 'yes' } };
+    const nullIntegrity = { ...mcpWrittenEntry, integrity: null };
+    expect(skillsLockReadSchema.safeParse({ lockfileVersion: 2, skills: { a: badType } }).success).toBe(false);
+    expect(skillsLockReadSchema.safeParse({ lockfileVersion: 2, skills: { a: nullIntegrity } }).success).toBe(false);
   });
 });
