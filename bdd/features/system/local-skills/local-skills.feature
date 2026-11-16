@@ -4,7 +4,8 @@
 # in-process fake registry that records every request. No bdd/steps file: the scenarios need fetch/tar mocks
 # and no running services, so they live with the CLI's vitest suite rather than `just test bdd`.
 
-@install @local-skills
+@install
+@local-skills
 Feature: Install registry skills and link local skills from one manifest
   As a team that keeps private skills in a git repo next to public registry dependencies
   I want one tank.json and one "tank install"
