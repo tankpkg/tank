@@ -1,6 +1,6 @@
 {
   "name": "@internals/schemas",
-  "version": "0.16.6",
+  "version": "0.17.0",
   "private": true,
   "type": "module",
   "exports": {
