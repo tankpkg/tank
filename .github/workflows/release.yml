@@ -23,11 +23,11 @@ jobs:
             platform: linux-arm64
             target: bun-linux-arm64
             output: tank-linux-arm64
-          - runner: macos-14
+          - runner: macos-15
             platform: darwin-arm64
             target: bun-darwin-arm64
             output: tank-darwin-arm64
-          - runner: macos-14
+          - runner: macos-15
             platform: darwin-x64
             target: bun-darwin-x64
             output: tank-darwin-x64
@@ -187,11 +187,11 @@ jobs:
             platform: linux-aarch64
             target: aarch64-unknown-linux-gnu
             manylinux: "2_28"
-          - runner: macos-14
+          - runner: macos-15
             platform: darwin-x86_64
             target: x86_64-apple-darwin
             manylinux: "off"
-          - runner: macos-14
+          - runner: macos-15
             platform: darwin-arm64
             target: aarch64-apple-darwin
             manylinux: "off"
